@@ -1,0 +1,165 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "scGantt",
+  "position": {
+    "x": 648,
+    "y": 368,
+    "z": 1003,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "atlasScatter0B23674C661C4797A349BBC2B0AD313A",
+    "query": {
+      "queryState": {
+        "task": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Tasks"
+                    }
+                  },
+                  "Property": "Task"
+                }
+              },
+              "queryRef": "Tasks.Task",
+              "nativeQueryRef": "Task"
+            }
+          ]
+        },
+        "legend": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Tasks"
+                    }
+                  },
+                  "Property": "Phase"
+                }
+              },
+              "queryRef": "Tasks.Phase",
+              "nativeQueryRef": "Phase"
+            }
+          ]
+        },
+        "start": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Tasks"
+                    }
+                  },
+                  "Property": "Start"
+                }
+              },
+              "queryRef": "Tasks.Start",
+              "nativeQueryRef": "Start"
+            }
+          ]
+        },
+        "end": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Tasks"
+                    }
+                  },
+                  "Property": "End"
+                }
+              },
+              "queryRef": "Tasks.End",
+              "nativeQueryRef": "End"
+            }
+          ]
+        },
+        "owner": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Tasks"
+                    }
+                  },
+                  "Property": "Owner"
+                }
+              },
+              "queryRef": "Tasks.Owner",
+              "nativeQueryRef": "Owner"
+            }
+          ]
+        },
+        "progress": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Tasks"
+                    }
+                  },
+                  "Property": "Percent Complete"
+                }
+              },
+              "queryRef": "Tasks.Percent Complete",
+              "nativeQueryRef": "Percent Complete"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'gantt'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Gantt · project plan'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

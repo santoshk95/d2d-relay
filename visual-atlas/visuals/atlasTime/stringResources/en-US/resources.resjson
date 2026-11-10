@@ -1,0 +1,22 @@
+{
+  "Role_Time": "Time",
+  "Role_Time_Desc": "A date (calendar, timeline slicer), the x-axis of a stream graph, or the columns of a heat grid (for example Hour).",
+  "Role_Rows": "Rows",
+  "Role_Rows_Desc": "Heat grid and punch card: the rows (for example Weekday).",
+  "Role_Series": "Legend",
+  "Role_Series_Desc": "Stream graph: one stream per value.",
+  "Role_Values": "Values",
+  "Role_Tooltips": "Tooltips",
+  "Landing_Line1": "Add a date (or a time field such as Hour) to Time and a measure to Values.",
+  "Landing_Line2": "Add Rows for a heat grid or a Legend for a stream graph. Pick calendar, heat grid, stream or timeline slicer in the Format pane.",
+  "Need_Dates": "This chart needs a date in Time.",
+  "Need_Two_Times": "A stream graph needs two or more points in Time.",
+  "All_Periods": "All periods",
+  "Warn_Target_Title": "Use a date column",
+  "Warn_Target_Text": "The timeline filters a plain date column. Use the date field itself, not its date hierarchy.",
+  "Warn_Limit_Title": "Showing the first 30,000 rows",
+  "Warn_Limit_Text": "There is more data than the visual can show. Filter the report to see the rest.",
+  "Mark_Selected": "Selected: this visual is filtering other visuals",
+  "Mark_Filter": "This visual is filtering the report",
+  "Mark_Highlighted": "Highlighted by a selection in another visual"
+}

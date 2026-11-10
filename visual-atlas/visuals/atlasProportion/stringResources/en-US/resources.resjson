@@ -1,0 +1,17 @@
+{
+  "Role_Category": "Category",
+  "Role_Category_Desc": "Columns of a Mekko, wedges of a rose or aster, waffle parts, icon rows, or Venn regions written as \"A & B\".",
+  "Role_Series": "Legend",
+  "Role_Series_Desc": "Optional. Segments of a Mekko column or stacked rose wedge.",
+  "Role_Values": "Values",
+  "Role_Values_Desc": "The value. A second measure is the total (waffle, pictogram) or the weight (aster).",
+  "Role_Tooltips": "Tooltips",
+  "Landing_Line1": "Add a field to Category and a measure to Values. Add a Legend for Mekko segments or a stacked rose.",
+  "Landing_Line2": "A second measure is the total (waffle, pictogram) or the weight (aster). For a Venn diagram, write overlaps in Category as \"A & B\".",
+  "Venn_Sets": "A Venn diagram needs 2 or 3 sets. Write overlaps in Category as \"A & B\".",
+  "Warn_Limit_Title": "Showing the first 1,000 rows",
+  "Warn_Limit_Text": "There is more data than the visual can show. Filter the report to see the rest.",
+  "Mark_Selected": "Selected: this visual is filtering other visuals",
+  "Mark_Filter": "This visual is filtering the report",
+  "Mark_Highlighted": "Highlighted by a selection in another visual"
+}

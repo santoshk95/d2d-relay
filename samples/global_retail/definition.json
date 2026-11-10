@@ -1,0 +1,3285 @@
+{
+  "name": "Atlas Retail",
+  "description": "Worldwide retail performance: sales, stores, categories, customers and online (Jan 2024 - Oct 2026).",
+  "theme": {
+    "page_bg": "#F7F3EE",
+    "card_bg": "#FFFFFF",
+    "card_border": "#E7E0D7",
+    "text": "#1F1A17",
+    "muted": "#6F6761",
+    "accent": "#DD7A12",
+    "accent_tint": "#FBE7CC",
+    "font": "Segoe UI",
+    "radius": 10,
+    "data_colors": [
+      "#DD7A12",
+      "#9C4F0C",
+      "#F2B166",
+      "#3B78D8",
+      "#6F6761",
+      "#C9A27A",
+      "#2E7D3A",
+      "#B3261E"
+    ]
+  },
+  "data": {
+    "parameter": "DataFolder",
+    "folder": "C:\\Users\\santosh.k\\Downloads\\Gen BI\\output\\GlobalRetail\\Data\\"
+  },
+  "tables": [
+    {
+      "name": "Country",
+      "csv": "dim_country.csv",
+      "columns": [
+        {
+          "name": "CountryKey",
+          "source": "CountryKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "CountryCode",
+          "source": "CountryCode",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "Country",
+          "source": "Country",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "Region",
+          "source": "Region",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "Currency",
+          "source": "Currency",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "OnlineAvailable",
+          "source": "OnlineAvailable",
+          "type": "string",
+          "hidden": false
+        }
+      ],
+      "blanks_to_null": false,
+      "description": "Countries and regions"
+    },
+    {
+      "name": "Store",
+      "csv": "dim_store.csv",
+      "columns": [
+        {
+          "name": "StoreKey",
+          "source": "StoreKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "StoreCode",
+          "source": "StoreCode",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "Store",
+          "source": "Store",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "StoreType",
+          "source": "StoreType",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "Channel",
+          "source": "Channel",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "Format",
+          "source": "Format",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "City",
+          "source": "City",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "CountryKey",
+          "source": "CountryKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "OpenDate",
+          "source": "OpenDate",
+          "type": "date",
+          "hidden": false
+        },
+        {
+          "name": "CloseDate",
+          "source": "CloseDate",
+          "type": "date",
+          "hidden": false
+        },
+        {
+          "name": "SellingAreaSqm",
+          "source": "SellingAreaSqm",
+          "type": "int",
+          "hidden": false
+        },
+        {
+          "name": "Manager",
+          "source": "Manager",
+          "type": "string",
+          "hidden": false
+        }
+      ],
+      "blanks_to_null": true,
+      "description": "Physical stores plus one online store per online market"
+    },
+    {
+      "name": "Category",
+      "csv": "dim_category.csv",
+      "columns": [
+        {
+          "name": "CategoryKey",
+          "source": "CategoryKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "Category",
+          "source": "Category",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "Department",
+          "source": "Department",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "SortOrder",
+          "source": "SortOrder",
+          "type": "int",
+          "hidden": true
+        }
+      ],
+      "blanks_to_null": false,
+      "description": ""
+    },
+    {
+      "name": "Sales",
+      "csv": "fact_sales.csv",
+      "columns": [
+        {
+          "name": "Date",
+          "source": "Date",
+          "type": "date",
+          "hidden": true
+        },
+        {
+          "name": "StoreKey",
+          "source": "StoreKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "CategoryKey",
+          "source": "CategoryKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "NetSales",
+          "source": "NetSales",
+          "type": "decimal",
+          "hidden": true
+        },
+        {
+          "name": "GrossProfit",
+          "source": "GrossProfit",
+          "type": "decimal",
+          "hidden": true
+        },
+        {
+          "name": "Unit Count",
+          "source": "Units",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "Discount Amount",
+          "source": "Discount",
+          "type": "decimal",
+          "hidden": true
+        }
+      ],
+      "blanks_to_null": false,
+      "description": "Daily sales by store and category"
+    },
+    {
+      "name": "Targets",
+      "csv": "fact_targets.csv",
+      "columns": [
+        {
+          "name": "Month",
+          "source": "Month",
+          "type": "date",
+          "hidden": true
+        },
+        {
+          "name": "StoreKey",
+          "source": "StoreKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "SalesTarget",
+          "source": "SalesTarget",
+          "type": "decimal",
+          "hidden": true
+        },
+        {
+          "name": "GrossProfitTarget",
+          "source": "GrossProfitTarget",
+          "type": "decimal",
+          "hidden": true
+        }
+      ],
+      "blanks_to_null": false,
+      "description": ""
+    },
+    {
+      "name": "Footfall",
+      "csv": "fact_footfall.csv",
+      "columns": [
+        {
+          "name": "Date",
+          "source": "Date",
+          "type": "date",
+          "hidden": true
+        },
+        {
+          "name": "StoreKey",
+          "source": "StoreKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "Hour",
+          "source": "Hour",
+          "type": "int",
+          "hidden": false
+        },
+        {
+          "name": "Visitors",
+          "source": "Footfall",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "Transaction Count",
+          "source": "Transactions",
+          "type": "int",
+          "hidden": true
+        }
+      ],
+      "blanks_to_null": false,
+      "description": "Hourly footfall and transactions, physical stores"
+    },
+    {
+      "name": "Inventory",
+      "csv": "fact_inventory.csv",
+      "columns": [
+        {
+          "name": "WeekEnding",
+          "source": "WeekEnding",
+          "type": "date",
+          "hidden": true
+        },
+        {
+          "name": "StoreKey",
+          "source": "StoreKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "CategoryKey",
+          "source": "CategoryKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "StockValue",
+          "source": "StockValue",
+          "type": "decimal",
+          "hidden": true
+        },
+        {
+          "name": "StockUnits",
+          "source": "StockUnits",
+          "type": "int",
+          "hidden": true
+        }
+      ],
+      "blanks_to_null": false,
+      "description": ""
+    },
+    {
+      "name": "Online Funnel",
+      "csv": "fact_online_funnel.csv",
+      "columns": [
+        {
+          "name": "Date",
+          "source": "Date",
+          "type": "date",
+          "hidden": true
+        },
+        {
+          "name": "CountryKey",
+          "source": "CountryKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "Device",
+          "source": "Device",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "Source",
+          "source": "Source",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "Session Count",
+          "source": "Sessions",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "ProductViews",
+          "source": "ProductViews",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "AddToCart",
+          "source": "AddToCart",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "Checkouts",
+          "source": "Checkouts",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "Order Count",
+          "source": "Orders",
+          "type": "int",
+          "hidden": true
+        }
+      ],
+      "blanks_to_null": false,
+      "description": ""
+    },
+    {
+      "name": "Customers",
+      "csv": "fact_customers.csv",
+      "columns": [
+        {
+          "name": "Month",
+          "source": "Month",
+          "type": "date",
+          "hidden": true
+        },
+        {
+          "name": "StoreKey",
+          "source": "StoreKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "Tier",
+          "source": "Tier",
+          "type": "string",
+          "hidden": false
+        },
+        {
+          "name": "ActiveCustomers",
+          "source": "ActiveCustomers",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "NewCustomers",
+          "source": "NewCustomers",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "RepeatCustomers",
+          "source": "RepeatCustomers",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "CustomerSales",
+          "source": "CustomerSales",
+          "type": "decimal",
+          "hidden": true
+        }
+      ],
+      "blanks_to_null": false,
+      "description": ""
+    },
+    {
+      "name": "Cohorts",
+      "csv": "fact_cohorts.csv",
+      "columns": [
+        {
+          "name": "CohortMonth",
+          "source": "CohortMonth",
+          "type": "date",
+          "hidden": true
+        },
+        {
+          "name": "CountryKey",
+          "source": "CountryKey",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "MonthsSince",
+          "source": "MonthsSince",
+          "type": "int",
+          "hidden": false
+        },
+        {
+          "name": "CohortSize",
+          "source": "CohortSize",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "ActiveCustomers",
+          "source": "ActiveCustomers",
+          "type": "int",
+          "hidden": true
+        }
+      ],
+      "blanks_to_null": false,
+      "description": ""
+    },
+    {
+      "name": "Date",
+      "date_table": true,
+      "description": "Calendar built in Power Query",
+      "m": "let\n    Start = #date(2024, 1, 1),\n    End = #date(2026, 12, 31),\n    Dates = List.Dates(Start, Duration.Days(End - Start) + 1, #duration(1, 0, 0, 0)),\n    Base = Table.TransformColumnTypes(Table.FromList(Dates, Splitter.SplitByNothing(), {\"Date\"}), {{\"Date\", type date}}),\n    Year = Table.AddColumn(Base, \"Year\", each Date.Year([Date]), Int64.Type),\n    MonthNumber = Table.AddColumn(Year, \"Month Number\", each Date.Month([Date]), Int64.Type),\n    Month = Table.AddColumn(MonthNumber, \"Month\", each Date.ToText([Date], [Format = \"MMM\", Culture = \"en-US\"]), type text),\n    MonthStart = Table.AddColumn(Month, \"Month Start\", each Date.StartOfMonth([Date]), type date),\n    YearMonth = Table.AddColumn(MonthStart, \"Year Month\", each Date.ToText([Date], [Format = \"yyyy-MM\", Culture = \"en-US\"]), type text),\n    Quarter = Table.AddColumn(YearMonth, \"Quarter\", each \"Q\" & Text.From(Date.QuarterOfYear([Date])), type text),\n    WeekdayNumber = Table.AddColumn(Quarter, \"Weekday Number\", each Date.DayOfWeek([Date], Day.Monday) + 1, Int64.Type),\n    Weekday = Table.AddColumn(WeekdayNumber, \"Weekday\", each Date.ToText([Date], [Format = \"ddd\", Culture = \"en-US\"]), type text),\n    WeekdayName = Table.AddColumn(Weekday, \"Weekday Name\", each Date.ToText([Date], [Format = \"dddd\", Culture = \"en-US\"]), type text),\n    KeyEvent = Table.AddColumn(WeekdayName, \"Key Event\", each\n        let m = Date.Month([Date]), d = Date.Day([Date]) in\n        if (m = 3 and d >= 20) or (m = 4 and d <= 5) then \"Spring sale\"\n        else if m = 7 and d <= 16 then \"Summer sale\"\n        else if m = 10 and d <= 19 then \"Autumn promo\"\n        else if m = 11 and d >= 24 then \"Black Friday\"\n        else if m = 12 and d >= 10 and d <= 24 then \"Christmas\"\n        else null, type text)\nin\n    KeyEvent",
+      "columns": [
+        {
+          "name": "Date",
+          "type": "date"
+        },
+        {
+          "name": "Year",
+          "type": "int"
+        },
+        {
+          "name": "Month Number",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "Month",
+          "type": "string",
+          "sortBy": "Month Number"
+        },
+        {
+          "name": "Month Start",
+          "type": "date"
+        },
+        {
+          "name": "Year Month",
+          "type": "string"
+        },
+        {
+          "name": "Quarter",
+          "type": "string"
+        },
+        {
+          "name": "Weekday Number",
+          "type": "int",
+          "hidden": true
+        },
+        {
+          "name": "Weekday",
+          "type": "string",
+          "sortBy": "Weekday Number"
+        },
+        {
+          "name": "Weekday Name",
+          "type": "string",
+          "sortBy": "Weekday Number"
+        },
+        {
+          "name": "Key Event",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Sales Driver",
+      "description": "Drivers of the change in sales vs last year (DAX calculated table)",
+      "dax": "DATATABLE ( \"Driver\", STRING, \"Sort\", INTEGER, { { \"Like-for-like stores\", 1 }, { \"Online\", 2 }, { \"New stores\", 3 }, { \"Closed stores\", 4 }, { \"Price and promo\", 5 } } )",
+      "columns": [
+        {
+          "name": "Driver",
+          "type": "string",
+          "sortBy": "Sort"
+        },
+        {
+          "name": "Sort",
+          "type": "int",
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "name": "Metrics",
+      "description": "Home of all measures (DAX calculated table)",
+      "dax": "DATATABLE ( \"Metric\", STRING, { { \"Measures live here\" } } )",
+      "columns": [
+        {
+          "name": "Metric",
+          "type": "string",
+          "hidden": true
+        }
+      ]
+    }
+  ],
+  "calculated_columns": [
+    {
+      "table": "Date",
+      "name": "Is Past",
+      "type": "bool",
+      "hidden": true,
+      "expression": "'Date'[Date] <= MAX ( Sales[Date] )"
+    },
+    {
+      "table": "Store",
+      "name": "Store Group",
+      "type": "string",
+      "expression": "SWITCH ( TRUE (), 'Store'[StoreType] = \"Online\", \"Online\", NOT ISBLANK ( 'Store'[CloseDate] ), \"Closed stores\", 'Store'[OpenDate] > DATE ( 2025, 1, 1 ), \"New stores\", \"Like-for-like stores\" )"
+    },
+    {
+      "table": "Store",
+      "name": "Region",
+      "type": "string",
+      "expression": "RELATED ( 'Country'[Region] )"
+    },
+    {
+      "table": "Store",
+      "name": "Country",
+      "type": "string",
+      "expression": "RELATED ( 'Country'[Country] )"
+    }
+  ],
+  "relationships": [
+    {
+      "from": "Sales[Date]",
+      "to": "Date[Date]"
+    },
+    {
+      "from": "Sales[StoreKey]",
+      "to": "Store[StoreKey]"
+    },
+    {
+      "from": "Sales[CategoryKey]",
+      "to": "Category[CategoryKey]"
+    },
+    {
+      "from": "Store[CountryKey]",
+      "to": "Country[CountryKey]"
+    },
+    {
+      "from": "Targets[Month]",
+      "to": "Date[Date]"
+    },
+    {
+      "from": "Targets[StoreKey]",
+      "to": "Store[StoreKey]"
+    },
+    {
+      "from": "Footfall[Date]",
+      "to": "Date[Date]"
+    },
+    {
+      "from": "Footfall[StoreKey]",
+      "to": "Store[StoreKey]"
+    },
+    {
+      "from": "Inventory[WeekEnding]",
+      "to": "Date[Date]"
+    },
+    {
+      "from": "Inventory[StoreKey]",
+      "to": "Store[StoreKey]"
+    },
+    {
+      "from": "Inventory[CategoryKey]",
+      "to": "Category[CategoryKey]"
+    },
+    {
+      "from": "'Online Funnel'[Date]",
+      "to": "Date[Date]"
+    },
+    {
+      "from": "'Online Funnel'[CountryKey]",
+      "to": "Country[CountryKey]"
+    },
+    {
+      "from": "Customers[Month]",
+      "to": "Date[Date]"
+    },
+    {
+      "from": "Customers[StoreKey]",
+      "to": "Store[StoreKey]"
+    },
+    {
+      "from": "Cohorts[CohortMonth]",
+      "to": "Date[Date]"
+    },
+    {
+      "from": "Cohorts[CountryKey]",
+      "to": "Country[CountryKey]"
+    }
+  ],
+  "measures_table": "Metrics",
+  "measures": [
+    {
+      "name": "Net Sales",
+      "expression": "SUM ( Sales[NetSales] )",
+      "format": "\\$#,0",
+      "folder": "Sales",
+      "description": "Sales after discounts"
+    },
+    {
+      "name": "Gross Profit",
+      "expression": "SUM ( Sales[GrossProfit] )",
+      "format": "\\$#,0",
+      "folder": "Sales",
+      "description": ""
+    },
+    {
+      "name": "Gross Margin %",
+      "expression": "DIVIDE ( [Gross Profit], [Net Sales] )",
+      "format": "0.0%",
+      "folder": "Sales",
+      "description": ""
+    },
+    {
+      "name": "COGS",
+      "expression": "[Net Sales] - [Gross Profit]",
+      "format": "\\$#,0",
+      "folder": "Sales",
+      "description": ""
+    },
+    {
+      "name": "Discount",
+      "expression": "SUM ( Sales[Discount Amount] )",
+      "format": "\\$#,0",
+      "folder": "Sales",
+      "description": "Markdown and promotion cost"
+    },
+    {
+      "name": "Units",
+      "expression": "SUM ( Sales[Unit Count] )",
+      "format": "#,0",
+      "folder": "Sales",
+      "description": ""
+    },
+    {
+      "name": "Net Sales LY",
+      "expression": "CALCULATE ( [Net Sales], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "\\$#,0",
+      "folder": "Sales",
+      "description": ""
+    },
+    {
+      "name": "Gross Profit LY",
+      "expression": "CALCULATE ( [Gross Profit], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "\\$#,0",
+      "folder": "Sales",
+      "description": ""
+    },
+    {
+      "name": "Gross Margin % LY",
+      "expression": "DIVIDE ( [Gross Profit LY], [Net Sales LY] )",
+      "format": "0.0%",
+      "folder": "Sales",
+      "description": ""
+    },
+    {
+      "name": "Discount LY",
+      "expression": "CALCULATE ( [Discount], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "\\$#,0",
+      "folder": "Sales",
+      "description": ""
+    },
+    {
+      "name": "Units LY",
+      "expression": "CALCULATE ( [Units], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "#,0",
+      "folder": "Sales",
+      "description": ""
+    },
+    {
+      "name": "Sales Change vs LY",
+      "expression": "[Net Sales] - [Net Sales LY]",
+      "format": "+\\$#,0;-\\$#,0;\\$#,0",
+      "folder": "Sales",
+      "description": ""
+    },
+    {
+      "name": "Net Sales vs LY %",
+      "expression": "DIVIDE ( [Net Sales] - [Net Sales LY], [Net Sales LY] )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Sales",
+      "description": ""
+    },
+    {
+      "name": "Sales Target",
+      "expression": "CALCULATE ( SUM ( Targets[SalesTarget] ), 'Date'[Is Past] = TRUE () )",
+      "format": "\\$#,0",
+      "folder": "Targets",
+      "description": "Plan for months that have actuals"
+    },
+    {
+      "name": "Gross Profit Target",
+      "expression": "CALCULATE ( SUM ( Targets[GrossProfitTarget] ), 'Date'[Is Past] = TRUE () )",
+      "format": "\\$#,0",
+      "folder": "Targets",
+      "description": ""
+    },
+    {
+      "name": "Gross Margin Target %",
+      "expression": "DIVIDE ( [Gross Profit Target], [Sales Target] )",
+      "format": "0.0%",
+      "folder": "Targets",
+      "description": ""
+    },
+    {
+      "name": "Net Sales vs Target %",
+      "expression": "VAR t = [Sales Target] RETURN IF ( NOT ISBLANK ( t ), DIVIDE ( [Net Sales] - t, t ) )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Targets",
+      "description": ""
+    },
+    {
+      "name": "LFL Sales",
+      "expression": "CALCULATE ( [Net Sales], 'Store'[Store Group] = \"Like-for-like stores\" )",
+      "format": "\\$#,0",
+      "folder": "Like-for-like",
+      "description": ""
+    },
+    {
+      "name": "LFL Sales LY",
+      "expression": "CALCULATE ( [Net Sales LY], 'Store'[Store Group] = \"Like-for-like stores\" )",
+      "format": "\\$#,0",
+      "folder": "Like-for-like",
+      "description": ""
+    },
+    {
+      "name": "LFL Growth %",
+      "expression": "DIVIDE ( [LFL Sales] - [LFL Sales LY], [LFL Sales LY] )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Like-for-like",
+      "description": "Growth of stores open all of last year"
+    },
+    {
+      "name": "LFL Growth Target %",
+      "expression": "VAR t = CALCULATE ( [Sales Target], 'Store'[Store Group] = \"Like-for-like stores\" ) VAR l = [LFL Sales LY] RETURN DIVIDE ( t - l, l )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Like-for-like",
+      "description": ""
+    },
+    {
+      "name": "LFL Growth LY %",
+      "expression": "CALCULATE ( [LFL Growth %], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Like-for-like",
+      "description": ""
+    },
+    {
+      "name": "Stock Value",
+      "expression": "VAR LastWeek = CALCULATE ( MAX ( Inventory[WeekEnding] ), 'Date'[Is Past] = TRUE () ) RETURN IF ( NOT ISBLANK ( LastWeek ), CALCULATE ( SUM ( Inventory[StockValue] ), 'Date'[Date] = LastWeek ) )",
+      "format": "\\$#,0",
+      "folder": "Inventory",
+      "description": "Closing stock at cost (latest week in the period)"
+    },
+    {
+      "name": "Avg Weekly COGS (13w)",
+      "expression": "VAR LastWeek = CALCULATE ( MAX ( Inventory[WeekEnding] ), 'Date'[Is Past] = TRUE () ) RETURN IF ( NOT ISBLANK ( LastWeek ), DIVIDE ( CALCULATE ( [COGS], REMOVEFILTERS ( 'Date' ), DATESINPERIOD ( 'Date'[Date], LastWeek, -91, DAY ), 'Store'[StoreType] = \"Physical\" ), 13 ) )",
+      "format": "\\$#,0",
+      "folder": "Inventory",
+      "description": ""
+    },
+    {
+      "name": "Inventory Cover (wks)",
+      "expression": "DIVIDE ( [Stock Value], [Avg Weekly COGS (13w)] )",
+      "format": "0.0\" wks\"",
+      "folder": "Inventory",
+      "description": ""
+    },
+    {
+      "name": "Inventory Cover LY (wks)",
+      "expression": "CALCULATE ( [Inventory Cover (wks)], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "0.0\" wks\"",
+      "folder": "Inventory",
+      "description": ""
+    },
+    {
+      "name": "Inventory Cover Target (wks)",
+      "expression": "7",
+      "format": "0.0\" wks\"",
+      "folder": "Inventory",
+      "description": ""
+    },
+    {
+      "name": "Net Sales (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Net Sales], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Sales Target (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Sales Target], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Net Sales LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Net Sales LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Gross Margin % (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Gross Margin %], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Gross Margin Target % (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Gross Margin Target %], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Gross Margin % LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Gross Margin % LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "LFL Growth % (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [LFL Growth %], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "LFL Growth Target % (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [LFL Growth Target %], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "LFL Growth LY % (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [LFL Growth LY %], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Inventory Cover (wks) (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Inventory Cover (wks)], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0\" wks\"",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Inventory Cover Target (wks) (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Inventory Cover Target (wks)], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0\" wks\"",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Inventory Cover LY (wks) (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Inventory Cover LY (wks)], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0\" wks\"",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Units (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Units], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Units LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Units LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Event Label",
+      "expression": "IF ( NOT ISBLANK ( [Net Sales] ), CALCULATE ( SELECTEDVALUE ( 'Date'[Key Event] ), NOT ISBLANK ( 'Date'[Key Event] ) ) )",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Sales Trend",
+      "expression": "IF ( NOT ISBLANK ( [Net Sales] ),\n    VAR s = CALCULATE ( [Net Sales], ALLSELECTED ( 'Date' ) )\n    VAR t = CALCULATE ( [Sales Target], ALLSELECTED ( 'Date' ) )\n    VAR l = CALCULATE ( [Net Sales LY], ALLSELECTED ( 'Date' ) )\n    VAR vt = DIVIDE ( s - t, t )\n    VAR vl = DIVIDE ( s - l, l )\n    RETURN \"Sales are \" & FORMAT ( ABS ( vt ), \"0.0%\" ) & IF ( vt >= 0, \" ahead of\", \" behind\" ) & \" target and \"\n        & FORMAT ( ABS ( vl ), \"0.0%\" ) & IF ( vl >= 0, \" up on\", \" down on\" ) & \" last year\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Sales Change by Driver",
+      "expression": "VAR d = SELECTEDVALUE ( 'Sales Driver'[Driver] )\nVAR promo = CALCULATE ( [Discount] - [Discount LY], 'Store'[Store Group] = \"Like-for-like stores\" )\nRETURN SWITCH ( d,\n    \"Like-for-like stores\", CALCULATE ( [Sales Change vs LY], 'Store'[Store Group] = \"Like-for-like stores\" ) + promo,\n    \"Online\", CALCULATE ( [Sales Change vs LY], 'Store'[Store Group] = \"Online\" ),\n    \"New stores\", CALCULATE ( [Sales Change vs LY], 'Store'[Store Group] = \"New stores\" ),\n    \"Closed stores\", CALCULATE ( [Sales Change vs LY], 'Store'[Store Group] = \"Closed stores\" ),\n    \"Price and promo\", - promo )",
+      "format": "+\\$#,0;-\\$#,0;\\$#,0",
+      "folder": "Drivers",
+      "description": "Bridge from last year's sales to this year's"
+    },
+    {
+      "name": "Title Drivers",
+      "expression": "VAR total = [Sales Change vs LY]\nVAR lfl = CALCULATE ( [Sales Change by Driver], 'Sales Driver'[Driver] = \"Like-for-like stores\" )\nRETURN IF ( total >= 0,\n    \"Like-for-like stores delivered \" & FORMAT ( DIVIDE ( lfl, total ), \"0%\" ) & \" of the \"\n        & FORMAT ( total / 1000000, \"$#,0.0\" ) & \"M growth\",\n    \"Sales are \" & FORMAT ( - total / 1000000, \"$#,0.0\" ) & \"M below last year\" )",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "LFL Store Growth %",
+      "expression": "IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = \"Like-for-like stores\", [Net Sales vs LY %] )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "LFL Store Margin %",
+      "expression": "IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = \"Like-for-like stores\", [Gross Margin %] )",
+      "format": "0.0%",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "LFL Store Sales",
+      "expression": "IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = \"Like-for-like stores\", [Net Sales] )",
+      "format": "\\$#,0",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Growth Target %",
+      "expression": "CALCULATE ( [LFL Growth Target %], ALLSELECTED ( 'Store' ) )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Avg LFL Margin %",
+      "expression": "CALCULATE ( [Gross Margin %], ALLSELECTED ( 'Store' ), 'Store'[Store Group] = \"Like-for-like stores\" )",
+      "format": "0.0%",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Title Store Quadrant",
+      "expression": "VAR target = [Growth Target %]\nVAR avgm = [Avg LFL Margin %]\nVAR n = COUNTROWS ( FILTER ( ALLSELECTED ( 'Store'[Store] ), [LFL Store Growth %] > target && [LFL Store Margin %] > avgm ) )\nRETURN FORMAT ( COALESCE ( n, 0 ), \"0\" ) & \" stores beat both the growth target and average margin\"",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Category Mix",
+      "expression": "IF ( NOT ISBLANK ( [Net Sales] ),\nVAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), \"@s\", [Net Sales], \"@m\", [Gross Margin %] )\nVAR total = SUMX ( t, [@s] )\nVAR big = TOPN ( 1, t, [@s], DESC )\nVAR best = TOPN ( 1, t, [@m], DESC )\nRETURN MAXX ( big, 'Category'[Category] ) & \" is \" & FORMAT ( DIVIDE ( MAXX ( big, [@s] ), total ), \"0%\" )\n    & \" of sales at \" & FORMAT ( MAXX ( big, [@m] ), \"0.0%\" ) & \" margin; \" & MAXX ( best, 'Category'[Category] )\n    & \" earns \" & FORMAT ( MAXX ( best, [@m] ), \"0%\" )\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Footfall",
+      "expression": "SUM ( Footfall[Visitors] )",
+      "format": "#,0",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Footfall LY",
+      "expression": "CALCULATE ( [Footfall], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "#,0",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Footfall vs LY %",
+      "expression": "DIVIDE ( [Footfall] - [Footfall LY], [Footfall LY] )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Transactions",
+      "expression": "SUM ( Footfall[Transaction Count] )",
+      "format": "#,0",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Store Conversion %",
+      "expression": "DIVIDE ( [Transactions], [Footfall] )",
+      "format": "0.0%",
+      "folder": "Stores",
+      "description": "Transactions per visitor"
+    },
+    {
+      "name": "Store Conversion % LY",
+      "expression": "CALCULATE ( [Store Conversion %], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "0.0%",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Store Sales",
+      "expression": "CALCULATE ( [Net Sales], 'Store'[Channel] = \"Store\" )",
+      "format": "\\$#,0",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Store Sales LY",
+      "expression": "CALCULATE ( [Store Sales], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "\\$#,0",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Avg Transaction Value",
+      "expression": "DIVIDE ( [Store Sales], [Transactions] )",
+      "format": "\\$#,0.00",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Avg Transaction Value LY",
+      "expression": "CALCULATE ( [Avg Transaction Value], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "\\$#,0.00",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Sales per sqm",
+      "expression": "DIVIDE ( [Store Sales], CALCULATE ( SUM ( 'Store'[SellingAreaSqm] ), 'Store'[Channel] = \"Store\" ) )",
+      "format": "\\$#,0",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Sales per sqm LY",
+      "expression": "CALCULATE ( [Sales per sqm], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "\\$#,0",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Footfall (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Footfall], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Footfall LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Footfall LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Store Conversion % (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Store Conversion %], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Store Conversion % LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Store Conversion % LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Avg Transaction Value (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Avg Transaction Value], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0.00",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Avg Transaction Value LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Avg Transaction Value LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0.00",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Sales per sqm (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Sales per sqm], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Sales per sqm LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Sales per sqm LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Title Footfall Trend",
+      "expression": "IF ( NOT ISBLANK ( [Footfall] ),\n    VAR f = CALCULATE ( [Footfall], ALLSELECTED ( 'Date' ) )\n    VAR fl = CALCULATE ( [Footfall LY], ALLSELECTED ( 'Date' ) )\n    VAR c = CALCULATE ( [Store Conversion %], ALLSELECTED ( 'Date' ) )\n    VAR cl = CALCULATE ( [Store Conversion % LY], ALLSELECTED ( 'Date' ) )\n    VAR g = DIVIDE ( f - fl, fl )\n    RETURN \"Footfall is \" & FORMAT ( ABS ( g ), \"0.0%\" ) & IF ( g >= 0, \" up\", \" down\" ) & \" on last year; conversion \"\n        & FORMAT ( ( c - cl ) * 100, \"+0.0;-0.0\" ) & \" pts\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Region Change",
+      "expression": "IF ( NOT ISBLANK ( [Sales Change vs LY] ),\nVAR t = ADDCOLUMNS ( ALLSELECTED ( 'Country'[Region] ), \"@c\", [Sales Change vs LY] )\nVAR leader = TOPN ( 1, t, [@c], DESC )\nRETURN MAXX ( leader, 'Country'[Region] ) & \" added the most sales: \" & FORMAT ( MAXX ( leader, [@c] ) / 1000000, \"+$#,0.0;-$#,0.0\" )\n    & \"M vs last year\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "LFL Footfall vs LY %",
+      "expression": "IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = \"Like-for-like stores\", [Footfall vs LY %] )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "LFL Store Conversion %",
+      "expression": "IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = \"Like-for-like stores\", [Store Conversion %] )",
+      "format": "0.0%",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "LFL Store Sales (stores)",
+      "expression": "IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = \"Like-for-like stores\", [Store Sales] )",
+      "format": "\\$#,0",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Zero Line",
+      "expression": "0",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Avg Store Conversion %",
+      "expression": "CALCULATE ( [Store Conversion %], ALLSELECTED ( 'Store' ), 'Store'[Store Group] = \"Like-for-like stores\" )",
+      "format": "0.0%",
+      "folder": "Stores",
+      "description": ""
+    },
+    {
+      "name": "Title Store Traffic",
+      "expression": "VAR avgc = [Avg Store Conversion %]\nVAR n = COUNTROWS ( FILTER ( ALLSELECTED ( 'Store'[Store] ), [LFL Footfall vs LY %] > 0 && [LFL Store Conversion %] > avgc ) )\nRETURN FORMAT ( COALESCE ( n, 0 ), \"0\" ) & \" stores grew traffic and convert above average\"",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Conversion Heatmap",
+      "expression": "IF ( NOT ISBLANK ( [Store Conversion %] ),\nVAR t = ADDCOLUMNS ( CROSSJOIN ( ALLSELECTED ( 'Date'[Weekday], 'Date'[Weekday Number] ), ALLSELECTED ( Footfall[Hour] ) ),\n    \"@f\", [Footfall], \"@c\", [Store Conversion %] )\nVAR leader = TOPN ( 1, t, [@f], DESC )\nVAR wd = MAXX ( leader, 'Date'[Weekday Number] )\nVAR h = MAXX ( leader, Footfall[Hour] )\nVAR avgc = CALCULATE ( [Store Conversion %], ALLSELECTED ( 'Date' ), ALLSELECTED ( Footfall[Hour] ) )\nRETURN \"Conversion dips to \" & FORMAT ( MAXX ( leader, [@c] ), \"0.0%\" ) & \" in the busiest hour (\" & SWITCH ( wd, 1, \"Monday\", 2, \"Tuesday\", 3, \"Wednesday\", 4, \"Thursday\", 5, \"Friday\", 6, \"Saturday\", \"Sunday\" )\n    & \" \" & FORMAT ( h, \"00\" ) & \":00) vs \" & FORMAT ( avgc, \"0.0%\" ) & \" overall\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Footfall Heatmap",
+      "expression": "IF ( NOT ISBLANK ( [Footfall] ),\nVAR t = ADDCOLUMNS ( CROSSJOIN ( ALLSELECTED ( 'Date'[Weekday], 'Date'[Weekday Number] ), ALLSELECTED ( Footfall[Hour] ) ),\n    \"@f\", [Footfall] )\nVAR leader = TOPN ( 1, t, [@f], DESC )\nVAR wd = MAXX ( leader, 'Date'[Weekday Number] )\nVAR h = MAXX ( leader, Footfall[Hour] )\nRETURN SWITCH ( wd, 1, \"Monday\", 2, \"Tuesday\", 3, \"Wednesday\", 4, \"Thursday\", 5, \"Friday\", 6, \"Saturday\", \"Sunday\" ) & IF ( h < 12, \" mornings\", IF ( h < 17, \" afternoons\", \" evenings\" ) )\n    & \" are the busiest; roster for \" & FORMAT ( h - 1, \"00\" ) & \":00-\" & FORMAT ( h + 3, \"00\" ) & \":00\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Country Mix",
+      "expression": "IF ( NOT ISBLANK ( [Net Sales] ),\nVAR t = ADDCOLUMNS ( ALLSELECTED ( 'Country'[Country] ), \"@s\", [Net Sales], \"@g\", [LFL Growth %] )\nVAR total = SUMX ( t, [@s] )\nVAR big = TOPN ( 1, t, [@s], DESC )\nVAR fast = TOPN ( 1, FILTER ( t, [@s] > total * 0.01 ), [@g], DESC )\nRETURN MAXX ( big, 'Country'[Country] ) & \" is \" & FORMAT ( DIVIDE ( MAXX ( big, [@s] ), total ), \"0%\" ) & \" of sales; \"\n    & MAXX ( fast, 'Country'[Country] ) & \" grows fastest like-for-like (\" & FORMAT ( MAXX ( fast, [@g] ), \"+0.0%;-0.0%\" ) & \")\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Margin Change Contribution (pts)",
+      "expression": "VAR s = CALCULATE ( [Net Sales], ALLSELECTED ( 'Category' ) )\nVAR sl = CALCULATE ( [Net Sales LY], ALLSELECTED ( 'Category' ) )\nRETURN ( DIVIDE ( [Gross Profit], s ) - DIVIDE ( [Gross Profit LY], sl ) ) * 100",
+      "format": "+0.00\" pts\";-0.00\" pts\";0.00\" pts\"",
+      "folder": "Categories",
+      "description": "Each category's contribution to the change in gross margin vs last year"
+    },
+    {
+      "name": "Title Margin Trend",
+      "expression": "IF ( NOT ISBLANK ( [Net Sales] ),\n    VAR g = CALCULATE ( [Gross Margin %], ALLSELECTED ( 'Date' ) )\n    VAR gt = CALCULATE ( [Gross Margin Target %], ALLSELECTED ( 'Date' ) )\n    VAR gl = CALCULATE ( [Gross Margin % LY], ALLSELECTED ( 'Date' ) )\n    VAR a = ( g - gt ) * 100\n    VAR b = ( g - gl ) * 100\n    RETURN \"Margin is \" & FORMAT ( ABS ( a ), \"0.0\" ) & \" pts \" & IF ( a >= 0, \"above\", \"under\" ) & \" target and \"\n        & FORMAT ( ABS ( b ), \"0.0\" ) & \" pts \" & IF ( b >= 0, \"above\", \"below\" ) & \" last year\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Margin Drivers",
+      "expression": "IF ( NOT ISBLANK ( [Margin Change Contribution (pts)] ),\nVAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), \"@c\", [Margin Change Contribution (pts)] )\nVAR worst = TOPN ( 1, t, [@c], ASC )\nVAR best = TOPN ( 1, t, [@c], DESC )\nRETURN MAXX ( worst, 'Category'[Category] ) & \" took \" & FORMAT ( ABS ( MAXX ( worst, [@c] ) ), \"0.00\" ) & \" pts off margin; \"\n    & MAXX ( best, 'Category'[Category] ) & \" added \" & FORMAT ( MAXX ( best, [@c] ), \"0.00\" )\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Total Growth %",
+      "expression": "CALCULATE ( [Net Sales vs LY %], ALLSELECTED ( 'Category' ) )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Categories",
+      "description": ""
+    },
+    {
+      "name": "Total Margin %",
+      "expression": "CALCULATE ( [Gross Margin %], ALLSELECTED ( 'Category' ) )",
+      "format": "0.0%",
+      "folder": "Categories",
+      "description": ""
+    },
+    {
+      "name": "Title Category Quadrant",
+      "expression": "VAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), \"@g\", [Net Sales vs LY %] )\nVAR best = TOPN ( 1, t, [@g], DESC )\nVAR worst = TOPN ( 1, t, [@g], ASC )\nRETURN MAXX ( best, 'Category'[Category] ) & \" leads growth at \" & FORMAT ( MAXX ( best, [@g] ), \"+0.0%;-0.0%\" ) & \"; \"\n    & MAXX ( worst, 'Category'[Category] ) & IF ( MAXX ( worst, [@g] ) < 0, \" is shrinking\", \" lags\" ) & \" (\"\n    & FORMAT ( MAXX ( worst, [@g] ), \"+0.0%;-0.0%\" ) & \")\"",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Category Growth",
+      "expression": "IF ( NOT ISBLANK ( [Net Sales vs LY %] ),\nVAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), \"@g\", CALCULATE ( [Net Sales vs LY %], ALLSELECTED ( 'Date' ) ) )\nVAR best = TOPN ( 1, t, [@g], DESC )\nVAR worst = TOPN ( 1, t, [@g], ASC )\nRETURN MAXX ( best, 'Category'[Category] ) & \" grew fastest (\" & FORMAT ( MAXX ( best, [@g] ), \"+0.0%;-0.0%\" ) & \"); \"\n    & MAXX ( worst, 'Category'[Category] ) & \" \" & FORMAT ( MAXX ( worst, [@g] ), \"+0.0%;-0.0%\" ) & \" vs last year\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Category Change",
+      "expression": "IF ( NOT ISBLANK ( [Sales Change vs LY] ),\nVAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), \"@c\", [Sales Change vs LY] )\nVAR leader = TOPN ( 1, t, [@c], DESC )\nRETURN MAXX ( leader, 'Category'[Category] ) & \" added the most sales: \" & FORMAT ( MAXX ( leader, [@c] ) / 1000000, \"+$#,0.0;-$#,0.0\" )\n    & \"M vs last year\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Inventory Mix",
+      "expression": "IF ( NOT ISBLANK ( [Stock Value] ),\nVAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), \"@w\", [Inventory Cover (wks)] )\nVAR hi = TOPN ( 1, t, [@w], DESC )\nVAR lo = TOPN ( 1, t, [@w], ASC )\nRETURN MAXX ( hi, 'Category'[Category] ) & \" holds \" & FORMAT ( MAXX ( hi, [@w] ), \"0.0\" ) & \" weeks of cover; \"\n    & MAXX ( lo, 'Category'[Category] ) & \" only \" & FORMAT ( MAXX ( lo, [@w] ), \"0.0\" )\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Active Customers",
+      "expression": "AVERAGEX ( VALUES ( 'Date'[Month Start] ), CALCULATE ( SUM ( Customers[ActiveCustomers] ) ) )",
+      "format": "#,0",
+      "folder": "Customers",
+      "description": "Average monthly active loyalty members"
+    },
+    {
+      "name": "Active Customers LY",
+      "expression": "CALCULATE ( [Active Customers], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "#,0",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "Active Customers vs LY %",
+      "expression": "DIVIDE ( [Active Customers] - [Active Customers LY], [Active Customers LY] )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "New Customers",
+      "expression": "SUM ( Customers[NewCustomers] )",
+      "format": "#,0",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "New Customers LY",
+      "expression": "CALCULATE ( [New Customers], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "#,0",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "Repeat Rate %",
+      "expression": "DIVIDE ( SUM ( Customers[RepeatCustomers] ), SUM ( Customers[ActiveCustomers] ) )",
+      "format": "0.0%",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "Repeat Rate % LY",
+      "expression": "CALCULATE ( [Repeat Rate %], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "0.0%",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "Spend per Customer",
+      "expression": "DIVIDE ( SUM ( Customers[CustomerSales] ), SUM ( Customers[ActiveCustomers] ) )",
+      "format": "\\$#,0.00",
+      "folder": "Customers",
+      "description": "Monthly spend per active member"
+    },
+    {
+      "name": "Spend per Customer LY",
+      "expression": "CALCULATE ( [Spend per Customer], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "\\$#,0.00",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "Member Sales",
+      "expression": "SUM ( Customers[CustomerSales] )",
+      "format": "\\$#,0",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "Member Sales LY",
+      "expression": "CALCULATE ( [Member Sales], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "\\$#,0",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "Member Sales Change",
+      "expression": "[Member Sales] - [Member Sales LY]",
+      "format": "+\\$#,0;-\\$#,0;\\$#,0",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "Cohort Retention %",
+      "expression": "DIVIDE ( SUM ( Cohorts[ActiveCustomers] ), SUM ( Cohorts[CohortSize] ) )",
+      "format": "0%",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "Active",
+      "expression": "[Active Customers]",
+      "format": "#,0",
+      "folder": "Customer funnel",
+      "description": ""
+    },
+    {
+      "name": "Repeat",
+      "expression": "AVERAGEX ( VALUES ( 'Date'[Month Start] ), CALCULATE ( SUM ( Customers[RepeatCustomers] ) ) )",
+      "format": "#,0",
+      "folder": "Customer funnel",
+      "description": ""
+    },
+    {
+      "name": "Gold & Platinum",
+      "expression": "CALCULATE ( [Active Customers], Customers[Tier] IN { \"Gold\", \"Platinum\" } )",
+      "format": "#,0",
+      "folder": "Customer funnel",
+      "description": ""
+    },
+    {
+      "name": "Platinum",
+      "expression": "CALCULATE ( [Active Customers], Customers[Tier] = \"Platinum\" )",
+      "format": "#,0",
+      "folder": "Customer funnel",
+      "description": ""
+    },
+    {
+      "name": "Avg Spend per Customer",
+      "expression": "CALCULATE ( [Spend per Customer], ALLSELECTED ( 'Country' ) )",
+      "format": "\\$#,0.00",
+      "folder": "Customers",
+      "description": ""
+    },
+    {
+      "name": "Active Customers (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Active Customers], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Active Customers LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Active Customers LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "New Customers (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [New Customers], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "New Customers LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [New Customers LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Repeat Rate % (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Repeat Rate %], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Repeat Rate % LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Repeat Rate % LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Spend per Customer (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Spend per Customer], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0.00",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Spend per Customer LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Spend per Customer LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0.00",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Title Customer Trend",
+      "expression": "IF ( NOT ISBLANK ( [Active Customers] ),\n    VAR a = CALCULATE ( [Active Customers], ALLSELECTED ( 'Date' ) )\n    VAR l = CALCULATE ( [Active Customers LY], ALLSELECTED ( 'Date' ) )\n    VAR g = DIVIDE ( a - l, l )\n    RETURN \"Active members are \" & FORMAT ( ABS ( g ), \"0.0%\" ) & IF ( g >= 0, \" up\", \" down\" ) & \" on last year\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Tier Drivers",
+      "expression": "IF ( NOT ISBLANK ( [Member Sales Change] ),\nVAR t = ADDCOLUMNS ( ALLSELECTED ( Customers[Tier] ), \"@c\", [Member Sales Change] )\nVAR leader = TOPN ( 1, t, [@c], DESC )\nRETURN MAXX ( leader, Customers[Tier] ) & \" members added the most spend: \" & FORMAT ( MAXX ( leader, [@c] ) / 1000000, \"+$#,0.0;-$#,0.0\" )\n    & \"M vs last year\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Cohorts",
+      "expression": "IF ( NOT ISBLANK ( [Cohort Retention %] ),\nVAR r1 = CALCULATE ( [Cohort Retention %], Cohorts[MonthsSince] = 1, ALLSELECTED ( 'Date' ) )\nVAR r3 = CALCULATE ( [Cohort Retention %], Cohorts[MonthsSince] = 3, ALLSELECTED ( 'Date' ) )\nRETURN FORMAT ( r1, \"0%\" ) & \" of new members come back the next month; \" & FORMAT ( r3, \"0%\" ) & \" are still active after 3 months\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Customer Funnel",
+      "expression": "\"Repeat buyers are \" & FORMAT ( DIVIDE ( [Repeat], [Active] ), \"0%\" ) & \" of active members; \"\n    & FORMAT ( DIVIDE ( [Gold & Platinum], [Active] ), \"0%\" ) & \" are Gold or Platinum\"",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Country Customers",
+      "expression": "VAR avgs = [Avg Spend per Customer]\nVAR n = COUNTROWS ( FILTER ( ALLSELECTED ( 'Country'[Country] ), [Active Customers vs LY %] > 0 && [Spend per Customer] > avgs ) )\nRETURN FORMAT ( COALESCE ( n, 0 ), \"0\" ) & \" countries grow members and spend above average\"",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Tier Mix",
+      "expression": "IF ( NOT ISBLANK ( [Member Sales] ),\nVAR t = ADDCOLUMNS ( ALLSELECTED ( Customers[Tier] ), \"@s\", [Member Sales] )\nVAR total = SUMX ( t, [@s] )\nVAR leader = TOPN ( 1, t, [@s], DESC )\nRETURN MAXX ( leader, Customers[Tier] ) & \" drives \" & FORMAT ( DIVIDE ( MAXX ( leader, [@s] ), total ), \"0%\" ) & \" of member spend\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Sessions",
+      "expression": "SUM ( 'Online Funnel'[Session Count] )",
+      "format": "#,0",
+      "folder": "Online funnel",
+      "description": ""
+    },
+    {
+      "name": "Product views",
+      "expression": "SUM ( 'Online Funnel'[ProductViews] )",
+      "format": "#,0",
+      "folder": "Online funnel",
+      "description": ""
+    },
+    {
+      "name": "Add to cart",
+      "expression": "SUM ( 'Online Funnel'[AddToCart] )",
+      "format": "#,0",
+      "folder": "Online funnel",
+      "description": ""
+    },
+    {
+      "name": "Checkout",
+      "expression": "SUM ( 'Online Funnel'[Checkouts] )",
+      "format": "#,0",
+      "folder": "Online funnel",
+      "description": ""
+    },
+    {
+      "name": "Orders",
+      "expression": "SUM ( 'Online Funnel'[Order Count] )",
+      "format": "#,0",
+      "folder": "Online funnel",
+      "description": ""
+    },
+    {
+      "name": "Sessions LY",
+      "expression": "CALCULATE ( [Sessions], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "#,0",
+      "folder": "Online",
+      "description": ""
+    },
+    {
+      "name": "Orders LY",
+      "expression": "CALCULATE ( [Orders], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "#,0",
+      "folder": "Online",
+      "description": ""
+    },
+    {
+      "name": "Sessions vs LY %",
+      "expression": "DIVIDE ( [Sessions] - [Sessions LY], [Sessions LY] )",
+      "format": "+0.0%;-0.0%;0.0%",
+      "folder": "Online",
+      "description": ""
+    },
+    {
+      "name": "Orders Change vs LY",
+      "expression": "[Orders] - [Orders LY]",
+      "format": "+#,0;-#,0;0",
+      "folder": "Online",
+      "description": ""
+    },
+    {
+      "name": "Online Conversion %",
+      "expression": "DIVIDE ( [Orders], [Sessions] )",
+      "format": "0.0%",
+      "folder": "Online",
+      "description": "Orders per session"
+    },
+    {
+      "name": "Online Conversion % LY",
+      "expression": "CALCULATE ( [Online Conversion %], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "0.0%",
+      "folder": "Online",
+      "description": ""
+    },
+    {
+      "name": "Online Sales",
+      "expression": "CALCULATE ( [Net Sales], 'Store'[Channel] = \"Online\" )",
+      "format": "\\$#,0",
+      "folder": "Online",
+      "description": ""
+    },
+    {
+      "name": "Online Sales LY",
+      "expression": "CALCULATE ( [Online Sales], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "\\$#,0",
+      "folder": "Online",
+      "description": ""
+    },
+    {
+      "name": "Online Sales Target",
+      "expression": "CALCULATE ( [Sales Target], 'Store'[Channel] = \"Online\" )",
+      "format": "\\$#,0",
+      "folder": "Online",
+      "description": ""
+    },
+    {
+      "name": "Avg Order Value",
+      "expression": "DIVIDE ( [Online Sales], [Orders] )",
+      "format": "\\$#,0.00",
+      "folder": "Online",
+      "description": ""
+    },
+    {
+      "name": "Avg Order Value LY",
+      "expression": "CALCULATE ( [Avg Order Value], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE () ) ) )",
+      "format": "\\$#,0.00",
+      "folder": "Online",
+      "description": ""
+    },
+    {
+      "name": "Avg Online Conversion %",
+      "expression": "CALCULATE ( [Online Conversion %], ALLSELECTED ( 'Country' ) )",
+      "format": "0.0%",
+      "folder": "Online",
+      "description": ""
+    },
+    {
+      "name": "Online Sales (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Online Sales], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Online Sales Target (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Online Sales Target], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Online Sales LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Online Sales LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Online Conversion % (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Online Conversion %], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Online Conversion % LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Online Conversion % LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "0.0%",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Avg Order Value (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Avg Order Value], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0.00",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Avg Order Value LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Avg Order Value LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "\\$#,0.00",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Sessions (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Sessions], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Sessions LY (card)",
+      "expression": "IF ( ISBLANK ( [Net Sales] ), BLANK (), CALCULATE ( [Sessions LY], ALLSELECTED ( 'Date'[Month Start] ) ) )",
+      "format": "#,0",
+      "folder": "Cards",
+      "description": ""
+    },
+    {
+      "name": "Title Funnel",
+      "expression": "\"Online converts \" & FORMAT ( [Online Conversion %], \"0.0%\" ) & \"; \" & FORMAT ( 1 - DIVIDE ( [Checkout], [Add to cart] ), \"0%\" )\n    & \" of carts never reach checkout\"",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Online Trend",
+      "expression": "IF ( NOT ISBLANK ( [Online Sales] ),\n    VAR s = CALCULATE ( [Online Sales], ALLSELECTED ( 'Date' ) )\n    VAR t = CALCULATE ( [Online Sales Target], ALLSELECTED ( 'Date' ) )\n    VAR l = CALCULATE ( [Online Sales LY], ALLSELECTED ( 'Date' ) )\n    VAR vt = DIVIDE ( s - t, t )\n    VAR vl = DIVIDE ( s - l, l )\n    RETURN \"Online sales are \" & FORMAT ( ABS ( vt ), \"0.0%\" ) & IF ( vt >= 0, \" ahead of\", \" behind\" ) & \" plan and \"\n        & FORMAT ( ABS ( vl ), \"0.0%\" ) & IF ( vl >= 0, \" up on\", \" down on\" ) & \" last year\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Source Drivers",
+      "expression": "IF ( NOT ISBLANK ( [Orders Change vs LY] ),\nVAR t = ADDCOLUMNS ( ALLSELECTED ( 'Online Funnel'[Source] ), \"@c\", [Orders Change vs LY] )\nVAR leader = TOPN ( 1, t, [@c], DESC )\nRETURN MAXX ( leader, 'Online Funnel'[Source] ) & \" added the most orders: \" & FORMAT ( MAXX ( leader, [@c] ), \"+#,0;-#,0\" ) & \" vs last year\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Device Source",
+      "expression": "IF ( NOT ISBLANK ( [Online Conversion %] ),\nVAR t = ADDCOLUMNS ( CROSSJOIN ( ALLSELECTED ( 'Online Funnel'[Device] ), ALLSELECTED ( 'Online Funnel'[Source] ) ),\n    \"@c\", [Online Conversion %] )\nVAR leader = TOPN ( 1, t, [@c], DESC )\nVAR laggard = TOPN ( 1, t, [@c], ASC )\nRETURN MAXX ( leader, 'Online Funnel'[Device] ) & \" from \" & MAXX ( leader, 'Online Funnel'[Source] ) & \" converts best (\"\n    & FORMAT ( MAXX ( leader, [@c] ), \"0.0%\" ) & \"); \" & MAXX ( laggard, 'Online Funnel'[Device] ) & \" from \"\n    & MAXX ( laggard, 'Online Funnel'[Source] ) & \" only \" & FORMAT ( MAXX ( laggard, [@c] ), \"0.0%\" )\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Online Markets",
+      "expression": "VAR avgc = [Avg Online Conversion %]\nVAR n = COUNTROWS ( FILTER ( ALLSELECTED ( 'Country'[Country] ), [Sessions vs LY %] > 0 && [Online Conversion %] > avgc ) )\nRETURN FORMAT ( COALESCE ( n, 0 ), \"0\" ) & \" markets grow traffic and convert above average\"",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Title Online Mix",
+      "expression": "IF ( NOT ISBLANK ( [Online Sales] ),\nVAR t = ADDCOLUMNS ( ALLSELECTED ( 'Country'[Country] ), \"@s\", [Online Sales] )\nVAR total = SUMX ( t, [@s] )\nVAR leader = TOPN ( 1, t, [@s], DESC )\nRETURN MAXX ( leader, 'Country'[Country] ) & \" is \" & FORMAT ( DIVIDE ( MAXX ( leader, [@s] ), total ), \"0%\" ) & \" of online sales\"\n)",
+      "format": "",
+      "folder": "Titles",
+      "description": ""
+    },
+    {
+      "name": "Insight Sales",
+      "expression": "VAR s = [Net Sales]\nVAR t = [Sales Target]\nVAR gap = s - t\nVAR ch = TOPN ( 1, ADDCOLUMNS ( VALUES ( 'Store'[Channel] ), \"@v\", [Net Sales vs Target %] ), [@v], DESC )\nVAR rg = TOPN ( 1, ADDCOLUMNS ( VALUES ( 'Country'[Region] ), \"@v\", [Net Sales vs Target %] ), [@v], DESC )\nRETURN \"Sales are **\" & FORMAT ( ABS ( gap ) / 1000000, \"$#,0.0\" ) & \"M \" & IF ( gap >= 0, \"ahead of\", \"behind\" )\n    & \" target**, led by \" & MAXX ( ch, 'Store'[Channel] ) & \" (\" & FORMAT ( MAXX ( ch, [@v] ), \"+0.0%;-0.0%\" )\n    & \" vs target) and \" & MAXX ( rg, 'Country'[Region] ) & \" (\" & FORMAT ( MAXX ( rg, [@v] ), \"+0.0%;-0.0%\" ) & \").\"",
+      "format": "",
+      "folder": "Insights",
+      "description": ""
+    },
+    {
+      "name": "Insight Margin",
+      "expression": "VAR g = [Gross Margin %]\nVAR d = ( g - [Gross Margin Target %] ) * 100\nVAR s = CALCULATE ( [Net Sales], ALLSELECTED ( 'Category' ) )\nVAR sl = CALCULATE ( [Net Sales LY], ALLSELECTED ( 'Category' ) )\nVAR cats = ADDCOLUMNS ( VALUES ( 'Category'[Category] ),\n    \"@c\", DIVIDE ( [Gross Profit], s ) - DIVIDE ( [Gross Profit LY], sl ), \"@m\", [Gross Margin %] )\nVAR worst = TOPN ( 2, cats, [@c], ASC )\nRETURN \"Margin is **\" & FORMAT ( ABS ( d ), \"0.0\" ) & \" pts \" & IF ( d >= 0, \"above\", \"under\" ) & \" target**: \"\n    & CONCATENATEX ( worst, 'Category'[Category] & \" (\" & FORMAT ( [@m], \"0.0%\" ) & \")\", \" and \", [@c], ASC )\n    & \" pull it down most.\"",
+      "format": "",
+      "folder": "Insights",
+      "description": ""
+    },
+    {
+      "name": "Insight Region",
+      "expression": "VAR rg = TOPN ( 1, ADDCOLUMNS ( VALUES ( 'Country'[Region] ), \"@v\", [Net Sales vs Target %] ), [@v], ASC )\nVAR rname = MAXX ( rg, 'Country'[Region] )\nVAR rv = MAXX ( rg, [@v] )\nVAR n = COUNTROWS ( FILTER ( CALCULATETABLE ( VALUES ( 'Store'[Store] ), 'Country'[Region] = rname, 'Store'[Channel] = \"Store\" ),\n    [Inventory Cover (wks)] > 9 ) )\nRETURN \"**\" & rname & \"** is \" & FORMAT ( ABS ( rv ), \"0.0%\" ) & IF ( rv < 0, \" behind\", \" ahead of\" ) & \" target; \"\n    & FORMAT ( COALESCE ( n, 0 ), \"0\" ) & \" of its stores hold more than 9 weeks of stock.\"",
+      "format": "",
+      "folder": "Insights",
+      "description": ""
+    }
+  ],
+  "pages": [
+    {
+      "name": "Overview",
+      "height": 1434,
+      "visuals": [
+        {
+          "id": "ov_nav",
+          "type": "pageNavigator",
+          "x": 24,
+          "y": 12,
+          "w": 1232,
+          "h": 44
+        },
+        {
+          "id": "ov_slicer_period",
+          "type": "slicer",
+          "x": 24,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Date[Year]",
+          "label": "Period",
+          "default": 2026,
+          "single": true,
+          "sync": "Period"
+        },
+        {
+          "id": "ov_slicer_region",
+          "type": "slicer",
+          "x": 336,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Country[Region]",
+          "label": "Region",
+          "default": null,
+          "single": false,
+          "sync": "Region"
+        },
+        {
+          "id": "ov_slicer_channel",
+          "type": "slicer",
+          "x": 648,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Store[Channel]",
+          "label": "Channel",
+          "default": null,
+          "single": false,
+          "sync": "Channel"
+        },
+        {
+          "id": "ov_slicer_category",
+          "type": "slicer",
+          "x": 960,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Category[Category]",
+          "label": "Category",
+          "default": null,
+          "single": false,
+          "sync": "Category"
+        },
+        {
+          "id": "ov_kpi0",
+          "type": "kpiCard",
+          "x": 24,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Net Sales (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Net Sales]",
+            "target": "[Sales Target (card)]",
+            "comparison": "[Net Sales LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Net sales \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "ov_kpi1",
+          "type": "kpiCard",
+          "x": 336,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Gross Margin % (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Gross Margin %]",
+            "target": "[Gross Margin Target % (card)]",
+            "comparison": "[Gross Margin % LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Gross margin \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "ov_kpi2",
+          "type": "kpiCard",
+          "x": 648,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[LFL Growth % (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[LFL Growth %]",
+            "target": "[LFL Growth Target % (card)]",
+            "comparison": "[LFL Growth LY % (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Like-for-like growth \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": true
+            }
+          }
+        },
+        {
+          "id": "ov_kpi3",
+          "type": "kpiCard",
+          "x": 960,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Inventory Cover (wks) (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Inventory Cover (wks)]",
+            "target": "[Inventory Cover Target (wks) (card)]",
+            "comparison": "[Inventory Cover LY (wks) (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Inventory cover \u00b7 latest week",
+              "lowerIsBetter": true,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "ov_trend",
+          "type": "trendLine",
+          "x": 24,
+          "y": 294,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "axis": "Date[Month]",
+            "actual": "[Net Sales]",
+            "target": "[Sales Target]",
+            "comparison": "[Net Sales LY]",
+            "annotation": "[Event Label]",
+            "title": "[Title Sales Trend]"
+          },
+          "format": {
+            "header": {
+              "title": "Sales vs target",
+              "subtitle": "Net sales by month"
+            }
+          }
+        },
+        {
+          "id": "ov_drivers",
+          "type": "driverBars",
+          "x": 648,
+          "y": 294,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "category": "'Sales Driver'[Driver]",
+            "value": "[Sales Change by Driver]",
+            "title": "[Title Drivers]"
+          },
+          "format": {
+            "header": {
+              "title": "What drove the change",
+              "subtitle": "Change in net sales vs last year by driver"
+            }
+          }
+        },
+        {
+          "id": "ov_quadrant",
+          "type": "quadrant",
+          "x": 24,
+          "y": 622,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "details": "Store[Store]",
+            "x": "[LFL Store Growth %]",
+            "y": "[LFL Store Margin %]",
+            "size": "[LFL Store Sales]",
+            "xRef": "[Growth Target %]",
+            "yRef": "[Avg LFL Margin %]",
+            "title": "[Title Store Quadrant]"
+          },
+          "format": {
+            "header": {
+              "title": "Store performance",
+              "subtitle": "{n} like-for-like stores \u00b7 growth vs LY (x), gross margin (y), size = sales"
+            },
+            "quadrant": {
+              "topLeft": "Margin, low growth",
+              "topRight": "Stars",
+              "bottomLeft": "Fix first",
+              "bottomRight": "Growth, thin margin",
+              "labelTop": 2,
+              "labelBottom": 1
+            }
+          }
+        },
+        {
+          "id": "ov_treemap",
+          "type": "treemap",
+          "x": 648,
+          "y": 622,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "category": "Category[Category]",
+            "size": "[Net Sales]",
+            "color": "[Gross Margin %]",
+            "title": "[Title Category Mix]"
+          },
+          "format": {
+            "header": {
+              "title": "Category mix",
+              "subtitle": "Net sales by category (size) and gross margin (colour)"
+            }
+          }
+        },
+        {
+          "id": "ov_heatmap",
+          "type": "heatmap",
+          "x": 24,
+          "y": 950,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "rows": "Date[Weekday]",
+            "columns": "Footfall[Hour]",
+            "value": "[Footfall]",
+            "title": "[Title Footfall Heatmap]"
+          },
+          "format": {
+            "header": {
+              "title": "Store traffic",
+              "subtitle": "Store footfall by weekday and hour \u00b7 busiest hour = 100"
+            },
+            "heatmap": {
+              "indexMode": true,
+              "lowLabel": "Quiet",
+              "highLabel": "Busy"
+            }
+          }
+        },
+        {
+          "id": "ov_funnel",
+          "type": "funnel",
+          "x": 648,
+          "y": 950,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "stages": [
+              "[Sessions]",
+              "[Product views]",
+              "[Add to cart]",
+              "[Checkout]",
+              "[Orders]"
+            ],
+            "title": "[Title Funnel]"
+          },
+          "format": {
+            "header": {
+              "title": "Online funnel",
+              "subtitle": "Online funnel \u00b7 selected period"
+            }
+          }
+        },
+        {
+          "id": "ov_insights",
+          "type": "narrative",
+          "x": 24,
+          "y": 1278,
+          "w": 1232,
+          "h": 124,
+          "fields": {
+            "items": [
+              "[Insight Sales]",
+              "[Insight Margin]",
+              "[Insight Region]"
+            ]
+          },
+          "format": {
+            "narrative": {
+              "heading": "Key insights",
+              "style": "numbered"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stores",
+      "height": 1294,
+      "visuals": [
+        {
+          "id": "st_nav",
+          "type": "pageNavigator",
+          "x": 24,
+          "y": 12,
+          "w": 1232,
+          "h": 44
+        },
+        {
+          "id": "st_slicer_period",
+          "type": "slicer",
+          "x": 24,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Date[Year]",
+          "label": "Period",
+          "default": 2026,
+          "single": true,
+          "sync": "Period"
+        },
+        {
+          "id": "st_slicer_region",
+          "type": "slicer",
+          "x": 336,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Country[Region]",
+          "label": "Region",
+          "default": null,
+          "single": false,
+          "sync": "Region"
+        },
+        {
+          "id": "st_slicer_channel",
+          "type": "slicer",
+          "x": 648,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Store[Channel]",
+          "label": "Channel",
+          "default": null,
+          "single": false,
+          "sync": "Channel"
+        },
+        {
+          "id": "st_slicer_category",
+          "type": "slicer",
+          "x": 960,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Category[Category]",
+          "label": "Category",
+          "default": null,
+          "single": false,
+          "sync": "Category"
+        },
+        {
+          "id": "st_kpi0",
+          "type": "kpiCard",
+          "x": 24,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Footfall (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Footfall]",
+            "comparison": "[Footfall LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Footfall \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "st_kpi1",
+          "type": "kpiCard",
+          "x": 336,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Store Conversion % (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Store Conversion %]",
+            "comparison": "[Store Conversion % LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Store conversion \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "st_kpi2",
+          "type": "kpiCard",
+          "x": 648,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Avg Transaction Value (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Avg Transaction Value]",
+            "comparison": "[Avg Transaction Value LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Avg transaction value \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "st_kpi3",
+          "type": "kpiCard",
+          "x": 960,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Sales per sqm (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Sales per sqm]",
+            "comparison": "[Sales per sqm LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Sales per sqm \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "st_trend",
+          "type": "trendLine",
+          "x": 24,
+          "y": 294,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "axis": "Date[Month]",
+            "actual": "[Footfall]",
+            "comparison": "[Footfall LY]",
+            "annotation": "[Event Label]",
+            "title": "[Title Footfall Trend]"
+          },
+          "format": {
+            "header": {
+              "title": "Footfall",
+              "subtitle": "Store visitors by month"
+            }
+          }
+        },
+        {
+          "id": "st_regions",
+          "type": "driverBars",
+          "x": 648,
+          "y": 294,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "category": "Country[Region]",
+            "value": "[Sales Change vs LY]",
+            "title": "[Title Region Change]"
+          },
+          "format": {
+            "header": {
+              "title": "Change by region",
+              "subtitle": "Change in net sales vs last year by region"
+            },
+            "bars": {
+              "sortDescending": true
+            }
+          }
+        },
+        {
+          "id": "st_quadrant",
+          "type": "quadrant",
+          "x": 24,
+          "y": 622,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "details": "Store[Store]",
+            "x": "[LFL Footfall vs LY %]",
+            "y": "[LFL Store Conversion %]",
+            "size": "[LFL Store Sales (stores)]",
+            "xRef": "[Zero Line]",
+            "yRef": "[Avg Store Conversion %]",
+            "title": "[Title Store Traffic]"
+          },
+          "format": {
+            "header": {
+              "title": "Traffic vs conversion",
+              "subtitle": "{n} like-for-like stores \u00b7 footfall growth (x), conversion (y), size = sales"
+            },
+            "quadrant": {
+              "topLeft": "Converting, fewer visitors",
+              "topRight": "Growing and converting",
+              "bottomLeft": "Losing traffic",
+              "bottomRight": "Busy, under-converting"
+            }
+          }
+        },
+        {
+          "id": "st_heatmap",
+          "type": "heatmap",
+          "x": 648,
+          "y": 622,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "rows": "Date[Weekday]",
+            "columns": "Footfall[Hour]",
+            "value": "[Store Conversion %]",
+            "title": "[Title Conversion Heatmap]"
+          },
+          "format": {
+            "header": {
+              "title": "Conversion by hour",
+              "subtitle": "Store conversion by weekday and hour"
+            },
+            "heatmap": {
+              "indexMode": false,
+              "lowLabel": "Low",
+              "highLabel": "High"
+            }
+          }
+        },
+        {
+          "id": "st_treemap",
+          "type": "treemap",
+          "x": 24,
+          "y": 950,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "category": "Country[Country]",
+            "size": "[Net Sales]",
+            "color": "[LFL Growth %]",
+            "title": "[Title Country Mix]"
+          },
+          "format": {
+            "header": {
+              "title": "Countries",
+              "subtitle": "Net sales by country (size) and like-for-like growth (colour)"
+            }
+          }
+        },
+        {
+          "id": "st_table",
+          "type": "table",
+          "x": 648,
+          "y": 950,
+          "w": 608,
+          "h": 312,
+          "title": "Store league table",
+          "fields": [
+            "Store[Store]",
+            "Store[Region]",
+            "Store[Format]",
+            "[Store Sales]",
+            "[Net Sales vs LY %]",
+            "[Store Conversion %]",
+            "[Avg Transaction Value]"
+          ],
+          "sort": [
+            "[Store Sales]",
+            "desc"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "height": 1294,
+      "visuals": [
+        {
+          "id": "ca_nav",
+          "type": "pageNavigator",
+          "x": 24,
+          "y": 12,
+          "w": 1232,
+          "h": 44
+        },
+        {
+          "id": "ca_slicer_period",
+          "type": "slicer",
+          "x": 24,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Date[Year]",
+          "label": "Period",
+          "default": 2026,
+          "single": true,
+          "sync": "Period"
+        },
+        {
+          "id": "ca_slicer_region",
+          "type": "slicer",
+          "x": 336,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Country[Region]",
+          "label": "Region",
+          "default": null,
+          "single": false,
+          "sync": "Region"
+        },
+        {
+          "id": "ca_slicer_channel",
+          "type": "slicer",
+          "x": 648,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Store[Channel]",
+          "label": "Channel",
+          "default": null,
+          "single": false,
+          "sync": "Channel"
+        },
+        {
+          "id": "ca_slicer_category",
+          "type": "slicer",
+          "x": 960,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Category[Category]",
+          "label": "Category",
+          "default": null,
+          "single": false,
+          "sync": "Category"
+        },
+        {
+          "id": "ca_kpi0",
+          "type": "kpiCard",
+          "x": 24,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Net Sales (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Net Sales]",
+            "target": "[Sales Target (card)]",
+            "comparison": "[Net Sales LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Net sales \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "ca_kpi1",
+          "type": "kpiCard",
+          "x": 336,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Gross Margin % (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Gross Margin %]",
+            "target": "[Gross Margin Target % (card)]",
+            "comparison": "[Gross Margin % LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Gross margin \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "ca_kpi2",
+          "type": "kpiCard",
+          "x": 648,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Units (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Units]",
+            "comparison": "[Units LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Units sold \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "ca_kpi3",
+          "type": "kpiCard",
+          "x": 960,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Inventory Cover (wks) (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Inventory Cover (wks)]",
+            "target": "[Inventory Cover Target (wks) (card)]",
+            "comparison": "[Inventory Cover LY (wks) (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Inventory cover \u00b7 latest week",
+              "lowerIsBetter": true,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "ca_trend",
+          "type": "trendLine",
+          "x": 24,
+          "y": 294,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "axis": "Date[Month]",
+            "actual": "[Gross Margin %]",
+            "target": "[Gross Margin Target %]",
+            "comparison": "[Gross Margin % LY]",
+            "annotation": "[Event Label]",
+            "title": "[Title Margin Trend]"
+          },
+          "format": {
+            "header": {
+              "title": "Gross margin",
+              "subtitle": "Gross margin % by month"
+            }
+          }
+        },
+        {
+          "id": "ca_margin",
+          "type": "driverBars",
+          "x": 648,
+          "y": 294,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "category": "Category[Category]",
+            "value": "[Margin Change Contribution (pts)]",
+            "title": "[Title Margin Drivers]"
+          },
+          "format": {
+            "header": {
+              "title": "Margin drivers",
+              "subtitle": "Contribution to the change in gross margin vs last year, pts"
+            },
+            "bars": {
+              "sortDescending": true
+            }
+          }
+        },
+        {
+          "id": "ca_quadrant",
+          "type": "quadrant",
+          "x": 24,
+          "y": 622,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "details": "Category[Category]",
+            "x": "[Net Sales vs LY %]",
+            "y": "[Gross Margin %]",
+            "size": "[Net Sales]",
+            "xRef": "[Total Growth %]",
+            "yRef": "[Total Margin %]",
+            "title": "[Title Category Quadrant]"
+          },
+          "format": {
+            "header": {
+              "title": "Growth vs margin",
+              "subtitle": "{n} categories \u00b7 growth vs LY (x), gross margin (y), size = sales"
+            },
+            "quadrant": {
+              "topLeft": "Profitable, slowing",
+              "topRight": "Stars",
+              "bottomLeft": "Under pressure",
+              "bottomRight": "Growing, thin margin",
+              "labelTop": 2,
+              "labelBottom": 2
+            }
+          }
+        },
+        {
+          "id": "ca_heatmap",
+          "type": "heatmap",
+          "x": 648,
+          "y": 622,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "rows": "Category[Category]",
+            "columns": "Date[Month]",
+            "value": "[Net Sales vs LY %]",
+            "title": "[Title Category Growth]"
+          },
+          "format": {
+            "header": {
+              "title": "Growth by month",
+              "subtitle": "Net sales growth vs last year by category and month"
+            },
+            "heatmap": {
+              "indexMode": false,
+              "showAll": true,
+              "lowLabel": "Slower",
+              "highLabel": "Faster"
+            }
+          }
+        },
+        {
+          "id": "ca_change",
+          "type": "driverBars",
+          "x": 24,
+          "y": 950,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "category": "Category[Category]",
+            "value": "[Sales Change vs LY]",
+            "title": "[Title Category Change]"
+          },
+          "format": {
+            "header": {
+              "title": "Sales change",
+              "subtitle": "Change in net sales vs last year by category"
+            },
+            "bars": {
+              "sortDescending": true
+            }
+          }
+        },
+        {
+          "id": "ca_stock",
+          "type": "treemap",
+          "x": 648,
+          "y": 950,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "category": "Category[Category]",
+            "size": "[Stock Value]",
+            "color": "[Inventory Cover (wks)]",
+            "title": "[Title Inventory Mix]"
+          },
+          "format": {
+            "header": {
+              "title": "Stock",
+              "subtitle": "Closing stock at cost (size) and weeks of cover (colour)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "height": 1294,
+      "visuals": [
+        {
+          "id": "cu_nav",
+          "type": "pageNavigator",
+          "x": 24,
+          "y": 12,
+          "w": 1232,
+          "h": 44
+        },
+        {
+          "id": "cu_slicer_period",
+          "type": "slicer",
+          "x": 24,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Date[Year]",
+          "label": "Period",
+          "default": 2026,
+          "single": true,
+          "sync": "Period"
+        },
+        {
+          "id": "cu_slicer_region",
+          "type": "slicer",
+          "x": 336,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Country[Region]",
+          "label": "Region",
+          "default": null,
+          "single": false,
+          "sync": "Region"
+        },
+        {
+          "id": "cu_slicer_channel",
+          "type": "slicer",
+          "x": 648,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Store[Channel]",
+          "label": "Channel",
+          "default": null,
+          "single": false,
+          "sync": "Channel"
+        },
+        {
+          "id": "cu_slicer_category",
+          "type": "slicer",
+          "x": 960,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Category[Category]",
+          "label": "Category",
+          "default": null,
+          "single": false,
+          "sync": "Category"
+        },
+        {
+          "id": "cu_kpi0",
+          "type": "kpiCard",
+          "x": 24,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Active Customers (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Active Customers]",
+            "comparison": "[Active Customers LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Active members \u00b7 monthly avg",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "cu_kpi1",
+          "type": "kpiCard",
+          "x": 336,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[New Customers (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[New Customers]",
+            "comparison": "[New Customers LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "New members \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "cu_kpi2",
+          "type": "kpiCard",
+          "x": 648,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Repeat Rate % (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Repeat Rate %]",
+            "comparison": "[Repeat Rate % LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Repeat rate \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "cu_kpi3",
+          "type": "kpiCard",
+          "x": 960,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Spend per Customer (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Spend per Customer]",
+            "comparison": "[Spend per Customer LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Spend per member \u00b7 monthly",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "cu_trend",
+          "type": "trendLine",
+          "x": 24,
+          "y": 294,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "axis": "Date[Month]",
+            "actual": "[Active Customers]",
+            "comparison": "[Active Customers LY]",
+            "title": "[Title Customer Trend]"
+          },
+          "format": {
+            "header": {
+              "title": "Active members",
+              "subtitle": "Active loyalty members by month"
+            }
+          }
+        },
+        {
+          "id": "cu_tiers",
+          "type": "driverBars",
+          "x": 648,
+          "y": 294,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "category": "Customers[Tier]",
+            "value": "[Member Sales Change]",
+            "title": "[Title Tier Drivers]"
+          },
+          "format": {
+            "header": {
+              "title": "Spend by tier",
+              "subtitle": "Change in member spend vs last year by loyalty tier"
+            },
+            "bars": {
+              "sortDescending": true
+            }
+          }
+        },
+        {
+          "id": "cu_cohorts",
+          "type": "heatmap",
+          "x": 24,
+          "y": 622,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "rows": "Date[Year Month]",
+            "columns": "Cohorts[MonthsSince]",
+            "value": "[Cohort Retention %]",
+            "title": "[Title Cohorts]"
+          },
+          "format": {
+            "header": {
+              "title": "Retention",
+              "subtitle": "Share of each monthly cohort still active, by months since joining"
+            },
+            "heatmap": {
+              "indexMode": false,
+              "showAll": true,
+              "lowLabel": "Churned",
+              "highLabel": "Retained"
+            }
+          }
+        },
+        {
+          "id": "cu_funnel",
+          "type": "funnel",
+          "x": 648,
+          "y": 622,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "stages": [
+              "[Active]",
+              "[Repeat]",
+              "[Gold & Platinum]",
+              "[Platinum]"
+            ],
+            "title": "[Title Customer Funnel]"
+          },
+          "format": {
+            "header": {
+              "title": "Member value ladder",
+              "subtitle": "Average monthly members by stage"
+            }
+          }
+        },
+        {
+          "id": "cu_quadrant",
+          "type": "quadrant",
+          "x": 24,
+          "y": 950,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "details": "Country[Country]",
+            "x": "[Active Customers vs LY %]",
+            "y": "[Spend per Customer]",
+            "size": "[Member Sales]",
+            "xRef": "[Zero Line]",
+            "yRef": "[Avg Spend per Customer]",
+            "title": "[Title Country Customers]"
+          },
+          "format": {
+            "header": {
+              "title": "Markets",
+              "subtitle": "{n} countries \u00b7 member growth (x), spend per member (y), size = spend"
+            },
+            "quadrant": {
+              "topLeft": "High value, shrinking",
+              "topRight": "Growing high value",
+              "bottomLeft": "Needs attention",
+              "bottomRight": "Growing, low spend",
+              "labelTop": 2,
+              "labelBottom": 1
+            }
+          }
+        },
+        {
+          "id": "cu_treemap",
+          "type": "treemap",
+          "x": 648,
+          "y": 950,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "category": "Customers[Tier]",
+            "size": "[Member Sales]",
+            "color": "[Repeat Rate %]",
+            "title": "[Title Tier Mix]"
+          },
+          "format": {
+            "header": {
+              "title": "Tier mix",
+              "subtitle": "Member spend by tier (size) and repeat rate (colour)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Online",
+      "height": 1294,
+      "visuals": [
+        {
+          "id": "on_nav",
+          "type": "pageNavigator",
+          "x": 24,
+          "y": 12,
+          "w": 1232,
+          "h": 44
+        },
+        {
+          "id": "on_slicer_period",
+          "type": "slicer",
+          "x": 24,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Date[Year]",
+          "label": "Period",
+          "default": 2026,
+          "single": true,
+          "sync": "Period"
+        },
+        {
+          "id": "on_slicer_region",
+          "type": "slicer",
+          "x": 336,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Country[Region]",
+          "label": "Region",
+          "default": null,
+          "single": false,
+          "sync": "Region"
+        },
+        {
+          "id": "on_slicer_channel",
+          "type": "slicer",
+          "x": 648,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Store[Channel]",
+          "label": "Channel",
+          "default": null,
+          "single": false,
+          "sync": "Channel"
+        },
+        {
+          "id": "on_slicer_category",
+          "type": "slicer",
+          "x": 960,
+          "y": 60,
+          "w": 296,
+          "h": 56,
+          "field": "Category[Category]",
+          "label": "Category",
+          "default": null,
+          "single": false,
+          "sync": "Category"
+        },
+        {
+          "id": "on_kpi0",
+          "type": "kpiCard",
+          "x": 24,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Online Sales (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Online Sales]",
+            "target": "[Online Sales Target (card)]",
+            "comparison": "[Online Sales LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Online sales \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "on_kpi1",
+          "type": "kpiCard",
+          "x": 336,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Online Conversion % (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Online Conversion %]",
+            "comparison": "[Online Conversion % LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Conversion \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "on_kpi2",
+          "type": "kpiCard",
+          "x": 648,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Avg Order Value (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Avg Order Value]",
+            "comparison": "[Avg Order Value LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Avg order value \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "on_kpi3",
+          "type": "kpiCard",
+          "x": 960,
+          "y": 128,
+          "w": 296,
+          "h": 150,
+          "fields": {
+            "value": "[Sessions (card)]",
+            "axis": "Date[Month Start]",
+            "trend": "[Sessions]",
+            "comparison": "[Sessions LY (card)]"
+          },
+          "format": {
+            "kpi": {
+              "label": "Sessions \u00b7 YTD",
+              "lowerIsBetter": false,
+              "signedValue": false
+            }
+          }
+        },
+        {
+          "id": "on_funnel",
+          "type": "funnel",
+          "x": 24,
+          "y": 294,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "stages": [
+              "[Sessions]",
+              "[Product views]",
+              "[Add to cart]",
+              "[Checkout]",
+              "[Orders]"
+            ],
+            "title": "[Title Funnel]"
+          },
+          "format": {
+            "header": {
+              "title": "Online funnel",
+              "subtitle": "Sessions to orders \u00b7 selected period"
+            }
+          }
+        },
+        {
+          "id": "on_trend",
+          "type": "trendLine",
+          "x": 648,
+          "y": 294,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "axis": "Date[Month]",
+            "actual": "[Online Sales]",
+            "target": "[Online Sales Target]",
+            "comparison": "[Online Sales LY]",
+            "annotation": "[Event Label]",
+            "title": "[Title Online Trend]"
+          },
+          "format": {
+            "header": {
+              "title": "Online sales",
+              "subtitle": "Online net sales by month"
+            }
+          }
+        },
+        {
+          "id": "on_sources",
+          "type": "driverBars",
+          "x": 24,
+          "y": 622,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "category": "'Online Funnel'[Source]",
+            "value": "[Orders Change vs LY]",
+            "title": "[Title Source Drivers]"
+          },
+          "format": {
+            "header": {
+              "title": "Orders by source",
+              "subtitle": "Change in orders vs last year by traffic source"
+            },
+            "bars": {
+              "sortDescending": true
+            }
+          }
+        },
+        {
+          "id": "on_heatmap",
+          "type": "heatmap",
+          "x": 648,
+          "y": 622,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "rows": "'Online Funnel'[Device]",
+            "columns": "'Online Funnel'[Source]",
+            "value": "[Online Conversion %]",
+            "title": "[Title Device Source]"
+          },
+          "format": {
+            "header": {
+              "title": "Conversion",
+              "subtitle": "Online conversion by device and traffic source"
+            },
+            "heatmap": {
+              "indexMode": false,
+              "showAll": true,
+              "lowLabel": "Low",
+              "highLabel": "High"
+            }
+          }
+        },
+        {
+          "id": "on_quadrant",
+          "type": "quadrant",
+          "x": 24,
+          "y": 950,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "details": "Country[Country]",
+            "x": "[Sessions vs LY %]",
+            "y": "[Online Conversion %]",
+            "size": "[Online Sales]",
+            "xRef": "[Zero Line]",
+            "yRef": "[Avg Online Conversion %]",
+            "title": "[Title Online Markets]"
+          },
+          "format": {
+            "header": {
+              "title": "Online markets",
+              "subtitle": "{n} markets \u00b7 session growth (x), conversion (y), size = online sales"
+            },
+            "quadrant": {
+              "topLeft": "Converting, less traffic",
+              "topRight": "Growing and converting",
+              "bottomLeft": "Needs attention",
+              "bottomRight": "Traffic, low conversion",
+              "labelTop": 2,
+              "labelBottom": 1
+            }
+          }
+        },
+        {
+          "id": "on_treemap",
+          "type": "treemap",
+          "x": 648,
+          "y": 950,
+          "w": 608,
+          "h": 312,
+          "fields": {
+            "category": "Country[Country]",
+            "size": "[Online Sales]",
+            "color": "[Online Conversion %]",
+            "title": "[Title Online Mix]"
+          },
+          "format": {
+            "header": {
+              "title": "Online by market",
+              "subtitle": "Online sales by country (size) and conversion (colour)"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

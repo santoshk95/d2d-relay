@@ -1,0 +1,111 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "cmpRadar",
+  "position": {
+    "x": 648,
+    "y": 368,
+    "z": 1003,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "atlasCompare1934AF42622F4D63BF12168C02806AC8",
+    "query": {
+      "queryState": {
+        "category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Carrier"
+                    }
+                  },
+                  "Property": "Carrier"
+                }
+              },
+              "queryRef": "Carrier.Carrier",
+              "nativeQueryRef": "Carrier"
+            }
+          ]
+        },
+        "series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Channel"
+                    }
+                  },
+                  "Property": "Channel"
+                }
+              },
+              "queryRef": "Channel.Channel",
+              "nativeQueryRef": "Channel"
+            }
+          ]
+        },
+        "values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Avg Delivery Days"
+                }
+              },
+              "queryRef": "Orders.Avg Delivery Days",
+              "nativeQueryRef": "Avg Delivery Days"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'radar'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Radar · delivery days by carrier and channel'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

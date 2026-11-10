@@ -1,0 +1,10 @@
+{
+  "name": "genbi-narrative",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Numbered insights from text measures, a how-to list, or a step timeline.",
+  "license": "MIT",
+  "dependencies": {
+    "powerbi-visuals-api": "~5.11.1"
+  }
+}

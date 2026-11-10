@@ -1,0 +1,429 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Source",
+      "name": "source",
+      "kind": "Grouping",
+      "description": "Where each flow starts (for example traffic source, From, Previous brand)",
+      "displayNameKey": "Role_Source"
+    },
+    {
+      "displayName": "Target",
+      "name": "target",
+      "kind": "Grouping",
+      "description": "Where each flow ends (for example landing page, To, Current brand)",
+      "displayNameKey": "Role_Target"
+    },
+    {
+      "displayName": "Weight",
+      "name": "weight",
+      "kind": "Measure",
+      "description": "Size of each flow",
+      "displayNameKey": "Role_Weight"
+    },
+    {
+      "displayName": "Tooltips",
+      "name": "tooltips",
+      "kind": "Measure",
+      "description": "Extra values to show in tooltips",
+      "displayNameKey": "Role_Tooltips"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "source": {
+            "max": 1
+          },
+          "target": {
+            "max": 1
+          },
+          "weight": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "select": [
+            {
+              "bind": {
+                "to": "source"
+              }
+            },
+            {
+              "bind": {
+                "to": "target"
+              }
+            }
+          ],
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 30000
+            }
+          }
+        },
+        "values": {
+          "select": [
+            {
+              "bind": {
+                "to": "weight"
+              }
+            },
+            {
+              "for": {
+                "in": "tooltips"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "chart": {
+      "properties": {
+        "chartType": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "sankey",
+                "displayName": "Sankey"
+              },
+              {
+                "value": "chord",
+                "displayName": "Chord"
+              },
+              {
+                "value": "network",
+                "displayName": "Network"
+              }
+            ]
+          }
+        },
+        "look": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "flat",
+                "displayName": "Flat"
+              },
+              {
+                "value": "soft",
+                "displayName": "Soft"
+              },
+              {
+                "value": "3d",
+                "displayName": "3D"
+              }
+            ]
+          }
+        },
+        "shadow": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "style": {
+      "properties": {
+        "fontFamily": {
+          "type": {
+            "formatting": {
+              "fontFamily": true
+            }
+          }
+        },
+        "textColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "marker": {
+          "type": {
+            "bool": true
+          }
+        },
+        "markerColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "markerHighlight": {
+          "type": {
+            "bool": true
+          }
+        },
+        "keepOthers": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "palette": {
+      "properties": {
+        "source": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "theme",
+                "displayName": "Report theme"
+              },
+              {
+                "value": "brand",
+                "displayName": "Brand color"
+              },
+              {
+                "value": "custom",
+                "displayName": "Custom list"
+              }
+            ]
+          }
+        },
+        "brand": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "mode": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "spectrum",
+                "displayName": "Spectrum"
+              },
+              {
+                "value": "analogous",
+                "displayName": "Analogous"
+              },
+              {
+                "value": "mono",
+                "displayName": "Mono"
+              }
+            ]
+          }
+        },
+        "custom": {
+          "type": {
+            "text": true
+          }
+        }
+      }
+    },
+    "nodeColors": {
+      "properties": {
+        "fill": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "nodes": {
+      "properties": {
+        "width": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "padding": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "radius": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "align": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "justify",
+                "displayName": "Justify"
+              },
+              {
+                "value": "left",
+                "displayName": "Left"
+              }
+            ]
+          }
+        },
+        "sizeBy": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "value",
+                "displayName": "Value"
+              },
+              {
+                "value": "degree",
+                "displayName": "Connections"
+              }
+            ]
+          }
+        },
+        "maxSize": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "links": {
+      "properties": {
+        "colorBy": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "source",
+                "displayName": "Source"
+              },
+              {
+                "value": "target",
+                "displayName": "Target"
+              },
+              {
+                "value": "gradient",
+                "displayName": "Gradient"
+              },
+              {
+                "value": "neutral",
+                "displayName": "Neutral"
+              }
+            ]
+          }
+        },
+        "opacity": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "labels": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "showValues": {
+          "type": {
+            "bool": true
+          }
+        },
+        "displayUnits": {
+          "type": {
+            "formatting": {
+              "labelDisplayUnits": true
+            }
+          }
+        },
+        "decimals": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "chord": {
+      "properties": {
+        "padAngle": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "arcWidth": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "ribbonOpacity": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "network": {
+      "properties": {
+        "colorBy": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "node",
+                "displayName": "Each node"
+              },
+              {
+                "value": "community",
+                "displayName": "Detected community"
+              }
+            ]
+          }
+        },
+        "labelCount": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "spacing": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    }
+  },
+  "tooltips": {
+    "supportedTypes": {
+      "default": true,
+      "canvas": true
+    },
+    "roles": [
+      "tooltips"
+    ]
+  },
+  "supportsHighlight": true,
+  "supportsLandingPage": true,
+  "supportsEmptyDataView": true,
+  "supportsKeyboardFocus": true,
+  "supportsMultiVisualSelection": true,
+  "privileges": []
+}

@@ -1,0 +1,111 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "txCloud",
+  "position": {
+    "x": 16,
+    "y": 368,
+    "z": 1002,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 2
+  },
+  "visual": {
+    "visualType": "atlasTextC961F02E238E426A825D8355E3503AA9",
+    "query": {
+      "queryState": {
+        "category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reviews"
+                    }
+                  },
+                  "Property": "Phrase"
+                }
+              },
+              "queryRef": "Reviews.Phrase",
+              "nativeQueryRef": "Phrase"
+            }
+          ]
+        },
+        "values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reviews"
+                    }
+                  },
+                  "Property": "Mention Count"
+                }
+              },
+              "queryRef": "Reviews.Mention Count",
+              "nativeQueryRef": "Mention Count"
+            }
+          ]
+        },
+        "colorValue": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reviews"
+                    }
+                  },
+                  "Property": "Avg Sentiment"
+                }
+              },
+              "queryRef": "Reviews.Avg Sentiment",
+              "nativeQueryRef": "Avg Sentiment"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "wcolor": [
+        {
+          "properties": {
+            "colorBy": {
+              "expr": {
+                "Literal": {
+                  "Value": "'value'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Word cloud · review phrases by sentiment'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

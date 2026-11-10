@@ -1,0 +1,21 @@
+Exporter,Importer,Value
+North America,Europe,320000000
+North America,Asia,410000000
+North America,Latin America,180000000
+North America,Africa,40000000
+Europe,North America,290000000
+Europe,Asia,380000000
+Europe,Latin America,90000000
+Europe,Africa,120000000
+Asia,North America,520000000
+Asia,Europe,460000000
+Asia,Latin America,140000000
+Asia,Africa,110000000
+Latin America,North America,160000000
+Latin America,Europe,70000000
+Latin America,Asia,120000000
+Latin America,Africa,20000000
+Africa,North America,30000000
+Africa,Europe,140000000
+Africa,Asia,90000000
+Africa,Latin America,15000000

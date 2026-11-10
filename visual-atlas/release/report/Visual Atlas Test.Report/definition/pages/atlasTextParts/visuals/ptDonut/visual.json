@@ -1,0 +1,93 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "ptDonut",
+  "position": {
+    "x": 16,
+    "y": 16,
+    "z": 1000,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "atlasPartsA0676FD0579D44EFB545170E4799ADC9",
+    "query": {
+      "queryState": {
+        "category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Channel"
+                    }
+                  },
+                  "Property": "Channel"
+                }
+              },
+              "queryRef": "Channel.Channel",
+              "nativeQueryRef": "Channel"
+            }
+          ]
+        },
+        "values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Sales"
+                }
+              },
+              "queryRef": "Orders.Sales",
+              "nativeQueryRef": "Sales"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'donut'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Donut · sales by channel'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

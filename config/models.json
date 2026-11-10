@@ -1,0 +1,167 @@
+{
+ "checked": "2026-11-03",
+ "default": "sonnet",
+ "about": "Models this Claude login can use (agent/probe_models.py). relative_cost: price per token vs Sonnet (latest), from Claude Code's own price table.",
+ "models": [
+  {
+   "id": "fable",
+   "label": "Fable (latest)",
+   "model": "claude-fable-5-1",
+   "family": "fable",
+   "version": "5.1",
+   "latest": true,
+   "relative_cost": 5.0,
+   "note": "Top-tier family; the highest cost."
+  },
+  {
+   "id": "opus",
+   "label": "Opus (latest)",
+   "model": "claude-opus-5-5",
+   "family": "opus",
+   "version": "5.5",
+   "latest": true,
+   "relative_cost": 2.0,
+   "note": "Large and highly capable."
+  },
+  {
+   "id": "sonnet",
+   "label": "Sonnet (latest)",
+   "model": "claude-sonnet-5-5",
+   "family": "sonnet",
+   "version": "5.5",
+   "latest": true,
+   "relative_cost": 1.0,
+   "note": "Balanced speed and quality; the default."
+  },
+  {
+   "id": "haiku",
+   "label": "Haiku (latest)",
+   "model": "claude-haiku-5-5",
+   "family": "haiku",
+   "version": "5.5",
+   "latest": true,
+   "relative_cost": 0.05,
+   "note": "Fastest and cheapest; best for small edits."
+  },
+  {
+   "id": "claude-fable-5-1",
+   "label": "Fable 5.1",
+   "model": "claude-fable-5-1",
+   "family": "fable",
+   "version": "5.1",
+   "latest": false,
+   "relative_cost": 5.0,
+   "note": "Top-tier family; the highest cost."
+  },
+  {
+   "id": "claude-fable-5",
+   "label": "Fable 5",
+   "model": "claude-fable-5",
+   "family": "fable",
+   "version": "5",
+   "latest": false,
+   "relative_cost": 5.0,
+   "note": "Top-tier family; the highest cost."
+  },
+  {
+   "id": "claude-opus-5-5",
+   "label": "Opus 5.5",
+   "model": "claude-opus-5-5",
+   "family": "opus",
+   "version": "5.5",
+   "latest": false,
+   "relative_cost": 2.0,
+   "note": "Large and highly capable."
+  },
+  {
+   "id": "claude-opus-5",
+   "label": "Opus 5",
+   "model": "claude-opus-5",
+   "family": "opus",
+   "version": "5",
+   "latest": false,
+   "relative_cost": 2.5,
+   "note": "Large and highly capable."
+  },
+  {
+   "id": "claude-opus-4-6",
+   "label": "Opus 4.6",
+   "model": "claude-opus-4-6",
+   "family": "opus",
+   "version": "4.6",
+   "latest": false,
+   "relative_cost": 2.5,
+   "note": "Large and highly capable."
+  },
+  {
+   "id": "claude-opus-4-5",
+   "label": "Opus 4.5",
+   "model": "claude-opus-4-5",
+   "family": "opus",
+   "version": "4.5",
+   "latest": false,
+   "relative_cost": 2.5,
+   "note": "Large and highly capable."
+  },
+  {
+   "id": "claude-sonnet-5-5",
+   "label": "Sonnet 5.5",
+   "model": "claude-sonnet-5-5",
+   "family": "sonnet",
+   "version": "5.5",
+   "latest": false,
+   "relative_cost": 1.0,
+   "note": "Balanced speed and quality; the default."
+  },
+  {
+   "id": "claude-sonnet-5",
+   "label": "Sonnet 5",
+   "model": "claude-sonnet-5",
+   "family": "sonnet",
+   "version": "5",
+   "latest": false,
+   "relative_cost": 1.0,
+   "note": "Balanced speed and quality; the default."
+  },
+  {
+   "id": "claude-sonnet-4-6",
+   "label": "Sonnet 4.6",
+   "model": "claude-sonnet-4-6",
+   "family": "sonnet",
+   "version": "4.6",
+   "latest": false,
+   "relative_cost": 1.5,
+   "note": "Balanced speed and quality; the default."
+  },
+  {
+   "id": "claude-sonnet-4-5",
+   "label": "Sonnet 4.5",
+   "model": "claude-sonnet-4-5",
+   "family": "sonnet",
+   "version": "4.5",
+   "latest": false,
+   "relative_cost": 1.5,
+   "note": "Balanced speed and quality; the default."
+  },
+  {
+   "id": "claude-haiku-5-5",
+   "label": "Haiku 5.5",
+   "model": "claude-haiku-5-5",
+   "family": "haiku",
+   "version": "5.5",
+   "latest": false,
+   "relative_cost": 0.05,
+   "note": "Fastest and cheapest; best for small edits."
+  },
+  {
+   "id": "claude-haiku-4-5",
+   "label": "Haiku 4.5",
+   "model": "claude-haiku-4-5",
+   "family": "haiku",
+   "version": "4.5",
+   "latest": false,
+   "relative_cost": 0.5,
+   "note": "Fastest and cheapest; best for small edits."
+  }
+ ]
+}

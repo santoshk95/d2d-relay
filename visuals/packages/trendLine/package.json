@@ -1,0 +1,10 @@
+{
+  "name": "genbi-trendline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Actual vs target vs last year over time, with end label and event annotations.",
+  "license": "MIT",
+  "dependencies": {
+    "powerbi-visuals-api": "~5.11.1"
+  }
+}

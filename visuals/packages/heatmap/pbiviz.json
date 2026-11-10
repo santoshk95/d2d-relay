@@ -1,0 +1,25 @@
+{
+  "visual": {
+    "name": "heatmap",
+    "displayName": "Relay Heatmap",
+    "guid": "genbiHeatmap8F3B21C5D7A64E9B13F2",
+    "visualClassName": "Visual",
+    "version": "1.0.2.0",
+    "description": "Rows by columns heatmap on a quiet-to-busy ramp, labelling the peak cell.",
+    "supportUrl": "https://pasdacs.com",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "5.11.0",
+  "author": {
+    "name": "RELAY by PASDACS",
+    "email": "info@pasdacs.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": [],
+  "version": "1.0.2.0"
+}

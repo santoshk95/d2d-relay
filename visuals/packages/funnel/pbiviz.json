@@ -1,0 +1,25 @@
+{
+  "visual": {
+    "name": "funnel",
+    "displayName": "Relay Funnel",
+    "guid": "genbiFunnel6E9A34D2B8C15F7E28A9",
+    "visualClassName": "Visual",
+    "version": "1.0.2.0",
+    "description": "Conversion funnel: one bar per stage measure with value and % of the first stage.",
+    "supportUrl": "https://pasdacs.com",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "5.11.0",
+  "author": {
+    "name": "RELAY by PASDACS",
+    "email": "info@pasdacs.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": [],
+  "version": "1.0.2.0"
+}

@@ -1,0 +1,35 @@
+# An agent image for one other CLI (platform plan, phase 8): the Claude agent image (toolkit, visual factory,
+# headless Chromium, server.py) plus that CLI, serving only that runner. Build context = the repository root:
+#   docker build -f agent/Dockerfile.runner --build-arg RUNNER=codex -t gen-bi-agent-codex .
+# (docker compose --profile runners build does all three). Needs gen-bi-agent:latest built first.
+ARG BASE=gen-bi-agent:latest
+FROM ${BASE}
+ARG RUNNER
+ARG CODEX_VERSION=0.163.0
+ARG GEMINI_VERSION=0.65.0
+USER root
+COPY agent/runner-config /tmp/runner-config
+RUN set -eu; case "$RUNNER" in \
+  codex) npm install -g "@openai/codex@${CODEX_VERSION}" && npm cache clean --force \
+          && mkdir -p /home/node/.codex && chown node:node /home/node/.codex ;; \
+  gemini) npm install -g "@google/gemini-cli@${GEMINI_VERSION}" && npm cache clean --force \
+          && mkdir -p /etc/gemini-cli && cp /tmp/runner-config/gemini-settings.json /etc/gemini-cli/settings.json ;; \
+  antigravity) apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* \
+          && m=$(curl -fsSL https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_amd64.json) \
+          && url=$(echo "$m" | sed -n 's/.*"url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p') \
+          && sum=$(echo "$m" | sed -n 's/.*"sha512"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p') \
+          && ver=$(echo "$m" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p') \
+          && curl -fsSL -o /tmp/agy.pkg "$url" && echo "$sum  /tmp/agy.pkg" | sha512sum -c - \
+          && case "$url" in *.tar.gz*) tar -xzf /tmp/agy.pkg -C /tmp antigravity && mv /tmp/antigravity /usr/local/bin/agy ;; \
+                                   *) mv /tmp/agy.pkg /usr/local/bin/agy ;; esac \
+          && chmod 755 /usr/local/bin/agy && echo "$ver" > /opt/genbi/agy-version \
+          && mkdir -p /home/node/.gemini/antigravity-cli \
+          && cp /tmp/runner-config/antigravity-settings.json /home/node/.gemini/antigravity-cli/settings.json \
+          && chown -R node:node /home/node/.gemini ;; \
+  *) echo "RUNNER must be codex, gemini or antigravity" >&2; exit 1 ;; \
+  esac; rm -rf /tmp/runner-config
+USER node
+# This image serves only its own CLI. The CLI binaries are owned by root, so they cannot update themselves.
+ENV D2D_RUNNERS=${RUNNER} GEMINI_CLI_SYSTEM_SETTINGS_PATH=/etc/gemini-cli/settings.json \
+    CODEX_HOME=/home/node/.codex NO_UPDATE_NOTIFIER=1
+LABEL d2d.runner=${RUNNER}

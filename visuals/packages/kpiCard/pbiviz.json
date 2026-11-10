@@ -1,0 +1,25 @@
+{
+  "visual": {
+    "name": "kpicard",
+    "displayName": "Relay KPI Card",
+    "guid": "genbiKpiCard7E2A91C4D35B4F06A8E1",
+    "visualClassName": "Visual",
+    "version": "1.0.2.0",
+    "description": "KPI with sparkline, target, change vs comparison and an on-track status pill.",
+    "supportUrl": "https://pasdacs.com",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "5.11.0",
+  "author": {
+    "name": "RELAY by PASDACS",
+    "email": "info@pasdacs.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": [],
+  "version": "1.0.2.0"
+}

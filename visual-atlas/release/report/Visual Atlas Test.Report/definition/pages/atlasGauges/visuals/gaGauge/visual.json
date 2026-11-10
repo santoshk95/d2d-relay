@@ -1,0 +1,124 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "gaGauge",
+  "position": {
+    "x": 16,
+    "y": 368,
+    "z": 1002,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 2
+  },
+  "visual": {
+    "visualType": "atlasGauges797C4E4189814B78AD7FCCDFF53CBC47",
+    "query": {
+      "queryState": {
+        "category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Channel"
+                    }
+                  },
+                  "Property": "Channel"
+                }
+              },
+              "queryRef": "Channel.Channel",
+              "nativeQueryRef": "Channel"
+            }
+          ]
+        },
+        "values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Sales 2025"
+                }
+              },
+              "queryRef": "Orders.Sales 2025",
+              "nativeQueryRef": "Sales 2025"
+            }
+          ]
+        },
+        "target": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Sales Target"
+                }
+              },
+              "queryRef": "Orders.Sales Target",
+              "nativeQueryRef": "Sales Target"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'gauge'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "status": [
+        {
+          "properties": {
+            "colorValue": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Gauges · 2025 sales vs target by channel'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "scPlay",
+  "position": {
+    "x": 648,
+    "y": 16,
+    "z": 1001,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 1
+  },
+  "visual": {
+    "visualType": "atlasScatter0B23674C661C4797A349BBC2B0AD313A",
+    "query": {
+      "queryState": {
+        "details": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Product"
+                    }
+                  },
+                  "Property": "Subcategory"
+                }
+              },
+              "queryRef": "Product.Subcategory",
+              "nativeQueryRef": "Subcategory"
+            }
+          ]
+        },
+        "legend": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Product"
+                    }
+                  },
+                  "Property": "Category"
+                }
+              },
+              "queryRef": "Product.Category",
+              "nativeQueryRef": "Category"
+            }
+          ]
+        },
+        "play": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Date"
+                    }
+                  },
+                  "Property": "Year"
+                }
+              },
+              "queryRef": "Date.Year",
+              "nativeQueryRef": "Year"
+            }
+          ]
+        },
+        "x": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Sales"
+                }
+              },
+              "queryRef": "Orders.Sales",
+              "nativeQueryRef": "Sales"
+            }
+          ]
+        },
+        "y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Margin %"
+                }
+              },
+              "queryRef": "Orders.Margin %",
+              "nativeQueryRef": "Margin %"
+            }
+          ]
+        },
+        "size": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Units"
+                }
+              },
+              "queryRef": "Orders.Units",
+              "nativeQueryRef": "Units"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "labels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Bubble · play axis by year'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "genbi-kpicard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KPI with sparkline, target, change vs comparison and an on-track status pill.",
+  "license": "MIT",
+  "dependencies": {
+    "powerbi-visuals-api": "~5.11.1"
+  }
+}

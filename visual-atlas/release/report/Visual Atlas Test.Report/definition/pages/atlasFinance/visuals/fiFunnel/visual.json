@@ -1,0 +1,131 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "fiFunnel",
+  "position": {
+    "x": 648,
+    "y": 368,
+    "z": 1003,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "atlasFinance8C601CA9CAF44ADCB6574FA21FDDE583",
+    "query": {
+      "queryState": {
+        "category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Pipeline"
+                    }
+                  },
+                  "Property": "Stage"
+                }
+              },
+              "queryRef": "Pipeline.Stage",
+              "nativeQueryRef": "Stage"
+            }
+          ]
+        },
+        "values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Pipeline"
+                    }
+                  },
+                  "Property": "Deal Count"
+                }
+              },
+              "queryRef": "Pipeline.Deal Count",
+              "nativeQueryRef": "Deal Count"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Pipeline"
+                  }
+                },
+                "Property": "Stage"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": false
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'funnel'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "funnel": [
+        {
+          "properties": {
+            "shape": {
+              "expr": {
+                "Literal": {
+                  "Value": "'tapered'"
+                }
+              }
+            },
+            "colors": {
+              "expr": {
+                "Literal": {
+                  "Value": "'gradient'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Funnel · sales pipeline'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+Source,Target,Amount
+Bikes,Revenue,4768700
+Components,Revenue,1769500
+Clothing,Revenue,1243100
+Accessories,Revenue,953700
+Revenue,Cost of goods,4979000
+Revenue,Gross profit,3756000
+Gross profit,Marketing,873500
+Gross profit,Admin,742500
+Gross profit,R&D,480400
+Gross profit,Operating profit,1659600

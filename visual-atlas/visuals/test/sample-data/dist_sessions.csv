@@ -1,0 +1,641 @@
+Device,Session ID,Minutes
+App,S00,11.3
+App,S01,2.3
+App,S02,9
+App,S03,2.3
+App,S04,10.4
+App,S05,1.6
+App,S06,12.3
+App,S07,3.3
+App,S08,10.5
+App,S09,1.9
+App,S010,11.8
+App,S011,2.8
+App,S012,11
+App,S013,2.4
+App,S014,12.6
+App,S015,2.4
+App,S016,11.2
+App,S017,3.3
+App,S018,7.1
+App,S019,2
+App,S020,9.3
+App,S021,2.3
+App,S022,7.4
+App,S023,2.7
+App,S024,12.4
+App,S025,0.6
+App,S026,14.7
+App,S027,1.5
+App,S028,6.8
+App,S029,2.4
+App,S030,13.5
+App,S031,2.1
+App,S032,10.5
+App,S033,2.7
+App,S034,12.4
+App,S035,1.3
+App,S036,11.2
+App,S037,2.5
+App,S038,11
+App,S039,2
+App,S040,11.6
+App,S041,1.5
+App,S042,8.3
+App,S043,2.4
+App,S044,7.5
+App,S045,0.8
+App,S046,9
+App,S047,3.4
+App,S048,12.9
+App,S049,2.2
+App,S050,11.7
+App,S051,1.5
+App,S052,11
+App,S053,2.7
+App,S054,11.1
+App,S055,4.6
+App,S056,14.1
+App,S057,1.7
+App,S058,7.1
+App,S059,2.7
+App,S060,7.3
+App,S061,3
+App,S062,10.1
+App,S063,1
+App,S064,10.6
+App,S065,1.8
+App,S066,10.1
+App,S067,2.4
+App,S068,10.7
+App,S069,0.7
+App,S070,9
+App,S071,1.8
+App,S072,11.4
+App,S073,2.5
+App,S074,8.4
+App,S075,2.5
+App,S076,8.7
+App,S077,3.1
+App,S078,10.3
+App,S079,1.6
+App,S080,9.5
+App,S081,0.8
+App,S082,8.2
+App,S083,1.4
+App,S084,7.1
+App,S085,2.2
+App,S086,15.3
+App,S087,1.3
+App,S088,11.7
+App,S089,2.3
+App,S090,9.8
+App,S091,3.7
+App,S092,12.9
+App,S093,2
+App,S094,7.4
+App,S095,2.3
+App,S096,6.4
+App,S097,2.1
+App,S098,9.3
+App,S099,3.2
+App,S0100,10
+App,S0101,3.1
+App,S0102,12.1
+App,S0103,0.8
+App,S0104,14.3
+App,S0105,1.9
+App,S0106,11.4
+App,S0107,2.9
+App,S0108,13.9
+App,S0109,1.4
+App,S0110,9.3
+App,S0111,4.2
+App,S0112,10.6
+App,S0113,1.9
+App,S0114,11.5
+App,S0115,2.3
+App,S0116,10.3
+App,S0117,2.7
+App,S0118,5.8
+App,S0119,2.5
+App,S0120,11.7
+App,S0121,3.6
+App,S0122,9.5
+App,S0123,2
+App,S0124,11.3
+App,S0125,1.6
+App,S0126,12.3
+App,S0127,1.5
+App,S0128,13.6
+App,S0129,1.8
+App,S0130,15
+App,S0131,2.1
+App,S0132,7.9
+App,S0133,1.7
+App,S0134,12.5
+App,S0135,2.3
+App,S0136,8.7
+App,S0137,2
+App,S0138,10.6
+App,S0139,2.9
+App,S0140,8.8
+App,S0141,0.5
+App,S0142,10.8
+App,S0143,2.2
+App,S0144,10.4
+App,S0145,1.2
+App,S0146,4.1
+App,S0147,1.8
+App,S0148,11.5
+App,S0149,1.3
+App,S0150,12.2
+App,S0151,2.3
+App,S0152,14.6
+App,S0153,3.7
+App,S0154,10.7
+App,S0155,2.9
+App,S0156,9.2
+App,S0157,2.8
+App,S0158,12.1
+App,S0159,1.3
+Desktop,S10,6.6
+Desktop,S11,8.6
+Desktop,S12,8.4
+Desktop,S13,6
+Desktop,S14,10.5
+Desktop,S15,8.5
+Desktop,S16,4.5
+Desktop,S17,9.8
+Desktop,S18,10.1
+Desktop,S19,9.4
+Desktop,S110,6.1
+Desktop,S111,6.7
+Desktop,S112,8.2
+Desktop,S113,9.9
+Desktop,S114,8.8
+Desktop,S115,7.7
+Desktop,S116,6.3
+Desktop,S117,5.1
+Desktop,S118,10.4
+Desktop,S119,7.4
+Desktop,S120,11.6
+Desktop,S121,8.9
+Desktop,S122,7
+Desktop,S123,2.5
+Desktop,S124,8
+Desktop,S125,11.5
+Desktop,S126,10
+Desktop,S127,9.5
+Desktop,S128,6.5
+Desktop,S129,6
+Desktop,S130,9.7
+Desktop,S131,10
+Desktop,S132,7.1
+Desktop,S133,14
+Desktop,S134,8.6
+Desktop,S135,12.9
+Desktop,S136,5.9
+Desktop,S137,11.8
+Desktop,S138,11.1
+Desktop,S139,6.8
+Desktop,S140,5.2
+Desktop,S141,5.7
+Desktop,S142,12.2
+Desktop,S143,8.6
+Desktop,S144,8.4
+Desktop,S145,5.6
+Desktop,S146,6.8
+Desktop,S147,8.4
+Desktop,S148,6.9
+Desktop,S149,7
+Desktop,S150,8.6
+Desktop,S151,8.4
+Desktop,S152,8.9
+Desktop,S153,12.5
+Desktop,S154,8.3
+Desktop,S155,10.8
+Desktop,S156,8.8
+Desktop,S157,11.9
+Desktop,S158,9.6
+Desktop,S159,3.7
+Desktop,S160,9.5
+Desktop,S161,5.5
+Desktop,S162,5.3
+Desktop,S163,8
+Desktop,S164,7.5
+Desktop,S165,8
+Desktop,S166,13.7
+Desktop,S167,6.6
+Desktop,S168,8.7
+Desktop,S169,15.2
+Desktop,S170,4.3
+Desktop,S171,11.2
+Desktop,S172,9.4
+Desktop,S173,10.7
+Desktop,S174,10.6
+Desktop,S175,9.9
+Desktop,S176,7.4
+Desktop,S177,9
+Desktop,S178,6.7
+Desktop,S179,11.4
+Desktop,S180,5.1
+Desktop,S181,13.9
+Desktop,S182,5.1
+Desktop,S183,11.4
+Desktop,S184,6.8
+Desktop,S185,4.5
+Desktop,S186,5.2
+Desktop,S187,11.2
+Desktop,S188,5.6
+Desktop,S189,8.8
+Desktop,S190,9.5
+Desktop,S191,8.7
+Desktop,S192,11.5
+Desktop,S193,12.3
+Desktop,S194,8.7
+Desktop,S195,8.9
+Desktop,S196,7.1
+Desktop,S197,9.6
+Desktop,S198,4.6
+Desktop,S199,4.3
+Desktop,S1100,7.6
+Desktop,S1101,9.8
+Desktop,S1102,8
+Desktop,S1103,10.2
+Desktop,S1104,8.8
+Desktop,S1105,8.6
+Desktop,S1106,10.7
+Desktop,S1107,6.8
+Desktop,S1108,7.9
+Desktop,S1109,6.4
+Desktop,S1110,11.1
+Desktop,S1111,13.6
+Desktop,S1112,4.6
+Desktop,S1113,10
+Desktop,S1114,6
+Desktop,S1115,7.6
+Desktop,S1116,12.2
+Desktop,S1117,3.3
+Desktop,S1118,6.9
+Desktop,S1119,7.2
+Desktop,S1120,7.1
+Desktop,S1121,10.2
+Desktop,S1122,13.2
+Desktop,S1123,13.3
+Desktop,S1124,12.6
+Desktop,S1125,7
+Desktop,S1126,11
+Desktop,S1127,5.4
+Desktop,S1128,13.2
+Desktop,S1129,10.2
+Desktop,S1130,11.4
+Desktop,S1131,7
+Desktop,S1132,6.9
+Desktop,S1133,8.3
+Desktop,S1134,10.8
+Desktop,S1135,9.3
+Desktop,S1136,7.4
+Desktop,S1137,7.5
+Desktop,S1138,10.5
+Desktop,S1139,4.5
+Desktop,S1140,8.8
+Desktop,S1141,5.1
+Desktop,S1142,10.5
+Desktop,S1143,12.7
+Desktop,S1144,11.7
+Desktop,S1145,8.8
+Desktop,S1146,7.9
+Desktop,S1147,7.4
+Desktop,S1148,7.3
+Desktop,S1149,6.4
+Desktop,S1150,5.1
+Desktop,S1151,4.6
+Desktop,S1152,7.4
+Desktop,S1153,10.2
+Desktop,S1154,8.8
+Desktop,S1155,13.5
+Desktop,S1156,9.2
+Desktop,S1157,7.3
+Desktop,S1158,9.2
+Desktop,S1159,12.3
+Tablet,S20,9.6
+Tablet,S21,7.2
+Tablet,S22,8.9
+Tablet,S23,7.7
+Tablet,S24,0.2
+Tablet,S25,7.5
+Tablet,S26,4.5
+Tablet,S27,1.7
+Tablet,S28,4.7
+Tablet,S29,9.5
+Tablet,S210,8.1
+Tablet,S211,7.8
+Tablet,S212,4.8
+Tablet,S213,7.7
+Tablet,S214,3.3
+Tablet,S215,7.2
+Tablet,S216,3.1
+Tablet,S217,6.7
+Tablet,S218,5.8
+Tablet,S219,6.1
+Tablet,S220,3
+Tablet,S221,6.4
+Tablet,S222,9.4
+Tablet,S223,6.6
+Tablet,S224,4.1
+Tablet,S225,8.3
+Tablet,S226,12.4
+Tablet,S227,9.4
+Tablet,S228,6.7
+Tablet,S229,6.3
+Tablet,S230,3.6
+Tablet,S231,6.9
+Tablet,S232,4.1
+Tablet,S233,5.2
+Tablet,S234,4
+Tablet,S235,6.2
+Tablet,S236,6.8
+Tablet,S237,4.3
+Tablet,S238,7.8
+Tablet,S239,5.6
+Tablet,S240,7.3
+Tablet,S241,5.8
+Tablet,S242,4.7
+Tablet,S243,7.7
+Tablet,S244,5.3
+Tablet,S245,1
+Tablet,S246,6.6
+Tablet,S247,6.6
+Tablet,S248,6.3
+Tablet,S249,6.8
+Tablet,S250,8.8
+Tablet,S251,8.3
+Tablet,S252,6.9
+Tablet,S253,7.4
+Tablet,S254,5.5
+Tablet,S255,7.2
+Tablet,S256,2.7
+Tablet,S257,5.8
+Tablet,S258,9.9
+Tablet,S259,5.7
+Tablet,S260,5.1
+Tablet,S261,7.7
+Tablet,S262,3.5
+Tablet,S263,6.3
+Tablet,S264,7.3
+Tablet,S265,7
+Tablet,S266,5.7
+Tablet,S267,7
+Tablet,S268,6.2
+Tablet,S269,6.6
+Tablet,S270,6.8
+Tablet,S271,4.6
+Tablet,S272,11.6
+Tablet,S273,5.3
+Tablet,S274,8.1
+Tablet,S275,5.8
+Tablet,S276,6.9
+Tablet,S277,9.1
+Tablet,S278,6.8
+Tablet,S279,8.8
+Tablet,S280,3.8
+Tablet,S281,7.2
+Tablet,S282,9.1
+Tablet,S283,6.5
+Tablet,S284,5
+Tablet,S285,2.2
+Tablet,S286,3.2
+Tablet,S287,8.5
+Tablet,S288,7.3
+Tablet,S289,7.4
+Tablet,S290,3.9
+Tablet,S291,5.6
+Tablet,S292,0.7
+Tablet,S293,10
+Tablet,S294,3.8
+Tablet,S295,4.1
+Tablet,S296,7.8
+Tablet,S297,7.7
+Tablet,S298,8.8
+Tablet,S299,7.8
+Tablet,S2100,3.4
+Tablet,S2101,5.6
+Tablet,S2102,4.2
+Tablet,S2103,4.7
+Tablet,S2104,8.3
+Tablet,S2105,8.8
+Tablet,S2106,4.3
+Tablet,S2107,4.5
+Tablet,S2108,3.2
+Tablet,S2109,9.5
+Tablet,S2110,6.6
+Tablet,S2111,6.2
+Tablet,S2112,4.6
+Tablet,S2113,6.4
+Tablet,S2114,6
+Tablet,S2115,7.3
+Tablet,S2116,5
+Tablet,S2117,7.5
+Tablet,S2118,6.5
+Tablet,S2119,7
+Tablet,S2120,3.3
+Tablet,S2121,6.8
+Tablet,S2122,6.4
+Tablet,S2123,7.6
+Tablet,S2124,8.8
+Tablet,S2125,8.4
+Tablet,S2126,10.4
+Tablet,S2127,5.7
+Tablet,S2128,7.7
+Tablet,S2129,8.5
+Tablet,S2130,3.3
+Tablet,S2131,5.1
+Tablet,S2132,4.8
+Tablet,S2133,4.8
+Tablet,S2134,6.4
+Tablet,S2135,3.9
+Tablet,S2136,3
+Tablet,S2137,6
+Tablet,S2138,6
+Tablet,S2139,4.5
+Tablet,S2140,6.1
+Tablet,S2141,5.4
+Tablet,S2142,8.1
+Tablet,S2143,4.7
+Tablet,S2144,4.6
+Tablet,S2145,5.4
+Tablet,S2146,7
+Tablet,S2147,5.3
+Tablet,S2148,10.9
+Tablet,S2149,4.6
+Tablet,S2150,5.3
+Tablet,S2151,5.9
+Tablet,S2152,6.7
+Tablet,S2153,7.2
+Tablet,S2154,5.5
+Tablet,S2155,5.4
+Tablet,S2156,3.6
+Tablet,S2157,9
+Tablet,S2158,6.4
+Tablet,S2159,7.7
+Mobile web,S30,3.8
+Mobile web,S31,3.2
+Mobile web,S32,4.6
+Mobile web,S33,5.3
+Mobile web,S34,1.1
+Mobile web,S35,3.5
+Mobile web,S36,4
+Mobile web,S37,4.6
+Mobile web,S38,4.2
+Mobile web,S39,3.2
+Mobile web,S310,5.8
+Mobile web,S311,3.7
+Mobile web,S312,2.9
+Mobile web,S313,4
+Mobile web,S314,3
+Mobile web,S315,3.4
+Mobile web,S316,1.1
+Mobile web,S317,5.1
+Mobile web,S318,6.1
+Mobile web,S319,5.9
+Mobile web,S320,4.6
+Mobile web,S321,3.2
+Mobile web,S322,7.4
+Mobile web,S323,2.8
+Mobile web,S324,0.8
+Mobile web,S325,3
+Mobile web,S326,3.4
+Mobile web,S327,0.2
+Mobile web,S328,2.7
+Mobile web,S329,5.4
+Mobile web,S330,2.5
+Mobile web,S331,1.3
+Mobile web,S332,3.8
+Mobile web,S333,2.6
+Mobile web,S334,4.1
+Mobile web,S335,5.3
+Mobile web,S336,3.1
+Mobile web,S337,3.1
+Mobile web,S338,5.3
+Mobile web,S339,3.5
+Mobile web,S340,2.5
+Mobile web,S341,4.1
+Mobile web,S342,2.6
+Mobile web,S343,7
+Mobile web,S344,2.9
+Mobile web,S345,6.6
+Mobile web,S346,3.6
+Mobile web,S347,4.3
+Mobile web,S348,2.7
+Mobile web,S349,2.7
+Mobile web,S350,3.9
+Mobile web,S351,5.2
+Mobile web,S352,5.4
+Mobile web,S353,1.7
+Mobile web,S354,3.8
+Mobile web,S355,3.7
+Mobile web,S356,3
+Mobile web,S357,4.5
+Mobile web,S358,4.1
+Mobile web,S359,3.6
+Mobile web,S360,2.8
+Mobile web,S361,2
+Mobile web,S362,1.3
+Mobile web,S363,3.6
+Mobile web,S364,3.7
+Mobile web,S365,2.7
+Mobile web,S366,5
+Mobile web,S367,3.6
+Mobile web,S368,2.7
+Mobile web,S369,1.6
+Mobile web,S370,6
+Mobile web,S371,2.3
+Mobile web,S372,6.2
+Mobile web,S373,5.7
+Mobile web,S374,2.1
+Mobile web,S375,4.9
+Mobile web,S376,2.4
+Mobile web,S377,4.3
+Mobile web,S378,2.4
+Mobile web,S379,3.5
+Mobile web,S380,6.3
+Mobile web,S381,3.3
+Mobile web,S382,4.2
+Mobile web,S383,2.3
+Mobile web,S384,4.2
+Mobile web,S385,2.9
+Mobile web,S386,3.6
+Mobile web,S387,5.5
+Mobile web,S388,2.6
+Mobile web,S389,3.1
+Mobile web,S390,6.1
+Mobile web,S391,2.5
+Mobile web,S392,2.4
+Mobile web,S393,3.2
+Mobile web,S394,6.6
+Mobile web,S395,2.5
+Mobile web,S396,4.2
+Mobile web,S397,3
+Mobile web,S398,3.5
+Mobile web,S399,3
+Mobile web,S3100,0.9
+Mobile web,S3101,3.4
+Mobile web,S3102,7
+Mobile web,S3103,4.3
+Mobile web,S3104,4.1
+Mobile web,S3105,3.1
+Mobile web,S3106,4.2
+Mobile web,S3107,2.8
+Mobile web,S3108,2.4
+Mobile web,S3109,3.6
+Mobile web,S3110,3.4
+Mobile web,S3111,5
+Mobile web,S3112,4.6
+Mobile web,S3113,4
+Mobile web,S3114,4.2
+Mobile web,S3115,3.3
+Mobile web,S3116,3.6
+Mobile web,S3117,2
+Mobile web,S3118,5.3
+Mobile web,S3119,4.7
+Mobile web,S3120,3.3
+Mobile web,S3121,2.9
+Mobile web,S3122,3
+Mobile web,S3123,3
+Mobile web,S3124,0.4
+Mobile web,S3125,6
+Mobile web,S3126,4.8
+Mobile web,S3127,4.3
+Mobile web,S3128,1.9
+Mobile web,S3129,3
+Mobile web,S3130,1.3
+Mobile web,S3131,3
+Mobile web,S3132,2.8
+Mobile web,S3133,4.2
+Mobile web,S3134,4.9
+Mobile web,S3135,4.3
+Mobile web,S3136,4.1
+Mobile web,S3137,4.5
+Mobile web,S3138,3.4
+Mobile web,S3139,4.4
+Mobile web,S3140,3.5
+Mobile web,S3141,5.2
+Mobile web,S3142,3.6
+Mobile web,S3143,1.1
+Mobile web,S3144,1.4
+Mobile web,S3145,3.6
+Mobile web,S3146,3.4
+Mobile web,S3147,6.5
+Mobile web,S3148,4.2
+Mobile web,S3149,3.4
+Mobile web,S3150,2
+Mobile web,S3151,2.6
+Mobile web,S3152,3.9
+Mobile web,S3153,1.4
+Mobile web,S3154,4.4
+Mobile web,S3155,3.8
+Mobile web,S3156,3.1
+Mobile web,S3157,0.6
+Mobile web,S3158,4.5
+Mobile web,S3159,3.1

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "allowJs": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "target": "es2022",
+    "sourceMap": true,
+    "outDir": "./.tmp/build/",
+    "moduleResolution": "node",
+    "declaration": false,
+    "lib": [
+      "es2022",
+      "dom"
+    ],
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "files": [
+    "./src/visual.ts"
+  ]
+}

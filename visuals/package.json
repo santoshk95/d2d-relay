@@ -1,0 +1,11 @@
+{
+  "name": "genbi-visuals",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gen BI custom visuals for Power BI and the matching HTML prototype renderers.",
+  "license": "MIT",
+  "dependencies": {
+    "powerbi-visuals-api": "5.11.1",
+    "typescript": "5.9.3"
+  }
+}

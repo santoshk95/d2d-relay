@@ -1,0 +1,196 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "fiCandle",
+  "position": {
+    "x": 16,
+    "y": 16,
+    "z": 1000,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "atlasFinance8C601CA9CAF44ADCB6574FA21FDDE583",
+    "query": {
+      "queryState": {
+        "category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Prices"
+                    }
+                  },
+                  "Property": "Day"
+                }
+              },
+              "queryRef": "Prices.Day",
+              "nativeQueryRef": "Day"
+            }
+          ]
+        },
+        "open": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Prices"
+                    }
+                  },
+                  "Property": "Price Open"
+                }
+              },
+              "queryRef": "Prices.Price Open",
+              "nativeQueryRef": "Price Open"
+            }
+          ]
+        },
+        "high": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Prices"
+                    }
+                  },
+                  "Property": "Price High"
+                }
+              },
+              "queryRef": "Prices.Price High",
+              "nativeQueryRef": "Price High"
+            }
+          ]
+        },
+        "low": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Prices"
+                    }
+                  },
+                  "Property": "Price Low"
+                }
+              },
+              "queryRef": "Prices.Price Low",
+              "nativeQueryRef": "Price Low"
+            }
+          ]
+        },
+        "close": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Prices"
+                    }
+                  },
+                  "Property": "Price Close"
+                }
+              },
+              "queryRef": "Prices.Price Close",
+              "nativeQueryRef": "Price Close"
+            }
+          ]
+        },
+        "volume": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Prices"
+                    }
+                  },
+                  "Property": "Trade Volume"
+                }
+              },
+              "queryRef": "Prices.Trade Volume",
+              "nativeQueryRef": "Trade Volume"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Prices"
+                  }
+                },
+                "Property": "Day"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": false
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'candlestick'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "candles": [
+        {
+          "properties": {
+            "movingAverage": {
+              "expr": {
+                "Literal": {
+                  "Value": "10D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Candlestick · six months'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,47 @@
+# The index database (phase 8). Use a managed Postgres in production: delete this file from the overlay and point
+# D2D_DATABASE_URL (secret d2d-secrets, key database-url) at it.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels: {app: postgres}
+  template:
+    metadata:
+      labels: {app: postgres}
+    spec:
+      serviceAccountName: d2d
+      securityContext: {fsGroup: 70, runAsUser: 70, runAsNonRoot: true}
+      containers:
+        - name: postgres
+          image: postgres:17.6-alpine
+          env:
+            - {name: POSTGRES_USER, value: d2d}
+            - {name: POSTGRES_DB, value: d2d}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: d2d-secrets, key: postgres-password}}
+          ports: [{containerPort: 5432, name: pg}]
+          readinessProbe:
+            exec: {command: ["pg_isready", "-U", "d2d"]}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 1Gi}
+          volumeMounts: [{name: data, mountPath: /var/lib/postgresql/data}]
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources: {requests: {storage: 10Gi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector: {app: postgres}
+  ports: [{port: 5432, targetPort: 5432, name: pg}]

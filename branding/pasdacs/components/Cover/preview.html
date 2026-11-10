@@ -1,0 +1,37 @@
+<!-- @dsCard height=288 -->
+<div class="cv">
+  <style>
+    .cv { position: relative; width: 960px; height: 288px; overflow: hidden; background: var(--surface); }
+    .cv svg { position: absolute; inset: 0; }
+    .cv .slab { fill: var(--primary-fill); }
+    .cv .mint { fill: var(--accent-500); }
+    .cv .tint { fill: var(--accent-100); }
+    .cv .chev { fill: none; stroke: var(--on-primary); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+    .cv .cursor { fill: var(--accent-500); }
+    .cv .r-card { rx: var(--radius-card); }
+    .cv .r-mark { rx: 6px; }
+    .cv .txt { position: absolute; left: 40px; bottom: 36px; max-width: 440px; }
+    .cv h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 72px; line-height: 0.95; letter-spacing: -0.03em; color: var(--ink); }
+    .cv p { margin: 14px 0 0; font-family: var(--font-sans); font-size: 14px; line-height: 20px; color: var(--ink-muted); }
+  </style>
+  <svg width="960" height="288" viewBox="0 0 960 288" aria-hidden="true">
+    <!--
+      blocks: primary-fill slab 304x320 (radius-card, bleeds top and bottom), accent-500 block 176x152 bleeding top-right, accent-100 tint 176x136 below it.
+      arrangement: one tall slab with two stacked satellites on its right, all right of x=480, echoing the mark's tile beside the wordmark.
+      pattern: chevrons, because the mark is two chevrons running into a mint cursor ("fast forward"); three pairs at a 56px pitch (grid-pitch) in on-primary, ending in a mint cursor bar.
+      scales: grid-pitch 56, card-pad 28, radius-card 16, radius-mark proportion for the cursor.
+    -->
+    <rect class="slab r-card" x="512" y="-16" width="304" height="320"/>
+    <rect class="mint r-card" x="800" y="-16" width="176" height="168"/>
+    <rect class="tint r-card" x="800" y="168" width="176" height="136"/>
+    <path class="chev" d="M556 104l28 40-28 40"/>
+    <path class="chev" d="M588 104l28 40-28 40"/>
+    <path class="chev" d="M640 104l28 40-28 40" opacity="0.55"/>
+    <path class="chev" d="M672 104l28 40-28 40" opacity="0.55"/>
+    <rect class="cursor r-mark" x="716" y="168" width="40" height="18"/>
+  </svg>
+  <div class="txt">
+    <h1>PASDACS<br>Brand Pack</h1>
+    <p>Mono and mint, from pasdacs.com, ready for RELAY by PASDACS.</p>
+  </div>
+</div>

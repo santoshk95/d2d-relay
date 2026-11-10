@@ -1,0 +1,125 @@
+/* =============================================================================
+   PASDACS brand theme for RELAY by PASDACS - drop-in CSS variables.
+   Light = pasdacs.com exactly. Dark = proposed for Relay (same scale).
+   Fonts: load Manrope (600-800) and Inter (400-700) from Google Fonts:
+   https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap
+   Full guide: brand-pack/project/README.md and relay.md
+   ========================================================================== */
+
+:root {
+  /* Brand scale (same in both themes) */
+  --brand-950: #0a0a0a;
+  --brand-900: #111111; /* logo ink */
+  --brand-800: #1c1c1c;
+  --brand-700: #262626;
+  --brand-600: #404040;
+  --brand-500: #525252;
+  --brand-100: #e5e5e5;
+  --brand-50: #f5f5f5;
+  --accent-700: #00664a;
+  --accent-600: #007a57; /* mint for text on white */
+  --accent-500: #00c48c; /* logo mint - fills and marks only on light */
+  --accent-400: #33d6a6;
+  --accent-100: #ccf5e8;
+  --accent-50: #ebfbf5;
+
+  /* Semantic - light */
+  --surface: #ffffff;
+  --surface-alt: #f6f6f6;
+  --ink: #111111;
+  --ink-muted: #525252;
+  --ink-subtle: #737373;
+  --line: #e5e5e5;
+  --line-strong: #d4d4d4;
+  --primary-fill: #111111;
+  --on-primary: #ffffff;
+  --accent-text: #007a57;
+  --accent-fill: #007a57;
+  --on-accent: #ffffff;
+  --focus-ring: #007a57;
+  --selection: #ccf5e8;
+  --success: #059669;
+  --success-bg: #ecfdf5;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+
+  /* Type */
+  --font-display: Manrope, Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Shape, depth, motion */
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-btn: 8px;
+  --radius-card: 16px;
+  --radius-full: 9999px;
+  --shadow-btn: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-btn-hover: 0 10px 30px -12px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 10px 30px -12px rgba(0, 196, 140, 0.6);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Layout */
+  --container-max: 1280px;
+  --card-pad: 28px;
+  --btn-h-sm: 36px;
+  --btn-h-md: 44px;
+  --btn-h-lg: 48px;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #0a0a0a;
+    --surface-alt: #161616;
+    --ink: #f5f5f5;
+    --ink-muted: #a3a3a3;
+    --ink-subtle: #8a8a8a;
+    --line: #262626;
+    --line-strong: #404040;
+    --primary-fill: #f5f5f5;
+    --on-primary: #0a0a0a;
+    --accent-text: #00c48c;
+    --accent-fill: #00c48c;
+    --on-accent: #0a0a0a;
+    --focus-ring: #00c48c;
+    --selection: #0f2a22;
+    --success: #34d399;
+    --success-bg: #0b2a1f;
+    --danger: #f87171;
+    --danger-bg: #2a1111;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --surface: #0a0a0a;
+  --surface-alt: #161616;
+  --ink: #f5f5f5;
+  --ink-muted: #a3a3a3;
+  --ink-subtle: #8a8a8a;
+  --line: #262626;
+  --line-strong: #404040;
+  --primary-fill: #f5f5f5;
+  --on-primary: #0a0a0a;
+  --accent-text: #00c48c;
+  --accent-fill: #00c48c;
+  --on-accent: #0a0a0a;
+  --focus-ring: #00c48c;
+  --selection: #0f2a22;
+  --success: #34d399;
+  --success-bg: #0b2a1f;
+  --danger: #f87171;
+  --danger-bg: #2a1111;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+}
+h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; }
+::selection { background: var(--selection); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: var(--radius-sm); }

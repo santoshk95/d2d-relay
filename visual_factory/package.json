@@ -1,0 +1,23 @@
+{
+  "name": "genbi-visual-factory",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared node_modules for every custom visual the Gen BI agent builds (the Visual Atlas dependencies plus d3).",
+  "dependencies": {
+    "d3": "7.9.0",
+    "d3-hierarchy": "3.1.2",
+    "powerbi-models": "1.15.2",
+    "powerbi-visuals-api": "5.11.1",
+    "powerbi-visuals-utils-dataviewutils": "6.1.0",
+    "powerbi-visuals-utils-formattingmodel": "6.0.4",
+    "powerbi-visuals-utils-formattingutils": "6.1.2"
+  },
+  "devDependencies": {
+    "@types/d3": "7.4.3",
+    "@types/d3-hierarchy": "3.1.7",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "eslint": "^9.11.1",
+    "eslint-plugin-powerbi-visuals": "^1.0.0",
+    "typescript": "5.5.4"
+  }
+}

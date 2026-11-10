@@ -1,0 +1,25 @@
+Source,Target,Sessions
+Organic search,Product page,1900
+Organic search,Category page,1500
+Organic search,Home page,800
+Paid search,Product page,1600
+Paid search,Category page,600
+Paid search,Home page,400
+Social,Product page,500
+Social,Category page,700
+Social,Home page,600
+Email,Product page,700
+Email,Category page,300
+Email,Home page,200
+Direct,Product page,600
+Direct,Category page,500
+Direct,Home page,1100
+Product page,Purchase,1700
+Product page,Sign-up,900
+Product page,Bounce,2700
+Category page,Purchase,700
+Category page,Sign-up,800
+Category page,Bounce,2100
+Home page,Purchase,300
+Home page,Sign-up,700
+Home page,Bounce,2100

@@ -1,0 +1,35 @@
+/* P17 tenants, partners and editions: the workspace chip, the band while acting in another workspace, the console.
+   Tokens only (light, dark and the partner accents come from app.css). */
+.wschip{display:flex;min-width:0}
+.wsbtn{display:inline-flex;align-items:center;gap:7px;max-width:280px;margin:0;padding:5px 9px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--ink);font:inherit;font-size:12.5px;cursor:pointer;min-width:0}
+.wsbtn:hover{border-color:var(--line-2);background:var(--side-hover)}
+.wsbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.wsbtn svg{width:15px;height:15px;flex:none;color:var(--ink-2)}
+.wsbtn .wsname{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.wsbtn .wskind{font-size:11px;color:var(--ink-2);white-space:nowrap}
+.wsbtn .wschev{transform:none}
+.wsbtn.acting{border-color:var(--you);background:var(--you-tint)}
+.wsbtn.acting svg{color:var(--you)}
+.actband{display:flex;align-items:center;gap:10px;padding:8px 24px;background:var(--you-tint);color:var(--ink);border-bottom:1px solid var(--line);font-size:13px}
+.actband[hidden]{display:none}
+.actband > svg{width:16px;height:16px;flex:none;color:var(--you)}
+.actband .grow{flex:1;min-width:0}
+.pmsect{padding:8px 12px 2px;text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
+.g4{display:grid;gap:14px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.g3{display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr))}
+label.tf{display:flex;flex-direction:column;gap:6px;margin:12px 0 0;font-weight:600;font-size:13px}
+label.tf > span{color:var(--ink)}
+label.tf input,label.tf select,label.tf textarea,.tmonth{width:100%;border:1px solid var(--line-2);border-radius:var(--radius-sm);padding:8px 11px;
+  background:var(--surface);color:var(--ink);outline:none;font-weight:400}
+label.tf input:focus,label.tf select:focus,label.tf textarea:focus,.tmonth:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.tmonth{width:auto;padding:6px 10px}
+label.tf .small{font-weight:400}
+.ttree{display:flex;align-items:flex-start;gap:8px}
+.ttree .tbranch{flex:none;width:12px;height:11px;margin-top:2px;border-left:1.5px solid var(--line-2);border-bottom:1.5px solid var(--line-2);border-bottom-left-radius:3px}
+.ttree a{color:var(--ink)}
+.setuplink{display:block;flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);
+  word-break:break-all;font-size:12px}
+@media (max-width:1100px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){.wsbtn .wskind{display:none}.actband{padding:8px 16px;flex-wrap:wrap}}
+@media (max-width:640px){.g4,.g3{grid-template-columns:minmax(0,1fr)}.wsbtn{max-width:160px}}

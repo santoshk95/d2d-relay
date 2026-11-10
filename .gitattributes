@@ -1,0 +1,9 @@
+# Keep every file byte for byte: the Docker images need LF shell scripts and the Windows host needs CRLF .cmd files,
+# so git must never convert line endings on checkout or commit (build-plan v2, pre-work 0.1).
+* -text
+*.pbiviz binary
+*.png binary
+*.jpg binary
+*.tar binary
+*.zip binary
+*.woff2 binary

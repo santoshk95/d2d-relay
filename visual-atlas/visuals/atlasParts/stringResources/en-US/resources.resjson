@@ -1,0 +1,20 @@
+{
+  "Role_Category": "Legend",
+  "Role_Category_Desc": "The slices. Add a hierarchy, for example Category and Subcategory, to drill down.",
+  "Role_Series": "Details",
+  "Role_Series_Desc": "Optional. Splits each slice into an outer ring.",
+  "Role_Values": "Values",
+  "Role_Tooltips": "Tooltips",
+  "Landing_Line1": "Add a field to Legend (the slices) and a measure to Values. Add a hierarchy such as Category and Subcategory to drill down.",
+  "Landing_Line2": "Add Details to split each slice into an outer ring. Pick pie or donut, labels and the center total in the Format pane.",
+  "Drill_Up": "Drill up",
+  "Drill_Next": "Go to the next level",
+  "Drill_Expand": "Expand all down one level",
+  "Warn_Limit_Title": "Showing the first 1,000 rows",
+  "Warn_Limit_Text": "There is more data than the visual can show. Filter the report to see the rest.",
+  "Drill_Reset": "Back to the top level",
+  "Clear_Selection": "Clear selection",
+  "Mark_Selected": "Selected: this visual is filtering other visuals",
+  "Mark_Filter": "This visual is filtering the report",
+  "Mark_Highlighted": "Highlighted by a selection in another visual"
+}

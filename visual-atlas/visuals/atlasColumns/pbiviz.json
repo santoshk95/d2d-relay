@@ -1,0 +1,26 @@
+{
+  "visual": {
+    "name": "atlasColumns",
+    "displayName": "Relay Columns",
+    "guid": "atlasColumns9A01238C3D0249F7B4F9DFBEA84D3599",
+    "visualClassName": "Visual",
+    "version": "1.0.8.0",
+    "description": "Clustered, stacked and 100% stacked columns and bars with drill-down, flat, soft and 3D looks, and a palette that follows your report theme, a brand color or your own colors.",
+    "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "5.11.1",
+  "author": {
+    "name": "RELAY by PASDACS",
+    "email": "info@pasdacs.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "externalJS": null,
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": [],
+  "version": "1.0.3.0"
+}

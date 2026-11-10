@@ -1,0 +1,111 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "flowNetwork",
+  "position": {
+    "x": 832,
+    "y": 368,
+    "z": 1002,
+    "height": 336,
+    "width": 432,
+    "tabOrder": 2
+  },
+  "visual": {
+    "visualType": "atlasFlowBA37FC4A61814B33BF815C11D35148B1",
+    "query": {
+      "queryState": {
+        "source": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Product Network"
+                    }
+                  },
+                  "Property": "Product A"
+                }
+              },
+              "queryRef": "Product Network.Product A",
+              "nativeQueryRef": "Product A"
+            }
+          ]
+        },
+        "target": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Product Network"
+                    }
+                  },
+                  "Property": "Product B"
+                }
+              },
+              "queryRef": "Product Network.Product B",
+              "nativeQueryRef": "Product B"
+            }
+          ]
+        },
+        "weight": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Product Network"
+                    }
+                  },
+                  "Property": "Co-purchase Orders"
+                }
+              },
+              "queryRef": "Product Network.Co-purchase Orders",
+              "nativeQueryRef": "Co-purchase Orders"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'network'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Network · products bought together'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

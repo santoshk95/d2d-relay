@@ -1,0 +1,34 @@
+# RELAY by PASDACS — what never goes into git (build-plan v2, pre-work 0.1)
+
+# Secrets and this PC's settings: copy .env.example to .env
+.env.*
+!.env.example
+.env
+deploy/kubernetes/*/secrets.env
+deploy/kubernetes/*/orch-token.env
+deploy/kubernetes/clients/*/secrets.env
+deploy/kubernetes/clients/*/orch-token.env
+.claude/settings.local.json
+
+# Data, generated projects, test runs and backups live on disk, not in git
+output/
+data/
+
+# The packaged release (scripts/package.sh): image file and install folder
+dist/
+
+# Caches and build leftovers
+__pycache__/
+*.pyc
+node_modules/
+visual-atlas/visuals/*/dist/
+visual-atlas/visuals/*/.tmp/
+visual-atlas/visuals/*/package-lock.json
+visual_factory/starter/dist/
+*.log
+!tests/mocklab/fixtures/**/*.log
+.DS_Store
+Thumbs.db
+
+# git worktrees of parallel agents (docs/parallel-work.md)
+.claude/worktrees/

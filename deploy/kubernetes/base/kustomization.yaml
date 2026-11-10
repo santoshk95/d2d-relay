@@ -1,0 +1,31 @@
+# D2D on Kubernetes (platform plan, phase 8). Apply an overlay, not this folder directly:
+#   kubectl apply -k deploy/kubernetes/local      (one-node clusters: k3s, kind, Docker Desktop)
+#   kubectl apply -k deploy/kubernetes/cluster    (shared storage with ReadWriteMany, an ingress)
+# See deploy/kubernetes/README.md.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: d2d
+resources:
+  - namespace.yaml
+  - storage.yaml
+  - rbac.yaml
+  - postgres.yaml
+  - agent.yaml
+  - orchestrator.yaml
+  - litellm.yaml
+  - webapp.yaml
+  - networkpolicy.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: d2d
+    includeSelectors: false
+# Built from this repository (docker compose build); push them to your registry and set newName / newTag.
+images:
+  - name: gen-bi-webapp
+    newTag: latest
+  - name: gen-bi-agent
+    newTag: latest
+  - name: gen-bi-orchestrator
+    newTag: latest
+  - name: gen-bi-litellm
+    newTag: latest

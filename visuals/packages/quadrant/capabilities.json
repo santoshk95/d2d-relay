@@ -1,0 +1,257 @@
+{
+  "dataRoles": [
+    {
+      "name": "details",
+      "displayName": "Details",
+      "kind": "Grouping"
+    },
+    {
+      "name": "x",
+      "displayName": "X axis",
+      "kind": "Measure"
+    },
+    {
+      "name": "y",
+      "displayName": "Y axis",
+      "kind": "Measure"
+    },
+    {
+      "name": "size",
+      "displayName": "Size",
+      "kind": "Measure"
+    },
+    {
+      "name": "xRef",
+      "displayName": "X reference line",
+      "kind": "Measure"
+    },
+    {
+      "name": "yRef",
+      "displayName": "Y reference line",
+      "kind": "Measure"
+    },
+    {
+      "name": "title",
+      "displayName": "Dynamic title (text)",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "details": {
+            "max": 1
+          },
+          "x": {
+            "max": 1
+          },
+          "y": {
+            "max": 1
+          },
+          "size": {
+            "max": 1
+          },
+          "xRef": {
+            "max": 1
+          },
+          "yRef": {
+            "max": 1
+          },
+          "title": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "for": {
+            "in": "details"
+          },
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 3000
+            }
+          }
+        },
+        "values": {
+          "select": [
+            {
+              "for": {
+                "in": "x"
+              }
+            },
+            {
+              "for": {
+                "in": "y"
+              }
+            },
+            {
+              "for": {
+                "in": "size"
+              }
+            },
+            {
+              "for": {
+                "in": "xRef"
+              }
+            },
+            {
+              "for": {
+                "in": "yRef"
+              }
+            },
+            {
+              "for": {
+                "in": "title"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "header": {
+      "displayName": "Title",
+      "properties": {
+        "title": {
+          "displayName": "Title",
+          "type": {
+            "text": true
+          }
+        },
+        "subtitle": {
+          "displayName": "Subtitle",
+          "type": {
+            "text": true
+          }
+        }
+      }
+    },
+    "card": {
+      "displayName": "Card",
+      "properties": {
+        "show": {
+          "displayName": "Card background",
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "colors": {
+      "displayName": "Colors",
+      "properties": {
+        "primary": {
+          "displayName": "Primary",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "primaryDark": {
+          "displayName": "Primary (dark)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "primaryLight": {
+          "displayName": "Primary (light)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "negative": {
+          "displayName": "Negative",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "ink": {
+          "displayName": "Text",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "muted": {
+          "displayName": "Muted text",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "quadrant": {
+      "displayName": "Quadrants",
+      "properties": {
+        "topLeft": {
+          "displayName": "Top-left label",
+          "type": {
+            "text": true
+          }
+        },
+        "topRight": {
+          "displayName": "Top-right label",
+          "type": {
+            "text": true
+          }
+        },
+        "bottomLeft": {
+          "displayName": "Bottom-left label",
+          "type": {
+            "text": true
+          }
+        },
+        "bottomRight": {
+          "displayName": "Bottom-right label",
+          "type": {
+            "text": true
+          }
+        },
+        "labelTop": {
+          "displayName": "Name best points",
+          "type": {
+            "numeric": true
+          }
+        },
+        "labelBottom": {
+          "displayName": "Name worst points",
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    }
+  },
+  "privileges": [],
+  "sorting": {
+    "default": {}
+  },
+  "supportsHighlight": false,
+  "supportsMultiVisualSelection": true,
+  "suppressDefaultTitle": true
+}

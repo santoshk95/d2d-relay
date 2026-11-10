@@ -1,0 +1,333 @@
+[
+ {
+  "name": "fable",
+  "ok": true,
+  "model": "claude-fable-5-1",
+  "input": 2,
+  "output": 4,
+  "cache_read": 0,
+  "cache_write": 560,
+  "cost_usd": 0.011419999999999998,
+  "context_window": 1000000,
+  "max_output": 64000
+ },
+ {
+  "name": "opus",
+  "ok": true,
+  "model": "claude-opus-5-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 0,
+  "cache_write": 537,
+  "cost_usd": 0.004384000000000001,
+  "context_window": 1000000,
+  "max_output": 128000
+ },
+ {
+  "name": "sonnet",
+  "ok": true,
+  "model": "claude-sonnet-5-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 0,
+  "cache_write": 541,
+  "cost_usd": 0.0022080000000000003,
+  "context_window": 1000000,
+  "max_output": 128000
+ },
+ {
+  "name": "haiku",
+  "ok": true,
+  "model": "claude-haiku-5-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 0,
+  "cache_write": 562,
+  "cost_usd": 0.00011460000000000001,
+  "context_window": 1000000,
+  "max_output": 128000
+ },
+ {
+  "name": "claude-fable-5-1",
+  "ok": true,
+  "model": "claude-fable-5-1",
+  "input": 2,
+  "output": 4,
+  "cache_read": 560,
+  "cache_write": 0,
+  "cost_usd": 0.00035999999999999997,
+  "context_window": 1000000,
+  "max_output": 64000
+ },
+ {
+  "name": "claude-fable-5",
+  "ok": true,
+  "model": "claude-fable-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 0,
+  "cache_write": 555,
+  "cost_usd": 0.01132,
+  "context_window": 1000000,
+  "max_output": 64000
+ },
+ {
+  "name": "claude-opus-5-5",
+  "ok": true,
+  "model": "claude-opus-5-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 537,
+  "cache_write": 0,
+  "cost_usd": 0.0001954,
+  "context_window": 1000000,
+  "max_output": 128000
+ },
+ {
+  "name": "claude-opus-5-1",
+  "ok": false,
+  "error": "There's an issue with the selected model (claude-opus-5-1). It may not exist or you may not have access to it. Run --model to pick a different model."
+ },
+ {
+  "name": "claude-opus-5",
+  "ok": true,
+  "model": "claude-opus-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 0,
+  "cache_write": 555,
+  "cost_usd": 0.00566,
+  "context_window": 1000000,
+  "max_output": 64000
+ },
+ {
+  "name": "claude-sonnet-5-5",
+  "ok": true,
+  "model": "claude-sonnet-5-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 541,
+  "cache_write": 0,
+  "cost_usd": 9.81e-05,
+  "context_window": 1000000,
+  "max_output": 128000
+ },
+ {
+  "name": "claude-sonnet-5-1",
+  "ok": false,
+  "error": "There's an issue with the selected model (claude-sonnet-5-1). It may not exist or you may not have access to it. Run --model to pick a different model."
+ },
+ {
+  "name": "claude-sonnet-5",
+  "ok": true,
+  "model": "claude-sonnet-5",
+  "input": 625,
+  "output": 4,
+  "cache_read": 0,
+  "cache_write": 0,
+  "cost_usd": 0.00129,
+  "context_window": 1000000,
+  "max_output": 64000
+ },
+ {
+  "name": "claude-haiku-5-5",
+  "ok": true,
+  "model": "claude-haiku-5-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 562,
+  "cache_write": 0,
+  "cost_usd": 7.82e-06,
+  "context_window": 1000000,
+  "max_output": 128000
+ },
+ {
+  "name": "claude-haiku-5-1",
+  "ok": false,
+  "error": "There's an issue with the selected model (claude-haiku-5-1). It may not exist or you may not have access to it. Run --model to pick a different model."
+ },
+ {
+  "name": "claude-haiku-5",
+  "ok": false,
+  "error": "There's an issue with the selected model (claude-haiku-5). It may not exist or you may not have access to it. Run --model to pick a different model."
+ },
+ {
+  "name": "claude-opus-4-6",
+  "ok": true,
+  "model": "claude-opus-4-6",
+  "input": 459,
+  "output": 4,
+  "cache_read": 0,
+  "cache_write": 0,
+  "cost_usd": 0.002395,
+  "context_window": 200000,
+  "max_output": 64000
+ },
+ {
+  "name": "claude-sonnet-4-6",
+  "ok": true,
+  "model": "claude-sonnet-4-6",
+  "input": 461,
+  "output": 4,
+  "cache_read": 0,
+  "cache_write": 0,
+  "cost_usd": 0.0014429999999999998,
+  "context_window": 200000,
+  "max_output": 32000
+ },
+ {
+  "name": "claude-opus-4-5",
+  "ok": true,
+  "model": "claude-opus-4-5",
+  "input": 488,
+  "output": 39,
+  "cache_read": 0,
+  "cache_write": 0,
+  "cost_usd": 0.0034149999999999996,
+  "context_window": 200000,
+  "max_output": 32000
+ },
+ {
+  "name": "claude-opus-4-5-20251101",
+  "ok": true,
+  "model": "claude-opus-4-5-20251101",
+  "input": 492,
+  "output": 39,
+  "cache_read": 0,
+  "cache_write": 0,
+  "cost_usd": 0.0034350000000000006,
+  "context_window": 200000,
+  "max_output": 32000
+ },
+ {
+  "name": "claude-sonnet-4-5",
+  "ok": true,
+  "model": "claude-sonnet-4-5",
+  "input": 490,
+  "output": 343,
+  "cache_read": 0,
+  "cache_write": 0,
+  "cost_usd": 0.006615,
+  "context_window": 200000,
+  "max_output": 32000
+ },
+ {
+  "name": "claude-sonnet-4-5-20250929",
+  "ok": true,
+  "model": "claude-sonnet-4-5-20250929",
+  "input": 494,
+  "output": 457,
+  "cache_read": 0,
+  "cache_write": 0,
+  "cost_usd": 0.008337,
+  "context_window": 200000,
+  "max_output": 32000
+ },
+ {
+  "name": "claude-haiku-4-5",
+  "ok": true,
+  "model": "claude-haiku-4-5",
+  "input": 490,
+  "output": 66,
+  "cache_read": 0,
+  "cache_write": 0,
+  "cost_usd": 0.00082,
+  "context_window": 200000,
+  "max_output": 32000
+ },
+ {
+  "name": "claude-haiku-4-5-20251001",
+  "ok": true,
+  "model": "claude-haiku-4-5-20251001",
+  "input": 494,
+  "output": 53,
+  "cache_read": 0,
+  "cache_write": 0,
+  "cost_usd": 0.0007589999999999999,
+  "context_window": 200000,
+  "max_output": 32000
+ },
+ {
+  "name": "claude-opus-4-1",
+  "ok": true,
+  "model": "claude-opus-5-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 537,
+  "cache_write": 0,
+  "cost_usd": 0.0001954,
+  "context_window": 1000000,
+  "max_output": 128000
+ },
+ {
+  "name": "claude-opus-4-1-20250805",
+  "ok": true,
+  "model": "claude-opus-5-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 537,
+  "cache_write": 0,
+  "cost_usd": 0.0001954,
+  "context_window": 1000000,
+  "max_output": 128000
+ },
+ {
+  "name": "claude-opus-4-0",
+  "ok": true,
+  "model": "claude-opus-5-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 537,
+  "cache_write": 0,
+  "cost_usd": 0.0001954,
+  "context_window": 1000000,
+  "max_output": 128000
+ },
+ {
+  "name": "claude-opus-4-20250514",
+  "ok": true,
+  "model": "claude-opus-5-5",
+  "input": 2,
+  "output": 4,
+  "cache_read": 537,
+  "cache_write": 0,
+  "cost_usd": 0.0001954,
+  "context_window": 1000000,
+  "max_output": 128000
+ },
+ {
+  "name": "claude-sonnet-4-0",
+  "ok": false,
+  "error": "There's an issue with the selected model (claude-sonnet-4-0). It may not exist or you may not have access to it. Run --model to pick a different model."
+ },
+ {
+  "name": "claude-sonnet-4-20250514",
+  "ok": false,
+  "error": "There's an issue with the selected model (claude-sonnet-4-20250514). It may not exist or you may not have access to it. Run --model to pick a different model."
+ },
+ {
+  "name": "claude-3-7-sonnet-20250219",
+  "ok": false,
+  "error": "There's an issue with the selected model (claude-3-7-sonnet-20250219). It may not exist or you may not have access to it. Run --model to pick a different model."
+ },
+ {
+  "name": "claude-3-5-sonnet-20241022",
+  "ok": false,
+  "error": "There's an issue with the selected model (claude-3-5-sonnet-20241022). It may not exist or you may not have access to it. Run --model to pick a different model."
+ },
+ {
+  "name": "claude-3-5-haiku-20241022",
+  "ok": false,
+  "error": "There's an issue with the selected model (claude-3-5-haiku-20241022). It may not exist or you may not have access to it. Run --model to pick a different model."
+ },
+ {
+  "name": "claude-3-opus-20240229",
+  "ok": false,
+  "error": "There's an issue with the selected model (claude-3-opus-20240229). It may not exist or you may not have access to it. Run --model to pick a different model."
+ },
+ {
+  "name": "claude-3-haiku-20240307",
+  "ok": false,
+  "error": "There's an issue with the selected model (claude-3-haiku-20240307). It may not exist or you may not have access to it. Run --model to pick a different model."
+ }
+]

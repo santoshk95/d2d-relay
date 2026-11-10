@@ -1,0 +1,71 @@
+{
+  "name": "kpiScorecard",
+  "title": "KPI Scorecard",
+  "description": "Executive scorecard: one row per KPI with result, latest month, target, a coloured status chip and a sparkline",
+  "guid": "kpiScorecard81E39EAE947247F5A5439F12F35A4B97",
+  "version": "1.0.0.3",
+  "sha": "af2d762329cd94a2e4f94e93a893a5582f278c1f8febe60c2c016dad783f091a",
+  "roles": {
+    "category": "Grouping",
+    "trend": "Grouping",
+    "result": "Measure",
+    "latest": "Measure",
+    "target": "Measure",
+    "status": "Measure",
+    "values": "Measure",
+    "tooltips": "Measure"
+  },
+  "role_info": {
+    "category": {
+      "displayName": "KPI",
+      "description": "One row per value, for example the KPI name.",
+      "max": 1
+    },
+    "trend": {
+      "displayName": "Trend axis",
+      "description": "Optional. A date or month column for the sparkline.",
+      "max": 1
+    },
+    "result": {
+      "displayName": "Result",
+      "description": "The headline result per row (number or text).",
+      "max": 1
+    },
+    "latest": {
+      "displayName": "Latest period",
+      "description": "Optional. The value in the latest period (number or text).",
+      "max": 1
+    },
+    "target": {
+      "displayName": "Target",
+      "description": "Optional. The target per row (number or text, e.g. \"≥ 95%\").",
+      "max": 1
+    },
+    "status": {
+      "displayName": "Status",
+      "description": "Optional. Status text (On track / At risk / Off track) or a number (1 good, 0 at risk, -1 off).",
+      "max": 1
+    },
+    "values": {
+      "displayName": "Trend values",
+      "description": "Optional. The measure drawn as the sparkline along the trend axis.",
+      "max": 1
+    },
+    "tooltips": {
+      "displayName": "Tooltips",
+      "description": "Extra measures shown in the tooltip.",
+      "max": null
+    }
+  },
+  "required": [
+    [
+      "category",
+      "result"
+    ]
+  ],
+  "created": 1793716124.4714088,
+  "updated": 1793716124.4714088,
+  "project": "vrtx-extended-0e2a",
+  "project_name": "VRTX Extended",
+  "report": "Global Operations Dashboard"
+}

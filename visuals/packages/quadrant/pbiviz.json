@@ -1,0 +1,25 @@
+{
+  "visual": {
+    "name": "quadrant",
+    "displayName": "Relay Quadrant",
+    "guid": "genbiQuadrant5A1F83D6C9E24B7A01D4",
+    "visualClassName": "Visual",
+    "version": "1.0.2.0",
+    "description": "Bubble scatter split into quadrants by reference lines, naming the stand-out points.",
+    "supportUrl": "https://pasdacs.com",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "5.11.0",
+  "author": {
+    "name": "RELAY by PASDACS",
+    "email": "info@pasdacs.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": [],
+  "version": "1.0.2.0"
+}

@@ -1,0 +1,17 @@
+{
+		"version": "1.0.5.0",
+		"author": {"name":"Visual Atlas","email":"atlas@example.com"},
+		"resources": [
+			{
+				"resourceId": "rId0",
+				"sourceType": 5,
+				"file": "resources/atlasScatter0B23674C661C4797A349BBC2B0AD313A.pbiviz.json"
+			}
+		],
+		"visual": {"name":"atlasScatter","displayName":"Atlas Scatter","guid":"atlasScatter0B23674C661C4797A349BBC2B0AD313A","visualClassName":"Visual","version":"1.0.5.0","description":"Scatter, bubble and dot plot with play axis, quadrants, trend and ratio lines, clusters and drag to zoom, plus a Gantt chart, with flat, soft and 3D looks and a palette that follows your report theme, a brand color or your own colors.","supportUrl":"https://learn.microsoft.com/power-bi/developer/visuals/","gitHubUrl":""},
+		"metadata": {
+			"pbivizjson": {
+				"resourceId": "rId0"
+			}
+		}
+	}

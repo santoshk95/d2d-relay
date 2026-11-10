@@ -1,0 +1,181 @@
+{
+  "dataRoles": [
+    {
+      "name": "category",
+      "displayName": "Category",
+      "kind": "Grouping"
+    },
+    {
+      "name": "value",
+      "displayName": "Value",
+      "kind": "Measure"
+    },
+    {
+      "name": "title",
+      "displayName": "Dynamic title (text)",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "category": {
+            "max": 1
+          },
+          "value": {
+            "max": 1
+          },
+          "title": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "for": {
+            "in": "category"
+          },
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 1000
+            }
+          }
+        },
+        "values": {
+          "select": [
+            {
+              "for": {
+                "in": "value"
+              }
+            },
+            {
+              "for": {
+                "in": "title"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "header": {
+      "displayName": "Title",
+      "properties": {
+        "title": {
+          "displayName": "Title",
+          "type": {
+            "text": true
+          }
+        },
+        "subtitle": {
+          "displayName": "Subtitle",
+          "type": {
+            "text": true
+          }
+        }
+      }
+    },
+    "card": {
+      "displayName": "Card",
+      "properties": {
+        "show": {
+          "displayName": "Card background",
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "colors": {
+      "displayName": "Colors",
+      "properties": {
+        "primary": {
+          "displayName": "Primary",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "primaryDark": {
+          "displayName": "Primary (dark)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "primaryLight": {
+          "displayName": "Primary (light)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "negative": {
+          "displayName": "Negative",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "ink": {
+          "displayName": "Text",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "muted": {
+          "displayName": "Muted text",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "bars": {
+      "displayName": "Bars",
+      "properties": {
+        "signed": {
+          "displayName": "Signed labels",
+          "type": {
+            "bool": true
+          }
+        },
+        "sortDescending": {
+          "displayName": "Sort largest first",
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    }
+  },
+  "privileges": [],
+  "sorting": {
+    "default": {}
+  },
+  "supportsHighlight": false,
+  "supportsMultiVisualSelection": true,
+  "suppressDefaultTitle": true
+}

@@ -1,0 +1,247 @@
+{
+  "kpiCard": {
+    "guid": "genbiKpiCard7E2A91C4D35B4F06A8E1",
+    "displayName": "Relay KPI Card",
+    "roles": {
+      "value": "Measure",
+      "target": "Measure",
+      "comparison": "Measure",
+      "axis": "Grouping",
+      "trend": "Measure"
+    },
+    "objects": {
+      "card": {
+        "show": "bool"
+      },
+      "colors": {
+        "primary": "color",
+        "primaryDark": "color",
+        "primaryLight": "color",
+        "negative": "color",
+        "ink": "color",
+        "muted": "color"
+      },
+      "kpi": {
+        "label": "text",
+        "lowerIsBetter": "bool",
+        "signedValue": "bool",
+        "comparisonLabel": "text",
+        "targetLabel": "text"
+      }
+    }
+  },
+  "trendLine": {
+    "guid": "genbiTrendLine3B8D52E7A1C94F2DB6A0",
+    "displayName": "Relay Trend",
+    "roles": {
+      "axis": "Grouping",
+      "actual": "Measure",
+      "target": "Measure",
+      "comparison": "Measure",
+      "annotation": "Measure",
+      "title": "Measure"
+    },
+    "objects": {
+      "header": {
+        "title": "text",
+        "subtitle": "text"
+      },
+      "card": {
+        "show": "bool"
+      },
+      "colors": {
+        "primary": "color",
+        "primaryDark": "color",
+        "primaryLight": "color",
+        "negative": "color",
+        "ink": "color",
+        "muted": "color"
+      },
+      "trend": {
+        "actualLabel": "text",
+        "targetLabel": "text",
+        "comparisonLabel": "text",
+        "showAllAnnotations": "bool"
+      }
+    }
+  },
+  "driverBars": {
+    "guid": "genbiDriverBars9C4E17A3B2D84E5F90C7",
+    "displayName": "Relay Driver Bars",
+    "roles": {
+      "category": "Grouping",
+      "value": "Measure",
+      "title": "Measure"
+    },
+    "objects": {
+      "header": {
+        "title": "text",
+        "subtitle": "text"
+      },
+      "card": {
+        "show": "bool"
+      },
+      "colors": {
+        "primary": "color",
+        "primaryDark": "color",
+        "primaryLight": "color",
+        "negative": "color",
+        "ink": "color",
+        "muted": "color"
+      },
+      "bars": {
+        "signed": "bool",
+        "sortDescending": "bool"
+      }
+    }
+  },
+  "quadrant": {
+    "guid": "genbiQuadrant5A1F83D6C9E24B7A01D4",
+    "displayName": "Relay Quadrant",
+    "roles": {
+      "details": "Grouping",
+      "x": "Measure",
+      "y": "Measure",
+      "size": "Measure",
+      "xRef": "Measure",
+      "yRef": "Measure",
+      "title": "Measure"
+    },
+    "objects": {
+      "header": {
+        "title": "text",
+        "subtitle": "text"
+      },
+      "card": {
+        "show": "bool"
+      },
+      "colors": {
+        "primary": "color",
+        "primaryDark": "color",
+        "primaryLight": "color",
+        "negative": "color",
+        "ink": "color",
+        "muted": "color"
+      },
+      "quadrant": {
+        "topLeft": "text",
+        "topRight": "text",
+        "bottomLeft": "text",
+        "bottomRight": "text",
+        "labelTop": "number",
+        "labelBottom": "number"
+      }
+    }
+  },
+  "treemap": {
+    "guid": "genbiTreemap2D7C46B9E1A35F8C42E6",
+    "displayName": "Relay Treemap",
+    "roles": {
+      "category": "Grouping",
+      "size": "Measure",
+      "color": "Measure",
+      "title": "Measure"
+    },
+    "objects": {
+      "header": {
+        "title": "text",
+        "subtitle": "text"
+      },
+      "card": {
+        "show": "bool"
+      },
+      "colors": {
+        "primary": "color",
+        "primaryDark": "color",
+        "primaryLight": "color",
+        "negative": "color",
+        "ink": "color",
+        "muted": "color"
+      }
+    }
+  },
+  "heatmap": {
+    "guid": "genbiHeatmap8F3B21C5D7A64E9B13F2",
+    "displayName": "Relay Heatmap",
+    "roles": {
+      "rows": "Grouping",
+      "columns": "Grouping",
+      "value": "Measure",
+      "title": "Measure"
+    },
+    "objects": {
+      "header": {
+        "title": "text",
+        "subtitle": "text"
+      },
+      "card": {
+        "show": "bool"
+      },
+      "colors": {
+        "primary": "color",
+        "primaryDark": "color",
+        "primaryLight": "color",
+        "negative": "color",
+        "ink": "color",
+        "muted": "color"
+      },
+      "heatmap": {
+        "indexMode": "bool",
+        "showAll": "bool",
+        "lowLabel": "text",
+        "highLabel": "text"
+      }
+    }
+  },
+  "funnel": {
+    "guid": "genbiFunnel6E9A34D2B8C15F7E28A9",
+    "displayName": "Relay Funnel",
+    "roles": {
+      "stages": "Measure",
+      "title": "Measure"
+    },
+    "objects": {
+      "header": {
+        "title": "text",
+        "subtitle": "text"
+      },
+      "card": {
+        "show": "bool"
+      },
+      "colors": {
+        "primary": "color",
+        "primaryDark": "color",
+        "primaryLight": "color",
+        "negative": "color",
+        "ink": "color",
+        "muted": "color"
+      }
+    }
+  },
+  "narrative": {
+    "guid": "genbiNarrative1C5E72A8F3D94B6E07B5",
+    "displayName": "Relay Narrative",
+    "roles": {
+      "items": "Measure"
+    },
+    "objects": {
+      "card": {
+        "show": "bool"
+      },
+      "colors": {
+        "primary": "color",
+        "primaryDark": "color",
+        "primaryLight": "color",
+        "negative": "color",
+        "ink": "color",
+        "muted": "color"
+      },
+      "narrative": {
+        "heading": "text",
+        "note": "text",
+        "style": "text",
+        "lines": "text"
+      }
+    }
+  }
+}

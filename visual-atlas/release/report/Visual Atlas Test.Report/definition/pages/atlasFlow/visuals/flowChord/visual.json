@@ -1,0 +1,111 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "flowChord",
+  "position": {
+    "x": 832,
+    "y": 16,
+    "z": 1001,
+    "height": 336,
+    "width": 432,
+    "tabOrder": 1
+  },
+  "visual": {
+    "visualType": "atlasFlowBA37FC4A61814B33BF815C11D35148B1",
+    "query": {
+      "queryState": {
+        "source": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Brand Switching"
+                    }
+                  },
+                  "Property": "From"
+                }
+              },
+              "queryRef": "Brand Switching.From",
+              "nativeQueryRef": "From"
+            }
+          ]
+        },
+        "target": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Brand Switching"
+                    }
+                  },
+                  "Property": "To"
+                }
+              },
+              "queryRef": "Brand Switching.To",
+              "nativeQueryRef": "To"
+            }
+          ]
+        },
+        "weight": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Brand Switching"
+                    }
+                  },
+                  "Property": "Switching Customers"
+                }
+              },
+              "queryRef": "Brand Switching.Switching Customers",
+              "nativeQueryRef": "Switching Customers"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'chord'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Chord · brand switching'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,33 @@
+fastapi==0.115.6
+uvicorn==0.32.1
+httpx==0.28.1
+python-multipart==0.0.20
+pyyaml==6.0.2
+duckdb==1.1.3
+jsonschema==4.26.0
+referencing==0.37.0
+cryptography==46.0.7
+PyJWT==2.12.1
+# phase 3: warehouse connectors
+pyarrow==25.0.1
+sqlglot==30.24.0
+snowflake-connector-python==4.8.1
+google-cloud-bigquery==3.46.1
+google-auth==2.61.0
+db-dtypes==1.8.0
+redshift-connector==2.1.16
+pyathena==4.1.0
+pyodbc==5.2.0
+# Oracle Database connections: python-oracledb in thin mode (pure Python, no Oracle client in the image)
+oracledb==26.0.1
+# phase 8: Postgres for the index (only used when D2D_DATABASE_URL is set)
+psycopg[binary]==3.2.10
+# P10: attachment readers (Start from an idea; the agent image has the same ones plus ffmpeg)
+python-docx==1.1.2
+openpyxl==3.1.5
+python-pptx==1.0.2
+pypdf==5.1.0
+# P16: AI SDLC — git in pure Python for `genbi repo` and the release push (no git binary in the image)
+dulwich==1.2.21
+# consolidation: Integration analytics reads SFTP file drops on a real server (AWS Glue's boto3 already comes with pyathena)
+paramiko==3.5.1

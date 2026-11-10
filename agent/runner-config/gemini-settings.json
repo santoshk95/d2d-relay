@@ -1,0 +1,13 @@
+{
+  "tools": {
+    "core": ["read_file", "read_many_files", "write_file", "replace", "glob", "search_file_content", "grep", "list_directory",
+             "run_shell_command(genbi)"],
+    "exclude": ["google_web_search", "web_fetch", "save_memory"]
+  },
+  "mcp": {"allowed": []},
+  "security": {"folderTrust": {"enabled": false}},
+  "general": {"disableAutoUpdate": true, "disableUpdateNag": true},
+  "privacy": {"usageStatisticsEnabled": false},
+  "telemetry": {"enabled": false},
+  "context": {"fileName": ["GEMINI.md"]}
+}

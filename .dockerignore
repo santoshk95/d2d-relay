@@ -1,0 +1,27 @@
+# Build context for every image (Dockerfile, agent/, webapp/, litellm/) is this folder: keep data and build leftovers out.
+# visual-library/ is in: the all-in-one image ships it as the library a new install starts with.
+output/
+.claude/
+archive/
+samples/
+visuals/
+**/__pycache__
+**/*.pyc
+.env
+.env.*
+*.dump
+visual_factory/node_modules
+# Visual Atlas: only the visual sources and mk_caps.js go into the agent image (the visual factory).
+visual-atlas/*
+!visual-atlas/visuals
+!visual-atlas/tools
+visual-atlas/tools/*
+!visual-atlas/tools/mk_caps.js
+visual-atlas/visuals/test
+visual-atlas/visuals/themes
+visual-atlas/visuals/*/src/common
+visual-atlas/visuals/*/node_modules
+visual-atlas/visuals/*/dist
+visual-atlas/visuals/*/.tmp
+visual-atlas/visuals/*/package-lock.json
+dist/

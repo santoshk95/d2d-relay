@@ -1,0 +1,7 @@
+# RELAY by PASDACS on this PC: also publish Relay on the office network (RELAY_LAN_IP in .env; Windows Firewall rule
+# "Relay 8000"). relay.cmd start adds this file only when that address is on the PC right now, so Relay still starts
+# away from the office (on 127.0.0.1 only). With sign-in set to single (RELAY_AUTH), everyone who opens it there is the admin.
+services:
+  relay:
+    ports:
+      - "${RELAY_LAN_IP:?set RELAY_LAN_IP in .env}:${RELAY_PORT:-8000}:8000"

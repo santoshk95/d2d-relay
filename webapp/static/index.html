@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#111111">
+<title>RELAY by PASDACS</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="relay-mark.svg">
+<link rel="apple-touch-icon" href="icons/relay-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/relay.css">
+<link rel="stylesheet" href="css/tenants.css">
+<script>try{const t=JSON.parse(localStorage.getItem('d2d.theme'));if(t==='dark'||(t==null&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.dataset.theme='dark';}catch(e){}</script>
+</head>
+<body>
+<div class="app">
+  <header class="mbar">
+    <button class="iconbtn" id="menubtn" type="button" aria-label="Menu" aria-controls="side" aria-expanded="false"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="mlogo" id="mlogo" href="#/" aria-label="Home"></a>
+    <span class="spacer"></span>
+    <button class="iconbtn" id="msearchbtn" type="button" aria-label="Search"><svg class="i" viewBox="0 0 24 24"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-5-5"/></svg></button>
+  </header>
+  <aside class="side" id="side" aria-label="Main navigation">
+    <div class="sidehead">
+      <a class="logo" id="brandlogo" href="#/" aria-label="Home"></a>
+      <button class="iconbtn railbtn" id="railbtn" type="button" aria-controls="side"></button>
+    </div>
+    <a class="btn primary new" href="#/new" id="newbtn"></a>
+    <div class="sidescroll">
+      <nav class="nav" id="nav"></nav>
+      <div class="recent" id="pinbox" hidden><div id="pinhead"></div><div id="pinlist"></div></div>
+      <div class="recent" id="recentbox"><div id="recenthead"></div><div id="plist"></div></div>
+    </div>
+    <div class="powered" id="powered"></div>
+  </aside>
+  <div class="scrim" id="scrim" aria-hidden="true"></div>
+  <div class="mainwrap">
+    <header class="topbar" id="topbar">
+      <button class="navsearch" id="searchbtn" type="button" aria-label="Search and go anywhere"><svg class="i" viewBox="0 0 24 24"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-5-5"/></svg><span class="lbl">Search modules, dashboards, pages…</span><kbd>Ctrl K</kbd></button>
+      <div id="ws" class="wschip" hidden></div>
+      <span class="spacer"></span>
+      <div class="sys" id="sys"><div id="agent" class="health"><b></b><span>Checking the agent…</span></div><div id="daxchk" class="health"><b></b><span>DAX checker</span></div></div>
+      <button class="iconbtn" id="bellbtn" type="button" aria-label="Notifications"><svg class="i" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg></button>
+      <button class="iconbtn" id="themebtn" type="button" aria-label="Dark mode"></button>
+      <div id="me" class="me"></div>
+    </header>
+    <div id="actband" class="actband" role="status" hidden></div>
+    <main id="main"></main>
+  </div>
+</div>
+<div id="toasts" role="status" aria-live="polite"></div>
+<div id="tip" class="tip" role="tooltip" hidden></div>
+<!-- The UI is split by area (platform plan, phase 0); classic scripts share one global scope and load in order. -->
+<script src="js/01-core.js"></script>
+<script src="js/02-shell.js"></script>
+<script src="js/03-home.js"></script>
+<script src="js/04-new.js"></script>
+<script src="js/05-library.js"></script>
+<script src="js/06-project.js"></script>
+<script src="js/07-tabs.js"></script>
+<script src="js/09-share.js"></script>
+<script src="js/10-admin.js"></script>
+<script src="js/11-settings.js"></script>
+<script src="js/12-connections.js"></script>
+<script src="js/13-semantic.js"></script>
+<script src="js/14-askd.js"></script>
+<script src="js/15-publish.js"></script>
+<script src="js/16-schedules.js"></script>
+<script src="js/17-ops.js"></script>
+<script src="js/18-ux.js"></script>
+<script src="js/19-home.js"></script>
+<script src="js/20-modules.js"></script>
+<script src="js/22-validate.js"></script>
+<script src="js/21-start.js"></script>
+<script src="js/23-team.js"></script>
+<script src="js/24-servicedesk.js"></script>
+<script src="js/25-lineage.js"></script>
+<script src="js/26-integrations.js"></script>
+<script src="js/27-observe.js"></script>
+<script src="js/28-studio.js"></script>
+<script src="js/29-rfp.js"></script>
+<script src="js/30-migrate.js"></script>
+<script src="js/31-heal.js"></script>
+<script src="js/32-sdlc.js"></script>
+<script src="js/33-tenants.js"></script>
+<script src="js/33-workbench.js"></script>
+<script src="js/34-doctor.js"></script>
+<script src="js/08-boot.js"></script>
+</body>
+</html>

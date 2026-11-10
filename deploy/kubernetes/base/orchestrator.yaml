@@ -1,0 +1,59 @@
+# Creates, starts, stops and removes the per-person workspaces (Deployments named d2d-ws-<user>) with the
+# Kubernetes API. Only the web app may call it (network policy + the shared token).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: orchestrator}
+  template:
+    metadata:
+      labels: {app: orchestrator}
+    spec:
+      serviceAccountName: d2d-orchestrator
+      enableServiceLinks: false
+      securityContext: {runAsNonRoot: true, runAsUser: 1000}
+      containers:
+        - name: orchestrator
+          image: gen-bi-orchestrator
+          imagePullPolicy: IfNotPresent
+          env:
+            - {name: D2D_ORCH_BACKEND, value: kubernetes}
+            - name: D2D_NAMESPACE
+              valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
+            - {name: D2D_AGENT_IMAGE, value: "gen-bi-agent:latest"}     # keep in step with the images: section
+            - {name: D2D_IMAGE_PULL_POLICY, value: IfNotPresent}
+            - {name: D2D_MAX_INSTANCES, value: "10"}
+            - {name: D2D_INSTANCE_CPUS, value: "2"}
+            - {name: D2D_INSTANCE_MEMORY_GB, value: "4"}
+            - {name: D2D_PROJECTS_PVC, value: d2d-projects}
+            - {name: D2D_LIBRARY_PVC, value: d2d-library}
+            - {name: D2D_CONFIG_MAP, value: d2d-config}
+            - {name: D2D_GATEWAY_DEPLOYMENT, value: litellm}
+            - {name: D2D_ORCH_TOKEN_FILE, value: /data/orch/token}
+            - {name: AGENT_MODEL, value: sonnet}
+          ports: [{containerPort: 8095, name: http}]
+          readinessProbe:
+            httpGet: {path: /health, port: 8095}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 256Mi}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: ["ALL"]}}
+          volumeMounts:
+            - {name: token, mountPath: /data/orch, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: token
+          secret: {secretName: d2d-orch-token, items: [{key: token, path: token}]}
+        - {name: tmp, emptyDir: {}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchestrator
+spec:
+  selector: {app: orchestrator}
+  ports: [{port: 8095, targetPort: 8095, name: http}]

@@ -1,0 +1,127 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "cmpDumbbell",
+  "position": {
+    "x": 648,
+    "y": 16,
+    "z": 1001,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 1
+  },
+  "visual": {
+    "visualType": "atlasCompare1934AF42622F4D63BF12168C02806AC8",
+    "query": {
+      "queryState": {
+        "category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Product"
+                    }
+                  },
+                  "Property": "Category"
+                }
+              },
+              "queryRef": "Product.Category",
+              "nativeQueryRef": "Category"
+            }
+          ]
+        },
+        "values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Sales 2024"
+                }
+              },
+              "queryRef": "Orders.Sales 2024",
+              "nativeQueryRef": "Sales 2024"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Sales 2025"
+                }
+              },
+              "queryRef": "Orders.Sales 2025",
+              "nativeQueryRef": "Sales 2025"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'dumbbell'"
+                }
+              }
+            },
+            "sort": {
+              "expr": {
+                "Literal": {
+                  "Value": "'changeDesc'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "labels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Dumbbell · 2024 vs 2025 by category'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

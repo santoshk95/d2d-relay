@@ -1,0 +1,166 @@
+# The other agent CLIs (phase 8 runners: OpenAI Codex, Gemini CLI, Antigravity), each in its own image built from
+# agent/Dockerfile.runner — the same as `docker compose --profile runners`. The web app finds them by these Service
+# names (worker.RUNNER_URLS: http://agent-codex:8090, http://agent-gemini:8090, http://agent-antigravity:8090).
+# A person picks one in Settings with their own API key; a runner gets no other credentials.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-codex
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: agent-codex}
+  template:
+    metadata:
+      labels: {app: agent-codex, relay.runner: "true"}
+    spec:
+      serviceAccountName: d2d
+      enableServiceLinks: false
+      securityContext: {runAsNonRoot: true, runAsUser: 1000, fsGroup: 1000}
+      containers:
+        - name: agent
+          image: gen-bi-agent-codex
+          imagePullPolicy: IfNotPresent
+          ports: [{containerPort: 8090, name: http}]
+          readinessProbe:
+            httpGet: {path: /health, port: 8090}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "2", memory: 3Gi}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: ["ALL"]}}
+          volumeMounts:
+            - {name: projects, mountPath: /data/projects}
+            - {name: config, mountPath: /opt/genbi/config, readOnly: true}
+            - {name: library, mountPath: /opt/genbi/library, readOnly: true}
+      volumes:
+        - {name: projects, persistentVolumeClaim: {claimName: d2d-projects}}
+        - {name: config, configMap: {name: d2d-config, optional: true}}
+        - {name: library, persistentVolumeClaim: {claimName: d2d-library}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-gemini
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: agent-gemini}
+  template:
+    metadata:
+      labels: {app: agent-gemini, relay.runner: "true"}
+    spec:
+      serviceAccountName: d2d
+      enableServiceLinks: false
+      securityContext: {runAsNonRoot: true, runAsUser: 1000, fsGroup: 1000}
+      containers:
+        - name: agent
+          image: gen-bi-agent-gemini
+          imagePullPolicy: IfNotPresent
+          ports: [{containerPort: 8090, name: http}]
+          readinessProbe:
+            httpGet: {path: /health, port: 8090}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "2", memory: 3Gi}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: ["ALL"]}}
+          volumeMounts:
+            - {name: projects, mountPath: /data/projects}
+            - {name: config, mountPath: /opt/genbi/config, readOnly: true}
+            - {name: library, mountPath: /opt/genbi/library, readOnly: true}
+      volumes:
+        - {name: projects, persistentVolumeClaim: {claimName: d2d-projects}}
+        - {name: config, configMap: {name: d2d-config, optional: true}}
+        - {name: library, persistentVolumeClaim: {claimName: d2d-library}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-antigravity
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: agent-antigravity}
+  template:
+    metadata:
+      labels: {app: agent-antigravity, relay.runner: "true"}
+    spec:
+      serviceAccountName: d2d
+      enableServiceLinks: false
+      securityContext: {runAsNonRoot: true, runAsUser: 1000, fsGroup: 1000}
+      containers:
+        - name: agent
+          image: gen-bi-agent-antigravity
+          imagePullPolicy: IfNotPresent
+          env:
+            # runs without a person's Gemini key copy the installation's Google login from here (agent/runners.py)
+            - {name: AGY_SHARED_LOGIN, value: /opt/agy-login}
+          ports: [{containerPort: 8090, name: http}]
+          readinessProbe:
+            httpGet: {path: /health, port: 8090}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "2", memory: 3Gi}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: ["ALL"]}}
+          volumeMounts:
+            - {name: projects, mountPath: /data/projects}
+            - {name: config, mountPath: /opt/genbi/config, readOnly: true}
+            - {name: library, mountPath: /opt/genbi/library, readOnly: true}
+            - {name: agy-auth, mountPath: /opt/agy-login, readOnly: true}
+      volumes:
+        - {name: projects, persistentVolumeClaim: {claimName: d2d-projects}}
+        - {name: config, configMap: {name: d2d-config, optional: true}}
+        - {name: library, persistentVolumeClaim: {claimName: d2d-library}}
+        - {name: agy-auth, persistentVolumeClaim: {claimName: d2d-agy-auth}}
+---
+# The Google login of the Antigravity gateway (antigravity-oauth-token, cache/default_project_id.txt): copy it in once
+# with `kubectl cp` into a pod that mounts the claim read-write (see README.md), then it is mounted read-only above.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: d2d-agy-auth
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests: {storage: 64Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-codex
+spec:
+  selector: {app: agent-codex}
+  ports: [{port: 8090, targetPort: 8090, name: http}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-gemini
+spec:
+  selector: {app: agent-gemini}
+  ports: [{port: 8090, targetPort: 8090, name: http}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-antigravity
+spec:
+  selector: {app: agent-antigravity}
+  ports: [{port: 8090, targetPort: 8090, name: http}]
+---
+# Only the web app talks to a runner (as to the shared agent).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: runners-from-webapp
+spec:
+  podSelector:
+    matchLabels: {relay.runner: "true"}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app: webapp}}}]

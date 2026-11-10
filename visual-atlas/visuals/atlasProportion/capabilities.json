@@ -1,0 +1,594 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Category",
+      "displayNameKey": "Role_Category",
+      "name": "category",
+      "kind": "Grouping",
+      "description": "Columns of a Mekko, wedges of a rose or aster, waffle parts, icon rows, or Venn regions written as \"A & B\".",
+      "descriptionKey": "Role_Category_Desc"
+    },
+    {
+      "displayName": "Legend",
+      "displayNameKey": "Role_Series",
+      "name": "series",
+      "kind": "Grouping",
+      "description": "Optional. Segments of a Mekko column or stacked rose wedge.",
+      "descriptionKey": "Role_Series_Desc"
+    },
+    {
+      "displayName": "Values",
+      "displayNameKey": "Role_Values",
+      "name": "values",
+      "kind": "Measure",
+      "description": "The value. A second measure is the total (waffle, pictogram) or the weight (aster).",
+      "descriptionKey": "Role_Values_Desc"
+    },
+    {
+      "displayName": "Tooltips",
+      "displayNameKey": "Role_Tooltips",
+      "name": "tooltips",
+      "kind": "Measure"
+    }
+  ],
+  "sorting": {
+    "default": {}
+  },
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "category": {
+            "max": 1
+          },
+          "series": {
+            "max": 0
+          }
+        },
+        {
+          "category": {
+            "max": 1
+          },
+          "series": {
+            "max": 1
+          },
+          "values": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "for": {
+            "in": "category"
+          },
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 1000
+            }
+          }
+        },
+        "values": {
+          "group": {
+            "by": "series",
+            "select": [
+              {
+                "for": {
+                  "in": "values"
+                }
+              },
+              {
+                "for": {
+                  "in": "tooltips"
+                }
+              }
+            ],
+            "dataReductionAlgorithm": {
+              "top": {
+                "count": 40
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "objects": {
+    "style": {
+      "properties": {
+        "fontFamily": {
+          "type": {
+            "formatting": {
+              "fontFamily": true
+            }
+          }
+        },
+        "textColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "keepOthers": {
+          "type": {
+            "bool": true
+          }
+        },
+        "marker": {
+          "type": {
+            "bool": true
+          }
+        },
+        "markerColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "markerHighlight": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "palette": {
+      "properties": {
+        "source": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "theme",
+                "displayName": "Report theme"
+              },
+              {
+                "value": "brand",
+                "displayName": "Brand color"
+              },
+              {
+                "value": "custom",
+                "displayName": "Custom list"
+              }
+            ]
+          }
+        },
+        "brand": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "mode": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "spectrum",
+                "displayName": "Spectrum"
+              },
+              {
+                "value": "analogous",
+                "displayName": "Analogous"
+              },
+              {
+                "value": "mono",
+                "displayName": "Mono"
+              }
+            ]
+          }
+        },
+        "custom": {
+          "type": {
+            "text": true
+          }
+        }
+      }
+    },
+    "dataColors": {
+      "properties": {
+        "fill": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "labels": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "displayUnits": {
+          "type": {
+            "formatting": {
+              "labelDisplayUnits": true
+            }
+          }
+        },
+        "decimals": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "categoryAxis": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "title": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "legend": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "position": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "top",
+                "displayName": "Top"
+              },
+              {
+                "value": "topCenter",
+                "displayName": "Top center"
+              },
+              {
+                "value": "bottom",
+                "displayName": "Bottom"
+              },
+              {
+                "value": "bottomCenter",
+                "displayName": "Bottom center"
+              },
+              {
+                "value": "right",
+                "displayName": "Right"
+              }
+            ]
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "title": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "chart": {
+      "properties": {
+        "chartType": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "mekko",
+                "displayName": "Mekko"
+              },
+              {
+                "value": "waffle",
+                "displayName": "Waffle"
+              },
+              {
+                "value": "pictogram",
+                "displayName": "Pictogram"
+              },
+              {
+                "value": "aster",
+                "displayName": "Aster plot"
+              },
+              {
+                "value": "rose",
+                "displayName": "Rose (polar area)"
+              },
+              {
+                "value": "venn",
+                "displayName": "Venn diagram"
+              }
+            ]
+          }
+        },
+        "look": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "flat",
+                "displayName": "Flat"
+              },
+              {
+                "value": "soft",
+                "displayName": "Soft"
+              },
+              {
+                "value": "3d",
+                "displayName": "3D"
+              }
+            ]
+          }
+        },
+        "shadow": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "content": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "percent",
+                "displayName": "Percent"
+              },
+              {
+                "value": "value",
+                "displayName": "Value"
+              },
+              {
+                "value": "both",
+                "displayName": "Value and percent"
+              }
+            ]
+          }
+        },
+        "emptyColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "multiples": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "waffle": {
+      "properties": {
+        "rows": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "columns": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "shape": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "square",
+                "displayName": "Square"
+              },
+              {
+                "value": "rounded",
+                "displayName": "Rounded"
+              },
+              {
+                "value": "circle",
+                "displayName": "Circle"
+              }
+            ]
+          }
+        },
+        "gap": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "bigNumber": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "pictogram": {
+      "properties": {
+        "icon": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "person",
+                "displayName": "Person"
+              },
+              {
+                "value": "circle",
+                "displayName": "Circle"
+              },
+              {
+                "value": "square",
+                "displayName": "Square"
+              },
+              {
+                "value": "star",
+                "displayName": "Star"
+              },
+              {
+                "value": "heart",
+                "displayName": "Heart"
+              },
+              {
+                "value": "drop",
+                "displayName": "Drop"
+              }
+            ]
+          }
+        },
+        "unit": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "perRow": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "total": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "radial": {
+      "properties": {
+        "hole": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "gap": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "maxScore": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "outline": {
+          "type": {
+            "bool": true
+          }
+        },
+        "centerText": {
+          "type": {
+            "bool": true
+          }
+        },
+        "shadeByValue": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "mekko": {
+      "properties": {
+        "gap": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "radius": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "showTotals": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "venn": {
+      "properties": {
+        "opacity": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "separator": {
+          "type": {
+            "text": true
+          }
+        }
+      }
+    }
+  },
+  "tooltips": {
+    "supportedTypes": {
+      "default": true,
+      "canvas": true
+    },
+    "roles": [
+      "tooltips"
+    ]
+  },
+  "supportsHighlight": true,
+  "supportsLandingPage": true,
+  "supportsEmptyDataView": true,
+  "supportsKeyboardFocus": true,
+  "supportsMultiVisualSelection": true,
+  "privileges": []
+}

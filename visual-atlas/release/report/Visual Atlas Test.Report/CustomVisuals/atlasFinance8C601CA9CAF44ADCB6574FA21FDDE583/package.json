@@ -1,0 +1,17 @@
+{
+		"version": "1.0.6.0",
+		"author": {"name":"Visual Atlas","email":"atlas@example.com"},
+		"resources": [
+			{
+				"resourceId": "rId0",
+				"sourceType": 5,
+				"file": "resources/atlasFinance8C601CA9CAF44ADCB6574FA21FDDE583.pbiviz.json"
+			}
+		],
+		"visual": {"name":"atlasFinance","displayName":"Atlas Finance","guid":"atlasFinance8C601CA9CAF44ADCB6574FA21FDDE583","visualClassName":"Visual","version":"1.0.6.0","description":"Candlestick, waterfall, ribbon and funnel charts in one visual, with flat, soft and 3D looks and a palette that follows your report theme, a brand color or your own colors.","supportUrl":"https://learn.microsoft.com/power-bi/developer/visuals/","gitHubUrl":""},
+		"metadata": {
+			"pbivizjson": {
+				"resourceId": "rId0"
+			}
+		}
+	}

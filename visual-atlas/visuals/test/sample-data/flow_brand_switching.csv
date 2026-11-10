@@ -1,0 +1,21 @@
+From,To,Customers
+Velo (us),Apex,4200
+Velo (us),Cadence,3100
+Velo (us),Ridgeline,1800
+Velo (us),Summit,1200
+Apex,Velo (us),5800
+Apex,Cadence,2200
+Apex,Ridgeline,1500
+Apex,Summit,900
+Cadence,Velo (us),3600
+Cadence,Apex,1900
+Cadence,Ridgeline,2400
+Cadence,Summit,1100
+Ridgeline,Velo (us),2100
+Ridgeline,Apex,1400
+Ridgeline,Cadence,2700
+Ridgeline,Summit,1600
+Summit,Velo (us),1500
+Summit,Apex,800
+Summit,Cadence,1000
+Summit,Ridgeline,1300

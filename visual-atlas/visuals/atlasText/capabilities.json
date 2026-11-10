@@ -1,0 +1,510 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Text",
+      "displayNameKey": "Role_Text",
+      "name": "category",
+      "kind": "Grouping",
+      "description": "Words, phrases or free text (comments, reviews). Free text is split into words.",
+      "descriptionKey": "Role_Text_Desc"
+    },
+    {
+      "displayName": "Topic",
+      "displayNameKey": "Role_Group",
+      "name": "group",
+      "kind": "Grouping",
+      "description": "Optional. Colors words by topic.",
+      "descriptionKey": "Role_Group_Desc"
+    },
+    {
+      "displayName": "Weight",
+      "displayNameKey": "Role_Values",
+      "name": "values",
+      "kind": "Measure",
+      "description": "Optional. Sizes words (for example Mentions). Without it, words are sized by how often they appear.",
+      "descriptionKey": "Role_Values_Desc"
+    },
+    {
+      "displayName": "Color value",
+      "displayNameKey": "Role_Color",
+      "name": "colorValue",
+      "kind": "Measure",
+      "description": "Optional. Colors words on a gradient (for example Sentiment).",
+      "descriptionKey": "Role_Color_Desc"
+    },
+    {
+      "displayName": "Tooltips",
+      "displayNameKey": "Role_Tooltips",
+      "name": "tooltips",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "category": {
+            "max": 1
+          },
+          "group": {
+            "max": 1
+          },
+          "values": {
+            "max": 1
+          },
+          "colorValue": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "select": [
+            {
+              "for": {
+                "in": "category"
+              }
+            },
+            {
+              "for": {
+                "in": "group"
+              }
+            }
+          ],
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 5000
+            }
+          }
+        },
+        "values": {
+          "select": [
+            {
+              "for": {
+                "in": "values"
+              }
+            },
+            {
+              "for": {
+                "in": "colorValue"
+              }
+            },
+            {
+              "for": {
+                "in": "tooltips"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "style": {
+      "properties": {
+        "fontFamily": {
+          "type": {
+            "formatting": {
+              "fontFamily": true
+            }
+          }
+        },
+        "textColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "keepOthers": {
+          "type": {
+            "bool": true
+          }
+        },
+        "marker": {
+          "type": {
+            "bool": true
+          }
+        },
+        "markerColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "markerHighlight": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "palette": {
+      "properties": {
+        "source": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "theme",
+                "displayName": "Report theme"
+              },
+              {
+                "value": "brand",
+                "displayName": "Brand color"
+              },
+              {
+                "value": "custom",
+                "displayName": "Custom list"
+              }
+            ]
+          }
+        },
+        "brand": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "mode": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "spectrum",
+                "displayName": "Spectrum"
+              },
+              {
+                "value": "analogous",
+                "displayName": "Analogous"
+              },
+              {
+                "value": "mono",
+                "displayName": "Mono"
+              }
+            ]
+          }
+        },
+        "custom": {
+          "type": {
+            "text": true
+          }
+        }
+      }
+    },
+    "dataColors": {
+      "properties": {
+        "fill": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "labels": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "displayUnits": {
+          "type": {
+            "formatting": {
+              "labelDisplayUnits": true
+            }
+          }
+        },
+        "decimals": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "legend": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "position": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "top",
+                "displayName": "Top"
+              },
+              {
+                "value": "topCenter",
+                "displayName": "Top center"
+              },
+              {
+                "value": "bottom",
+                "displayName": "Bottom"
+              },
+              {
+                "value": "bottomCenter",
+                "displayName": "Bottom center"
+              },
+              {
+                "value": "right",
+                "displayName": "Right"
+              }
+            ]
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "title": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "chart": {
+      "properties": {
+        "chartType": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "cloud",
+                "displayName": "Word cloud"
+              },
+              {
+                "value": "bars",
+                "displayName": "Ranked words"
+              }
+            ]
+          }
+        },
+        "look": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "flat",
+                "displayName": "Flat"
+              },
+              {
+                "value": "soft",
+                "displayName": "Soft"
+              },
+              {
+                "value": "3d",
+                "displayName": "3D"
+              }
+            ]
+          }
+        },
+        "shadow": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "words": {
+      "properties": {
+        "split": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "auto",
+                "displayName": "Auto"
+              },
+              {
+                "value": "phrases",
+                "displayName": "Keep phrases"
+              },
+              {
+                "value": "words",
+                "displayName": "Split into words"
+              }
+            ]
+          }
+        },
+        "stopWords": {
+          "type": {
+            "bool": true
+          }
+        },
+        "extraStopWords": {
+          "type": {
+            "text": true
+          }
+        },
+        "minLength": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "maxWords": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "lowercase": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "cloud": {
+      "properties": {
+        "rotation": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "none",
+                "displayName": "None"
+              },
+              {
+                "value": "some",
+                "displayName": "Some vertical"
+              },
+              {
+                "value": "mixed",
+                "displayName": "Mixed angles"
+              }
+            ]
+          }
+        },
+        "minSize": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "maxSize": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "scale": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "sqrt",
+                "displayName": "Square root"
+              },
+              {
+                "value": "linear",
+                "displayName": "Linear"
+              },
+              {
+                "value": "log",
+                "displayName": "Logarithmic"
+              }
+            ]
+          }
+        },
+        "padding": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "wcolor": {
+      "properties": {
+        "colorBy": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "palette",
+                "displayName": "A color per word"
+              },
+              {
+                "value": "single",
+                "displayName": "One color"
+              },
+              {
+                "value": "group",
+                "displayName": "Topic"
+              },
+              {
+                "value": "value",
+                "displayName": "Color value (gradient)"
+              }
+            ]
+          }
+        },
+        "lowColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "highColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tooltips": {
+    "supportedTypes": {
+      "default": true,
+      "canvas": true
+    },
+    "roles": [
+      "tooltips"
+    ]
+  },
+  "supportsHighlight": true,
+  "supportsLandingPage": true,
+  "supportsEmptyDataView": true,
+  "supportsKeyboardFocus": true,
+  "supportsMultiVisualSelection": true,
+  "privileges": []
+}

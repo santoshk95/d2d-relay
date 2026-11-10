@@ -1,0 +1,8 @@
+{
+  "modelProvider": "gemini",
+  "permissions": {
+    "allow": ["command(genbi)", "command(ls)", "command(cat)", "command(head)", "command(tail)", "command(wc)",
+              "command(pwd)", "command(grep)"],
+    "deny": ["command(curl)", "command(wget)", "command(rm -rf)"]
+  }
+}

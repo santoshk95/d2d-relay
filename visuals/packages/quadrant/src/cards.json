@@ -1,0 +1,116 @@
+[
+  {
+    "object": "header",
+    "displayName": "Title",
+    "props": [
+      {
+        "name": "title",
+        "displayName": "Title",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "name": "subtitle",
+        "displayName": "Subtitle",
+        "type": "text",
+        "default": ""
+      }
+    ]
+  },
+  {
+    "object": "card",
+    "displayName": "Card",
+    "props": [
+      {
+        "name": "show",
+        "displayName": "Card background",
+        "type": "bool",
+        "default": true
+      }
+    ]
+  },
+  {
+    "object": "colors",
+    "displayName": "Colors",
+    "props": [
+      {
+        "name": "primary",
+        "displayName": "Primary",
+        "type": "color",
+        "default": "#DD7A12"
+      },
+      {
+        "name": "primaryDark",
+        "displayName": "Primary (dark)",
+        "type": "color",
+        "default": "#9C4F0C"
+      },
+      {
+        "name": "primaryLight",
+        "displayName": "Primary (light)",
+        "type": "color",
+        "default": "#F6D3A3"
+      },
+      {
+        "name": "negative",
+        "displayName": "Negative",
+        "type": "color",
+        "default": "#3B78D8"
+      },
+      {
+        "name": "ink",
+        "displayName": "Text",
+        "type": "color",
+        "default": "#1F1A17"
+      },
+      {
+        "name": "muted",
+        "displayName": "Muted text",
+        "type": "color",
+        "default": "#6F6761"
+      }
+    ]
+  },
+  {
+    "object": "quadrant",
+    "displayName": "Quadrants",
+    "props": [
+      {
+        "name": "topLeft",
+        "displayName": "Top-left label",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "name": "topRight",
+        "displayName": "Top-right label",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "name": "bottomLeft",
+        "displayName": "Bottom-left label",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "name": "bottomRight",
+        "displayName": "Bottom-right label",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "name": "labelTop",
+        "displayName": "Name best points",
+        "type": "number",
+        "default": 2
+      },
+      {
+        "name": "labelBottom",
+        "displayName": "Name worst points",
+        "type": "number",
+        "default": 1
+      }
+    ]
+  }
+]

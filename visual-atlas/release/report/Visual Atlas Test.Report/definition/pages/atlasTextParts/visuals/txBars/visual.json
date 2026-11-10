@@ -1,0 +1,137 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "txBars",
+  "position": {
+    "x": 648,
+    "y": 368,
+    "z": 1003,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "atlasTextC961F02E238E426A825D8355E3503AA9",
+    "query": {
+      "queryState": {
+        "category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reviews"
+                    }
+                  },
+                  "Property": "Phrase"
+                }
+              },
+              "queryRef": "Reviews.Phrase",
+              "nativeQueryRef": "Phrase"
+            }
+          ]
+        },
+        "group": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reviews"
+                    }
+                  },
+                  "Property": "Topic"
+                }
+              },
+              "queryRef": "Reviews.Topic",
+              "nativeQueryRef": "Topic"
+            }
+          ]
+        },
+        "values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reviews"
+                    }
+                  },
+                  "Property": "Mention Count"
+                }
+              },
+              "queryRef": "Reviews.Mention Count",
+              "nativeQueryRef": "Mention Count"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'bars'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "wcolor": [
+        {
+          "properties": {
+            "colorBy": {
+              "expr": {
+                "Literal": {
+                  "Value": "'group'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "labels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Ranked words · by topic'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

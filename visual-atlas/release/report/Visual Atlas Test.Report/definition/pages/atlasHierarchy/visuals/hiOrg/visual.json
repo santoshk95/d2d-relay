@@ -1,0 +1,142 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "hiOrg",
+  "position": {
+    "x": 648,
+    "y": 368,
+    "z": 1003,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "atlasHierarchy21AE4CB2A0F74216862D09F0C9A3BF2E",
+    "query": {
+      "queryState": {
+        "nodeId": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Employees"
+                    }
+                  },
+                  "Property": "Employee"
+                }
+              },
+              "queryRef": "Employees.Employee",
+              "nativeQueryRef": "Employee"
+            }
+          ]
+        },
+        "parentId": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Employees"
+                    }
+                  },
+                  "Property": "Manager"
+                }
+              },
+              "queryRef": "Employees.Manager",
+              "nativeQueryRef": "Manager"
+            }
+          ]
+        },
+        "label": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Employees"
+                    }
+                  },
+                  "Property": "Name"
+                }
+              },
+              "queryRef": "Employees.Name",
+              "nativeQueryRef": "Name"
+            }
+          ]
+        },
+        "values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Employees"
+                    }
+                  },
+                  "Property": "Total Salary"
+                }
+              },
+              "queryRef": "Employees.Total Salary",
+              "nativeQueryRef": "Total Salary"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'tree'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "tree": [
+        {
+          "properties": {
+            "expanded": {
+              "expr": {
+                "Literal": {
+                  "Value": "2D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Org chart · click a card to open its team'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

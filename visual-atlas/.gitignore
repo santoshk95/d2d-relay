@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.tmp/
+webpack.statistics.*.html
+visuals/test/out/
+gallery/dist/bundle.js
+gallery/dist/preview.html
+__pycache__/

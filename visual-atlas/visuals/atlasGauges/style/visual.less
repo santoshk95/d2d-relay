@@ -1,0 +1,6 @@
+@import "atlas.less";
+/* ticker: the strip moves by one copy of its content, then starts again; it pauses under the mouse */
+.atl-svg .atl-tick { animation: atl-tick var(--atl-dur, 30s) linear infinite; }
+.atl-svg .atl-tick:hover { animation-play-state: paused; }
+@keyframes atl-tick { from { transform: translate(0px, 0px); } to { transform: translate(var(--atl-shift)); } }
+@media (prefers-reduced-motion: reduce) { .atl-svg .atl-tick { animation: none; } }

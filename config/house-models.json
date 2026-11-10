@@ -1,0 +1,13 @@
+{
+ "about": "Relay's own models: the id and label the app shows, and the model that serves it (target). The target is read by the agent only; the web app, the activity log, costs and exports see the id.",
+ "models": [
+  {
+   "id": "relay",
+   "label": "Relay Model",
+   "group": "Relay",
+   "family": "relay",
+   "target": "claude-opus-5-5",
+   "note": "Relay's own model, tuned for building and changing reports."
+  }
+ ]
+}

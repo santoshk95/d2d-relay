@@ -1,0 +1,232 @@
+{
+  "dataRoles": [
+    {
+      "name": "axis",
+      "displayName": "Axis",
+      "kind": "Grouping"
+    },
+    {
+      "name": "actual",
+      "displayName": "Actual",
+      "kind": "Measure"
+    },
+    {
+      "name": "target",
+      "displayName": "Target",
+      "kind": "Measure"
+    },
+    {
+      "name": "comparison",
+      "displayName": "Comparison (e.g. last year)",
+      "kind": "Measure"
+    },
+    {
+      "name": "annotation",
+      "displayName": "Annotation (text)",
+      "kind": "Measure"
+    },
+    {
+      "name": "title",
+      "displayName": "Dynamic title (text)",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "axis": {
+            "max": 1
+          },
+          "actual": {
+            "max": 1
+          },
+          "target": {
+            "max": 1
+          },
+          "comparison": {
+            "max": 1
+          },
+          "annotation": {
+            "max": 1
+          },
+          "title": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "for": {
+            "in": "axis"
+          },
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 1000
+            }
+          }
+        },
+        "values": {
+          "select": [
+            {
+              "for": {
+                "in": "actual"
+              }
+            },
+            {
+              "for": {
+                "in": "target"
+              }
+            },
+            {
+              "for": {
+                "in": "comparison"
+              }
+            },
+            {
+              "for": {
+                "in": "annotation"
+              }
+            },
+            {
+              "for": {
+                "in": "title"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "header": {
+      "displayName": "Title",
+      "properties": {
+        "title": {
+          "displayName": "Title",
+          "type": {
+            "text": true
+          }
+        },
+        "subtitle": {
+          "displayName": "Subtitle",
+          "type": {
+            "text": true
+          }
+        }
+      }
+    },
+    "card": {
+      "displayName": "Card",
+      "properties": {
+        "show": {
+          "displayName": "Card background",
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "colors": {
+      "displayName": "Colors",
+      "properties": {
+        "primary": {
+          "displayName": "Primary",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "primaryDark": {
+          "displayName": "Primary (dark)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "primaryLight": {
+          "displayName": "Primary (light)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "negative": {
+          "displayName": "Negative",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "ink": {
+          "displayName": "Text",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "muted": {
+          "displayName": "Muted text",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "trend": {
+      "displayName": "Trend",
+      "properties": {
+        "actualLabel": {
+          "displayName": "Actual label",
+          "type": {
+            "text": true
+          }
+        },
+        "targetLabel": {
+          "displayName": "Target label",
+          "type": {
+            "text": true
+          }
+        },
+        "comparisonLabel": {
+          "displayName": "Comparison label",
+          "type": {
+            "text": true
+          }
+        },
+        "showAllAnnotations": {
+          "displayName": "Show all annotations",
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    }
+  },
+  "privileges": [],
+  "sorting": {
+    "default": {}
+  },
+  "supportsHighlight": false,
+  "supportsMultiVisualSelection": true,
+  "suppressDefaultTitle": true
+}

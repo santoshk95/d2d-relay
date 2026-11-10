@@ -1,0 +1,131 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "scDot",
+  "position": {
+    "x": 16,
+    "y": 368,
+    "z": 1002,
+    "height": 336,
+    "width": 616,
+    "tabOrder": 2
+  },
+  "visual": {
+    "visualType": "atlasScatter0B23674C661C4797A349BBC2B0AD313A",
+    "query": {
+      "queryState": {
+        "details": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Order ID"
+                }
+              },
+              "queryRef": "Orders.Order ID",
+              "nativeQueryRef": "Order ID"
+            }
+          ]
+        },
+        "xCategory": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Carrier"
+                    }
+                  },
+                  "Property": "Carrier"
+                }
+              },
+              "queryRef": "Carrier.Carrier",
+              "nativeQueryRef": "Carrier"
+            }
+          ]
+        },
+        "y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Days to Deliver"
+                }
+              },
+              "queryRef": "Orders.Days to Deliver",
+              "nativeQueryRef": "Days to Deliver"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'dotplot'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "points": [
+        {
+          "properties": {
+            "size": {
+              "expr": {
+                "Literal": {
+                  "Value": "2D"
+                }
+              }
+            },
+            "opacity": {
+              "expr": {
+                "Literal": {
+                  "Value": "45D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Dot plot · delivery days per order by carrier'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

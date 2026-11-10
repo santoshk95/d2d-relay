@@ -1,0 +1,26 @@
+{
+  "visual": {
+    "name": "smLines",
+    "displayName": "Small Multiple Lines",
+    "guid": "smLines58D103504BF34E2991B69339FC8356B1",
+    "visualClassName": "Visual",
+    "version": "1.0.0.1",
+    "description": "Small Multiple Lines",
+    "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "5.11.1",
+  "author": {
+    "name": "RELAY by PASDACS",
+    "email": "info@pasdacs.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "externalJS": null,
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": [],
+  "version": "1.0.0.0"
+}

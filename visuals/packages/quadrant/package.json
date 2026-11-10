@@ -1,0 +1,10 @@
+{
+  "name": "genbi-quadrant",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bubble scatter split into quadrants by reference lines, naming the stand-out points.",
+  "license": "MIT",
+  "dependencies": {
+    "powerbi-visuals-api": "~5.11.1"
+  }
+}

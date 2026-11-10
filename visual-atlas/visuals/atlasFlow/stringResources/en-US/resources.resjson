@@ -1,0 +1,15 @@
+{
+  "Role_Source": "Source",
+  "Role_Target": "Target",
+  "Role_Weight": "Weight",
+  "Role_Tooltips": "Tooltips",
+  "Landing_Line1": "Add a Source, a Target and a Weight to draw a Sankey, chord or network.",
+  "Landing_Line2": "Pick the chart type, look and palette in the Format pane.",
+  "Warn_Loops_Title": "Some flows loop back",
+  "Warn_Loops_Text": "Flows that return to an earlier stage are left out of the Sankey. Switch to Chord or Network to see them.",
+  "Warn_Limit_Title": "Showing the first 30,000 rows",
+  "Warn_Limit_Text": "There are more source and target pairs than the visual can show. Filter the report to see the rest.",
+  "Mark_Selected": "Selected: this visual is filtering other visuals",
+  "Mark_Filter": "This visual is filtering the report",
+  "Mark_Highlighted": "Highlighted by a selection in another visual"
+}

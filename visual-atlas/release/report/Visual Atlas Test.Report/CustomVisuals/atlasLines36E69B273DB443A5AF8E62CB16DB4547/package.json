@@ -1,0 +1,17 @@
+{
+		"version": "1.0.6.0",
+		"author": {"name":"Visual Atlas","email":"atlas@example.com"},
+		"resources": [
+			{
+				"resourceId": "rId0",
+				"sourceType": 5,
+				"file": "resources/atlasLines36E69B273DB443A5AF8E62CB16DB4547.pbiviz.json"
+			}
+		],
+		"visual": {"name":"atlasLines","displayName":"Atlas Lines","guid":"atlasLines36E69B273DB443A5AF8E62CB16DB4547","visualClassName":"Visual","version":"1.0.6.0","description":"Line, area, stacked area, 100% stacked area and line-and-column combo charts with drill-down, forecast, trend, anomalies, error bands, a zoom slider, flat, soft and 3D looks and a palette that follows your report theme, a brand color or your own colors.","supportUrl":"https://learn.microsoft.com/power-bi/developer/visuals/","gitHubUrl":""},
+		"metadata": {
+			"pbivizjson": {
+				"resourceId": "rId0"
+			}
+		}
+	}

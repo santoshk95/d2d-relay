@@ -1,0 +1,20 @@
+{
+  "Role_Category": "Category axis",
+  "Role_Category_Desc": "Categories along the axis. Add a hierarchy, for example Year, Quarter and Month, to drill down.",
+  "Role_Series": "Legend",
+  "Role_Values": "Values",
+  "Role_Tooltips": "Tooltips",
+  "Landing_Line1": "Add a field to the Category axis and one or more Values to draw columns or bars.",
+  "Landing_Line2": "Add a hierarchy such as Year, Quarter and Month to drill down. Pick the chart type, look and palette in the Format pane.",
+  "Drill_Up": "Drill up",
+  "Drill_Next": "Go to the next level",
+  "Drill_Expand": "Expand all down one level",
+  "Default_Color": "Default color",
+  "Warn_Limit_Title": "Showing the first 5,000 categories",
+  "Warn_Limit_Text": "There are more categories than the visual can show. Filter the report or drill down to see the rest.",
+  "Drill_Reset": "Back to the top level",
+  "Clear_Selection": "Clear selection",
+  "Mark_Selected": "Selected: this visual is filtering other visuals",
+  "Mark_Filter": "This visual is filtering the report",
+  "Mark_Highlighted": "Highlighted by a selection in another visual"
+}

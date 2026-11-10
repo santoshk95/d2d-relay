@@ -1,0 +1,18 @@
+{
+  "Role_Text": "Text",
+  "Role_Text_Desc": "Words, phrases or free text (comments, reviews). Free text is split into words.",
+  "Role_Group": "Topic",
+  "Role_Group_Desc": "Optional. Colors words by topic.",
+  "Role_Values": "Weight",
+  "Role_Values_Desc": "Optional. Sizes words (for example Mentions). Without it, words are sized by how often they appear.",
+  "Role_Color": "Color value",
+  "Role_Color_Desc": "Optional. Colors words on a gradient (for example Sentiment).",
+  "Role_Tooltips": "Tooltips",
+  "Landing_Line1": "Add words, phrases or free text (comments, reviews) to Text. Add a Weight such as Mentions, or leave it empty to count words.",
+  "Landing_Line2": "Add a Topic or a Color value (for example Sentiment) to color the words. Pick word cloud or ranked words in the Format pane.",
+  "Warn_Limit_Title": "Showing the first 5,000 rows",
+  "Warn_Limit_Text": "There is more data than the visual can show. Filter the report to see the rest.",
+  "Mark_Selected": "Selected: this visual is filtering other visuals",
+  "Mark_Filter": "This visual is filtering the report",
+  "Mark_Highlighted": "Highlighted by a selection in another visual"
+}

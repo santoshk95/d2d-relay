@@ -1,0 +1,632 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Levels",
+      "displayNameKey": "Role_Levels",
+      "name": "levels",
+      "kind": "Grouping",
+      "description": "One or more fields from the top level down, for example Category, Subcategory, Product.",
+      "descriptionKey": "Role_Levels_Desc"
+    },
+    {
+      "displayName": "ID",
+      "displayNameKey": "Role_Id",
+      "name": "nodeId",
+      "kind": "Grouping",
+      "description": "For an org chart: the field that identifies each person or node (use instead of Levels).",
+      "descriptionKey": "Role_Id_Desc"
+    },
+    {
+      "displayName": "Parent ID",
+      "displayNameKey": "Role_Parent",
+      "name": "parentId",
+      "kind": "Grouping",
+      "description": "For an org chart: the ID of the manager or parent node. Empty for the top.",
+      "descriptionKey": "Role_Parent_Desc"
+    },
+    {
+      "displayName": "Label",
+      "displayNameKey": "Role_Label",
+      "name": "label",
+      "kind": "Grouping",
+      "description": "For an org chart: the name shown on each card (defaults to the ID).",
+      "descriptionKey": "Role_Label_Desc"
+    },
+    {
+      "displayName": "Size",
+      "displayNameKey": "Role_Values",
+      "name": "values",
+      "kind": "Measure",
+      "description": "The value that sizes tiles, segments and circles.",
+      "descriptionKey": "Role_Values_Desc"
+    },
+    {
+      "displayName": "Color value",
+      "displayNameKey": "Role_Color",
+      "name": "colorValue",
+      "kind": "Measure",
+      "description": "Optional. Colors items on a gradient (for example Margin %) when Colors › Color by is Value.",
+      "descriptionKey": "Role_Color_Desc"
+    },
+    {
+      "displayName": "Tooltips",
+      "displayNameKey": "Role_Tooltips",
+      "name": "tooltips",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "levels": {
+            "max": 6
+          },
+          "nodeId": {
+            "max": 0
+          },
+          "parentId": {
+            "max": 0
+          },
+          "label": {
+            "max": 0
+          },
+          "values": {
+            "max": 1
+          },
+          "colorValue": {
+            "max": 1
+          }
+        },
+        {
+          "levels": {
+            "max": 0
+          },
+          "nodeId": {
+            "max": 1
+          },
+          "parentId": {
+            "max": 1
+          },
+          "label": {
+            "max": 1
+          },
+          "values": {
+            "max": 1
+          },
+          "colorValue": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "select": [
+            {
+              "for": {
+                "in": "levels"
+              }
+            },
+            {
+              "for": {
+                "in": "nodeId"
+              }
+            },
+            {
+              "for": {
+                "in": "parentId"
+              }
+            },
+            {
+              "for": {
+                "in": "label"
+              }
+            }
+          ],
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 10000
+            }
+          }
+        },
+        "values": {
+          "select": [
+            {
+              "for": {
+                "in": "values"
+              }
+            },
+            {
+              "for": {
+                "in": "colorValue"
+              }
+            },
+            {
+              "for": {
+                "in": "tooltips"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "style": {
+      "properties": {
+        "fontFamily": {
+          "type": {
+            "formatting": {
+              "fontFamily": true
+            }
+          }
+        },
+        "textColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "keepOthers": {
+          "type": {
+            "bool": true
+          }
+        },
+        "marker": {
+          "type": {
+            "bool": true
+          }
+        },
+        "markerColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "markerHighlight": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "palette": {
+      "properties": {
+        "source": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "theme",
+                "displayName": "Report theme"
+              },
+              {
+                "value": "brand",
+                "displayName": "Brand color"
+              },
+              {
+                "value": "custom",
+                "displayName": "Custom list"
+              }
+            ]
+          }
+        },
+        "brand": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "mode": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "spectrum",
+                "displayName": "Spectrum"
+              },
+              {
+                "value": "analogous",
+                "displayName": "Analogous"
+              },
+              {
+                "value": "mono",
+                "displayName": "Mono"
+              }
+            ]
+          }
+        },
+        "custom": {
+          "type": {
+            "text": true
+          }
+        }
+      }
+    },
+    "dataColors": {
+      "properties": {
+        "fill": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "labels": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "displayUnits": {
+          "type": {
+            "formatting": {
+              "labelDisplayUnits": true
+            }
+          }
+        },
+        "decimals": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "legend": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "position": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "top",
+                "displayName": "Top"
+              },
+              {
+                "value": "topCenter",
+                "displayName": "Top center"
+              },
+              {
+                "value": "bottom",
+                "displayName": "Bottom"
+              },
+              {
+                "value": "bottomCenter",
+                "displayName": "Bottom center"
+              },
+              {
+                "value": "right",
+                "displayName": "Right"
+              }
+            ]
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "title": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "chart": {
+      "properties": {
+        "chartType": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "treemap",
+                "displayName": "Treemap"
+              },
+              {
+                "value": "sunburst",
+                "displayName": "Sunburst"
+              },
+              {
+                "value": "pack",
+                "displayName": "Circle packing"
+              },
+              {
+                "value": "tree",
+                "displayName": "Org chart / tree"
+              }
+            ]
+          }
+        },
+        "look": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "flat",
+                "displayName": "Flat"
+              },
+              {
+                "value": "soft",
+                "displayName": "Soft"
+              },
+              {
+                "value": "3d",
+                "displayName": "3D"
+              }
+            ]
+          }
+        },
+        "shadow": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "depth": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "click": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "zoom",
+                "displayName": "Zoom into groups"
+              },
+              {
+                "value": "select",
+                "displayName": "Select (cross-filter)"
+              }
+            ]
+          }
+        },
+        "content": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "name",
+                "displayName": "Name"
+              },
+              {
+                "value": "nameValue",
+                "displayName": "Name and value"
+              },
+              {
+                "value": "namePercent",
+                "displayName": "Name and percent"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "hcolor": {
+      "properties": {
+        "colorBy": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "branch",
+                "displayName": "Top-level branch"
+              },
+              {
+                "value": "level",
+                "displayName": "Level"
+              },
+              {
+                "value": "value",
+                "displayName": "Color value (gradient)"
+              }
+            ]
+          }
+        },
+        "fade": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "lowColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "highColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "treemap": {
+      "properties": {
+        "tile": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "squarify",
+                "displayName": "Squarified"
+              },
+              {
+                "value": "binary",
+                "displayName": "Balanced"
+              },
+              {
+                "value": "sliceDice",
+                "displayName": "Slice and dice"
+              }
+            ]
+          }
+        },
+        "padding": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "headers": {
+          "type": {
+            "bool": true
+          }
+        },
+        "radius": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "sunburst": {
+      "properties": {
+        "hole": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "gap": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "radius": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "pack": {
+      "properties": {
+        "padding": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "tree": {
+      "properties": {
+        "orientation": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "topDown",
+                "displayName": "Top down"
+              },
+              {
+                "value": "leftRight",
+                "displayName": "Left to right"
+              }
+            ]
+          }
+        },
+        "expanded": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "links": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "curve",
+                "displayName": "Curved"
+              },
+              {
+                "value": "elbow",
+                "displayName": "Elbow"
+              },
+              {
+                "value": "straight",
+                "displayName": "Straight"
+              }
+            ]
+          }
+        },
+        "cardWidth": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "cardHeight": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "badges": {
+          "type": {
+            "bool": true
+          }
+        },
+        "bars": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    }
+  },
+  "tooltips": {
+    "supportedTypes": {
+      "default": true,
+      "canvas": true
+    },
+    "roles": [
+      "tooltips"
+    ]
+  },
+  "supportsHighlight": true,
+  "supportsLandingPage": true,
+  "supportsEmptyDataView": true,
+  "supportsKeyboardFocus": true,
+  "supportsMultiVisualSelection": true,
+  "privileges": []
+}

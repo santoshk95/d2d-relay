@@ -1,0 +1,617 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Time",
+      "displayNameKey": "Role_Time",
+      "name": "time",
+      "kind": "Grouping",
+      "description": "A date (calendar, timeline slicer), the x-axis of a stream graph, or the columns of a heat grid (for example Hour).",
+      "descriptionKey": "Role_Time_Desc"
+    },
+    {
+      "displayName": "Rows",
+      "displayNameKey": "Role_Rows",
+      "name": "rows",
+      "kind": "Grouping",
+      "description": "Heat grid and punch card: the rows (for example Weekday).",
+      "descriptionKey": "Role_Rows_Desc"
+    },
+    {
+      "displayName": "Legend",
+      "displayNameKey": "Role_Series",
+      "name": "series",
+      "kind": "Grouping",
+      "description": "Stream graph: one stream per value.",
+      "descriptionKey": "Role_Series_Desc"
+    },
+    {
+      "displayName": "Values",
+      "displayNameKey": "Role_Values",
+      "name": "values",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Tooltips",
+      "displayNameKey": "Role_Tooltips",
+      "name": "tooltips",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "time": {
+            "max": 1
+          },
+          "rows": {
+            "max": 1
+          },
+          "series": {
+            "max": 1
+          },
+          "values": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "select": [
+            {
+              "for": {
+                "in": "time"
+              }
+            },
+            {
+              "for": {
+                "in": "rows"
+              }
+            }
+          ],
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 30000
+            }
+          }
+        },
+        "values": {
+          "group": {
+            "by": "series",
+            "select": [
+              {
+                "for": {
+                  "in": "values"
+                }
+              },
+              {
+                "for": {
+                  "in": "tooltips"
+                }
+              }
+            ],
+            "dataReductionAlgorithm": {
+              "top": {
+                "count": 30
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "objects": {
+    "style": {
+      "properties": {
+        "fontFamily": {
+          "type": {
+            "formatting": {
+              "fontFamily": true
+            }
+          }
+        },
+        "textColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "keepOthers": {
+          "type": {
+            "bool": true
+          }
+        },
+        "marker": {
+          "type": {
+            "bool": true
+          }
+        },
+        "markerColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "markerHighlight": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "palette": {
+      "properties": {
+        "source": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "theme",
+                "displayName": "Report theme"
+              },
+              {
+                "value": "brand",
+                "displayName": "Brand color"
+              },
+              {
+                "value": "custom",
+                "displayName": "Custom list"
+              }
+            ]
+          }
+        },
+        "brand": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "mode": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "spectrum",
+                "displayName": "Spectrum"
+              },
+              {
+                "value": "analogous",
+                "displayName": "Analogous"
+              },
+              {
+                "value": "mono",
+                "displayName": "Mono"
+              }
+            ]
+          }
+        },
+        "custom": {
+          "type": {
+            "text": true
+          }
+        }
+      }
+    },
+    "dataColors": {
+      "properties": {
+        "fill": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "labels": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "displayUnits": {
+          "type": {
+            "formatting": {
+              "labelDisplayUnits": true
+            }
+          }
+        },
+        "decimals": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "categoryAxis": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "title": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "legend": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "position": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "top",
+                "displayName": "Top"
+              },
+              {
+                "value": "topCenter",
+                "displayName": "Top center"
+              },
+              {
+                "value": "bottom",
+                "displayName": "Bottom"
+              },
+              {
+                "value": "bottomCenter",
+                "displayName": "Bottom center"
+              },
+              {
+                "value": "right",
+                "displayName": "Right"
+              }
+            ]
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "title": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "general": {
+      "properties": {
+        "filter": {
+          "type": {
+            "filter": true
+          }
+        }
+      }
+    },
+    "chart": {
+      "properties": {
+        "chartType": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "calendar",
+                "displayName": "Calendar heatmap"
+              },
+              {
+                "value": "heatgrid",
+                "displayName": "Heat grid"
+              },
+              {
+                "value": "stream",
+                "displayName": "Stream graph"
+              },
+              {
+                "value": "timeline",
+                "displayName": "Timeline slicer"
+              }
+            ]
+          }
+        },
+        "look": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "flat",
+                "displayName": "Flat"
+              },
+              {
+                "value": "soft",
+                "displayName": "Soft"
+              },
+              {
+                "value": "3d",
+                "displayName": "3D"
+              }
+            ]
+          }
+        },
+        "shadow": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "scale": {
+      "properties": {
+        "mode": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "linear",
+                "displayName": "By value"
+              },
+              {
+                "value": "quantile",
+                "displayName": "By rank (quantiles)"
+              }
+            ]
+          }
+        },
+        "lowColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "highColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "emptyColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "steps": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "gap": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "radius": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "calendar": {
+      "properties": {
+        "view": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "year",
+                "displayName": "Year (weeks)"
+              },
+              {
+                "value": "month",
+                "displayName": "Month pages"
+              }
+            ]
+          }
+        },
+        "weekStart": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "monday",
+                "displayName": "Monday"
+              },
+              {
+                "value": "sunday",
+                "displayName": "Sunday"
+              }
+            ]
+          }
+        },
+        "dayNames": {
+          "type": {
+            "bool": true
+          }
+        },
+        "monthNames": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "heatgrid": {
+      "properties": {
+        "shape": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "cell",
+                "displayName": "Cells"
+              },
+              {
+                "value": "circle",
+                "displayName": "Circles sized by value (punch card)"
+              }
+            ]
+          }
+        },
+        "colorCircles": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "stream": {
+      "properties": {
+        "offset": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "wiggle",
+                "displayName": "Wiggle"
+              },
+              {
+                "value": "silhouette",
+                "displayName": "Silhouette"
+              },
+              {
+                "value": "zero",
+                "displayName": "Stacked"
+              },
+              {
+                "value": "expand",
+                "displayName": "100% stacked"
+              }
+            ]
+          }
+        },
+        "smooth": {
+          "type": {
+            "bool": true
+          }
+        },
+        "opacity": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "timeline": {
+      "properties": {
+        "granularity": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "day",
+                "displayName": "Day"
+              },
+              {
+                "value": "week",
+                "displayName": "Week"
+              },
+              {
+                "value": "month",
+                "displayName": "Month"
+              },
+              {
+                "value": "quarter",
+                "displayName": "Quarter"
+              },
+              {
+                "value": "year",
+                "displayName": "Year"
+              }
+            ]
+          }
+        },
+        "bars": {
+          "type": {
+            "bool": true
+          }
+        },
+        "selColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tooltips": {
+    "supportedTypes": {
+      "default": true,
+      "canvas": true
+    },
+    "roles": [
+      "tooltips"
+    ]
+  },
+  "supportsHighlight": true,
+  "supportsLandingPage": true,
+  "supportsEmptyDataView": true,
+  "supportsKeyboardFocus": true,
+  "supportsMultiVisualSelection": true,
+  "privileges": []
+}

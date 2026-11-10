@@ -1,0 +1,146 @@
+{
+  "dataRoles": [
+    {
+      "name": "stages",
+      "displayName": "Stages (measures, in order)",
+      "kind": "Measure"
+    },
+    {
+      "name": "title",
+      "displayName": "Dynamic title (text)",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "stages": {
+            "max": 8
+          },
+          "title": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "values": {
+          "select": [
+            {
+              "for": {
+                "in": "stages"
+              }
+            },
+            {
+              "for": {
+                "in": "title"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "header": {
+      "displayName": "Title",
+      "properties": {
+        "title": {
+          "displayName": "Title",
+          "type": {
+            "text": true
+          }
+        },
+        "subtitle": {
+          "displayName": "Subtitle",
+          "type": {
+            "text": true
+          }
+        }
+      }
+    },
+    "card": {
+      "displayName": "Card",
+      "properties": {
+        "show": {
+          "displayName": "Card background",
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "colors": {
+      "displayName": "Colors",
+      "properties": {
+        "primary": {
+          "displayName": "Primary",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "primaryDark": {
+          "displayName": "Primary (dark)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "primaryLight": {
+          "displayName": "Primary (light)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "negative": {
+          "displayName": "Negative",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "ink": {
+          "displayName": "Text",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "muted": {
+          "displayName": "Muted text",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "privileges": [],
+  "sorting": {
+    "default": {}
+  },
+  "supportsHighlight": false,
+  "supportsMultiVisualSelection": true,
+  "suppressDefaultTitle": true
+}

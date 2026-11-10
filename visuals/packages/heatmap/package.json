@@ -1,0 +1,10 @@
+{
+  "name": "genbi-heatmap",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Rows by columns heatmap on a quiet-to-busy ramp, labelling the peak cell.",
+  "license": "MIT",
+  "dependencies": {
+    "powerbi-visuals-api": "~5.11.1"
+  }
+}

@@ -1,0 +1,47 @@
+/* shared Atlas styles */
+.atl { position: relative; overflow: hidden; }
+.atl-svg { display: block; overflow: hidden; user-select: none; -webkit-user-select: none; }
+.atl-svg text { pointer-events: none; }
+.atl-svg [tabindex]:focus { outline: none; }
+.atl-svg [tabindex]:focus-visible { stroke: #605e5c; stroke-width: 2px; }
+.atl-svg .lbl { font-weight: 600; paint-order: stroke; stroke: var(--atl-halo, rgba(255, 255, 255, 0.75)); stroke-opacity: 0.8; stroke-width: 3px; stroke-linejoin: round; }
+/* labels on a colored mark: no halo (a light halo blurs light text on a dark fill) */
+.atl-svg .lbl.in { stroke: none; }
+.atl-svg .lbl .val, .atl-svg .lbl.val { font-weight: 400; opacity: 0.8; }
+.atl-svg .dim { opacity: 0.22; }
+.atl-svg .lk, .atl-svg .rb, .atl-svg .nl, .atl-svg .nd, .atl-svg .arc, .atl-svg .nn, .atl-svg .bar { transition: opacity 0.2s, fill-opacity 0.2s; cursor: pointer; }
+.atl-svg .lk:hover, .atl-svg .rb:hover { fill-opacity: 0.7 !important; }
+.atl-svg .nd:hover, .atl-svg .arc:hover, .atl-svg .nn:hover, .atl-svg .bar:hover { filter: brightness(1.08); }
+.atl-landing { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; padding: 16px; text-align: center; font: 13px 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif; color: #605e5c; }
+.atl-landing-t { font-size: 18px; font-weight: 600; color: #252423; }
+/* family visuals (common/family.ts, chart.ts) */
+.atl-fam { width: 100%; height: 100%; }
+.atl-svg .ghost { opacity: 0.3; }
+.atl-svg .ax, .atl-svg .note { font-weight: 400; }
+.atl-svg .ttl, .atl-svg .lgt, .atl-svg .ref { font-weight: 600; }
+.atl-svg .lg { cursor: pointer; transition: opacity 0.2s; }
+.atl-svg .lg:focus { outline: none; }
+.atl-svg .lg:focus-visible .hit { stroke: #605e5c; stroke-width: 1.5px; stroke-opacity: 1; }
+/* the cursor is set per mark by Interact.bind(): a hand only where a click selects data */
+.atl-svg .grp, .atl-svg .pt, .atl-svg .pl, .atl-svg .mk { transition: opacity 0.2s; }
+.atl-svg .grp:hover, .atl-svg .mk:hover { filter: brightness(1.06); }
+.atl-svg .pl:hover { stroke-opacity: 1 !important; }
+/* drill buttons (common/drill.ts) */
+/* top-right corner row (common/corner.ts): Reset zoom, drill buttons, selection marker */
+.atl-corner { position: absolute; top: 4px; right: 6px; display: flex; align-items: center; gap: 6px; z-index: 2; }
+.atl-corner:empty { display: none; }
+.atl-reset { order: 1; height: 24px; display: inline-flex; align-items: center; gap: 4px; padding: 0 9px 0 7px; border-radius: 12px; border: 1px solid rgba(128, 128, 128, 0.45); background: var(--atl-halo, #ffffff); color: inherit; font: 600 11px 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif; cursor: pointer; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.atl-reset:hover { background: rgba(128, 128, 128, 0.16); }
+.atl-reset:focus { outline: none; }
+.atl-reset:focus-visible { outline: 2px solid #605e5c; outline-offset: 1px; }
+.atl-mark { order: 3; font: 700 22px/16px 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif; height: 14px; padding-top: 2px; user-select: none; }
+.atl-mark[role=button] { cursor: pointer; }
+.atl-mark-hl { opacity: 0.55; }
+.atl-mark:focus { outline: none; }
+.atl-mark:focus-visible { outline: 2px solid #605e5c; outline-offset: 1px; }
+.atl-drill { order: 2; display: flex; gap: 3px; }
+.atl-drill-b { width: 26px; height: 24px; display: grid; place-items: center; padding: 0; border-radius: 6px; border: 1px solid rgba(128, 128, 128, 0.38); background: var(--atl-halo, #ffffff); color: inherit; cursor: pointer; }
+.atl-drill-b:hover:not(:disabled) { background: rgba(128, 128, 128, 0.16); }
+.atl-drill-b:disabled { opacity: 0.32; cursor: default; }
+.atl-drill-b:focus { outline: none; }
+.atl-drill-b:focus-visible { outline: 2px solid #605e5c; outline-offset: 1px; }

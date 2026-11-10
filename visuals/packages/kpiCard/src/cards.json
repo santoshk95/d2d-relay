@@ -1,0 +1,92 @@
+[
+  {
+    "object": "card",
+    "displayName": "Card",
+    "props": [
+      {
+        "name": "show",
+        "displayName": "Card background",
+        "type": "bool",
+        "default": true
+      }
+    ]
+  },
+  {
+    "object": "colors",
+    "displayName": "Colors",
+    "props": [
+      {
+        "name": "primary",
+        "displayName": "Primary",
+        "type": "color",
+        "default": "#DD7A12"
+      },
+      {
+        "name": "primaryDark",
+        "displayName": "Primary (dark)",
+        "type": "color",
+        "default": "#9C4F0C"
+      },
+      {
+        "name": "primaryLight",
+        "displayName": "Primary (light)",
+        "type": "color",
+        "default": "#F6D3A3"
+      },
+      {
+        "name": "negative",
+        "displayName": "Negative",
+        "type": "color",
+        "default": "#3B78D8"
+      },
+      {
+        "name": "ink",
+        "displayName": "Text",
+        "type": "color",
+        "default": "#1F1A17"
+      },
+      {
+        "name": "muted",
+        "displayName": "Muted text",
+        "type": "color",
+        "default": "#6F6761"
+      }
+    ]
+  },
+  {
+    "object": "kpi",
+    "displayName": "KPI",
+    "props": [
+      {
+        "name": "label",
+        "displayName": "Label",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "name": "lowerIsBetter",
+        "displayName": "Lower is better",
+        "type": "bool",
+        "default": false
+      },
+      {
+        "name": "signedValue",
+        "displayName": "Show + on value",
+        "type": "bool",
+        "default": false
+      },
+      {
+        "name": "comparisonLabel",
+        "displayName": "Comparison label",
+        "type": "text",
+        "default": "vs LY"
+      },
+      {
+        "name": "targetLabel",
+        "displayName": "Target label",
+        "type": "text",
+        "default": "Target"
+      }
+    ]
+  }
+]

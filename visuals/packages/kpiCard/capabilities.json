@@ -1,0 +1,208 @@
+{
+  "dataRoles": [
+    {
+      "name": "value",
+      "displayName": "Value",
+      "kind": "Measure"
+    },
+    {
+      "name": "target",
+      "displayName": "Target",
+      "kind": "Measure"
+    },
+    {
+      "name": "comparison",
+      "displayName": "Comparison (e.g. last year)",
+      "kind": "Measure"
+    },
+    {
+      "name": "axis",
+      "displayName": "Sparkline axis",
+      "kind": "Grouping"
+    },
+    {
+      "name": "trend",
+      "displayName": "Sparkline value",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "value": {
+            "max": 1
+          },
+          "target": {
+            "max": 1
+          },
+          "comparison": {
+            "max": 1
+          },
+          "axis": {
+            "max": 1
+          },
+          "trend": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "for": {
+            "in": "axis"
+          },
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 1000
+            }
+          }
+        },
+        "values": {
+          "select": [
+            {
+              "for": {
+                "in": "value"
+              }
+            },
+            {
+              "for": {
+                "in": "target"
+              }
+            },
+            {
+              "for": {
+                "in": "comparison"
+              }
+            },
+            {
+              "for": {
+                "in": "trend"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "card": {
+      "displayName": "Card",
+      "properties": {
+        "show": {
+          "displayName": "Card background",
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "colors": {
+      "displayName": "Colors",
+      "properties": {
+        "primary": {
+          "displayName": "Primary",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "primaryDark": {
+          "displayName": "Primary (dark)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "primaryLight": {
+          "displayName": "Primary (light)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "negative": {
+          "displayName": "Negative",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "ink": {
+          "displayName": "Text",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "muted": {
+          "displayName": "Muted text",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "kpi": {
+      "displayName": "KPI",
+      "properties": {
+        "label": {
+          "displayName": "Label",
+          "type": {
+            "text": true
+          }
+        },
+        "lowerIsBetter": {
+          "displayName": "Lower is better",
+          "type": {
+            "bool": true
+          }
+        },
+        "signedValue": {
+          "displayName": "Show + on value",
+          "type": {
+            "bool": true
+          }
+        },
+        "comparisonLabel": {
+          "displayName": "Comparison label",
+          "type": {
+            "text": true
+          }
+        },
+        "targetLabel": {
+          "displayName": "Target label",
+          "type": {
+            "text": true
+          }
+        }
+      }
+    }
+  },
+  "privileges": [],
+  "sorting": {
+    "default": {}
+  },
+  "supportsHighlight": false,
+  "supportsMultiVisualSelection": true,
+  "suppressDefaultTitle": true
+}

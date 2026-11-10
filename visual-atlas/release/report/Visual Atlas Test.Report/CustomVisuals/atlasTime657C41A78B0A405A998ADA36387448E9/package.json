@@ -1,0 +1,17 @@
+{
+		"version": "1.0.5.0",
+		"author": {"name":"Visual Atlas","email":"atlas@example.com"},
+		"resources": [
+			{
+				"resourceId": "rId0",
+				"sourceType": 5,
+				"file": "resources/atlasTime657C41A78B0A405A998ADA36387448E9.pbiviz.json"
+			}
+		],
+		"visual": {"name":"atlasTime","displayName":"Atlas Time","guid":"atlasTime657C41A78B0A405A998ADA36387448E9","visualClassName":"Visual","version":"1.0.5.0","description":"Calendar heatmap, heat grid and punch card, stream graph and a timeline slicer that filters the report, with flat, soft and 3D looks and a palette that follows your report theme, a brand color or your own colors.","supportUrl":"https://learn.microsoft.com/power-bi/developer/visuals/","gitHubUrl":""},
+		"metadata": {
+			"pbivizjson": {
+				"resourceId": "rId0"
+			}
+		}
+	}

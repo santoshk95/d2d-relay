@@ -1,0 +1,138 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "distRaincloud",
+  "position": {
+    "x": 744,
+    "y": 16,
+    "z": 1004,
+    "height": 336,
+    "width": 520,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "atlasDistribution1C4252B29C654CC1BF16155962622408",
+    "query": {
+      "queryState": {
+        "category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Device"
+                    }
+                  },
+                  "Property": "Device"
+                }
+              },
+              "queryRef": "Device.Device",
+              "nativeQueryRef": "Device"
+            }
+          ]
+        },
+        "detail": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Order ID"
+                }
+              },
+              "queryRef": "Orders.Order ID",
+              "nativeQueryRef": "Order ID"
+            }
+          ]
+        },
+        "values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Session Minutes"
+                }
+              },
+              "queryRef": "Orders.Session Minutes",
+              "nativeQueryRef": "Session Minutes"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'violin'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "violin": [
+        {
+          "properties": {
+            "side": {
+              "expr": {
+                "Literal": {
+                  "Value": "'half'"
+                }
+              }
+            },
+            "inner": {
+              "expr": {
+                "Literal": {
+                  "Value": "'box'"
+                }
+              }
+            },
+            "points": {
+              "expr": {
+                "Literal": {
+                  "Value": "'jitter'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Raincloud · minutes on site by device (online orders)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

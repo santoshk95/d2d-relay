@@ -1,0 +1,155 @@
+{
+  "common_cards": {
+    "header": {"displayName": "Title", "props": [
+      {"name": "title", "displayName": "Title", "type": "text", "default": ""},
+      {"name": "subtitle", "displayName": "Subtitle", "type": "text", "default": ""}]},
+    "card": {"displayName": "Card", "props": [
+      {"name": "show", "displayName": "Card background", "type": "bool", "default": true}]},
+    "colors": {"displayName": "Colors", "props": [
+      {"name": "primary", "displayName": "Primary", "type": "color", "default": "#DD7A12"},
+      {"name": "primaryDark", "displayName": "Primary (dark)", "type": "color", "default": "#9C4F0C"},
+      {"name": "primaryLight", "displayName": "Primary (light)", "type": "color", "default": "#F6D3A3"},
+      {"name": "negative", "displayName": "Negative", "type": "color", "default": "#3B78D8"},
+      {"name": "ink", "displayName": "Text", "type": "color", "default": "#1F1A17"},
+      {"name": "muted", "displayName": "Muted text", "type": "color", "default": "#6F6761"}]}
+  },
+  "visuals": {
+    "kpiCard": {
+      "displayName": "Relay KPI Card",
+      "guid": "genbiKpiCard7E2A91C4D35B4F06A8E1",
+      "description": "KPI with sparkline, target, change vs comparison and an on-track status pill.",
+      "glyph": "kpi",
+      "roles": [
+        {"name": "value", "displayName": "Value", "kind": "Measure", "max": 1},
+        {"name": "target", "displayName": "Target", "kind": "Measure", "max": 1},
+        {"name": "comparison", "displayName": "Comparison (e.g. last year)", "kind": "Measure", "max": 1},
+        {"name": "axis", "displayName": "Sparkline axis", "kind": "Grouping", "max": 1},
+        {"name": "trend", "displayName": "Sparkline value", "kind": "Measure", "max": 1}],
+      "categories": "axis",
+      "values": ["value", "target", "comparison", "trend"],
+      "cards": ["card", "colors", {"object": "kpi", "displayName": "KPI", "props": [
+        {"name": "label", "displayName": "Label", "type": "text", "default": ""},
+        {"name": "lowerIsBetter", "displayName": "Lower is better", "type": "bool", "default": false},
+        {"name": "signedValue", "displayName": "Show + on value", "type": "bool", "default": false},
+        {"name": "comparisonLabel", "displayName": "Comparison label", "type": "text", "default": "vs LY"},
+        {"name": "targetLabel", "displayName": "Target label", "type": "text", "default": "Target"}]}]
+    },
+    "trendLine": {
+      "displayName": "Relay Trend",
+      "guid": "genbiTrendLine3B8D52E7A1C94F2DB6A0",
+      "description": "Actual vs target vs last year over time, with end label and event annotations.",
+      "glyph": "trend",
+      "roles": [
+        {"name": "axis", "displayName": "Axis", "kind": "Grouping", "max": 1},
+        {"name": "actual", "displayName": "Actual", "kind": "Measure", "max": 1},
+        {"name": "target", "displayName": "Target", "kind": "Measure", "max": 1},
+        {"name": "comparison", "displayName": "Comparison (e.g. last year)", "kind": "Measure", "max": 1},
+        {"name": "annotation", "displayName": "Annotation (text)", "kind": "Measure", "max": 1},
+        {"name": "title", "displayName": "Dynamic title (text)", "kind": "Measure", "max": 1}],
+      "categories": "axis",
+      "values": ["actual", "target", "comparison", "annotation", "title"],
+      "cards": ["header", "card", "colors", {"object": "trend", "displayName": "Trend", "props": [
+        {"name": "actualLabel", "displayName": "Actual label", "type": "text", "default": "Actual"},
+        {"name": "targetLabel", "displayName": "Target label", "type": "text", "default": "Target"},
+        {"name": "comparisonLabel", "displayName": "Comparison label", "type": "text", "default": "Last year"},
+        {"name": "showAllAnnotations", "displayName": "Show all annotations", "type": "bool", "default": false}]}]
+    },
+    "driverBars": {
+      "displayName": "Relay Driver Bars",
+      "guid": "genbiDriverBars9C4E17A3B2D84E5F90C7",
+      "description": "Diverging bars for drivers of change: positive vs negative contributions with signed labels.",
+      "glyph": "bars",
+      "roles": [
+        {"name": "category", "displayName": "Category", "kind": "Grouping", "max": 1},
+        {"name": "value", "displayName": "Value", "kind": "Measure", "max": 1},
+        {"name": "title", "displayName": "Dynamic title (text)", "kind": "Measure", "max": 1}],
+      "categories": "category",
+      "values": ["value", "title"],
+      "cards": ["header", "card", "colors", {"object": "bars", "displayName": "Bars", "props": [
+        {"name": "signed", "displayName": "Signed labels", "type": "bool", "default": true},
+        {"name": "sortDescending", "displayName": "Sort largest first", "type": "bool", "default": false}]}]
+    },
+    "quadrant": {
+      "displayName": "Relay Quadrant",
+      "guid": "genbiQuadrant5A1F83D6C9E24B7A01D4",
+      "description": "Bubble scatter split into quadrants by reference lines, naming the stand-out points.",
+      "glyph": "quadrant",
+      "roles": [
+        {"name": "details", "displayName": "Details", "kind": "Grouping", "max": 1},
+        {"name": "x", "displayName": "X axis", "kind": "Measure", "max": 1},
+        {"name": "y", "displayName": "Y axis", "kind": "Measure", "max": 1},
+        {"name": "size", "displayName": "Size", "kind": "Measure", "max": 1},
+        {"name": "xRef", "displayName": "X reference line", "kind": "Measure", "max": 1},
+        {"name": "yRef", "displayName": "Y reference line", "kind": "Measure", "max": 1},
+        {"name": "title", "displayName": "Dynamic title (text)", "kind": "Measure", "max": 1}],
+      "categories": "details",
+      "categoryCount": 3000,
+      "values": ["x", "y", "size", "xRef", "yRef", "title"],
+      "cards": ["header", "card", "colors", {"object": "quadrant", "displayName": "Quadrants", "props": [
+        {"name": "topLeft", "displayName": "Top-left label", "type": "text", "default": ""},
+        {"name": "topRight", "displayName": "Top-right label", "type": "text", "default": ""},
+        {"name": "bottomLeft", "displayName": "Bottom-left label", "type": "text", "default": ""},
+        {"name": "bottomRight", "displayName": "Bottom-right label", "type": "text", "default": ""},
+        {"name": "labelTop", "displayName": "Name best points", "type": "number", "default": 2},
+        {"name": "labelBottom", "displayName": "Name worst points", "type": "number", "default": 1}]}]
+    },
+    "treemap": {
+      "displayName": "Relay Treemap",
+      "guid": "genbiTreemap2D7C46B9E1A35F8C42E6",
+      "description": "Squarified treemap sized by one measure and coloured by another, with a gradient legend.",
+      "glyph": "treemap",
+      "roles": [
+        {"name": "category", "displayName": "Category", "kind": "Grouping", "max": 1},
+        {"name": "size", "displayName": "Size", "kind": "Measure", "max": 1},
+        {"name": "color", "displayName": "Color saturation", "kind": "Measure", "max": 1},
+        {"name": "title", "displayName": "Dynamic title (text)", "kind": "Measure", "max": 1}],
+      "categories": "category",
+      "values": ["size", "color", "title"],
+      "cards": ["header", "card", "colors"]
+    },
+    "heatmap": {
+      "displayName": "Relay Heatmap",
+      "guid": "genbiHeatmap8F3B21C5D7A64E9B13F2",
+      "description": "Rows by columns heatmap on a quiet-to-busy ramp, labelling the peak cell.",
+      "glyph": "heatmap",
+      "roles": [
+        {"name": "rows", "displayName": "Rows", "kind": "Grouping", "max": 1},
+        {"name": "columns", "displayName": "Columns", "kind": "Grouping", "max": 1},
+        {"name": "value", "displayName": "Value", "kind": "Measure", "max": 1},
+        {"name": "title", "displayName": "Dynamic title (text)", "kind": "Measure", "max": 1}],
+      "categories": "rows",
+      "series": "columns",
+      "values": ["value", "title"],
+      "cards": ["header", "card", "colors", {"object": "heatmap", "displayName": "Heatmap", "props": [
+        {"name": "indexMode", "displayName": "Label as index (peak = 100)", "type": "bool", "default": true},
+        {"name": "showAll", "displayName": "Show all values", "type": "bool", "default": false},
+        {"name": "lowLabel", "displayName": "Legend low", "type": "text", "default": "Quiet"},
+        {"name": "highLabel", "displayName": "Legend high", "type": "text", "default": "Busy"}]}]
+    },
+    "funnel": {
+      "displayName": "Relay Funnel",
+      "guid": "genbiFunnel6E9A34D2B8C15F7E28A9",
+      "description": "Conversion funnel: one bar per stage measure with value and % of the first stage.",
+      "glyph": "funnel",
+      "roles": [
+        {"name": "stages", "displayName": "Stages (measures, in order)", "kind": "Measure", "max": 8},
+        {"name": "title", "displayName": "Dynamic title (text)", "kind": "Measure", "max": 1}],
+      "values": ["stages", "title"],
+      "cards": ["header", "card", "colors"]
+    },
+    "narrative": {
+      "displayName": "Relay Narrative",
+      "guid": "genbiNarrative1C5E72A8F3D94B6E07B5",
+      "description": "Numbered insights from text measures, a how-to list, or a step timeline.",
+      "glyph": "narrative",
+      "roles": [
+        {"name": "items", "displayName": "Insights (text measures)", "kind": "Measure", "max": 8}],
+      "values": ["items"],
+      "cards": ["card", "colors", {"object": "narrative", "displayName": "Narrative", "props": [
+        {"name": "heading", "displayName": "Heading", "type": "text", "default": "Key insights"},
+        {"name": "note", "displayName": "Note", "type": "text", "default": ""},
+        {"name": "style", "displayName": "Style (numbered, list, timeline)", "type": "text", "default": "numbered"},
+        {"name": "lines", "displayName": "Static lines (one per line)", "type": "text", "default": ""}]}]
+    }
+  }
+}

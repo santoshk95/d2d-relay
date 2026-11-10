@@ -1,0 +1,34 @@
+{
+  "name": "periodHierarchySlicer",
+  "title": "Period Hierarchy Slicer",
+  "description": "One dropdown filter with an expandable Year › Month › Week tree; picks filter the whole report",
+  "guid": "periodHierarchySlicerFC8D21A984BF4EB0A95E4B086D8ABCAD",
+  "version": "1.0.0.1",
+  "sha": "e112533265d0a71551698de98de622313a3365b44893a47c6fdd5a2f79af86e2",
+  "roles": {
+    "levels": "Grouping",
+    "values": "Measure"
+  },
+  "role_info": {
+    "levels": {
+      "displayName": "Levels",
+      "description": "The levels of the tree, from the top (for example Year, Month, Week). Each pick filters the report on that level.",
+      "max": 6
+    },
+    "values": {
+      "displayName": "Values",
+      "description": "Optional. A number shown next to every item (for example Net Sales).",
+      "max": 1
+    }
+  },
+  "required": [
+    [
+      "levels"
+    ]
+  ],
+  "created": 1793801435.914405,
+  "updated": 1793801435.914405,
+  "project": "kirana-shops-bangalore-0c8a",
+  "project_name": "kirana shops bangalore",
+  "report": "Kirana Shops Bangalore"
+}

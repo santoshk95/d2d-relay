@@ -1,0 +1,801 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Values (details)",
+      "displayNameKey": "Role_Details",
+      "name": "details",
+      "kind": "Grouping",
+      "description": "Scatter: one point per value, for example Store.",
+      "descriptionKey": "Role_Details_Desc"
+    },
+    {
+      "displayName": "Legend",
+      "displayNameKey": "Role_Legend",
+      "name": "legend",
+      "kind": "Grouping",
+      "description": "Colors points by group. Gantt: the phase.",
+      "descriptionKey": "Role_Legend_Desc"
+    },
+    {
+      "displayName": "X-axis category",
+      "displayNameKey": "Role_XCat",
+      "name": "xCategory",
+      "kind": "Grouping",
+      "description": "Dot plot: a categorical x-axis.",
+      "descriptionKey": "Role_XCat_Desc"
+    },
+    {
+      "displayName": "Play axis",
+      "displayNameKey": "Role_Play",
+      "name": "play",
+      "kind": "Grouping",
+      "description": "Animates the scatter through the values, for example Year.",
+      "descriptionKey": "Role_Play_Desc"
+    },
+    {
+      "displayName": "X-axis",
+      "displayNameKey": "Role_X",
+      "name": "x",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Y-axis",
+      "displayNameKey": "Role_Y",
+      "name": "y",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Size",
+      "displayNameKey": "Role_Size",
+      "name": "size",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Task",
+      "displayNameKey": "Role_Task",
+      "name": "task",
+      "kind": "Grouping",
+      "description": "Gantt: one bar per task.",
+      "descriptionKey": "Role_Task_Desc"
+    },
+    {
+      "displayName": "Start date",
+      "displayNameKey": "Role_Start",
+      "name": "start",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "End date",
+      "displayNameKey": "Role_End",
+      "name": "end",
+      "kind": "Grouping",
+      "description": "Gantt: leave blank for a milestone.",
+      "descriptionKey": "Role_End_Desc"
+    },
+    {
+      "displayName": "Owner",
+      "displayNameKey": "Role_Owner",
+      "name": "owner",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "% complete",
+      "displayNameKey": "Role_Progress",
+      "name": "progress",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Tooltips",
+      "displayNameKey": "Role_Tooltips",
+      "name": "tooltips",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "details": {
+            "max": 1
+          },
+          "legend": {
+            "max": 1
+          },
+          "xCategory": {
+            "max": 1
+          },
+          "play": {
+            "max": 1
+          },
+          "x": {
+            "max": 1
+          },
+          "y": {
+            "max": 1
+          },
+          "size": {
+            "max": 1
+          },
+          "task": {
+            "max": 1
+          },
+          "start": {
+            "max": 1
+          },
+          "end": {
+            "max": 1
+          },
+          "owner": {
+            "max": 1
+          },
+          "progress": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "select": [
+            {
+              "for": {
+                "in": "details"
+              }
+            },
+            {
+              "for": {
+                "in": "legend"
+              }
+            },
+            {
+              "for": {
+                "in": "xCategory"
+              }
+            },
+            {
+              "for": {
+                "in": "play"
+              }
+            },
+            {
+              "for": {
+                "in": "task"
+              }
+            },
+            {
+              "for": {
+                "in": "start"
+              }
+            },
+            {
+              "for": {
+                "in": "end"
+              }
+            },
+            {
+              "for": {
+                "in": "owner"
+              }
+            }
+          ],
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 10000
+            }
+          }
+        },
+        "values": {
+          "select": [
+            {
+              "for": {
+                "in": "x"
+              }
+            },
+            {
+              "for": {
+                "in": "y"
+              }
+            },
+            {
+              "for": {
+                "in": "size"
+              }
+            },
+            {
+              "for": {
+                "in": "progress"
+              }
+            },
+            {
+              "for": {
+                "in": "tooltips"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "style": {
+      "properties": {
+        "fontFamily": {
+          "type": {
+            "formatting": {
+              "fontFamily": true
+            }
+          }
+        },
+        "textColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "keepOthers": {
+          "type": {
+            "bool": true
+          }
+        },
+        "marker": {
+          "type": {
+            "bool": true
+          }
+        },
+        "markerColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "markerHighlight": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "palette": {
+      "properties": {
+        "source": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "theme",
+                "displayName": "Report theme"
+              },
+              {
+                "value": "brand",
+                "displayName": "Brand color"
+              },
+              {
+                "value": "custom",
+                "displayName": "Custom list"
+              }
+            ]
+          }
+        },
+        "brand": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "mode": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "spectrum",
+                "displayName": "Spectrum"
+              },
+              {
+                "value": "analogous",
+                "displayName": "Analogous"
+              },
+              {
+                "value": "mono",
+                "displayName": "Mono"
+              }
+            ]
+          }
+        },
+        "custom": {
+          "type": {
+            "text": true
+          }
+        }
+      }
+    },
+    "dataColors": {
+      "properties": {
+        "fill": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "labels": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "displayUnits": {
+          "type": {
+            "formatting": {
+              "labelDisplayUnits": true
+            }
+          }
+        },
+        "decimals": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "categoryAxis": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "title": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "valueAxis": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "displayUnits": {
+          "type": {
+            "formatting": {
+              "labelDisplayUnits": true
+            }
+          }
+        },
+        "decimals": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "start": {
+          "type": {
+            "text": true
+          }
+        },
+        "end": {
+          "type": {
+            "text": true
+          }
+        },
+        "title": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "gridlines": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "style": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "solid",
+                "displayName": "Solid"
+              },
+              {
+                "value": "dashed",
+                "displayName": "Dashed"
+              },
+              {
+                "value": "dotted",
+                "displayName": "Dotted"
+              }
+            ]
+          }
+        },
+        "width": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "legend": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "position": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "top",
+                "displayName": "Top"
+              },
+              {
+                "value": "topCenter",
+                "displayName": "Top center"
+              },
+              {
+                "value": "bottom",
+                "displayName": "Bottom"
+              },
+              {
+                "value": "bottomCenter",
+                "displayName": "Bottom center"
+              },
+              {
+                "value": "right",
+                "displayName": "Right"
+              }
+            ]
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "title": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "chart": {
+      "properties": {
+        "chartType": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "scatter",
+                "displayName": "Scatter or bubble"
+              },
+              {
+                "value": "dotplot",
+                "displayName": "Dot plot"
+              },
+              {
+                "value": "gantt",
+                "displayName": "Gantt"
+              }
+            ]
+          }
+        },
+        "look": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "flat",
+                "displayName": "Flat"
+              },
+              {
+                "value": "soft",
+                "displayName": "Soft"
+              },
+              {
+                "value": "3d",
+                "displayName": "3D"
+              }
+            ]
+          }
+        },
+        "shadow": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "points": {
+      "properties": {
+        "shape": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "circle",
+                "displayName": "Circle"
+              },
+              {
+                "value": "square",
+                "displayName": "Square"
+              },
+              {
+                "value": "diamond",
+                "displayName": "Diamond"
+              }
+            ]
+          }
+        },
+        "size": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "maxBubble": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "opacity": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "colorBy": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "legend",
+                "displayName": "Legend"
+              },
+              {
+                "value": "single",
+                "displayName": "One color"
+              },
+              {
+                "value": "cluster",
+                "displayName": "Automatic clusters"
+              }
+            ]
+          }
+        },
+        "clusters": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "guides": {
+      "properties": {
+        "quadrants": {
+          "type": {
+            "bool": true
+          }
+        },
+        "xSplit": {
+          "type": {
+            "text": true
+          }
+        },
+        "ySplit": {
+          "type": {
+            "text": true
+          }
+        },
+        "trend": {
+          "type": {
+            "bool": true
+          }
+        },
+        "ratio": {
+          "type": {
+            "bool": true
+          }
+        },
+        "symmetry": {
+          "type": {
+            "bool": true
+          }
+        },
+        "xLog": {
+          "type": {
+            "bool": true
+          }
+        },
+        "yLog": {
+          "type": {
+            "bool": true
+          }
+        },
+        "zoom": {
+          "type": {
+            "bool": true
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      },
+      "objectCategory": 2
+    },
+    "play": {
+      "properties": {
+        "speed": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "loop": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "gantt": {
+      "properties": {
+        "progress": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "fill",
+                "displayName": "Fill the bar"
+              },
+              {
+                "value": "overlay",
+                "displayName": "Thin overlay"
+              },
+              {
+                "value": "none",
+                "displayName": "None"
+              }
+            ]
+          }
+        },
+        "today": {
+          "type": {
+            "bool": true
+          }
+        },
+        "weekends": {
+          "type": {
+            "bool": true
+          }
+        },
+        "barHeight": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "ownerColumn": {
+          "type": {
+            "bool": true
+          }
+        },
+        "percentColumn": {
+          "type": {
+            "bool": true
+          }
+        },
+        "milestoneColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "radius": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    }
+  },
+  "tooltips": {
+    "supportedTypes": {
+      "default": true,
+      "canvas": true
+    },
+    "roles": [
+      "tooltips"
+    ]
+  },
+  "supportsHighlight": true,
+  "supportsLandingPage": true,
+  "supportsEmptyDataView": true,
+  "supportsKeyboardFocus": true,
+  "supportsMultiVisualSelection": true,
+  "privileges": []
+}

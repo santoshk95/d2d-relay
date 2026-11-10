@@ -1,0 +1,18 @@
+{
+  "Role_Group": "Group",
+  "Role_Group_Desc": "Optional. One box, violin or histogram color per value, for example Carrier or Channel.",
+  "Role_Detail": "Sample by",
+  "Role_Detail_Desc": "The field that identifies one observation, for example Order ID or Shipment ID. Each row becomes one data point.",
+  "Role_Values": "Values",
+  "Role_Values_Desc": "The value to describe. Parallel coordinates draws one axis per measure.",
+  "Role_Tooltips": "Tooltips",
+  "Landing_Line1": "Add a measure to Values and the field that identifies one observation (Order ID, Shipment ID) to Sample by.",
+  "Landing_Line2": "Add a Group to compare distributions. Pick histogram, box, violin or parallel coordinates in the Format pane.",
+  "Need_Two": "Parallel coordinates needs two or more measures in Values.",
+  "Warn_Limit_Title": "Showing the first 30,000 rows",
+  "Warn_Limit_Text": "There are more observations than the visual can show. Filter the report to see a complete distribution.",
+  "Default_Color": "Default color",
+  "Mark_Selected": "Selected: this visual is filtering other visuals",
+  "Mark_Filter": "This visual is filtering the report",
+  "Mark_Highlighted": "Highlighted by a selection in another visual"
+}

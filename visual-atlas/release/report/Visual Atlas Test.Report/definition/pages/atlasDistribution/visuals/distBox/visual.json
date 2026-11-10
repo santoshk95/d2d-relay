@@ -1,0 +1,144 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "distBox",
+  "position": {
+    "x": 212,
+    "y": 16,
+    "z": 1003,
+    "height": 336,
+    "width": 520,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "atlasDistribution1C4252B29C654CC1BF16155962622408",
+    "query": {
+      "queryState": {
+        "category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Carrier"
+                    }
+                  },
+                  "Property": "Carrier"
+                }
+              },
+              "queryRef": "Carrier.Carrier",
+              "nativeQueryRef": "Carrier"
+            }
+          ]
+        },
+        "detail": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Order ID"
+                }
+              },
+              "queryRef": "Orders.Order ID",
+              "nativeQueryRef": "Order ID"
+            }
+          ]
+        },
+        "values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Orders"
+                    }
+                  },
+                  "Property": "Days to Deliver"
+                }
+              },
+              "queryRef": "Orders.Days to Deliver",
+              "nativeQueryRef": "Days to Deliver"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "chart": [
+        {
+          "properties": {
+            "chartType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'box'"
+                }
+              }
+            },
+            "look": {
+              "expr": {
+                "Literal": {
+                  "Value": "'soft'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "box": [
+        {
+          "properties": {
+            "mean": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "valueAxis": [
+        {
+          "properties": {
+            "title": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Box and whisker · delivery days by carrier'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

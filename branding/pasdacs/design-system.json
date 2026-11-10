@@ -1,0 +1,39 @@
+{
+  "v": 3,
+  "layout": "files",
+  "createdOnFiles": { "v": 1, "at": "2026-11-06T06:27:46Z" },
+  "title": "PASDACS Brand Pack",
+  "namespace": "PASDACS",
+  "libraries": [],
+  "sections": {},
+  "groups": ["Logos", "Relay"],
+  "assetGroups": {
+    "Logos": {
+      "name": "Logos",
+      "tile": "l",
+      "order": ["logo.svg", "logo-dark.svg", "logo-mark.svg", "favicon-mark.svg", "logo-mark.png", "logo-email.png", "og-default.png"],
+      "files": {
+        "logo.svg": { "name": "logo.svg", "blob": "a1649f81cf28645a7cb6d3cb2830fc00", "size": 695, "type": "image/svg+xml" },
+        "logo-dark.svg": { "name": "logo-dark.svg", "blob": "5ed813267a233b17c5adc5d45cf18cae", "size": 695, "type": "image/svg+xml" },
+        "logo-mark.svg": { "name": "logo-mark.svg", "blob": "e6f45342e110e21c85f5c2fe5d441a6d", "size": 537, "type": "image/svg+xml" },
+        "favicon-mark.svg": { "name": "favicon-mark.svg", "blob": "9ec1ddcd15cfc5112feee18d8ccd9e6e", "size": 528, "type": "image/svg+xml" },
+        "logo-mark.png": { "name": "logo-mark.png", "blob": "08e3eaea808ce20e3a4d1ae742c25c2b", "size": 12801, "type": "image/png" },
+        "logo-email.png": { "name": "logo-email.png", "blob": "5506e9151569ec6835eed4e27f6e43f8", "size": 9850, "type": "image/png" },
+        "og-default.png": { "name": "og-default.png", "blob": "3867133cf31ad63b826484bbcfeb7e7d", "size": 29094, "type": "image/png" }
+      }
+    },
+    "Relay": {
+      "name": "Relay",
+      "tile": "l",
+      "order": ["relay-lockup.svg", "relay-lockup-dark.svg", "powered-by.svg"],
+      "files": {
+        "relay-lockup.svg": { "name": "relay-lockup.svg", "blob": "fd81f09a1756928968e11160cea94bfd", "size": 867, "type": "image/svg+xml" },
+        "relay-lockup-dark.svg": { "name": "relay-lockup-dark.svg", "blob": "6c7c32cafbf2a5aa34dc5df4f8c75b28", "size": 867, "type": "image/svg+xml" },
+        "powered-by.svg": { "name": "powered-by.svg", "blob": "892b57411ca24987ae3604c6bbec731e", "size": 854, "type": "image/svg+xml" }
+      }
+    }
+  },
+  "blobs": {},
+  "docs": { "readme": "project/README.md", "sections": [] },
+  "lastChange": { "by": "Raveena Ravindran", "at": "2026-11-06T06:40:00Z", "via": "GitHub · santoshk95/pasdacs-corporate-site@cc76249", "note": "Brand pack built from pasdacs.com for the Relay rebrand" }
+}

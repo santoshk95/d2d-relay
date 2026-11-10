@@ -1,0 +1,59 @@
+{
+  "name": "smallMultipleLines",
+  "title": "Small Multiple Lines",
+  "description": "One small line panel per group (e.g. study) comparing actual vs plan over time, with end labels showing value and % of plan and an on-track check",
+  "guid": "smallMultipleLines16139C3090BA483185B4ABC948B2E057",
+  "version": "1.0.0.4",
+  "sha": "594c2eeed1afa0000434aab08caa2fccf1840e1c5b6baa701587b1510164aa57",
+  "roles": {
+    "category": "Grouping",
+    "group": "Grouping",
+    "values": "Measure",
+    "comparison": "Measure",
+    "subtitle": "Measure",
+    "tooltips": "Measure"
+  },
+  "role_info": {
+    "category": {
+      "displayName": "Axis",
+      "description": "The x axis, usually a date or month.",
+      "max": 1
+    },
+    "group": {
+      "displayName": "Small multiples",
+      "description": "One panel per value, for example Study.",
+      "max": 1
+    },
+    "values": {
+      "displayName": "Values",
+      "description": "The actual line (for example cumulative enrolled).",
+      "max": 1
+    },
+    "comparison": {
+      "displayName": "Comparison",
+      "description": "Optional. The plan or target line; end labels show the value as % of it.",
+      "max": 1
+    },
+    "subtitle": {
+      "displayName": "Panel subtitle",
+      "description": "Optional. A text measure shown under each panel title.",
+      "max": 1
+    },
+    "tooltips": {
+      "displayName": "Tooltips",
+      "description": "Extra measures shown in the tooltip.",
+      "max": null
+    }
+  },
+  "required": [
+    [
+      "category",
+      "values"
+    ]
+  ],
+  "created": 1793716124.6770027,
+  "updated": 1793716124.6770027,
+  "project": "vrtx-extended-0e2a",
+  "project_name": "VRTX Extended",
+  "report": "Global Operations Dashboard"
+}

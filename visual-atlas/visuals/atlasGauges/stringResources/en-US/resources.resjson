@@ -1,0 +1,21 @@
+{
+  "Role_Category": "Category",
+  "Role_Category_Desc": "Optional. One card, gauge, ring or bullet per value (for example Region or Measure name).",
+  "Role_Trend": "Trend axis",
+  "Role_Trend_Desc": "Optional. A date or period for the KPI sparkline; the latest period is the value shown.",
+  "Role_Values": "Value",
+  "Role_Values_Desc": "The value. Several measures without a Category make one card each.",
+  "Role_Target": "Target",
+  "Role_Min": "Minimum",
+  "Role_Max": "Maximum",
+  "Role_Band1": "Band 1 (poor to fair)",
+  "Role_Band2": "Band 2 (fair to good)",
+  "Role_Tooltips": "Tooltips",
+  "Landing_Line1": "Add a measure to Value, and a Target, Minimum and Maximum if you have them.",
+  "Landing_Line2": "Add a Category for one tile per item, or a Trend axis for a KPI sparkline. Pick card, KPI, gauge, dial, radial bars, liquid fill, bullet or ticker in the Format pane.",
+  "Warn_Limit_Title": "Showing the first 10,000 rows",
+  "Warn_Limit_Text": "There is more data than the visual can show. Filter the report to see the rest.",
+  "Mark_Selected": "Selected: this visual is filtering other visuals",
+  "Mark_Filter": "This visual is filtering the report",
+  "Mark_Highlighted": "Highlighted by a selection in another visual"
+}

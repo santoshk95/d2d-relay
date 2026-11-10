@@ -1,0 +1,26 @@
+{
+  "visual": {
+    "name": "periodHierarchySlicer",
+    "displayName": "Period Hierarchy Slicer",
+    "guid": "periodHierarchySlicerFC8D21A984BF4EB0A95E4B086D8ABCAD",
+    "visualClassName": "Visual",
+    "version": "1.0.0.1",
+    "description": "One dropdown filter with an expandable Year › Month › Week tree; picks filter the whole report",
+    "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "5.11.1",
+  "author": {
+    "name": "RELAY by PASDACS",
+    "email": "info@pasdacs.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "externalJS": null,
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": [],
+  "version": "1.0.0.0"
+}

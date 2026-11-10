@@ -1,0 +1,494 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Legend",
+      "displayNameKey": "Role_Category",
+      "name": "category",
+      "kind": "Grouping",
+      "description": "The slices. Add a hierarchy, for example Category and Subcategory, to drill down.",
+      "descriptionKey": "Role_Category_Desc"
+    },
+    {
+      "displayName": "Details",
+      "displayNameKey": "Role_Series",
+      "name": "series",
+      "kind": "Grouping",
+      "description": "Optional. Splits each slice into an outer ring.",
+      "descriptionKey": "Role_Series_Desc"
+    },
+    {
+      "displayName": "Values",
+      "displayNameKey": "Role_Values",
+      "name": "values",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Tooltips",
+      "displayNameKey": "Role_Tooltips",
+      "name": "tooltips",
+      "kind": "Measure"
+    }
+  ],
+  "drilldown": {
+    "roles": [
+      "category"
+    ],
+    "canDisableDrill": {
+      "disabledByDefault": false
+    }
+  },
+  "sorting": {
+    "default": {}
+  },
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "category": {
+            "max": 1
+          },
+          "series": {
+            "max": 0
+          }
+        },
+        {
+          "category": {
+            "max": 1
+          },
+          "series": {
+            "max": 1
+          },
+          "values": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "for": {
+            "in": "category"
+          },
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 1000
+            }
+          }
+        },
+        "values": {
+          "group": {
+            "by": "series",
+            "select": [
+              {
+                "for": {
+                  "in": "values"
+                }
+              },
+              {
+                "for": {
+                  "in": "tooltips"
+                }
+              }
+            ],
+            "dataReductionAlgorithm": {
+              "top": {
+                "count": 30
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "objects": {
+    "style": {
+      "properties": {
+        "fontFamily": {
+          "type": {
+            "formatting": {
+              "fontFamily": true
+            }
+          }
+        },
+        "textColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "keepOthers": {
+          "type": {
+            "bool": true
+          }
+        },
+        "marker": {
+          "type": {
+            "bool": true
+          }
+        },
+        "markerColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "markerHighlight": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "palette": {
+      "properties": {
+        "source": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "theme",
+                "displayName": "Report theme"
+              },
+              {
+                "value": "brand",
+                "displayName": "Brand color"
+              },
+              {
+                "value": "custom",
+                "displayName": "Custom list"
+              }
+            ]
+          }
+        },
+        "brand": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "mode": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "spectrum",
+                "displayName": "Spectrum"
+              },
+              {
+                "value": "analogous",
+                "displayName": "Analogous"
+              },
+              {
+                "value": "mono",
+                "displayName": "Mono"
+              }
+            ]
+          }
+        },
+        "custom": {
+          "type": {
+            "text": true
+          }
+        }
+      }
+    },
+    "dataColors": {
+      "properties": {
+        "fill": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "labels": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "displayUnits": {
+          "type": {
+            "formatting": {
+              "labelDisplayUnits": true
+            }
+          }
+        },
+        "decimals": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "legend": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "position": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "top",
+                "displayName": "Top"
+              },
+              {
+                "value": "topCenter",
+                "displayName": "Top center"
+              },
+              {
+                "value": "bottom",
+                "displayName": "Bottom"
+              },
+              {
+                "value": "bottomCenter",
+                "displayName": "Bottom center"
+              },
+              {
+                "value": "right",
+                "displayName": "Right"
+              }
+            ]
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "color": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "title": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "chart": {
+      "properties": {
+        "chartType": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "pie",
+                "displayName": "Pie"
+              },
+              {
+                "value": "donut",
+                "displayName": "Donut"
+              }
+            ]
+          }
+        },
+        "look": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "flat",
+                "displayName": "Flat"
+              },
+              {
+                "value": "soft",
+                "displayName": "Soft"
+              },
+              {
+                "value": "3d",
+                "displayName": "3D"
+              }
+            ]
+          }
+        },
+        "shadow": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "hole": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "startAngle": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "half": {
+          "type": {
+            "bool": true
+          }
+        },
+        "sort": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "value",
+                "displayName": "Largest first"
+              },
+              {
+                "value": "none",
+                "displayName": "Data order"
+              }
+            ]
+          }
+        },
+        "topN": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "otherLabel": {
+          "type": {
+            "text": true
+          }
+        },
+        "gap": {
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "slices": {
+      "properties": {
+        "labelPosition": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "outside",
+                "displayName": "Outside with leader lines"
+              },
+              {
+                "value": "inside",
+                "displayName": "Inside"
+              },
+              {
+                "value": "auto",
+                "displayName": "Inside when it fits"
+              }
+            ]
+          }
+        },
+        "content": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "percent",
+                "displayName": "Percent"
+              },
+              {
+                "value": "categoryPercent",
+                "displayName": "Category, percent"
+              },
+              {
+                "value": "categoryValue",
+                "displayName": "Category, value"
+              },
+              {
+                "value": "all",
+                "displayName": "Category, value, percent"
+              },
+              {
+                "value": "value",
+                "displayName": "Value"
+              }
+            ]
+          }
+        },
+        "centerTotal": {
+          "type": {
+            "bool": true
+          }
+        },
+        "centerLabel": {
+          "type": {
+            "text": true
+          }
+        },
+        "track": {
+          "type": {
+            "bool": true
+          }
+        },
+        "trackColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "drill": {
+      "properties": {
+        "buttons": {
+          "type": {
+            "bool": true
+          }
+        },
+        "allow": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    }
+  },
+  "tooltips": {
+    "supportedTypes": {
+      "default": true,
+      "canvas": true
+    },
+    "roles": [
+      "tooltips"
+    ]
+  },
+  "supportsHighlight": true,
+  "supportsLandingPage": true,
+  "supportsEmptyDataView": true,
+  "supportsKeyboardFocus": true,
+  "supportsMultiVisualSelection": true,
+  "privileges": []
+}

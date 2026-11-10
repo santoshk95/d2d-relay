@@ -1,0 +1,456 @@
+# Power BI built-in visuals gallery — every `pbi.*` visual Relay places, with a wide range of Format-pane options
+# (per-series and per-category colors, field-value and gradient conditional formatting, display units, secondary
+# axis, small multiples, matrix banding, report-theme styles). Data: samples/sales.csv + samples/products.csv.
+# Built and checked by tests/stock_visuals_test.py; open the PBIP it writes in Power BI Desktop to see every visual.
+name: Stock Visuals Gallery
+description: "Power BI's own visuals with their formatting — the gallery behind `type: pbi.<visual>`"
+theme:
+  accent: "#0F766E"
+  look: soft
+  styles:                                    # report-theme defaults for Power BI's own visuals (every Format-pane option)
+    "*":
+      title: {fontSize: 12, bold: true}
+    pbi.clusteredColumnChart:
+      legend: {position: Top}
+    pbi.lineChart:
+      lineStyles: {strokeWidth: 3}
+tables:
+  - name: Sales
+    csv: sales.csv
+    description: One row per order line
+    columns:
+      - {name: Order ID, type: string, hidden: true}
+      - {name: Order Date, type: date, hidden: true}
+      - {name: Region, type: string}
+      - {name: City, type: string, category: City}
+      - {name: Category, type: string}
+      - {name: Product, type: string}
+      - {name: Channel, type: string}
+      - {name: Quantity, type: int, hidden: true}
+      - {name: Revenue Amount, source: Revenue, type: decimal, hidden: true}
+      - {name: Cost Amount, source: Cost, type: decimal, hidden: true}
+      - {name: Profit Amount, source: Profit, type: decimal, hidden: true}
+  - name: Products
+    csv: products.csv
+    columns:
+      - {name: Product, type: string}
+      - {name: Brand, type: string}
+      - {name: Supplier, type: string}
+      - {name: Target Margin, type: decimal, hidden: true}
+  - name: Date
+    date_table: {start: 2024-01-01, end: 2025-12-31}
+relationships: ["Sales[Order Date] -> Date[Date]", "Sales[Product] -> Products[Product]"]
+measures:
+  - {name: Revenue, format: \$#,0, folder: Sales, expression: "SUM ( Sales[Revenue Amount] )"}
+  - {name: Cost, format: \$#,0, folder: Sales, expression: "SUM ( Sales[Cost Amount] )"}
+  - {name: Profit, format: \$#,0, folder: Sales, expression: "SUM ( Sales[Profit Amount] )"}
+  - {name: Orders, format: "#,0", folder: Sales, expression: "DISTINCTCOUNT ( Sales[Order ID] )"}
+  - {name: Units, format: "#,0", folder: Sales, expression: "SUM ( Sales[Quantity] )"}
+  - {name: Margin %, format: 0.0%, folder: Sales, expression: "DIVIDE ( [Profit], [Revenue] )"}
+  - {name: Avg Order Value, format: "\\$#,0.00", folder: Sales, expression: "DIVIDE ( [Revenue], [Orders] )"}
+  - {name: Revenue LY, format: \$#,0, folder: Time, expression: "CALCULATE ( [Revenue], SAMEPERIODLASTYEAR ( 'Date'[Date] ) )"}
+  - {name: Revenue Change, format: \$#,0, folder: Time, expression: "[Revenue] - [Revenue LY]"}
+  - {name: Revenue vs LY %, format: "+0.0%;-0.0%;0.0%", folder: Time, expression: "DIVIDE ( [Revenue] - [Revenue LY], [Revenue LY] )"}
+  - {name: Revenue Target, format: \$#,0, folder: Targets, expression: "[Revenue LY] * 1.08"}
+  - {name: Target Margin %, format: 0.0%, folder: Targets, expression: "AVERAGE ( Products[Target Margin] )"}
+  - name: Margin Color
+    folder: Formatting
+    description: Green when the margin meets the product's target margin, red when not (field-value colors)
+    expression: IF ( [Margin %] >= [Target Margin %], "#1B7F3B", "#C0392B" )
+filters:
+  - {field: "Date[Year]", label: Year, default: 2025}
+pages:
+  - name: Cards & KPIs
+    rows:
+      - height: 150
+        visuals:
+          - id: kc_new
+            type: pbi.cardVisual
+            span: 3
+            fields:
+              values: ["[Revenue]", "[Profit]", "[Margin %]", "[Orders]"]
+              reference: "[Revenue vs LY %]"
+            format:
+              accentBar: {show: true, position: Left, width: 4}
+              outline: {show: false}
+              value: {fontSize: 22, bold: true}
+              label: {fontSize: 10}
+              referenceLabelTitle: {titleText: vs last year}
+            prototype:
+              sql: |
+                WITH c AS (SELECT SUM(s."Revenue Amount") AS rev, SUM(s."Profit Amount") AS prof, COUNT(DISTINCT s."Order ID") AS orders
+                           FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025),
+                     l AS (SELECT SUM(s."Revenue Amount") AS rev FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2024)
+                SELECT c.rev AS "Revenue", c.prof AS "Profit", c.prof / c.rev AS "Margin %", c.orders AS "Orders",
+                       (c.rev - l.rev) / l.rev AS "Revenue vs LY %" FROM c, l
+          - id: kc_kpi
+            type: pbi.kpi
+            title: Revenue vs target
+            fields: {value: "[Revenue]", trend: "Date[Month Start]", target: "[Revenue Target]"}
+            format:
+              goals: {direction: High is good, goalText: Target, showDistance: true}
+              status: {goodColor: "#1B7F3B", badColor: "#C0392B"}
+              indicator: {indicatorDisplayUnits: 1000, indicatorPrecision: 1}
+            prototype:
+              sql: |
+                WITH c AS (SELECT d."Month Start" AS m, SUM(s."Revenue Amount") AS rev FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date"
+                           WHERE d."Year" = 2025 GROUP BY 1),
+                     l AS (SELECT CAST(d."Month Start" + INTERVAL 1 YEAR AS DATE) AS m, SUM(s."Revenue Amount") AS rev FROM "Sales" s
+                           JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2024 GROUP BY 1)
+                SELECT c.m AS "Month Start", c.rev AS "Revenue", l.rev * 1.08 AS "Revenue Target" FROM c LEFT JOIN l USING (m) ORDER BY 1
+      - height: 230
+        visuals:
+          - id: kc_gauge
+            type: pbi.gauge
+            title: Margin vs target
+            fields: {value: "[Margin %]", target: "[Target Margin %]"}
+            format:
+              axis: {min: 0, max: 0.5}
+              dataPoint: {fill: "#0F766E"}
+              calloutValue: {bold: true}
+            prototype:
+              sql: |
+                SELECT SUM(s."Profit Amount") / SUM(s."Revenue Amount") AS "Margin %", (SELECT AVG("Target Margin") FROM "Products") AS "Target Margin %"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025
+          - id: kc_card
+            type: pbi.card
+            title: Average order
+            fields: {value: "[Avg Order Value]"}
+            format:
+              labels: {fontSize: 28, labelDisplayUnits: None, color: "#0F766E"}
+              categoryLabels: {show: true}
+            prototype:
+              sql: |
+                SELECT SUM(s."Revenue Amount") / COUNT(DISTINCT s."Order ID") AS "Avg Order Value"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025
+          - id: kc_rows
+            type: pbi.multiRowCard
+            title: By region
+            fields: {values: ["Sales[Region]", "[Revenue]", "[Margin %]"]}
+            format:
+              card: {barShow: true, barColor: "#0F766E"}
+            prototype:
+              sql: |
+                SELECT s."Region" AS "Region", SUM(s."Revenue Amount") AS "Revenue", SUM(s."Profit Amount") / SUM(s."Revenue Amount") AS "Margin %"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1 ORDER BY 2 DESC
+  - name: Columns & bars
+    rows:
+      - visuals:
+          - id: cb_clustered
+            type: pbi.clusteredColumnChart
+            title: Revenue by region, this year and last
+            fields: {axis: "Sales[Region]", values: ["[Revenue]", "[Revenue LY]"], tooltips: "[Margin %]"}
+            sort: ["[Revenue]", desc]
+            format:
+              dataPoint:
+                - {for: "[Revenue]", fill: "theme:0"}
+                - {for: "[Revenue LY]", fill: "#9AA5B1"}
+              labels: {show: true, labelDisplayUnits: Thousands, labelPrecision: 0}
+              valueAxis: {gridlineStyle: dotted, showAxisTitle: false}
+              categoryAxis: {showAxisTitle: false}
+            prototype:
+              sql: |
+                WITH c AS (SELECT s."Region" AS r, SUM(s."Revenue Amount") AS rev, SUM(s."Profit Amount") AS prof FROM "Sales" s
+                           JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1),
+                     l AS (SELECT s."Region" AS r, SUM(s."Revenue Amount") AS rev FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date"
+                           WHERE d."Year" = 2024 GROUP BY 1)
+                SELECT c.r AS "Region", c.rev AS "Revenue", l.rev AS "Revenue LY", c.prof / c.rev AS "Margin %" FROM c LEFT JOIN l USING (r) ORDER BY 2 DESC
+          - id: cb_stacked
+            type: pbi.columnChart
+            title: Revenue by category and channel
+            fields: {axis: "Sales[Category]", legend: "Sales[Channel]", values: "[Revenue]"}
+            format:
+              legend: {position: TopCenter, showTitle: false}
+              valueAxis: {labelDisplayUnits: Thousands}
+            prototype:
+              sql: |
+                SELECT s."Category" AS "Category", s."Channel" AS "Channel", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2 ORDER BY 1, 2
+          - id: cb_percent
+            type: pbi.hundredPercentStackedColumnChart
+            title: Channel mix by region
+            fields: {axis: "Sales[Region]", legend: "Sales[Channel]", values: "[Revenue]"}
+            format:
+              labels: {show: true}
+            prototype:
+              sql: |
+                SELECT s."Region" AS "Region", s."Channel" AS "Channel", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2 ORDER BY 1, 2
+      - visuals:
+          - id: cb_bar
+            type: pbi.clusteredBarChart
+            title: Margin by product (green = on target)
+            fields: {axis: "Sales[Product]", values: "[Margin %]"}
+            sort: ["[Margin %]", desc]
+            format:
+              dataPoint: {fill: "[Margin Color]"}
+              labels: {show: true, labelPrecision: 1}
+            prototype:
+              sql: |
+                SELECT s."Product" AS "Product", SUM(s."Profit Amount") / SUM(s."Revenue Amount") AS "Margin %",
+                       CASE WHEN SUM(s."Profit Amount") / SUM(s."Revenue Amount") >= MAX(p."Target Margin") THEN '#1B7F3B' ELSE '#C0392B' END AS "Margin Color"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" JOIN "Products" p ON p."Product" = s."Product"
+                WHERE d."Year" = 2025 GROUP BY 1 ORDER BY 2 DESC
+          - id: cb_stackbar
+            type: pbi.barChart
+            title: Revenue by region and channel
+            fields: {axis: "Sales[Region]", legend: "Sales[Channel]", values: "[Revenue]"}
+            format:
+              dataPoint:
+                - {for: {"Sales[Channel]": Online}, fill: "#0F766E"}
+                - {for: {"Sales[Channel]": Partner}, fill: "#5EAAA8"}
+                - {for: {"Sales[Channel]": Retail}, fill: "#B6D7D5"}
+            prototype:
+              sql: |
+                SELECT s."Region" AS "Region", s."Channel" AS "Channel", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2 ORDER BY 1, 2
+          - id: cb_pctbar
+            type: pbi.hundredPercentStackedBarChart
+            title: Units by category and channel
+            fields: {axis: "Sales[Category]", legend: "Sales[Channel]", values: "[Units]"}
+            prototype:
+              sql: |
+                SELECT s."Category" AS "Category", s."Channel" AS "Channel", SUM(s."Quantity") AS "Units"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2 ORDER BY 1, 2
+      - visuals:
+          - id: cb_ribbon
+            type: pbi.ribbonChart
+            title: Category ranking by quarter
+            fields: {axis: "Date[Quarter]", legend: "Sales[Category]", values: "[Revenue]"}
+            prototype:
+              sql: |
+                SELECT d."Quarter" AS "Quarter", s."Category" AS "Category", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2 ORDER BY 1, 2
+          - id: cb_waterfall
+            type: pbi.waterfallChart
+            title: What moved revenue vs last year
+            fields: {category: "Sales[Region]", values: "[Revenue Change]"}
+            format:
+              sentimentColors: {increaseFill: "#1B7F3B", decreaseFill: "#C0392B", totalFill: "#0F766E"}
+              labels: {show: true, labelDisplayUnits: Thousands}
+            prototype:
+              sql: |
+                WITH c AS (SELECT s."Region" AS r, SUM(s."Revenue Amount") AS rev FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date"
+                           WHERE d."Year" = 2025 GROUP BY 1),
+                     l AS (SELECT s."Region" AS r, SUM(s."Revenue Amount") AS rev FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date"
+                           WHERE d."Year" = 2024 GROUP BY 1)
+                SELECT c.r AS "Region", c.rev - COALESCE(l.rev, 0) AS "Revenue Change" FROM c LEFT JOIN l USING (r) ORDER BY 1
+          - id: cb_multiples
+            type: pbi.clusteredColumnChart
+            title: Revenue by channel, one chart per region
+            fields: {axis: "Sales[Channel]", values: "[Revenue]", smallMultiples: "Sales[Region]"}
+            format:
+              smallMultiplesLayout: {columnCount: 2}
+              valueAxis: {labelDisplayUnits: Thousands, showAxisTitle: false}
+              categoryAxis: {showAxisTitle: false}
+            prototype:
+              sql: |
+                SELECT s."Region" AS "Region", s."Channel" AS "Channel", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2 ORDER BY 1, 2
+  - name: Lines & areas
+    rows:
+      - visuals:
+          - id: la_line
+            type: pbi.lineChart
+            span: 2
+            title: Revenue vs last year, with margin on the secondary axis
+            fields: {axis: "Date[Month Start]", values: ["[Revenue]", "[Revenue LY]"], lineValues: "[Margin %]"}
+            format:
+              lineStyles:
+                - {showMarker: true, lineChartType: smooth}
+                - {for: "[Revenue LY]", lineStyle: dashed, strokeColor: "#9AA5B1"}
+              legend: {position: TopCenter}
+              valueAxis: {labelDisplayUnits: Thousands}
+            prototype:
+              sql: |
+                WITH c AS (SELECT d."Month Start" AS m, SUM(s."Revenue Amount") AS rev, SUM(s."Profit Amount") AS prof FROM "Sales" s
+                           JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1),
+                     l AS (SELECT CAST(d."Month Start" + INTERVAL 1 YEAR AS DATE) AS m, SUM(s."Revenue Amount") AS rev FROM "Sales" s
+                           JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2024 GROUP BY 1)
+                SELECT c.m AS "Month Start", c.rev AS "Revenue", l.rev AS "Revenue LY", c.prof / c.rev AS "Margin %" FROM c LEFT JOIN l USING (m) ORDER BY 1
+          - id: la_area
+            type: pbi.areaChart
+            title: Profit by month
+            fields: {axis: "Date[Month Start]", values: "[Profit]"}
+            format:
+              valueAxis: {labelDisplayUnits: Thousands, showAxisTitle: false}
+            prototype:
+              sql: |
+                SELECT d."Month Start" AS "Month Start", SUM(s."Profit Amount") AS "Profit"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1 ORDER BY 1
+      - visuals:
+          - id: la_stacked
+            type: pbi.stackedAreaChart
+            title: Revenue by channel
+            fields: {axis: "Date[Month Start]", legend: "Sales[Channel]", values: "[Revenue]"}
+            prototype:
+              sql: |
+                SELECT d."Month Start" AS "Month Start", s."Channel" AS "Channel", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2 ORDER BY 1, 2
+          - id: la_percent
+            type: pbi.hundredPercentStackedAreaChart
+            title: Category share by month
+            fields: {axis: "Date[Month Start]", legend: "Sales[Category]", values: "[Revenue]"}
+            prototype:
+              sql: |
+                SELECT d."Month Start" AS "Month Start", s."Category" AS "Category", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2 ORDER BY 1, 2
+      - visuals:
+          - id: la_combo
+            type: pbi.lineClusteredColumnComboChart
+            title: Revenue (columns) and margin (line)
+            fields: {axis: "Date[Month Start]", values: "[Revenue]", lineValues: "[Margin %]"}
+            format:
+              dataPoint: {fill: "#5EAAA8"}
+              labels: {show: false}
+            prototype:
+              sql: |
+                SELECT d."Month Start" AS "Month Start", SUM(s."Revenue Amount") AS "Revenue", SUM(s."Profit Amount") / SUM(s."Revenue Amount") AS "Margin %"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1 ORDER BY 1
+          - id: la_combo2
+            type: pbi.lineStackedColumnComboChart
+            title: Revenue by channel and last year
+            fields: {axis: "Date[Quarter]", legend: "Sales[Channel]", values: "[Revenue]", lineValues: "[Revenue LY]"}
+            prototype:
+              sql: |
+                WITH c AS (SELECT d."Quarter" AS q, s."Channel" AS ch, SUM(s."Revenue Amount") AS rev FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date"
+                           WHERE d."Year" = 2025 GROUP BY 1, 2),
+                     l AS (SELECT d."Quarter" AS q, SUM(s."Revenue Amount") AS rev FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date"
+                           WHERE d."Year" = 2024 GROUP BY 1)
+                SELECT c.q AS "Quarter", c.ch AS "Channel", c.rev AS "Revenue", l.rev AS "Revenue LY" FROM c LEFT JOIN l USING (q) ORDER BY 1, 2
+  - name: Parts & relationships
+    rows:
+      - visuals:
+          - id: pr_pie
+            type: pbi.pieChart
+            title: Revenue by channel
+            fields: {legend: "Sales[Channel]", values: "[Revenue]"}
+            format:
+              labels: {labelStyle: "Data value, percent of total", labelDisplayUnits: Thousands}
+              legend: {position: Bottom}
+            prototype:
+              sql: |
+                SELECT s."Channel" AS "Channel", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1 ORDER BY 2 DESC
+          - id: pr_donut
+            type: pbi.donutChart
+            title: Revenue by category
+            fields: {legend: "Sales[Category]", values: "[Revenue]"}
+            format:
+              slices: {innerRadiusRatio: 62}
+              labels: {labelStyle: "Category, percent of total"}
+              dataPoint:
+                - {for: {"Sales[Category]": Electronics}, fill: "#0F766E"}
+            prototype:
+              sql: |
+                SELECT s."Category" AS "Category", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1 ORDER BY 2 DESC
+          - id: pr_treemap
+            type: pbi.treemap
+            title: Revenue by product (color = margin)
+            fields: {category: "Sales[Product]", values: "[Revenue]", tooltips: "[Margin %]"}
+            format:
+              dataPoint: {fill: {gradient: {input: "[Margin %]", min: "#F4D6CF", max: "#0F766E"}}}
+              labels: {show: true, labelDisplayUnits: Thousands}
+            prototype:
+              sql: |
+                SELECT s."Product" AS "Product", SUM(s."Revenue Amount") AS "Revenue", SUM(s."Profit Amount") / SUM(s."Revenue Amount") AS "Margin %"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1 ORDER BY 2 DESC
+          - id: pr_funnel
+            type: pbi.funnel
+            title: Revenue by channel (funnel)
+            fields: {category: "Sales[Channel]", values: "[Revenue]"}
+            format:
+              labels: {funnelLabelStyle: "Data, percent of first", labelDisplayUnits: Thousands}
+              dataPoint: {fill: "#0F766E"}
+            prototype:
+              sql: |
+                SELECT s."Channel" AS "Channel", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1 ORDER BY 2 DESC
+      - visuals:
+          - id: pr_scatter
+            type: pbi.scatterChart
+            title: Products — revenue vs margin (size = units)
+            fields: {details: "Sales[Product]", legend: "Sales[Category]", x: "[Revenue]", y: "[Margin %]", size: "[Units]"}
+            format:
+              categoryLabels: {show: true}
+            prototype:
+              sql: |
+                SELECT s."Product" AS "Product", s."Category" AS "Category", SUM(s."Revenue Amount") AS "Revenue",
+                       SUM(s."Profit Amount") / SUM(s."Revenue Amount") AS "Margin %", SUM(s."Quantity") AS "Units"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2
+          - id: pr_decomp
+            type: pbi.decompositionTreeVisual
+            title: Revenue, broken down
+            fields: {analyze: "[Revenue]", explainBy: ["Sales[Region]", "Sales[Category]", "Sales[Channel]"]}
+            prototype:
+              sql: |
+                SELECT s."Region" AS "Region", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1 ORDER BY 2 DESC
+          - id: pr_drivers
+            type: pbi.keyDriversVisual
+            title: What influences margin
+            fields: {analyze: "[Margin %]", explainBy: ["Sales[Region]", "Sales[Channel]", "Sales[Category]"]}
+            prototype:
+              sql: |
+                SELECT s."Region" AS "Region", s."Channel" AS "Channel", s."Category" AS "Category",
+                       SUM(s."Profit Amount") / SUM(s."Revenue Amount") AS "Margin %"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2, 3
+  - name: Tables & maps
+    rows:
+      - height: 340
+        visuals:
+          - id: tm_table
+            type: pbi.tableEx
+            span: 2
+            title: Products
+            fields: {columns: ["Sales[Product]", "Sales[Category]", "[Revenue]", "[Margin %]", "[Revenue vs LY %]"]}
+            sort: ["[Revenue]", desc]
+            format:
+              values:
+                - {backColorPrimary: "#FFFFFF", backColorSecondary: "#F2F7F7"}
+                - {for: "[Margin %]", backColor: {gradient: {input: "[Margin %]", min: "#FBE3DE", max: "#CFE8E5"}}}
+              columnHeaders: {bold: true, fontColor: "#0F766E"}
+              total: {totals: true}
+            prototype:
+              sql: |
+                WITH c AS (SELECT s."Product" AS p, s."Category" AS c, SUM(s."Revenue Amount") AS rev, SUM(s."Profit Amount") AS prof FROM "Sales" s
+                           JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2),
+                     l AS (SELECT s."Product" AS p, s."Category" AS c, SUM(s."Revenue Amount") AS rev FROM "Sales" s
+                           JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2024 GROUP BY 1, 2)
+                SELECT c.p AS "Product", c.c AS "Category", c.rev AS "Revenue", c.prof / c.rev AS "Margin %", (c.rev - l.rev) / l.rev AS "Revenue vs LY %"
+                FROM c LEFT JOIN l USING (p, c) ORDER BY 3 DESC
+          - id: tm_matrix
+            type: pbi.pivotTable
+            span: 2
+            title: Region × channel
+            fields: {rows: "Sales[Region]", columns: "Sales[Channel]", values: "[Revenue]"}
+            format:
+              values: {backColorPrimary: "#FFFFFF", backColorSecondary: "#F2F7F7"}
+              subTotals: [{state: Row, rowSubtotals: true}, {state: Column, columnSubtotals: true}]
+              columnHeaders: {bold: true}
+            prototype:
+              sql: |
+                SELECT s."Region" AS "Region", s."Channel" AS "Channel", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1, 2 ORDER BY 1, 2
+      - visuals:
+          - id: tm_slicer
+            type: pbi.slicer
+            title: Category
+            fields: {field: "Sales[Category]"}
+            format:
+              data: {mode: HorizontalList}
+              header: {show: false}
+            prototype:
+              sql: SELECT DISTINCT s."Category" AS "Category" FROM "Sales" s ORDER BY 1
+          - id: tm_map
+            type: pbi.map
+            span: 2
+            title: Revenue by city
+            fields: {location: "Sales[City]", size: "[Revenue]"}
+            format:
+              dataPoint: {fill: "#0F766E"}
+            prototype:
+              sql: |
+                SELECT s."City" AS "City", SUM(s."Revenue Amount") AS "Revenue"
+                FROM "Sales" s JOIN "Date" d ON d."Date" = s."Order Date" WHERE d."Year" = 2025 GROUP BY 1 ORDER BY 2 DESC

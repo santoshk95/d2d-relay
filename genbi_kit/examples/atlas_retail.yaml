@@ -1,0 +1,1754 @@
+# Atlas Retail — tested reference definition (no prototype SQL). Patterns, not a template.
+name: Atlas Retail
+description: 'Worldwide retail performance: sales, stores, categories, customers and online (Jan 2024 - Oct 2026).'
+theme:
+  page_bg: '#F7F3EE'
+  card_bg: '#FFFFFF'
+  card_border: '#E7E0D7'
+  text: '#1F1A17'
+  muted: '#6F6761'
+  accent: '#DD7A12'
+  accent_tint: '#FBE7CC'
+  font: Segoe UI
+  radius: 10
+  data_colors:
+  - '#DD7A12'
+  - '#9C4F0C'
+  - '#F2B166'
+  - '#3B78D8'
+  - '#6F6761'
+  - '#C9A27A'
+  - '#2E7D3A'
+  - '#B3261E'
+tables:
+- name: Country
+  csv: dim_country.csv
+  description: Countries and regions
+  columns:
+  - name: CountryKey
+    type: int
+    hidden: true
+  - name: CountryCode
+    type: string
+  - name: Country
+    type: string
+  - name: Region
+    type: string
+  - name: Currency
+    type: string
+  - name: OnlineAvailable
+    type: string
+- name: Store
+  csv: dim_store.csv
+  description: Physical stores plus one online store per online market
+  columns:
+  - name: StoreKey
+    type: int
+    hidden: true
+  - name: StoreCode
+    type: string
+  - name: Store
+    type: string
+  - name: StoreType
+    type: string
+  - name: Channel
+    type: string
+  - name: Format
+    type: string
+  - name: City
+    type: string
+  - name: CountryKey
+    type: int
+    hidden: true
+  - name: OpenDate
+    type: date
+  - name: CloseDate
+    type: date
+  - name: SellingAreaSqm
+    type: int
+  - name: Manager
+    type: string
+- name: Category
+  csv: dim_category.csv
+  columns:
+  - name: CategoryKey
+    type: int
+    hidden: true
+  - name: Category
+    type: string
+  - name: Department
+    type: string
+  - name: SortOrder
+    type: int
+    hidden: true
+- name: Sales
+  csv: fact_sales.csv
+  description: Daily sales by store and category
+  columns:
+  - name: Date
+    type: date
+    hidden: true
+  - name: StoreKey
+    type: int
+    hidden: true
+  - name: CategoryKey
+    type: int
+    hidden: true
+  - name: NetSales
+    type: decimal
+    hidden: true
+  - name: GrossProfit
+    type: decimal
+    hidden: true
+  - name: Unit Count
+    source: Units
+    type: int
+    hidden: true
+  - name: Discount Amount
+    source: Discount
+    type: decimal
+    hidden: true
+- name: Targets
+  csv: fact_targets.csv
+  columns:
+  - name: Month
+    type: date
+    hidden: true
+  - name: StoreKey
+    type: int
+    hidden: true
+  - name: SalesTarget
+    type: decimal
+    hidden: true
+  - name: GrossProfitTarget
+    type: decimal
+    hidden: true
+- name: Footfall
+  csv: fact_footfall.csv
+  description: Hourly footfall and transactions, physical stores
+  columns:
+  - name: Date
+    type: date
+    hidden: true
+  - name: StoreKey
+    type: int
+    hidden: true
+  - name: Hour
+    type: int
+  - name: Visitors
+    source: Footfall
+    type: int
+    hidden: true
+  - name: Transaction Count
+    source: Transactions
+    type: int
+    hidden: true
+- name: Inventory
+  csv: fact_inventory.csv
+  columns:
+  - name: WeekEnding
+    type: date
+    hidden: true
+  - name: StoreKey
+    type: int
+    hidden: true
+  - name: CategoryKey
+    type: int
+    hidden: true
+  - name: StockValue
+    type: decimal
+    hidden: true
+  - name: StockUnits
+    type: int
+    hidden: true
+- name: Online Funnel
+  csv: fact_online_funnel.csv
+  columns:
+  - name: Date
+    type: date
+    hidden: true
+  - name: CountryKey
+    type: int
+    hidden: true
+  - name: Device
+    type: string
+  - name: Source
+    type: string
+  - name: Session Count
+    source: Sessions
+    type: int
+    hidden: true
+  - name: ProductViews
+    type: int
+    hidden: true
+  - name: AddToCart
+    type: int
+    hidden: true
+  - name: Checkouts
+    type: int
+    hidden: true
+  - name: Order Count
+    source: Orders
+    type: int
+    hidden: true
+- name: Customers
+  csv: fact_customers.csv
+  columns:
+  - name: Month
+    type: date
+    hidden: true
+  - name: StoreKey
+    type: int
+    hidden: true
+  - name: Tier
+    type: string
+  - name: ActiveCustomers
+    type: int
+    hidden: true
+  - name: NewCustomers
+    type: int
+    hidden: true
+  - name: RepeatCustomers
+    type: int
+    hidden: true
+  - name: CustomerSales
+    type: decimal
+    hidden: true
+- name: Cohorts
+  csv: fact_cohorts.csv
+  columns:
+  - name: CohortMonth
+    type: date
+    hidden: true
+  - name: CountryKey
+    type: int
+    hidden: true
+  - name: MonthsSince
+    type: int
+  - name: CohortSize
+    type: int
+    hidden: true
+  - name: ActiveCustomers
+    type: int
+    hidden: true
+- name: Date
+  description: Calendar built in Power Query
+  date_table:
+    start: '2024-01-01'
+    end: '2026-12-31'
+    is_past_from: Sales[Date]
+    events:
+    - name: Spring sale
+      from: 03-20
+      to: 04-05
+    - name: Summer sale
+      from: 07-01
+      to: 07-16
+    - name: Autumn promo
+      from: 10-01
+      to: 10-19
+    - name: Black Friday
+      from: 11-24
+      to: 11-30
+    - name: Christmas
+      from: 12-10
+      to: 12-24
+- name: Sales Driver
+  dax: DATATABLE ( "Driver", STRING, "Sort", INTEGER, { { "Like-for-like stores", 1 }, { "Online", 2 }, { "New stores", 3
+    }, { "Closed stores", 4 }, { "Price and promo", 5 } } )
+  description: Drivers of the change in sales vs last year (DAX calculated table)
+  columns:
+  - name: Driver
+    type: string
+    sortBy: Sort
+  - name: Sort
+    type: int
+    hidden: true
+calculated_columns:
+- table: Store
+  name: Store Group
+  type: string
+  expression: SWITCH ( TRUE (), 'Store'[StoreType] = "Online", "Online", NOT ISBLANK ( 'Store'[CloseDate] ), "Closed stores",
+    'Store'[OpenDate] > DATE ( 2025, 1, 1 ), "New stores", "Like-for-like stores" )
+- table: Store
+  name: Region
+  type: string
+  expression: RELATED ( 'Country'[Region] )
+- table: Store
+  name: Country
+  type: string
+  expression: RELATED ( 'Country'[Country] )
+relationships:
+- Sales[Date] -> Date[Date]
+- Sales[StoreKey] -> Store[StoreKey]
+- Sales[CategoryKey] -> Category[CategoryKey]
+- Store[CountryKey] -> Country[CountryKey]
+- Targets[Month] -> Date[Date]
+- Targets[StoreKey] -> Store[StoreKey]
+- Footfall[Date] -> Date[Date]
+- Footfall[StoreKey] -> Store[StoreKey]
+- Inventory[WeekEnding] -> Date[Date]
+- Inventory[StoreKey] -> Store[StoreKey]
+- Inventory[CategoryKey] -> Category[CategoryKey]
+- '''Online Funnel''[Date] -> Date[Date]'
+- '''Online Funnel''[CountryKey] -> Country[CountryKey]'
+- Customers[Month] -> Date[Date]
+- Customers[StoreKey] -> Store[StoreKey]
+- Cohorts[CohortMonth] -> Date[Date]
+- Cohorts[CountryKey] -> Country[CountryKey]
+measures:
+- name: Net Sales
+  format: \$#,0
+  folder: Sales
+  description: Sales after discounts
+  expression: SUM ( Sales[NetSales] )
+- name: Gross Profit
+  format: \$#,0
+  folder: Sales
+  expression: SUM ( Sales[GrossProfit] )
+- name: Gross Margin %
+  format: 0.0%
+  folder: Sales
+  expression: DIVIDE ( [Gross Profit], [Net Sales] )
+- name: COGS
+  format: \$#,0
+  folder: Sales
+  expression: '[Net Sales] - [Gross Profit]'
+- name: Discount
+  format: \$#,0
+  folder: Sales
+  description: Markdown and promotion cost
+  expression: SUM ( Sales[Discount Amount] )
+- name: Units
+  format: '#,0'
+  folder: Sales
+  expression: SUM ( Sales[Unit Count] )
+- name: Net Sales LY
+  format: \$#,0
+  folder: Sales
+  expression: CALCULATE ( [Net Sales], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE
+    () ) ) )
+- name: Gross Profit LY
+  format: \$#,0
+  folder: Sales
+  expression: CALCULATE ( [Gross Profit], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] =
+    TRUE () ) ) )
+- name: Gross Margin % LY
+  format: 0.0%
+  folder: Sales
+  expression: DIVIDE ( [Gross Profit LY], [Net Sales LY] )
+- name: Discount LY
+  format: \$#,0
+  folder: Sales
+  expression: CALCULATE ( [Discount], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE
+    () ) ) )
+- name: Units LY
+  format: '#,0'
+  folder: Sales
+  expression: CALCULATE ( [Units], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE ()
+    ) ) )
+- name: Sales Change vs LY
+  format: +\$#,0;-\$#,0;\$#,0
+  folder: Sales
+  expression: '[Net Sales] - [Net Sales LY]'
+- name: Net Sales vs LY %
+  format: +0.0%;-0.0%;0.0%
+  folder: Sales
+  expression: DIVIDE ( [Net Sales] - [Net Sales LY], [Net Sales LY] )
+- name: Sales Target
+  format: \$#,0
+  folder: Targets
+  description: Plan for months that have actuals
+  expression: CALCULATE ( SUM ( Targets[SalesTarget] ), 'Date'[Is Past] = TRUE () )
+- name: Gross Profit Target
+  format: \$#,0
+  folder: Targets
+  expression: CALCULATE ( SUM ( Targets[GrossProfitTarget] ), 'Date'[Is Past] = TRUE () )
+- name: Gross Margin Target %
+  format: 0.0%
+  folder: Targets
+  expression: DIVIDE ( [Gross Profit Target], [Sales Target] )
+- name: Net Sales vs Target %
+  format: +0.0%;-0.0%;0.0%
+  folder: Targets
+  expression: VAR t = [Sales Target] RETURN IF ( NOT ISBLANK ( t ), DIVIDE ( [Net Sales] - t, t ) )
+- name: LFL Sales
+  format: \$#,0
+  folder: Like-for-like
+  expression: CALCULATE ( [Net Sales], 'Store'[Store Group] = "Like-for-like stores" )
+- name: LFL Sales LY
+  format: \$#,0
+  folder: Like-for-like
+  expression: CALCULATE ( [Net Sales LY], 'Store'[Store Group] = "Like-for-like stores" )
+- name: LFL Growth %
+  format: +0.0%;-0.0%;0.0%
+  folder: Like-for-like
+  description: Growth of stores open all of last year
+  expression: DIVIDE ( [LFL Sales] - [LFL Sales LY], [LFL Sales LY] )
+- name: LFL Growth Target %
+  format: +0.0%;-0.0%;0.0%
+  folder: Like-for-like
+  expression: VAR t = CALCULATE ( [Sales Target], 'Store'[Store Group] = "Like-for-like stores" ) VAR l = [LFL Sales LY] RETURN
+    DIVIDE ( t - l, l )
+- name: LFL Growth LY %
+  format: +0.0%;-0.0%;0.0%
+  folder: Like-for-like
+  expression: CALCULATE ( [LFL Growth %], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] =
+    TRUE () ) ) )
+- name: Stock Value
+  format: \$#,0
+  folder: Inventory
+  description: Closing stock at cost (latest week in the period)
+  expression: VAR LastWeek = CALCULATE ( MAX ( Inventory[WeekEnding] ), 'Date'[Is Past] = TRUE () ) RETURN IF ( NOT ISBLANK
+    ( LastWeek ), CALCULATE ( SUM ( Inventory[StockValue] ), 'Date'[Date] = LastWeek ) )
+- name: Avg Weekly COGS (13w)
+  format: \$#,0
+  folder: Inventory
+  expression: VAR LastWeek = CALCULATE ( MAX ( Inventory[WeekEnding] ), 'Date'[Is Past] = TRUE () ) RETURN IF ( NOT ISBLANK
+    ( LastWeek ), DIVIDE ( CALCULATE ( [COGS], REMOVEFILTERS ( 'Date' ), DATESINPERIOD ( 'Date'[Date], LastWeek, -91, DAY
+    ), 'Store'[StoreType] = "Physical" ), 13 ) )
+- name: Inventory Cover (wks)
+  format: 0.0" wks"
+  folder: Inventory
+  expression: DIVIDE ( [Stock Value], [Avg Weekly COGS (13w)] )
+- name: Inventory Cover LY (wks)
+  format: 0.0" wks"
+  folder: Inventory
+  expression: CALCULATE ( [Inventory Cover (wks)], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is
+    Past] = TRUE () ) ) )
+- name: Inventory Cover Target (wks)
+  format: 0.0" wks"
+  folder: Inventory
+  expression: '7'
+- name: Event Label
+  format: ''
+  folder: Titles
+  expression: IF ( NOT ISBLANK ( [Net Sales] ), CALCULATE ( SELECTEDVALUE ( 'Date'[Key Event] ), NOT ISBLANK ( 'Date'[Key
+    Event] ) ) )
+- name: Title Sales Trend
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Net Sales] ),
+        VAR s = CALCULATE ( [Net Sales], ALLSELECTED ( 'Date' ) )
+        VAR t = CALCULATE ( [Sales Target], ALLSELECTED ( 'Date' ) )
+        VAR l = CALCULATE ( [Net Sales LY], ALLSELECTED ( 'Date' ) )
+        VAR vt = DIVIDE ( s - t, t )
+        VAR vl = DIVIDE ( s - l, l )
+        RETURN "Sales are " & FORMAT ( ABS ( vt ), "0.0%" ) & IF ( vt >= 0, " ahead of", " behind" ) & " target and "
+            & FORMAT ( ABS ( vl ), "0.0%" ) & IF ( vl >= 0, " up on", " down on" ) & " last year"
+    )
+- name: Sales Change by Driver
+  format: +\$#,0;-\$#,0;\$#,0
+  folder: Drivers
+  description: Bridge from last year's sales to this year's
+  expression: |-
+    VAR d = SELECTEDVALUE ( 'Sales Driver'[Driver] )
+    VAR promo = CALCULATE ( [Discount] - [Discount LY], 'Store'[Store Group] = "Like-for-like stores" )
+    RETURN SWITCH ( d,
+        "Like-for-like stores", CALCULATE ( [Sales Change vs LY], 'Store'[Store Group] = "Like-for-like stores" ) + promo,
+        "Online", CALCULATE ( [Sales Change vs LY], 'Store'[Store Group] = "Online" ),
+        "New stores", CALCULATE ( [Sales Change vs LY], 'Store'[Store Group] = "New stores" ),
+        "Closed stores", CALCULATE ( [Sales Change vs LY], 'Store'[Store Group] = "Closed stores" ),
+        "Price and promo", - promo )
+- name: Title Drivers
+  format: ''
+  folder: Titles
+  expression: |-
+    VAR total = [Sales Change vs LY]
+    VAR lfl = CALCULATE ( [Sales Change by Driver], 'Sales Driver'[Driver] = "Like-for-like stores" )
+    RETURN IF ( total >= 0,
+        "Like-for-like stores delivered " & FORMAT ( DIVIDE ( lfl, total ), "0%" ) & " of the "
+            & FORMAT ( total / 1000000, "$#,0.0" ) & "M growth",
+        "Sales are " & FORMAT ( - total / 1000000, "$#,0.0" ) & "M below last year" )
+- name: LFL Store Growth %
+  format: +0.0%;-0.0%;0.0%
+  folder: Stores
+  expression: IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = "Like-for-like stores", [Net Sales vs LY %] )
+- name: LFL Store Margin %
+  format: 0.0%
+  folder: Stores
+  expression: IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = "Like-for-like stores", [Gross Margin %] )
+- name: LFL Store Sales
+  format: \$#,0
+  folder: Stores
+  expression: IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = "Like-for-like stores", [Net Sales] )
+- name: Growth Target %
+  format: +0.0%;-0.0%;0.0%
+  folder: Stores
+  expression: CALCULATE ( [LFL Growth Target %], ALLSELECTED ( 'Store' ) )
+- name: Avg LFL Margin %
+  format: 0.0%
+  folder: Stores
+  expression: CALCULATE ( [Gross Margin %], ALLSELECTED ( 'Store' ), 'Store'[Store Group] = "Like-for-like stores" )
+- name: Title Store Quadrant
+  format: ''
+  folder: Titles
+  expression: |-
+    VAR target = [Growth Target %]
+    VAR avgm = [Avg LFL Margin %]
+    VAR n = COUNTROWS ( FILTER ( ALLSELECTED ( 'Store'[Store] ), [LFL Store Growth %] > target && [LFL Store Margin %] > avgm ) )
+    RETURN FORMAT ( COALESCE ( n, 0 ), "0" ) & " stores beat both the growth target and average margin"
+- name: Title Category Mix
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Net Sales] ),
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), "@s", [Net Sales], "@m", [Gross Margin %] )
+    VAR total = SUMX ( t, [@s] )
+    VAR big = TOPN ( 1, t, [@s], DESC )
+    VAR best = TOPN ( 1, t, [@m], DESC )
+    RETURN MAXX ( big, 'Category'[Category] ) & " is " & FORMAT ( DIVIDE ( MAXX ( big, [@s] ), total ), "0%" )
+        & " of sales at " & FORMAT ( MAXX ( big, [@m] ), "0.0%" ) & " margin; " & MAXX ( best, 'Category'[Category] )
+        & " earns " & FORMAT ( MAXX ( best, [@m] ), "0%" )
+    )
+- name: Footfall
+  format: '#,0'
+  folder: Stores
+  expression: SUM ( Footfall[Visitors] )
+- name: Footfall LY
+  format: '#,0'
+  folder: Stores
+  expression: CALCULATE ( [Footfall], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE
+    () ) ) )
+- name: Footfall vs LY %
+  format: +0.0%;-0.0%;0.0%
+  folder: Stores
+  expression: DIVIDE ( [Footfall] - [Footfall LY], [Footfall LY] )
+- name: Transactions
+  format: '#,0'
+  folder: Stores
+  expression: SUM ( Footfall[Transaction Count] )
+- name: Store Conversion %
+  format: 0.0%
+  folder: Stores
+  description: Transactions per visitor
+  expression: DIVIDE ( [Transactions], [Footfall] )
+- name: Store Conversion % LY
+  format: 0.0%
+  folder: Stores
+  expression: CALCULATE ( [Store Conversion %], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past]
+    = TRUE () ) ) )
+- name: Store Sales
+  format: \$#,0
+  folder: Stores
+  expression: CALCULATE ( [Net Sales], 'Store'[Channel] = "Store" )
+- name: Store Sales LY
+  format: \$#,0
+  folder: Stores
+  expression: CALCULATE ( [Store Sales], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] =
+    TRUE () ) ) )
+- name: Avg Transaction Value
+  format: \$#,0.00
+  folder: Stores
+  expression: DIVIDE ( [Store Sales], [Transactions] )
+- name: Avg Transaction Value LY
+  format: \$#,0.00
+  folder: Stores
+  expression: CALCULATE ( [Avg Transaction Value], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is
+    Past] = TRUE () ) ) )
+- name: Sales per sqm
+  format: \$#,0
+  folder: Stores
+  expression: DIVIDE ( [Store Sales], CALCULATE ( SUM ( 'Store'[SellingAreaSqm] ), 'Store'[Channel] = "Store" ) )
+- name: Sales per sqm LY
+  format: \$#,0
+  folder: Stores
+  expression: CALCULATE ( [Sales per sqm], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past]
+    = TRUE () ) ) )
+- name: Title Footfall Trend
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Footfall] ),
+        VAR f = CALCULATE ( [Footfall], ALLSELECTED ( 'Date' ) )
+        VAR fl = CALCULATE ( [Footfall LY], ALLSELECTED ( 'Date' ) )
+        VAR c = CALCULATE ( [Store Conversion %], ALLSELECTED ( 'Date' ) )
+        VAR cl = CALCULATE ( [Store Conversion % LY], ALLSELECTED ( 'Date' ) )
+        VAR g = DIVIDE ( f - fl, fl )
+        RETURN "Footfall is " & FORMAT ( ABS ( g ), "0.0%" ) & IF ( g >= 0, " up", " down" ) & " on last year; conversion "
+            & FORMAT ( ( c - cl ) * 100, "+0.0;-0.0" ) & " pts"
+    )
+- name: Title Region Change
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Sales Change vs LY] ),
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( 'Country'[Region] ), "@c", [Sales Change vs LY] )
+    VAR leader = TOPN ( 1, t, [@c], DESC )
+    RETURN MAXX ( leader, 'Country'[Region] ) & " added the most sales: " & FORMAT ( MAXX ( leader, [@c] ) / 1000000, "+$#,0.0;-$#,0.0" )
+        & "M vs last year"
+    )
+- name: LFL Footfall vs LY %
+  format: +0.0%;-0.0%;0.0%
+  folder: Stores
+  expression: IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = "Like-for-like stores", [Footfall vs LY %] )
+- name: LFL Store Conversion %
+  format: 0.0%
+  folder: Stores
+  expression: IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = "Like-for-like stores", [Store Conversion %] )
+- name: LFL Store Sales (stores)
+  format: \$#,0
+  folder: Stores
+  expression: IF ( SELECTEDVALUE ( 'Store'[Store Group] ) = "Like-for-like stores", [Store Sales] )
+- name: Zero Line
+  format: +0.0%;-0.0%;0.0%
+  folder: Stores
+  expression: '0'
+- name: Avg Store Conversion %
+  format: 0.0%
+  folder: Stores
+  expression: CALCULATE ( [Store Conversion %], ALLSELECTED ( 'Store' ), 'Store'[Store Group] = "Like-for-like stores" )
+- name: Title Store Traffic
+  format: ''
+  folder: Titles
+  expression: |-
+    VAR avgc = [Avg Store Conversion %]
+    VAR n = COUNTROWS ( FILTER ( ALLSELECTED ( 'Store'[Store] ), [LFL Footfall vs LY %] > 0 && [LFL Store Conversion %] > avgc ) )
+    RETURN FORMAT ( COALESCE ( n, 0 ), "0" ) & " stores grew traffic and convert above average"
+- name: Title Conversion Heatmap
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Store Conversion %] ),
+    VAR t = ADDCOLUMNS ( CROSSJOIN ( ALLSELECTED ( 'Date'[Weekday], 'Date'[Weekday Number] ), ALLSELECTED ( Footfall[Hour] ) ),
+        "@f", [Footfall], "@c", [Store Conversion %] )
+    VAR leader = TOPN ( 1, t, [@f], DESC )
+    VAR wd = MAXX ( leader, 'Date'[Weekday Number] )
+    VAR h = MAXX ( leader, Footfall[Hour] )
+    VAR avgc = CALCULATE ( [Store Conversion %], ALLSELECTED ( 'Date' ), ALLSELECTED ( Footfall[Hour] ) )
+    RETURN "Conversion dips to " & FORMAT ( MAXX ( leader, [@c] ), "0.0%" ) & " in the busiest hour (" & SWITCH ( wd, 1, "Monday", 2, "Tuesday", 3, "Wednesday", 4, "Thursday", 5, "Friday", 6, "Saturday", "Sunday" )
+        & " " & FORMAT ( h, "00" ) & ":00) vs " & FORMAT ( avgc, "0.0%" ) & " overall"
+    )
+- name: Title Footfall Heatmap
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Footfall] ),
+    VAR t = ADDCOLUMNS ( CROSSJOIN ( ALLSELECTED ( 'Date'[Weekday], 'Date'[Weekday Number] ), ALLSELECTED ( Footfall[Hour] ) ),
+        "@f", [Footfall] )
+    VAR leader = TOPN ( 1, t, [@f], DESC )
+    VAR wd = MAXX ( leader, 'Date'[Weekday Number] )
+    VAR h = MAXX ( leader, Footfall[Hour] )
+    RETURN SWITCH ( wd, 1, "Monday", 2, "Tuesday", 3, "Wednesday", 4, "Thursday", 5, "Friday", 6, "Saturday", "Sunday" ) & IF ( h < 12, " mornings", IF ( h < 17, " afternoons", " evenings" ) )
+        & " are the busiest; roster for " & FORMAT ( h - 1, "00" ) & ":00-" & FORMAT ( h + 3, "00" ) & ":00"
+    )
+- name: Title Country Mix
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Net Sales] ),
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( 'Country'[Country] ), "@s", [Net Sales], "@g", [LFL Growth %] )
+    VAR total = SUMX ( t, [@s] )
+    VAR big = TOPN ( 1, t, [@s], DESC )
+    VAR fast = TOPN ( 1, FILTER ( t, [@s] > total * 0.01 ), [@g], DESC )
+    RETURN MAXX ( big, 'Country'[Country] ) & " is " & FORMAT ( DIVIDE ( MAXX ( big, [@s] ), total ), "0%" ) & " of sales; "
+        & MAXX ( fast, 'Country'[Country] ) & " grows fastest like-for-like (" & FORMAT ( MAXX ( fast, [@g] ), "+0.0%;-0.0%" ) & ")"
+    )
+- name: Margin Change Contribution (pts)
+  format: +0.00" pts";-0.00" pts";0.00" pts"
+  folder: Categories
+  description: Each category's contribution to the change in gross margin vs last year
+  expression: |-
+    VAR s = CALCULATE ( [Net Sales], ALLSELECTED ( 'Category' ) )
+    VAR sl = CALCULATE ( [Net Sales LY], ALLSELECTED ( 'Category' ) )
+    RETURN ( DIVIDE ( [Gross Profit], s ) - DIVIDE ( [Gross Profit LY], sl ) ) * 100
+- name: Title Margin Trend
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Net Sales] ),
+        VAR g = CALCULATE ( [Gross Margin %], ALLSELECTED ( 'Date' ) )
+        VAR gt = CALCULATE ( [Gross Margin Target %], ALLSELECTED ( 'Date' ) )
+        VAR gl = CALCULATE ( [Gross Margin % LY], ALLSELECTED ( 'Date' ) )
+        VAR a = ( g - gt ) * 100
+        VAR b = ( g - gl ) * 100
+        RETURN "Margin is " & FORMAT ( ABS ( a ), "0.0" ) & " pts " & IF ( a >= 0, "above", "under" ) & " target and "
+            & FORMAT ( ABS ( b ), "0.0" ) & " pts " & IF ( b >= 0, "above", "below" ) & " last year"
+    )
+- name: Title Margin Drivers
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Margin Change Contribution (pts)] ),
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), "@c", [Margin Change Contribution (pts)] )
+    VAR worst = TOPN ( 1, t, [@c], ASC )
+    VAR best = TOPN ( 1, t, [@c], DESC )
+    RETURN MAXX ( worst, 'Category'[Category] ) & " took " & FORMAT ( ABS ( MAXX ( worst, [@c] ) ), "0.00" ) & " pts off margin; "
+        & MAXX ( best, 'Category'[Category] ) & " added " & FORMAT ( MAXX ( best, [@c] ), "0.00" )
+    )
+- name: Total Growth %
+  format: +0.0%;-0.0%;0.0%
+  folder: Categories
+  expression: CALCULATE ( [Net Sales vs LY %], ALLSELECTED ( 'Category' ) )
+- name: Total Margin %
+  format: 0.0%
+  folder: Categories
+  expression: CALCULATE ( [Gross Margin %], ALLSELECTED ( 'Category' ) )
+- name: Title Category Quadrant
+  format: ''
+  folder: Titles
+  expression: |-
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), "@g", [Net Sales vs LY %] )
+    VAR best = TOPN ( 1, t, [@g], DESC )
+    VAR worst = TOPN ( 1, t, [@g], ASC )
+    RETURN MAXX ( best, 'Category'[Category] ) & " leads growth at " & FORMAT ( MAXX ( best, [@g] ), "+0.0%;-0.0%" ) & "; "
+        & MAXX ( worst, 'Category'[Category] ) & IF ( MAXX ( worst, [@g] ) < 0, " is shrinking", " lags" ) & " ("
+        & FORMAT ( MAXX ( worst, [@g] ), "+0.0%;-0.0%" ) & ")"
+- name: Title Category Growth
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Net Sales vs LY %] ),
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), "@g", CALCULATE ( [Net Sales vs LY %], ALLSELECTED ( 'Date' ) ) )
+    VAR best = TOPN ( 1, t, [@g], DESC )
+    VAR worst = TOPN ( 1, t, [@g], ASC )
+    RETURN MAXX ( best, 'Category'[Category] ) & " grew fastest (" & FORMAT ( MAXX ( best, [@g] ), "+0.0%;-0.0%" ) & "); "
+        & MAXX ( worst, 'Category'[Category] ) & " " & FORMAT ( MAXX ( worst, [@g] ), "+0.0%;-0.0%" ) & " vs last year"
+    )
+- name: Title Category Change
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Sales Change vs LY] ),
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), "@c", [Sales Change vs LY] )
+    VAR leader = TOPN ( 1, t, [@c], DESC )
+    RETURN MAXX ( leader, 'Category'[Category] ) & " added the most sales: " & FORMAT ( MAXX ( leader, [@c] ) / 1000000, "+$#,0.0;-$#,0.0" )
+        & "M vs last year"
+    )
+- name: Title Inventory Mix
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Stock Value] ),
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( 'Category'[Category] ), "@w", [Inventory Cover (wks)] )
+    VAR hi = TOPN ( 1, t, [@w], DESC )
+    VAR lo = TOPN ( 1, t, [@w], ASC )
+    RETURN MAXX ( hi, 'Category'[Category] ) & " holds " & FORMAT ( MAXX ( hi, [@w] ), "0.0" ) & " weeks of cover; "
+        & MAXX ( lo, 'Category'[Category] ) & " only " & FORMAT ( MAXX ( lo, [@w] ), "0.0" )
+    )
+- name: Active Customers
+  format: '#,0'
+  folder: Customers
+  description: Average monthly active loyalty members
+  expression: AVERAGEX ( VALUES ( 'Date'[Month Start] ), CALCULATE ( SUM ( Customers[ActiveCustomers] ) ) )
+- name: Active Customers LY
+  format: '#,0'
+  folder: Customers
+  expression: CALCULATE ( [Active Customers], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past]
+    = TRUE () ) ) )
+- name: Active Customers vs LY %
+  format: +0.0%;-0.0%;0.0%
+  folder: Customers
+  expression: DIVIDE ( [Active Customers] - [Active Customers LY], [Active Customers LY] )
+- name: New Customers
+  format: '#,0'
+  folder: Customers
+  expression: SUM ( Customers[NewCustomers] )
+- name: New Customers LY
+  format: '#,0'
+  folder: Customers
+  expression: CALCULATE ( [New Customers], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past]
+    = TRUE () ) ) )
+- name: Repeat Rate %
+  format: 0.0%
+  folder: Customers
+  expression: DIVIDE ( SUM ( Customers[RepeatCustomers] ), SUM ( Customers[ActiveCustomers] ) )
+- name: Repeat Rate % LY
+  format: 0.0%
+  folder: Customers
+  expression: CALCULATE ( [Repeat Rate %], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past]
+    = TRUE () ) ) )
+- name: Spend per Customer
+  format: \$#,0.00
+  folder: Customers
+  description: Monthly spend per active member
+  expression: DIVIDE ( SUM ( Customers[CustomerSales] ), SUM ( Customers[ActiveCustomers] ) )
+- name: Spend per Customer LY
+  format: \$#,0.00
+  folder: Customers
+  expression: CALCULATE ( [Spend per Customer], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past]
+    = TRUE () ) ) )
+- name: Member Sales
+  format: \$#,0
+  folder: Customers
+  expression: SUM ( Customers[CustomerSales] )
+- name: Member Sales LY
+  format: \$#,0
+  folder: Customers
+  expression: CALCULATE ( [Member Sales], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] =
+    TRUE () ) ) )
+- name: Member Sales Change
+  format: +\$#,0;-\$#,0;\$#,0
+  folder: Customers
+  expression: '[Member Sales] - [Member Sales LY]'
+- name: Cohort Retention %
+  format: 0%
+  folder: Customers
+  expression: DIVIDE ( SUM ( Cohorts[ActiveCustomers] ), SUM ( Cohorts[CohortSize] ) )
+- name: Active
+  format: '#,0'
+  folder: Customer funnel
+  expression: '[Active Customers]'
+- name: Repeat
+  format: '#,0'
+  folder: Customer funnel
+  expression: AVERAGEX ( VALUES ( 'Date'[Month Start] ), CALCULATE ( SUM ( Customers[RepeatCustomers] ) ) )
+- name: Gold & Platinum
+  format: '#,0'
+  folder: Customer funnel
+  expression: CALCULATE ( [Active Customers], Customers[Tier] IN { "Gold", "Platinum" } )
+- name: Platinum
+  format: '#,0'
+  folder: Customer funnel
+  expression: CALCULATE ( [Active Customers], Customers[Tier] = "Platinum" )
+- name: Avg Spend per Customer
+  format: \$#,0.00
+  folder: Customers
+  expression: CALCULATE ( [Spend per Customer], ALLSELECTED ( 'Country' ) )
+- name: Title Customer Trend
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Active Customers] ),
+        VAR a = CALCULATE ( [Active Customers], ALLSELECTED ( 'Date' ) )
+        VAR l = CALCULATE ( [Active Customers LY], ALLSELECTED ( 'Date' ) )
+        VAR g = DIVIDE ( a - l, l )
+        RETURN "Active members are " & FORMAT ( ABS ( g ), "0.0%" ) & IF ( g >= 0, " up", " down" ) & " on last year"
+    )
+- name: Title Tier Drivers
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Member Sales Change] ),
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( Customers[Tier] ), "@c", [Member Sales Change] )
+    VAR leader = TOPN ( 1, t, [@c], DESC )
+    RETURN MAXX ( leader, Customers[Tier] ) & " members added the most spend: " & FORMAT ( MAXX ( leader, [@c] ) / 1000000, "+$#,0.0;-$#,0.0" )
+        & "M vs last year"
+    )
+- name: Title Cohorts
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Cohort Retention %] ),
+    VAR r1 = CALCULATE ( [Cohort Retention %], Cohorts[MonthsSince] = 1, ALLSELECTED ( 'Date' ) )
+    VAR r3 = CALCULATE ( [Cohort Retention %], Cohorts[MonthsSince] = 3, ALLSELECTED ( 'Date' ) )
+    RETURN FORMAT ( r1, "0%" ) & " of new members come back the next month; " & FORMAT ( r3, "0%" ) & " are still active after 3 months"
+    )
+- name: Title Customer Funnel
+  format: ''
+  folder: Titles
+  expression: |-
+    "Repeat buyers are " & FORMAT ( DIVIDE ( [Repeat], [Active] ), "0%" ) & " of active members; "
+        & FORMAT ( DIVIDE ( [Gold & Platinum], [Active] ), "0%" ) & " are Gold or Platinum"
+- name: Title Country Customers
+  format: ''
+  folder: Titles
+  expression: |-
+    VAR avgs = [Avg Spend per Customer]
+    VAR n = COUNTROWS ( FILTER ( ALLSELECTED ( 'Country'[Country] ), [Active Customers vs LY %] > 0 && [Spend per Customer] > avgs ) )
+    RETURN FORMAT ( COALESCE ( n, 0 ), "0" ) & " countries grow members and spend above average"
+- name: Title Tier Mix
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Member Sales] ),
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( Customers[Tier] ), "@s", [Member Sales] )
+    VAR total = SUMX ( t, [@s] )
+    VAR leader = TOPN ( 1, t, [@s], DESC )
+    RETURN MAXX ( leader, Customers[Tier] ) & " drives " & FORMAT ( DIVIDE ( MAXX ( leader, [@s] ), total ), "0%" ) & " of member spend"
+    )
+- name: Sessions
+  format: '#,0'
+  folder: Online funnel
+  expression: SUM ( 'Online Funnel'[Session Count] )
+- name: Product views
+  format: '#,0'
+  folder: Online funnel
+  expression: SUM ( 'Online Funnel'[ProductViews] )
+- name: Add to cart
+  format: '#,0'
+  folder: Online funnel
+  expression: SUM ( 'Online Funnel'[AddToCart] )
+- name: Checkout
+  format: '#,0'
+  folder: Online funnel
+  expression: SUM ( 'Online Funnel'[Checkouts] )
+- name: Orders
+  format: '#,0'
+  folder: Online funnel
+  expression: SUM ( 'Online Funnel'[Order Count] )
+- name: Sessions LY
+  format: '#,0'
+  folder: Online
+  expression: CALCULATE ( [Sessions], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE
+    () ) ) )
+- name: Orders LY
+  format: '#,0'
+  folder: Online
+  expression: CALCULATE ( [Orders], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] = TRUE
+    () ) ) )
+- name: Sessions vs LY %
+  format: +0.0%;-0.0%;0.0%
+  folder: Online
+  expression: DIVIDE ( [Sessions] - [Sessions LY], [Sessions LY] )
+- name: Orders Change vs LY
+  format: +#,0;-#,0;0
+  folder: Online
+  expression: '[Orders] - [Orders LY]'
+- name: Online Conversion %
+  format: 0.0%
+  folder: Online
+  description: Orders per session
+  expression: DIVIDE ( [Orders], [Sessions] )
+- name: Online Conversion % LY
+  format: 0.0%
+  folder: Online
+  expression: CALCULATE ( [Online Conversion %], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is
+    Past] = TRUE () ) ) )
+- name: Online Sales
+  format: \$#,0
+  folder: Online
+  expression: CALCULATE ( [Net Sales], 'Store'[Channel] = "Online" )
+- name: Online Sales LY
+  format: \$#,0
+  folder: Online
+  expression: CALCULATE ( [Online Sales], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past] =
+    TRUE () ) ) )
+- name: Online Sales Target
+  format: \$#,0
+  folder: Online
+  expression: CALCULATE ( [Sales Target], 'Store'[Channel] = "Online" )
+- name: Avg Order Value
+  format: \$#,0.00
+  folder: Online
+  expression: DIVIDE ( [Online Sales], [Orders] )
+- name: Avg Order Value LY
+  format: \$#,0.00
+  folder: Online
+  expression: CALCULATE ( [Avg Order Value], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), 'Date'[Is Past]
+    = TRUE () ) ) )
+- name: Avg Online Conversion %
+  format: 0.0%
+  folder: Online
+  expression: CALCULATE ( [Online Conversion %], ALLSELECTED ( 'Country' ) )
+- name: Title Funnel
+  format: ''
+  folder: Titles
+  expression: |-
+    "Online converts " & FORMAT ( [Online Conversion %], "0.0%" ) & "; " & FORMAT ( 1 - DIVIDE ( [Checkout], [Add to cart] ), "0%" )
+        & " of carts never reach checkout"
+- name: Title Online Trend
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Online Sales] ),
+        VAR s = CALCULATE ( [Online Sales], ALLSELECTED ( 'Date' ) )
+        VAR t = CALCULATE ( [Online Sales Target], ALLSELECTED ( 'Date' ) )
+        VAR l = CALCULATE ( [Online Sales LY], ALLSELECTED ( 'Date' ) )
+        VAR vt = DIVIDE ( s - t, t )
+        VAR vl = DIVIDE ( s - l, l )
+        RETURN "Online sales are " & FORMAT ( ABS ( vt ), "0.0%" ) & IF ( vt >= 0, " ahead of", " behind" ) & " plan and "
+            & FORMAT ( ABS ( vl ), "0.0%" ) & IF ( vl >= 0, " up on", " down on" ) & " last year"
+    )
+- name: Title Source Drivers
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Orders Change vs LY] ),
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( 'Online Funnel'[Source] ), "@c", [Orders Change vs LY] )
+    VAR leader = TOPN ( 1, t, [@c], DESC )
+    RETURN MAXX ( leader, 'Online Funnel'[Source] ) & " added the most orders: " & FORMAT ( MAXX ( leader, [@c] ), "+#,0;-#,0" ) & " vs last year"
+    )
+- name: Title Device Source
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Online Conversion %] ),
+    VAR t = ADDCOLUMNS ( CROSSJOIN ( ALLSELECTED ( 'Online Funnel'[Device] ), ALLSELECTED ( 'Online Funnel'[Source] ) ),
+        "@c", [Online Conversion %] )
+    VAR leader = TOPN ( 1, t, [@c], DESC )
+    VAR laggard = TOPN ( 1, t, [@c], ASC )
+    RETURN MAXX ( leader, 'Online Funnel'[Device] ) & " from " & MAXX ( leader, 'Online Funnel'[Source] ) & " converts best ("
+        & FORMAT ( MAXX ( leader, [@c] ), "0.0%" ) & "); " & MAXX ( laggard, 'Online Funnel'[Device] ) & " from "
+        & MAXX ( laggard, 'Online Funnel'[Source] ) & " only " & FORMAT ( MAXX ( laggard, [@c] ), "0.0%" )
+    )
+- name: Title Online Markets
+  format: ''
+  folder: Titles
+  expression: |-
+    VAR avgc = [Avg Online Conversion %]
+    VAR n = COUNTROWS ( FILTER ( ALLSELECTED ( 'Country'[Country] ), [Sessions vs LY %] > 0 && [Online Conversion %] > avgc ) )
+    RETURN FORMAT ( COALESCE ( n, 0 ), "0" ) & " markets grow traffic and convert above average"
+- name: Title Online Mix
+  format: ''
+  folder: Titles
+  expression: |-
+    IF ( NOT ISBLANK ( [Online Sales] ),
+    VAR t = ADDCOLUMNS ( ALLSELECTED ( 'Country'[Country] ), "@s", [Online Sales] )
+    VAR total = SUMX ( t, [@s] )
+    VAR leader = TOPN ( 1, t, [@s], DESC )
+    RETURN MAXX ( leader, 'Country'[Country] ) & " is " & FORMAT ( DIVIDE ( MAXX ( leader, [@s] ), total ), "0%" ) & " of online sales"
+    )
+- name: Insight Sales
+  format: ''
+  folder: Insights
+  expression: |-
+    VAR s = [Net Sales]
+    VAR t = [Sales Target]
+    VAR gap = s - t
+    VAR ch = TOPN ( 1, ADDCOLUMNS ( VALUES ( 'Store'[Channel] ), "@v", [Net Sales vs Target %] ), [@v], DESC )
+    VAR rg = TOPN ( 1, ADDCOLUMNS ( VALUES ( 'Country'[Region] ), "@v", [Net Sales vs Target %] ), [@v], DESC )
+    RETURN "Sales are **" & FORMAT ( ABS ( gap ) / 1000000, "$#,0.0" ) & "M " & IF ( gap >= 0, "ahead of", "behind" )
+        & " target**, led by " & MAXX ( ch, 'Store'[Channel] ) & " (" & FORMAT ( MAXX ( ch, [@v] ), "+0.0%;-0.0%" )
+        & " vs target) and " & MAXX ( rg, 'Country'[Region] ) & " (" & FORMAT ( MAXX ( rg, [@v] ), "+0.0%;-0.0%" ) & ")."
+- name: Insight Margin
+  format: ''
+  folder: Insights
+  expression: |-
+    VAR g = [Gross Margin %]
+    VAR d = ( g - [Gross Margin Target %] ) * 100
+    VAR s = CALCULATE ( [Net Sales], ALLSELECTED ( 'Category' ) )
+    VAR sl = CALCULATE ( [Net Sales LY], ALLSELECTED ( 'Category' ) )
+    VAR cats = ADDCOLUMNS ( VALUES ( 'Category'[Category] ),
+        "@c", DIVIDE ( [Gross Profit], s ) - DIVIDE ( [Gross Profit LY], sl ), "@m", [Gross Margin %] )
+    VAR worst = TOPN ( 2, cats, [@c], ASC )
+    RETURN "Margin is **" & FORMAT ( ABS ( d ), "0.0" ) & " pts " & IF ( d >= 0, "above", "under" ) & " target**: "
+        & CONCATENATEX ( worst, 'Category'[Category] & " (" & FORMAT ( [@m], "0.0%" ) & ")", " and ", [@c], ASC )
+        & " pull it down most."
+- name: Insight Region
+  format: ''
+  folder: Insights
+  expression: |-
+    VAR rg = TOPN ( 1, ADDCOLUMNS ( VALUES ( 'Country'[Region] ), "@v", [Net Sales vs Target %] ), [@v], ASC )
+    VAR rname = MAXX ( rg, 'Country'[Region] )
+    VAR rv = MAXX ( rg, [@v] )
+    VAR n = COUNTROWS ( FILTER ( CALCULATETABLE ( VALUES ( 'Store'[Store] ), 'Country'[Region] = rname, 'Store'[Channel] = "Store" ),
+        [Inventory Cover (wks)] > 9 ) )
+    RETURN "**" & rname & "** is " & FORMAT ( ABS ( rv ), "0.0%" ) & IF ( rv < 0, " behind", " ahead of" ) & " target; "
+        & FORMAT ( COALESCE ( n, 0 ), "0" ) & " of its stores hold more than 9 weeks of stock."
+filters:
+- field: Date[Year]
+  label: Period
+  default: 2026
+- field: Country[Region]
+  label: Region
+- field: Store[Channel]
+  label: Channel
+- field: Category[Category]
+  label: Category
+pages:
+- name: Overview
+  rows:
+  - visuals:
+    - id: ov_kpi0
+      type: kpiCard
+      fields:
+        value: '[Net Sales]'
+        axis: Date[Month Start]
+        trend: '[Net Sales]'
+        target: '[Sales Target]'
+        comparison: '[Net Sales LY]'
+      format:
+        kpi:
+          label: Net sales · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: ov_kpi1
+      type: kpiCard
+      fields:
+        value: '[Gross Margin %]'
+        axis: Date[Month Start]
+        trend: '[Gross Margin %]'
+        target: '[Gross Margin Target %]'
+        comparison: '[Gross Margin % LY]'
+      format:
+        kpi:
+          label: Gross margin · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: ov_kpi2
+      type: kpiCard
+      fields:
+        value: '[LFL Growth %]'
+        axis: Date[Month Start]
+        trend: '[LFL Growth %]'
+        target: '[LFL Growth Target %]'
+        comparison: '[LFL Growth LY %]'
+      format:
+        kpi:
+          label: Like-for-like growth · YTD
+          lowerIsBetter: false
+          signedValue: true
+    - id: ov_kpi3
+      type: kpiCard
+      fields:
+        value: '[Inventory Cover (wks)]'
+        axis: Date[Month Start]
+        trend: '[Inventory Cover (wks)]'
+        target: '[Inventory Cover Target (wks)]'
+        comparison: '[Inventory Cover LY (wks)]'
+      format:
+        kpi:
+          label: Inventory cover · latest week
+          lowerIsBetter: true
+          signedValue: false
+  - visuals:
+    - id: ov_trend
+      type: trendLine
+      fields:
+        axis: Date[Month]
+        actual: '[Net Sales]'
+        target: '[Sales Target]'
+        comparison: '[Net Sales LY]'
+        annotation: '[Event Label]'
+        title: '[Title Sales Trend]'
+      format:
+        header:
+          title: Sales vs target
+          subtitle: Net sales by month
+    - id: ov_drivers
+      type: driverBars
+      fields:
+        category: '''Sales Driver''[Driver]'
+        value: '[Sales Change by Driver]'
+        title: '[Title Drivers]'
+      format:
+        header:
+          title: What drove the change
+          subtitle: Change in net sales vs last year by driver
+  - visuals:
+    - id: ov_quadrant
+      type: quadrant
+      fields:
+        details: Store[Store]
+        x: '[LFL Store Growth %]'
+        y: '[LFL Store Margin %]'
+        size: '[LFL Store Sales]'
+        xRef: '[Growth Target %]'
+        yRef: '[Avg LFL Margin %]'
+        title: '[Title Store Quadrant]'
+      format:
+        header:
+          title: Store performance
+          subtitle: '{n} like-for-like stores · growth vs LY (x), gross margin (y), size = sales'
+        quadrant:
+          topLeft: Margin, low growth
+          topRight: Stars
+          bottomLeft: Fix first
+          bottomRight: Growth, thin margin
+          labelTop: 2
+          labelBottom: 1
+    - id: ov_treemap
+      type: treemap
+      fields:
+        category: Category[Category]
+        size: '[Net Sales]'
+        color: '[Gross Margin %]'
+        title: '[Title Category Mix]'
+      format:
+        header:
+          title: Category mix
+          subtitle: Net sales by category (size) and gross margin (colour)
+  - visuals:
+    - id: ov_heatmap
+      type: heatmap
+      fields:
+        rows: Date[Weekday]
+        columns: Footfall[Hour]
+        value: '[Footfall]'
+        title: '[Title Footfall Heatmap]'
+      format:
+        header:
+          title: Store traffic
+          subtitle: Store footfall by weekday and hour · busiest hour = 100
+        heatmap:
+          indexMode: true
+          lowLabel: Quiet
+          highLabel: Busy
+    - id: ov_funnel
+      type: funnel
+      fields:
+        stages:
+        - '[Sessions]'
+        - '[Product views]'
+        - '[Add to cart]'
+        - '[Checkout]'
+        - '[Orders]'
+        title: '[Title Funnel]'
+      format:
+        header:
+          title: Online funnel
+          subtitle: Online funnel · selected period
+  - visuals:
+    - id: ov_insights
+      type: narrative
+      fields:
+        items:
+        - '[Insight Sales]'
+        - '[Insight Margin]'
+        - '[Insight Region]'
+      format:
+        narrative:
+          heading: Key insights
+          style: numbered
+    height: 124
+- name: Stores
+  rows:
+  - visuals:
+    - id: st_kpi0
+      type: kpiCard
+      fields:
+        value: '[Footfall]'
+        axis: Date[Month Start]
+        trend: '[Footfall]'
+        comparison: '[Footfall LY]'
+      format:
+        kpi:
+          label: Footfall · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: st_kpi1
+      type: kpiCard
+      fields:
+        value: '[Store Conversion %]'
+        axis: Date[Month Start]
+        trend: '[Store Conversion %]'
+        comparison: '[Store Conversion % LY]'
+      format:
+        kpi:
+          label: Store conversion · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: st_kpi2
+      type: kpiCard
+      fields:
+        value: '[Avg Transaction Value]'
+        axis: Date[Month Start]
+        trend: '[Avg Transaction Value]'
+        comparison: '[Avg Transaction Value LY]'
+      format:
+        kpi:
+          label: Avg transaction value · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: st_kpi3
+      type: kpiCard
+      fields:
+        value: '[Sales per sqm]'
+        axis: Date[Month Start]
+        trend: '[Sales per sqm]'
+        comparison: '[Sales per sqm LY]'
+      format:
+        kpi:
+          label: Sales per sqm · YTD
+          lowerIsBetter: false
+          signedValue: false
+  - visuals:
+    - id: st_trend
+      type: trendLine
+      fields:
+        axis: Date[Month]
+        actual: '[Footfall]'
+        comparison: '[Footfall LY]'
+        annotation: '[Event Label]'
+        title: '[Title Footfall Trend]'
+      format:
+        header:
+          title: Footfall
+          subtitle: Store visitors by month
+    - id: st_regions
+      type: driverBars
+      fields:
+        category: Country[Region]
+        value: '[Sales Change vs LY]'
+        title: '[Title Region Change]'
+      format:
+        header:
+          title: Change by region
+          subtitle: Change in net sales vs last year by region
+        bars:
+          sortDescending: true
+  - visuals:
+    - id: st_quadrant
+      type: quadrant
+      fields:
+        details: Store[Store]
+        x: '[LFL Footfall vs LY %]'
+        y: '[LFL Store Conversion %]'
+        size: '[LFL Store Sales (stores)]'
+        xRef: '[Zero Line]'
+        yRef: '[Avg Store Conversion %]'
+        title: '[Title Store Traffic]'
+      format:
+        header:
+          title: Traffic vs conversion
+          subtitle: '{n} like-for-like stores · footfall growth (x), conversion (y), size = sales'
+        quadrant:
+          topLeft: Converting, fewer visitors
+          topRight: Growing and converting
+          bottomLeft: Losing traffic
+          bottomRight: Busy, under-converting
+    - id: st_heatmap
+      type: heatmap
+      fields:
+        rows: Date[Weekday]
+        columns: Footfall[Hour]
+        value: '[Store Conversion %]'
+        title: '[Title Conversion Heatmap]'
+      format:
+        header:
+          title: Conversion by hour
+          subtitle: Store conversion by weekday and hour
+        heatmap:
+          indexMode: false
+          lowLabel: Low
+          highLabel: High
+  - visuals:
+    - id: st_treemap
+      type: treemap
+      fields:
+        category: Country[Country]
+        size: '[Net Sales]'
+        color: '[LFL Growth %]'
+        title: '[Title Country Mix]'
+      format:
+        header:
+          title: Countries
+          subtitle: Net sales by country (size) and like-for-like growth (colour)
+    - id: st_table
+      type: table
+      fields:
+      - Store[Store]
+      - Store[Region]
+      - Store[Format]
+      - '[Store Sales]'
+      - '[Net Sales vs LY %]'
+      - '[Store Conversion %]'
+      - '[Avg Transaction Value]'
+      title: Store league table
+      sort:
+      - '[Store Sales]'
+      - desc
+- name: Categories
+  rows:
+  - visuals:
+    - id: ca_kpi0
+      type: kpiCard
+      fields:
+        value: '[Net Sales]'
+        axis: Date[Month Start]
+        trend: '[Net Sales]'
+        target: '[Sales Target]'
+        comparison: '[Net Sales LY]'
+      format:
+        kpi:
+          label: Net sales · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: ca_kpi1
+      type: kpiCard
+      fields:
+        value: '[Gross Margin %]'
+        axis: Date[Month Start]
+        trend: '[Gross Margin %]'
+        target: '[Gross Margin Target %]'
+        comparison: '[Gross Margin % LY]'
+      format:
+        kpi:
+          label: Gross margin · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: ca_kpi2
+      type: kpiCard
+      fields:
+        value: '[Units]'
+        axis: Date[Month Start]
+        trend: '[Units]'
+        comparison: '[Units LY]'
+      format:
+        kpi:
+          label: Units sold · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: ca_kpi3
+      type: kpiCard
+      fields:
+        value: '[Inventory Cover (wks)]'
+        axis: Date[Month Start]
+        trend: '[Inventory Cover (wks)]'
+        target: '[Inventory Cover Target (wks)]'
+        comparison: '[Inventory Cover LY (wks)]'
+      format:
+        kpi:
+          label: Inventory cover · latest week
+          lowerIsBetter: true
+          signedValue: false
+  - visuals:
+    - id: ca_trend
+      type: trendLine
+      fields:
+        axis: Date[Month]
+        actual: '[Gross Margin %]'
+        target: '[Gross Margin Target %]'
+        comparison: '[Gross Margin % LY]'
+        annotation: '[Event Label]'
+        title: '[Title Margin Trend]'
+      format:
+        header:
+          title: Gross margin
+          subtitle: Gross margin % by month
+    - id: ca_margin
+      type: driverBars
+      fields:
+        category: Category[Category]
+        value: '[Margin Change Contribution (pts)]'
+        title: '[Title Margin Drivers]'
+      format:
+        header:
+          title: Margin drivers
+          subtitle: Contribution to the change in gross margin vs last year, pts
+        bars:
+          sortDescending: true
+  - visuals:
+    - id: ca_quadrant
+      type: quadrant
+      fields:
+        details: Category[Category]
+        x: '[Net Sales vs LY %]'
+        y: '[Gross Margin %]'
+        size: '[Net Sales]'
+        xRef: '[Total Growth %]'
+        yRef: '[Total Margin %]'
+        title: '[Title Category Quadrant]'
+      format:
+        header:
+          title: Growth vs margin
+          subtitle: '{n} categories · growth vs LY (x), gross margin (y), size = sales'
+        quadrant:
+          topLeft: Profitable, slowing
+          topRight: Stars
+          bottomLeft: Under pressure
+          bottomRight: Growing, thin margin
+          labelTop: 2
+          labelBottom: 2
+    - id: ca_heatmap
+      type: heatmap
+      fields:
+        rows: Category[Category]
+        columns: Date[Month]
+        value: '[Net Sales vs LY %]'
+        title: '[Title Category Growth]'
+      format:
+        header:
+          title: Growth by month
+          subtitle: Net sales growth vs last year by category and month
+        heatmap:
+          indexMode: false
+          showAll: true
+          lowLabel: Slower
+          highLabel: Faster
+  - visuals:
+    - id: ca_change
+      type: driverBars
+      fields:
+        category: Category[Category]
+        value: '[Sales Change vs LY]'
+        title: '[Title Category Change]'
+      format:
+        header:
+          title: Sales change
+          subtitle: Change in net sales vs last year by category
+        bars:
+          sortDescending: true
+    - id: ca_stock
+      type: treemap
+      fields:
+        category: Category[Category]
+        size: '[Stock Value]'
+        color: '[Inventory Cover (wks)]'
+        title: '[Title Inventory Mix]'
+      format:
+        header:
+          title: Stock
+          subtitle: Closing stock at cost (size) and weeks of cover (colour)
+- name: Customers
+  rows:
+  - visuals:
+    - id: cu_kpi0
+      type: kpiCard
+      fields:
+        value: '[Active Customers]'
+        axis: Date[Month Start]
+        trend: '[Active Customers]'
+        comparison: '[Active Customers LY]'
+      format:
+        kpi:
+          label: Active members · monthly avg
+          lowerIsBetter: false
+          signedValue: false
+    - id: cu_kpi1
+      type: kpiCard
+      fields:
+        value: '[New Customers]'
+        axis: Date[Month Start]
+        trend: '[New Customers]'
+        comparison: '[New Customers LY]'
+      format:
+        kpi:
+          label: New members · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: cu_kpi2
+      type: kpiCard
+      fields:
+        value: '[Repeat Rate %]'
+        axis: Date[Month Start]
+        trend: '[Repeat Rate %]'
+        comparison: '[Repeat Rate % LY]'
+      format:
+        kpi:
+          label: Repeat rate · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: cu_kpi3
+      type: kpiCard
+      fields:
+        value: '[Spend per Customer]'
+        axis: Date[Month Start]
+        trend: '[Spend per Customer]'
+        comparison: '[Spend per Customer LY]'
+      format:
+        kpi:
+          label: Spend per member · monthly
+          lowerIsBetter: false
+          signedValue: false
+  - visuals:
+    - id: cu_trend
+      type: trendLine
+      fields:
+        axis: Date[Month]
+        actual: '[Active Customers]'
+        comparison: '[Active Customers LY]'
+        title: '[Title Customer Trend]'
+      format:
+        header:
+          title: Active members
+          subtitle: Active loyalty members by month
+    - id: cu_tiers
+      type: driverBars
+      fields:
+        category: Customers[Tier]
+        value: '[Member Sales Change]'
+        title: '[Title Tier Drivers]'
+      format:
+        header:
+          title: Spend by tier
+          subtitle: Change in member spend vs last year by loyalty tier
+        bars:
+          sortDescending: true
+  - visuals:
+    - id: cu_cohorts
+      type: heatmap
+      fields:
+        rows: Date[Year Month]
+        columns: Cohorts[MonthsSince]
+        value: '[Cohort Retention %]'
+        title: '[Title Cohorts]'
+      format:
+        header:
+          title: Retention
+          subtitle: Share of each monthly cohort still active, by months since joining
+        heatmap:
+          indexMode: false
+          showAll: true
+          lowLabel: Churned
+          highLabel: Retained
+    - id: cu_funnel
+      type: funnel
+      fields:
+        stages:
+        - '[Active]'
+        - '[Repeat]'
+        - '[Gold & Platinum]'
+        - '[Platinum]'
+        title: '[Title Customer Funnel]'
+      format:
+        header:
+          title: Member value ladder
+          subtitle: Average monthly members by stage
+  - visuals:
+    - id: cu_quadrant
+      type: quadrant
+      fields:
+        details: Country[Country]
+        x: '[Active Customers vs LY %]'
+        y: '[Spend per Customer]'
+        size: '[Member Sales]'
+        xRef: '[Zero Line]'
+        yRef: '[Avg Spend per Customer]'
+        title: '[Title Country Customers]'
+      format:
+        header:
+          title: Markets
+          subtitle: '{n} countries · member growth (x), spend per member (y), size = spend'
+        quadrant:
+          topLeft: High value, shrinking
+          topRight: Growing high value
+          bottomLeft: Needs attention
+          bottomRight: Growing, low spend
+          labelTop: 2
+          labelBottom: 1
+    - id: cu_treemap
+      type: treemap
+      fields:
+        category: Customers[Tier]
+        size: '[Member Sales]'
+        color: '[Repeat Rate %]'
+        title: '[Title Tier Mix]'
+      format:
+        header:
+          title: Tier mix
+          subtitle: Member spend by tier (size) and repeat rate (colour)
+- name: Online
+  rows:
+  - visuals:
+    - id: on_kpi0
+      type: kpiCard
+      fields:
+        value: '[Online Sales]'
+        axis: Date[Month Start]
+        trend: '[Online Sales]'
+        target: '[Online Sales Target]'
+        comparison: '[Online Sales LY]'
+      format:
+        kpi:
+          label: Online sales · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: on_kpi1
+      type: kpiCard
+      fields:
+        value: '[Online Conversion %]'
+        axis: Date[Month Start]
+        trend: '[Online Conversion %]'
+        comparison: '[Online Conversion % LY]'
+      format:
+        kpi:
+          label: Conversion · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: on_kpi2
+      type: kpiCard
+      fields:
+        value: '[Avg Order Value]'
+        axis: Date[Month Start]
+        trend: '[Avg Order Value]'
+        comparison: '[Avg Order Value LY]'
+      format:
+        kpi:
+          label: Avg order value · YTD
+          lowerIsBetter: false
+          signedValue: false
+    - id: on_kpi3
+      type: kpiCard
+      fields:
+        value: '[Sessions]'
+        axis: Date[Month Start]
+        trend: '[Sessions]'
+        comparison: '[Sessions LY]'
+      format:
+        kpi:
+          label: Sessions · YTD
+          lowerIsBetter: false
+          signedValue: false
+  - visuals:
+    - id: on_funnel
+      type: funnel
+      fields:
+        stages:
+        - '[Sessions]'
+        - '[Product views]'
+        - '[Add to cart]'
+        - '[Checkout]'
+        - '[Orders]'
+        title: '[Title Funnel]'
+      format:
+        header:
+          title: Online funnel
+          subtitle: Sessions to orders · selected period
+    - id: on_trend
+      type: trendLine
+      fields:
+        axis: Date[Month]
+        actual: '[Online Sales]'
+        target: '[Online Sales Target]'
+        comparison: '[Online Sales LY]'
+        annotation: '[Event Label]'
+        title: '[Title Online Trend]'
+      format:
+        header:
+          title: Online sales
+          subtitle: Online net sales by month
+  - visuals:
+    - id: on_sources
+      type: driverBars
+      fields:
+        category: '''Online Funnel''[Source]'
+        value: '[Orders Change vs LY]'
+        title: '[Title Source Drivers]'
+      format:
+        header:
+          title: Orders by source
+          subtitle: Change in orders vs last year by traffic source
+        bars:
+          sortDescending: true
+    - id: on_heatmap
+      type: heatmap
+      fields:
+        rows: '''Online Funnel''[Device]'
+        columns: '''Online Funnel''[Source]'
+        value: '[Online Conversion %]'
+        title: '[Title Device Source]'
+      format:
+        header:
+          title: Conversion
+          subtitle: Online conversion by device and traffic source
+        heatmap:
+          indexMode: false
+          showAll: true
+          lowLabel: Low
+          highLabel: High
+  - visuals:
+    - id: on_quadrant
+      type: quadrant
+      fields:
+        details: Country[Country]
+        x: '[Sessions vs LY %]'
+        y: '[Online Conversion %]'
+        size: '[Online Sales]'
+        xRef: '[Zero Line]'
+        yRef: '[Avg Online Conversion %]'
+        title: '[Title Online Markets]'
+      format:
+        header:
+          title: Online markets
+          subtitle: '{n} markets · session growth (x), conversion (y), size = online sales'
+        quadrant:
+          topLeft: Converting, less traffic
+          topRight: Growing and converting
+          bottomLeft: Needs attention
+          bottomRight: Traffic, low conversion
+          labelTop: 2
+          labelBottom: 1
+    - id: on_treemap
+      type: treemap
+      fields:
+        category: Country[Country]
+        size: '[Online Sales]'
+        color: '[Online Conversion %]'
+        title: '[Title Online Mix]'
+      format:
+        header:
+          title: Online by market
+          subtitle: Online sales by country (size) and conversion (colour)

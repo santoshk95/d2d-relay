@@ -1,0 +1,59 @@
+{
+  "name": "spcChart",
+  "title": "SPC Control Chart",
+  "description": "Individuals control chart: values in order with centre line, upper/lower control limits and out-of-control points highlighted",
+  "guid": "spcChart2F44EE613D5E4F46B7EF9430A277856F",
+  "version": "1.0.0.1",
+  "sha": "1b77110db1f9ffd469396e48d2eb533a3c65865d711b5165cb1d7fc7eec5a240",
+  "roles": {
+    "category": "Grouping",
+    "values": "Measure",
+    "centre": "Measure",
+    "upper": "Measure",
+    "lower": "Measure",
+    "tooltips": "Measure"
+  },
+  "role_info": {
+    "category": {
+      "displayName": "Subgroup / batch (in time order)",
+      "description": "One point per value, in the order they should be plotted (for example the batch ID, sorted by start date).",
+      "max": 1
+    },
+    "values": {
+      "displayName": "Value",
+      "description": "The measured value that is charted (one measure).",
+      "max": 1
+    },
+    "centre": {
+      "displayName": "Centre line",
+      "description": "The process mean. Optional: if empty it is computed from the plotted values.",
+      "max": 1
+    },
+    "upper": {
+      "displayName": "Upper control limit",
+      "description": "Usually mean + 3 sigma. Optional: if empty it is computed from the plotted values.",
+      "max": 1
+    },
+    "lower": {
+      "displayName": "Lower control limit",
+      "description": "Usually mean - 3 sigma. Optional: if empty it is computed from the plotted values.",
+      "max": 1
+    },
+    "tooltips": {
+      "displayName": "Tooltips",
+      "description": "",
+      "max": null
+    }
+  },
+  "required": [
+    [
+      "category",
+      "values"
+    ]
+  ],
+  "created": 1793709303.2783334,
+  "updated": 1793709303.2783334,
+  "project": "batch-quality-spc-78aa",
+  "project_name": "Batch Quality SPC",
+  "report": "Batch Quality SPC"
+}

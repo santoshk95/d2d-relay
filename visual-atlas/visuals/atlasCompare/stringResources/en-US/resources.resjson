@@ -1,0 +1,19 @@
+{
+  "Role_Category": "Category",
+  "Role_Category_Desc": "The items to compare (rows of a lollipop or dumbbell, spokes of a radar, periods of a bump chart).",
+  "Role_Series": "Legend",
+  "Role_Series_Desc": "Optional. Splits the values into series (periods for a slope chart, items for a bump chart, lines on a radar).",
+  "Role_Values": "Values",
+  "Role_Values_Desc": "One measure, or several (for example Sales 2024 and Sales 2025 for a dumbbell).",
+  "Role_Tooltips": "Tooltips",
+  "Landing_Line1": "Add a field to Category and one or more measures to Values (two for a dumbbell, slope or tornado).",
+  "Landing_Line2": "Add a Legend to compare series. Pick lollipop, dot plot, dumbbell, slope, bump, tornado or radar in the Format pane.",
+  "Need_Two_Series": "This chart needs two series: two measures in Values, or a Legend with two values.",
+  "Need_Legend": "A bump chart ranks series: put the periods in Category and the items in Legend.",
+  "Need_Three": "A radar needs three or more categories (spokes).",
+  "Warn_Limit_Title": "Showing the first 3,000 rows",
+  "Warn_Limit_Text": "There is more data than the visual can show. Filter the report to see the rest.",
+  "Mark_Selected": "Selected: this visual is filtering other visuals",
+  "Mark_Filter": "This visual is filtering the report",
+  "Mark_Highlighted": "Highlighted by a selection in another visual"
+}

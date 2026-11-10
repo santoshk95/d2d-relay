@@ -1,0 +1,59 @@
+# RELAY by PASDACS: the whole platform in one container (web app, AI engine, database, AI gateway).
+#   relay.cmd start               on this PC (adds the office network address when it is here: docker-compose.lan.yml)
+#   docker compose up -d          anywhere else
+#   http://127.0.0.1:8000         Relay in the browser
+# Settings: .env (copy .env.example). Data: the relay-data volume (database, keys, gateway settings) and the folders
+# below on this PC. Guide: docs/single-container.md. The one-container-per-part stack is docker-compose.dev.yml.
+name: relay
+
+services:
+  relay:
+    # relay:latest = the version running here (relay build, relay load, and Relay Doctor's deploys all move this tag)
+    image: ${RELAY_IMAGE:-relay:latest}
+    build:
+      context: .
+      args:
+        RELAY_VERSION: ${RELAY_VERSION:-1.0.0}
+        RELAY_COMMIT: ${RELAY_COMMIT:-}
+        AGY_IMAGE: ${RELAY_AGY_IMAGE:-agy-download}
+    container_name: relay
+    hostname: relay
+    # every RELAY_* setting in .env reaches the container (see .env.example); a missing .env is fine
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HOST_PROJECTS_DIR: ${HOST_PROJECTS_DIR:-}
+      HOST_LIBRARY_DIR: ${HOST_LIBRARY_DIR:-}
+    volumes:
+      - relay-data:/data
+      # projects stay a folder on this PC: Power BI Desktop opens them and the DAX checker serves their queue
+      - ${RELAY_PROJECTS:-./data/projects}:/data/projects
+      - ${RELAY_BACKUPS:-./data/backups}:/data/backups
+      - ${RELAY_LIBRARY:-./data/library}:/opt/genbi/library
+      # the model lists (config/models.json, config/house-models.json): edits apply without a restart
+      - ./config:/opt/genbi/config:ro
+      # the AI engine's Claude sign-in (relay-ctl login), and the Antigravity CLI's Google sign-in (read only)
+      - claude-login:/home/agent/.claude
+      - agy-login:/opt/agy-login:ro
+    ports:
+      - "127.0.0.1:${RELAY_PORT:-8000}:8000"
+    restart: unless-stopped
+    stop_grace_period: 2m
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+volumes:
+  relay-data:
+    name: relay-data
+  claude-login:
+    name: ${RELAY_CLAUDE_VOLUME:-relay-claude-login}
+    external: ${RELAY_CLAUDE_EXTERNAL:-false}
+  agy-login:
+    name: ${RELAY_AGY_VOLUME:-relay-agy-login}
+    external: ${RELAY_AGY_EXTERNAL:-false}

@@ -1,0 +1,135 @@
+<title>Power BI Visual Atlas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Every built-in Power BI visual plus popular AppSource and build-your-own visuals, drawn live in every useful variation, re-themed to any brand color.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>/*CSS*/</style>
+
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="#top" aria-label="Visual Atlas, back to top">
+      <span class="brand-mark" aria-hidden="true"><span><i style="height:7px"></i><i style="height:12px"></i><i style="height:18px"></i></span></span>
+      <span><b>Visual Atlas</b><small>Power BI · every visual</small></span>
+    </a>
+    <label class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+      <span class="sr">Search visuals</span>
+      <input id="q" type="search" placeholder="Search visuals and features: sankey, drill, zoom, target…" autocomplete="off">
+    </label>
+    <div class="ctl">
+      <div class="seg look-seg" role="group" aria-label="Look">
+        <button type="button" data-sx="look" data-v="flat">Flat</button><button type="button" data-sx="look" data-v="soft">Soft</button><button type="button" data-sx="look" data-v="3d">3D</button>
+      </div>
+      <div class="seg theme-seg" id="theme" role="group" aria-label="Color mode">
+        <button type="button" data-t="auto">Auto</button><button type="button" data-t="light">Light</button><button type="button" data-t="dark">Dark</button>
+      </div>
+      <button class="brand-btn" id="brand-btn" type="button" aria-expanded="false" aria-controls="studio-pop"><span class="bsw" aria-hidden="true"><i style="background:var(--c1)"></i><i style="background:var(--c2)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></span><span class="bb-t">Brand</span></button>
+      <button class="pane-btn" id="pane-btn" type="button">Visuals</button>
+    </div>
+  </div>
+  <div class="studio-pop" id="studio-pop" hidden><div class="studio" data-studio></div></div>
+</header>
+
+<div class="layout" id="top">
+  <main>
+    <section class="hero">
+      <div class="hero-txt">
+        <p class="eyebrow"><span class="dot" aria-hidden="true"></span>Power BI visuals · built-in and AppSource · November 2026</p>
+        <h1>Every Power BI visual, <span class="hl">in your brand</span></h1>
+        <p class="lede">All <b id="l-std">48</b> built-in visuals and <b id="l-ext">36</b> popular AppSource and build-your-own visuals, drawn live in <b id="l-var">384</b> variations. Pick one brand color and every chart, ramp and accent re-themes itself. Switch between flat, soft and 3D, then drill, zoom and filter, or open any variation in focus mode.</p>
+        <div class="figs">
+          <div><b id="f-vis">0</b><span>built-in visuals</span></div>
+          <div><b id="f-ext">0</b><span>AppSource &amp; custom</span></div>
+          <div><b id="f-var">0</b><span>live variations</span></div>
+          <div><b id="f-int">0</b><span>drill, zoom or click</span></div>
+        </div>
+      </div>
+      <div class="stage" id="stage" aria-hidden="true">
+        <div class="deck" id="deck">
+          <div class="board"></div>
+          <div class="fl f1"><div class="fl-in" data-mini="kpi"></div></div>
+          <div class="fl f2"><div class="fl-t">Sales by month</div><div class="fl-in" data-mini="cols"></div></div>
+          <div class="fl f3"><div class="fl-t">Category share</div><div class="fl-in" data-mini="donut"></div></div>
+          <div class="fl f4"><div class="fl-t">Traffic to outcome</div><div class="fl-in" data-mini="sankey"></div></div>
+          <div class="fl f5"><div class="fl-in" data-mini="liquid"></div></div>
+        </div>
+      </div>
+      <div class="studio" data-studio id="studio"></div>
+    </section>
+
+    <section class="intro">
+      <div class="ask">
+        <h2>Start from your question</h2>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="changes">
+        <h3>Changed in 2025–26</h3>
+        <ul>
+          <li><span class="pill ga"><i></i>GA</span><span><b>Card</b> is the new card visual (Nov 2025). The legacy card and multi-row card come back through Restore default visuals.</span></li>
+          <li><span class="pill ga"><i></i>GA</span><span><b>Input slicer</b> (was the text slicer) and <b>button slicer</b>. The <b>list slicer</b> is still in preview.</span></li>
+          <li><span class="pill preview"><i></i>Preview</span><span><b>Gantt</b> is now a built-in visual, with progress, milestones and a zoomable axis.</span></li>
+          <li><span class="pill retiring"><i></i>Retiring</span><span><b>Q&amp;A</b> retires in December 2026. Move those experiences to Copilot.</span></li>
+          <li><span class="pill legacy"><i></i>Legacy</span><span><b>Map</b> and <b>Filled map</b> (Bing) are scheduled for deprecation. Convert them to Azure Maps.</span></li>
+        </ul>
+      </div>
+    </section>
+    <div class="srcbar" id="srcbar" role="group" aria-label="Show visuals from">
+      <button type="button" data-src="all" aria-pressed="true">All visuals <span></span></button>
+      <button type="button" data-src="std" aria-pressed="false">Built-in <span></span></button>
+      <button type="button" data-src="appsource" aria-pressed="false">AppSource <span></span></button>
+      <button type="button" data-src="build" aria-pressed="false">Build your own <span></span></button>
+    </div>
+    <div class="filterbar" id="filterbar" aria-live="polite"></div>
+    <div id="gallery"></div>
+    <p class="empty" id="empty" hidden>No visual matches that search. Try a feature such as “labels”, “drill”, “zoom” or “target”.</p>
+    <footer class="foot">
+      <span>Independent reference, not affiliated with Microsoft. All figures are invented sample data.</span>
+      <span>AppSource visuals come from Microsoft and third-party publishers; names, options and certification differ by publisher, and some tenants allow only certified visuals.</span>
+      <span>Built-in list checked against Microsoft Learn, November 2026 · Map geometry: Natural Earth (world-atlas), US Census (us-atlas)</span>
+    </footer>
+  </main>
+  <aside class="pane" id="pane" aria-label="Visualizations">
+    <div class="pane-h"><b>Visualizations</b><button id="pane-x" type="button" aria-label="Close the visualizations pane">✕</button></div>
+    <div id="icons"></div>
+    <div class="build" id="build"></div>
+    <div class="legend">
+      <div><span class="pill ga"><i></i>GA</span>Generally available</div>
+      <div><span class="pill preview"><i></i>Preview</span>Turn on in Options › Preview features</div>
+      <div><span class="pill legacy"><i></i>Legacy</span>Kept for existing reports</div>
+      <div><span class="pill retiring"><i></i>Retiring</span>Stops working Dec 2026</div>
+      <div><span class="pill appsource"><i></i>AppSource</span>Get more visuals, then add</div>
+      <div><span class="pill bld"><i></i>Build</span>Deneb or DAX measures</div>
+    </div>
+  </aside>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<dialog class="fm" id="fm" aria-label="Focus mode">
+  <div class="fm-top">
+    <div class="fm-ti"><span></span><b></b></div>
+    <div class="vh fm-vh"></div>
+    <button class="fm-x" type="button" aria-label="Close focus mode">✕</button>
+  </div>
+  <div class="fm-g">
+    <div class="fm-main">
+      <div class="crumb"></div>
+      <div class="tb"></div>
+      <div class="fm-tbl" hidden></div>
+      <div class="fm-nav"><button class="fm-prev" type="button">← Previous</button><span></span><button class="fm-next" type="button">Next →</button></div>
+    </div>
+    <aside class="fm-side">
+      <p class="fm-d"></p>
+      <h4>How to build it</h4>
+      <ol class="fm-h"></ol>
+      <h4>Field wells</h4>
+      <div class="wells fm-w"></div>
+      <h4>Good for</h4>
+      <ul class="fm-u"></ul>
+      <label class="fm-tt"><input type="checkbox" id="fm-table"> Show as a table</label>
+      <p class="fm-keys"></p>
+    </aside>
+  </div>
+</dialog>
+<script>/*JS*/</script>

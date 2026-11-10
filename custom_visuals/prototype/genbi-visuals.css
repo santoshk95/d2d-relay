@@ -1,0 +1,53 @@
+/* Gen BI visual styles. Plain CSS (valid LESS) so the same file styles the Power BI
+   custom visuals and the HTML prototype. Colours come from CSS variables set per visual. */
+.gb-root { width: 100%; height: 100%; box-sizing: border-box; font-family: var(--gb-font); color: var(--gb-ink); -webkit-font-smoothing: antialiased; }
+.gb-root * { box-sizing: border-box; }
+.gb-card { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: var(--gb-card); border: 1px solid var(--gb-border); border-radius: 10px; padding: 12px 14px 10px; }
+.gb-card.gb-flat { background: transparent; border-color: transparent; padding: 2px; }
+.gb-head { flex: none; margin-bottom: 8px; }
+.gb-title { font-size: 14px; font-weight: 600; line-height: 1.3; letter-spacing: -0.1px; color: var(--gb-ink); }
+.gb-sub { font-size: 11px; line-height: 1.35; color: var(--gb-muted); margin-top: 2px; }
+.gb-body { flex: 1 1 auto; min-height: 0; position: relative; }
+.gb-body > svg { display: block; overflow: visible; }
+.gb-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 12px; color: var(--gb-faint); }
+
+/* KPI card */
+.gb-kpi .gb-body { display: flex; }
+.gb-kpi-box { flex: 1; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+.gb-kpi-label { font-size: 12px; font-weight: 600; color: var(--gb-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gb-kpi-label-muted { font-weight: 400; color: var(--gb-muted); }
+.gb-kpi-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gb-kpi-value { font-weight: 700; letter-spacing: -0.6px; line-height: 1.05; white-space: nowrap; color: var(--gb-ink); }
+.gb-spark { flex: none; overflow: visible; }
+.gb-kpi-target { font-size: 11px; color: var(--gb-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gb-kpi-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; white-space: nowrap; }
+.gb-delta { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.gb-delta.good { color: var(--gb-good); }
+.gb-delta.bad { color: var(--gb-bad); }
+.gb-delta-arrow { font-size: 9px; }
+.gb-delta-label { font-weight: 400; color: var(--gb-muted); }
+.gb-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 4px; border-radius: 999px; font-weight: 600; font-size: 11px; flex: none; }
+.gb-pill.ok { background: var(--gb-good-bg); color: var(--gb-good); }
+.gb-pill.risk { background: var(--gb-warn-bg); color: var(--gb-warn); }
+.gb-pill.off { background: var(--gb-bad-bg); color: var(--gb-bad); }
+.gb-pill-icon { flex: none; }
+
+/* Narrative */
+.gb-narrative .gb-body { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.gb-nar-head { display: flex; align-items: center; gap: 6px; font-size: 11px; white-space: nowrap; overflow: hidden; }
+.gb-nar-title { font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--gb-primary-dark); }
+.gb-nar-note { color: var(--gb-muted); overflow: hidden; text-overflow: ellipsis; }
+.gb-nar-list { display: flex; flex-direction: column; gap: 7px; min-height: 0; }
+.gb-nar-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.4; color: var(--gb-ink); }
+.gb-nar-num { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--gb-primary); color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
+.gb-nar-bullet { flex: none; margin-top: 4px; }
+.gb-nar-text b { font-weight: 700; }
+.gb-timeline .gb-nar-list { flex-direction: row; justify-content: space-between; gap: 12px; }
+.gb-timeline .gb-nar-item { flex: 1; min-width: 0; font-size: 11px; }
+.gb-nar-badge { flex: none; min-width: 26px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--gb-primary-dark); color: #fff; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.gb-nar-step { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gb-nar-muted { color: var(--gb-muted); }
+
+/* Tooltip used by the HTML prototype (Power BI draws its own) */
+.gb-tooltip { position: fixed; pointer-events: none; z-index: 1000; background: #fff; border: 1px solid var(--gb-border, #E7E0D7); border-radius: 6px; padding: 6px 8px; box-shadow: 0 4px 14px rgba(0,0,0,.12); font: 11px/1.45 var(--gb-font, sans-serif); color: #1F1A17; }
+.gb-tooltip b { font-weight: 600; }

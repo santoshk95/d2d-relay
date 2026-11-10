@@ -1,0 +1,59 @@
+{
+  "name": "smLines",
+  "title": "Small Multiple Lines",
+  "description": "Small Multiple Lines",
+  "guid": "smLines58D103504BF34E2991B69339FC8356B1",
+  "version": "1.0.0.1",
+  "sha": "36f1aa3b3ab47d2528c427c8ae506a8c185dbcdca9699251720cbfea43de0ade",
+  "roles": {
+    "category": "Grouping",
+    "group": "Grouping",
+    "values": "Measure",
+    "comparison": "Measure",
+    "subtitle": "Measure",
+    "tooltips": "Measure"
+  },
+  "role_info": {
+    "category": {
+      "displayName": "Axis",
+      "description": "The x axis, usually a date or month.",
+      "max": 1
+    },
+    "group": {
+      "displayName": "Small multiples",
+      "description": "One panel per value, for example Study.",
+      "max": 1
+    },
+    "values": {
+      "displayName": "Values",
+      "description": "The actual line (for example cumulative enrolled).",
+      "max": 1
+    },
+    "comparison": {
+      "displayName": "Comparison",
+      "description": "Optional. The plan or target line; end labels show the value as % of it.",
+      "max": 1
+    },
+    "subtitle": {
+      "displayName": "Panel subtitle",
+      "description": "Optional. A text measure shown under each panel title.",
+      "max": 1
+    },
+    "tooltips": {
+      "displayName": "Tooltips",
+      "description": "Extra measures shown in the tooltip.",
+      "max": null
+    }
+  },
+  "required": [
+    [
+      "category",
+      "values"
+    ]
+  ],
+  "created": 1793730280.9648595,
+  "updated": 1793730280.9648595,
+  "project": "retail-demand-planning-dashboard-2ee6",
+  "project_name": "Retail Demand Planning Dashboard",
+  "report": "Sock Demand"
+}

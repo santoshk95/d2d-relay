@@ -1,0 +1,17 @@
+{
+		"version": "1.0.6.0",
+		"author": {"name":"Visual Atlas","email":"atlas@example.com"},
+		"resources": [
+			{
+				"resourceId": "rId0",
+				"sourceType": 5,
+				"file": "resources/atlasProportion74F95B1AE3CB4D9195CC248A3EC140A4.pbiviz.json"
+			}
+		],
+		"visual": {"name":"atlasProportion","displayName":"Atlas Proportion","guid":"atlasProportion74F95B1AE3CB4D9195CC248A3EC140A4","visualClassName":"Visual","version":"1.0.6.0","description":"Mekko, waffle, pictogram, aster plot, rose (polar area) and Venn diagram in one visual, with flat, soft and 3D looks and a palette that follows your report theme, a brand color or your own colors.","supportUrl":"https://learn.microsoft.com/power-bi/developer/visuals/","gitHubUrl":""},
+		"metadata": {
+			"pbivizjson": {
+				"resourceId": "rId0"
+			}
+		}
+	}
