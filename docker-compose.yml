@@ -1,24 +1,21 @@
-# RELAY by PASDACS: the whole platform in one container (web app, AI engine, database, AI gateway).
-#   relay.cmd start               on this PC (adds the office network address when it is here: docker-compose.lan.yml)
-#   docker compose up -d          anywhere else
-#   http://127.0.0.1:8000         Relay in the browser
-# Settings: .env (copy .env.example). Data: the relay-data volume (database, keys, gateway settings) and the folders
-# below on this PC. Guide: docs/single-container.md. The one-container-per-part stack is docker-compose.dev.yml.
-name: relay
+# D2D Relay by PASDACS: Power BI dashboards from CSV files and Google BigQuery, in one container.
+# Separate from RELAY by PASDACS (the folder ../Gen BI): its own image, container, database, projects and sign-in.
+#   docker compose up -d                    the app on http://127.0.0.1:8100 (this PC only)
+#   docker compose --profile tunnel up -d   plus the Cloudflare tunnel that serves https://d2d-relay.pasdacs.com
+# Settings: .env (copy .env.example). Guide: docs/d2d-relay.md.
+name: d2d-relay
 
 services:
-  relay:
-    # relay:latest = the version running here (relay build, relay load, and Relay Doctor's deploys all move this tag)
-    image: ${RELAY_IMAGE:-relay:latest}
+  d2d-relay:
+    image: ${RELAY_IMAGE:-d2d-relay:latest}
     build:
       context: .
       args:
         RELAY_VERSION: ${RELAY_VERSION:-1.0.0}
         RELAY_COMMIT: ${RELAY_COMMIT:-}
         AGY_IMAGE: ${RELAY_AGY_IMAGE:-agy-download}
-    container_name: relay
-    hostname: relay
-    # every RELAY_* setting in .env reaches the container (see .env.example); a missing .env is fine
+    container_name: d2d-relay
+    hostname: d2d-relay
     env_file:
       - path: .env
         required: false
@@ -26,18 +23,16 @@ services:
       HOST_PROJECTS_DIR: ${HOST_PROJECTS_DIR:-}
       HOST_LIBRARY_DIR: ${HOST_LIBRARY_DIR:-}
     volumes:
-      - relay-data:/data
-      # projects stay a folder on this PC: Power BI Desktop opens them and the DAX checker serves their queue
+      - d2d-data:/data
       - ${RELAY_PROJECTS:-./data/projects}:/data/projects
       - ${RELAY_BACKUPS:-./data/backups}:/data/backups
       - ${RELAY_LIBRARY:-./data/library}:/opt/genbi/library
-      # the model lists (config/models.json, config/house-models.json): edits apply without a restart
       - ./config:/opt/genbi/config:ro
-      # the AI engine's Claude sign-in (relay-ctl login), and the Antigravity CLI's Google sign-in (read only)
+      # the AI engine's Claude sign-in (relay-ctl login inside this container, or an existing volume: RELAY_CLAUDE_*)
       - claude-login:/home/agent/.claude
       - agy-login:/opt/agy-login:ro
     ports:
-      - "127.0.0.1:${RELAY_PORT:-8000}:8000"
+      - "127.0.0.1:${RELAY_PORT:-8100}:8000"
     restart: unless-stopped
     stop_grace_period: 2m
     security_opt:
@@ -48,12 +43,29 @@ services:
         max-size: "20m"
         max-file: "5"
 
+  # https://d2d-relay.pasdacs.com -> this container, through Cloudflare (no port is opened on this PC).
+  # The tunnel and its public hostname are made in the Cloudflare dashboard; its token goes in tunnel.env
+  # (one line: TUNNEL_TOKEN=...), a file of its own so the app container never sees it.
+  tunnel:
+    image: cloudflare/cloudflared:2025.11.1
+    container_name: d2d-relay-tunnel
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run
+    env_file:
+      - path: tunnel.env
+        required: false
+    depends_on:
+      - d2d-relay
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
 volumes:
-  relay-data:
-    name: relay-data
+  d2d-data:
+    name: d2d-relay-data
   claude-login:
-    name: ${RELAY_CLAUDE_VOLUME:-relay-claude-login}
+    name: ${RELAY_CLAUDE_VOLUME:-d2d-relay-claude-login}
     external: ${RELAY_CLAUDE_EXTERNAL:-false}
   agy-login:
-    name: ${RELAY_AGY_VOLUME:-relay-agy-login}
+    name: ${RELAY_AGY_VOLUME:-d2d-relay-agy-login}
     external: ${RELAY_AGY_EXTERNAL:-false}

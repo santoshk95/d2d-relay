@@ -1,5 +1,5 @@
 <#
-Relay DAX checker: runs Power BI's own engine (Analysis Services, from Power BI Desktop on this PC) for the
+D2D Relay DAX checker: runs Power BI's own engine (Analysis Services, from Power BI Desktop on this PC) for the
 Relay app, so every measure and visual query is checked by the real engine before a report is shared.
 
 The app (in Docker) drops requests in <projects>\.daxcheck\requests. For each one this script starts a private,
@@ -10,7 +10,7 @@ Start: double-click daxcheck\start-daxcheck.cmd, or
        powershell -NoProfile -ExecutionPolicy Bypass -File daxcheck\daxcheck.ps1
 #>
 param(
-    [string]$Queue = (Join-Path $PSScriptRoot "..\output\projects\.daxcheck"),
+    [string]$Queue = (Join-Path $PSScriptRoot "..\data\projects\.daxcheck"),
     [string]$PbiBin = ""
 )
 $ErrorActionPreference = "Stop"

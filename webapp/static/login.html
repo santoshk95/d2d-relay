@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Sign in · RELAY by PASDACS</title>
+<title>Sign in · D2D Relay</title>
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="relay-mark.svg">
 <link rel="stylesheet" href="css/fonts.css">
@@ -50,85 +50,56 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
 <div class="wrap">
   <div class="hero">
     <div class="brand" id="brand"></div>
-    <div><h1 id="hero-title">Agents do the repeated work. People validate. Leads see everything.</h1>
-      <p>Connect your data and systems, ask in plain language, and ship dashboards, flows and changes that pass every review gate — with a person confirming each step that matters.</p></div>
-    <div class="powered" id="powered"></div>
+    <div><h1>Your data to a Power BI dashboard.</h1>
+      <p>Bring CSV files or connect Google BigQuery, describe the dashboard you need, and get a reviewed Power BI project with every number checked.</p></div>
+    <div class="powered"><span>D2D Relay · by PASDACS</span></div>
   </div>
   <main class="form">
-    <h2 id="signin">Sign in</h2>
-    <p class="muted">Use your organisation account.</p>
-    <div id="error" class="err" hidden></div>
-    <div id="providers"></div>
-    <form id="setupbox" method="post" action="/auth/setup" style="display:grid;gap:10px" hidden>
-      <div><label for="newpw">New password</label><input id="newpw" name="password" type="password" autocomplete="new-password" minlength="12" required></div>
-      <div><label for="newpw2">The same again</label><input id="newpw2" type="password" autocomplete="new-password" minlength="12" required></div>
-      <input type="hidden" name="token" id="token">
-      <button type="submit">Set my password</button>
-      <p class="fine">At least 12 characters. The link works once, for 72 hours.</p>
+    <h2 id="signin">Sign in to D2D Relay</h2>
+    <p class="muted" id="lead">We email you a 6-digit code. No password needed.</p>
+    <div id="error" class="err" role="alert" hidden></div>
+    <div id="note" class="none" role="status" hidden></div>
+    <form id="askform" style="display:grid;gap:10px">
+      <div><label for="email">Work email</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+      <button type="submit" id="askbtn">Email me a code</button>
     </form>
-    <details id="localbox" hidden>
-      <summary>Administrator sign-in (local account)</summary>
-      <form method="post" action="/auth/local" id="localform" style="display:grid;gap:10px;margin-top:12px">
-        <div><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="username" required></div>
-        <div><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
-        <input type="hidden" name="next" id="next">
-        <button type="submit">Sign in</button>
-        <p class="fine">Only for setting up the organisation. Everyone else signs in with SSO.</p>
-      </form>
-    </details>
+    <form id="codeform" style="display:grid;gap:10px" hidden>
+      <div><label for="code">6-digit code</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required></div>
+      <button type="submit" id="codebtn">Sign in</button>
+      <p class="fine"><a href="#" id="again">Send a new code</a> · <a href="#" id="other">Use another address</a></p>
+    </form>
+    <p class="fine">Questions? Write to <a href="mailto:info@pasdacs.com">info@pasdacs.com</a>.</p>
   </main>
 </div>
 <script>
 const RELAY_LOGO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 48" role="img" aria-label="RELAY by PASDACS"><rect class="rl-tile" x="2" y="2" width="44" height="44" rx="11" fill="#111111"/><path class="rl-chev" d="M10 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/><path class="rl-chev" d="M19 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="29" y="29.5" width="9" height="4.4" rx="2" fill="#00C48C"/><text class="rl-word" x="60" y="27" font-family="Manrope, Inter, Segoe UI, Arial, sans-serif" font-size="23" font-weight="800" letter-spacing="3" fill="#111111">RELAY</text><text class="rl-sub" x="61" y="42" font-family="Manrope, Inter, Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" letter-spacing="2" fill="#525252">BY PASDACS</text></svg>';
-const RELAY_MARK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" aria-hidden="true"><rect class="rl-tile" x="2" y="2" width="44" height="44" rx="11" fill="#111111"/><path class="rl-chev" d="M10 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><path class="rl-chev" d="M19 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="29" y="29" width="9" height="5" rx="2" fill="#00C48C"/></svg>';
-const LOGOS = {entra: 'linear-gradient(135deg,#F25022 0 50%,#7FBA00 50%)', google: 'linear-gradient(135deg,#4285F4,#34A853 50%,#FBBC05 75%,#EA4335)', okta: '#1A1A1A'};
-const qs = new URLSearchParams(location.search), next = qs.get('next') || '';
-// P17: the workspace this page is for (?t=, else its host name on the server); a one-time set-up link (?setup=)
-const T = /^[a-z][a-z0-9-]{1,30}$/.test(qs.get('t') || '') ? qs.get('t') : '', TQ = T ? 't=' + encodeURIComponent(T) : '';
-const setup = qs.get('setup') || '';
-if (qs.get('error')) { const e = document.getElementById('error'); e.textContent = qs.get('error'); e.hidden = false; }
-document.getElementById('next').value = next.startsWith('#/') ? next : '';
-document.getElementById('localform').action = '/auth/local' + (TQ ? '?' + TQ : '');
-if (setup) {
-  document.getElementById('setupbox').hidden = false; document.getElementById('token').value = setup;
-  document.getElementById('signin').textContent = 'Set your password';
-  document.querySelector('.form .muted').textContent = 'You are the first admin of this workspace. Choose a password for its local sign-in.';
-  document.getElementById('setupbox').addEventListener('submit', e => {
-    if (document.getElementById('newpw').value !== document.getElementById('newpw2').value) {
-      e.preventDefault(); const x = document.getElementById('error'); x.textContent = 'The two passwords are not the same.'; x.hidden = false;
-    }
-  });
+document.getElementById('brand').innerHTML = RELAY_LOGO;
+const qs = new URLSearchParams(location.search), next = (qs.get('next') || '').startsWith('#/') ? qs.get('next') : '';
+const $ = id => document.getElementById(id);
+const show = (id, text) => { const e = $(id); e.textContent = text || ''; e.hidden = !text; };
+if (qs.get('error')) show('error', qs.get('error'));
+async function post(url, body) {
+  const r = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body), credentials: 'same-origin'});
+  let j = {}; try { j = await r.json(); } catch (e) { /* not JSON */ }
+  if (!r.ok) throw new Error(j.detail || 'Something went wrong. Try again.');
+  return j;
 }
-if (qs.get('done')) { const x = document.getElementById('error'); x.className = 'none'; x.textContent = 'Your password is set. Sign in with it below.'; x.hidden = false; }
-const esc = s => String(s || '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
-fetch('/auth/brand' + (TQ ? '?' + TQ : '')).then(r => r.json()).then(b => {
-  if (b.workspace && !setup) document.querySelector('.form .muted').textContent = `Sign in to the ${b.workspace} workspace.`;
-  const brand = document.getElementById('brand'), pw = document.getElementById('powered');
-  if (b.partner) {
-    brand.innerHTML = (b.logo_dark || b.logo_light ? `<img src="${esc(b.logo_dark || b.logo_light)}" alt="">` : `<span class="pmark" style="background:${esc(b.color)}">${esc(b.mark)}</span>`)
-      + `<span class="bname">${esc(b.full)}<small>${esc(b.tagline)}</small></span>`;
-    pw.innerHTML = RELAY_MARK + '<span>Powered by <b>PASDACS Relay</b></span>';
-    document.title = 'Sign in · ' + b.full; document.getElementById('signin').textContent = 'Sign in to ' + b.name;
-  } else { brand.innerHTML = RELAY_LOGO; pw.innerHTML = '<span>RELAY by PASDACS · one platform, every pillar</span>'; document.getElementById('signin').textContent = 'Sign in to Relay'; }
-  if (b.contact) { const c = document.createElement('p'); c.className = 'fine'; c.innerHTML = `Questions? Write to <a href="mailto:${esc(b.contact)}">${esc(b.contact)}</a>.`; document.querySelector('.form').appendChild(c); }
-}).catch(() => { document.getElementById('brand').innerHTML = RELAY_LOGO; });
-fetch('/auth/providers' + (TQ ? '?' + TQ : '')).then(r => r.json()).then(cfg => {
-  if (cfg.mode !== 'sso') {
-    if (setup || qs.get('done')) { if (!setup) document.getElementById('providers').innerHTML = '<a class="sso" href="/">Open the app</a>'; return; }
-    location.replace('/'); return;
-  }
-  if (setup) return;
-  const box = document.getElementById('providers');
-  for (const p of cfg.providers) {
-    const a = document.createElement('a');
-    const q = [TQ, next.startsWith('#/') ? 'next=' + encodeURIComponent(next) : ''].filter(Boolean).join('&');
-    a.className = 'sso'; a.href = `/auth/oidc/${encodeURIComponent(p.id)}/start` + (q ? '?' + q : '');
-    const i = document.createElement('i'); i.style.background = LOGOS[p.kind] || 'var(--ink)';
-    a.append(i, 'Continue with ' + p.label); box.append(a);
-  }
-  if (!cfg.providers.length) box.innerHTML = '<div class="none">Single sign-on is not set up yet. An administrator signs in below and adds it under Admin › Sign-in.</div>';
-  if (cfg.local) { const l = document.getElementById('localbox'); l.hidden = false; if (!cfg.providers.length) l.open = true; }
+async function ask() {
+  show('error'); show('note'); $('askbtn').disabled = true;
+  try {
+    const j = await post('/auth/otp/start', {email: $('email').value.trim()});
+    show('note', j.message); $('askform').hidden = true; $('codeform').hidden = false; $('code').value = ''; $('code').focus();
+  } catch (e) { show('error', e.message); } finally { $('askbtn').disabled = false; }
+}
+$('askform').addEventListener('submit', e => { e.preventDefault(); ask(); });
+$('codeform').addEventListener('submit', async e => {
+  e.preventDefault(); show('error'); $('codebtn').disabled = true;
+  try { const j = await post('/auth/otp/verify', {email: $('email').value.trim(), code: $('code').value, next}); location.replace(j.next || '/'); }
+  catch (err) { show('error', err.message); $('codebtn').disabled = false; }
 });
+$('again').addEventListener('click', e => { e.preventDefault(); ask(); });
+$('other').addEventListener('click', e => { e.preventDefault(); show('note'); show('error'); $('codeform').hidden = true; $('askform').hidden = false; $('email').focus(); });
+fetch('/auth/providers').then(r => r.json()).then(cfg => { if (cfg.mode !== 'otp' && cfg.mode !== 'sso') location.replace('/'); }).catch(() => {});
 </script>
 </body>
 </html>

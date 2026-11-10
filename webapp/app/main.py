@@ -28,6 +28,7 @@ from . import (askd_routes, auth, connectors, publishing, publishing_routes, dat
 from . import changes as changes_mod
 from . import home, mailer, monitor, notify, phases, registry, schedules, usage
 from . import doctor, errors
+from . import edition, otp                 # D2D Relay: the dashboard-only catalogue and the email-code sign-in
 
 errors.install()                                # every traceback.print_exc() and thread crash reports Relay's own bugs (Relay Doctor)
 STATIC = Path(__file__).resolve().parent.parent / "static"
@@ -50,6 +51,10 @@ def _import_existing() -> None:
 async def lifespan(_):
     db.init()
     identity.bootstrap_password()
+    try:
+        otp.sync_admin()
+    except Exception:  # noqa: BLE001 - sign-in still works with the address the admin row has
+        traceback.print_exc()
     _import_existing()
     try:
         usage.backfill()                        # once: cost rows for the runs recorded before phase 7
@@ -68,12 +73,9 @@ async def lifespan(_):
              asyncio.create_task(data_routes.scheduler()), asyncio.create_task(schedules.scheduler()),
              asyncio.create_task(monitor.watchdog()), asyncio.create_task(tenancy.sweeper()),
              asyncio.create_task(doctor.loop())]  # Relay Doctor's shared folder: what runs now, the hold, Admin requests
-    phases.migrate.ensure_drift_loop()          # Migrate BI's nightly drift checks, every tenant in turn (consolidation)
-    phases.heal.ensure_scheduler()              # Self-healing's watcher and AI SDLC's run after a restart without waiting for a
-    phases.sdlc.ensure_scheduler()              # visit (consolidation: their routes run in the thread pool, which could not start them)
     await asyncio.sleep(0)                      # let the worker loop record its event loop (Integration analytics and observability use it)
     worker._loop = worker._loop or asyncio.get_running_loop()
-    for starter in (phases.itsm.ensure_scheduler, phases.intan.ensure_scheduler, phases.observe.ensure_scheduler, phases.workbench.ensure_scheduler):
+    for starter in ():                          # D2D Relay: the other modules' pollers (service desk, integrations, observability, workbench) stay off
         try:                                    # the Service desk, Integration analytics and Data observability pollers and the workbench's
             starter()                           # schedule start with the app, not with the first visit to their page
         except Exception:  # noqa: BLE001 - one poller must not stop the app from starting
@@ -81,12 +83,9 @@ async def lifespan(_):
     yield
     for t in tasks:
         t.cancel()
-    phases.migrate.stop_drift_loop()
-    phases.heal.stop_scheduler()
-    phases.sdlc.stop_scheduler()
 
 
-app = FastAPI(title="Relay", lifespan=lifespan)
+app = FastAPI(title="D2D Relay", lifespan=lifespan)
 app.middleware("http")(auth.middleware)        # every request: who is asking, and may they (see auth.py)
 app.middleware("http")(monitor.middleware)     # outermost: request counts, timings, JSON log lines (phase 8)
 app.include_router(platform.router)            # sign-in, sharing, administration (phase 1)
@@ -104,6 +103,8 @@ app.include_router(registry.router)            # module registry, brand settings
 app.include_router(home.router)                # Home insight dashboard (P9)
 for _r in phases.ROUTERS:                      # P10 onwards: one router per phase module (app/phases.py)
     app.include_router(_r)
+app.include_router(otp.router)                 # D2D Relay: sign-in with a one-time email code
+edition.apply()                                # D2D Relay: keep dashboards, the visual library and BigQuery; switch the rest off
 
 
 @app.exception_handler(usage.QuotaError)

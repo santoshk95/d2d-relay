@@ -71,6 +71,8 @@ def sign_in_options():
 @router.post("/auth/setup")
 def setup_password(request: Request, token: str = Form(...), password: str = Form(...)):
     """A new workspace's first admin sets their local password with the one-time link (P17)."""
+    if auth.MODE == "otp":
+        return _to_login("Sign in with a code sent to your email.")          # D2D Relay: email codes only
     t = identity.setup_tenant(token)
     if not t:
         return _to_login("This set-up link has expired or was already used. Ask for a new one.")
@@ -86,6 +88,8 @@ def setup_password(request: Request, token: str = Form(...), password: str = For
 
 @router.get("/auth/oidc/{pid}/start")
 def oidc_start(pid: str, request: Request, next: str = ""):
+    if auth.MODE == "otp":
+        return _to_login("Sign in with a code sent to your email.")          # D2D Relay: email codes only
     try:
         return RedirectResponse(identity.start(pid, str(request.base_url), next), 303)
     except identity.SignInError as e:
@@ -110,6 +114,8 @@ def oidc_callback(pid: str, request: Request, code: str = "", state: str = "", e
 
 @router.post("/auth/local")
 def local_sign_in(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form("")):
+    if auth.MODE == "otp":
+        return _to_login("Sign in with a code sent to your email.")          # D2D Relay: email codes only
     try:
         u = identity.local_sign_in(email, password, _ip(request))
     except identity.SignInError as e:

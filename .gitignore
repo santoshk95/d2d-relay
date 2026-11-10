@@ -32,3 +32,4 @@ Thumbs.db
 
 # git worktrees of parallel agents (docs/parallel-work.md)
 .claude/worktrees/
+tunnel.env

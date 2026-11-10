@@ -24,7 +24,7 @@ from urllib.parse import quote, urlparse
 from fastapi import Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from . import db, identity, instances, store
+from . import db, edition, identity, instances, store
 
 MODE = os.environ.get("D2D_AUTH", "single")
 current: contextvars.ContextVar[dict | None] = contextvars.ContextVar("d2d_user", default=None)
@@ -64,7 +64,7 @@ def home_of(request: Request) -> tuple[str, dict | None, str]:
         if u and u.get("home_tenant"):                  # a guest row is never anyone's home
             u = None
         return t, u, ("u:" + uid) if u else ""
-    if MODE == "sso":
+    if MODE in ("sso", "otp"):                          # D2D Relay: otp = one email, one-time code (otp.py)
         t, sid = identity.split_cookie(request.cookies.get(identity.COOKIE))
         if not tenant_row(t):
             return db.PLATFORM, None, ""
@@ -226,8 +226,10 @@ def check(u: dict | None, method: str, path: str) -> JSONResponse | None:
     """The rule for one request; None means allowed."""
     if not path.startswith("/api/"):
         return None                                    # the app shell and static files (sign-in handled in middleware)
+    if edition.blocked(path):
+        return _deny(404, "That is not part of D2D Relay.")
     if u is None:
-        return _deny(401, "Sign in to D2D.")
+        return _deny(401, "Sign in to D2D Relay.")
     if path.startswith("/api/admin"):
         return None if is_admin(u) else _deny(403, "Admins only.")
     if path == "/api/projects" and method == "POST":
@@ -264,11 +266,11 @@ def _same_origin(request: Request) -> bool:
 
 async def middleware(request: Request, call_next):
     path = request.url.path
-    if MODE == "sso" and request.method not in SAFE and not _same_origin(request):
+    if MODE in ("sso", "otp") and request.method not in SAFE and not _same_origin(request):
         return _deny(403, "Cross-site request refused.")
     u = resolve(request)
     request.state.uid = u["id"] if u else None          # for the request log (monitor.py)
-    if MODE == "sso" and u is None and not path.startswith("/api/") and not path.startswith(OPEN_PATHS):
+    if MODE in ("sso", "otp") and u is None and not path.startswith("/api/") and not path.startswith(OPEN_PATHS):
         return RedirectResponse("/login.html" + (f"?next={quote(request.url.fragment)}" if request.url.fragment else ""), 303)
     # the tenant this request runs in: sign-in routes stay in the person's home tenant (their session lives there)
     tid = (u["_tenancy"]["home"] if path.startswith("/auth/") else u["_tenancy"]["tenant"]) if u else _anon_tenant(request)

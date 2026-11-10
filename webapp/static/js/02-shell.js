@@ -16,7 +16,7 @@ const svgEl = (markup, cls) => { const s = h('span', {class: cls}); s.innerHTML 
 const markEl = cls => svgEl(RELAY_MARK, cls || 'pm');
 function partnerMark(b) { return h('span', {class: 'pmark', style: `background:${b.color || '#111111'}`}, b.mark || 'R'); }
 function applyBrand() {
-  const b = S.brand || {accent: 'signal', full: 'RELAY by PASDACS', name: 'Relay', partner: false};
+  const b = S.brand || {accent: 'signal', full: 'D2D Relay', name: 'D2D Relay', partner: false};
   const root = document.documentElement;
   if (b.accent && b.accent !== 'signal') root.dataset.accent = b.accent; else delete root.dataset.accent;
   document.title = b.full;
@@ -28,7 +28,7 @@ function applyBrand() {
   } else logo.replaceChildren(svgEl(RELAY_LOGO, 'relaylogo'), svgEl(RELAY_MARK, 'railmark'));
   logo.setAttribute('aria-label', `${b.full} — Home`);
   $('#mlogo').replaceChildren(...(b.partner ? [partnerMark(b), h('b', {}, b.name)] : [markEl(), h('b', {}, 'RELAY')]));   // spread: an array is printed as "[object …]"
-  $('#powered').replaceChildren(...(b.partner ? [markEl(), h('span', {}, 'Powered by ', h('b', {}, 'PASDACS Relay'))] : [h('span', {class: 'faint'}, 'RELAY by PASDACS')]));
+  $('#powered').replaceChildren(...(b.partner ? [markEl(), h('span', {}, 'Powered by ', h('b', {}, 'PASDACS Relay'))] : [h('span', {class: 'faint'}, 'D2D Relay · by PASDACS')]));
 }
 function setTheme(t, keep) {
   const root = document.documentElement;
@@ -48,26 +48,17 @@ const moduleById = id => (S.registry ? S.registry.modules.find(m => m.id === id)
 
 /* ---------------- navigation from the registry ---------------- */
 const routeOn = href => { const r = location.hash || '#/'; if (href === '#/') return !S.pid && (r === '#/' || r === '#' || r === ''); return r === href || r.startsWith(href + '/'); };
-function navGroups(route) {
+function navGroups(route) {          // D2D Relay: dashboards, visuals and connections only
   const on = p => route.startsWith(p);
-  const me = S.me || {}, reg = S.registry;
-  const top = {id: 'top', label: '', items: [['#/', 'gauge', 'Home', routeOn('#/')], ['#/modules', 'grid', 'All modules', on('#/modules') || on('#/m/')]]};
-  if (me.builder !== false) top.items.splice(1, 0, ['#/start', 'plus', 'Start from an idea', on('#/start')]);     // P10
-  if (me.builder !== false) top.items.push(['#/d2d', 'chart', 'Dashboards', on('#/d2d') || !!S.pid]);
-  top.items.push(['#/pages', 'file', 'Pages', on('#/pages')]);
-  const groups = [top];
-  if (me.builder !== false) groups.push({id: 'practice', label: 'Your practice', items: [['#/team', 'users', 'Team & agents', route === '#/team'], ['#/validate', 'check', 'Validation queue', route === '#/validate', {badge: S.vcount || 0}]]});
-  if (reg) for (const p of reg.pillars) {
-    const items = reg.modules.filter(m => m.pl === p.id && m.state !== 'off').map(m => [m.route, m.icon, m.short || m.name, routeOn(m.route), {state: m.state, tip: m.sub}]);   // P17: off = switched off for this workspace
-    if (items.length) groups.push({id: p.id, label: p.name, items, pillar: true});
-  }
-  groups.push({id: 'platform', label: 'Platform', items: [
+  const me = S.me || {};
+  const top = {id: 'top', label: '', items: [['#/d2d', 'chart', 'Dashboards', routeOn('#/') || on('#/d2d') || !!S.pid]]};
+  if (me.builder !== false) top.items.push(['#/new', 'plus', 'New dashboard', on('#/new')]);
+  top.items.push(['#/library', 'layers', 'Visual library', on('#/library')]);
+  return [top, {id: 'platform', label: 'Setup', items: [
     ['#/connections', 'plug', 'Connections', on('#/connections')],
     ['#/notifications', 'bell', 'Notifications', route === '#/notifications'],
     ['#/settings', 'gear', 'Settings', on('#/settings')],
-    ...(me.admin ? [['#/admin', 'shield', 'Administration', on('#/admin')]] : []),
-    ...((me.tenant || {}).console ? [['#/tenants', 'layers', 'Tenants & partners', on('#/tenants') && !on('#/tenants/usage')], ['#/tenants/usage', 'pulse', 'Usage & statements', on('#/tenants/usage')]] : [])]});   // P17
-  return groups;
+    ...(me.admin ? [['#/admin', 'shield', 'Administration', on('#/admin')]] : [])]}];
 }
 function groupOpen(g, route) {
   if (!g.label) return true;
@@ -92,9 +83,8 @@ function setDrawer(open) {
 function renderShell() {
   const nb = $('#newbtn');
   if (!nb.childElementCount) {      // the + opens Start new work (19-home.js); without script its link still leads somewhere to start
-    nb.append(icon('plus'), h('span', {class: 'lbl'}, 'Start new work')); nb.dataset.tip = 'Start new work'; nb.setAttribute('aria-label', 'Start new work');
-    nb.setAttribute('href', '#/start'); nb.setAttribute('role', 'button'); nb.setAttribute('aria-haspopup', 'dialog');
-    nb.onclick = e => { if (typeof startChooser !== 'function') return; e.preventDefault(); setDrawer(false); startChooser(); };
+    nb.append(icon('plus'), h('span', {class: 'lbl'}, 'New dashboard')); nb.dataset.tip = 'New dashboard'; nb.setAttribute('aria-label', 'New dashboard');
+    nb.setAttribute('href', '#/new'); nb.onclick = () => setDrawer(false);
   }
   nb.hidden = !!(S.me && S.me.builder === false);
   const route = location.hash;
@@ -206,7 +196,13 @@ function route() {
   }
   if (tab !== S.tab) { S.tab = tab; S.key = null; S.act = null; }
   renderShell();
-  if (!pid) document.title = S.brand ? S.brand.full : 'RELAY by PASDACS';
+  if (!pid) document.title = 'D2D Relay';
+  // D2D Relay: only these screens exist; anything else (old links, bookmarks) opens the dashboards list
+  const D2D_ROUTES = ['#/new', '#/d2d', '#/library', '#/admin', '#/settings', '#/notifications', '#/connections', '#/p/'];
+  if (!pid && !D2D_ROUTES.some(r => location.hash === r || location.hash.startsWith(r.endsWith('/') ? r : r + '/'))) {
+    if (location.hash && location.hash !== '#/' && location.hash !== '#') { history.replaceState(null, '', '#/d2d'); }
+    return renderDashboards();
+  }
   if (location.hash === '#/new') return renderNew();
   if (location.hash === '#/d2d') return renderDashboards();
   if (location.hash === '#/modules') return renderModules();

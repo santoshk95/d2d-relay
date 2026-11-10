@@ -228,7 +228,7 @@ def confirm_for(m: dict, work: str) -> list:
 
 # ------------------------------------------------------------------ brand settings (Admin › Branding)
 
-DEFAULT_BRAND = {"name": "Relay", "full": "RELAY by PASDACS", "tagline": "Agentic platform", "partner": False, "mark": "R",
+DEFAULT_BRAND = {"name": "D2D Relay", "full": "D2D Relay", "tagline": "Data to dashboards", "partner": False, "mark": "R",
                  "color": "#111111", "accent": "signal", "logo_light": "", "logo_dark": "", "sender": "Relay", "contact": "info@pasdacs.com",
                  "edition": "both", "hourly_rate": 0, "currency": "₹", "usd_rate": 1.0, "powered": "Powered by PASDACS Relay"}
 ACCENTS = ("signal", "gold", "teal", "ink")

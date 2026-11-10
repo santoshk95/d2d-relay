@@ -371,7 +371,7 @@ def main() -> int:
     db = {"embedded": "PostgreSQL 17 in this container", "sqlite": "SQLite file in /data/state",
           "external": "an external PostgreSQL (RELAY_DATABASE_URL)"}[env["RELAY_DB"]]
     commit = env.get("RELAY_COMMIT", "")[:8]
-    say(f"RELAY by PASDACS {env.get('RELAY_VERSION') or ''}{f' ({commit})' if commit else ''} · database: {db} · "
+    say(f"D2D Relay {env.get('RELAY_VERSION') or ''}{f' ({commit})' if commit else ''} · database: {db} · "
         f"AI gateway: {'on' if gw else 'off until a cloud AI provider is set up'} · sign-in: {env['D2D_AUTH']}")
     return 0
 
