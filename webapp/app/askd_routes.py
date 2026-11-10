@@ -67,8 +67,12 @@ def scope_options():
 
 
 def _kpi_names(pid: str) -> list[str]:
-    st = store.load(pid) or {}
-    return [str(k.get("label") or k.get("name")) for k in ((st.get("plan") or {}).get("kpis") or []) if k.get("label") or k.get("name")]
+    import yaml
+    try:
+        plan = yaml.safe_load((store.project_dir(pid) / "plan.yaml").read_text(encoding="utf-8")) or {}
+    except (OSError, ValueError, yaml.YAMLError):
+        return []
+    return [str(k.get("label") or k.get("name")) for k in (plan.get("kpis") or []) if isinstance(k, dict) and (k.get("label") or k.get("name"))]
 
 
 def _suggestions(ps: list[dict]) -> list[str]:
@@ -80,7 +84,9 @@ def _suggestions(ps: list[dict]) -> list[str]:
                 names.append(n)
     if not names:
         return ["What are the main numbers in my data?", "How did things change month by month?", "What stands out as unusual?"]
-    k = names + names[:1] * 4
+    import re
+    base = [n for n in names if not re.search(r"last year|vs|prior|previous|target|goal|ly|change|growth|%|·", n, re.I)] or names
+    k = base + base[:1] * 4
     return [f"How has {k[0]} changed month by month?", f"What is driving {k[1]} up or down?",
             f"Where is {k[2]} weakest, and why?", f"How does {k[0]} compare with last year?"]
 
