@@ -44,6 +44,8 @@ button:hover{background:var(--primary-2);transform:translateY(-1px);box-shadow:0
 .none{border:1px dashed var(--line-2);border-radius:8px;padding:14px;color:var(--ink-2);font-size:13px}
 details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
 .fine{font-size:12px;color:var(--ink-2)}
+.test{background:#FDF3DC;color:#6B4500;border:1px solid #E9C46A;border-radius:8px;padding:10px 12px;font-size:13px}  /* TEMPORARY test login */
+.test code{font-size:12px}
 @media (max-width:900px){.wrap{grid-template-columns:1fr}.hero{min-height:240px;padding:28px 20px}.form{padding:28px 20px}}
 </style>
 </head>
@@ -58,6 +60,9 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
   <main class="form">
     <h2 id="signin">Sign in to D2D Relay</h2>
     <p class="muted" id="lead">Use your work email: we email you a 6-digit code, no password needed. New here? The first person from your company creates its organisation; colleagues who sign in later join it.</p>
+    <!-- TEMPORARY test login (RELAY_TEST_LOGIN, this PC only): delete with the TEMPORARY script block below -->
+    <div id="testbanner" class="test" role="note" hidden><b>Testing mode (this PC only):</b> no code is emailed; it is filled in
+      for you. Switch user with <code>/login.html?as=name@company.com</code>. Turn <code>RELAY_TEST_LOGIN</code> off when testing is done.</div>
     <div id="error" class="err" role="alert" hidden></div>
     <div id="note" class="none" role="status" hidden></div>
     <form id="askform" style="display:grid;gap:10px">
@@ -97,6 +102,7 @@ async function ask() {
   try {
     const j = await post('/auth/otp/start', {email: $('email').value.trim()});
     show('note', j.message); $('askform').hidden = true; $('codeform').hidden = false; $('code').value = ''; $('code').focus();
+    if (j.test_code) { $('code').value = j.test_code; $('codeform').requestSubmit(); }     // TEMPORARY test login
   } catch (e) { show('error', e.message); } finally { $('askbtn').disabled = false; }
 }
 $('askform').addEventListener('submit', e => { e.preventDefault(); ask(); });
@@ -127,6 +133,15 @@ $('orgform').addEventListener('submit', async e => {
   catch (err) { show('error', err.message); $('orgbtn').disabled = false; }
 });
 fetch('/auth/otp/organisation', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : null).then(o => { if (o && o.domain) orgStep(o); }).catch(() => {});
+/* ---- TEMPORARY test login (delete this block, the banner above and the test_code line in ask() when testing is done):
+   with RELAY_TEST_LOGIN=1, on this PC only, the code is filled in for you; ?as=name@company.com signs in as that address. */
+fetch('/auth/otp/test-login', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : {}).then(t => {
+  if (!t.on) return;
+  $('testbanner').hidden = false;
+  const as = (qs.get('as') || '').trim();
+  if (as) { $('email').value = as; ask(); }
+}).catch(() => {});
+/* ---- end of the temporary test login */
 $('again').addEventListener('click', e => { e.preventDefault(); ask(); });
 $('other').addEventListener('click', e => { e.preventDefault(); show('note'); show('error'); $('codeform').hidden = true; $('askform').hidden = false; $('email').focus(); });
 fetch('/auth/providers').then(r => r.json()).then(cfg => { if (cfg.mode !== 'otp' && cfg.mode !== 'sso') location.replace('/'); }).catch(() => {});

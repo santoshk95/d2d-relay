@@ -138,6 +138,24 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 - the notification texts promised pages, alerts and schedules that D2D Relay does not have;
 - every dashboard page asked the switched-off data observability API.
 
+## TEMPORARY: test login (delete when testing is done)
+
+Added on 2026-11-10 at the user's request, to test organisations without real mailboxes. It is off unless
+`RELAY_TEST_LOGIN=1` is in `.env`. When on, it works only on this PC (http://127.0.0.1:8100): a request through the
+Cloudflare tunnel always carries `cf-connecting-ip` and still needs the emailed code.
+
+- With it on, no code is emailed (so test addresses at made-up domains get no mail). The sign-in page fills the code
+  in, the per-address and per-network limits are skipped, and every use is in the platform audit as
+  `auth.test_login`.
+- `/login.html?as=name@company.com` signs in as that address in one step, including "Create your organisation"
+  for a new domain. Public domains are still refused.
+- **To delete it:** `git revert` the commit "D2D Relay: TEMPORARY test login …" (it holds the test login and this
+  section only), then remove `RELAY_TEST_LOGIN` from `.env`.
+  - By hand instead: in `webapp/app/otp.py`, delete the "TEMPORARY TEST LOGIN" block (`TEST_LOGIN`, `_test_login`),
+    the two "TEMPORARY" parts of `start()` and `test_login_state()`.
+  - In `webapp/static/login.html`, delete the `.test` styles, the `testbanner` div, the `test_code` line in `ask()`
+    and the "TEMPORARY test login" script block.
+
 ## Still open
 
 - **Payments.** Add credits is a request by email until online payment exists; a platform admin adds the credits.
