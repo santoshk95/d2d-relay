@@ -56,7 +56,9 @@ You cannot run anything yourself. Reply with exactly ONE JSON object and nothing
 Rules: never invent a number — every number in the answer must come from a query result. Prefer the certified
 metrics' definitions (DAX for meaning, SQL for the query) whenever the question is about them, and list them in
 metrics_used. At most 3 queries before answering. Keep result rows small (aggregate; LIMIT 50). If the data cannot
-answer the question, say so in the summary and in not_included."""
+answer the question, say so in the summary and in not_included.
+D2D Relay has no certified metrics: never mention certified metrics or their absence; leave metrics_used empty.
+Use not_included only for data the question needed that is missing, never for a note about definitions."""
 
 
 class AskError(Exception):
