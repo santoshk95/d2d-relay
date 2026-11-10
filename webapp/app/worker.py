@@ -25,7 +25,7 @@ from genbi_kit import datagen, daxcheck, definition, gates, prototype, report_bu
 from genbi_kit import validate as checks
 from genbi_kit.profile import profile
 
-from . import connectors, db, doctor, errors, instances, notify, prompts, providers, store, usage
+from . import connectors, db, doctor, errors, instances, notify, orgs, prompts, providers, store, usage
 
 AGENT_URL = os.environ.get("AGENT_URL", "http://agent:8090")
 CATALOG = Path(os.environ.get("MODELS_FILE", "/opt/genbi/config/models.json"))
@@ -231,8 +231,23 @@ def stop(pid: str) -> bool:
         if jid:
             db.set_job(jid, "stopped", "stopped before it started")
         store.update(pid, status="error", error="Stopped before it started. Press Retry to run this step.")
+        give_back(pid, st.get("job") or {})
         return True
     return False
+
+
+def give_back(pid: str, args: dict, kind: str | None = None) -> int:
+    """D2D Relay: the run a charge paid for did not deliver (failed, stopped, cut off by a restart): the credits go back
+    to the organisation and the activity log says so. Retry charges again (main.retry)."""
+    cid = (args or {}).get("charge")
+    try:
+        n = orgs.refund(cid, "The run did not finish.")
+        if n:
+            app_note(pid, kind or args.get("kind") or "", orgs.refund_text(n, (orgs.charge_row(cid) or {}).get("what")), "warn")
+        return n
+    except Exception:  # noqa: BLE001 - never stop the queue over the credits; a platform admin can correct them
+        traceback.print_exc()
+        return 0
 
 
 def recover() -> None:
@@ -242,6 +257,10 @@ def recover() -> None:
     for _t in db.each_tenant():                  # P17: every tenant's queue and folders
         for row in db.interrupted():
             db.set_job(row["id"], "error", "interrupted by a restart")
+            try:
+                give_back(row["pid"], json.loads(row.get("args") or "{}"), row.get("kind"))
+            except ValueError:
+                pass
         for p in store.all_projects():
             if p["status"] not in RUNNING:
                 continue
@@ -262,6 +281,11 @@ def _finish(jid: str, pid: str) -> None:
     state = ("stopped" if err and err.startswith("Stopped") else "error") if err else "done"
     db.set_job(jid, state, err)
     row = db.job(jid) or {}
+    if state != "done":
+        try:
+            give_back(pid, json.loads(row.get("args") or "{}"), row.get("kind"))
+        except ValueError:
+            pass
     if state != "stopped" and row.get("owner_id"):
         from . import agents                   # every kind of folder opens its own screen (a start, a change request …), not #/p/
         here = agents.place(pid, st)
@@ -584,12 +608,17 @@ async def _extract(pid: str) -> None:
                + "\n".join(f"- data/{i['file']} ← {i['object']} ({i['rows']:,} rows)" for i in done))
     app_note(pid, "extract", f"Data ready: {len(done)} table(s), {sum(i['rows'] for i in done):,} rows.", "ok")
     if not store.load(pid).get("plan_rounds"):
-        enqueue(pid, "plan")
+        enqueue(pid, "plan", **_carry(pid))
     else:
         store.update(pid, status="awaiting_review" if store.load(pid).get("versions") else "awaiting_kpis", job=None)
 
 
 KIND_LABEL = {k: v["label"] for k, v in connectors.KINDS.items()}
+
+
+def _carry(pid: str) -> dict:
+    """D2D Relay: the charge of the run now going (a new dashboard's), for the run it starts next."""
+    return orgs.job_args((store.load(pid).get("job") or {}).get("charge"))
 
 
 async def _data(pid: str, feedback: str | None = None) -> None:
@@ -623,7 +652,7 @@ async def _data(pid: str, feedback: str | None = None) -> None:
              + ", ".join(f"{t['table']} {t['rows']:,}" for t in summary["tables"]) + ").", "ok",
              [f"Story: {s}" for s in summary["story"]])
     if not st.get("plan_rounds"):
-        enqueue(pid, "plan")            # first time: plan the report on the new data (its own job, in turn)
+        enqueue(pid, "plan", **_carry(pid))      # first time: plan the report on the new data (its own job, in turn)
     else:
         store.update(pid, status="awaiting_kpis", job=None)
 

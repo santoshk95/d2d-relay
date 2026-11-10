@@ -57,7 +57,7 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
   </div>
   <main class="form">
     <h2 id="signin">Sign in to D2D Relay</h2>
-    <p class="muted" id="lead">We email you a 6-digit code. No password needed.</p>
+    <p class="muted" id="lead">Use your work email: we email you a 6-digit code, no password needed. New here? The first person from your company creates its organisation; colleagues who sign in later join it.</p>
     <div id="error" class="err" role="alert" hidden></div>
     <div id="note" class="none" role="status" hidden></div>
     <form id="askform" style="display:grid;gap:10px">
@@ -68,6 +68,13 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
       <div><label for="code">6-digit code</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required></div>
       <button type="submit" id="codebtn">Sign in</button>
       <p class="fine"><a href="#" id="again">Send a new code</a> · <a href="#" id="other">Use another address</a></p>
+    </form>
+    <form id="orgform" style="display:grid;gap:10px" hidden>
+      <p class="muted" id="orglead"></p>
+      <div><label for="orgname">Organisation name</label><input id="orgname" name="orgname" autocomplete="organization" maxlength="80" required></div>
+      <div><label for="person">Your name</label><input id="person" name="person" autocomplete="name" maxlength="120" required></div>
+      <p class="fine" id="orgcredits"></p>
+      <button type="submit" id="orgbtn">Create organisation</button>
     </form>
     <p class="fine">Questions? Write to <a href="mailto:info@pasdacs.com">info@pasdacs.com</a>.</p>
   </main>
@@ -95,9 +102,31 @@ async function ask() {
 $('askform').addEventListener('submit', e => { e.preventDefault(); ask(); });
 $('codeform').addEventListener('submit', async e => {
   e.preventDefault(); show('error'); $('codebtn').disabled = true;
-  try { const j = await post('/auth/otp/verify', {email: $('email').value.trim(), code: $('code').value, next}); location.replace(j.next || '/'); }
+  try {
+    const j = await post('/auth/otp/verify', {email: $('email').value.trim(), code: $('code').value, next});
+    if (j.organisation) return orgStep(j.organisation);          // the first person from this domain names the organisation
+    location.replace(j.next || '/');
+  }
   catch (err) { show('error', err.message); $('codebtn').disabled = false; }
 });
+/* D2D Relay: the first person from a business domain creates its organisation (and owns it) */
+function orgStep(o) {
+  show('note'); show('error');
+  $('askform').hidden = true; $('codeform').hidden = true; $('orgform').hidden = false;
+  $('signin').textContent = 'Create your organisation';
+  $('lead').hidden = true;
+  $('orglead').textContent = `You are the first person from ${o.domain} on D2D Relay. Name your organisation: everyone who signs in later with an @${o.domain} address joins it and shares its credits, and you are its owner.`;
+  $('orgname').value = $('orgname').value || o.suggested || '';
+  $('person').value = $('person').value || o.person || '';
+  $('orgcredits').textContent = `It starts with ${o.credits} credits. Next you set up your brand.`;
+  $('orgname').focus(); $('orgname').select();
+}
+$('orgform').addEventListener('submit', async e => {
+  e.preventDefault(); show('error'); $('orgbtn').disabled = true;
+  try { const j = await post('/auth/otp/organisation', {name: $('orgname').value.trim(), person: $('person').value.trim()}); location.replace(j.next || '/'); }
+  catch (err) { show('error', err.message); $('orgbtn').disabled = false; }
+});
+fetch('/auth/otp/organisation', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : null).then(o => { if (o && o.domain) orgStep(o); }).catch(() => {});
 $('again').addEventListener('click', e => { e.preventDefault(); ask(); });
 $('other').addEventListener('click', e => { e.preventDefault(); show('note'); show('error'); $('codeform').hidden = true; $('askform').hidden = false; $('email').focus(); });
 fetch('/auth/providers').then(r => r.json()).then(cfg => { if (cfg.mode !== 'otp' && cfg.mode !== 'sso') location.replace('/'); }).catch(() => {});

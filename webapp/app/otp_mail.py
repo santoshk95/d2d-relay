@@ -77,15 +77,18 @@ def _app_token() -> str:
     return r.json()["access_token"]
 
 
-def send(to: str, subject: str, html: str) -> None:
+def send(to: str, subject: str, html: str, reply_to: str | None = None) -> None:
     m = mode()
     if not m:
         raise MailError("Email sending is not set up.")
     token = _app_token() if m == "app" else _delegated_token()
     url = f"{MS_GRAPH}/users/{SENDER}/sendMail" if m == "app" else f"{MS_GRAPH}/me/sendMail"
+    message = {"subject": subject, "body": {"contentType": "HTML", "content": html},
+               "toRecipients": [{"emailAddress": {"address": to}}]}
+    if reply_to:                        # a credit request: answering it writes to the person who asked
+        message["replyTo"] = [{"emailAddress": {"address": reply_to}}]
     r = httpx.post(url, timeout=30, headers={"Authorization": "Bearer " + token},
-                   json={"message": {"subject": subject, "body": {"contentType": "HTML", "content": html},
-                                     "toRecipients": [{"emailAddress": {"address": to}}]}, "saveToSentItems": False})
+                   json={"message": message, "saveToSentItems": False})
     if r.status_code not in (200, 202):
         raise MailError(f"Microsoft Graph refused the email ({r.status_code}): {r.text[:300]}")
 

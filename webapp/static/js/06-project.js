@@ -20,7 +20,7 @@ function header(st) {
       h('div', {style: 'flex:1 1 320px;min-width:0'}, h('div', {class: 'row', style: 'gap:12px'}, h('h1', {}, st.name), h('span', {id: 'hpill'}, pill(st.status))),
         h('div', {class: 'meta'}, `Created ${when(st.created)} · ${st.files.length} data file${st.files.length === 1 ? '' : 's'}`,
           st.versions.length ? ` · ${st.versions.length} version${st.versions.length === 1 ? '' : 's'}` : '',
-          runs.length ? ` · AI: ${dur(mins)}, ${spend(st.usage && st.usage.total)}` : '')),
+          runs.length ? ` · AI: ${dur(mins)}` : '')),
       h('span', {class: 'seg'}, h('em', {}, busy ? 'Model (next run)' : 'AI model'), sel),
       st.access ? accessBadge(st) : null,
       certSummary(st),
@@ -58,7 +58,7 @@ function banner(st) {
     const bad = gatesFailed(v);
     if (bad.length) return box('you', icon('alert'), `Action required: v${lv} needs a fix before it can be approved`,
       `${bad.length} review gate${bad.length === 1 ? '' : 's'} failed (${bad.map(g => g.name).join(', ')}). Ask Relay to fix them, or describe other changes below.`,
-      h('button', {class: 'btn primary', onclick: e => fixGates(st, v, e.currentTarget)}, 'Ask Relay to fix them'));
+      h('button', {class: 'btn primary', title: "Fixing what failed in Relay's own review gates uses no credits", onclick: e => fixGates(st, v, e.currentTarget)}, 'Ask Relay to fix them'));
     return box('you', icon('user'), `Ready for review: prototype v${lv}`,
       (v.gates || []).length ? `It passed every review gate. Approve it to publish the Power BI project, or describe what should change.`
         : 'Approve it to publish the Power BI project, or describe what should change.',
@@ -72,8 +72,10 @@ function banner(st) {
       h('a', {class: 'btn primary', href: `/api/projects/${st.id}/download`}, icon('download'), 'Download'));
   }
   if (st.status === 'error') {
-    const retry = h('button', {class: 'btn primary', onclick: async () => { retry.disabled = true;
-      try { S.project = await api(`/api/projects/${st.id}/retry`, {method: 'POST'}); S.key = null; render(); poll(); } catch (e) { retry.disabled = false; notify(e.message, 'err'); } }}, 'Retry');
+    const retryCost = (st.credits || {}).retry || 0;      // D2D Relay: the failed run's credits came back, so Retry pays again
+    const retry = h('button', {class: 'btn primary', title: retryCost ? `Retry uses ${retryCost} credits` : 'Retry costs no credits', onclick: async () => { retry.disabled = true;
+      try { S.project = await api(`/api/projects/${st.id}/retry`, {method: 'POST'}); S.key = null; render(); poll(); refreshOrg(true); } catch (e) { retry.disabled = false; notify(e.message, 'err'); } }},
+      'Retry', retryCost ? h('span', {class: 'cost'}, ` · ${retryCost} credits`) : null);
     return box('err', icon('alert'), 'This step needs attention', st.error || 'Something went wrong.', st.job ? retry : null);
   }
   return null;
@@ -219,7 +221,8 @@ function planView(st) {
   S.planKpis = kpis;
   const list = h('div', {class: 'kpis'}, kpis.map(kpiCard));
   const fb = h('textarea', {rows: 2, placeholder: 'Comments for Relay — needed to ask for a revised plan (or attach files), optional when confirming'});
-  const ask = h('button', {class: 'btn', onclick: () => sendPlan('revise')}, 'Ask Relay to revise the plan');
+  const askLabel = () => ['Ask Relay to revise the plan', costTag('change')];
+  const ask = h('button', {class: 'btn', onclick: () => sendPlan('revise')}, ...askLabel());
   const ok = h('button', {class: 'btn primary', onclick: () => sendPlan('confirm')}, icon('check'), 'Confirm & build prototype');
   const att = attacher();
   async function sendPlan(action) {
@@ -237,14 +240,13 @@ function planView(st) {
     try {
       S.project = await upload(`/api/projects/${st.id}/kpis`, fd, p => { if (files.length) ask.textContent = `Uploading ${Math.round(p * 100)}%…`; });
       notify(action === 'confirm' ? 'Plan confirmed — Relay is building the prototype' : 'Sent to Relay — the plan will be revised', 'ok');
-      S.key = null; render(); poll();
-    } catch (e) { ask.disabled = ok.disabled = att.button.disabled = false; ask.textContent = 'Ask Relay to revise the plan'; toast(ok, e.message); }
+      S.key = null; render(); poll(); refreshOrg(true);
+    } catch (e) { ask.disabled = ok.disabled = att.button.disabled = false; ask.replaceChildren(...askLabel()); toast(ok, e.message); }
   }
   const actions = h('div', {class: 'card actions'}, h('div', {class: 'ask'}, fb, att.list), att.button, ask, ok, att.input);
   att.dropOn(actions);
   return [
-    h('div', {class: 'card'}, h('div', {class: 'row', style: 'margin-bottom:8px'}, h('h3', {style: 'margin:0'}, "Relay's plan"), h('span', {class: 'spacer'}),
-      h('span', {class: 'muted small', title: 'AI tokens and estimated cost of planning so far'}, spendModel(st.usage && st.usage.by.plan))),
+    h('div', {class: 'card'}, h('div', {class: 'row', style: 'margin-bottom:8px'}, h('h3', {style: 'margin:0'}, "Relay's plan")),
       st.plan_summary ? notes(st.plan_summary) : null, plan.summary ? h('p', {class: 'muted'}, plan.summary) : null,
       st.plan_error ? h('div', {class: 'note err'}, st.plan_error) : null),
     dataCard(st),
@@ -325,7 +327,7 @@ async function runGates(st, v, btn) {
 function gateFix(st, v) {
   const bad = gatesFailed(v);
   if (!bad.length) return null;
-  const btn = h('button', {class: 'btn sm primary', disabled: RUN.has(st.status), onclick: () => fixGates(st, v, btn)}, 'Ask Relay to fix them');
+  const btn = h('button', {class: 'btn sm primary', disabled: RUN.has(st.status), title: "Fixing what failed in Relay's own review gates uses no credits", onclick: () => fixGates(st, v, btn)}, 'Ask Relay to fix them');
   return h('div', {class: 'note err gatefix'}, h('span', {style: 'flex:1;min-width:220px'},
     h('b', {}, `v${v.v} did not pass ${bad.length} review gate${bad.length === 1 ? '' : 's'}`), ` (${bad.map(g => g.name).join(', ')}) — approval is locked until they pass.`), btn);
 }
@@ -337,6 +339,7 @@ async function fixGates(st, v, btn) {
     const fd = new FormData();
     fd.append('text', 'Fix what failed in the review gates, and change nothing else:\n' + items.slice(0, 25).map(t => '- ' + t).join('\n'));
     fd.append('version', v.v);
+    fd.append('fix_gates', '1');                 // D2D Relay: fixing what failed in Relay's own checks uses no credits
     S.project = await upload(`/api/projects/${st.id}/feedback`, fd);
     notify('Sent to Relay — it is fixing the failing gates', 'ok'); S.version = null; S.key = null; render(); poll();
   } catch (e) { btn.disabled = false; notify(e.message, 'err'); }
@@ -362,7 +365,7 @@ function customCard(st, v) {
   const busy = RUN.has(st.status);
   const decide = async (name, decision, btn) => {
     btn.disabled = true;
-    try { S.project = await api(`/api/projects/${st.id}/custom-visuals`, {json: {name, decision}}); notify(decision === 'generate' ? 'Relay will build it' : 'Kept the available visual', 'ok'); S.key = null; render(); poll(); }
+    try { S.project = await api(`/api/projects/${st.id}/custom-visuals`, {json: {name, decision}}); notify(decision === 'generate' ? 'Relay will build it' : 'Kept the available visual', 'ok'); S.key = null; render(); poll(); refreshOrg(true); }
     catch (e) { btn.disabled = false; toast(btn, e.message); }
   };
   const item = c => c.origin === 'project'
@@ -373,7 +376,7 @@ function customCard(st, v) {
   return h('div', {class: 'note'},
     used.length ? h('div', {}, h('b', {}, 'Custom visuals in this version'), h('div', {class: 'cvlist'}, used.map(item))) : null,
     open.map(p => {
-      const gen = h('button', {class: 'btn sm primary', disabled: busy, onclick: e => decide(p.name, 'generate', e.currentTarget)}, '✦ Build it');
+      const gen = h('button', {class: 'btn sm primary', disabled: busy, onclick: e => decide(p.name, 'generate', e.currentTarget)}, '✦ Build it', costTag('change'));
       const keep = h('button', {class: 'btn sm', disabled: busy, onclick: e => decide(p.name, 'available', e.currentTarget)}, 'Keep ' + (p.fallback || 'the available visual'));
       return h('div', {class: 'cv'}, h('div', {class: 'ttl'}, h('b', {}, 'Relay suggests a custom visual: ' + (p.title || p.name))),
         p.need ? h('div', {class: 'need small'}, p.need) : null,
@@ -386,7 +389,8 @@ function reviewView(st) {
   const latest = vs[vs.length - 1].v;
   const fb = h('textarea', {rows: 3, id: 'feedback', placeholder: (v.v === latest ? 'What should change? e.g. "Add a page for suppliers", "Show margin instead of sales on the quadrant", "Use blue as the accent"'
     : `Changes start from v${v.v} (it becomes the base again).`) + ' — attach CSVs or images if it needs more data or a design.'});
-  const change = h('button', {class: 'btn', onclick: send}, 'Request changes');
+  const changeLabel = () => ['Request changes', costTag('change')];
+  const change = h('button', {class: 'btn', onclick: send}, ...changeLabel());
   const approved = st.status === 'done' && st.approved === v.v, blocked = gatesFailed(v).length > 0;
   const approveBtn = h('button', {class: 'btn primary', onclick: doApprove, disabled: approved || blocked,
     title: blocked ? 'Approval is locked until every review gate passes' : ''}, icon('publish'), approved ? `v${v.v} published` : `Approve v${v.v} & publish`);
@@ -400,8 +404,8 @@ function reviewView(st) {
     change.disabled = approveBtn.disabled = att.button.disabled = true;
     try {
       S.project = await upload(`/api/projects/${st.id}/feedback`, fd, p => { if (files.length) change.textContent = `Uploading ${Math.round(p * 100)}%…`; });
-      notify('Sent to Relay — a new version is on its way', 'ok'); S.version = null; S.key = null; render(); poll();
-    } catch (e) { change.disabled = att.button.disabled = false; approveBtn.disabled = approved || blocked; change.textContent = 'Request changes'; toast(approveBtn, e.message); }
+      notify('Sent to Relay — a new version is on its way', 'ok'); S.version = null; S.key = null; render(); poll(); refreshOrg(true);
+    } catch (e) { change.disabled = att.button.disabled = false; approveBtn.disabled = approved || blocked; change.replaceChildren(...changeLabel()); toast(approveBtn, e.message); }
   }
   async function doApprove() { change.disabled = approveBtn.disabled = true; await approve(st, v.v); }
   const actions = h('div', {class: 'card actions'}, h('div', {class: 'ask'}, fb, att.list), att.button, change, approveBtn, att.input);
@@ -413,7 +417,6 @@ function reviewView(st) {
           onclick: () => { S.version = x.v; S.key = null; render(); }}, 'v' + x.v, published(st, x.v).length ? h('span', {class: 'ap'}, '✓') : null))),
         v.label ? h('span', {class: 'tag acc'}, v.label) : null,
         h('span', {class: 'spacer'}), h('span', {class: 'muted small'}, `${v.pages.length} pages · ${v.visuals} visuals · ${v.measures} measures`),
-        st.usage && st.usage.by['v' + v.v] ? h('span', {class: 'tag', title: 'AI tokens and estimated cost of this version, including automatic fixes'}, spendModel(st.usage.by['v' + v.v])) : null,
         h('a', {class: 'btn sm ghost', href: `#/p/${st.id}/versions`, onclick: () => { S.vsel = v.v; }}, icon('clock'), 'History & changes'),
         h('a', {class: 'btn sm', href: `/api/projects/${st.id}/prototype/${v.v}`, target: '_blank'}, icon('external'), 'Open')),
       v.feedback ? h('div', {class: 'note'}, h('b', {}, 'You asked: '), v.feedback.replace(/^\(Start from[^)]*\)\s*/, ''), attachedList(v.attachments)) : null,
@@ -431,8 +434,7 @@ function doneCard(st) {
   return h('div', {class: 'card'},
     h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Your Power BI project'), h('span', {class: 'spacer'}),
       h('a', {class: 'btn primary', href: `/api/projects/${st.id}/download`}, icon('download'), 'Download ', o.zip || 'zip')),
-    h('div', {class: 'muted small', style: 'margin-top:4px'}, `${o.pbip} · ${o.pages} pages · ${o.visuals} visuals · ${o.measures} measures · from prototype v${st.approved}`
-      + (st.usage && st.usage.total.runs ? ` · AI in total: ${spend(st.usage.total)}` : '')),
+    h('div', {class: 'muted small', style: 'margin-top:4px'}, `${o.pbip} · ${o.pages} pages · ${o.visuals} visuals · ${o.measures} measures · from prototype v${st.approved}`),
     (o.gates || []).length ? gatesPanel(st, {v: st.approved, gates: o.gates, dax: {...(o.dax || {}), checked: true}}, {title: 'Review gates passed before publishing', rerun: false})
       : o.dax ? daxLine(st, st.approved, {...o.dax, problems: 0}) : null,
     (o.custom_visuals || []).length ? h('div', {class: 'small', style: 'margin-top:6px'}, '✦ Custom visuals: ' + o.custom_visuals.join(', ') + ' — embedded in the report; their .pbiviz files are in custom-visuals/ in the download.') : null,

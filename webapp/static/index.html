@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/relay.css">
 <link rel="stylesheet" href="css/tenants.css">
+<link rel="stylesheet" href="css/org.css">
 <script>try{const t=JSON.parse(localStorage.getItem('d2d.theme'));if(t==='dark'||(t==null&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.dataset.theme='dark';}catch(e){}</script>
 </head>
 <body>
@@ -42,6 +43,7 @@
     <header class="topbar" id="topbar">
       <button class="navsearch" id="searchbtn" type="button" aria-label="Search and go anywhere"><svg class="i" viewBox="0 0 24 24"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-5-5"/></svg><span class="lbl">Search modules, dashboards, pages…</span><kbd>Ctrl K</kbd></button>
       <div id="ws" class="wschip" hidden></div>
+      <div id="orgchip" class="orgchip" hidden></div>
       <span class="spacer"></span>
       <div class="sys" id="sys"><div id="agent" class="health"><b></b><span>Checking the agent…</span></div><div id="daxchk" class="health"><b></b><span>DAX checker</span></div></div>
       <button class="iconbtn" id="bellbtn" type="button" aria-label="Notifications"><svg class="i" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg></button>
@@ -90,6 +92,7 @@
 <script src="js/33-workbench.js"></script>
 <script src="js/34-doctor.js"></script>
 <script src="js/35-branding.js"></script>
+<script src="js/36-org.js"></script>
 <script src="js/08-boot.js"></script>
 </body>
 </html>

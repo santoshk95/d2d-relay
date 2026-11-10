@@ -1,11 +1,11 @@
 /* ---------------- D2D Relay › Branding: logo + a few words -> 2-3 palettes from the Relay Model -> pick one ---------------- */
-async function renderBranding() {
-  const page = h('div', {class: 'page'});
-  $('#main').replaceChildren(page);
-  document.title = 'Branding · D2D Relay';
+async function renderBranding(opts = {}) {      // opts.into: draw inside that box instead of the page (the first-time setup, #/setup)
+  const route = opts.route || '#/branding';
+  const page = opts.into || h('div', {class: 'page'});
+  if (!opts.into) { $('#main').replaceChildren(page); document.title = 'Branding · D2D Relay'; }
   let b;
   try { b = await api('/api/branding'); } catch (e) { return page.append(h('div', {class: 'note err'}, e.message)); }
-  if (!location.hash.startsWith('#/branding')) return;
+  if (!location.hash.startsWith(route)) return;
 
   const sw = (c, size) => h('i', {title: c, style: `display:inline-block;width:${size || 22}px;height:${size || 22}px;border-radius:5px;background:${c};border:1px solid rgba(0,0,0,.08)`});
   const logoBox = h('div');
@@ -77,11 +77,11 @@ async function renderBranding() {
   };
 
   drawLogo(); drawVariants();
-  page.append(
-    h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('h1', {}, 'Branding'),
+  page.append(...[
+    opts.into ? null : h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('h1', {}, 'Branding'),
       h('div', {class: 'meta'}, 'Your logo and a few words about your brand. The Relay Model turns them into report palettes; pick one and every new dashboard uses it.'))),
     h('div', {class: 'card'}, h('h3', {}, '1 · Your logo'), file, logoBox),
     h('div', {class: 'card'}, h('h3', {}, '2 · Describe your brand'), h('div', {class: 'muted small', style: 'margin-bottom:6px'}, 'Who you are, the feeling you want, colours to use or avoid, light or dark reports. Optional if you added a logo.'),
       desc, h('div', {class: 'row', style: 'margin-top:10px;gap:10px'}, genBtn, status)),
-    h('div', {class: 'card'}, h('h3', {}, '3 · Pick a palette'), variantsBox));
+    h('div', {class: 'card'}, h('h3', {}, '3 · Pick a palette'), variantsBox)].filter(Boolean));
 }

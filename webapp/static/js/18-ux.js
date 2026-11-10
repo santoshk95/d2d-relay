@@ -143,11 +143,10 @@ function profileMenu(anchor) {
       h('div', {class: 'small faint'}, role + (me.teams && me.teams.length ? ' · ' + me.teams.map(t => t.name).join(', ') : '') + (me.auth === 'single' ? ' · single-user mode' : ''))),
     me.tenant && me.tenant.name ? h('div', {class: 'small muted', style: 'padding:0 12px 6px'}, 'Workspace: ', h('b', {}, me.tenant.name), me.tenant.acting ? ' (as a guest)' : '') : null,
     me.tenant && ((me.tenant.enter || []).length || me.tenant.acting) ? item('building', 'Switch workspace', () => workspaceMenu($('#ws button') || $('#me button'))) : null,
-    item('gear', 'My settings', () => { location.hash = '/settings'; }),
-    item('clock', 'My time zone, email and AI use', () => { location.hash = '/settings'; }),
+    me.org && me.org.id ? item('building', 'Organisation and credits', () => { location.hash = '/org'; }) : null,   // D2D Relay
     item('bell', 'Notifications', () => { location.hash = '/notifications'; }),
     item('search', 'Search and go anywhere', palette, 'Ctrl K'),
     item('info', 'Keyboard shortcuts', shortcutsDialog),
-    me.auth === 'sso' ? item('external', 'Sign out', async () => { await fetch('/auth/logout', {method: 'POST'}); location.href = '/login.html'; }) : null,
+    me.auth === 'sso' || me.auth === 'otp' ? item('external', 'Sign out', async () => { await fetch('/auth/logout', {method: 'POST'}); location.href = '/login.html'; }) : null,
   ], 'profile');
 }

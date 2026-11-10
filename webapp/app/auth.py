@@ -4,6 +4,7 @@ Modes (D2D_AUTH):
   single  (default) one local user: every request is the bootstrap admin — the app works as before sign-in existed
   sso     sign-in required: SSO (OpenID Connect) for everyone, a local password for the bootstrap admin only
   header  tests only: the X-D2D-User header names the user
+  otp     D2D Relay: a code by email for business addresses, each person in their organisation's workspace (otp.py)
 
 Roles: Admin (organisation-wide); per team membership 'dev' (BI Dev / Analyst) or 'viewer'.
 Projects are private to their owner by default; the owner (or an Admin) shares them with people, teams or the whole
@@ -231,7 +232,11 @@ def check(u: dict | None, method: str, path: str) -> JSONResponse | None:
     if u is None:
         return _deny(401, "Sign in to D2D Relay.")
     if path.startswith("/api/admin"):
-        return None if is_admin(u) else _deny(403, "Admins only.")
+        # D2D Relay: an organisation's owner is the admin of their own workspace only; Administration (people, AI
+        # providers, monitoring, backups, Relay Doctor, every organisation) is the platform admin's, working at home.
+        t = u.get("_tenancy") or {}
+        platform = t.get("home") == db.PLATFORM and t.get("tenant") == db.PLATFORM and not u.get("home_tenant")
+        return None if is_admin(u) and platform else _deny(403, "Admins only.")
     if path == "/api/projects" and method == "POST":
         return None if is_dev(u) else _deny(403, "Only BI Devs / Analysts can create dashboards.")
     m = PROJECT.match(path)

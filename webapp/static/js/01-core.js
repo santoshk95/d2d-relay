@@ -67,6 +67,7 @@ async function api(path, opts = {}) {
   if (!r.ok) {
     let msg = r.status + ' ' + r.statusText;
     try { const j = await r.json(); msg = Array.isArray(j.detail) ? j.detail.map(d => d.msg).join('; ') : (j.detail || msg); } catch (e) {}
+    if (r.status === 402 && typeof onNoCredits === 'function') onNoCredits(msg);     // D2D Relay: not enough credits (36-org.js)
     throw new Error(msg);
   }
   return (r.headers.get('content-type') || '').includes('json') ? r.json() : r.text();
@@ -144,7 +145,11 @@ function upload(url, fd, onProgress) {
       let r = {}; try { r = JSON.parse(xhr.responseText); } catch (e) {}
       if (xhr.status === 401) { toSignIn(); return reject(new Error('Signed out')); }
       if (xhr.status === 200) resolve(r);
-      else reject(new Error(Array.isArray(r.detail) ? r.detail.map(d => d.msg).join('; ') : r.detail || `Request failed (${xhr.status})`));
+      else {
+        const msg = Array.isArray(r.detail) ? r.detail.map(d => d.msg).join('; ') : r.detail || `Request failed (${xhr.status})`;
+        if (xhr.status === 402 && typeof onNoCredits === 'function') onNoCredits(msg);   // D2D Relay: not enough credits (36-org.js)
+        reject(new Error(msg));
+      }
     };
     xhr.onerror = () => reject(new Error('Upload failed — is the app running?'));
     xhr.open('POST', url); xhr.send(fd);

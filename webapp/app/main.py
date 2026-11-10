@@ -28,7 +28,7 @@ from . import (askd_routes, auth, connectors, publishing, publishing_routes, dat
 from . import changes as changes_mod
 from . import home, mailer, monitor, notify, phases, registry, schedules, usage
 from . import doctor, errors
-from . import branding, edition, otp                 # D2D Relay: the dashboard-only catalogue and the email-code sign-in
+from . import branding, edition, orgs, otp           # D2D Relay: the dashboard-only catalogue, organisations and credits, the email-code sign-in
 
 errors.install()                                # every traceback.print_exc() and thread crash reports Relay's own bugs (Relay Doctor)
 STATIC = Path(__file__).resolve().parent.parent / "static"
@@ -65,6 +65,10 @@ async def lifespan(_):
     try:
         otp.sync_admin()
     except Exception:  # noqa: BLE001 - sign-in still works with the address the admin row has
+        traceback.print_exc()
+    try:
+        orgs.init()                             # D2D Relay: the platform's own workspace is an organisation too
+    except Exception:  # noqa: BLE001 - the other organisations still work; the log says why
         traceback.print_exc()
     _import_existing()
     try:
@@ -116,12 +120,19 @@ for _r in phases.ROUTERS:                      # P10 onwards: one router per pha
     app.include_router(_r)
 app.include_router(branding.router)            # D2D Relay: Branding (logo + description -> palettes)
 app.include_router(otp.router)                 # D2D Relay: sign-in with a one-time email code
+app.include_router(orgs.router)                # D2D Relay: organisations, credits, Add credits, every organisation (platform admins)
 edition.apply()                                # D2D Relay: keep dashboards, the visual library and BigQuery; switch the rest off
 
 
 @app.exception_handler(usage.QuotaError)
 async def _quota_stop(_request, exc: usage.QuotaError):
     return JSONResponse({"detail": str(exc)}, status_code=429)
+
+
+@app.exception_handler(orgs.NoCredits)
+async def _no_credits(_request, exc: orgs.NoCredits):
+    """D2D Relay: not enough credits for a new dashboard or a change (the screen offers Add credits)."""
+    return JSONResponse({"detail": str(exc), "credits": True}, status_code=402)
 
 
 @app.exception_handler(Exception)
@@ -396,6 +407,7 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
         raise HTTPException(400, "Data size must be small, medium or large, and the period 3 to 60 months.")
     if not files and not generate and not warehouse:
         raise HTTPException(400, "Upload at least one CSV file — or connect a warehouse, or generate demo data.")
+    orgs.require("dashboard")                   # D2D Relay: before anything is saved
 
     title = name.strip() or (" ".join(data_brief.split()[:5]).rstrip(".,;:").title() if generate
                              else picked[0]["object"].split(".")[-1].replace("_", " ").title() if warehouse
@@ -450,7 +462,16 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
     db.add_project(pid, auth.who() or db.ADMIN_ID)
     db.audit("project.create", pid, {"name": title, "data": "generate" if generate else "warehouse" if warehouse else "upload",
                                      "model": model}, auth.who())
-    worker.enqueue(pid, "data" if generate else "extract" if warehouse else "plan")
+
+    def first_run(cid: str | None) -> dict:     # D2D Relay: the new dashboard's charge rides with its runs until v1
+        store.update(pid, credit_charge=cid)
+        return worker.enqueue(pid, "data" if generate else "extract" if warehouse else "plan", **orgs.job_args(cid))
+    try:
+        orgs.paid("dashboard", pid, title, first_run)
+    except orgs.NoCredits:
+        shutil.rmtree(d, ignore_errors=True)
+        db.run("DELETE FROM projects WHERE id = ?", (pid,))
+        raise
     return store.load(pid)
 
 
@@ -464,7 +485,8 @@ def list_projects():
     projects = [p for p in store.all_projects() if p.get("kind", "dashboard") == "dashboard"]     # starts (P10) have their own list
     access = auth.access_map(auth.current.get(), [p["id"] for p in projects])
     names = {u["id"]: u["name"] for u in db.q("SELECT id, name FROM users")}
-    return [{**p, **access[p["id"]], "owner": names.get(access[p["id"]]["owner_id"])} for p in projects if p["id"] in access]
+    return [{**{k: v for k, v in p.items() if k != "cost_usd"}, **access[p["id"]], "owner": names.get(access[p["id"]]["owner_id"])}
+            for p in projects if p["id"] in access]       # D2D Relay: AI costs stay on the server
 
 
 @app.get("/api/me")
@@ -474,46 +496,7 @@ def me():
     u = auth.current.get()
     return {**{k: u[k] for k in ("id", "email", "name", "org_role")}, "teams": u["teams"],
             "admin": auth.is_admin(u), "builder": auth.is_dev(u), "auth": auth.MODE, "instance": db.INSTANCE,
-            "tz": u.get("tz"), "guest": bool(u.get("home_tenant")), "tenant": tenancy.me_info(u)}
-
-
-TOKENS = ("input", "cache_write", "cache_read", "output")
-
-
-def _usage(runs: list[dict]) -> dict:
-    """Claude runs, time, tokens and estimated cost per step ("plan", "v1", "v2" …), for the dashboard and per
-    model. Costs are Claude Code's estimates at the list prices of the model each run used."""
-    def blank():
-        return {"runs": 0, "turns": 0, "duration_ms": 0, "cost_usd": 0.0, "tokens": 0, **dict.fromkeys(TOKENS, 0),
-                "complete": True, "from_logs": False, "models": []}
-    by, total, by_model = {}, blank(), {}
-    for r in runs:
-        u = r.get("usage")
-        model = r.get("model") or "unknown"
-        for g in (by.setdefault(r.get("for") or r.get("stage") or "?", blank()), total):
-            g["runs"] += 1
-            g["turns"] += r.get("turns") or 0
-            g["duration_ms"] += r.get("duration_ms") or 0
-            g["cost_usd"] += r.get("cost_usd") or 0
-            if u:
-                for k in TOKENS:
-                    g[k] += u.get(k) or 0
-                    g["tokens"] += u.get(k) or 0
-            else:
-                g["complete"] = False       # a run from before tracking, or one that was stopped
-            g["from_logs"] |= r.get("usage_source") == "logs"
-            if model not in g["models"]:
-                g["models"].append(model)
-        # exact split when Claude Code reported one; otherwise the whole run counts for its model
-        parts = r.get("models") or {model: {**(u or {}), "cost_usd": r.get("cost_usd") or 0}}
-        for m, part in parts.items():
-            pm = by_model.setdefault(m, {"runs": 0, "tokens": 0, **dict.fromkeys(TOKENS, 0), "cost_usd": 0.0})
-            pm["runs"] += 1
-            pm["cost_usd"] += part.get("cost_usd") or 0
-            for k in TOKENS:
-                pm[k] += part.get(k) or 0
-                pm["tokens"] += part.get(k) or 0
-    return {"by": by, "total": total, "by_model": by_model}
+            "tz": u.get("tz"), "guest": bool(u.get("home_tenant")), "tenant": tenancy.me_info(u), "org": orgs.me_info(u)}
 
 
 @app.get("/api/projects/{pid}")
@@ -539,7 +522,8 @@ def get_project(pid: str):
         st["certification"] = {}
     st["access"] = {"level": level, "via": via, "can_edit": auth.can_project(me, "edit", db.project(pid)),
                     "can_publish": auth.can_project(me, "publish", db.project(pid)), "can_share": level == "owner"}
-    st["usage"] = _usage(st.get("runs") or [])
+    st["runs"] = [_no_costs(r) for r in st.get("runs") or []]      # D2D Relay: AI costs and tokens stay on the server
+    st["credits"] = {**orgs.project_credits(pid), "retry": orgs.retry_cost(st), "costs": orgs.COST}
     st.setdefault("model", worker.DEFAULT_MODEL)
     st.setdefault("custom_visuals", "ask")
     st.setdefault("visuals_mode", "relay")
@@ -552,10 +536,18 @@ def get_project(pid: str):
     return st
 
 
+COST_KEYS = ("cost_usd", "usage", "models", "usage_source")
+
+
+def _no_costs(e: dict) -> dict:
+    """D2D Relay: a run or activity event without its AI cost and tokens (they are kept on the server only)."""
+    return {k: v for k, v in e.items() if k not in COST_KEYS}
+
+
 @app.get("/api/projects/{pid}/activity")
 def activity(pid: str, after: int = 0):
     _get(pid)
-    return store.activity(pid, after)
+    return [_no_costs(e) for e in store.activity(pid, after)]
 
 
 @app.get("/api/projects/{pid}/images/{name}")
@@ -639,6 +631,8 @@ async def review_kpis(pid: str, payload: str = Form(...), files: list[UploadFile
     feedback = body.feedback.strip()
     if body.action == "revise" and not feedback and not files and not images:
         raise HTTPException(400, "Tell Relay what to change in the plan, or attach files.")
+    if body.action == "revise":
+        orgs.require("change")                  # D2D Relay: a revised plan is a change
     d = store.project_dir(pid)
     plan = definition.load(d / "plan.yaml")
     kpis = []
@@ -663,8 +657,9 @@ async def review_kpis(pid: str, payload: str = Form(...), files: list[UploadFile
                    + ("\n\nThe user also edited the KPIs directly:\n" + "\n".join(changes) if changes else ""))
         store.log(pid, {"kind": "user", "stage": "plan", "text": feedback or "(attached files)",
                         "attachments": [a["path"] for a in added]})
-        worker.enqueue(pid, "plan", attachments=added, feedback=request + (
-            "\n\n(Direct KPI edits, already saved in plan.yaml:\n" + "\n".join(changes) + ")" if changes else ""))
+        orgs.paid("change", pid, st["name"], lambda cid: worker.enqueue(pid, "plan", attachments=added, feedback=request + (
+            "\n\n(Direct KPI edits, already saved in plan.yaml:\n" + "\n".join(changes) + ")" if changes else ""), **orgs.job_args(cid)),
+            note="Plan revision")
     else:
         summary = "\n".join(f"- **{k['name']}** ({k['label']}): `{k['dax']}` format `{k['format']}`" for k in kpis)
         store.note(pid, "KPIs confirmed by the user", summary + ("\n\nChanges the user made:\n" + "\n".join(changes) if changes else "")
@@ -672,24 +667,52 @@ async def review_kpis(pid: str, payload: str = Form(...), files: list[UploadFile
                    + (f"\n\nComment: {feedback}" if feedback else ""))
         store.log(pid, {"kind": "user", "stage": "plan", "text": f"Confirmed {len(kpis)} KPIs"
                         + (f" ({len(changes)} edit(s))" if changes else "") + (f" — {feedback}" if feedback else "")})
-        worker.enqueue(pid, "build")
+        # D2D Relay: building the first prototype is part of the new dashboard (no charge); it carries that charge,
+        # so a failed build gives it back
+        carry = st.get("credit_charge") if not st.get("versions") and not orgs.refunded(st.get("credit_charge")) else None
+        worker.enqueue(pid, "build", **orgs.job_args(carry))
     return get_project(pid)
 
 
+def _failed_gates(d: Path, v: int) -> list[str]:
+    """What failed in a version's review gates, one line each (what "Ask Relay to fix them" sends)."""
+    try:
+        found = json.loads((d / "versions" / f"v{v}" / "gates.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    out = []
+    for g in found if isinstance(found, list) else []:
+        if g.get("status") != "fail":
+            continue
+        items = [i.get("text") for i in g.get("items") or [] if i.get("level") == "fail" and i.get("text")]
+        out += [f"{g.get('name')}: {t}" for t in items] or [f"{g.get('name')}: {g.get('summary') or 'failed'}"]
+    return out
+
+
 @app.post("/api/projects/{pid}/feedback")
-async def feedback(pid: str, text: str = Form(""), version: int | None = Form(None),
+async def feedback(pid: str, text: str = Form(""), version: int | None = Form(None), fix_gates: str = Form(""),
                    files: list[UploadFile] = File(default=[]), images: list[UploadFile] = File(default=[])):
-    """A change request on a prototype version, optionally with new CSVs (more or updated data) and images."""
+    """A change request on a prototype version, optionally with new CSVs (more or updated data) and images.
+    fix_gates=1: fix what failed in the version's review gates (D2D Relay: free; the request is written here)."""
     st = _get(pid)
     if st["status"] not in ("awaiting_review", "done", "error") or not st["versions"]:
         raise HTTPException(409, f"There is no prototype to change right now (status: {st['status']}).")
     files, images = _check_uploads(files, images)
-    text = text.strip()
-    if not text and not files and not images:
-        raise HTTPException(400, "Describe the changes you want, or attach files.")
     d = store.project_dir(pid)
     latest = st["versions"][-1]["v"]
     base = version or latest
+    gate_fix = fix_gates.strip().lower() in ("1", "true", "on")
+    if gate_fix:                                # Relay's own checks failed: fixing them costs no credits
+        items = _failed_gates(d, base)
+        if not items:
+            raise HTTPException(409, f"v{base} has no failed review gates to fix.")
+        files, images = [], []
+        text = "Fix what failed in the review gates, and change nothing else:\n" + "\n".join("- " + t for t in items[:25])
+    text = text.strip()
+    if not text and not files and not images:
+        raise HTTPException(400, "Describe the changes you want, or attach files.")
+    if not gate_fix:
+        orgs.require("change")
     src = d / "versions" / f"v{base}" / "definition.yaml"
     if base != latest and not src.exists():
         raise HTTPException(400, "Unknown version")
@@ -701,7 +724,11 @@ async def feedback(pid: str, text: str = Form(""), version: int | None = Form(No
     store.note(pid, f"Change request on prototype v{base}", request + _attachment_note(added))
     store.log(pid, {"kind": "user", "stage": "revise", "text": text or "(attached files)",
                     "attachments": [a["path"] for a in added]})
-    worker.enqueue(pid, "revise", feedback=request, attachments=added)
+    if gate_fix:
+        worker.enqueue(pid, "revise", feedback=request, attachments=added)
+    else:
+        orgs.paid("change", pid, st["name"], lambda cid: worker.enqueue(pid, "revise", feedback=request, attachments=added,
+                                                                        **orgs.job_args(cid)), note=f"Change request on v{base}")
     return get_project(pid)
 
 
@@ -721,6 +748,8 @@ def choose_visual(pid: str, body: VisualChoice):
     item = next((v for v in plan.get("custom_visuals") or [] if v.get("name") == body.name), None)
     if item is None:
         raise HTTPException(404, "No such proposal")
+    if body.decision == "generate":
+        orgs.require("change")                  # D2D Relay: building it is a change
     line = _decide(plan, {body.name: body.decision})
     (d / "plan.yaml").write_text(yaml.safe_dump(plan, sort_keys=False, allow_unicode=True, width=110), encoding="utf-8")
     if body.decision == "available":
@@ -730,7 +759,8 @@ def choose_visual(pid: str, body: VisualChoice):
     request = prompts.generate(item)
     store.note(pid, "Custom visual requested", request)
     store.log(pid, {"kind": "user", "stage": "revise", "text": f"Build the custom visual {item.get('title')}"})
-    worker.enqueue(pid, "revise", feedback=request, visual=body.name)
+    orgs.paid("change", pid, st["name"], lambda cid: worker.enqueue(pid, "revise", feedback=request, visual=body.name, **orgs.job_args(cid)),
+              note=f"Custom visual {item.get('title') or body.name}")
     return get_project(pid)
 
 
@@ -801,8 +831,8 @@ def _event_text(e: dict) -> str:
     if kind == "start":
         return "Started working" + (f" ({worker.model_labels().get(e['model'], e['model'])})" if e.get("model") else "")
     if kind == "done":
-        return (f"Finished: {e.get('turns') or 0} steps, {round((e.get('duration_ms') or 0) / 1000)} s, "
-                f"${(e.get('cost_usd') or 0):.2f}" + ("" if e.get("ok", True) else f" ({e.get('subtype')})"))
+        return (f"Finished: {e.get('turns') or 0} steps, {round((e.get('duration_ms') or 0) / 1000)} s"
+                + ("" if e.get("ok", True) else f" ({e.get('subtype')})"))
     if kind == "tool":
         return f"{e.get('tool')}: {e.get('detail') or ''}"
     if kind == "result":
@@ -988,8 +1018,21 @@ def retry(pid: str):
     job = st.get("job")
     if st["status"] != "error" or not job:
         raise HTTPException(409, "Nothing to retry.")
+    args = {k: v for k, v in job.items() if k not in ("kind", "id", "model")}
+    old = orgs.charge_row(args.get("charge"))
+    again = bool(old) and orgs.refunded(old["id"])       # D2D Relay: the failed run's credits came back, so this run pays
+    if again:
+        orgs.require(old["what"])
     store.log(pid, {"kind": "user", "stage": job["kind"], "text": "Retry"})
-    worker.enqueue(pid, job["kind"], **{k: v for k, v in job.items() if k not in ("kind", "id", "model")})
+    if not again:
+        worker.enqueue(pid, job["kind"], **args)
+        return get_project(pid)
+
+    def rerun(cid: str | None) -> dict:
+        if st.get("credit_charge") == old["id"]:
+            store.update(pid, credit_charge=cid)
+        return worker.enqueue(pid, job["kind"], **{**args, **orgs.job_args(cid)})
+    orgs.paid(old["what"], pid, st["name"], rerun, note="Retry")
     return get_project(pid)
 
 

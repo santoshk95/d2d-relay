@@ -13,7 +13,10 @@ apps use the same Claude subscription.
 |---|---|
 | Public address | https://d2d-relay.pasdacs.com (Cloudflare tunnel) |
 | On this PC | http://127.0.0.1:8100 |
-| Sign-in | a 6-digit code emailed to **info@pasdacs.com** only (no passwords, no SSO) |
+| Sign-in | a 6-digit code emailed to any **business** address (no passwords, no SSO); free and disposable mail refused |
+| Organisations | one per email domain, each in its own workspace; the first person creates and owns it |
+| Credits | 100 per organisation to start; a new dashboard uses 30, a change 15 (see "Organisations and credits") |
+| Platform admin | **info@pasdacs.com**: Administration and Organisations (every organisation, adding credits) |
 | Code sender | info@pasdacs.com through Microsoft Graph (delegated Mail.Send, signed in once) |
 | Data sources | CSV / flat files (New dashboard → upload) and Google BigQuery (Connections) |
 
@@ -22,8 +25,9 @@ apps use the same Claude subscription.
 `webapp/app/edition.py` is the one place that decides this.
 
 - **Kept:** Dashboards (D2D: plan → KPIs → prototype → review → PBIP), the review gates and the Power BI engine
-  check, the visual library, sample data, Connections (BigQuery only), Settings and Administration.
-- **Switched off:** all other modules (process, automation, systems, AI, consulting), Ask D, schedules, pages, the
+  check, the visual library, sample data, Connections (BigQuery only), Ask Relay, Branding, organisations and credits.
+  Administration's APIs stay for the platform admin only (not in the menu).
+- **Switched off:** all other modules (process, automation, systems, AI, consulting), schedules, pages, the
   semantic layer, the service desk, Migrate BI, self-healing, AI SDLC, the workbench and the tenants console. Their APIs
   answer 404 and their background pollers do not start. Old links open the dashboards list.
 
@@ -69,10 +73,45 @@ run `login` again. If a sign-in policy blocks device-code sign-in, an admin can 
 For a local test only, set `RELAY_OTP_DEV_LOG=1` and codes are printed in `docker logs d2d-relay` instead. This is
 ignored once mail is set up.
 
-Code rules: 6 digits, valid for 10 minutes, 5 tries, 1 code a minute and 6 codes an hour. Only a salted hash is stored.
-The page gives the same answer for any address. A session lasts 12 hours (`RELAY_SESSION_HOURS`).
+Code rules: 6 digits, valid for 10 minutes, 5 tries. Per address: 1 code a minute and 6 codes an hour. Per network
+(Cloudflare's `cf-connecting-ip`): 20 codes an hour. Only a salted hash is stored. A session lasts 12 hours
+(`RELAY_SESSION_HOURS`).
 
-To allow a different address, change `RELAY_OTP_EMAIL` (and `RELAY_ADMIN_EMAIL`) and restart.
+`RELAY_OTP_EMAIL` (and `RELAY_ADMIN_EMAIL`) is the platform admin's address, info@pasdacs.com. It signs in to the
+platform's own workspace, the organisation "PASDACS".
+
+## Organisations and credits
+
+Anyone with a business email address can sign in. Free and disposable mail (Gmail, Outlook, Yahoo, iCloud, Proton,
+Mailinator …) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTRA` / `RELAY_PUBLIC_DOMAINS_ALLOW`
+(comma-separated).
+
+- **The first person from a domain** names their organisation after the code and becomes its owner. They then see the
+  first-time setup: the brand (logo, description, palette), which they can skip. Everyone who signs in later from
+  the same domain joins that organisation, and the owner is told.
+- **Each organisation is its own workspace.** Dashboards, connections, branding, Ask Relay conversations and people
+  are never visible to another organisation. Inside one, each person's dashboards are private until shared; the owner
+  can open them all.
+- **Credits are shared** by everyone in the organisation. The top bar shows the organisation and its credits;
+  Organisation (`#/org`) shows the owner, the people, the costs and the credit history.
+
+| What | Credits |
+|---|---|
+| Start | 100 (`RELAY_CREDITS_START`) |
+| New dashboard (plan, KPIs and first prototype) | 30 (`RELAY_CREDITS_DASHBOARD`) |
+| A change: revise the plan, a change request, building a suggested custom visual, an Ask Relay answer sent to a dashboard | 15 (`RELAY_CREDITS_CHANGE`) |
+| Confirming the plan, fixing failed review gates, approving and publishing, Ask Relay questions, brand palettes | free |
+
+A request without enough credits is refused before anything starts, with the balance in the message. When a run
+fails, is stopped, or is cut off by a restart, its credits come back on their own; Retry then uses them again. Every
+AI cost is still recorded on the server (the `usage` table); the screens show no tokens and no cost breakdown. Ask
+Relay shows only a conversation's overall cost.
+
+**Adding credits.** Online payment is not built yet. "Add credits" sends a request to info@pasdacs.com
+(`RELAY_CREDITS_CONTACT`) from the code mailbox, with the organisation, the person and the amount, and Reply-To set
+to the person. It also shows a prefilled email link. When the payment is agreed, the platform admin opens
+**Organisations** (`#/orgs`), clicks **+ Credits** for the organisation and writes why (for example the invoice);
+the organisation sees it in its credit history. A negative number takes credits back.
 
 ### 2. Public address (Cloudflare tunnel)
 

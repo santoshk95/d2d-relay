@@ -54,10 +54,12 @@ function navGroups(route) {          // D2D Relay: dashboards, Ask Relay, brandi
   const top = {id: 'top', label: '', items: [['#/d2d', 'chart', 'Dashboards', routeOn('#/') || on('#/d2d') || !!S.pid]]};
   if (me.builder !== false) top.items.push(['#/new', 'plus', 'New dashboard', on('#/new')]);
   top.items.push(['#/askd', 'spark', 'Ask Relay', on('#/askd')]);
-  return [top, {id: 'platform', label: 'Setup', items: [
+  const setup = [['#/org', 'building', 'Organisation', route === '#/org'],       // D2D Relay: owner, people, credits (36-org.js)
     ['#/branding', 'palette', 'Branding', on('#/branding')],
     ['#/connections', 'plug', 'Connections', on('#/connections')],
-    ['#/notifications', 'bell', 'Notifications', route === '#/notifications']]}];
+    ['#/notifications', 'bell', 'Notifications', route === '#/notifications']];
+  if (me.org && me.org.platform_admin) setup.push(['#/orgs', 'layers', 'Organisations', route === '#/orgs']);
+  return [top, {id: 'platform', label: 'Setup', items: setup}];
 }
 function groupOpen(g, route) {
   if (!g.label) return true;
@@ -197,8 +199,11 @@ function route() {
   renderShell();
   if (!pid) document.title = 'D2D Relay';
   // D2D Relay: only these screens exist; anything else (old links, bookmarks) opens the dashboards list
-  const D2D_ROUTES = ['#/new', '#/d2d', '#/askd', '#/branding', '#/notifications', '#/connections', '#/p/'];
+  const D2D_ROUTES = ['#/new', '#/d2d', '#/askd', '#/branding', '#/notifications', '#/connections', '#/p/', '#/org', '#/orgs', '#/setup'];
   if (location.hash.startsWith('#/branding')) return renderBranding();
+  if (location.hash === '#/org') return renderOrg();                               // D2D Relay: organisations and credits (36-org.js)
+  if (location.hash === '#/orgs') return renderOrgs();
+  if (location.hash === '#/setup') return renderSetup();
   if (!pid && !D2D_ROUTES.some(r => location.hash === r || location.hash.startsWith(r.endsWith('/') ? r : r + '/'))) {
     if (location.hash && location.hash !== '#/' && location.hash !== '#') { history.replaceState(null, '', '#/d2d'); }
     return renderDashboards();
@@ -253,6 +258,7 @@ async function loadMe() {
       icon('chevr', 'mechev')));
     renderShell();
     if (typeof renderWorkspace === 'function') renderWorkspace();                  // P17: the workspace chip and band
+    if (typeof orgAfterMe === 'function') orgAfterMe(me);                         // D2D Relay: the organisation chip, first-time setup
     $('#me').title = `${me.email} · instance ${me.instance}`;
   } catch (e) {}
 }

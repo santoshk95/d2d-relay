@@ -149,7 +149,9 @@ function renderNew() {
         h('div', {}, h('small', {}, 'Brand color'), h('label', {class: 'chk'}, useBrand, brand, h('span', {}, 'use my brand color'))),
         h('div', {}, h('small', {}, 'Palette from the brand'), palette),
         h('div', {}, h('small', {}, 'Background'), h('label', {class: 'chk'}, dark, h('span', {}, 'dark report'))))),
-    h('div', {class: 'row', style: 'margin-top:22px'}, goBtn, h('span', {class: 'muted small'}, 'Relay reads your data and proposes a plan for you to confirm first. Nothing is built before you agree.')), bar);
+    h('div', {class: 'row', style: 'margin-top:22px'}, goBtn, h('span', {class: 'muted small'},
+      typeof ORG === 'function' && ORG().id ? h('b', {}, `Uses ${costOf('dashboard')} credits (${ORG().name} has ${Number(ORG().credits || 0).toLocaleString()}). `) : null,
+      'Relay reads your data and proposes a plan for you to confirm first. Nothing is built before you agree.')), bar);
   form.onsubmit = e => {
     e.preventDefault();
     if (!prompt.value.trim()) return toast(goBtn, 'Describe what you need.');
@@ -171,11 +173,16 @@ function renderNew() {
     for (const f of img.input.files) fd.append('images', f);
     bar.style.display = 'block'; goBtn.disabled = true; goBtn.lastChild.textContent = 'Uploading…';
     upload('/api/projects', fd, p => { $('i', bar).style.width = (100 * p) + '%'; })
-      .then(r => { refreshList(); location.hash = '#/p/' + r.id; })
+      .then(r => { refreshList(); if (typeof refreshOrg === 'function') refreshOrg(true); location.hash = '#/p/' + r.id; })
       .catch(err => { goBtn.disabled = false; goBtn.lastChild.textContent = startText(); toast(goBtn, err.message); });
   };
   $('#main').replaceChildren(h('div', {class: 'page'},
     h('div', {class: 'crumbs'}, h('a', {href: '#/'}, 'Dashboards'), '›', 'New'),
-    h('h1', {}, 'New dashboard'), h('div', {class: 'muted', style: 'margin:4px 0 16px'}, 'Four short steps. Bring your CSVs, or let Relay generate demo data. Relay plans first — you confirm the KPIs before anything is built.'), form));
+    h('h1', {}, 'New dashboard'), h('div', {class: 'muted', style: 'margin:4px 0 16px'}, 'Four short steps. Bring your CSVs, or let Relay generate demo data. Relay plans first — you confirm the KPIs before anything is built.'),
+    typeof ORG === 'function' && ORG().id && (ORG().credits || 0) < costOf('dashboard')       // D2D Relay: say it before the form is filled in
+      ? h('div', {class: 'note warn row', style: 'gap:10px;flex-wrap:wrap'}, h('span', {style: 'flex:1;min-width:220px'},
+          `Not enough credits for a new dashboard: it uses ${costOf('dashboard')} credits and ${ORG().name} has ${ORG().credits}.`),
+        h('button', {class: 'btn sm primary', type: 'button', onclick: () => creditsDialog()}, icon('plus'), 'Add credits')) : null,
+    form));
 }
 

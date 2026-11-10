@@ -155,7 +155,17 @@ CREATE TABLE IF NOT EXISTS relay.tn_audit (
   id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL NOT NULL, who TEXT, who_tenant TEXT, tenant_id TEXT,
   action TEXT NOT NULL, object TEXT, detail TEXT);
 CREATE TABLE IF NOT EXISTS relay.tn_meta (key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS relay.tn_orgs (
+  tenant_id TEXT PRIMARY KEY, name TEXT NOT NULL, domain TEXT UNIQUE NOT NULL, owner_id TEXT NOT NULL,
+  credits INTEGER NOT NULL DEFAULT 0, setup_done INTEGER NOT NULL DEFAULT 0, created REAL NOT NULL, created_by TEXT);
+CREATE TABLE IF NOT EXISTS relay.tn_credits (
+  id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, ts REAL NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('start', 'charge', 'refund', 'adjust')), delta INTEGER NOT NULL,
+  balance INTEGER NOT NULL, what TEXT, user_id TEXT, user_name TEXT, project_id TEXT, project_name TEXT, note TEXT,
+  ref TEXT);
 """
+# D2D Relay (orgs.py): tn_orgs = an organisation per tenant (its email domain, owner and pooled credits);
+# tn_credits = every change to those credits (starting credits, charges, refunds, admin adjustments).
 CONTROL_TABLES = re.findall(r"CREATE TABLE IF NOT EXISTS relay\.(\w+)", CONTROL_SCHEMA)
 
 SCHEMA = """

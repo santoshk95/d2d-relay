@@ -46,59 +46,98 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
    - Progress steps while it works, and plain labels with a CSV download.
    - Charts are interactive, use the brand palette, and show value labels only when there are 12 points or fewer.
    - The model is told to write for business readers.
-8. **AI cost.** `GET /api/askd/costs` returns the month by work type and the cost of one conversation. Today Ask
-   Relay shows the cost on each answer plus a cost panel, and the Dashboards page has a cost line. This is to be
-   changed; see the next section.
+8. **AI cost** (changed by item 10). `GET /api/askd/costs` returned the month by work type and the cost of one
+   conversation, shown on each answer, in a cost panel and on the Dashboards page.
+9. **Organisations, credits and open sign-up** (`webapp/app/orgs.py`, `otp.py`, `public_domains.py`,
+   `static/js/36-org.js`, `css/org.css`; the user's request of 2026-11-10).
+   - **One tenant per organisation** (the P17 tenancy): its own schema and folders, so organisations never see each
+     other's dashboards, connections, branding, Ask Relay conversations or people. `relay.tn_orgs` holds the
+     organisation (tenant, name, email domain, owner, credits, setup done) and `relay.tn_credits` every change to its
+     credits (start, charge, refund, adjust). Both are control-plane tables, so the nightly backup includes them.
+   - **Sign-in** is open to business email domains. Public and disposable domains (Gmail, Outlook/Hotmail/Live, Yahoo,
+     iCloud, AOL, Proton, GMX, Yandex, Zoho Mail, Rediffmail, QQ/163, Mailinator …, plus their country variants)
+     are refused at both steps. `RELAY_PUBLIC_DOMAINS_EXTRA` / `_ALLOW` adjust the list.
+   - The first person from a domain gets "Create your organisation" after the code (name prefilled from the domain,
+     their own name). They own it as the admin of that workspace only, and go to the first-time setup `#/setup`
+     (step 2 is the Branding flow; "Skip for now" or "Finish"). Later people from the domain join it as BI Devs
+     and the owner is notified.
+   - `info@pasdacs.com` (`RELAY_OTP_EMAIL`) stays the platform admin. The platform's own workspace is the organisation
+     "PASDACS" (pasdacs.com), with 100 credits from the upgrade and setup marked done. Other pasdacs.com addresses join it.
+   - Code limits: 1 a minute and 6 an hour per address (as before), plus 20 an hour per network (`cf-connecting-ip`).
+     A session is created in the person's own workspace, so the cookie is `<tenant>~<id>`.
+   - **Administration is the platform admin's only.** `/api/admin/*` answers 403 to everyone else, organisation
+     owners included (people, AI providers, monitoring, backups, Relay Doctor). An owner sees every dashboard of
+     their own organisation, as Relay's admins always did.
+   - **Credits** are pooled per organisation. The amounts are set by `RELAY_CREDITS_START` (100),
+     `RELAY_CREDITS_DASHBOARD` (30) and `RELAY_CREDITS_CHANGE` (15). A change is: asking Relay to revise the plan, a
+     change request on a prototype, "Build it" on a custom visual Relay suggested, or an Ask Relay answer sent to a
+     dashboard.
+     - **Free:** confirming the plan (the first build is part of the new dashboard), "Ask Relay to fix them" for
+       failed review gates (the server writes that request from `gates.json`, so it cannot carry other changes),
+       approving and publishing, Ask Relay questions, brand palettes.
+     - Every request checks the balance before anything is saved. Not enough credits gives HTTP 402 with a clear
+       message, and the screen opens Add credits.
+   - **Refunds (decided here).** A run carries the id of the charge it delivers (job args `charge`). When that run
+     fails, is stopped, or is cut off by a restart, the credits go back automatically: `worker._finish`, `worker.stop`
+     and `worker.recover` call `give_back`, and the activity log says so. Retry then charges again, and the button
+     shows "Retry · 30 credits".
+     - A new dashboard's charge rides on through data/extract, plan and the first build until v1 exists, so a failed
+       first build gives back the 30.
+     - Runs from before this change carry no charge and retry for free.
+   - **Add credits** (top-bar chip, Organisation page, Dashboards, and any 402) is "Paying online is coming soon".
+     It sends a request to `RELAY_CREDITS_CONTACT` (info@pasdacs.com) by email through the same Microsoft Graph
+     mailbox, with Reply-To set to the person. The request is prefilled with the organisation, the person and the
+     amount, and a prefilled mailto link is the fallback. Requests also notify the platform admins in the app.
+   - **Organisations** (`#/orgs`, platform admins): every organisation with its owner, people, dashboards, credits
+     used and left, plus the credit requests. "+ Credits" adds or takes back credits; a note is required and is shown
+     in the organisation's history.
+   - **Organisation** (`#/org`, everyone): owner, people, credits and costs, and the credit history. The owner can
+     rename it.
+10. **AI cost display.** No tokens and no cost breakdown anywhere. The tokens/$ on the dashboard header, plan,
+    versions, Details tab and activity log are gone, as are the Dashboards cost line and the per-answer cost in Ask
+    Relay. Ask Relay shows only the open conversation's overall cost (`/api/askd/costs?thread=` returns just
+    `thread_usd`). The APIs no longer send costs (`get_project` drops `usage` and run costs; activity events,
+    answers and the list strip them). `/api/home` and `/api/me/usage` are blocked. Every cost is still recorded in
+    the `usage` table on the server. The Details tab shows the credits the dashboard used instead.
 
 Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
 (JPEG) on Branding but has not picked a palette yet; leave it.
 
-## NEXT: the user's request of 2026-11-10 (not started)
+## How items 9-10 were checked (2026-11-10)
 
-The user's words, condensed:
+Not deployed yet: the live container still runs commit 3a23b25 until someone redeploys.
 
-1. **AI cost display.** Do not show the cost of each answer. Show only the conversation's overall cost. Show no tokens
-   and no cost breakdowns anywhere (also remove "2.29M tokens · $2.14" on the dashboard page and the cost line on the
-   Dashboards list). Costs are logged on the backend only (the `usage` table already records them).
-2. **First sign-in setup.** On a person's first sign-in, ask them to **create an organisation**, then show **brand
-   setup** (the Branding flow), so everything is configured once at the start.
-3. **Credits.**
-   - Every organisation starts with **100 credits**.
-   - A **new dashboard costs 30 credits**. A **change** (change request / revision) **costs 15 credits**.
-   - Refuse with a clear message when there are not enough credits, and show the balance.
-4. **Add credits.** A button that will later go to payment. For now it says "coming soon" and offers a contact
-   form/mail to info@pasdacs.com, prefilled with the organisation, the person and the amount.
-5. **Organisations.**
-   - People from the **same organisation pool their credits**, and the screen shows **who the organisation's owner
-     is** (the first person from that organisation).
-   - **Do not allow public email domains** (gmail, yahoo, outlook/hotmail/live, icloud, aol, proton, gmx, yandex,
-     zoho mail, rediffmail, qq/163, disposable mail …) to sign in or sign up.
-   - This replaces the single allowed address: sign-up becomes open to business email domains. Keep
-     info@pasdacs.com as the platform admin.
+- An isolated container from the live image with this code mounted (port 8101, its own empty volume, codes printed
+  in its log with `RELAY_OTP_DEV_LOG=1`, no Claude sign-in, so every AI run fails, which exercises the refunds).
+  81 end-to-end API checks pass:
+  - public domains refused;
+  - the platform admin;
+  - a new organisation and a colleague joining;
+  - isolation between organisations and the platform;
+  - `/api/admin` refused to owners;
+  - charges, refunds on failure, stop and retry;
+  - a change request, a free gate fix, 402 with too few credits;
+  - credit requests and admin top-ups;
+  - the per-network code limit.
+- Upgrade: a container started with the live code made a session, a dashboard and a logo, then restarted with this
+  code on the same volume. The session, dashboard and logo stayed, PASDACS became an organisation with 100 credits,
+  and a second restart did not add credits again.
+- The screens in a browser: sign-in with the "Create your organisation" step, `#/setup`, the chip, Add credits,
+  Organisation, Organisations, the credits on New dashboard and on a failed dashboard, dark mode, and 375 px width
+  with no sideways scroll.
 
-### Design notes from the first look (2026-11-10)
+## Still open
 
-- **Isolation matters.** Today every user is in the platform tenant and the Default team. Admins see all projects,
-  `/api/directory` lists everyone, and Ask Relay's "team" scope covers the team's dashboards. Two client
-  organisations in one tenant could see each other.
-- **Recommended: one tenant per organisation**, using the P17 tenancy that already exists.
-  - `tenancy.create()` (webapp/app/tenancy.py ~334) makes the tenant row, its own schema (`db.init_tenant`) and its
-    own project folder (`store.root()` gives `.tenants/<tid>`).
-  - It needs a platform-admin user and an `admin_email`, and returns a setup link. Factor out a function that makes
-    an organisation's tenant from the OTP sign-up (no setup link; the first person becomes the org owner as
-    `org_role 'admin'` of THAT tenant only).
-- **Sign-in in the right tenant.** OTP verify must look up the organisation by email domain, `db.use(tid)`, create or
-  find the user there, and call `identity.create_session` inside that tenant, so the cookie carries `<tid>~<sid>`
-  (`identity.cookie_value`). `auth.home_of` already handles the `otp` mode like `sso`.
-- **Credits.** Keep them in a platform-level table (for example `relay.d2d_orgs(tenant_id, name, domain unique,
-  owner_user_id, credits, created)` plus `relay.d2d_credit_log(org, user, delta, reason, object, ts, balance)`).
-  - Charge 30 in `main.create_project` and 15 where a change request or revision is accepted (find the revise route
-    in main.py / worker; charge only when the run is queued).
-  - Refund when a run fails before producing a version (decide and log).
-- **Branding per organisation.** `branding.py` keeps one brand per install (meta key) and must become per tenant. The
-  meta table is per tenant schema, so it may already work inside `db.use(tid)`; check this.
-- **Check per-tenant behaviour:** the DAX checker queue, the agent workdir (`store.rel`), Ask Relay, and module
-  entitlements (`tenancy.effective` for the new tenant's edition must keep the dashboard modules on).
+- **Payments.** Add credits is a request by email until online payment exists; a platform admin adds the credits.
+- **Abuse.** Anyone with a business mailbox can create an organisation and spend 100 credits of AI time. If that
+  happens, lower `RELAY_CREDITS_START` or add an approval step for new organisations.
+- **Ask Relay questions and brand palettes cost no credits** (as asked). Their AI cost is recorded in `usage` only.
+- **BigQuery "Sign in with Google"** needs a Google OAuth client per workspace (Administration, platform admin only),
+  so for client organisations the service-account JSON is the way in.
+- People management for owners (remove a colleague, transfer ownership) is not built. A platform admin can do it in
+  the database.
+- **NOT DONE (from item 2):** an Exchange ApplicationAccessPolicy that limits the mail app to info@pasdacs.com. Codes
+  now go to any business address; the sender stays info@pasdacs.com.
 
 ## Hand-over rules for this repository
 

@@ -226,7 +226,7 @@ function answerCard(m, opts) {
     h('div', {class: 'row', style: 'gap:6px'}, icon('spark'), h('b', {}, 'Ask Relay'),
       v.where ? h('span', {class: 'tag ' + (v.where === 'live' ? 'acc' : '')}, v.where === 'live' ? 'Live from BigQuery' : 'From your dashboard data') : null,
       a.cached ? h('span', {class: 'tag', title: 'The same question was answered recently; no new AI cost'}, 'Answered before') : null, h('span', {class: 'spacer'}),
-      h('span', {class: 'faint small', title: 'What this answer cost in AI'}, ['AI cost ' + aiUsd(u.cost_usd), a.seconds ? `${a.seconds}s` : null].filter(Boolean).join(' · '))),
+      a.seconds ? h('span', {class: 'faint small', title: 'How long the answer took'}, `${a.seconds}s`) : null),     // D2D Relay: no cost per answer
     (a.result || {}).headline ? h('div', {style: 'font-size:19px;font-weight:600;line-height:1.35;margin:8px 0 2px'}, a.result.headline) : null,
     chart,
     a.summary ? h('p', {style: 'margin:8px 0'}, h('b', {}, 'What this means. '), a.summary) : null,
@@ -260,9 +260,11 @@ async function snapshotAnswer(mid) {
   } catch (e) { notify(e.message, 'err'); }
 }
 async function sendToDashboard(mid, project) {
-  const note = await askText('Send to the dashboard', {label: 'Anything Relay should know when adding it?', hint: 'Optional. It goes to the dashboard as a change request.', ok: 'Send'});
+  const uses = typeof ORG === 'function' && ORG().id ? ` and uses ${costOf('change')} credits` : '';
+  const note = await askText('Send to the dashboard', {label: 'Anything Relay should know when adding it?', hint: `Optional. It goes to the dashboard as a change request${uses}.`, ok: 'Send'});
   if (note === null) return;
-  try { await api(`/api/askd/messages/${mid}/to-dashboard`, {json: {project, note}}); notify('Sent to the dashboard as a change request', 'ok'); } catch (e) { notify(e.message, 'err'); }
+  try { await api(`/api/askd/messages/${mid}/to-dashboard`, {json: {project, note}}); notify('Sent to the dashboard as a change request', 'ok'); if (typeof refreshOrg === 'function') refreshOrg(true); }
+  catch (e) { notify(e.message, 'err'); }
 }
 async function pickDashboard(mid) {
   const o = await api('/api/askd/options');
@@ -296,18 +298,14 @@ async function renderAskD() {
     opts.dashboards.map(d => h('option', {value: d.id, selected: scope.kind === 'dashboard' && scope.project === d.id}, 'Dashboard: ' + d.name)));
   scopeSel.onchange = () => { scope = scopeSel.value ? {kind: 'dashboard', project: scopeSel.value} : {kind: 'team'}; };
 
-  // the AI cost box: this conversation, this month
+  // D2D Relay: the conversation's overall AI cost and nothing else (no cost per answer, no tokens, no breakdown)
   const costBox = h('div', {class: 'card flat askcost', style: 'margin:0 0 12px'});
   const drawCost = () => {
-    if (!cost) return costBox.replaceChildren();
-    const row = (k, v, strong) => [h('dt', {}, strong ? h('b', {}, k) : k), h('dd', {}, strong ? h('b', {}, v) : v)];
-    costBox.replaceChildren(h('div', {class: 'row', style: 'gap:6px'}, icon('gauge'), h('b', {class: 'small'}, 'AI cost')),
-      h('dl', {class: 'kv small', style: 'margin:6px 0 0'},
-        th ? row('This conversation', `${aiUsd(cost.thread_usd)} · ${cost.thread_questions} question${cost.thread_questions === 1 ? '' : 's'}`) : null,
-        row(`Questions in ${cost.month}`, `${aiUsd(cost.ask_usd)} · ${cost.ask_questions} asked`),
-        row('Dashboards', aiUsd(cost.dashboards_usd)),
-        cost.branding_usd ? row('Branding', aiUsd(cost.branding_usd)) : null,
-        row('Total this month', aiUsd(cost.total_usd), true)));
+    const show = !!(cost && cost.thread_usd != null);
+    costBox.style.display = show ? '' : 'none';
+    if (!show) return costBox.replaceChildren();
+    costBox.replaceChildren(h('div', {class: 'row', style: 'gap:6px'}, icon('gauge'), h('b', {class: 'small'}, 'This conversation')),
+      h('div', {class: 'small', style: 'margin-top:4px'}, 'AI cost so far: ', h('b', {}, aiUsd(cost.thread_usd))));
   };
   const refreshCost = async id => { try { cost = await api('/api/askd/costs' + (id ? '?thread=' + encodeURIComponent(id) : '')); drawCost(); } catch (e) { /* the answer matters more */ } };
   drawCost();

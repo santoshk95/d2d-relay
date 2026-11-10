@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from . import askd, auth, connectors, db, instances, store
+from . import askd, auth, connectors, db, instances, orgs, store
 
 router = APIRouter()
 
@@ -23,12 +23,17 @@ class Ask(BaseModel):
     model: str | None = None              # a model id from the person's catalog; empty = Ask D's default
 
 
+def _no_cost(body: dict) -> dict:
+    """D2D Relay: an answer without its AI cost and tokens (the conversation's total is all a person sees)."""
+    return {k: v for k, v in body.items() if k != "usage"} if isinstance(body, dict) else body
+
+
 @router.post("/api/askd/ask")
 async def ask(body: Ask):
     if body.scope.get("kind") not in ("dashboard", "team", "org"):
         raise HTTPException(400, "Scope must be dashboard, team or org.")
     try:
-        return await askd.ask(_u(), body.question, body.scope, body.thread_id, body.model)
+        return _no_cost(await askd.ask(_u(), body.question, body.scope, body.thread_id, body.model))
     except (askd.AskError, connectors.ConnectorError, instances.InstanceError) as e:
         raise HTTPException(400, str(e))
     except httpx.HTTPError as e:
@@ -49,9 +54,11 @@ def my_threads():
 @router.get("/api/askd/threads/{tid}")
 def one_thread(tid: str):
     try:
-        return askd.thread(tid, _u()["id"])
+        t = askd.thread(tid, _u()["id"])
     except askd.AskError:
         raise HTTPException(404, "Unknown conversation")
+    t["messages"] = [{**m, "body": _no_cost(m.get("body"))} for m in t["messages"]]
+    return t
 
 
 @router.get("/api/askd/options")
@@ -99,25 +106,14 @@ def _brand_colors() -> list[str]:
 
 @router.get("/api/askd/costs")
 def ai_costs(thread: str = ""):
-    """D2D Relay: what the AI has cost this person — this conversation, and this month by kind of work."""
-    import datetime
+    """D2D Relay: the overall AI cost of one conversation, nothing else (no tokens, no breakdown: every cost record
+    stays in the usage table on the server)."""
     u = _u()
-    now = datetime.datetime.now()
-    month = datetime.datetime(now.year, now.month, 1).timestamp()
-    rows = db.q("SELECT step, count(*) AS n, coalesce(sum(cost_usd), 0) AS usd FROM usage WHERE user_id = ? AND kind = 'llm' AND ts >= ? "
-                "GROUP BY step", (u["id"], month))
-    ask = [r for r in rows if r["step"] == "askd"]
-    brand = [r for r in rows if r["step"] == "branding"]
-    other = [r for r in rows if r["step"] not in ("askd", "branding")]
-    out = {"month": now.strftime("%B %Y"),
-           "ask_usd": round(sum(r["usd"] for r in ask), 4), "ask_questions": sum(r["n"] for r in ask),
-           "dashboards_usd": round(sum(r["usd"] for r in other), 4), "branding_usd": round(sum(r["usd"] for r in brand), 4)}
-    out["total_usd"] = round(out["ask_usd"] + out["dashboards_usd"] + out["branding_usd"], 4)
-    if thread:
-        t = db.one("SELECT coalesce(sum(cost_usd), 0) AS usd, count(*) AS n FROM usage WHERE user_id = ? AND kind = 'llm' AND step = 'askd' AND object = ?",
-                   (u["id"], thread))
-        out["thread_usd"], out["thread_questions"] = round(t["usd"], 4), t["n"]
-    return out
+    if not thread:
+        return {}
+    t = db.one("SELECT coalesce(sum(cost_usd), 0) AS usd FROM usage WHERE user_id = ? AND kind = 'llm' AND step = 'askd' AND object = ?",
+               (u["id"], thread))
+    return {"thread_usd": round(t["usd"], 4)}
 
 
 @router.get("/api/projects/{pid}/askd-context")
@@ -194,6 +190,7 @@ def to_dashboard(mid: str, body: ToDashboard):
     st = store.load(body.project)
     if st["status"] not in ("awaiting_review", "done", "error") or not st.get("versions"):
         raise HTTPException(409, f"Not now (status: {st['status']}).")
+    orgs.require("change")                       # D2D Relay: a change request costs credits
     v = ans.get("validation") or {}
     main = next((q for q in v.get("queries") or [] if q.get("id") == v.get("main_query")), None)
     request = (f"Add to the dashboard what answers this Ask D question: \"{meta['question']}\".\n"
@@ -203,6 +200,7 @@ def to_dashboard(mid: str, body: ToDashboard):
                + "Put it where it fits best (a new visual on an existing page, or a new page if it is a new topic).")
     store.note(body.project, "Change request (from Ask D)", request)
     store.log(body.project, {"kind": "user", "stage": "revise", "text": f"From Ask D: {meta['question'][:160]}"})
-    worker.enqueue(body.project, "revise", feedback=request, attachments=[])
+    orgs.paid("change", body.project, st.get("name"), lambda cid: worker.enqueue(body.project, "revise", feedback=request, attachments=[],
+                                                                                 **orgs.job_args(cid)), note="From Ask Relay")
     db.audit("askd.to_dashboard", mid, {"project": body.project}, _u()["id"])
     return {"ok": True}

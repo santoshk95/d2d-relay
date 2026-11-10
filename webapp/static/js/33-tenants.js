@@ -17,7 +17,8 @@ ICONS.building = ICONS.building || 'M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 
 function renderWorkspace() {
   const t = (S.me || {}).tenant || {}, chip = $('#ws'), band = $('#actband');
   if (!chip || !band) return;
-  const show = t.id && (t.console || t.acting || (t.enter || []).length || t.kind !== 'platform');
+  // D2D Relay: an organisation shows its own chip (organisation and credits, 36-org.js) instead of the workspace chip
+  const show = !(S.me && S.me.org && S.me.org.id) && t.id && (t.console || t.acting || (t.enter || []).length || t.kind !== 'platform');
   chip.hidden = !show;
   if (show) {
     chip.replaceChildren(h('button', {class: 'wsbtn' + (t.acting ? ' acting' : ''), type: 'button', 'aria-haspopup': 'dialog',

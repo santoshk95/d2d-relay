@@ -168,7 +168,7 @@ function eventRow(e) {
   }
   if (e.kind === 'start') return row('neutral', icon('play'), h('div', {class: 'bd'}, 'Relay started working', e.model && modelName(e.model) ? ` · ${modelName(e.model)}` : '', ' ', t), 'quiet');
   if (e.kind === 'done') return row(e.ok ? 'ok' : 'warn', icon(e.ok ? 'check' : 'alert'), h('div', {class: 'bd'}, e.ok ? 'Relay finished' : `Relay stopped (${e.subtype || 'error'})`,
-    e.turns ? ` · ${e.turns} steps` : '', e.duration_ms ? ` · ${dur(e.duration_ms)}` : '', e.usage ? ` · ${tok(runTokens(e.usage))} tokens` : '', e.cost_usd != null ? ` · ${usd(e.cost_usd)}` : '', ' ', t), 'quiet');
+    e.turns ? ` · ${e.turns} steps` : '', e.duration_ms ? ` · ${dur(e.duration_ms)}` : '', ' ', t), 'quiet');     // D2D Relay: no tokens or AI cost
   if (e.kind === 'error') return row('err', icon('alert'), h('div', {}, h('div', {class: 'hd'}, h('b', {}, 'Error'), t), h('div', {class: 'bd', style: 'color:var(--err)'}, e.text)));
   return null;
 }
@@ -236,23 +236,16 @@ function renderLive() {
 }
 
 /* ---------------- details tab ---------------- */
-function usageTable(st) {
-  const u = st.usage || {by: {}, total: {}}, vs = st.versions || [];
-  const label = k => k === 'plan' ? 'Plan & KPIs' : /^v\d+$/.test(k) ? `${k} · ${(vs.find(x => 'v' + x.v === k) || {}).feedback ? 'change request' : 'first build'}` : k;
-  const rank = k => k === 'plan' ? 0 : /^v\d+$/.test(k) ? +k.slice(1) : 1e6;
-  const num = v => h('td', {class: 'n'}, v);
-  const row = (name, g, cls) => h('tr', {class: cls || ''}, h('td', {}, name), h('td', {}, modelsText(g.models)), num(g.runs), num(dur(g.duration_ms)),
-    num((g.complete ? '' : '≥ ') + tok(g.tokens)), num(tok(g.output)), num(usd(g.cost_usd)));
-  const models = Object.entries(u.by_model || {}).sort((a, b) => b[1].cost_usd - a[1].cost_usd);
-  return h('div', {},
-    h('table', {class: 'utable'}, h('thead', {}, h('tr', {}, ['Step', 'Model', 'Runs', 'Time', 'Tokens', 'Written', 'Est. cost'].map(c => h('th', {class: c === 'Model' ? 'l' : null}, c)))),
-      h('tbody', {}, Object.keys(u.by).sort((a, b) => rank(a) - rank(b)).map(k => row(label(k), u.by[k])),
-        st.output ? h('tr', {}, h('td', {}, 'Power BI build'), h('td', {}, 'no AI'), num('–'), num('–'), num('0'), num('–'), num('$0.00')) : null,
-        u.total.runs ? row('Whole dashboard', u.total, 'total') : null)),
-    models.length ? [h('h4', {class: 'uhead'}, 'By model'), h('table', {class: 'utable'},
-      h('thead', {}, h('tr', {}, ['Model', 'Runs', 'Tokens', 'Written', 'Est. cost'].map(c => h('th', {}, c)))),
-      h('tbody', {}, models.map(([m, g]) => h('tr', {}, h('td', {}, modelName(m) || 'Set by an admin'), num(g.runs), num(tok(g.tokens)), num(tok(g.output)), num(usd(g.cost_usd))))))] : null,
-    h('div', {class: 'unotes'}, h('p', {}, "Tokens count everything Relay processed; most are cache reads, which cost a fraction of normal input. Costs are the agent's own estimates at the list price of the model each run used.")));
+function creditsCard(st) {
+  const c = st.credits || {}, items = c.items || [];
+  const what = r => (r.kind === 'refund' ? 'Given back: ' : '') + (r.what === 'dashboard' ? 'new dashboard' : 'change') + (r.note && r.kind === 'charge' ? ` · ${r.note}` : '');
+  return h('div', {class: 'card'}, h('h3', {}, 'Credits'),
+    h('div', {class: 'muted small', style: 'margin:-6px 0 8px'}, `This dashboard has used ${credits(c.used || 0)}. A new dashboard uses ${(c.costs || {}).dashboard || 0}, `
+      + `a change ${(c.costs || {}).change || 0}; when a run fails or is stopped, its credits come back.`),
+    items.length ? h('table', {class: 'utable'}, h('thead', {}, h('tr', {}, h('th', {}, 'When'), h('th', {class: 'l'}, 'What'), h('th', {class: 'l'}, 'Who'), h('th', {}, 'Credits'))),
+      h('tbody', {}, items.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, what(r)), h('td', {}, r.user_name || 'Relay'),
+        h('td', {class: 'n delta' + (r.delta > 0 ? ' plus' : '')}, (r.delta > 0 ? '+' : '') + r.delta)))))
+      : h('div', {class: 'muted small'}, 'No credits used yet.'));
 }
 const VISUALS_LABEL = {relay: 'Relay custom visuals', builtin: "Power BI's built-in visuals only", mixed: 'Built-in first, custom where needed'};
 // Which visuals the next versions use; editors can change it (the next plan, build or change follows it).
@@ -287,7 +280,7 @@ function detailsTab(st) {
       st.warehouse || (st.files || []).some(f => f.warehouse) ? warehouseCard(st) : null,
       h('div', {class: 'card'}, h('h3', {}, 'Files'), h('div', {class: 'muted small', style: 'margin:-6px 0 6px'}, 'What Relay and you wrote along the way — the request log, the plan and the report definition.'),
         h('div', {class: 'files'}, (st.files_available || []).map(n => h('button', {onclick: () => viewFile(n)}, icon('file'), h('span', {}, FILES[n] || n), h('span', {class: 'faint mono'}, n))))),
-      h('div', {class: 'card'}, h('h3', {}, 'AI usage'), usageTable(st))))];
+      creditsCard(st)))];
 }
 async function viewFile(name) {
   const text = await api(`/api/projects/${S.pid}/files/${encodeURIComponent(name)}`).catch(e => 'Could not load: ' + e.message);
