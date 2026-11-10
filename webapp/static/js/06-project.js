@@ -26,7 +26,7 @@ function header(st) {
       certSummary(st),
       st.versions && st.versions.length ? h('button', {class: 'btn', title: 'Ask a question about this dashboard', onclick: () => {
         const go = () => { const p = $('#askpanel'); if (!p) return false; p.scrollIntoView({behavior: 'smooth', block: 'center'}); const i = $('input', p); if (i) i.focus({preventScroll: true}); return true; };
-        if (S.tab !== 'overview') { location.hash = `#/p/${st.id}`; setTimeout(go, 600); } else go(); }}, icon('spark'), 'Ask D') : null,
+        if (S.tab !== 'overview') { location.hash = `#/p/${st.id}`; setTimeout(go, 600); } else go(); }}, icon('spark'), 'Ask Relay') : null,
       h('button', {class: 'btn' + ((S.pins || []).includes(st.id) ? ' on' : ''), 'aria-pressed': String((S.pins || []).includes(st.id)),
         title: (S.pins || []).includes(st.id) ? 'Unpin from the sidebar' : 'Pin to the sidebar', onclick: async e => { await togglePin(st.id); S.key = null; render(); }},
         icon('pin'), (S.pins || []).includes(st.id) ? 'Pinned' : 'Pin'),

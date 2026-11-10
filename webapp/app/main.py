@@ -28,7 +28,7 @@ from . import (askd_routes, auth, connectors, publishing, publishing_routes, dat
 from . import changes as changes_mod
 from . import home, mailer, monitor, notify, phases, registry, schedules, usage
 from . import doctor, errors
-from . import edition, otp                 # D2D Relay: the dashboard-only catalogue and the email-code sign-in
+from . import branding, edition, otp                 # D2D Relay: the dashboard-only catalogue and the email-code sign-in
 
 errors.install()                                # every traceback.print_exc() and thread crash reports Relay's own bugs (Relay Doctor)
 STATIC = Path(__file__).resolve().parent.parent / "static"
@@ -114,6 +114,7 @@ app.include_router(registry.router)            # module registry, brand settings
 app.include_router(home.router)                # Home insight dashboard (P9)
 for _r in phases.ROUTERS:                      # P10 onwards: one router per phase module (app/phases.py)
     app.include_router(_r)
+app.include_router(branding.router)            # D2D Relay: Branding (logo + description -> palettes)
 app.include_router(otp.router)                 # D2D Relay: sign-in with a one-time email code
 edition.apply()                                # D2D Relay: keep dashboards, the visual library and BigQuery; switch the rest off
 
@@ -277,7 +278,7 @@ def _catalog() -> dict:
     cat = providers.catalog_for(u["id"] if u else None, {**worker.model_catalog(), "default": worker.DEFAULT_MODEL})
     ids = {h["id"] for h in worker.house_models()}
     house = [m for m in cat["models"] if m["id"] in ids]
-    if house and not (u and auth.is_admin(u)):
+    if house:                                   # D2D Relay: the Relay Model only, admins included
         cat = {**cat, "models": house, "default": cat["default"] if cat["default"] in ids else house[0]["id"]}
     return cat
 
@@ -354,6 +355,7 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
                          custom_visuals: str = Form("ask"), data_mode: str = Form("upload"), data_brief: str = Form(""),
                          data_size: str = Form("medium"), data_months: int = Form(12),
                          connection_id: str = Form(""), tables: str = Form(""), visuals_mode: str = Form("relay"),
+                         use_brand: str = Form("1"),
                          files: list[UploadFile] = File(default=[]), images: list[UploadFile] = File(default=[])):
     prompt = prompt.strip()
     model = _model(model)
@@ -367,6 +369,9 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
     if visuals_mode == "builtin":
         custom_visuals = "never"          # a report of Power BI's built-in visuals only gets no new custom visual
     style = _style(look.strip().lower(), brand.strip(), palette.strip().lower(), dark.strip().lower())
+    house = branding.chosen_style() if isinstance(use_brand, str) and use_brand.strip() in ("1", "true", "on") and not brand.strip() else None
+    if house:                                   # D2D Relay: the palette chosen under Branding (the form's own look wins)
+        style = {**house, **{k: v for k, v in style.items() if k in ("look", "dark")}}
     files, images = _check_uploads(files, images)
     generate, warehouse = data_mode == "generate", data_mode == "warehouse"
     picked = []
@@ -431,6 +436,7 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
         lines += ["", "## Visual style (put these in definition.yaml `theme`)", ""]
         lines += [f"- look: {style['look']} ({LOOKS[style['look']]})"] if style.get("look") else []
         lines += [f"- accent: \"{style['accent']}\" (the brand color), palette: {style['palette']}"] if style.get("accent") else []
+        lines += [f"- colors: [{', '.join(chr(34) + c + chr(34) for c in style['colors'])}] (the brand palette \"{style.get('brand_name', '')}\", in this order)"] if style.get("colors") else []
         lines += ["- dark: true (dark report background)"] if style.get("dark") else []
     lines += ["", "## Custom visuals", "", f"- Custom visuals: {custom_visuals} — {POLICIES[custom_visuals]}"]
     lines += ["", "## Visuals", "", _visuals_line(visuals_mode)]

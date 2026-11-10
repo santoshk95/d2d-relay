@@ -1,6 +1,6 @@
 """D2D Relay: the dashboard product, cut down from RELAY by PASDACS.
 
-What stays: Dashboards (describe -> plan -> KPIs -> prototype -> review -> Power BI project), the visual library,
+What stays: Ask Relay (Ask D: questions about your data, answered with charts), Dashboards (describe -> plan -> KPIs -> prototype -> review -> Power BI project), the visual library,
 CSV / flat-file uploads, and Connections with Google BigQuery only. Administration stays for the one admin.
 
 Everything else in the copied code base is switched off here, in one place:
@@ -16,10 +16,10 @@ KEEP_MODULES = {"d2d", "bi", "connect", "gates", "visuals", "demodata", "runners
 KEEP_KINDS = {"bigquery"}
 
 # APIs of screens that are not part of D2D Relay (on top of the dropped modules' own `api=[…]` prefixes)
-EXTRA_BLOCKED = ("/api/askd", "/api/schedules", "/api/semantic", "/api/pages", "/api/reviews", "/api/studio", "/api/rfp",
+EXTRA_BLOCKED = ("/api/schedules", "/api/semantic", "/api/pages", "/api/reviews", "/api/studio", "/api/rfp",
                  "/api/servicedesk", "/api/lineage", "/api/graph", "/api/intan", "/api/observe", "/api/migrate-bi", "/api/heal",
                  "/api/sdlc", "/api/start", "/api/team", "/api/m/", "/api/tenancy/tenants", "/api/email")
-ALLOWED_UNDER_BLOCKED = ("/api/m/connect",)   # the Connections module page
+ALLOWED_UNDER_BLOCKED = ("/api/m/connect", "/api/askd")   # the Connections module page; Ask Relay (Ask D)
 
 BLOCKED_API: tuple[str, ...] = EXTRA_BLOCKED
 _applied = False

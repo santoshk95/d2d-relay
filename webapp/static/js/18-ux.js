@@ -79,7 +79,7 @@ async function palette() {
   const go = href => () => { if (href.startsWith('/')) window.open(href, '_blank'); else location.hash = href.slice(1); };
   const items = [
     ...(S.me && S.me.builder !== false ? [{k: 'Action', t: 'New dashboard', ic: 'plus', run: go('#/new')}] : []),
-    {k: 'Action', t: 'Ask D a question', ic: 'spark', run: go('#/askd')},
+    {k: 'Action', t: 'Ask Relay a question', ic: 'spark', run: go('#/askd')},
     {k: 'Action', t: 'New scheduled report', ic: 'clock', run: () => { location.hash = '/schedules'; setTimeout(async () => scheduleDialog('report', await api('/api/schedules')), 500); }},
     {k: 'Action', t: 'New alert', ic: 'alert', run: () => { location.hash = '/schedules'; setTimeout(async () => scheduleDialog('alert', await api('/api/schedules')), 500); }},
     {k: 'Action', t: 'Collapse or expand the sidebar', ic: 'chevl', hint: 'Ctrl+B', run: () => setRail(!$('.app').classList.contains('rail'))},
@@ -131,7 +131,7 @@ document.addEventListener('keydown', e => {
 function shortcutsDialog() {
   modal('Keyboard shortcuts', h('div', {class: 'mbody'}, h('table', {class: 'utable'},
     [['Ctrl + K', 'Search and go anywhere (dashboards, pages, settings, actions)'], ['Ctrl + B', 'Collapse or expand the sidebar'],
-     ['Esc', 'Close a dialog, panel or the phone menu'], ['Enter', 'Ask (in Ask D); Shift + Enter for a new line']]
+     ['Esc', 'Close a dialog, panel or the phone menu'], ['Enter', 'Ask (in Ask Relay); Shift + Enter for a new line']]
       .map(([k, d]) => h('tr', {}, h('td', {}, h('kbd', {}, k)), h('td', {class: 'l'}, d))))));
 }
 function profileMenu(anchor) {

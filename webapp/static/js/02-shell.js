@@ -48,17 +48,16 @@ const moduleById = id => (S.registry ? S.registry.modules.find(m => m.id === id)
 
 /* ---------------- navigation from the registry ---------------- */
 const routeOn = href => { const r = location.hash || '#/'; if (href === '#/') return !S.pid && (r === '#/' || r === '#' || r === ''); return r === href || r.startsWith(href + '/'); };
-function navGroups(route) {          // D2D Relay: dashboards, visuals and connections only
+function navGroups(route) {          // D2D Relay: dashboards, Ask Relay, branding and connections only
   const on = p => route.startsWith(p);
   const me = S.me || {};
   const top = {id: 'top', label: '', items: [['#/d2d', 'chart', 'Dashboards', routeOn('#/') || on('#/d2d') || !!S.pid]]};
   if (me.builder !== false) top.items.push(['#/new', 'plus', 'New dashboard', on('#/new')]);
-  top.items.push(['#/library', 'layers', 'Visual library', on('#/library')]);
+  top.items.push(['#/askd', 'spark', 'Ask Relay', on('#/askd')]);
   return [top, {id: 'platform', label: 'Setup', items: [
+    ['#/branding', 'palette', 'Branding', on('#/branding')],
     ['#/connections', 'plug', 'Connections', on('#/connections')],
-    ['#/notifications', 'bell', 'Notifications', route === '#/notifications'],
-    ['#/settings', 'gear', 'Settings', on('#/settings')],
-    ...(me.admin ? [['#/admin', 'shield', 'Administration', on('#/admin')]] : [])]}];
+    ['#/notifications', 'bell', 'Notifications', route === '#/notifications']]}];
 }
 function groupOpen(g, route) {
   if (!g.label) return true;
@@ -198,7 +197,8 @@ function route() {
   renderShell();
   if (!pid) document.title = 'D2D Relay';
   // D2D Relay: only these screens exist; anything else (old links, bookmarks) opens the dashboards list
-  const D2D_ROUTES = ['#/new', '#/d2d', '#/library', '#/admin', '#/settings', '#/notifications', '#/connections', '#/p/'];
+  const D2D_ROUTES = ['#/new', '#/d2d', '#/askd', '#/branding', '#/notifications', '#/connections', '#/p/'];
+  if (location.hash.startsWith('#/branding')) return renderBranding();
   if (!pid && !D2D_ROUTES.some(r => location.hash === r || location.hash.startsWith(r.endsWith('/') ? r : r + '/'))) {
     if (location.hash && location.hash !== '#/' && location.hash !== '#') { history.replaceState(null, '', '#/d2d'); }
     return renderDashboards();

@@ -1,5 +1,5 @@
 /* ---------------- Ask D (phase 5): questions about your data, checked at every step ---------------- */
-const SCOPE_LABEL = {dashboard: 'This dashboard', team: 'My teams', org: 'Whole organisation'};
+const SCOPE_LABEL = {dashboard: 'One dashboard', team: 'All my data', org: 'All my data'};
 
 /* An Ask D answer as an interactive widget. Everything comes from the answer's own data: filters for its category
    columns and its date range, a chip for each of its measures, "By" to regroup, Top N, Bar / Line / Table, totals that
@@ -197,13 +197,8 @@ function chartPng(svg, name) {
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml.replace('<svg', '<svg font-family="Segoe UI, Arial, sans-serif"'));
 }
 
-function askModelSel() {
-  const ids = CATALOG.models.map(m => m.id);
-  const saved = pref('askdModel');
-  const dflt = ids.includes(saved) ? saved : ids.includes('sonnet') ? 'sonnet' : CATALOG.default;
-  const sel = h('select', {class: 'sel', 'aria-label': 'Model for Ask D', title: 'The model that answers. Sonnet is fast and cheap for most questions; Opus thinks harder.'}, modelOptions(dflt));
-  sel.onchange = () => pref('askdModel', sel.value);
-  return {el: h('label', {class: 'amodel'}, icon('spark'), 'Model', sel), value: () => sel.value};
+function askModelSel() {          // D2D Relay: always the Relay Model, no picker
+  return {el: null, value: () => CATALOG.default};
 }
 
 function askTable(d, max) {
@@ -219,8 +214,7 @@ function answerCard(m, opts) {
   const mid = m.id || a.message_id;
   const chart = askChart(a, {onAsk: opts && opts.onAsk});
   return h('div', {class: 'card', style: 'margin:0'},
-    h('div', {class: 'row', style: 'gap:6px'}, icon('spark'), h('b', {}, 'Ask D'),
-      v.certified ? h('span', {class: 'tag ok', title: 'Uses certified team metrics: ' + (v.certified_metrics || []).join(', ')}, icon('check'), 'Certified') : h('span', {class: 'tag', title: 'No certified metric was used'}, 'Ad hoc'),
+    h('div', {class: 'row', style: 'gap:6px'}, icon('spark'), h('b', {}, 'Ask Relay'),
       v.where ? h('span', {class: 'tag ' + (v.where === 'live' ? 'acc' : '')}, v.where === 'live' ? 'Live warehouse' : 'Extract') : null,
       a.cached ? h('span', {class: 'tag'}, 'From cache') : null, h('span', {class: 'spacer'}),
       h('span', {class: 'faint small'}, [S.me && S.me.admin ? u.provider : null, u.model ? modelName(u.model) : null, u.cost_usd ? usd(u.cost_usd) : null].filter(Boolean).join(' · '))),
@@ -242,10 +236,9 @@ function answerCard(m, opts) {
         const sql = await askText('Not helpful', {label: 'What was wrong?', hint: 'Optional. You can paste a corrected SQL query here too.', ok: 'Send'}); if (sql !== null) rate(-1, /select/i.test(sql) ? {corrected_sql: sql} : {comment: sql}); }}, icon('thumbdown'), 'Not helpful'),
       h('span', {class: 'spacer'}),
       h('a', {class: 'btn sm', href: `/api/askd/messages/${mid}/snapshot`, onclick: e => { e.preventDefault(); snapshotAnswer(mid); }}, icon('download'), 'Snapshot'),
-      h('button', {class: 'btn sm', onclick: () => saveAsPage({kind: 'askd_message', message: mid})}, icon('file'), 'Save as page'),
       opts && opts.project ? h('button', {class: 'btn sm', onclick: () => sendToDashboard(mid, opts.project)}, icon('plus'), 'Add to dashboard')
         : h('button', {class: 'btn sm', onclick: () => pickDashboard(mid)}, icon('plus'), 'Add to a dashboard'),
-      opts && opts.thread ? h('a', {class: 'btn sm', href: `#/askd/${opts.thread}`}, 'Open in Ask D') : null),
+      opts && opts.thread ? h('a', {class: 'btn sm', href: `#/askd/${opts.thread}`}, 'Open in Ask Relay') : null),
     (a.next_questions || []).length && opts && opts.onAsk ? h('div', {class: 'chips', style: 'margin-top:10px'}, a.next_questions.map(q => h('button', {class: 'chip', onclick: () => opts.onAsk(q)}, q))) : null);
 }
 
@@ -254,7 +247,7 @@ async function snapshotAnswer(mid) {
   try {
     const r = await fetch(`/api/askd/messages/${mid}/snapshot`, {method: 'POST'});
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'Snapshot failed');
-    const a = h('a', {href: URL.createObjectURL(await r.blob()), download: `ask-d-${mid}.png`}); a.click();
+    const a = h('a', {href: URL.createObjectURL(await r.blob()), download: `ask-relay-${mid}.png`}); a.click();
   } catch (e) { notify(e.message, 'err'); }
 }
 async function sendToDashboard(mid, project) {
@@ -285,10 +278,10 @@ async function renderAskD() {
     const dash = h('select', {class: 'sel', disabled: !!th}, opts.dashboards.map(d => h('option', {value: d.id, selected: scope.project === d.id}, d.name)));
     dash.onchange = () => { scope = {kind: 'dashboard', project: dash.value}; };
     scopeBox.replaceChildren(...[h('b', {class: 'small'}, 'Asking about'),
-      ...['dashboard', 'team', 'org'].map(k => h('label', {class: 'chk', style: 'margin-top:6px;' + (scope.kind === k ? 'border-color:var(--accent);background:var(--accent-tint)' : '')},
+      ...['team', 'dashboard'].map(k => h('label', {class: 'chk', style: 'margin-top:6px;' + (scope.kind === k ? 'border-color:var(--accent);background:var(--accent-tint)' : '')},
         h('input', {type: 'radio', name: 'scope', checked: scope.kind === k, disabled: !!th, onchange: () => { scope = k === 'dashboard' ? {kind: k, project: (opts.dashboards[0] || {}).id} : {kind: k}; drawScope(); }}),
-        h('span', {}, h('b', {}, SCOPE_LABEL[k]), h('small', {class: 'muted', style: 'display:block'}, {dashboard: 'its model, pages and filters, on its extract',
-          team: `dashboards of your teams + your ${opts.connections.length} connection(s)`, org: 'everything you can open, guided by the ontology'}[k])))),
+        h('span', {}, h('b', {}, SCOPE_LABEL[k]), h('small', {class: 'muted', style: 'display:block'}, {dashboard: 'its tables, measures and filters',
+          team: `every dashboard's data + your ${opts.connections.length} BigQuery connection${opts.connections.length === 1 ? '' : 's'}`}[k])))),
       scope.kind === 'dashboard' ? h('div', {style: 'margin-top:6px'}, dash) : null,
       h('div', {class: 'note small', style: 'margin:8px 0 0'}, icon('lock'), ' Every number is fetched with your own access. Data you cannot open is named as "not included", never read.'),
       th ? h('a', {class: 'small', href: '#/askd'}, '+ New conversation (another scope)') : null].filter(Boolean));
@@ -303,7 +296,7 @@ async function renderAskD() {
     q = (q || input.value).trim(); if (!q) return;
     go.disabled = true; input.value = '';
     chat.append(h('div', {class: 'row', style: 'justify-content:flex-end'}, h('div', {class: 'card flat', style: 'margin:0;background:var(--ink);color:#fff;max-width:70%'}, q)));
-    const wait = h('div', {class: 'muted small'}, h('span', {class: 'spin', style: 'display:inline-block;vertical-align:middle;margin-right:8px'}), 'Ask D is working — querying, checking, writing…');
+    const wait = h('div', {class: 'muted small'}, h('span', {class: 'spin', style: 'display:inline-block;vertical-align:middle;margin-right:8px'}), 'Ask Relay is working — querying, checking, writing…');
     chat.append(wait);
     try {
       const r = await api('/api/askd/ask', {json: {question: q, scope, thread_id: th ? th.id : null, model: msel.value()}});
@@ -319,10 +312,10 @@ async function renderAskD() {
   for (const m of (th ? th.messages : [])) chat.append(m.role === 'user'
     ? h('div', {class: 'row', style: 'justify-content:flex-end'}, h('div', {class: 'card flat', style: 'margin:0;background:var(--ink);color:#fff;max-width:70%'}, m.body.text))
     : answerCard(m, {onAsk: ask}));
-  if (!th) chat.append(h('div', {class: 'card empty'}, h('h3', {}, 'Ask D'), 'Ask in plain language. You get the numbers, a short summary, what to do next and good follow-up questions — with the SQL and every check visible.',
+  if (!th) chat.append(h('div', {class: 'card empty'}, h('h3', {}, 'Ask Relay'), 'Ask anything about your data in plain language. You get the numbers, an interactive chart, a short summary, what to do next and follow-up questions — with the SQL and every check visible.',
     h('div', {class: 'chips', style: 'justify-content:center;margin-top:12px'}, ['What are my top 10 stores by revenue this year?', 'How did sales trend month by month?', 'Which category has the lowest margin?'].map(x => h('button', {class: 'chip', onclick: () => ask(x)}, x)))));
-  page.append(h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('h1', {}, 'Ask D'), h('div', {class: 'meta'}, 'Questions about your data — answered with your permissions, checked at every step.')),
-      th ? h('button', {class: 'btn', onclick: () => saveAsPage({kind: 'askd_thread', thread: th.id})}, icon('file'), 'Save conversation as page') : null),
+  page.append(h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('h1', {}, 'Ask Relay'), h('div', {class: 'meta'}, 'A conversation with your data: ask, see the chart, ask the next question.')),
+      null),
     h('div', {class: 'vwrap'}, h('div', {}, scopeBox, threadsBox),
       h('div', {class: 'stack'}, chat, h('div', {class: 'card', style: 'margin:0;position:sticky;bottom:8px'}, input, h('div', {class: 'row', style: 'margin-top:8px'},
         h('span', {class: 'faint small'}, 'Enter to ask · Shift+Enter for a new line'), h('span', {class: 'spacer'}), msel.el, go)))));
@@ -348,7 +341,7 @@ function askPanel(st) {
     q = (q || input.value).trim(); if (!q) return;
     go.disabled = true; input.value = '';
     out.prepend(h('div', {class: 'muted small'}, h('b', {}, 'You: '), q, Object.keys(filters).length ? ` (${Object.entries(filters).map(([k, v]) => `${k} = ${v}`).join(', ')})` : ''));
-    const wait = h('div', {class: 'muted small'}, 'Ask D is working…'); out.prepend(wait);
+    const wait = h('div', {class: 'muted small'}, 'Ask Relay is working…'); out.prepend(wait);
     try {
       const r = await api('/api/askd/ask', {json: {question: q, thread_id: thread, model: msel.value(), scope: {kind: 'dashboard', project: st.id, page: page || null, filters: {...filters}}}});
       thread = r.thread_id; wait.replaceWith(answerCard({id: r.message_id, body: r}, {project: st.access && st.access.can_edit ? st.id : null, thread, onAsk: ask}));
@@ -357,7 +350,7 @@ function askPanel(st) {
   };
   go.onclick = () => ask();
   input.onkeydown = e => { if (e.key === 'Enter') ask(); };
-  card.append(h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, icon('spark'), ' Ask about this dashboard'), h('span', {class: 'spacer'}), h('a', {class: 'small', href: '#/askd'}, 'Open Ask D →')),
+  card.append(h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, icon('spark'), ' Ask about this dashboard'), h('span', {class: 'spacer'}), h('a', {class: 'small', href: '#/askd'}, 'Open Ask Relay →')),
     h('div', {class: 'muted small'}, 'Answers use this dashboard\'s model, its measures and the filters you set here, on its data.'), bar,
     h('div', {class: 'row askrow', style: 'margin-top:8px'}, input, msel.el, go), out);
   return card;

@@ -52,7 +52,8 @@ def model_catalog() -> dict:
     except (OSError, ValueError):
         data = FALLBACK
     house = house_models()
-    return {**data, "models": house + [m for m in data["models"] if m["id"] not in {h["id"] for h in house}]} if house else data
+    # D2D Relay: the Relay Model only, for everyone (the user's decision, 2026-11-10)
+    return {**data, "default": house[0]["id"], "models": house} if house else data
 
 
 def model_labels() -> dict:

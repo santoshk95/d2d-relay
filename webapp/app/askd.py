@@ -38,7 +38,7 @@ EXTRACT_TIMEOUT_S = 60
 CACHE_LIVE_S = 3600
 FILE_FUNCS = re.compile(r"^(read_|scan_|parquet_|glob$|getenv$|query$|query_table$|sniff_csv$|duckdb_|pragma_|iceberg_|delta_)", re.I)
 
-SYSTEM = """You are Ask D, the data assistant of D2D. You answer business questions with numbers from the person's
+SYSTEM = """You are Ask Relay, the data assistant of D2D Relay. You answer business questions with numbers from the person's
 own data, then explain them in plain language and suggest what to do next.
 
 You cannot run anything yourself. Reply with exactly ONE JSON object and nothing else — no prose, no code fence:

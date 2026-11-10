@@ -58,10 +58,23 @@ function renderNew() {
     ['mono', 'Mono — shades of the brand']].map(([v, t]) => h('option', {value: v}, t)));
   const dark = h('input', {type: 'checkbox'});
   brand.oninput = () => { useBrand.checked = true; };
+  // D2D Relay: the palette chosen under Branding is used unless unticked
+  const houseUse = h('input', {type: 'checkbox', checked: false});
+  const houseBox = h('div', {class: 'note small', style: 'margin:0 0 12px'}, 'Loading your brand…');
+  api('/api/branding').then(b => {
+    const v = b.chosen != null ? b.variants[b.chosen] : null;
+    if (!v) { houseBox.replaceChildren(icon('brush'), ' No brand palette yet. ', h('a', {href: '#/branding'}, 'Set up your brand'), ' to give every dashboard your colours.'); return; }
+    houseUse.checked = true;
+    houseBox.replaceChildren(h('label', {class: 'chk', style: 'margin:0;display:flex;align-items:center;gap:10px'}, houseUse,
+      b.logo ? h('img', {src: b.logo, alt: '', style: 'height:26px;max-width:90px;object-fit:contain'}) : null,
+      h('span', {}, h('b', {}, 'Use my brand: ' + v.name), h('span', {style: 'display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle'},
+        v.colors.map(c => h('i', {style: `display:inline-block;width:14px;height:14px;border-radius:3px;background:${c}`, title: c})))),
+      h('span', {class: 'spacer'}), h('a', {href: '#/branding', class: 'small'}, 'Change')));
+  }).catch(() => houseBox.replaceChildren(''));
   const custom = h('select', {class: 'sel'}, [['ask', 'Ask me — Relay proposes them in the plan, I choose'],
     ['auto', 'Build them when they fit better than the available visuals'], ['never', 'Only use the available visuals']].map(([v, t]) => h('option', {value: v}, t)));
   // Which visuals the report uses: Relay / Visual Atlas custom visuals, Power BI's own (built-in) visuals only, or both
-  const visualsSel = h('select', {class: 'sel', 'aria-label': 'Visuals'}, [['relay', 'Relay & Atlas custom visuals'],
+  const visualsSel = h('select', {class: 'sel', 'aria-label': 'Visuals'}, [['relay', 'Relay custom visuals'],
     ['builtin', "Power BI's built-in visuals only"], ['mixed', 'Built-in first, custom where needed']]
     .map(([v, t]) => h('option', {value: v}, t)));
   const visualsHint = h('div', {class: 'hint'});
@@ -104,7 +117,7 @@ function renderNew() {
   api('/api/connections').then(r => {
     whConns = r.connections.filter(c => c.tables.length);
     whPanel.replaceChildren(...(whConns.length ? [h('label', {class: 'f', style: 'margin-top:0'}, 'Connection'), whSel, whTables, whHint]
-      : [h('div', {}, 'You have no warehouse connection with tables yet. ', h('a', {href: '#/connections'}, 'Connect Snowflake, BigQuery, Fabric, Redshift, Athena, Oracle Database or Oracle Retail MFCS'), ' first.')]));
+      : [h('div', {}, 'You have no warehouse connection with tables yet. ', h('a', {href: '#/connections'}, 'Connect Google BigQuery'), ' first.')]));
     whSel.replaceChildren(...whConns.map(c => h('option', {value: c.id}, `${c.name} · ${c.label}`)));
     drawTables();
   }).catch(() => {});
@@ -127,11 +140,11 @@ function renderNew() {
     sect('2', 'Your data', null, h('div', {class: 'dmode'}, modeBtns), genPanel, whPanel, h('div', {style: 'margin-top:10px'}, csv.zone)),
     sect('3', 'Design reference', ' optional', h('div', {style: 'margin-top:10px'}, img.zone)),
     sect('4', 'Options', ' you can keep the defaults',
-      h('div', {class: 'opts'}, h('div', {}, h('label', {class: 'f'}, 'AI model', h('small', {}, 'can be changed for any later step')), modelSel, modelNote),
-        h('div', {}, h('label', {class: 'f'}, 'Visuals', h('small', {}, 'can be changed for later versions')), visualsSel, visualsHint),
-        h('div', {}, h('label', {class: 'f'}, 'Custom visuals', h('small', {}, 'new visuals in your colors, kept in the '), h('a', {href: '#/library', class: 'small'}, 'library')), custom,
+      houseBox,
+      h('div', {class: 'opts'}, h('div', {}, h('label', {class: 'f'}, 'Visuals', h('small', {}, 'can be changed for later versions')), visualsSel, visualsHint),
+        h('div', {}, h('label', {class: 'f'}, 'Custom visuals', h('small', {}, 'new Relay visuals in your colors')), custom,
           h('div', {class: 'hint'}, 'When no available chart fits a need, Relay can build a new Power BI visual.'))),
-      h('label', {class: 'f'}, 'Visual style', h('small', {}, 'optional — ideas in the '), h('a', {href: '/gallery', target: '_blank', class: 'small'}, 'Visual gallery ↗')),
+      h('label', {class: 'f'}, 'Visual style', h('small', {}, 'optional')),
       h('div', {class: 'style'}, h('div', {}, h('small', {}, 'Look'), look),
         h('div', {}, h('small', {}, 'Brand color'), h('label', {class: 'chk'}, useBrand, brand, h('span', {}, 'use my brand color'))),
         h('div', {}, h('small', {}, 'Palette from the brand'), palette),
@@ -149,7 +162,8 @@ function renderNew() {
     fd.append('data_mode', mode);
     if (mode === 'generate') { fd.append('data_brief', brief.value); fd.append('data_size', dsize.value); fd.append('data_months', dmonths.value); }
     if (mode === 'warehouse') { fd.append('connection_id', whSel.value); fd.append('tables', JSON.stringify(picked)); }
-    if (useBrand.checked) { fd.append('brand', brand.value); fd.append('palette', palette.value); }
+    fd.append('use_brand', houseUse.checked ? '1' : '0');
+    if (useBrand.checked && !houseUse.checked) { fd.append('brand', brand.value); fd.append('palette', palette.value); }
     if (dark.checked) fd.append('dark', '1');
     fd.append('custom_visuals', custom.value);
     fd.append('visuals_mode', visualsSel.value);

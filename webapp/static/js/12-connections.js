@@ -180,7 +180,7 @@ async function connectionDetail(cid) {
       kv('Secrets', 'in the secrets store, never shown'), kv('Audit', 'every use logged with who and why')),
     c.tables && (c.sql || c.extract) ? h('div', {style: 'margin-top:10px'}, h('b', {class: 'small'}, `Configured ${c.sql ? 'tables' : 'objects'} (${c.tables.length})`),
       c.tables.length ? h('div', {class: 'chips', style: 'margin-top:6px'}, c.tables.map(t => h('span', {class: 'tag'}, t.object, t.rows != null ? ` · ${t.rows.toLocaleString()} rows` : '')))
-        : h('div', {class: 'muted small'}, c.sql ? 'None yet — dashboards and Ask D can only use the tables chosen here.' : 'None yet — dashboards can only pull the objects chosen here.')) : null,
+        : h('div', {class: 'muted small'}, c.sql ? 'None yet — dashboards and Ask Relay can only use the tables chosen here.' : 'None yet — dashboards can only pull the objects chosen here.')) : null,
     h('div', {class: 'row', style: 'margin-top:14px;gap:6px'},
       h('button', {class: 'btn', type: 'button', disabled: c.enabled === false, onclick: () => act(() => api(`/api/connections/${c.id}/test`, {method: 'POST'}), 'Connection works')}, 'Test now'),
       c.own ? h('button', {class: 'btn' + (c.status === 'reconsent' ? ' primary' : ''), type: 'button', onclick: renew}, c.auth_mode === 'oauth' && c.status === 'new' ? 'Sign in' : 'Renew sign-in') : null,
@@ -425,7 +425,7 @@ async function adminData() {
         k === 'snowflake' ? [h('small', {class: 'muted', style: 'display:block;margin-top:6px'}, 'Role to request (optional)'), field(apps[k], 'role')] : null,
         h('small', {class: 'muted', style: 'display:block;margin-top:6px'}, 'Client secret'),
         (() => { const el = h('input', {type: 'password', placeholder: v.has_secret ? 'Stored — leave empty to keep' : 'client secret'}); el.oninput = () => { secretsIn[k] = el.value; }; return el; })())))),
-    h('div', {class: 'card flat'}, h('h3', {}, 'Guardrails for live queries (Ask D)'), h('div', {class: 'opts'},
+    h('div', {class: 'card flat'}, h('h3', {}, 'Guardrails for live queries (Ask Relay)'), h('div', {class: 'opts'},
       h('div', {}, h('small', {class: 'muted'}, 'Row limit'), field(g, 'row_limit', '', 'number')),
       h('div', {}, h('small', {class: 'muted'}, 'Timeout (seconds)'), field(g, 'timeout_s', '', 'number')),
       h('div', {}, h('small', {class: 'muted'}, 'BigQuery: most GB one query may scan (dry run first)'), field(g, 'bigquery_max_gb', '', 'number'))),

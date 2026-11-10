@@ -254,7 +254,7 @@ function usageTable(st) {
       h('tbody', {}, models.map(([m, g]) => h('tr', {}, h('td', {}, modelName(m) || 'Set by an admin'), num(g.runs), num(tok(g.tokens)), num(tok(g.output)), num(usd(g.cost_usd))))))] : null,
     h('div', {class: 'unotes'}, h('p', {}, "Tokens count everything Relay processed; most are cache reads, which cost a fraction of normal input. Costs are the agent's own estimates at the list price of the model each run used.")));
 }
-const VISUALS_LABEL = {relay: 'Relay & Atlas custom visuals', builtin: "Power BI's built-in visuals only", mixed: 'Built-in first, custom where needed'};
+const VISUALS_LABEL = {relay: 'Relay custom visuals', builtin: "Power BI's built-in visuals only", mixed: 'Built-in first, custom where needed'};
 // Which visuals the next versions use; editors can change it (the next plan, build or change follows it).
 function visualsSetting(st) {
   const mode = st.visuals_mode || 'relay';
@@ -275,10 +275,10 @@ function detailsTab(st) {
     h('div', {},
       requestCard(st),
       h('div', {class: 'card'}, h('h3', {}, 'Settings'), h('dl', {class: 'kv'},
-        h('dt', {}, 'AI model'), h('dd', {}, modelName(st.model) || 'Set by an admin', h('span', {class: 'muted small'}, ' — change it at the top of the page')),
+        h('dt', {}, 'AI model'), h('dd', {}, 'Relay Model'),
         h('dt', {}, 'Visuals'), h('dd', {}, visualsSetting(st)),
         h('dt', {}, 'Custom visuals'), h('dd', {}, {ask: 'Ask me in the plan', auto: 'Build when they fit better', never: 'Only available visuals'}[st.custom_visuals] || st.custom_visuals),
-        h('dt', {}, 'Visual style'), h('dd', {}, [style.look ? `look ${style.look}` : null, style.accent ? `brand ${style.accent} (${style.palette})` : null, style.dark ? 'dark' : null].filter(Boolean).join(', ') || 'Relay decides'))),
+        h('dt', {}, 'Visual style'), h('dd', {}, [style.look ? `look ${style.look}` : null, style.brand_name ? `brand palette ${style.brand_name}` : style.accent ? `brand ${style.accent} (${style.palette})` : null, style.dark ? 'dark' : null].filter(Boolean).join(', ') || 'Relay decides'))),
       h('div', {class: 'card'}, h('h3', {}, 'On this PC'), h('dl', {class: 'kv'},
         host ? [h('dt', {}, 'Project folder'), h('dd', {}, h('div', {class: 'path', style: 'margin:0'}, h('code', {}, host), copyBtn(host)))] : null,
         o.pbip_path ? [h('dt', {}, 'Power BI project'), h('dd', {}, h('div', {class: 'path', style: 'margin:0'}, h('code', {}, o.pbip_path), copyBtn(o.pbip_path)))] : null,

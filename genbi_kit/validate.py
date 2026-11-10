@@ -111,7 +111,7 @@ def _unquoted(value) -> str:
             f"(write it in quotes, e.g. format: \"0.0\")")
 
 
-VISUALS_MODES = {"relay": "Relay and Visual Atlas custom visuals (and Power BI's own where they fit)",
+VISUALS_MODES = {"relay": "Relay custom visuals (and Power BI's own where they fit)",
                  "builtin": "Power BI's built-in visuals only (pbi.*): no custom visual in the report",
                  "mixed": "Power BI's built-in visuals first; a custom visual only where no built-in visual does the job"}
 NATIVE = {"slicer", "textbox", "pageNavigator", "table"}       # what the builder writes as Power BI's own visuals already
