@@ -88,7 +88,9 @@ function askChart(ans, opts = {}) {
       Object.values(st.filters).some(Boolean) || st.from || st.to || st.top ? h('button', {class: 'btn sm ghost', type: 'button',
         onclick: () => { st.filters = {}; st.from = st.to = null; st.top = 0; draw(); }}, icon('x'), 'Reset') : null].filter(Boolean));
     // measure chips and their totals for the current filters
-    kpis.replaceChildren(...nums.slice(0, 8).map(c => {
+    // D2D Relay: only the measures the answer charts (helper columns such as a repeated year total would add up to nonsense)
+    const chartCols = (spec.y || []).filter(c => nums.includes(c));
+    kpis.replaceChildren(...(chartCols.length ? chartCols : nums).slice(0, 8).map(c => {
       const i = nums.indexOf(c), on = st.on.has(c), color = ASK_COLORS[[...st.on].indexOf(c) % 4] || '#8E958E';
       return h('button', {class: 'akpi' + (on ? ' on' : ''), type: 'button', 'aria-pressed': String(on),
         title: `Show ${prettyCol(c)} · Shift+click to compare it with the others`, style: on ? `border-color:${color}` : '',
@@ -321,7 +323,7 @@ async function renderAskD() {
   const input = h('textarea', {rows: 2, placeholder: 'Ask a question about your business, in your own words…', 'aria-label': 'Your question'});
   const go = h('button', {class: 'btn primary'}, icon('send'), 'Ask');
   const you = q => h('div', {class: 'row', style: 'justify-content:flex-end'},
-    h('div', {class: 'card flat askq', style: 'margin:0;background:var(--ink);color:var(--paper);max-width:75%'}, q));
+    h('div', {class: 'card flat askq', style: 'margin:0;background:var(--ink);color:var(--bg);max-width:75%'}, q));
   const ask = async q => {
     q = (q || input.value).trim(); if (!q) return;
     go.disabled = true; input.value = '';
