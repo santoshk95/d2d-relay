@@ -47,6 +47,17 @@ def _import_existing() -> None:
         db.audit("import", None, added, "system")
 
 
+async def _otp_mail_keepalive():
+    """D2D Relay: use the code mailbox's sign-in once a day, so Microsoft never ends it for being unused."""
+    from . import otp_mail
+    while True:
+        try:
+            await asyncio.to_thread(otp_mail.keep_alive)
+        except Exception:  # noqa: BLE001 - logged; the next sign-in code shows the problem to the person too
+            traceback.print_exc()
+        await asyncio.sleep(24 * 3600)
+
+
 @asynccontextmanager
 async def lifespan(_):
     db.init()
@@ -72,7 +83,7 @@ async def lifespan(_):
              asyncio.create_task(instances.reaper(worker.busy_owner)),
              asyncio.create_task(data_routes.scheduler()), asyncio.create_task(schedules.scheduler()),
              asyncio.create_task(monitor.watchdog()), asyncio.create_task(tenancy.sweeper()),
-             asyncio.create_task(doctor.loop())]  # Relay Doctor's shared folder: what runs now, the hold, Admin requests
+             asyncio.create_task(doctor.loop()), asyncio.create_task(_otp_mail_keepalive())]  # Relay Doctor's shared folder: what runs now, the hold, Admin requests
     await asyncio.sleep(0)                      # let the worker loop record its event loop (Integration analytics and observability use it)
     worker._loop = worker._loop or asyncio.get_running_loop()
     for starter in ():                          # D2D Relay: the other modules' pollers (service desk, integrations, observability, workbench) stay off

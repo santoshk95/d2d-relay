@@ -2,9 +2,9 @@
 
   D2D_OTP_EMAIL              the only address that may sign in (it becomes the bootstrap admin's address)
   D2D_OTP_FROM               the mailbox the code is sent from (default: D2D_OTP_EMAIL)
-  D2D_OTP_MS_TENANT          Microsoft Entra tenant id or domain of that mailbox
-  D2D_OTP_MS_CLIENT_ID       an Entra app with the Microsoft Graph *application* permission Mail.Send (admin consent);
-  D2D_OTP_MS_CLIENT_SECRET   limit it to the D2D_OTP_FROM mailbox with an Exchange application access policy
+  D2D_OTP_MS_TENANT          Microsoft Entra tenant of that mailbox, and
+  D2D_OTP_MS_CLIENT_ID       a public-client Entra app with delegated Mail.Send; the mailbox signs in once
+                             (otp_mail.py says how). A client secret (D2D_OTP_MS_CLIENT_SECRET) also works, app-only.
 
 The code: 6 digits, valid 10 minutes, 5 tries, then it dies. One code a minute and 6 an hour per address. Only a salted
 hash is stored. Every answer to "send me a code" is the same, whether or not the address may sign in, so the page
@@ -21,22 +21,16 @@ import threading
 import time
 import traceback
 
-import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from . import db, identity
+from . import db, identity, otp_mail
 
 router = APIRouter()
 
 EMAIL = (os.environ.get("D2D_OTP_EMAIL") or "").strip().lower()
 SENDER = (os.environ.get("D2D_OTP_FROM") or EMAIL).strip()
-MS_TENANT = (os.environ.get("D2D_OTP_MS_TENANT") or "").strip()
-MS_CLIENT_ID = (os.environ.get("D2D_OTP_MS_CLIENT_ID") or "").strip()
-MS_SECRET = (os.environ.get("D2D_OTP_MS_CLIENT_SECRET") or "").strip()
-MS_LOGIN = os.environ.get("D2D_MS_LOGIN", "https://login.microsoftonline.com")
-MS_GRAPH = os.environ.get("D2D_MS_GRAPH", "https://graph.microsoft.com/v1.0")
 # Testing only: with no Microsoft app set, print the code in the log instead of sending it. Ignored once mail is set up.
 DEV_LOG = os.environ.get("D2D_OTP_DEV_LOG") == "1"
 
@@ -64,7 +58,7 @@ CREATE INDEX IF NOT EXISTS otp_codes_email ON otp_codes (email, created);""")
 
 
 def configured() -> bool:
-    return bool(MS_TENANT and MS_CLIENT_ID and MS_SECRET and SENDER)
+    return bool(otp_mail.mode())
 
 
 def sync_admin() -> None:
@@ -87,19 +81,10 @@ def _mail(to: str, code: str) -> None:
         if DEV_LOG:
             print(f"[otp] code for {to}: {code} (mail is not set up; D2D_OTP_DEV_LOG=1)", flush=True)
             return
-        raise RuntimeError("Email sending is not set up (D2D_OTP_MS_TENANT / CLIENT_ID / CLIENT_SECRET).")
-    tok = httpx.post(f"{MS_LOGIN}/{MS_TENANT}/oauth2/v2.0/token", timeout=20,
-                     data={"client_id": MS_CLIENT_ID, "client_secret": MS_SECRET, "grant_type": "client_credentials",
-                           "scope": "https://graph.microsoft.com/.default"})
-    if tok.status_code != 200:
-        raise RuntimeError(f"Microsoft sign-in for mail failed ({tok.status_code}): {tok.text[:300]}")
+        raise RuntimeError("Email sending is not set up: set D2D_OTP_MS_TENANT / CLIENT_ID and sign the mailbox in (otp_mail.py).")
     html = (f"<p>Your D2D Relay sign-in code is</p><p style=\"font-size:28px;font-weight:700;letter-spacing:6px\">{code}</p>"
             "<p>It works once, for 10 minutes. If you did not ask for it, you can ignore this email.</p>")
-    r = httpx.post(f"{MS_GRAPH}/users/{SENDER}/sendMail", timeout=30, headers={"Authorization": "Bearer " + tok.json()["access_token"]},
-                   json={"message": {"subject": f"D2D Relay sign-in code: {code}", "body": {"contentType": "HTML", "content": html},
-                                     "toRecipients": [{"emailAddress": {"address": to}}]}, "saveToSentItems": False})
-    if r.status_code not in (200, 202):
-        raise RuntimeError(f"Microsoft Graph refused the email ({r.status_code}): {r.text[:300]}")
+    otp_mail.send(to, f"D2D Relay sign-in code: {code}", html)
 
 
 class StartBody(BaseModel):

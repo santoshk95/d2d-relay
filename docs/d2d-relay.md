@@ -14,7 +14,7 @@ apps use the same Claude subscription.
 | Public address | https://d2d-relay.pasdacs.com (Cloudflare tunnel) |
 | On this PC | http://127.0.0.1:8100 |
 | Sign-in | a 6-digit code emailed to **info@pasdacs.com** only (no passwords, no SSO) |
-| Code sender | info@pasdacs.com through Microsoft Graph (app-only Mail.Send) |
+| Code sender | info@pasdacs.com through Microsoft Graph (delegated Mail.Send, signed in once) |
 | Data sources | CSV / flat files (New dashboard → upload) and Google BigQuery (Connections) |
 
 ## What was kept and what was switched off
@@ -43,31 +43,36 @@ Start the DAX checker for D2D Relay too (it watches `data\projects\.daxcheck`, n
 
 ### 1. Email codes (Microsoft 365, info@pasdacs.com)
 
-1. In Microsoft Entra admin center, go to **App registrations → New registration**. Name it "D2D Relay sign-in mail",
-   single tenant, with no redirect URI.
-2. Under **API permissions → Add → Microsoft Graph → Application permissions**, add **Mail.Send**, then click
-   **Grant admin consent**.
-3. Under **Certificates & secrets → New client secret**, copy the value.
-4. Limit the app to the one mailbox. In Exchange Online PowerShell, run:
+The codes are sent AS info@pasdacs.com with a delegated sign-in. No client secret is needed (the pasdacs.com tenant
+blocks them), and no Exchange policy is needed: a delegated app can only send as the account that signed in.
+
+1. Go to Entra admin center → **App registrations → New registration**. Name it "D2D Relay sign-in mail", choose
+   **single tenant**, leave the redirect URI empty, and click Register. Copy the **Application (client) ID** and the
+   **Directory (tenant) ID**.
+2. Under **Authentication**, set **Allow public client flows** to **Yes**, then Save.
+3. Under **API permissions → Add → Microsoft Graph → Delegated permissions**, add **Mail.Send** and **offline_access**
+   (User.Read is already there). Then click **Grant admin consent**.
+4. Put the two IDs in `.env` (`RELAY_OTP_MS_TENANT`, `RELAY_OTP_MS_CLIENT_ID`) and run `docker compose up -d`.
+5. Sign the mailbox in once. Run the command below, open the link it prints, enter the code, and sign in as
+   **info@pasdacs.com**:
 
    ```
-   New-DistributionGroup -Name "D2D Relay senders" -Type Security -Members info@pasdacs.com
-   New-ApplicationAccessPolicy -AppId <client id> -PolicyScopeGroupId "D2D Relay senders" -AccessRight RestrictAccess -Description "D2D Relay sends codes only as info@pasdacs.com"
+   docker exec -it -u relay -w /srv d2d-relay /opt/relay/bin/launch web python -m app.otp_mail login
    ```
 
-   (Microsoft now also offers RBAC for Applications for this. Either way works.)
-5. Put the tenant ID, client ID and secret in `.env`: `RELAY_OTP_MS_TENANT`, `RELAY_OTP_MS_CLIENT_ID` and
-   `RELAY_OTP_MS_CLIENT_SECRET`. Then run `docker compose up -d`.
+   Check it with `... python -m app.otp_mail status`, or send yourself a test with `... python -m app.otp_mail test`.
 
-Until these three are set, "Email me a code" answers "The code could not be sent". For a local test only, add
-`RELAY_OTP_DEV_LOG=1` and the code is printed in `docker logs d2d-relay` instead. This setting is ignored once mail is
-set up.
+The sign-in is kept encrypted in the app's secrets store, in the d2d-relay-data volume. The app uses it once a day, so
+Microsoft never ends it for being unused. If info@pasdacs.com's password changes, or an admin revokes its sessions,
+run `login` again. If a sign-in policy blocks device-code sign-in, an admin can allow it for this one app.
+
+For a local test only, set `RELAY_OTP_DEV_LOG=1` and codes are printed in `docker logs d2d-relay` instead. This is
+ignored once mail is set up.
 
 Code rules: 6 digits, valid for 10 minutes, 5 tries, 1 code a minute and 6 codes an hour. Only a salted hash is stored.
-The page gives the same answer for any address, so it does not reveal which address can sign in. A session lasts
-12 hours (`RELAY_SESSION_HOURS`).
+The page gives the same answer for any address. A session lasts 12 hours (`RELAY_SESSION_HOURS`).
 
-To allow a different address, change `RELAY_OTP_EMAIL` (and `RELAY_ADMIN_EMAIL`) and restart the container.
+To allow a different address, change `RELAY_OTP_EMAIL` (and `RELAY_ADMIN_EMAIL`) and restart.
 
 ### 2. Public address (Cloudflare tunnel)
 
