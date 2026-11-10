@@ -249,7 +249,7 @@ const go = (tab, version) => { if (version != null) S.version = version; S.key =
 async function loadMe() {
   try {
     const me = S.me = await api('/api/me');
-    const role = me.admin ? 'Admin' : me.builder ? 'Builder / Analyst' : 'Viewer';
+    const role = roleText(me);
     const initials = (me.name || me.email || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
     $('#me').replaceChildren(h('button', {class: 'mebtn', type: 'button', 'aria-haspopup': 'dialog', 'aria-label': `Your profile: ${me.name || me.email}`,
         'data-tip': me.name || me.email, onclick: e => profileMenu(e.currentTarget)},

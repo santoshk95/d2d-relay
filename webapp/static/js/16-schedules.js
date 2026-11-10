@@ -30,11 +30,11 @@ function drawNotes(n) {
   list.replaceChildren(...(n.items.length ? n.items.map(x => h('div', {class: 'note-row' + (x.read ? '' : ' unread'), onclick: () => openNote(x)},
     h('span', {class: 'nicon ' + x.kind}, icon(NOTE_ICON[x.kind] || 'info')),
     h('div', {class: 'grow'}, h('b', {}, x.title), x.body ? h('div', {class: 'small muted'}, x.body) : null), h('span', {class: 'faint small'}, ago(x.created))))
-    : [h('div', {class: 'muted'}, 'Nothing yet. Builds that finish, dashboards shared with you, alerts and schedules that need you show up here.')]));
+    : [h('div', {class: 'muted'}, 'Nothing yet. Builds that finish, dashboards shared with you and news about your organisation and its credits show up here.')]));
 }
 async function renderNotes() {
   const page = h('div', {class: 'page'}, h('div', {class: 'phead'}, h('div', {}, h('h1', {}, 'Notifications'),
-    h('div', {class: 'meta'}, 'Builds that finished, dashboards and pages shared with you, alerts, schedules that need you, AI budget warnings.'))),
+    h('div', {class: 'meta'}, 'Builds that finished, dashboards shared with you, and news about your organisation and its credits.'))),
     h('div', {class: 'row', style: 'justify-content:flex-end;margin-bottom:8px'}, h('button', {class: 'btn sm', onclick: async () => { drawNotes(await api('/api/notifications/read', {method: 'POST'})); refreshNotes(); }}, 'Mark all read')),
     h('div', {class: 'card flat', id: 'notelist'}, skel('rows')));
   $('#main').replaceChildren(page);

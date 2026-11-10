@@ -148,7 +148,7 @@ async function renderOrg() {
     h('div', {class: 'card'}, h('h3', {}, 'Credit history'),
       d.ledger.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'What', 'Who', 'Dashboard', 'Credits', 'Left'], 4),
         h('tbody', {}, d.ledger.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, LEDGER(r)), h('td', {}, r.user_name || 'Relay'),
-          h('td', {}, r.project_id ? h('a', {href: '#/p/' + r.project_id}, r.project_name || r.project_id) : '—'),
+          h('td', {}, r.project_open ? h('a', {href: '#/p/' + r.project_id}, r.project_name || r.project_id) : r.project_name || '—'),
           h('td', {class: 'n delta' + (r.delta > 0 ? ' plus' : '')}, (r.delta > 0 ? '+' : '') + r.delta), h('td', {class: 'n'}, r.balance))))))
         : h('div', {class: 'muted small'}, 'Nothing yet.')));
 }

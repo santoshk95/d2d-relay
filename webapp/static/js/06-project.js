@@ -31,7 +31,7 @@ function header(st) {
         title: (S.pins || []).includes(st.id) ? 'Unpin from the sidebar' : 'Pin to the sidebar', onclick: async e => { await togglePin(st.id); S.key = null; render(); }},
         icon('pin'), (S.pins || []).includes(st.id) ? 'Pinned' : 'Pin'),
       st.access && st.access.can_share ? h('button', {class: 'btn', onclick: () => shareDialog(st)}, icon('share'), 'Share') : null),
-    typeof observeWarnings === 'function' ? observeWarnings(st.id) : null);   // P14: "numbers under review" banner once a warning was accepted
+    null);   // P14's "numbers under review" banner (observeWarnings): D2D Relay has no data observability, its API answers 404
 }
 function stepper(st) {
   // generated demo data adds a first step

@@ -39,6 +39,7 @@ async function poll() {
       if (pid !== S.pid) return;
       const pillEl = $('#hpill');
       if (pillEl && S.project && S.project.status !== st.status) pillEl.replaceChildren(pill(st.status));
+      if (S.project && S.project.status !== st.status && typeof refreshOrg === 'function') refreshOrg(true);   // D2D Relay: a run ended, its credits may have come back
       const first = !S.project;
       S.project = st;
       if (first) render();                           // draw the page at once; the log follows
@@ -55,6 +56,6 @@ async function poll() {
   }
   timer = setTimeout(poll, S.project && RUN.has(S.project.status) ? 1500 : 5000);
 }
-setInterval(() => { refreshList(); refreshSys(); }, 5000);
+setInterval(() => { refreshList(); refreshSys(); if (typeof refreshOrg === 'function') refreshOrg(); }, 5000);   // refreshOrg: at most every 30 s
 loadMe().then(ensureWorkspace);
 Promise.all([loadModels(), loadRegistry()]).then(() => { refreshList(); refreshSys(); route(); });

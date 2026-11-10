@@ -57,7 +57,7 @@ async function notesPanel(anchor) {
       onclick: () => { closePopover(); openNote(x); }},
     h('span', {class: 'nicon ' + x.kind}, icon(NOTE_ICON[x.kind] || 'info')),
     h('span', {class: 'grow'}, h('b', {}, x.title), x.body ? h('span', {class: 'small muted nb'}, x.body) : null), h('span', {class: 'faint small'}, ago(x.created))))
-    : [h('div', {class: 'muted small', style: 'padding:14px'}, 'Nothing yet. Builds that finish, shares, alerts and schedules that need you show up here.')]));
+    : [h('div', {class: 'muted small', style: 'padding:14px'}, 'Nothing yet. Builds that finish, shares and news about your organisation and its credits show up here.')]));
   try { draw(await api('/api/notifications')); } catch (e) { list.replaceChildren(h('div', {class: 'note err'}, e.message)); }
   return p;
 }
@@ -80,12 +80,10 @@ async function palette() {
   const items = [
     ...(S.me && S.me.builder !== false ? [{k: 'Action', t: 'New dashboard', ic: 'plus', run: go('#/new')}] : []),
     {k: 'Action', t: 'Ask Relay a question', ic: 'spark', run: go('#/askd')},
-    {k: 'Action', t: 'New scheduled report', ic: 'clock', run: () => { location.hash = '/schedules'; setTimeout(async () => scheduleDialog('report', await api('/api/schedules')), 500); }},
-    {k: 'Action', t: 'New alert', ic: 'alert', run: () => { location.hash = '/schedules'; setTimeout(async () => scheduleDialog('alert', await api('/api/schedules')), 500); }},
+    // D2D Relay: no scheduled reports or alerts, and no Administration screens (their links only led back to Dashboards)
     {k: 'Action', t: 'Collapse or expand the sidebar', ic: 'chevl', hint: 'Ctrl+B', run: () => setRail(!$('.app').classList.contains('rail'))},
     {k: 'Action', t: 'Mark all notifications read', ic: 'bell', run: async () => { await api('/api/notifications/read', {method: 'POST'}); refreshNotes(); notify('All read', 'ok'); }},
     ...navGroups(route).flatMap(g => g.items.map(([href, ic, label]) => ({k: 'Go to', t: label, ic, run: go(href)}))),
-    ...(S.me && S.me.admin ? ADMIN_TABS.map(([id, label]) => ({k: 'Admin', t: label, ic: 'shield', run: go('#/admin/' + id)})) : []),
     ...S.projects.map(p => ({k: 'Dashboard', t: p.name, ic: 'grid', sub: (STATUS[p.status] || [p.status])[0], run: go('#/p/' + p.id)})),
   ];
   const input = h('input', {type: 'text', placeholder: 'Search dashboards, pages, settings — or type an action', role: 'combobox',
@@ -117,11 +115,7 @@ async function palette() {
   m.classList.add('palette');
   draw();
   setTimeout(() => input.focus(), 40);
-  try {                                                     // insight pages arrive a moment later
-    const pg = await api('/api/pages');
-    items.push(...(Array.isArray(pg) ? pg : pg.pages || []).map(p => ({k: 'Page', t: p.title, ic: 'file', run: go('#/pages/' + p.id)})));
-    if (m.isConnected) draw();
-  } catch (e) {}
+  // D2D Relay: insight pages are switched off (their API answers 404), so the palette no longer asks for them
 }
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (!$('.modal.palette')) palette(); }
@@ -136,7 +130,7 @@ function shortcutsDialog() {
 }
 function profileMenu(anchor) {
   const me = S.me || {};
-  const role = me.admin ? 'Admin' : me.builder ? 'BI Dev / Analyst' : 'Viewer';
+  const role = roleText(me, 'BI Dev / Analyst');
   const item = (ic, label, fn, hint) => h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); fn(); }}, icon(ic), h('span', {class: 'grow'}, label), hint ? h('kbd', {}, hint) : null);
   popover(anchor, [
     h('div', {class: 'pmhead'}, h('b', {}, me.name || me.email), h('div', {class: 'small muted'}, me.email),

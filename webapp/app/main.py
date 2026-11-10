@@ -299,7 +299,9 @@ def _shown_model(model: str | None) -> str | None:
     if not model:
         return None
     u = auth.current.get()
-    return model if (u and auth.is_admin(u)) or model in {m["id"] for m in _catalog()["models"]} else None
+    # D2D Relay: an organisation's owner is an admin of their own workspace only; the models behind the Relay Model
+    # are named to the platform admin alone
+    return model if (u and orgs.platform_admin(u)) or model in {m["id"] for m in _catalog()["models"]} else None
 
 
 def _model(model: str) -> str:

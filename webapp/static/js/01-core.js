@@ -82,7 +82,11 @@ let CATALOG = {default: 'sonnet', models: []};
 const catalogEntry = id => CATALOG.models.find(m => m.id === id);
 // Only admins see which AI models run behind Relay. Everyone else sees a model only when it is one they can pick
 // themselves (Relay's own, or the provider they chose in Settings); otherwise modelName is '' and callers leave it out.
-const modelSeen = id => !!(S.me && S.me.admin) || !!catalogEntry(id);
+// D2D Relay: "admins" here means the platform admin; an organisation's owner is an admin of their own workspace only.
+const modelSeen = id => !!(S.me && (S.me.org ? S.me.org.platform_admin : S.me.admin)) || !!catalogEntry(id);
+/* the person's role in words (D2D Relay: an organisation's owner, the platform admin) */
+const roleText = (me, dev = 'Builder / Analyst') => me.org && me.org.platform_admin ? 'Platform admin' : me.org && me.org.is_owner ? 'Owner'
+  : me.admin ? 'Admin' : me.builder ? dev : 'Viewer';
 const modelName = id => {
   if (id && !modelSeen(id)) return '';
   const m = /^claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?(?:-\d{8})?$/.exec(id || '');

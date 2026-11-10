@@ -126,6 +126,18 @@ Not deployed yet: the live container still runs commit 3a23b25 until someone red
   Organisation, Organisations, the credits on New dashboard and on a failed dashboard, dark mode, and 375 px width
   with no sideways scroll.
 
+## Second sweep (2026-11-10)
+
+Every screen was walked in a browser on an isolated container, signed in as several people with a temporary test
+login. The API checks were run again: the 81 above plus 10 for the test login, all passing. Fixed on the way:
+- the credits chip did not update when a failed run gave credits back;
+- the search palette offered schedules and Administration links that lead nowhere;
+- an organisation's owner was shown the AI models behind the Relay Model, and was labelled "Admin" instead of
+  "Owner";
+- the credit history linked a colleague's private dashboard;
+- the notification texts promised pages, alerts and schedules that D2D Relay does not have;
+- every dashboard page asked the switched-off data observability API.
+
 ## Still open
 
 - **Payments.** Add credits is a request by email until online payment exists; a platform admin adds the credits.

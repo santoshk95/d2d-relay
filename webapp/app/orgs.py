@@ -342,7 +342,11 @@ def get_org():
     for p in people:
         p["owner"] = p["id"] == o["owner_id"]
     dashboards = db.one("SELECT count(*) AS n FROM projects")["n"]
-    return {**me_info(u), "created": o["created"], "people": people, "dashboards": dashboards, "ledger": ledger(o["tenant_id"]),
+    rows = ledger(o["tenant_id"])
+    can_open = auth.access_map(u, list({r["project_id"] for r in rows if r["project_id"]}))   # a private dashboard is named, not linked
+    for r in rows:
+        r["project_open"] = bool(r["project_id"]) and r["project_id"] in can_open
+    return {**me_info(u), "created": o["created"], "people": people, "dashboards": dashboards, "ledger": rows,
             "may_manage": _may_manage(u, o)}
 
 
