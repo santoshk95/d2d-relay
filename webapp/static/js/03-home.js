@@ -42,6 +42,7 @@ function renderDashboards() {
        ['run', running, 'in progress', running ? 'color:var(--run)' : ''], ['pub', count(p => p.published), 'published to Power BI', '']].map(([k, n, label, style]) =>
         h('button', {class: 'stat sbtn' + (filter === k ? ' on' : ''), type: 'button', 'aria-pressed': String(filter === k), title: k === 'all' ? 'Show all' : `Show only: ${label}`,
           onclick: () => { S.hfilter = filter === k ? 'all' : k; renderDashboards(); }}, h('b', {style}, n), h('span', {}, label)))) : null,
+    aiCostLine(),
     ps.length > 3 ? h('div', {class: 'row hsearch'}, (() => {
       const q = h('input', {type: 'search', placeholder: 'Search dashboards by name or request', value: S.hq || '', 'aria-label': 'Search dashboards'});
       q.oninput = () => { S.hq = q.value; const g = $('#hgrid'); if (g) g.replaceChildren(...shownCards()); };
@@ -54,5 +55,16 @@ function renderDashboards() {
  if (!r.reviews.length || !isDash()) return;
     $('#main .page').insertBefore(h('div', {class: 'banner you'}, h('div', {class: 'txt'}, h('div', {class: 't'}, `${r.reviews.length} dashboard version${r.reviews.length === 1 ? '' : 's'} waiting for your review`),
       h('div', {class: 'd'}, r.reviews.map(x => h('a', {href: `#/p/${x.project}`, style: 'margin-right:12px'}, `${x.name} v${x.v}`))))), $('#main .page').children[1]); }).catch(() => {});
+}
+
+/* D2D Relay: what the AI has cost this month (dashboards + Ask Relay), fetched at most once a minute */
+function aiCostLine() {
+  const el = h('div', {class: 'small muted', style: 'margin-top:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap'});
+  const fill = c => el.replaceChildren(icon('gauge'), `AI cost in ${c.month}:`, h('b', {}, '$' + (c.total_usd || 0).toFixed(2)),
+    `· dashboards $${(c.dashboards_usd || 0).toFixed(2)} · Ask Relay $${(c.ask_usd || 0).toFixed(2)} (${c.ask_questions} question${c.ask_questions === 1 ? '' : 's'})`
+    + (c.branding_usd ? ` · branding $${c.branding_usd.toFixed(2)}` : ''));
+  if (S.aicost && Date.now() - S.aicost.at < 60000) fill(S.aicost.c);
+  else api('/api/askd/costs').then(c => { S.aicost = {c, at: Date.now()}; fill(c); }).catch(() => {});
+  return el;
 }
 

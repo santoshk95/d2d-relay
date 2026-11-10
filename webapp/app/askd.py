@@ -57,6 +57,9 @@ Rules: never invent a number — every number in the answer must come from a que
 metrics' definitions (DAX for meaning, SQL for the query) whenever the question is about them, and list them in
 metrics_used. At most 3 queries before answering. Keep result rows small (aggregate; LIMIT 50). If the data cannot
 answer the question, say so in the summary and in not_included.
+Write for a business reader: headline, summary, actions and next_questions use business words, never SQL, table or
+column names (say "revenue", not "net_rev_amt"); round sensibly ($1.42M, 32.9%); keep the summary to 2-4 short sentences.
+Actions are concrete things a manager could do this week. Next questions are ones a manager would naturally ask next.
 D2D Relay has no certified metrics: never mention certified metrics or their absence; leave metrics_used empty.
 Use not_included only for data the question needed that is missing, never for a note about definitions."""
 

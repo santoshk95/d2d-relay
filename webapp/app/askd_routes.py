@@ -62,7 +62,56 @@ def scope_options():
     access = auth.access_map(u, [p["id"] for p in ps])
     return {"dashboards": [{"id": p["id"], "name": p["name"]} for p in ps if p["id"] in access],
             "connections": [{"id": c["id"], "name": c["name"], "kind": c["kind"], "tables": len(c["tables"])} for c in connectors.mine(u["id"])],
-            "teams": u.get("teams", []), "viewer": not auth.is_dev(u)}
+            "teams": u.get("teams", []), "viewer": not auth.is_dev(u),
+            "suggestions": _suggestions([p for p in ps if p["id"] in access]), "brand_colors": _brand_colors()}
+
+
+def _kpi_names(pid: str) -> list[str]:
+    st = store.load(pid) or {}
+    return [str(k.get("label") or k.get("name")) for k in ((st.get("plan") or {}).get("kpis") or []) if k.get("label") or k.get("name")]
+
+
+def _suggestions(ps: list[dict]) -> list[str]:
+    """D2D Relay: starter questions built from the person's own dashboards' KPIs (most recent dashboards first)."""
+    names: list[str] = []
+    for p in sorted(ps, key=lambda x: x.get("created") or 0, reverse=True)[:3]:
+        for n in _kpi_names(p["id"]):
+            if n not in names:
+                names.append(n)
+    if not names:
+        return ["What are the main numbers in my data?", "How did things change month by month?", "What stands out as unusual?"]
+    k = names + names[:1] * 4
+    return [f"How has {k[0]} changed month by month?", f"What is driving {k[1]} up or down?",
+            f"Where is {k[2]} weakest, and why?", f"How does {k[0]} compare with last year?"]
+
+
+def _brand_colors() -> list[str]:
+    from . import branding
+    s = branding.chosen_style()
+    return (s or {}).get("colors") or []
+
+
+@router.get("/api/askd/costs")
+def ai_costs(thread: str = ""):
+    """D2D Relay: what the AI has cost this person — this conversation, and this month by kind of work."""
+    import datetime
+    u = _u()
+    now = datetime.datetime.now()
+    month = datetime.datetime(now.year, now.month, 1).timestamp()
+    rows = db.q("SELECT step, count(*) AS n, coalesce(sum(cost_usd), 0) AS usd FROM usage WHERE user_id = ? AND kind = 'llm' AND ts >= ? "
+                "GROUP BY step", (u["id"], month))
+    ask = [r for r in rows if r["step"] == "askd"]
+    brand = [r for r in rows if r["step"] == "branding"]
+    other = [r for r in rows if r["step"] not in ("askd", "branding")]
+    out = {"month": now.strftime("%B %Y"),
+           "ask_usd": round(sum(r["usd"] for r in ask), 4), "ask_questions": sum(r["n"] for r in ask),
+           "dashboards_usd": round(sum(r["usd"] for r in other), 4), "branding_usd": round(sum(r["usd"] for r in brand), 4)}
+    out["total_usd"] = round(out["ask_usd"] + out["dashboards_usd"] + out["branding_usd"], 4)
+    if thread:
+        t = db.one("SELECT coalesce(sum(cost_usd), 0) AS usd, count(*) AS n FROM usage WHERE user_id = ? AND kind = 'llm' AND step = 'askd' AND object = ?",
+                   (u["id"], thread))
+        out["thread_usd"], out["thread_questions"] = round(t["usd"], 4), t["n"]
+    return out
 
 
 @router.get("/api/projects/{pid}/askd-context")

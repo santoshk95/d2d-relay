@@ -201,6 +201,13 @@ function askModelSel() {          // D2D Relay: always the Relay Model, no picke
   return {el: null, value: () => CATALOG.default};
 }
 
+function askCsvBtn(d) {             // the answer's numbers as a CSV file, for Excel
+  if (!d || !d.rows || !d.rows.length) return null;
+  const cell = v => v == null ? '' : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+  return h('button', {class: 'btn sm ghost', type: 'button', style: 'margin:6px 0', onclick: () => {
+    const csv = [d.columns.map(cell).join(','), ...d.rows.map(r => d.columns.map(c => cell(r[c])).join(','))].join('\r\n');
+    const a = h('a', {href: URL.createObjectURL(new Blob([csv], {type: 'text/csv'})), download: 'ask-relay-answer.csv'}); a.click(); }}, icon('download'), 'Download for Excel (CSV)');
+}
 function askTable(d, max) {
   if (!d || !d.rows.length) return null;
   return h('div', {class: 'dprev', style: 'max-height:280px'}, h('table', {}, h('tr', {}, d.columns.map(c => h('th', {}, c))),
@@ -215,16 +222,16 @@ function answerCard(m, opts) {
   const chart = askChart(a, {onAsk: opts && opts.onAsk});
   return h('div', {class: 'card', style: 'margin:0'},
     h('div', {class: 'row', style: 'gap:6px'}, icon('spark'), h('b', {}, 'Ask Relay'),
-      v.where ? h('span', {class: 'tag ' + (v.where === 'live' ? 'acc' : '')}, v.where === 'live' ? 'Live warehouse' : 'Extract') : null,
-      a.cached ? h('span', {class: 'tag'}, 'From cache') : null, h('span', {class: 'spacer'}),
-      h('span', {class: 'faint small'}, [S.me && S.me.admin ? u.provider : null, u.model ? modelName(u.model) : null, u.cost_usd ? usd(u.cost_usd) : null].filter(Boolean).join(' · '))),
+      v.where ? h('span', {class: 'tag ' + (v.where === 'live' ? 'acc' : '')}, v.where === 'live' ? 'Live from BigQuery' : 'From your dashboard data') : null,
+      a.cached ? h('span', {class: 'tag', title: 'The same question was answered recently; no new AI cost'}, 'Answered before') : null, h('span', {class: 'spacer'}),
+      h('span', {class: 'faint small', title: 'What this answer cost in AI'}, ['AI cost ' + aiUsd(u.cost_usd), a.seconds ? `${a.seconds}s` : null].filter(Boolean).join(' · '))),
     (a.result || {}).headline ? h('div', {style: 'font-size:19px;font-weight:600;line-height:1.35;margin:8px 0 2px'}, a.result.headline) : null,
     chart,
-    a.summary ? h('p', {style: 'margin:8px 0'}, h('b', {}, 'Summary. '), a.summary) : null,
-    (a.actions || []).length ? h('div', {}, h('b', {class: 'small'}, 'Suggested next actions'), h('ul', {style: 'margin:4px 0 8px'}, a.actions.map(x => h('li', {}, x)))) : null,
-    !chart ? askTable(a.data, 50) : h('details', {class: 'more'}, h('summary', {}, `Data (${(a.data || {}).row_count || 0} rows)`), askTable(a.data, 100)),
-    (v.not_included || []).length ? h('div', {class: 'note warn small'}, h('b', {}, 'Not included: '), v.not_included.join(' · ')) : null,
-    !(v.queries || []).length ? null : h('details', {class: 'more'}, h('summary', {}, `How this was answered · ${(v.queries || []).length} quer${(v.queries || []).length === 1 ? 'y' : 'ies'}`),
+    a.summary ? h('p', {style: 'margin:8px 0'}, h('b', {}, 'What this means. '), a.summary) : null,
+    (a.actions || []).length ? h('div', {}, h('b', {class: 'small'}, 'What you could do next'), h('ul', {style: 'margin:4px 0 8px'}, a.actions.map(x => h('li', {}, x)))) : null,
+    !chart ? askTable(a.data, 50) : h('details', {class: 'more'}, h('summary', {}, `See the numbers (${(a.data || {}).row_count || 0} rows)`), askCsvBtn(a.data), askTable(a.data, 100)),
+    (v.not_included || []).length ? h('div', {class: 'note warn small'}, h('b', {}, 'Could not include: '), v.not_included.join(' · ')) : null,
+    !(v.queries || []).length ? null : h('details', {class: 'more'}, h('summary', {}, 'How Relay worked this out (for analysts)'),
       (v.queries || []).map(q => h('div', {style: 'margin:8px 0;padding-left:8px;border-left:3px solid ' + (q.error ? 'var(--err)' : 'var(--line-2)')},
         h('div', {class: 'small'}, h('b', {}, q.id), ` · ${q.where || q.engine || ''}`, q.why ? ` · ${q.why}` : '', q.row_count != null ? ` · ${q.row_count.toLocaleString()} rows${q.limited ? ' (limit reached)' : ''} in ${q.seconds}s` : ''),
         h('pre', {class: 'mono small', style: 'white-space:pre-wrap;margin:4px 0'}, q.sql || ''),
@@ -235,11 +242,11 @@ function answerCard(m, opts) {
       h('button', {class: 'btn sm ghost' + (fb && fb.rating < 0 ? ' on' : ''), title: 'Wrong or unhelpful', onclick: async () => {
         const sql = await askText('Not helpful', {label: 'What was wrong?', hint: 'Optional. You can paste a corrected SQL query here too.', ok: 'Send'}); if (sql !== null) rate(-1, /select/i.test(sql) ? {corrected_sql: sql} : {comment: sql}); }}, icon('thumbdown'), 'Not helpful'),
       h('span', {class: 'spacer'}),
-      h('a', {class: 'btn sm', href: `/api/askd/messages/${mid}/snapshot`, onclick: e => { e.preventDefault(); snapshotAnswer(mid); }}, icon('download'), 'Snapshot'),
+      h('a', {class: 'btn sm', href: `/api/askd/messages/${mid}/snapshot`, onclick: e => { e.preventDefault(); snapshotAnswer(mid); }}, icon('download'), 'Save as image'),
       opts && opts.project ? h('button', {class: 'btn sm', onclick: () => sendToDashboard(mid, opts.project)}, icon('plus'), 'Add to dashboard')
         : h('button', {class: 'btn sm', onclick: () => pickDashboard(mid)}, icon('plus'), 'Add to a dashboard'),
       opts && opts.thread ? h('a', {class: 'btn sm', href: `#/askd/${opts.thread}`}, 'Open in Ask Relay') : null),
-    (a.next_questions || []).length && opts && opts.onAsk ? h('div', {class: 'chips', style: 'margin-top:10px'}, a.next_questions.map(q => h('button', {class: 'chip', onclick: () => opts.onAsk(q)}, q))) : null);
+    (a.next_questions || []).length && opts && opts.onAsk ? h('div', {class: 'chips', style: 'margin-top:10px;align-items:center'}, h('span', {class: 'small muted'}, 'Ask next:'), a.next_questions.map(q => h('button', {class: 'chip', onclick: () => opts.onAsk(q)}, q))) : null);
 }
 
 async function snapshotAnswer(mid) {
@@ -263,63 +270,102 @@ async function pickDashboard(mid) {
       h('button', {class: 'btn primary', onclick: () => { m.remove(); sendToDashboard(mid, sel.value); }}, 'Continue'))));
 }
 
-/* the Ask D page */
+/* the Ask Relay page (D2D Relay): a plain-words conversation with your data */
+const aiUsd = x => !x ? '$0.00' : x < 0.01 ? 'under $0.01' : '$' + x.toFixed(2);
+const ASK_STEPS = ['Looking at your data…', 'Running the numbers…', 'Double-checking every figure…', 'Drawing the chart…', 'Writing it up in plain words…'];
 async function renderAskD() {
   const tid = (location.hash.split('/')[2] || '').split('?')[0] || null;
-  const page = h('div', {class: 'page wide'});
+  const page = h('div', {class: 'page wide askpage'});
   $('#main').replaceChildren(page);
-  let opts, list, th = null;
-  try { [opts, list] = await Promise.all([api('/api/askd/options'), api('/api/askd/threads')]); if (tid) th = await api(`/api/askd/threads/${tid}`); }
-  catch (e) { return page.append(h('div', {class: 'note err'}, e.message)); }
+  document.title = 'Ask Relay · D2D Relay';
+  let opts, list, th = null, cost = null;
+  try {
+    [opts, list, cost] = await Promise.all([api('/api/askd/options'), api('/api/askd/threads'),
+      api('/api/askd/costs' + (tid ? '?thread=' + encodeURIComponent(tid) : '')).catch(() => null)]);
+    if (tid) th = await api(`/api/askd/threads/${tid}`);
+  } catch (e) { return page.append(h('div', {class: 'note err'}, e.message)); }
   if (!location.hash.startsWith('#/askd')) return;
+  if (opts.brand_colors && opts.brand_colors.length >= 3) ASK_COLORS.splice(0, ASK_COLORS.length, ...opts.brand_colors);   // charts in the brand palette
+
+  // what the question is about: everything, or one dashboard (a simple drop-down, fixed once a conversation starts)
   let scope = th ? th.scope : {kind: 'team'};
-  const scopeBox = h('div', {class: 'card flat', style: 'margin:0'});
-  const drawScope = () => {
-    const dash = h('select', {class: 'sel', disabled: !!th}, opts.dashboards.map(d => h('option', {value: d.id, selected: scope.project === d.id}, d.name)));
-    dash.onchange = () => { scope = {kind: 'dashboard', project: dash.value}; };
-    scopeBox.replaceChildren(...[h('b', {class: 'small'}, 'Asking about'),
-      ...['team', 'dashboard'].map(k => h('label', {class: 'chk', style: 'margin-top:6px;' + (scope.kind === k ? 'border-color:var(--accent);background:var(--accent-tint)' : '')},
-        h('input', {type: 'radio', name: 'scope', checked: scope.kind === k, disabled: !!th, onchange: () => { scope = k === 'dashboard' ? {kind: k, project: (opts.dashboards[0] || {}).id} : {kind: k}; drawScope(); }}),
-        h('span', {}, h('b', {}, SCOPE_LABEL[k]), h('small', {class: 'muted', style: 'display:block'}, {dashboard: 'its tables, measures and filters',
-          team: opts.connections.length ? `every dashboard's data + your ${opts.connections.length} BigQuery connection${opts.connections.length === 1 ? '' : 's'}` : "every dashboard's data (no BigQuery connection yet)"}[k])))),
-      scope.kind === 'dashboard' ? h('div', {style: 'margin-top:6px'}, dash) : null,
-      h('div', {class: 'note small', style: 'margin:8px 0 0'}, icon('lock'), ' Every number is fetched with your own access. Data you cannot open is named as "not included", never read.'),
-      th ? h('a', {class: 'small', href: '#/askd'}, '+ New conversation (another scope)') : null].filter(Boolean));
+  const scopeSel = h('select', {class: 'sel', 'aria-label': 'What to ask about', disabled: !!th, style: 'width:auto;max-width:360px'},
+    h('option', {value: ''}, 'All my data'),
+    opts.dashboards.map(d => h('option', {value: d.id, selected: scope.kind === 'dashboard' && scope.project === d.id}, 'Dashboard: ' + d.name)));
+  scopeSel.onchange = () => { scope = scopeSel.value ? {kind: 'dashboard', project: scopeSel.value} : {kind: 'team'}; };
+
+  // the AI cost box: this conversation, this month
+  const costBox = h('div', {class: 'card flat askcost', style: 'margin:0 0 12px'});
+  const drawCost = () => {
+    if (!cost) return costBox.replaceChildren();
+    const row = (k, v, strong) => [h('dt', {}, strong ? h('b', {}, k) : k), h('dd', {}, strong ? h('b', {}, v) : v)];
+    costBox.replaceChildren(h('div', {class: 'row', style: 'gap:6px'}, icon('gauge'), h('b', {class: 'small'}, 'AI cost')),
+      h('dl', {class: 'kv small', style: 'margin:6px 0 0'},
+        th ? row('This conversation', `${aiUsd(cost.thread_usd)} · ${cost.thread_questions} question${cost.thread_questions === 1 ? '' : 's'}`) : null,
+        row(`Questions in ${cost.month}`, `${aiUsd(cost.ask_usd)} · ${cost.ask_questions} asked`),
+        row('Dashboards', aiUsd(cost.dashboards_usd)),
+        cost.branding_usd ? row('Branding', aiUsd(cost.branding_usd)) : null,
+        row('Total this month', aiUsd(cost.total_usd), true)));
   };
-  drawScope();
-  const threadsBox = h('div', {class: 'vlist', style: 'margin-top:12px'}, list.threads.length ? list.threads.map(t => h('a', {class: 'vitem' + (t.id === tid ? ' on' : ''), href: `#/askd/${t.id}`},
-    h('div', {class: 'l1'}, h('span', {class: 'lab'}, t.title)), h('div', {class: 'l2'}, `${SCOPE_LABEL[t.scope.kind]} · ${ago(t.updated)}`))) : h('div', {class: 'vitem'}, h('div', {class: 'l2'}, 'Your questions appear here.')));
-  const chat = h('div', {class: 'stack'});
-  const input = h('textarea', {rows: 2, placeholder: 'Ask about your data, e.g. "Why did gross margin drop in Q3?"'});
-  const go = h('button', {class: 'btn primary'}, icon('spark'), 'Ask');
+  const refreshCost = async id => { try { cost = await api('/api/askd/costs' + (id ? '?thread=' + encodeURIComponent(id) : '')); drawCost(); } catch (e) { /* the answer matters more */ } };
+  drawCost();
+
+  const threadsBox = h('div', {class: 'vlist'},
+    h('a', {class: 'btn primary', href: '#/askd', style: 'width:100%;justify-content:center;margin-bottom:10px'}, icon('plus'), 'New question'),
+    h('div', {class: 'small muted', style: 'margin:4px 2px 6px'}, 'Your conversations'),
+    list.threads.length ? list.threads.map(t => h('a', {class: 'vitem' + (t.id === tid ? ' on' : ''), href: `#/askd/${t.id}`},
+      h('div', {class: 'l1'}, h('span', {class: 'lab'}, t.title)), h('div', {class: 'l2'}, `${t.scope.kind === 'dashboard' ? 'One dashboard' : 'All my data'} · ${ago(t.updated)}`)))
+      : h('div', {class: 'vitem'}, h('div', {class: 'l2'}, 'Your questions will appear here.')));
+
+  const chat = h('div', {class: 'stack', 'aria-live': 'polite'});
+  const input = h('textarea', {rows: 2, placeholder: 'Ask a question about your business, in your own words…', 'aria-label': 'Your question'});
+  const go = h('button', {class: 'btn primary'}, icon('send'), 'Ask');
+  const you = q => h('div', {class: 'row', style: 'justify-content:flex-end'},
+    h('div', {class: 'card flat askq', style: 'margin:0;background:var(--ink);color:var(--paper);max-width:75%'}, q));
   const ask = async q => {
     q = (q || input.value).trim(); if (!q) return;
     go.disabled = true; input.value = '';
-    chat.append(h('div', {class: 'row', style: 'justify-content:flex-end'}, h('div', {class: 'card flat', style: 'margin:0;background:var(--ink);color:#fff;max-width:70%'}, q)));
-    const wait = h('div', {class: 'muted small'}, h('span', {class: 'spin', style: 'display:inline-block;vertical-align:middle;margin-right:8px'}), 'Ask Relay is working — querying, checking, writing…');
-    chat.append(wait);
+    const hello = chat.querySelector('.askhello'); if (hello) hello.remove();
+    chat.append(you(q));
+    let i = 0;
+    const msg = h('span', {}, ASK_STEPS[0]);
+    const wait = h('div', {class: 'card flat', style: 'margin:0'}, h('span', {class: 'spin', style: 'display:inline-block;vertical-align:middle;margin-right:10px'}), msg);
+    const tick = setInterval(() => { i = Math.min(i + 1, ASK_STEPS.length - 1); msg.textContent = ASK_STEPS[i]; }, 3500);
+    chat.append(wait); wait.scrollIntoView({block: 'end', behavior: 'smooth'});
+    const t0 = Date.now();
     try {
-      const r = await api('/api/askd/ask', {json: {question: q, scope, thread_id: th ? th.id : null, model: msel.value()}});
-      wait.remove();
+      const r = await api('/api/askd/ask', {json: {question: q, scope, thread_id: th ? th.id : null, model: CATALOG.default}});
+      clearInterval(tick); wait.remove();
       if (!th) { location.hash = `#/askd/${r.thread_id}`; return; }
-      chat.append(answerCard({id: r.message_id, body: r}, {onAsk: ask}));
-    } catch (e) { wait.replaceChildren(h('div', {class: 'note err'}, e.message)); }
-    go.disabled = false;
+      chat.append(answerCard({id: r.message_id, body: {...r, seconds: Math.round((Date.now() - t0) / 1000)}}, {onAsk: ask}));
+      refreshCost(th.id);
+    } catch (e) {
+      clearInterval(tick);
+      wait.replaceChildren(h('div', {class: 'note err', style: 'margin:0'}, 'Relay could not answer that: ' + e.message + ' Try asking it a different way.'));
+    }
+    go.disabled = false; input.focus();
   };
   go.onclick = () => ask();
   input.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } };
-  const msel = askModelSel();
-  for (const m of (th ? th.messages : [])) chat.append(m.role === 'user'
-    ? h('div', {class: 'row', style: 'justify-content:flex-end'}, h('div', {class: 'card flat', style: 'margin:0;background:var(--ink);color:#fff;max-width:70%'}, m.body.text))
-    : answerCard(m, {onAsk: ask}));
-  if (!th) chat.append(h('div', {class: 'card empty'}, h('h3', {}, 'Ask Relay'), 'Ask anything about your data in plain language. You get the numbers, an interactive chart, a short summary, what to do next and follow-up questions — with the SQL and every check visible.',
-    h('div', {class: 'chips', style: 'justify-content:center;margin-top:12px'}, ['What are my top 10 stores by revenue this year?', 'How did sales trend month by month?', 'Which category has the lowest margin?'].map(x => h('button', {class: 'chip', onclick: () => ask(x)}, x)))));
-  page.append(h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('h1', {}, 'Ask Relay'), h('div', {class: 'meta'}, 'A conversation with your data: ask, see the chart, ask the next question.')),
-      null),
-    h('div', {class: 'vwrap'}, h('div', {}, scopeBox, threadsBox),
-      h('div', {class: 'stack'}, chat, h('div', {class: 'card', style: 'margin:0;position:sticky;bottom:8px'}, input, h('div', {class: 'row', style: 'margin-top:8px'},
-        h('span', {class: 'faint small'}, 'Enter to ask · Shift+Enter for a new line'), h('span', {class: 'spacer'}), msel.el, go)))));
+
+  for (const m of (th ? th.messages : [])) chat.append(m.role === 'user' ? you(m.body.text) : answerCard(m, {onAsk: ask}));
+  if (!th) {
+    chat.append(h('div', {class: 'card askhello', style: 'margin:0;text-align:center;padding:28px 20px'},
+      h('h2', {style: 'margin:0 0 6px'}, 'What would you like to know?'),
+      h('p', {class: 'muted', style: 'margin:0 auto 16px;max-width:560px'}, opts.dashboards.length
+        ? 'Ask in your own words. Relay answers with the numbers, a chart you can explore, what it means and what you could do next.'
+        : 'Build a dashboard first (or connect BigQuery), then Relay can answer questions about that data.'),
+      h('div', {class: 'chips', style: 'justify-content:center'}, (opts.suggestions || []).map(x => h('button', {class: 'chip', type: 'button', onclick: () => ask(x)}, icon('spark'), ' ' + x))),
+      h('div', {class: 'small muted', style: 'margin-top:16px'}, 'Tip: ask about a trend ("month by month"), a comparison ("vs last year"), the best or worst ("top 5") or a cause ("why did … drop?").')));
+  }
+  page.append(h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('h1', {}, 'Ask Relay'),
+      h('div', {class: 'meta'}, 'Ask a question about your business. Get the answer, a chart and what to do next.'))),
+    h('div', {class: 'vwrap'}, h('div', {}, costBox, threadsBox),
+      h('div', {class: 'stack'}, chat, h('div', {class: 'card', style: 'margin:0;position:sticky;bottom:8px'},
+        h('div', {class: 'row', style: 'gap:8px;margin-bottom:8px'}, h('span', {class: 'small muted'}, 'Asking about'), scopeSel), input,
+        h('div', {class: 'row', style: 'margin-top:8px'}, h('span', {class: 'faint small'}, 'Enter to ask · Shift+Enter for a new line'), h('span', {class: 'spacer'}), go)))));
   if (th) setTimeout(() => chat.lastChild && chat.lastChild.scrollIntoView({block: 'end'}), 50);
+  else input.focus();
 }
 
 /* the dashboard panel (Overview tab) */
