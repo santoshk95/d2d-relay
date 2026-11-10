@@ -281,7 +281,7 @@ async function renderAskD() {
       ...['team', 'dashboard'].map(k => h('label', {class: 'chk', style: 'margin-top:6px;' + (scope.kind === k ? 'border-color:var(--accent);background:var(--accent-tint)' : '')},
         h('input', {type: 'radio', name: 'scope', checked: scope.kind === k, disabled: !!th, onchange: () => { scope = k === 'dashboard' ? {kind: k, project: (opts.dashboards[0] || {}).id} : {kind: k}; drawScope(); }}),
         h('span', {}, h('b', {}, SCOPE_LABEL[k]), h('small', {class: 'muted', style: 'display:block'}, {dashboard: 'its tables, measures and filters',
-          team: `every dashboard's data + your ${opts.connections.length} BigQuery connection${opts.connections.length === 1 ? '' : 's'}`}[k])))),
+          team: opts.connections.length ? `every dashboard's data + your ${opts.connections.length} BigQuery connection${opts.connections.length === 1 ? '' : 's'}` : "every dashboard's data (no BigQuery connection yet)"}[k])))),
       scope.kind === 'dashboard' ? h('div', {style: 'margin-top:6px'}, dash) : null,
       h('div', {class: 'note small', style: 'margin:8px 0 0'}, icon('lock'), ' Every number is fetched with your own access. Data you cannot open is named as "not included", never read.'),
       th ? h('a', {class: 'small', href: '#/askd'}, '+ New conversation (another scope)') : null].filter(Boolean));

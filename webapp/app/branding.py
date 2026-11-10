@@ -86,7 +86,7 @@ def logo_colors(raw: bytes, kind: str) -> list[str]:
         counts: dict[str, int] = {}
         for c in found:
             counts[c.upper()] = counts.get(c.upper(), 0) + 1
-        return sorted(counts, key=counts.get, reverse=True)[:6]
+        return _distinct(sorted(counts, key=counts.get, reverse=True))[:6]
     from PIL import Image
     img = Image.open(io.BytesIO(raw)).convert("RGBA")
     img.thumbnail((160, 160))
@@ -104,7 +104,17 @@ def logo_colors(raw: bytes, kind: str) -> list[str]:
         light, dark = min(r, g, b_) > 235, max(r, g, b_) < 25
         out.append(("#%02X%02X%02X" % (r, g, b_), n, light or dark))
     keep = [c for c, _, plain in out if not plain] or [c for c, _, _ in out]
-    return keep[:6]
+    return _distinct(keep)[:6]
+
+
+def _distinct(colors: list[str], gap: int = 48) -> list[str]:
+    """Drop shades too close to a colour already kept (anti-aliased logo edges give many near-copies)."""
+    rgb = lambda c: tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))  # noqa: E731
+    out: list[str] = []
+    for c in colors:
+        if all(sum((a - b) ** 2 for a, b in zip(rgb(c), rgb(k))) ** 0.5 >= gap for k in out):
+            out.append(c)
+    return out
 
 
 def _clean_variant(v: dict) -> dict | None:
