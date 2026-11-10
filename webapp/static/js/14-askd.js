@@ -38,7 +38,7 @@ function askChart(ans, opts = {}) {
   const cur = (text.match(/[₹$€£]/) || [])[0] || '';
   const curOf = c => cur && MONEY.test(c) && !/(share|pct|percent|%|margin)/i.test(c) ? cur : '';
   const st = {x: dims.includes(spec.x) ? spec.x : dims[0], on: new Set((spec.y || []).filter(c => nums.includes(c)).slice(0, 4)), view: 'bar', sort: false, top: 0,
-    values: true, filters: {}, from: null, to: null};
+    values: (d.rows || []).length <= 12, filters: {}, from: null, to: null};      // labels only where they fit; hover shows the rest
   if (!st.on.size) st.on.add(nums[0]);
   st.view = (ans.result || {}).type === 'table' ? 'table' : spec.kind === 'line' || (dates.includes(st.x) && rows0.length > 12) ? 'line' : 'bar';
   const distinct = c => [...new Set(rows0.map(r => r[c]).filter(v => v != null))];
