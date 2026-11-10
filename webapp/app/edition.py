@@ -40,6 +40,7 @@ def apply() -> None:
     for k in list(connectors.KINDS):
         if k not in KEEP_KINDS:
             del connectors.KINDS[k]
+    connectors.CATEGORIES[:] = [c for c in connectors.CATEGORIES if c[0] == "warehouse"]
     for k in list(connectors.OAUTH):
         if k not in KEEP_KINDS:
             del connectors.OAUTH[k]

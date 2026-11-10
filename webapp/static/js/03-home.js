@@ -50,7 +50,8 @@ function renderDashboards() {
       h('div', {}, 'Start with your CSV files and a sentence about what the dashboard should answer.'),
       h('div', {style: 'margin-top:14px'}, h('a', {class: 'btn primary', href: '#/new'}, icon('plus'), 'New dashboard'))),
     S.projects.length <= 2 ? h('div', {style: 'margin-top:20px'}, how) : null));        // onboarding only
-  api('/api/reviews').then(r => { if (!r.reviews.length || !isDash()) return;
+  if (false) api('/api/reviews').then(r => {          // D2D Relay: no review pages
+ if (!r.reviews.length || !isDash()) return;
     $('#main .page').insertBefore(h('div', {class: 'banner you'}, h('div', {class: 'txt'}, h('div', {class: 't'}, `${r.reviews.length} dashboard version${r.reviews.length === 1 ? '' : 's'} waiting for your review`),
       h('div', {class: 'd'}, r.reviews.map(x => h('a', {href: `#/p/${x.project}`, style: 'margin-right:12px'}, `${x.name} v${x.v}`))))), $('#main .page').children[1]); }).catch(() => {});
 }

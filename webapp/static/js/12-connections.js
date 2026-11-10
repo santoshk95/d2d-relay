@@ -29,7 +29,7 @@ async function loadConnections() {
 const MOD_STATE = {ok: ['Connected', 'ok'], new: ['Not read yet', ''], sign_in: ['Sign in again', 'err'], error: ['Error', 'err'], paused: ['Paused', '']};
 const modPill = x => { const [t, k] = MOD_STATE[x.state] || [x.state, '']; return h('span', {class: 'tag ' + k, title: x.error || ''}, x.status_label || t); };
 async function moduleSources() {
-  const [sd, ia] = await Promise.all([api('/api/servicedesk/sources').catch(() => null), api('/api/intan/sources').catch(() => null)]);
+  const [sd, ia] = [null, null];          // D2D Relay: no service desk or integration analytics
   const items = [];
   if (sd) items.push(...(sd.sources || []).map(x => ({id: x.id, name: x.name, label: x.label, module: x.module || 'Service desk', link: x.link || '#/servicedesk', category: x.category || 'crm',
     state: x.paused ? 'paused' : x.status, status_label: x.status_label, error: x.error, last: x.last_read, owner: x.owner, has_secret: !!x.has_secret, scope: x.scope || 'read',
@@ -100,12 +100,12 @@ async function renderConnections() {
         h('td', {class: 'small'}, c.last_test ? ago(c.last_test) : '—'), h('td', {}, connPill(c)),
         h('td', {}, h('button', {class: 'btn sm', type: 'button', onclick: () => connectionDetail(c.id)}, 'Open'))))))
       : h('div', {class: 'card empty', style: 'margin:0'}, h('h3', {}, all.length ? 'Nothing matches' : 'No connections yet'),
-        h('div', {}, all.length ? 'Try another category or search.' : 'Connect a warehouse, a finance system, a ticketing tool or any platform with an API — read-only by default.')));
+        h('div', {}, all.length ? 'Try another category or search.' : 'Connect Google BigQuery to build dashboards straight from your tables — read-only. CSV files are uploaded on New dashboard.')));
   };
   drawTable(); drawMods();
   page.append(...[
     pageHead({crumbs: [['Home', '#/'], ['Connections']], eyebrow: brandName() + ' · Platform · Connections', title: 'Connections',
-      promise: 'Every system Relay can reach, in one place — how it signs in, what it may do, who can use it, and which modules rely on it. Start and every module pick from here, or create a new one on the spot.',
+      promise: 'Your Google BigQuery connections: how each signs in and which dashboards use it. Read-only; CSV files are uploaded on New dashboard.',
       actions: h('button', {class: 'btn primary', type: 'button', onclick: () => connectionWizard({onDone: () => renderConnections()})}, icon('plus'), 'New connection')}),
     qs.get('error') ? h('div', {class: 'note err'}, qs.get('error')) : null,
     qs.get('connected') ? h('div', {class: 'note ok'}, 'Signed in. Choose the tables Relay may use.') : null,
