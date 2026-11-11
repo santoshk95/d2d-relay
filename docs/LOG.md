@@ -242,6 +242,10 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       - the PC does not sleep (the user runs a keep-awake script). Adding the two helpers to the Startup folder was
         refused to Claude Code as persistence, so that one-time step is the user's (`docs/d2d-relay.md`, "After the
         PC restarts").
+      - **Redeployed at 11:05 IST** (image `d2d-relay:ae18feb`, web and admin only): healthy, no errors, and the
+        watchdog sees both helpers online. The D2D DAX checker was restarted on its guarded version from the deploy
+        folder; RELAY's checker (`Gen BI`) was not touched. Running on the PC now: the D2D DAX checker and the Power
+        BI file maker, both started from `Downloads\D2D Relay`.
 
 Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
 (JPEG) on Branding but has not picked a palette yet; leave it.
