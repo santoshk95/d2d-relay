@@ -250,8 +250,8 @@ def require_connector(kind: str | None) -> None:
     if not connector_on(kind):
         o = row(db.tenant()) or {}
         raise HTTPException(403, f"{connector_label(kind)} is not switched on for {o.get('name') or 'your organisation'}. "
-                                 f"PASDACS connects warehouses and databases on request: ask on the Connections page, or "
-                                 f"write to {CONTACT}.")
+                                 f"Your own warehouse or database comes as a turnkey deployment by PASDACS: ask on the Connections page, "
+                                 f"or write to {CONTACT}.")
 
 
 def _to_pasdacs(subject: str, intro: str, rows: list[tuple[str, str]], reply_to: str | None, outro: str = "") -> bool:
@@ -738,9 +738,9 @@ def connector_request(body: ConnectorRequest):
     rows = [("Organisation", o["name"]), ("Email domain", o["domain"]), ("Workspace id", o["tenant_id"]),
             ("Requested by", f"{u.get('name') or ''} <{u.get('email') or ''}>"), ("Connectors requested", names),
             ("Switched on now", ", ".join(connector_label(k) for k in on) or "none (CSV files only)"), ("Message", msg or "(none)")]
-    sent = _to_pasdacs(f"D2D Relay: {o['name']} asks to connect {names}", "A D2D Relay organisation asks PASDACS to connect a "
-                       "warehouse or database.", rows, u.get("email"),
-                       "Switch it on for the organisation on the D2D Relay admin portal (Organisations, Connectors) once it is agreed.")
+    sent = _to_pasdacs(f"D2D Relay: {o['name']} asks to connect {names}", "A D2D Relay organisation asks PASDACS to connect its own "
+                       "warehouse or database: a turnkey deployment.", rows, u.get("email"),
+                       "Agree the turnkey deployment with them; on the shared site, a connector can still be switched on for the organisation on the D2D Relay admin portal (Organisations, Connectors).")
     tenancy.ctl_audit("d2d.connector_request", o["tenant_id"], u["id"], {"kinds": kinds, "message": msg[:500], "email": u.get("email"),
                                                                           "name": u.get("name"), "sent": sent})
     _tell_platform(f"{o['name']} asks to connect {names}", f"{u.get('name')} ({u.get('email')}): {msg[:300] or 'no message'}", "#/requests")

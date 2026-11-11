@@ -90,7 +90,7 @@ function connectorRequestDialog(cat, preselect = []) {
     send.disabled = true;
     try {
       const r = await api('/api/org/connector-request', {json: {kinds: [...picked], message: msg.value}});
-      out.replaceChildren(r.sent ? h('div', {class: 'note ok'}, `Sent to ${r.contact}. PASDACS replies to ${me.email} and switches the connector on for ${org}.`)
+      out.replaceChildren(r.sent ? h('div', {class: 'note ok'}, `Sent to ${r.contact}. PASDACS replies to ${me.email} about a turnkey deployment for ${org}.`)
         : h('div', {class: 'note warn'}, 'Your request is recorded, but the email could not be sent from here. Please ', mailLink(`email ${r.contact}`), ' as well.'));
       send.lastChild.textContent = 'Sent';
     } catch (e) {
@@ -99,7 +99,7 @@ function connectorRequestDialog(cat, preselect = []) {
     }
   };
   modal('Ask PASDACS to connect your data', h('div', {class: 'mbody'},
-    h('p', {style: 'margin-top:0'}, `D2D Relay takes CSV files on its own. PASDACS connects warehouses and databases for ${org} on request and replies by email.`),
+    h('p', {style: 'margin-top:0'}, `D2D Relay takes CSV files on its own. Your own warehouse or database comes as a turnkey deployment that PASDACS sets up for ${org}: ask here and PASDACS replies by email.`),
     h('label', {class: 'f', style: 'margin-top:0'}, 'Connectors'), boxes,
     h('label', {class: 'f'}, 'Message ', h('small', {}, 'optional')), msg, out,
     h('div', {class: 'row', style: 'justify-content:flex-end;gap:12px;margin-top:12px;align-items:center;flex-wrap:wrap'},
@@ -122,10 +122,10 @@ async function renderConnections() {
   if (!onKinds.length && !all.length) {          // CSV files only: what PASDACS can connect, and how to ask
     page.append(...[
       pageHead({crumbs: [['Home', '#/'], ['Connections']], eyebrow: brandName() + ' · Connections', title: 'Connections',
-        promise: `Upload CSV files on New dashboard. To use a warehouse or database, PASDACS connects it for ${cat.org} on request.`,
+        promise: `Upload CSV files on New dashboard. To use your own warehouse or database, ask PASDACS for a turnkey deployment for ${cat.org}.`,
         actions: h('a', {class: 'btn primary', href: '#/new'}, icon('file'), 'Upload CSV files')}),
       qs.get('error') ? h('div', {class: 'note err'}, qs.get('error')) : null,
-      h('div', {class: 'section-title'}, h('h2', {}, 'Connectors'), h('span', {class: 'hint'}, 'switched on by PASDACS for your organisation, on request')),
+      h('div', {class: 'section-title'}, h('h2', {}, 'Connectors'), h('span', {class: 'hint'}, 'your own warehouse or database: a turnkey deployment by PASDACS, on request')),
       connectorCards(cat),
       h('p', {class: 'small muted', style: 'margin-top:14px'}, `Questions about your data? Write to ${cat.contact}.`)].filter(Boolean));
     return;

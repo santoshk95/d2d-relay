@@ -1,6 +1,8 @@
 # Row-level security in D2D dashboards (backlog)
 
-Status: **backlog, not started.** Raised on 2026-11-10, after an enterprise-size test of D2D's Power BI output.
+Status: **dropped from the shared D2D Relay on 2026-11-11** (the user's decision): an organisation that needs
+row-level security gets a turnkey deployment after it contacts PASDACS; this note stays as the design for
+that work. Raised on 2026-11-10, after an enterprise-size test of D2D's Power BI output.
 
 ## Why
 
