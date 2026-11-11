@@ -588,6 +588,14 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       price, the invoice page and email, the CSV, test payments in their own series, invoices kept when an
       organisation is erased) and 37 in Chromium (the billing form in Buy credits, who the invoices go to, no
       refunds, the GST invoice page, a foreign organisation paying dollars, the admin's Tax invoices card).
+      The release image `d2d-relay:7d28ea7` (commit 7d28ea7) passed those and the earlier suites on a fresh test
+      stack: 120 API checks, 60 data-governance checks and 10 in Chromium, 14 Ask Relay credit checks, 13 review
+      checks (367 in all).
+    - **Against Razorpay's test mode** (the same image, the user's test keys): 18 order checks (rupees and dollars), then
+      two real payments in Razorpay's checkout, each with its invoice in the TEST series: `TEST/26-27/00001`, $100
+      (`pay_TyvKUxl6GOexvU`), an export under the LUT without IGST, ₹9,373.07 at Razorpay's 93.7307; and
+      `TEST/26-27/00002`, ₹1,178.82 (`pay_TyvLLaIUUclUBj`), ₹999 + CGST ₹89.91 + SGST ₹89.91, place of supply
+      Karnataka (29). Not deployed: committed as 7d28ea7.
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -653,6 +661,11 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   activates the account) into the live `.env` by hand, a live-mode webhook with its own secret, a restart of web and
   admin, then Sell credits online switched on (admin portal, Payments). Open choices: GST added or not (now: not),
   whether a GST invoice is needed (not built), and the refund rule (refunds are made by hand on Razorpay).
+- **GST invoices (item 25) are built, not deployed.** Needed from the user first: PASDACS's legal name, registered
+  address, state, PIN and GSTIN; the SAC code (the accountant's; the setting suggests 998314); the LUT's ARN if one is
+  filed for 2026-27 (else dollar sales carry IGST, included in the price); and whether ₹100 a credit includes GST or
+  has 18% added. They go on the admin portal (Payments → Tax invoices), or the user sends them and they are set at the
+  deploy. Live keys cannot sell until they are complete.
 - **Dollar prices (item 24) are live** (since 2026-11-11 ~20:13 IST): $1 a credit outside India, ₹100 in India.
   **The Razorpay account takes Indian cards only** (seen in test mode): until the user switches on international
   payments (Razorpay Dashboard → Account & Settings → International payments; Razorpay reviews it), a buyer abroad
