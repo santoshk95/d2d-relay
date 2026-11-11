@@ -447,6 +447,16 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       settings), 10 in Chromium (the Delete dialog, Delete conversation, Your data and its download, the notice from
       the sign-in page), and the earlier suites: 121 API checks (the 2 rehearsal checks need a copy of the live
       database), 14 Ask Relay credit checks, 13 review checks.
+      The release image `d2d-relay:8f39265` passed the same checks again, and the real-Claude lockdown test of item 21
+      with the new managed settings (Claude Code loads them and its CLAUDE.md; all 11 ways out refused; Ask Relay's
+      runs have no tools; no auto-memory written).
+    - **Deployed on 2026-11-11 at 17:11 IST together with item 21** (image `d2d-relay:8f39265`; `docker compose up -d
+      --no-deps web admin`, the database container untouched; the user's go-ahead: "Yeah deploy all"). Nothing was
+      running. Checked afterwards: web and admin healthy on 8f39265; the managed settings (transcripts 7 days, no
+      auto-memory) and DuckDB 1.2.2 in place; `/privacy.html` opens through Cloudflare and the sign-in page links it;
+      signed-out API calls get 401; no errors in the logs. The sweep, run once by hand, removed 83 of the AI engine's
+      records: its transcript folders went from 30 (65 MB) to 7 (3.3 MB: set-up runs and model probes outside the
+      projects folder, which Claude Code's own 7-day clean-up removes). Pushed to GitHub with the work log.
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -496,7 +506,8 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   admin`. The data before the fresh start: `data\backups\relay-db-20261111-064453.dump` (no dashboards are left
   from then but the sample below). Since item 22 the nightly sweep deletes hand-made dumps after 30 days: this one
   and the three others of 10-11 November go around 10-11 December; move any that must stay out of `data\backups`.
-- **Images:** since 2026-11-11 (item 21) all three containers run the current image; older images were removed.
+- **Images:** since 2026-11-11 17:11 IST web and admin run `d2d-relay:8f39265` (= latest: items 21 and 22); the
+  database container still runs `d2d-relay:8689305`'s image, which stays tagged for going back.
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
