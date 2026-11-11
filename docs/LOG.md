@@ -524,6 +524,35 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       Razorpay; no errors in the logs. The $1 a credit the user also named needs a US-dollar checkout: Razorpay's
       international payments switched on for the account, then a USD price beside the rupee one (not built).
 
+24. **Prices in US dollars outside India** (the user, 2026-11-11: "each credit is 1$ and INR 100", then "Yes, add USD",
+    "cannot it be decided based on the user location for India show inr and for others show usd ?" and "usd as
+    fallback and inr only for india"). `app/payments.py`, `js/37-payments.js`; `docs/d2d-relay.md`, "Currencies".
+    Committed as 442a396; not deployed.
+    - Each pack can have a dollar price beside the rupee one (whole dollars; the admin portal's Payments page, one more
+      box per pack). Where the buyer is decides, by Cloudflare's country header: rupees only in India, US dollars
+      everywhere else, unknown included. The server offers and accepts only that currency (an order for the other
+      currency's pack is refused), so the dollar price, which carries no GST, is not open to buyers in India. A pack
+      without a dollar price is not sold outside India; with no dollar prices at all everyone pays in rupees.
+    - Orders, the checkout, the credit history ("$100.00 paid online"), receipts and emails are in the pack's
+      currency; GST and the admin's note under the prices are for India only; dollar buyers are told "by card". The
+      admin portal shows the takings per currency. Download my data gives amounts with their currency.
+    - Razorpay's test mode takes dollar orders as they are (an order for $25 and one for $0.50 were accepted). With live
+      keys, dollars need Razorpay's international payments switched on for the account.
+    - **Checked** on a test stack with the stand-in Razorpay: 84 payment checks (the earlier 70 plus where the buyer is:
+      India, the United States, unknown, an address Cloudflare cannot place; a pack in the other currency refused
+      both ways; a dollar order, its payment, history, receipt without GST; a payment in the wrong currency refused;
+      the admin's totals per currency; a negative dollar price refused) and 32 in Chromium (a buyer in India sees
+      rupees with GST, one in the United States sees dollars with no switch and no GST, pays and sees $100.00 listed;
+      the admin page's dollar boxes).
+      The release image `d2d-relay:442a396` on a fresh test stack passed those and the earlier suites: 120 API checks,
+      60 data-governance checks and 10 in Chromium, 14 Ask Relay credit checks, 13 review checks (333 in all).
+    - **Against Razorpay's test mode** (the same image, the user's test keys): orders in rupees and in dollars made and
+      read back; a $100 payment by Razorpay's domestic test card captured (`pay_TytyfBY4iaybCO`), its 100 credits
+      added ("$100.00 paid online"); Razorpay's international test card refused by Razorpay: "this business accepts
+      domestic (Indian) card payments only" (`pay_TytxhcZVTiaARu`), which the app showed, adding nothing and
+      recording the payment as failed. So buyers abroad, who pay with international cards, can pay only once
+      international payments are switched on for the Razorpay account.
+
 Test data in the live install: none since the fresh start (item 18).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -586,8 +615,12 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   Razorpay's test card), which also exercises the webhook; (3) going live: live keys from Razorpay (after it
   activates the account) into the live `.env` by hand, a live-mode webhook with its own secret, a restart of web and
   admin, then Sell credits online switched on (admin portal, Payments). Open choices: GST added or not (now: not),
-  whether a GST invoice is needed (not built), the refund rule (refunds are made by hand on Razorpay), and a US-dollar
-  price ($1 a credit, the user's figure; needs Razorpay's international payments, not built).
+  whether a GST invoice is needed (not built), and the refund rule (refunds are made by hand on Razorpay).
+- **Dollar prices (item 24) are built, not deployed.** At the deploy (with the user's go-ahead): the image of 442a396,
+  and each live pack given its dollar price, $1 a credit (25 credits $25 ... 500 credits $500). **The Razorpay account
+  takes Indian cards only** (seen in test mode): until the user switches on international payments (Razorpay
+  Dashboard → Account & Settings → International payments; Razorpay reviews it), a buyer abroad sees dollar prices but
+  only an Indian card goes through.
 - **Abuse.** Anyone with a business mailbox can sign up and create an organisation (as asked). Since item 19 it gets
   50 credits at once (about two dashboards' AI time) without anyone's approval; more need PASDACS's approval. Since
   item 21 PASDACS gets an email for every sign-in, and pauses an organisation or switches a person off on the admin

@@ -302,9 +302,20 @@ added once Razorpay has captured the payment, by whichever of these comes first,
    string, the same one in `.env` as `RELAY_RAZORPAY_WEBHOOK_SECRET`); the events `payment.captured`, `order.paid`,
    `payment.failed` and `refund.processed`. In test mode Razorpay asks for an OTP: 754081.
 3. Restart web and admin so they read the keys: `docker compose up -d --no-deps web admin`.
-4. Admin portal → **Payments**: the packs (credits, and a price in whole rupees), GST added on top (0: none added,
-   the price is what people pay), a note under the prices, who may buy (each organisation's owners, or everyone in
-   it), and **Sell credits online**. The page also shows which keys are in use and the webhook URL.
+4. Admin portal → **Payments**: the packs (credits, a price in whole rupees and, for buyers outside India, one in
+   whole US dollars), GST added on top of rupee prices (0: none added, the price is what people pay), a note under
+   the rupee prices, who may buy (each organisation's owners, or everyone in it), and **Sell credits online**. The
+   page also shows which keys are in use, the webhook URL, and the takings in each currency.
+
+**Currencies.** Where the buyer is decides, by the country Cloudflare gives each request (`cf-ipcountry`; nobody can
+set it through Cloudflare): **rupees only in India, US dollars everywhere else**, also where Cloudflare cannot tell
+the country (and on this PC itself). The server offers and accepts only that currency, so the dollar price, which
+carries no GST, is not open to buyers in India. A pack without a dollar price is not sold outside India; with no
+dollar prices at all, everyone pays in rupees. GST and the note under the prices are shown in India only. Dollar
+buyers pay by card. Test keys take dollar orders as they are; with live keys, dollars need Razorpay's international
+payments switched on for the account (Razorpay Dashboard → Account & Settings → International payments). Whether a
+sale abroad in dollars carries GST is a question for PASDACS's accountant (an export of services is usually
+zero-rated).
 
 **Test keys** (`rzp_test_...`) move no money, so with them only PASDACS's own workspace can buy (anyone else would
 get credits for nothing): sign in to the public site as info@pasdacs.com, Organisation → Buy credits, and pay with
@@ -324,7 +335,8 @@ refunded) and tells PASDACS; the credits are not taken back on their own: take t
 when that is the rule. A payment that does not match its checkout, or a second payment for one order, adds no
 credits and alerts PASDACS to refund it.
 
-**Records.** `relay.tn_payments`, one row per checkout, amounts in paise. Paid ones are kept (tax and accounting law
+**Records.** `relay.tn_payments`, one row per checkout, amounts in the currency's smallest unit (paise, cents) with the
+currency beside them. Paid ones are kept (tax and accounting law
 asks for eight years), without names once an organisation is erased; checkouts never paid go after a year (the
 nightly sweep). Each person's own payments are in Download my data.
 
