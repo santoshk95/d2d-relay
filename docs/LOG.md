@@ -4,7 +4,8 @@ Last updated: 2026-11-11 (IST). This file says where the project stands for anyo
 
 ## What D2D Relay is
 
-D2D Relay is a separate product cut from RELAY by PASDACS (copied from Relay commit 8f3d9a0) for a client who wanted
+D2D means Data to Dashboard. D2D Relay is a product of the Relay Platform by PASDACS: cut from RELAY, the platform
+(copied from Relay commit 8f3d9a0), as a product of its own for a client who wanted
 Power BI dashboard generation from CSV files and Google BigQuery. It has its own repository, image, container, data and
 sign-in. The setup guide is `docs/d2d-relay.md`.
 
@@ -321,6 +322,13 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       made in the fresh start with 0, got the new default as a "Starting credits" entry of 50. Checked afterwards:
       the prices on the server (25, 10, 10 for 5 questions, 50 to start), both sites answer, the new screens are
       served, the watchdog sees both helpers online, the sign-in mail works, no errors in the logs.
+
+20. **The name** (the user's words of 2026-11-11: "D2D meaning, Data to Dashboard, and D2D is a sub product of Relay
+    Platform"). D2D means Data to Dashboard, and D2D Relay is a product of the Relay Platform by PASDACS. Said under
+    the RELAY logo ("D2D · Data to Dashboard" / "a Relay Platform product · PASDACS"), on the sign-in page, on the
+    Dashboards page ("D2D · Data to Dashboard"; it said "BI & dashboards"), in the sign-in code email and the other
+    emails' footer, the module's description (it said "Data to Decisions"), the brand's tagline, the Ask Relay export
+    footer (it said "Ask D"), the agent's instructions and the docs. The screens checked on a test stack.
 
 Test data in the live install: none since the fresh start (item 18).
 

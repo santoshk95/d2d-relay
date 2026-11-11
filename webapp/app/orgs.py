@@ -514,9 +514,9 @@ def _invite_mail(email: str, name: str, by: dict, o: dict, role: str) -> bool:
     url = identity.PUBLIC_URL or "D2D Relay"
     lines = [f"Hello {name},", f"{by.get('name') or 'A colleague'} added you to {o['name']} on D2D Relay"
              + (", as one of its owners." if role == "admin" else "."),
-             "D2D Relay turns your CSV files into checked Power BI dashboards.",
+             "D2D Relay (D2D: Data to Dashboard, a Relay Platform product) turns your CSV files into checked Power BI dashboards.",
              f"Sign in at {url} with {email}: we email you a 6-digit code, no password needed.",
-             f"D2D Relay by PASDACS · {CONTACT}"]
+             f"D2D Relay · a Relay Platform product by PASDACS · {CONTACT}"]
     try:
         otp_mail.send(email, f"You were added to {o['name']} on D2D Relay", "".join(f"<p>{html.escape(x)}</p>" for x in lines),
                       reply_to=by.get("email"))
@@ -806,7 +806,7 @@ def _answer_mail(r: dict, o: dict, subject: str, lines: list[str]) -> bool:
         return False
     from . import otp_mail
     body = "".join(f"<p>{html.escape(x)}</p>" for x in [f"Hello {r.get('user_name') or ''},".replace(" ,", ","), *lines,
-                                                          f"D2D Relay by PASDACS · {CONTACT}"])
+                                                          f"D2D Relay · a Relay Platform product by PASDACS · {CONTACT}"])
     try:
         otp_mail.send(r["email"], subject, body, reply_to=CONTACT)
         return True

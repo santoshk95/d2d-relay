@@ -108,7 +108,8 @@ def _mail(to: str, code: str) -> None:
             return
         raise RuntimeError("Email sending is not set up: set D2D_OTP_MS_TENANT / CLIENT_ID and sign the mailbox in (otp_mail.py).")
     html = (f"<p>Your D2D Relay sign-in code is</p><p style=\"font-size:28px;font-weight:700;letter-spacing:6px\">{code}</p>"
-            "<p>It works once, for 10 minutes. If you did not ask for it, you can ignore this email.</p>")
+            "<p>It works once, for 10 minutes. If you did not ask for it, you can ignore this email.</p>"
+            "<p style=\"color:#777;font-size:12px\">D2D Relay · Data to Dashboard, a Relay Platform product by PASDACS</p>")
     otp_mail.send(to, f"D2D Relay sign-in code: {code}", html)
 
 

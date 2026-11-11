@@ -1,5 +1,7 @@
 # D2D Relay by PASDACS
 
+D2D means **Data to Dashboard**: D2D Relay is a product of the **Relay Platform** by PASDACS.
+
 D2D Relay turns a company's CSV files into a checked Power BI dashboard. A person signs in with their work email,
 uploads CSV files and describes the dashboard they need. D2D Relay plans it, agrees the KPIs with them, builds a
 clickable prototype, checks every version (Power BI's own engine included) and hands over a Power BI file (.pbix)
@@ -7,8 +9,8 @@ with its data.
 Each company is an organisation with its own workspace, people and credits; PASDACS runs the platform from its own
 admin portal.
 
-It is the dashboard part of RELAY by PASDACS, run as a product of its own. The rest of RELAY's code is still in this
-repository, switched off in one place (`webapp/app/edition.py`).
+It is the Relay Platform's dashboard product, run as a product of its own. The rest of the platform's code (RELAY) is
+still in this repository, switched off in one place (`webapp/app/edition.py`).
 
 | | |
 |---|---|

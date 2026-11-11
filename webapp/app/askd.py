@@ -645,4 +645,4 @@ td,th{{border-bottom:1px solid #EEE;padding:3px 8px;text-align:left}}.f{{margin-
 <div>{'<span class="b">Certified</span>' if v.get("certified") else '<span class="b">Ad hoc</span>'}<span class="b">{h.escape(str(v.get("where") or ""))}</span></div>
 {chart}<p>{h.escape(body.get("summary") or "")}</p>
 <table><tr>{''.join(f'<th>{h.escape(c)}</th>' for c in cols)}</tr>{table}</table>
-<div class="f">D2D · Ask D · {time.strftime('%Y-%m-%d %H:%M')}</div></div>"""
+<div class="f">D2D Relay · Ask Relay · {time.strftime('%Y-%m-%d %H:%M')}</div></div>"""

@@ -32,7 +32,7 @@ function renderDashboards() {
         icon(p.visibility === 'private' ? 'lock' : p.visibility === 'org' ? 'globe' : 'users')) : null,
       h('span', {}, ago(p.updated || p.created))));
   $('#main').replaceChildren(h('div', {class: 'page'},
-    h('div', {class: 'row'}, h('div', {}, h('div', {class: 'eyebrow'}, 'D2D · BI & dashboards'), h('h1', {}, 'Dashboards'), h('div', {class: 'muted', style: 'margin-top:4px'},
+    h('div', {class: 'row'}, h('div', {}, h('div', {class: 'eyebrow'}, 'D2D · Data to Dashboard'), h('h1', {}, 'Dashboards'), h('div', {class: 'muted', style: 'margin-top:4px'},
       'Describe what you need — Relay builds the data model, KPIs and report, and a Power BI file (.pbix) you can open in Desktop.')),
       h('span', {class: 'spacer'}), S.me && !S.me.builder ? null : h('a', {class: 'btn primary', href: '#/new'}, icon('plus'), 'New dashboard')),
     S.projects.some(p => p.via && p.via !== 'owner') ? h('div', {class: 'segbtn', style: 'margin-top:14px'}, SCOPES.map(([k, l]) =>

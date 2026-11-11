@@ -1,6 +1,7 @@
 # D2D Relay
 
-D2D Relay is the dashboard part of RELAY by PASDACS, run as a separate product for a client. A person brings CSV files
+D2D means Data to Dashboard: D2D Relay is a product of the Relay Platform by PASDACS (RELAY), run as a separate
+product for a client. A person brings CSV files
 and describes the dashboard. D2D Relay plans it, agrees the KPIs, builds a prototype and reviews it. The result is a
 checked Power BI file (.pbix) with its data. Warehouses and databases are connected by PASDACS for an organisation on
 request.
