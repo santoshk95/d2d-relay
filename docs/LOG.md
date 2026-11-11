@@ -15,9 +15,13 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
 - Four containers from one image (item 12): `d2d-relay-db` (volume `d2d-relay-db-data`), `d2d-relay-web` (volume
   `d2d-relay-data`, projects in `./data/projects`), `d2d-relay-admin` (volume `d2d-relay-admin-data`) and the tunnel.
   The public site shares the Claude sign-in volume `claude-api-auth` with RELAY.
-- Its own DAX checker runs on the host: `daxcheck\start-daxcheck.cmd`, with the queue `data\projects\.daxcheck`.
-- Deploy (in the deploy folder `Downloads\D2D Relay`, while nobody is building): `docker compose build web` (with
-  `RELAY_COMMIT=<sha>`), then `docker compose --profile tunnel up -d`.
+- Two helpers run on the host PC: its own DAX checker (`daxcheck\start-daxcheck.cmd`, queue `data\projects\.daxcheck`)
+  and the Power BI file maker (`pbix\start-pbix.cmd`, queue `data\projects\.pbix`; item 16).
+- Deploy (in the deploy folder `Downloads\D2D Relay`, while nobody is building): `git fetch <repo> main` + `git merge
+  --ff-only FETCH_HEAD`, `RELAY_COMMIT=<sha> docker compose build web`, `docker tag d2d-relay:latest d2d-relay:<sha>`,
+  then `docker compose up -d --no-deps web admin` (the database container is left running).
+- Code: GitHub `santoshk95/d2d-relay`, branch `main`. Items 11-20 were kept on this PC at the user's wish and pushed
+  on 2026-11-11 when the user asked.
 
 ## Done so far (in commit order)
 
