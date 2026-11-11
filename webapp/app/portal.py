@@ -10,7 +10,7 @@
           2. The app's own email code, for addresses at D2D_ADMIN_DOMAINS (pasdacs.com) only. Everyone signed in
              here is a platform admin. The session has its own cookie and kind ("otp-admin"), so a session from the
              public site is never accepted here, nor one from here there.
-          The admin portal answers only the APIs in API (organisations, requests, notifications, who am I); it runs
+          The admin portal answers only the APIs in API (organisations, requests, payments, notifications, who am I); it runs
           no AI engine, no job queue and no schedules.
 """
 from __future__ import annotations
@@ -26,7 +26,8 @@ _team = (os.environ.get("D2D_ADMIN_ACCESS_TEAM") or "").strip().lower().removepr
 ACCESS_TEAM = _team if "." in _team or not _team else f"{_team}.cloudflareaccess.com"
 ACCESS_AUD = (os.environ.get("D2D_ADMIN_ACCESS_AUD") or "").strip()
 # What the admin portal answers under /api (everything else there is 404)
-API = ("/api/me", "/api/registry", "/api/brand", "/api/notifications", "/api/admin/orgs", "/api/admin/requests")
+API = ("/api/me", "/api/registry", "/api/brand", "/api/notifications", "/api/admin/orgs", "/api/admin/requests",
+       "/api/admin/payments")
 _jwks = None
 
 

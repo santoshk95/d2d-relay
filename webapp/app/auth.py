@@ -240,6 +240,8 @@ def check(u: dict | None, method: str, path: str) -> JSONResponse | None:
             return _deny(401, "Sign in to the D2D Relay admin portal.")
         return None if portal.is_admin(u) else _deny(403, "The admin portal is for PASDACS people only.")
     if u is None:
+        if path == "/api/payments/webhook" and method == "POST":     # Razorpay: no sign-in, its body is signed (payments.py)
+            return None
         return _deny(401, "Sign in to D2D Relay.")
     if path.startswith("/api/admin"):
         # D2D Relay: no platform powers on the public site. Every organisation, credits and connectors are on the

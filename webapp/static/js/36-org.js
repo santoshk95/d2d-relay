@@ -1,6 +1,7 @@
 /* ---------------- D2D Relay: the organisation and its credits (app/orgs.py): the chip in the top bar (organisation and
-   credits left), Organisation (#/org: owner, people, credits and their history), Add credits, the first-time setup of
-   a new organisation's owner (#/setup: the brand), and Organisations for the platform admins (#/orgs).
+   credits left), Organisation (#/org: owner, people, credits and their history), Request credits (Buy credits is in
+   37-payments.js), the first-time setup of a new organisation's owner (#/setup: the brand), and Organisations for the
+   platform admins (#/orgs).
    Every rule is the server's; this file only shows it. ---------------- */
 ICONS.palette = ICONS.palette || 'M12 3a9 9 0 0 0 0 18c1 0 1.6-.7 1.6-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.3-4-7.8-9-7.8zM6.5 12.5h.01M8.5 8h.01M13 6.5h.01M17 9.5h.01';
 ICONS.coin = ICONS.coin || 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9.4a4 4 0 1 0 0 5.2';
@@ -35,7 +36,8 @@ function orgMenu(anchor) {
       h('div', {class: 'small muted'}, `credits left · ${costLine()}`),
       o.pending_request ? h('div', {class: 'small', style: 'margin-top:6px'}, h('span', {class: 'tag warn'}, 'Waiting for PASDACS'),
         ` ${Number(o.pending_request.credits).toLocaleString()} credits asked for`) : null),
-    h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); creditsDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Request credits')),
+    (o.pay || {}).on ? h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); buyDialog(); }}, icon('coin'), h('span', {class: 'grow'}, 'Buy credits')) : null,
+    h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); requestDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Request credits')),
     h('a', {class: 'pmitem', href: '#/org', onclick: closePopover}, icon('building'), h('span', {class: 'grow'}, 'Organisation, people and credit history')),
     h('a', {class: 'pmitem', href: '/privacy.html', target: '_blank', rel: 'noopener', onclick: closePopover}, icon('shield'), h('span', {class: 'grow'}, 'Privacy notice')),
   ], 'profile');
@@ -61,11 +63,15 @@ function creditsLine() {
   return h('div', {class: 'credline'}, icon('coin'), h('span', {}, h('b', {}, credits(o.credits)), ` left in ${o.name}`),
     h('span', {}, `· ${costLine()}`),
     o.pending_request ? h('span', {class: 'tag warn'}, `${Number(o.pending_request.credits).toLocaleString()} credits asked for, waiting for PASDACS`) : null,
-    h('button', {class: 'btn sm ghost', type: 'button', onclick: () => creditsDialog()}, icon('plus'), 'Request credits'));
+    (o.pay || {}).on ? h('button', {class: 'btn sm ghost', type: 'button', onclick: () => buyDialog()}, icon('coin'), 'Buy credits')
+      : h('button', {class: 'btn sm ghost', type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'));
 }
 
+/* More credits: Buy credits when PASDACS sells them online to this organisation (37-payments.js), else Request credits */
+function creditsDialog(reason) { return (ORG().pay || {}).on ? buyDialog(reason) : requestDialog(reason); }
+
 /* ---------------- Request credits: PASDACS approves every request (the admin portal); one waiting at a time ---------------- */
-function creditsDialog(reason) {
+function requestDialog(reason) {
   const o = ORG(), me = S.me || {};
   if (!o.id) return;
   const contact = o.contact || 'info@pasdacs.com';
@@ -120,7 +126,8 @@ function creditsDialog(reason) {
   };
   modal('Request credits', h('div', {class: 'mbody'},
     reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
-    h('p', {style: 'margin-top:0'}, h('b', {}, 'PASDACS approves every credit request. '), `Tell us how many credits ${o.name} needs: we reply by email, and once it is approved the credits appear here at once. Paying online is coming later.`),
+    h('p', {style: 'margin-top:0'}, h('b', {}, 'PASDACS approves every credit request. '), `Tell us how many credits ${o.name} needs: we reply by email, and once it is approved the credits appear here at once.`,
+      (o.pay || {}).on ? [' Or ', h('a', {href: '#', onclick: e => { e.preventDefault(); e.currentTarget.closest('.modal').remove(); buyDialog(reason); }}, 'buy credits online'), ' now.'] : null),
     h('dl', {class: 'kv small'}, h('dt', {}, 'Organisation'), h('dd', {}, `${o.name} · @${o.domain}`),
       h('dt', {}, 'Requested by'), h('dd', {}, `${me.name || ''} · ${me.email || ''}`), h('dt', {}, 'Credits now'), h('dd', {}, credits(o.credits))),
     h('label', {class: 'f'}, 'Credits you need'), h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, picks, custom),
@@ -133,6 +140,7 @@ function creditsDialog(reason) {
 
 /* ---------------- Organisation (#/org) ---------------- */
 const LEDGER = r => r.kind === 'start' ? 'Starting credits'
+  : r.kind === 'adjust' && r.what === 'purchase' ? 'Bought online' + (r.note ? ` · ${r.note}` : '')
   : r.kind === 'adjust' ? (r.delta > 0 ? 'Added by PASDACS' : 'Taken back by PASDACS') + (r.note ? ` · ${r.note}` : '')
   : (r.kind === 'refund' ? 'Given back: ' : '') + (r.what === 'dashboard' ? 'new dashboard' : r.what === 'ask' ? 'Ask Relay questions' : 'change')
     + (r.note && r.kind === 'charge' ? ` · ${r.note}` : '');
@@ -150,6 +158,8 @@ async function renderOrg() {
     try { await api('/api/org', {method: 'PATCH', json: {name}}); notify('Renamed', 'ok'); await refreshOrg(true); renderOrg(); } catch (e) { notify(e.message, 'err'); }
   }}, icon('edit'), 'Rename') : null;
   const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
+  const payBox = h('div');                     // credits bought online (37-payments.js), filled in once they are fetched
+  fillPayments(payBox);
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1;min-width:0'}, h('div', {class: 'eyebrow'}, 'Organisation'),
       h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, h('h1', {}, d.name), rename),
@@ -163,8 +173,11 @@ async function renderOrg() {
           h('dt', {}, 'A change'), h('dd', {}, `${credits(d.costs.change)}: revising the plan, a change request, building a custom visual Relay suggested`),
           d.costs.ask ? [h('dt', {}, 'Ask Relay'), h('dd', {}, `${credits(d.costs.ask)} for up to ${d.costs.ask_questions || 5} questions in a conversation`)] : null,
           h('dt', {}, 'Free'), h('dd', {}, 'Confirming the plan, fixing failed review gates, approving and publishing')),
-        h('div', {class: 'row', style: 'margin-top:12px;gap:10px;flex-wrap:wrap'}, h('button', {class: 'btn primary', type: 'button', onclick: () => creditsDialog()}, icon('plus'), 'Request credits'),
-          h('span', {class: 'small muted'}, 'PASDACS approves every request. When a run fails or is stopped, its credits come back.'))),
+        h('div', {class: 'row', style: 'margin-top:12px;gap:10px;flex-wrap:wrap'},
+          (d.pay || {}).on ? h('button', {class: 'btn primary', type: 'button', onclick: () => buyDialog()}, icon('coin'), 'Buy credits') : null,
+          h('button', {class: 'btn' + ((d.pay || {}).on ? '' : ' primary'), type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'),
+          h('span', {class: 'small muted'}, ((d.pay || {}).on ? 'Buy a pack online (card, UPI, netbanking), or ask PASDACS. ' : 'PASDACS approves every request. ')
+            + 'When a run fails or is stopped, its credits come back.'))),
       h('div', {class: 'card'}, h('h3', {}, 'Owners'),
         h('div', {class: 'stack', style: 'gap:6px'}, d.people.filter(p => p.owner).map(p => h('div', {},
           h('b', {}, p.name + (p.id === (S.me || {}).id ? ' (you)' : '')), p.primary ? h('span', {class: 'tag acc', style: 'margin-left:6px'}, 'Main owner') : null,
@@ -179,6 +192,7 @@ async function renderOrg() {
           h('td', {}, r.project_open ? h('a', {href: '#/p/' + r.project_id}, r.project_name || r.project_id) : r.project_name || '—'),
           h('td', {class: 'n delta' + (r.delta > 0 ? ' plus' : '')}, (r.delta > 0 ? '+' : '') + r.delta), h('td', {class: 'n'}, r.balance))))))
         : h('div', {class: 'muted small'}, 'Nothing yet.')),
+    payBox,
     h('div', {class: 'card'}, h('h3', {}, 'Credit requests'),
       (d.requests || []).length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['Asked', 'Who', 'Credits', 'Answer', ''], 2),
         h('tbody', {}, d.requests.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, r.user_name || '—'),
@@ -198,7 +212,7 @@ function yourDataCard(d) {
       h('a', {href: '/privacy.html', target: '_blank', rel: 'noopener'}, 'privacy notice'), '.'),
     h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'},
       h('a', {class: 'btn', href: '/api/me/data', download: 'd2d-relay-my-data.json'}, icon('download'), 'Download my data'),
-      h('span', {class: 'small muted'}, 'Your profile, sign-ins, dashboards, Ask Relay conversations and credit requests, as a file.')),
+      h('span', {class: 'small muted'}, 'Your profile, sign-ins, dashboards, Ask Relay conversations, credit requests and payments, as a file.')),
     h('ul', {class: 'small muted', style: 'margin:12px 0 0;padding-left:18px'},
       h('li', {}, 'Delete a dashboard on its own page (Delete), and an Ask Relay conversation in Ask Relay.'),
       h('li', {}, d.may_manage ? 'As an owner you can remove people (People, above).' : 'An owner of your organisation can remove you.'),

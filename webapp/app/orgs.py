@@ -16,15 +16,17 @@ Credits are pooled per organisation (relay.tn_orgs.credits); every change is a r
   refund  the run a charge paid for failed or was stopped before it delivered, so the credits come back (Retry charges
           again). A new dashboard is delivered with its first prototype (planning and building are both part of it);
           a change with its new plan or version; Ask Relay's credits with the answer.
-  adjust  a platform admin added (or took back) credits: approving a request, or by hand (e.g. after a payment)
+  adjust  a platform admin added (or took back) credits: approving a request, or by hand (e.g. after a payment);
+          and credits bought online with Razorpay (what = 'purchase', ref = the payment: payments.py, item 23)
 Free: confirming the plan, asking Relay to fix failed review gates, approving and publishing, and brand palettes. A run
 carries the id of the charge it delivers (job args `charge`); worker.py gives it back when the run fails, is stopped,
 or is cut off by a restart.
 
-More credits only come with PASDACS's approval (against abuse: anyone with a business mailbox can sign up). An organisation
-asks for them (Request credits: relay.tn_credit_requests, one pending request at a time, also emailed to PASDACS) or
-writes to PASDACS; a platform admin approves the request on the admin portal (the amount may differ) or declines it with
-a reason, and the organisation is told either way. A platform admin can also add or take back credits by hand.
+More credits come from PASDACS (against abuse: anyone with a business mailbox can sign up) or are bought online once
+PASDACS opens selling (payments.py). An organisation asks for them (Request credits: relay.tn_credit_requests, one
+pending request at a time, also emailed to PASDACS) or writes to PASDACS; a platform admin approves the request on the
+admin portal (the amount may differ) or declines it with a reason, and the organisation is told either way. A platform
+admin can also add or take back credits by hand.
 The public site charges and refunds, the admin portal adds: every change is one database transaction (_entry).
 
 Connectors (relay.tn_orgs.connectors, a JSON list of connector kinds): the public side takes CSV files only. Every
@@ -310,8 +312,10 @@ def _entry(tid: str, kind: str, delta: int, *, what: str | None = None, pid: str
 def _short(o: dict, what: str) -> str:
     uses = (f"Ask Relay uses {COST['ask']} credits for up to {ASK_QUESTIONS} questions" if what == "ask" else
             f"{'A new dashboard' if what == 'dashboard' else 'A change'} uses {COST[what]} credits")
-    return (f"Not enough credits. {uses} and {o['name']} has {o['credits']} left. "
-            "Ask PASDACS for credits (Request credits) to continue.")
+    from . import payments
+    more = ("Buy credits, or ask PASDACS for some (Request credits), to continue." if payments.offer(None, o)["on"]
+            else "Ask PASDACS for credits (Request credits) to continue.")
+    return f"Not enough credits. {uses} and {o['name']} has {o['credits']} left. {more}"
 
 
 def require(what: str) -> None:
@@ -415,7 +419,17 @@ def me_info(u: dict | None) -> dict:
             "is_owner": is_owner(u), "is_primary": primary,                       # people management: several owners, one main
             "setup_needed": primary and not o["setup_done"],                      # only the main owner sets the organisation up
             "connectors": connectors_of(o["tenant_id"]),                          # none: CSV files only
-            "pending_request": _pending(o["tenant_id"])}                          # credits asked for, not answered yet
+            "pending_request": _pending(o["tenant_id"]),                          # credits asked for, not answered yet
+            "pay": _pay_offer(u, o)}                                              # buying credits online (payments.py)
+
+
+def _pay_offer(u: dict, o: dict) -> dict:
+    from . import payments
+    try:
+        return payments.offer(u, o)
+    except Exception:  # noqa: BLE001 - /api/me must answer even if the payment settings cannot be read
+        traceback.print_exc()
+        return {"on": False, "can": False}
 
 
 def _pending(tid: str) -> dict | None:

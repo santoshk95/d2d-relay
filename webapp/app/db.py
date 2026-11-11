@@ -168,10 +168,18 @@ CREATE TABLE IF NOT EXISTS relay.tn_credit_requests (
   message TEXT, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'declined', 'withdrawn')),
   created REAL NOT NULL, emailed INTEGER NOT NULL DEFAULT 0, decided REAL, decided_by TEXT, decided_name TEXT,
   granted INTEGER, note TEXT);
+CREATE TABLE IF NOT EXISTS relay.tn_payments (
+  id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, org_name TEXT, user_id TEXT, user_name TEXT, email TEXT,
+  credits INTEGER NOT NULL, price INTEGER NOT NULL, gst INTEGER NOT NULL DEFAULT 0, amount INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'INR', live INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'paid', 'failed', 'refunded')),
+  order_id TEXT UNIQUE, payment_id TEXT, method TEXT, error TEXT, credit_id TEXT, refunded INTEGER NOT NULL DEFAULT 0,
+  refunds TEXT NOT NULL DEFAULT '[]', created REAL NOT NULL, paid REAL, checked REAL, updated REAL);
 """
 # D2D Relay (orgs.py): tn_orgs = an organisation per tenant (its email domain, owner and pooled credits);
 # tn_credits = every change to those credits (starting credits, charges, refunds, admin adjustments);
-# tn_credit_requests = what organisations asked for, and PASDACS's answer (credits are added only by approving one).
+# tn_credit_requests = what organisations asked for, and PASDACS's answer (credits are added by approving one);
+# tn_payments = credits bought online with Razorpay (payments.py): one row per checkout, amounts in paise.
 CONTROL_TABLES = re.findall(r"CREATE TABLE IF NOT EXISTS relay\.(\w+)", CONTROL_SCHEMA)
 
 SCHEMA = """

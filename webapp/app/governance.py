@@ -7,8 +7,8 @@ Erasure
     AI engine's own transcripts of its runs;
   - one Ask Relay conversation (DELETE /api/askd/threads/<id>; the person who asked);
   - a whole organisation (PASDACS, on the owner's written request: `python -m app.governance erase-org`, see
-    erase_org): its database schema, folders, secrets, visual library and AI transcripts. The credit history stays
-    for the accounts, without names, email addresses or messages.
+    erase_org): its database schema, folders, secrets, visual library and AI transcripts. The credit history and
+    its online payments (item 23) stay for the accounts, without names, email addresses or messages.
   The credit history of a dashboard (credits are money) and the audit trail stay; nightly backups (ops.py) keep
   the last 14 nights, so an erased dashboard leaves them two weeks later.
 
@@ -19,6 +19,7 @@ Retention (nightly, after the backup: ops.nightly -> sweep)
   - the audit trail, sign-in records and sign-in codes: LOG_DAYS (365). India's DPDP Rules 2025, rule 8(3): personal
     data, traffic data and logs of processing are kept at least a year, then erased (CERT-In asks 180 days of logs);
   - Ask Relay's answer cache: CACHE_DAYS (7);
+  - online checkouts never paid (payments.py): LOG_DAYS; paid ones are accounting records and stay (eight years);
   - database dumps and exports made by hand (relay-ctl db-dump / export, kept beside the nightly backups): DUMP_DAYS (30);
   - the AI engine's transcripts: of folders that no longer exist, and any older than AI_DAYS (7; Claude Code also
     drops them after cleanupPeriodDays when a run starts: agent/managed-settings.json). Ask Relay's go as soon as it
@@ -206,6 +207,9 @@ def my_data(u: dict) -> dict:
                                 "WHERE tenant_id = ? AND user_id = ? ORDER BY created", (db.tenant(), uid)),
         "credits_used": db.q("SELECT ts, kind, delta, what, project_name FROM relay.tn_credits WHERE tenant_id = ? AND user_id = ? "
                              "ORDER BY ts", (db.tenant(), uid)),
+        "payments": db.q("SELECT id AS receipt, created, paid, status, credits, amount AS amount_paise, currency, method, payment_id, "
+                         "refunded AS refunded_paise FROM relay.tn_payments WHERE tenant_id = ? AND user_id = ? ORDER BY created",
+                         (db.tenant(), uid)),
         f"activity_last_{LOG_DAYS}_days": audit,
     }
 
@@ -259,6 +263,8 @@ def erase_org(tid: str, who: str) -> dict:
             db.run("UPDATE relay.tn_credits SET user_id = NULL, user_name = NULL, project_name = NULL, note = NULL WHERE tenant_id = ?", (tid,))
             db.run("UPDATE relay.tn_credit_requests SET user_id = NULL, user_name = NULL, email = NULL, message = NULL, "
                    "decided_name = NULL, note = NULL WHERE tenant_id = ?", (tid,))
+            # payments are accounting records (kept eight years): the organisation's name and the amounts stay, the people go
+            db.run("UPDATE relay.tn_payments SET user_id = NULL, user_name = NULL, email = NULL WHERE tenant_id = ?", (tid,))
     tenancy._invalidate()                                           # noqa: SLF001
     ai = forget_ai(missing=True)
     # the control plane's audit only (tenancy.ctl_audit also writes to the organisation's own log, which is gone)
@@ -273,7 +279,7 @@ def erase_org(tid: str, who: str) -> dict:
 def sweep() -> dict:
     now = time.time()
     logs, cache = now - LOG_DAYS * 86400, now - CACHE_DAYS * 86400
-    out = {"audit": 0, "signin_codes": 0, "answer_cache": 0, "dumps": 0}
+    out = {"audit": 0, "signin_codes": 0, "answer_cache": 0, "dumps": 0, "unpaid_checkouts": 0}
     for _t in db.each_tenant():
         out["audit"] += db.run("DELETE FROM audit WHERE ts < ?", (logs,))
         out["answer_cache"] += db.run("DELETE FROM askd_cache WHERE created < ?", (cache,))
@@ -281,6 +287,8 @@ def sweep() -> dict:
         out["signin_codes"] += db.run("DELETE FROM otp_signup WHERE created < ?", (logs,))
     with db.use(db.PLATFORM):
         out["audit"] += db.run("DELETE FROM relay.tn_audit WHERE ts < ?", (logs,))
+        # online checkouts never paid (item 23); paid ones are accounting records and stay
+        out["unpaid_checkouts"] += db.run("DELETE FROM relay.tn_payments WHERE status IN ('created', 'failed') AND created < ?", (logs,))
     for pattern in DUMPS:
         for f in BACKUPS.glob(pattern):
             try:

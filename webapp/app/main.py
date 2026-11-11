@@ -32,6 +32,7 @@ from . import doctor, errors
 from . import branding, edition, orgs, otp           # D2D Relay: the dashboard-only catalogue, organisations and credits, the email-code sign-in
 from . import portal                                 # D2D Relay: the public site or the admin portal (D2D_PORTAL)
 from . import governance                             # item 22: erasure, "Download my data", retention
+from . import payments                               # item 23: buying credits online with Razorpay
 
 errors.install()                                # every traceback.print_exc() and thread crash reports Relay's own bugs (Relay Doctor)
 STATIC = Path(__file__).resolve().parent.parent / "static"
@@ -129,6 +130,7 @@ for _r in phases.ROUTERS:                      # P10 onwards: one router per pha
 app.include_router(branding.router)            # D2D Relay: Branding (logo + description -> palettes)
 app.include_router(otp.router)                 # D2D Relay: sign-in with a one-time email code
 app.include_router(orgs.router)                # D2D Relay: organisations, credits and their requests, every organisation (admin portal)
+app.include_router(payments.router)            # D2D Relay: buying credits online with Razorpay (item 23)
 edition.apply()                                # D2D Relay: keep dashboards, the visual library and BigQuery; switch the rest off
 
 

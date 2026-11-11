@@ -217,7 +217,7 @@ Mailinator …) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTR
 
 | What | Credits |
 |---|---|
-| Start | 50 (`RELAY_CREDITS_START`); more come only when PASDACS approves a request |
+| Start | 50 (`RELAY_CREDITS_START`); more are bought online (Payments, below) or come when PASDACS approves a request |
 | New dashboard (plan, KPIs and first prototype) | 25 (`RELAY_CREDITS_DASHBOARD`) |
 | A change: revise the plan, a change request, building a suggested custom visual, an Ask Relay answer sent to a dashboard | 10 (`RELAY_CREDITS_CHANGE`) |
 | Ask Relay: up to 5 answered questions in one conversation (`RELAY_CREDITS_ASK_QUESTIONS`), charged at its 1st, 6th, 11th … question | 10 (`RELAY_CREDITS_ASK`) |
@@ -229,8 +229,9 @@ AI cost is still recorded on the server (the `usage` table); the screens show no
 Relay shows the credits a conversation used and the questions left in them; a question that gets no answer gives
 its credits back.
 
-**Getting more credits (PASDACS approves every request).** Anyone with a business mailbox can sign up; a new
-organisation gets its 50 starting credits at once, and more only when PASDACS approves them. Online payment is not built yet.
+**Getting more credits.** Anyone with a business mailbox can sign up; a new organisation gets its 50 starting
+credits at once. More are bought online once PASDACS opens selling (**Payments (Razorpay)**, below), or come when
+PASDACS approves a request (for invoices and bank transfers):
 
 1. Someone in the organisation clicks **Request credits** (top-bar chip, Organisation, Dashboards, or the message
    when credits run short), picks an amount and adds a message. One request can wait at a time; the person who asked,
@@ -280,6 +281,52 @@ Switching a connector on for an organisation on the shared site, below, stays po
 PASDACS's own workspace has every connector switched on. For BigQuery, the simplest way in for a client is a
 service-account JSON (roles BigQuery Data Viewer + BigQuery Job User). Queries are read-only and limited to 1 GB
 scanned by default.
+
+## Payments (Razorpay)
+
+Organisations buy credit packs online (`app/payments.py`, `js/37-payments.js`). The amount is always the server's;
+Razorpay's own window takes the card, UPI, netbanking or wallet details (they never reach D2D Relay); the credits are
+added once Razorpay has captured the payment, by whichever of these comes first, and only once:
+
+- the checkout's answer: Razorpay's signature is checked with the key secret, and the payment is fetched from
+  Razorpay (its order, amount and currency must match; one that is only authorised is captured);
+- the webhook (`https://d2d-relay.pasdacs.com/api/payments/webhook`, no sign-in, signed with the webhook secret);
+- a look at Razorpay when the organisation's Organisation page opens, or **Check** on the admin portal (checkouts of
+  the last two days still waiting: a tab closed before the answer came back).
+
+**Setting it up**
+
+1. Razorpay Dashboard, test mode first → Account & Settings → API keys → generate. In `.env` (never in commits):
+   `RELAY_RAZORPAY_KEY_ID` and `RELAY_RAZORPAY_KEY_SECRET`.
+2. Razorpay Dashboard → Account & Settings → Webhooks → Add new webhook: the URL above; a secret (a long random
+   string, the same one in `.env` as `RELAY_RAZORPAY_WEBHOOK_SECRET`); the events `payment.captured`, `order.paid`,
+   `payment.failed` and `refund.processed`. In test mode Razorpay asks for an OTP: 754081.
+3. Restart web and admin so they read the keys: `docker compose up -d --no-deps web admin`.
+4. Admin portal → **Payments**: the packs (credits, and a price in whole rupees), GST added on top (0: none added,
+   the price is what people pay), a note under the prices, who may buy (each organisation's owners, or everyone in
+   it), and **Sell credits online**. The page also shows which keys are in use and the webhook URL.
+
+**Test keys** (`rzp_test_...`) move no money, so with them only PASDACS's own workspace can buy (anyone else would
+get credits for nothing): sign in to the public site as info@pasdacs.com, Organisation → Buy credits, and pay with
+the UPI ID `success@razorpay` (`failure@razorpay` shows a failure) or a test card from Razorpay's documentation.
+**Live keys** (`rzp_live_...`, once Razorpay has activated the account) open selling to every organisation while
+**Sell credits online** is on. Going live: replace both keys and the webhook secret with live ones (the live webhook
+is added again in live mode), restart, and switch selling on.
+
+**What people see.** **Buy credits** on Organisation, in the menu under the organisation chip, on Dashboards, and
+when credits run out: the packs with GST, then Razorpay's window. The credits appear at once; the buyer gets a
+receipt by email and on Organisation → Payments (a printable page: a payment receipt, not a tax invoice); the owners
+are told in the app; PASDACS gets an email and a notification for each payment. Owners see all of the organisation's
+payments, others their own. **Request credits** stays, for invoices and bank transfers.
+
+**Refunds** are made on the Razorpay Dashboard. The webhook records them (Payments shows Refunded, or the amount
+refunded) and tells PASDACS; the credits are not taken back on their own: take them back on Organisations → Credits
+when that is the rule. A payment that does not match its checkout, or a second payment for one order, adds no
+credits and alerts PASDACS to refund it.
+
+**Records.** `relay.tn_payments`, one row per checkout, amounts in paise. Paid ones are kept (tax and accounting law
+asks for eight years), without names once an organisation is erased; checkouts never paid go after a year (the
+nightly sweep). Each person's own payments are in Download my data.
 
 ## Sign-in alerts
 
@@ -333,6 +380,7 @@ notice, `/privacy.html`, linked from the sign-in page, the profile menu and Orga
 | The AI engine's transcripts (Claude Code) | `claude-api-auth` volume, `/home/agent/.claude/projects` | PASDACS, on this PC | Ask Relay: deleted once the answer is given; dashboards: at most 7 days | deleted with the dashboard; nightly sweep; Claude Code's own `cleanupPeriodDays` (managed settings, which also switch auto-memory off) |
 | Audit trail, sign-in records, sign-in codes (hashed) | database | the person (Download my data); PASDACS | 1 year | nightly sweep |
 | Warehouse passwords and keys | `data\state\tenants\<organisation>\secrets.enc`, encrypted | nobody: the app uses them | while the connection exists | removing the connection |
+| Payments for credits (no card or bank details: those stay with Razorpay) | control plane, `relay.tn_payments` | the buyer, the organisation's owners; PASDACS on the admin portal | paid: eight years (accounting); never paid: 1 year | nightly sweep for the unpaid; an erased organisation's stay without names |
 | Nightly backups | `data\backups\d2d-*` | PASDACS | 14 nights | rotated |
 | Database copies made by hand (`relay-ctl db-dump`, `export`) | `data\backups\*.dump`, `relay-export-*` | PASDACS | 30 days | nightly sweep: copy one elsewhere first if it must stay |
 | Container logs | Docker | PASDACS | 5 × 20 MB per container | rotated; they hold user ids, never query strings, bodies or codes |
@@ -349,7 +397,8 @@ Requests from people (India's DPDP Act 2023 and its Rules of 2025; most duties a
 30 days and settle every grievance within 90):
 
 - **See my data:** Organisation › Your data › Download my data (a JSON file: profile, sign-ins, dashboards,
-  conversations, credit requests, a year of activity). Each dashboard's Power BI file and data download from it.
+  conversations, credit requests, payments, a year of activity). Each dashboard's Power BI file and data download
+  from it.
 - **Delete a dashboard or a conversation:** the person does it themselves.
 - **Remove a person:** an owner removes them on the Organisation page; they can no longer sign in. Their name and
   address stay in the audit trail for the year the law asks for.
@@ -363,7 +412,8 @@ Requests from people (India's DPDP Act 2023 and its Rules of 2025; most duties a
   It refuses while a dashboard run is in progress or waiting, and refuses the platform's own workspace. It drops the
   organisation's database schema, its folders, secrets, visual library and the AI engine's transcripts, removes its
   people's accounts (they are signed out, and their addresses are free to sign up again), keeps the credit history
-  without names, emails or messages, and records `d2d.org_erased`. The nightly backups hold it for 14 more days.
+  and its payments without names, emails or messages, and records `d2d.org_erased`. The nightly backups hold it for
+  14 more days.
 
 If personal data may have leaked: report to CERT-In within 6 hours of noticing (incident@cert-in.org.in, in force
 today), tell the people affected without delay, and from 13 May 2027 report to the Data Protection Board within 72
