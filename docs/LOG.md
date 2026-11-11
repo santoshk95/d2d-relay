@@ -527,7 +527,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
 24. **Prices in US dollars outside India** (the user, 2026-11-11: "each credit is 1$ and INR 100", then "Yes, add USD",
     "cannot it be decided based on the user location for India show inr and for others show usd ?" and "usd as
     fallback and inr only for india"). `app/payments.py`, `js/37-payments.js`; `docs/d2d-relay.md`, "Currencies".
-    Committed as 442a396; not deployed.
+    Committed as 442a396; deployed on 2026-11-11 at about 20:13 IST (below).
     - Each pack can have a dollar price beside the rupee one (whole dollars; the admin portal's Payments page, one more
       box per pack). Where the buyer is decides, by Cloudflare's country header: rupees only in India, US dollars
       everywhere else, unknown included. The server offers and accepts only that currency (an order for the other
@@ -552,6 +552,14 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       domestic (Indian) card payments only" (`pay_TytxhcZVTiaARu`), which the app showed, adding nothing and
       recording the payment as failed. So buyers abroad, who pay with international cards, can pay only once
       international payments are switched on for the Razorpay account.
+    - **Deployed on 2026-11-11 at about 20:13 IST** (the user: "Yes, deploy"). Nothing was running; no payment had been
+      made on live yet and Razorpay had sent no webhook (it is not added in the Razorpay Dashboard yet). The deploy
+      folder fast-forwarded to 475e4f7; web and admin on the tested image `d2d-relay:442a396` (`docker compose up -d
+      --no-deps web admin`; the database container untouched). Each live pack got its dollar price, $1 a credit:
+      25 credits ₹2,500 or $25, 50 ₹5,000 or $50, 100 ₹10,000 or $100, 250 ₹25,000 or $250, 500 ₹50,000 or $500.
+      Checked afterwards: the rule on live (India rupees; the United States, the United Kingdom, the UAE, an unknown
+      country and no country, dollars); still test keys, so only PASDACS can buy; through Cloudflare signed-out payment
+      calls get 401, an unsigned webhook call 400 and a signed one 200; no errors in the logs.
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -601,9 +609,10 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   admin`. The data before the fresh start: `data\backups\relay-db-20261111-064453.dump` (no dashboards are left
   from then but the sample below). Since item 22 the nightly sweep deletes hand-made dumps after 30 days: this one
   and the three others of 10-11 November go around 10-11 December; move any that must stay out of `data\backups`.
-- **Images:** since 2026-11-11 ~19:45 IST web and admin run `d2d-relay:c8e615f` (= latest: item 23); the previous
-  `d2d-relay:8f39265` stays tagged for going back (`docker tag d2d-relay:8f39265 d2d-relay:latest`, then `docker
-  compose up -d --no-deps web admin`); the database container still runs `d2d-relay:8689305`'s image.
+- **Images:** since 2026-11-11 ~20:13 IST web and admin run `d2d-relay:442a396` (= latest: items 23 and 24); the
+  previous `d2d-relay:c8e615f` (rupees only) and `d2d-relay:8f39265` (before payments) stay tagged for going back
+  (`docker tag <image> d2d-relay:latest`, then `docker compose up -d --no-deps web admin`); the database container
+  still runs `d2d-relay:8689305`'s image.
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
@@ -616,11 +625,10 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   activates the account) into the live `.env` by hand, a live-mode webhook with its own secret, a restart of web and
   admin, then Sell credits online switched on (admin portal, Payments). Open choices: GST added or not (now: not),
   whether a GST invoice is needed (not built), and the refund rule (refunds are made by hand on Razorpay).
-- **Dollar prices (item 24) are built, not deployed.** At the deploy (with the user's go-ahead): the image of 442a396,
-  and each live pack given its dollar price, $1 a credit (25 credits $25 ... 500 credits $500). **The Razorpay account
-  takes Indian cards only** (seen in test mode): until the user switches on international payments (Razorpay
-  Dashboard → Account & Settings → International payments; Razorpay reviews it), a buyer abroad sees dollar prices but
-  only an Indian card goes through.
+- **Dollar prices (item 24) are live** (since 2026-11-11 ~20:13 IST): $1 a credit outside India, ₹100 in India.
+  **The Razorpay account takes Indian cards only** (seen in test mode): until the user switches on international
+  payments (Razorpay Dashboard → Account & Settings → International payments; Razorpay reviews it), a buyer abroad
+  sees dollar prices but only an Indian card goes through.
 - **Abuse.** Anyone with a business mailbox can sign up and create an organisation (as asked). Since item 19 it gets
   50 credits at once (about two dashboards' AI time) without anyone's approval; more need PASDACS's approval. Since
   item 21 PASDACS gets an email for every sign-in, and pauses an organisation or switches a person off on the admin
