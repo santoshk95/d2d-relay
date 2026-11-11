@@ -1,11 +1,14 @@
 /* ---------------- D2D Relay: buying credits online with Razorpay (app/payments.py, item 23): Buy credits, the
    Organisation page's Payments, and the admin portal's Payments (#/payments: the keys, what is on sale, every payment).
    The amount is always the server's; Razorpay's own window takes the card or UPI details, and the server checks the
-   payment with Razorpay before any credits are added. ---------------- */
+   payment with Razorpay before any credits are added. Where the person is decides the currency (item 24, the server's
+   rule): rupees only in India, US dollars everywhere else once PASDACS sets dollar prices. ---------------- */
 
-/* ₹1,17,882 (Indian grouping); paise shown when there are any, or when asked */
-const rupees = (paise, dec) => (Number(paise || 0) / 100).toLocaleString('en-IN',
-  {style: 'currency', currency: 'INR', minimumFractionDigits: dec || Number(paise || 0) % 100 ? 2 : 0, maximumFractionDigits: 2});
+/* an amount in the currency's smallest unit: ₹1,17,882 (Indian grouping) or $1,250; the minor part when there is one,
+   or when asked */
+const money = (minor, cur = 'INR', dec) => (Number(minor || 0) / 100).toLocaleString(cur === 'INR' ? 'en-IN' : 'en-US',
+  {style: 'currency', currency: cur, minimumFractionDigits: dec || Number(minor || 0) % 100 ? 2 : 0, maximumFractionDigits: 2});
+const rupees = (paise, dec) => money(paise, 'INR', dec);
 const PAY_METHODS = {card: 'Card', upi: 'UPI', netbanking: 'Netbanking', wallet: 'Wallet', emi: 'EMI', paylater: 'Pay later'};
 
 /* Razorpay's checkout script, loaded the first time someone pays */
@@ -50,19 +53,23 @@ async function buyDialog(reason) {
   let d;
   try { d = await api('/api/payments'); } catch (e) { return requestDialog(reason); }
   if (!d.on || !(d.packs || []).length) return requestDialog(reason);
-  let pick = d.packs[Math.min(1, d.packs.length - 1)], ord = null;
+  const cur = d.currency || 'INR';                    // the server's: rupees only in India, US dollars everywhere else
+  const list = d.packs.filter(p => (p.currency || 'INR') === cur);
+  if (!list.length) return requestDialog(reason);
+  let pick = list[Math.min(1, list.length - 1)], ord = null;
   const out = h('div', {role: 'status', 'aria-live': 'polite'});
   const payBtn = h('button', {class: 'btn primary', type: 'button'});
-  const payLabel = () => payBtn.replaceChildren(icon('lock'), `Pay ${rupees(pick.amount)}`);
-  const cards = h('div', {class: 'packs', role: 'radiogroup', 'aria-label': 'Credit packs'}, d.packs.map(p =>
+  const payLabel = () => payBtn.replaceChildren(icon('lock'), `Pay ${money(pick.amount, cur)}`);
+  const cards = h('div', {class: 'packs', role: 'radiogroup', 'aria-label': 'Credit packs'}, list.map(p =>
     h('button', {type: 'button', class: 'pack' + (p === pick ? ' on' : ''), role: 'radio', 'aria-checked': String(p === pick), onclick: () => {
       pick = p;
-      [...cards.children].forEach((c, i) => { const on = d.packs[i] === p; c.classList.toggle('on', on); c.setAttribute('aria-checked', String(on)); });
+      [...cards.children].forEach((c, i) => { const on = list[i] === p; c.classList.toggle('on', on); c.setAttribute('aria-checked', String(on)); });
       payLabel();
     }},
     h('b', {class: 'pcred'}, Number(p.credits).toLocaleString('en-IN')), h('span', {class: 'small muted'}, 'credits'),
-    h('span', {class: 'pprice'}, rupees(p.price)), p.gst ? h('span', {class: 'small muted'}, `+ ${rupees(p.gst, true)} GST`) : null,
-    h('span', {class: 'small faint'}, `${rupees(Math.round(p.amount / p.credits), true)} a credit`))));
+    h('span', {class: 'pprice'}, money(p.price, cur)), p.gst ? h('span', {class: 'small muted'}, `+ ${money(p.gst, cur, true)} GST`) : null,
+    h('span', {class: 'small faint'}, `${money(Math.round(p.amount / p.credits), cur, true)} a credit`))));
+  const words = [cur === 'INR' && d.gst ? `GST of ${d.gst}% is added to each price.` : '', d.note || ''].filter(Boolean).join(' ');
   payLabel();
   const done = h('button', {class: 'btn primary', type: 'button', onclick: () => m.remove()}, icon('check'), 'Done');
   const paid = async (resp, ord) => {                 // Razorpay says paid: the server checks it, then adds the credits
@@ -123,21 +130,21 @@ async function buyDialog(reason) {
   const m = modal('Buy credits', h('div', {class: 'mbody'},
     reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
     d.test ? h('div', {class: 'note warn', style: reason ? null : 'margin-top:0'}, h('b', {}, 'Test mode: no money moves. '),
-      'Pay with the UPI ID success@razorpay, or one of the test cards in Razorpay’s documentation.') : null,
+      'Pay with one of the test cards in Razorpay’s documentation (an international one for US dollars).') : null,
     bal,
     d.can ? null : h('div', {class: 'note'}, d.why),
     cards,
-    d.gst || d.note ? h('div', {class: 'hint'}, [d.gst ? `GST of ${d.gst}% is added to each price.` : '', d.note || ''].filter(Boolean).join(' ')) : null,
+    words ? h('div', {class: 'hint'}, words) : null,
     out,
     h('div', {class: 'row', style: 'justify-content:space-between;gap:12px;margin-top:12px;align-items:center;flex-wrap:wrap'},
-      h('span', {class: 'small muted'}, 'Card, UPI, netbanking or wallet, through Razorpay. ',
+      h('span', {class: 'small muted'}, cur === 'INR' ? 'Card, UPI, netbanking or wallet, through Razorpay. ' : 'By card, through Razorpay. ',
         h('a', {href: '#', onclick: e => { e.preventDefault(); m.remove(); requestDialog(reason); }}, 'Ask PASDACS instead')),
       d.can ? payBtn : null)));
 }
 
 /* a payment's state, in words */
 function payState(p) {
-  if (p.status === 'paid') return p.refunded ? h('span', {class: 'tag warn'}, `Paid · ${rupees(p.refunded, true)} refunded`) : h('span', {class: 'tag ok'}, 'Paid');
+  if (p.status === 'paid') return p.refunded ? h('span', {class: 'tag warn'}, `Paid · ${money(p.refunded, p.currency, true)} refunded`) : h('span', {class: 'tag ok'}, 'Paid');
   if (p.status === 'refunded') return h('span', {class: 'tag'}, 'Refunded');
   if (p.status === 'failed') return h('span', {class: 'tag err', title: p.error || ''}, 'Failed');
   return Date.now() / 1000 - p.created < 1800 ? h('span', {class: 'tag warn'}, 'Waiting') : h('span', {class: 'small muted'}, 'Not completed');
@@ -156,7 +163,7 @@ async function fillPayments(box) {
       h('tbody', {}, d.payments.map(p => h('tr', {},
         h('td', {}, when(p.paid || p.created), p.live ? null : h('span', {class: 'tag', style: 'margin-left:6px'}, 'Test')),
         h('td', {}, p.user_name || '—'), h('td', {class: 'n'}, '+' + Number(p.credits).toLocaleString('en-IN')),
-        h('td', {class: 'n'}, rupees(p.amount, true)), h('td', {}, payState(p), p.method ? h('span', {class: 'small muted'}, ` ${PAY_METHODS[p.method] || p.method}`) : null),
+        h('td', {class: 'n'}, money(p.amount, p.currency, true)), h('td', {}, payState(p), p.method ? h('span', {class: 'small muted'}, ` ${PAY_METHODS[p.method] || p.method}`) : null),
         h('td', {class: 'n'}, p.status === 'paid' || p.status === 'refunded'
           ? h('a', {href: `/api/payments/${encodeURIComponent(p.id)}/receipt`, target: '_blank', rel: 'noopener'}, 'Receipt') : null))))))
       : h('div', {class: 'muted small'}, d.can ? 'None yet. Buy credits pays online, by card, UPI or netbanking.' : 'None yet.')));
@@ -200,20 +207,23 @@ async function renderPayments() {
   const gst = h('input', {type: 'number', class: 'num', min: 0, max: 28, step: 0.01, value: s.gst || 0, style: 'max-width:110px', 'aria-label': 'GST added, in per cent'});
   const note = h('input', {type: 'text', maxlength: 200, value: s.note || '', placeholder: 'Optional, under the prices: e.g. Prices include GST. Credits never expire.'});
   const rows = h('div', {class: 'packrows'});
-  const addRow = (credits = '', price = '') => {
+  const addRow = (credits = '', price = '', usd = '') => {
     const c = h('input', {type: 'number', min: 1, step: 1, value: credits, placeholder: 'Credits', 'aria-label': 'Credits'});
     const p = h('input', {type: 'number', min: 1, step: 1, value: price, placeholder: 'Price in ₹', 'aria-label': 'Price in rupees'});
-    const r = h('div', {class: 'packrow'}, c, h('span', {class: 'small muted'}, 'credits for ₹'), p,
+    const u = h('input', {type: 'number', min: 1, step: 1, value: usd || '', placeholder: 'Price in $', 'aria-label': 'Price in US dollars'});
+    const r = h('div', {class: 'packrow'}, c, h('span', {class: 'small muted'}, 'credits'), h('span', {class: 'small muted'}, '₹'), p,
+      h('span', {class: 'small muted'}, '$'), u,
       h('button', {class: 'btn sm ghost', type: 'button', title: 'Remove this pack', onclick: () => r.remove()}, icon('x')));
     rows.append(r);
   };
-  (s.packs || []).forEach(p => addRow(p.credits, p.price));
+  (s.packs || []).forEach(p => addRow(p.credits, p.price, p.usd));
   if (!(s.packs || []).length) addRow();
   const err = h('div', {class: 'err-msg', role: 'alert'});
   const save = h('button', {class: 'btn primary', type: 'button'}, icon('check'), 'Save');
   save.onclick = async () => {
-    const packs = [...rows.children].map(r => { const [c, p] = r.querySelectorAll('input'); return {credits: parseInt(c.value, 10), price: parseInt(p.value, 10)}; })
-      .filter(p => p.credits || p.price);
+    const packs = [...rows.children].map(r => { const [c, p, u] = r.querySelectorAll('input');
+      return {credits: parseInt(c.value, 10), price: parseInt(p.value, 10), usd: parseInt(u.value, 10) || 0}; })
+      .filter(p => p.credits || p.price || p.usd);
     if (packs.some(p => !(p.credits > 0) || !(p.price > 0))) { err.textContent = 'Each pack needs a number of credits and a price in whole rupees.'; return; }
     save.disabled = true;
     try {
@@ -226,10 +236,13 @@ async function renderPayments() {
     h('label', {class: 'chk'}, on, h('span', {}, h('b', {}, 'Sell credits online'), d.mode === 'live' ? '' : ' (with live keys; test keys let only PASDACS buy)')),
     h('label', {class: 'f'}, 'Who can buy'), whoSeg,
     h('div', {class: 'hint'}, 'Owners: each organisation’s owners; members ask them, or ask PASDACS. Everyone: anyone in the organisation.'),
-    h('label', {class: 'f'}, 'Packs ', h('small', {}, `up to 6; the price is in whole rupees`)), rows,
+    h('label', {class: 'f'}, 'Packs ', h('small', {}, 'up to 6; prices in whole rupees and, if wanted, whole US dollars')), rows,
+    h('div', {class: 'hint'}, 'Where the buyer is decides: rupees only in India, US dollars everywhere else, also where Cloudflare '
+      + 'cannot tell the country. A pack without a dollar price is not sold outside India; with no dollar prices at all, everyone pays '
+      + 'in rupees. With live keys, dollars need Razorpay’s international payments switched on.'),
     h('button', {class: 'btn sm', type: 'button', style: 'margin-top:8px', onclick: () => { if (rows.children.length < 6) addRow(); }}, icon('plus'), 'Add a pack'),
-    h('label', {class: 'f'}, 'GST added on top ', h('small', {}, 'per cent; 0: none added, the price is what people pay')), gst,
-    h('label', {class: 'f'}, 'Note under the prices ', h('small', {}, 'optional')), note,
+    h('label', {class: 'f'}, 'GST added on top of rupee prices ', h('small', {}, 'per cent; 0: none added, the price is what people pay')), gst,
+    h('label', {class: 'f'}, 'Note under the rupee prices ', h('small', {}, 'optional; shown to buyers in India')), note,
     err, h('div', {class: 'row', style: 'justify-content:space-between;margin-top:12px;gap:10px;flex-wrap:wrap;align-items:center'},
       h('span', {class: 'small muted'}, s.updated ? `Last saved ${when(s.updated)}${s.updated_by ? ' by ' + s.updated_by : ''}.` : 'Not saved yet.'), save));
 
@@ -240,14 +253,16 @@ async function renderPayments() {
   };
   const t = d.totals || {};
   const list = h('div', {class: 'card'}, h('h3', {}, 'Payments'),
-    h('div', {class: 'muted small', style: 'margin:-6px 0 8px'}, `Live payments, refunds taken off: ${rupees(t.month, true)} this month, ${rupees(t.all, true)} in all (${t.count || 0}). `
-      + 'A checkout that was never paid is deleted after a year; paid ones are kept.'),
+    h('div', {class: 'muted small', style: 'margin:-6px 0 8px'}, 'Live payments, refunds taken off: '
+      + ['INR', 'USD'].filter(c => c === 'INR' || (t[c] || {}).count).map(c => { const x = t[c] || {};
+        return `${money(x.month, c, true)} this month, ${money(x.all, c, true)} in all (${x.count || 0})`; }).join('; ')
+      + '. A checkout that was never paid is deleted after a year; paid ones are kept.'),
     d.payments.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Organisation', 'Who', 'Credits', 'Amount', 'Status', 'Razorpay', ''], 3),
       h('tbody', {}, d.payments.map(p => h('tr', {},
         h('td', {}, when(p.paid || p.created), p.live ? null : h('span', {class: 'tag', style: 'margin-left:6px'}, 'Test')),
         h('td', {}, h('b', {}, p.org_name || p.tenant_id)), h('td', {}, p.user_name || '—', h('div', {class: 'small muted'}, p.email || '')),
         h('td', {class: 'n'}, '+' + Number(p.credits).toLocaleString('en-IN')),
-        h('td', {class: 'n'}, rupees(p.amount, true), p.gst ? h('div', {class: 'small muted'}, `incl. ${rupees(p.gst, true)} GST`) : null),
+        h('td', {class: 'n'}, money(p.amount, p.currency, true), p.gst ? h('div', {class: 'small muted'}, `incl. ${money(p.gst, p.currency, true)} GST`) : null),
         h('td', {}, payState(p), p.method ? h('div', {class: 'small muted'}, PAY_METHODS[p.method] || p.method) : null,
           p.error ? h('div', {class: 'small muted'}, p.error) : null),
         h('td', {class: 'small'}, p.payment_id || '', h('div', {class: 'muted'}, p.order_id || '')),

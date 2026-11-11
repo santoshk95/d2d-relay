@@ -207,8 +207,8 @@ def my_data(u: dict) -> dict:
                                 "WHERE tenant_id = ? AND user_id = ? ORDER BY created", (db.tenant(), uid)),
         "credits_used": db.q("SELECT ts, kind, delta, what, project_name FROM relay.tn_credits WHERE tenant_id = ? AND user_id = ? "
                              "ORDER BY ts", (db.tenant(), uid)),
-        "payments": db.q("SELECT id AS receipt, created, paid, status, credits, amount AS amount_paise, currency, method, payment_id, "
-                         "refunded AS refunded_paise FROM relay.tn_payments WHERE tenant_id = ? AND user_id = ? ORDER BY created",
+        "payments": db.q("SELECT id AS receipt, created, paid, status, credits, amount / 100.0 AS amount, currency, method, payment_id, "
+                         "refunded / 100.0 AS refunded FROM relay.tn_payments WHERE tenant_id = ? AND user_id = ? ORDER BY created",
                          (db.tenant(), uid)),
         f"activity_last_{LOG_DAYS}_days": audit,
     }

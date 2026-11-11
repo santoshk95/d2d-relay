@@ -41,7 +41,7 @@
 .pack .pprice{font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
 .packrows{display:grid;gap:8px}
 .packrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.packrow input{max-width:140px}
+.packrow input{max-width:100px;min-width:0}
 .packrow input[type=number],input.num{border:1px solid var(--line-2);border-radius:var(--radius-sm);padding:7px 10px;background:var(--surface);
   outline:none;font-variant-numeric:tabular-nums}
 @media (max-width:900px){.orggrid{grid-template-columns:1fr}.orgbtn .oname{max-width:96px}.orgbtn .ocred{font-size:11px}}

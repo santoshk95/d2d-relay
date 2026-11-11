@@ -19,6 +19,16 @@ credits for nothing); D2D_PAYMENTS_TEST_FOR=all opens test payments to every org
 With live keys (rzp_live_...) organisations buy once a platform admin switches selling on. The admin portal's Payments
 page sets the packs and their prices, GST, a note under the prices and who may buy (relay.tn_meta 'd2d_payments').
 
+Currencies (item 24): each pack has a price in rupees and, optionally, one in US dollars (whole units). Where the person
+is decides (the user's rule: "usd as fallback and inr only for india"): rupees only in India, US dollars everywhere
+else, by the country Cloudflare gives each request (cf-ipcountry; a person cannot set it through Cloudflare). An unknown
+country (this PC, an address Cloudflare cannot place, Tor) gets dollars too. Rupees for everyone only while no pack has
+a dollar price. The server offers and accepts only that currency, so the dollar price (which carries no GST) is not
+open to buyers in India.
+GST is added to rupee prices only (a sale abroad in dollars is an export of services; what to charge is PASDACS's
+accountant's call). Dollar payments use Razorpay's international payments, which a live account may need switched on.
+Amounts are kept in the currency's smallest unit (paise, cents) with the currency beside them.
+
 Records: relay.tn_payments, one row per checkout (created, then paid or failed; refunded once Razorpay refunded all of
 it). Paid rows are accounting records and stay (tax law asks for eight years); checkouts never paid are deleted after
 the log period (governance.sweep). Refunds are made on the Razorpay Dashboard: the webhook records them and tells
@@ -96,20 +106,37 @@ def settings() -> dict:
 
 
 def packs(s: dict | None = None) -> list[dict]:
-    """The packs on sale, fewest credits first: price before GST, the GST added and the amount charged (all in paise).
-    A pack's id changes with its price or the GST, so a dialog left open with old prices cannot buy at them."""
+    """The packs on sale: in rupees, then in US dollars (only packs with a dollar price), fewest credits first. Each has
+    its currency, the price before GST, the GST added (rupees only) and the amount charged, in the currency's smallest
+    unit. A pack's id changes with its price or the GST, so a dialog left open with old prices cannot buy at them."""
     s = s or settings()
     bp = int(round(float(s.get("gst") or 0) * 100))                 # basis points: 18% = 1800
-    out = []
+    inr_, usd_ = [], []
     for p in s.get("packs") or []:
         try:
-            credits, rupees = int(p["credits"]), int(p["price"])
+            credits, rupees, dollars = int(p["credits"]), int(p["price"]), int(p.get("usd") or 0)
         except (KeyError, TypeError, ValueError):
             continue
         base = rupees * 100
         tax = (base * bp + 5000) // 10000                           # rounded half up, to the paisa
-        out.append({"id": f"{credits}-{rupees}-{bp}", "credits": credits, "price": base, "gst": tax, "amount": base + tax})
-    return sorted(out, key=lambda x: x["credits"])
+        inr_.append({"id": f"{credits}-{rupees}-{bp}", "currency": "INR", "credits": credits, "price": base, "gst": tax, "amount": base + tax})
+        if dollars > 0:
+            usd_.append({"id": f"{credits}-usd{dollars}", "currency": "USD", "credits": credits, "price": dollars * 100, "gst": 0,
+                         "amount": dollars * 100})
+    return sorted(inr_, key=lambda x: x["credits"]) + sorted(usd_, key=lambda x: x["credits"])
+
+
+def currencies(s: dict | None = None) -> list[str]:
+    """The currencies on sale (a currency with no pack is not)."""
+    have = {p["currency"] for p in packs(s)}
+    return [c for c in ("INR", "USD") if c in have]
+
+
+def local_currency(request: Request | None, s: dict | None = None) -> str:
+    """Where the person is decides: rupees only in India, US dollars everywhere else (when Cloudflare cannot say, too:
+    this PC, an unplaced address, Tor). Rupees for everyone only while PASDACS has set no dollar price."""
+    country = ((request.headers.get("cf-ipcountry") if request is not None else "") or "").strip().upper()
+    return "INR" if country == "IN" or "USD" not in currencies(s) else "USD"
 
 
 def offer(u: dict | None, o: dict | None) -> dict:
@@ -141,6 +168,14 @@ def inr(paise: int | None, decimals: bool = False) -> str:
             head = head[:-2]
         s = ",".join(([head] if head else []) + groups)
     return f"₹{s}" + (f".{p:02d}" if p or decimals else "")
+
+
+def money(minor: int | None, currency: str = "INR", decimals: bool = False) -> str:
+    """An amount in the currency's smallest unit, as people read it: ₹1,17,882.50 or $1,250.00."""
+    if currency == "USD":
+        dollars, cents = divmod(int(minor or 0), 100)
+        return f"${dollars:,}" + (f".{cents:02d}" if cents or decimals else "")
+    return inr(minor, decimals)
 
 
 def _ist(ts: float | None) -> str:
@@ -205,7 +240,7 @@ def _captured(r: dict, pay: dict) -> dict:
 def _fulfil(r: dict, pay: dict, via: str) -> bool:
     """Mark the checkout paid and add its credits: once, in one transaction. False: it was paid before."""
     now = time.time()
-    note = f"{inr(r['amount'], True)} paid online, Razorpay {pay['id']}" + ("" if r["live"] else " (a test payment: no money moved)")
+    note = f"{money(r['amount'], r['currency'], True)} paid online, Razorpay {pay['id']}" + ("" if r["live"] else " (a test payment: no money moved)")
     e = None
     with orgs._lock, db.transaction():                                  # noqa: SLF001 - the credits' own lock
         if not db.run("UPDATE relay.tn_payments SET status = 'paid', payment_id = ?, method = ?, paid = ?, updated = ?, error = NULL "
@@ -240,7 +275,7 @@ def _refunded(r: dict, ref: dict) -> bool:
         db.run("UPDATE relay.tn_payments SET refunds = ?, refunded = ?, status = ?, updated = ? WHERE id = ?",
                (json.dumps(done + [rid]), total, "refunded" if total >= int(cur["amount"]) else cur["status"], time.time(), r["id"]))
     from . import tenancy
-    amount = inr(ref.get("amount"), True)
+    amount = money(ref.get("amount"), r["currency"], True)
     tenancy.ctl_audit("d2d.payment_refunded", r["tenant_id"], r["id"], {"refund": rid, "amount": ref.get("amount"), "total": total},
                       who="system")
     try:
@@ -253,7 +288,7 @@ def _refunded(r: dict, ref: dict) -> bool:
     orgs._tell_platform(f"Refund for {r['org_name']}: {amount}", f"Razorpay refunded {amount} of {r['payment_id']} ({r['credits']:,} credits). "  # noqa: SLF001
                         "The credits were not taken back; do it on Organisations if that is the rule.", "#/payments")
     _mail(orgs.CONTACT, f"D2D Relay: {amount} refunded to {r['org_name']}", "Razorpay refunded a D2D Relay payment.",
-          _rows(r) + [("Refunded now", amount), ("Refunded in all", inr(total, True)), ("Razorpay refund", rid)],
+          _rows(r) + [("Refunded now", amount), ("Refunded in all", money(total, r["currency"], True)), ("Razorpay refund", rid)],
           "The organisation keeps the credits it bought until you take them back by hand (admin portal, Organisations, Credits).")
     return True
 
@@ -272,15 +307,16 @@ def _paid_news(r: dict, via: str, added: bool) -> None:
     from . import tenancy
     test = "" if r["live"] else " (test)"
     try:
-        tenancy.ctl_audit("d2d.payment", r["tenant_id"], r["id"], {"credits": r["credits"], "amount": r["amount"], "payment": r["payment_id"],
+        tenancy.ctl_audit("d2d.payment", r["tenant_id"], r["id"], {"credits": r["credits"], "amount": r["amount"], "currency": r["currency"],
+                          "payment": r["payment_id"],
                           "method": r.get("method"), "via": via, "live": bool(r["live"]), "added": added}, who=r.get("user_id") or "system")
         if added:
             with db.use(r["tenant_id"]):
                 for uid in {r.get("user_id"), *orgs.owner_ids()} - {None}:
                     notify.add(uid, "ops", f"+{r['credits']:,} credits for {r['org_name']}",
-                               f"{r.get('user_name') or 'Someone'} paid {inr(r['amount'])} online{test}. The credits are in.", "#/org")
+                               f"{r.get('user_name') or 'Someone'} paid {money(r['amount'], r['currency'])} online{test}. The credits are in.", "#/org")
         orgs._tell_platform(f"{r['org_name']} bought {r['credits']:,} credits{test}",                  # noqa: SLF001
-                            f"{r.get('user_name') or ''} ({r.get('email') or ''}) paid {inr(r['amount'], True)}, Razorpay {r['payment_id']}."
+                            f"{r.get('user_name') or ''} ({r.get('email') or ''}) paid {money(r['amount'], r['currency'], True)}, Razorpay {r['payment_id']}."
                             + ("" if added else " The organisation is gone, so no credits were added: refund it on the Razorpay Dashboard."),
                             "#/payments")
     except Exception:  # noqa: BLE001 - the payment is recorded; the news is best effort
@@ -290,7 +326,7 @@ def _paid_news(r: dict, via: str, added: bool) -> None:
         _mail(r["email"], f"D2D Relay: payment received, {r['credits']:,} credits added to {r['org_name']}{test}",
               f"Thank you. We received your payment and added {r['credits']:,} credits to {r['org_name']}.", rows,
               "This is a payment receipt, not a tax invoice. Questions about it? Reply to this email.", reply_to=orgs.CONTACT)
-    _mail(orgs.CONTACT, f"D2D Relay: {r['org_name']} bought {r['credits']:,} credits for {inr(r['amount'])}{test}",
+    _mail(orgs.CONTACT, f"D2D Relay: {r['org_name']} bought {r['credits']:,} credits for {money(r['amount'], r['currency'])}{test}",
           "A D2D Relay organisation bought credits online." if added else
           "A payment came in for an organisation that no longer exists, so no credits were added. Refund it on the Razorpay Dashboard.",
           rows, reply_to=r.get("email") or None)
@@ -301,8 +337,8 @@ def _rows(r: dict) -> list[tuple[str, str]]:
            ("Paid by", f"{r.get('user_name') or ''} <{r.get('email') or ''}>"), ("Credits", f"{int(r['credits']):,}")]
     if r.get("gst"):
         rate = round(int(r["gst"]) * 100 / max(int(r["price"]), 1), 2)
-        out += [("Price", inr(r["price"], True)), (f"GST ({rate:g}%)", inr(r["gst"], True))]
-    out += [("Total paid", inr(r["amount"], True)), ("Paid with", METHODS.get(r.get("method") or "", r.get("method") or "Razorpay")),
+        out += [("Price", money(r["price"], r["currency"], True)), (f"GST ({rate:g}%)", money(r["gst"], r["currency"], True))]
+    out += [("Total paid", money(r["amount"], r["currency"], True)), ("Paid with", METHODS.get(r.get("method") or "", r.get("method") or "Razorpay")),
             ("Razorpay payment", r.get("payment_id") or "")]
     if not r.get("live"):
         out.append(("Test payment", "made with Razorpay test keys: no money moved"))
@@ -384,9 +420,10 @@ def _public(r: dict) -> dict:
 
 
 @router.get("/api/payments")
-def overview():
-    """Buy credits and the Organisation page: whether this person can buy here, the packs and their prices, and the
-    organisation's payments (owners see all of them, others their own). Checkouts still waiting are looked up first."""
+def overview(request: Request):
+    """Buy credits and the Organisation page: whether this person can buy here, the packs and their prices in the
+    person's currency (rupees in India, US dollars elsewhere: local_currency), and the organisation's payments (owners
+    see all of them, others their own). Checkouts still waiting are looked up first."""
     u, o = orgs._must()                                                      # noqa: SLF001
     tid = o["tenant_id"]
     if mode() != "off":
@@ -398,7 +435,9 @@ def overview():
     sql = "SELECT * FROM relay.tn_payments WHERE tenant_id = ? AND (status IN ('paid', 'refunded') OR created > ?)"
     rows = db.q(sql + (" ORDER BY created DESC LIMIT 50" if everyone else " AND user_id = ? ORDER BY created DESC LIMIT 50"),
                 (tid, recent) if everyone else (tid, recent, u["id"]))
-    return {**off, "packs": packs(s) if off["on"] else [], "gst": s["gst"] if off["on"] else 0, "note": s["note"] if off["on"] else "",
+    cur = local_currency(request, s)
+    return {**off, "packs": [p for p in packs(s) if p["currency"] == cur] if off["on"] else [], "currency": cur,
+            "gst": s["gst"] if off["on"] and cur == "INR" else 0, "note": s["note"] if off["on"] and cur == "INR" else "",   # India's
             "credits": o["credits"], "org": o["name"], "contact": orgs.CONTACT, "payments": [_public(r) for r in rows], "all": everyone}
 
 
@@ -407,8 +446,9 @@ class Buy(BaseModel):
 
 
 @router.post("/api/payments/order")
-def start(body: Buy):
-    """Open a checkout: a Razorpay order for the pack's price, and what Razorpay's checkout window needs."""
+def start(body: Buy, request: Request):
+    """Open a checkout: a Razorpay order for the pack's price, in the person's own currency (local_currency), and what
+    Razorpay's checkout window needs."""
     u, o = orgs._must()                                                      # noqa: SLF001
     off = offer(u, o)
     if not off["on"]:
@@ -418,26 +458,32 @@ def start(body: Buy):
     pack = next((p for p in packs() if p["id"] == body.pack), None)
     if not pack:
         raise HTTPException(409, "The prices have just changed. Close this window and open Buy credits again.")
+    if pack["currency"] != local_currency(request):
+        raise HTTPException(409, "Prices are in your local currency (rupees in India, US dollars elsewhere), and it is not the one "
+                                 "this window shows. Close it and open Buy credits again.")
     started = db.one("SELECT count(*) AS n FROM relay.tn_payments WHERE user_id = ? AND created > ?", (u["id"], time.time() - 3600))["n"]
     if started >= ORDERS_PER_HOUR:
         raise HTTPException(429, f"You started several payments this hour. Try again later, or write to {orgs.CONTACT}.")
     pid = "pay-" + secrets.token_hex(8)                                      # also the Razorpay receipt (40 characters at most)
     notes = {"d2d_payment": pid, "organisation": o["name"][:250], "workspace": o["tenant_id"], "credits": str(pack["credits"]),
              "email": (u.get("email") or "")[:250]}
+    cur = pack["currency"]
     try:
-        r = _api("POST", "/orders", {"amount": pack["amount"], "currency": "INR", "receipt": pid, "notes": notes})
+        r = _api("POST", "/orders", {"amount": pack["amount"], "currency": cur, "receipt": pid, "notes": notes})
     except PayError as e:
-        raise HTTPException(502, f"Razorpay could not start the payment: {e} Nothing was charged. Try again in a minute, "
+        abroad = " Paying in US dollars needs Razorpay's international payments switched on for PASDACS's account." if cur != "INR" else ""
+        raise HTTPException(502, f"Razorpay could not start the payment: {e}{abroad} Nothing was charged. Try again in a minute, "
                                  "or use Request credits.") from None
-    if not ORDER_ID.match(str(r.get("id") or "")) or r.get("amount") != pack["amount"] or r.get("currency") != "INR":
+    if not ORDER_ID.match(str(r.get("id") or "")) or r.get("amount") != pack["amount"] or r.get("currency") != cur:
         raise HTTPException(502, "Razorpay's answer did not match the price, so the payment was not started. Nothing was charged.")
     now, live = time.time(), mode() == "live"
     db.run("INSERT INTO relay.tn_payments (id, tenant_id, org_name, user_id, user_name, email, credits, price, gst, amount, currency, live, "
-           "status, order_id, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'INR', ?, 'created', ?, ?, ?)",
+           "status, order_id, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'created', ?, ?, ?)",
            (pid, o["tenant_id"], o["name"], u["id"], u.get("name"), u.get("email"), pack["credits"], pack["price"], pack["gst"],
-            pack["amount"], 1 if live else 0, r["id"], now, now))
-    db.audit("payment.started", pid, {"credits": pack["credits"], "amount": pack["amount"], "order": r["id"], "live": live}, u["id"])
-    return {"id": pid, "key": KEY_ID, "order_id": r["id"], "amount": pack["amount"], "currency": "INR", "name": "D2D Relay",
+            pack["amount"], cur, 1 if live else 0, r["id"], now, now))
+    db.audit("payment.started", pid, {"credits": pack["credits"], "amount": pack["amount"], "currency": cur, "order": r["id"], "live": live},
+             u["id"])
+    return {"id": pid, "key": KEY_ID, "order_id": r["id"], "amount": pack["amount"], "currency": cur, "name": "D2D Relay",
             "description": f"{pack['credits']:,} credits for {o['name']}"[:250], "test": not live,
             "prefill": {"name": u.get("name") or "", "email": u.get("email") or ""}}
 
@@ -550,7 +596,7 @@ def receipt(pid: str):
     if r["status"] not in ("paid", "refunded"):
         raise HTTPException(409, "This payment was not completed, so there is no receipt.")
     e = html.escape
-    rows = _rows(r) + ([("Refunded", inr(r["refunded"], True))] if r.get("refunded") else [])
+    rows = _rows(r) + ([("Refunded", money(r["refunded"], r["currency"], True))] if r.get("refunded") else [])
     page = ("<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
             f"<title>Receipt {e(r['id'])} · D2D Relay</title><style>"
             "body{font:15px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;color:#1d1d1f;background:#fff;margin:0;padding:32px 16px}"
@@ -588,17 +634,20 @@ def admin_view():
     s = settings()
     rows = db.q("SELECT * FROM relay.tn_payments ORDER BY created DESC LIMIT 200")
     month = datetime.now(IST).replace(day=1, hour=0, minute=0, second=0, microsecond=0).timestamp()
-    paid = db.q("SELECT amount, refunded, paid FROM relay.tn_payments WHERE live = 1 AND status IN ('paid', 'refunded')")
+    paid = db.q("SELECT amount, refunded, paid, currency FROM relay.tn_payments WHERE live = 1 AND status IN ('paid', 'refunded')")
     net = lambda p: int(p["amount"]) - int(p["refunded"] or 0)            # noqa: E731
+    totals = {c: {"month": sum(net(p) for p in paid if p["currency"] == c and (p["paid"] or 0) >= month),
+                  "all": sum(net(p) for p in paid if p["currency"] == c), "count": sum(p["currency"] == c for p in paid)}
+              for c in ("INR", "USD")}
     return {"mode": mode(), "key_id": (KEY_ID[:13] + "…" + KEY_ID[-4:]) if len(KEY_ID) > 20 else KEY_ID, "key_secret": bool(KEY_SECRET),
             "webhook_secret": bool(WEBHOOK_SECRET), "webhook_url": _site() + WEBHOOK_PATH, "events": list(EVENTS), "test_for": TEST_FOR,
-            "settings": s, "packs": packs(s), "payments": [_admin_row(r) for r in rows], "contact": orgs.CONTACT,
-            "totals": {"month": sum(net(p) for p in paid if (p["paid"] or 0) >= month), "all": sum(net(p) for p in paid), "count": len(paid)}}
+            "settings": s, "packs": packs(s), "payments": [_admin_row(r) for r in rows], "contact": orgs.CONTACT, "totals": totals}
 
 
 class PackIn(BaseModel):
     credits: int
     price: int                  # whole rupees, before any GST added
+    usd: int = 0                # whole US dollars (0: not sold in dollars)
 
 
 class SettingsIn(BaseModel):
@@ -611,7 +660,8 @@ class SettingsIn(BaseModel):
 
 @router.put("/api/admin/payments/settings")
 def admin_save(body: SettingsIn):
-    """Selling on or off, who may buy, the GST added on top (0: prices as they are), the note under the prices, the packs."""
+    """Selling on or off, who may buy, the GST added on top of rupee prices (0: prices as they are), the note under the
+    prices, the packs (credits, a price in rupees and, optionally, one in US dollars)."""
     from . import tenancy
     u = orgs._admin()                                                        # noqa: SLF001
     if body.who not in ("owners", "everyone"):
@@ -627,10 +677,12 @@ def admin_save(body: SettingsIn):
             raise HTTPException(400, "A pack has 1 to 1,00,000 credits.")
         if not 1 <= p.price <= 1_000_000:
             raise HTTPException(400, "A pack costs ₹1 to ₹10,00,000.")
+        if not 0 <= p.usd <= 100_000:
+            raise HTTPException(400, "A dollar price is $1 to $1,00,000 (or empty: not sold in dollars).")
         if p.credits in seen:
             raise HTTPException(400, f"Two packs have {p.credits:,} credits.")
         seen.add(p.credits)
-        out.append({"credits": p.credits, "price": p.price})
+        out.append({"credits": p.credits, "price": p.price, **({"usd": p.usd} if p.usd else {})})
     if body.on and not out:
         raise HTTPException(400, "Add at least one pack before switching selling on.")
     new = {"on": bool(body.on), "who": body.who, "gst": gst, "note": " ".join((body.note or "").split())[:200],
