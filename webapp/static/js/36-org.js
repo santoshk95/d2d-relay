@@ -37,6 +37,7 @@ function orgMenu(anchor) {
         ` ${Number(o.pending_request.credits).toLocaleString()} credits asked for`) : null),
     h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); creditsDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Request credits')),
     h('a', {class: 'pmitem', href: '#/org', onclick: closePopover}, icon('building'), h('span', {class: 'grow'}, 'Organisation, people and credit history')),
+    h('a', {class: 'pmitem', href: '/privacy.html', target: '_blank', rel: 'noopener', onclick: closePopover}, icon('shield'), h('span', {class: 'grow'}, 'Privacy notice')),
   ], 'profile');
 }
 /* the credits left, fetched again after something used or added credits (and now and then) */
@@ -186,7 +187,22 @@ async function renderOrg() {
             ? h('button', {class: 'btn sm ghost', type: 'button', onclick: async () => {
                 try { await api(`/api/org/credit-request/${encodeURIComponent(r.id)}/withdraw`, {method: 'POST'}); await refreshOrg(true); renderOrg(); }
                 catch (e) { notify(e.message, 'err'); } }}, 'Withdraw') : null))))))
-        : h('div', {class: 'muted small'}, 'None yet. PASDACS approves every credit request: use Request credits.')));
+        : h('div', {class: 'muted small'}, 'None yet. PASDACS approves every credit request: use Request credits.')),
+    yourDataCard(d));
+}
+/* item 22: what D2D Relay holds about the person, and how it is removed (app/governance.py, /privacy.html) */
+function yourDataCard(d) {
+  const contact = ORG().contact || 'info@pasdacs.com';
+  return h('div', {class: 'card'}, h('h3', {}, 'Your data'),
+    h('p', {class: 'small muted', style: 'margin-top:0'}, 'What D2D Relay keeps about you, who handles it and for how long: ',
+      h('a', {href: '/privacy.html', target: '_blank', rel: 'noopener'}, 'privacy notice'), '.'),
+    h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'},
+      h('a', {class: 'btn', href: '/api/me/data', download: 'd2d-relay-my-data.json'}, icon('download'), 'Download my data'),
+      h('span', {class: 'small muted'}, 'Your profile, sign-ins, dashboards, Ask Relay conversations and credit requests, as a file.')),
+    h('ul', {class: 'small muted', style: 'margin:12px 0 0;padding-left:18px'},
+      h('li', {}, 'Delete a dashboard on its own page (Delete), and an Ask Relay conversation in Ask Relay.'),
+      h('li', {}, d.may_manage ? 'As an owner you can remove people (People, above).' : 'An owner of your organisation can remove you.'),
+      h('li', {}, 'To have your account or the whole organisation erased, write to ', h('a', {href: 'mailto:' + contact}, contact), '.')));
 }
 /* ---------------- people: owners add people, make owners or members, remove and add back (app/orgs.py) ---------------- */
 function peopleCard(d, th) {

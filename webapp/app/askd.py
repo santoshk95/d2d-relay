@@ -15,6 +15,7 @@ Claude — checks each query (one read-only SELECT, only the listed tables, no f
 person's permissions and hands back the rows. At most MAX_QUERIES rounds. Every number in an answer comes from a
 query result; the answer shows the SQL, where it ran, the checks, and whether it used certified metrics.
 """
+import asyncio
 import hashlib
 import json
 import re
@@ -442,6 +443,7 @@ async def ask_json(u: dict, system: str, prompt: str, step: str, model: str | No
     Counts against the person's quota and is recorded in the cost records under `step`."""
     costs.check(u["id"])
     res = await _claude(u, prompt, None, _workdir(u["id"]), model, system)
+    await _forget(u, [res.get("session_id")])
     use = res.get("usage") or {}
     costs.record("llm", u["id"], step=step, model=res.get("model"), provider=res.get("provider"),
                  tokens=sum(v for v in use.values() if isinstance(v, (int, float))), cost_usd=res.get("cost_usd") or 0)
@@ -451,6 +453,14 @@ async def ask_json(u: dict, system: str, prompt: str, step: str, model: str | No
         return json.loads(m.group(0)) if m else {}
     except ValueError:
         return {}
+
+
+async def _forget(u: dict, sessions) -> None:
+    """Data governance: the AI engine keeps no transcript of an answer once it is given (governance.forget_ai)."""
+    ids = sorted({s for s in sessions if s})
+    if ids:
+        from . import governance
+        await asyncio.to_thread(governance.forget_ai, _workdir(u["id"]), ids)
 
 
 def _workdir(uid: str) -> str:
@@ -521,33 +531,38 @@ async def ask(u: dict, question: str, scope: dict, thread_id: str | None = None,
     queries: list[dict] = []
     session, usage = None, {"cost_usd": 0.0, "tokens": 0, "model": None, "provider": None}
     reply = None
-    for _ in range(MAX_QUERIES + 2):
-        res = await _claude(u, prompt, session, _workdir(u["id"]), model)
-        session = res.get("session_id")
-        usage["cost_usd"] += res.get("cost_usd") or 0
-        usage["tokens"] += sum((res.get("usage") or {}).values())
-        usage["model"], usage["provider"] = res.get("model") or usage["model"], res.get("provider")
-        reply = _json_reply(res.get("text", ""))
-        if reply is None:
-            prompt = "Reply with exactly one JSON object as described (action query or answer), nothing else."
-            continue
-        if reply["action"] == "answer":
-            break
-        if len(queries) >= MAX_QUERIES:
-            prompt = "That is the query limit. Answer now with the results you have (action answer)."
-            continue
-        qid = f"q{len(queries) + 1}"
-        try:
-            r = run_query(ctx["engines"], str(reply.get("engine", "")), str(reply.get("sql", "")), u)
-            queries.append({"id": qid, **r, "why": reply.get("why")})
-            preview = {"columns": r["columns"], "rows": r["rows"][:PREVIEW_ROWS], "row_count": r["row_count"], "limited": r["limited"]}
-            prompt = f"Result of {qid} ({r['where']}): " + json.dumps(preview, default=str)[:20000]
-        except (AskError, connectors.ConnectorError) as e:
-            queries.append({"id": qid, "engine": reply.get("engine"), "sql": reply.get("sql"), "error": str(e)})
-            prompt = f"{qid} was refused or failed: {e}. Fix the query (or answer if you cannot)."
-        except Exception as e:  # noqa: BLE001 - the warehouse's message helps Claude correct the SQL
-            queries.append({"id": qid, "engine": reply.get("engine"), "sql": reply.get("sql"), "error": str(e)[:300]})
-            prompt = f"{qid} failed in the warehouse: {str(e)[:300]}. Fix the query (or answer if you cannot)."
+    used: set = set()                   # the AI engine's sessions for this answer: forgotten once it is given
+    try:
+        for _ in range(MAX_QUERIES + 2):
+            res = await _claude(u, prompt, session, _workdir(u["id"]), model)
+            session = res.get("session_id")
+            used.add(session)
+            usage["cost_usd"] += res.get("cost_usd") or 0
+            usage["tokens"] += sum((res.get("usage") or {}).values())
+            usage["model"], usage["provider"] = res.get("model") or usage["model"], res.get("provider")
+            reply = _json_reply(res.get("text", ""))
+            if reply is None:
+                prompt = "Reply with exactly one JSON object as described (action query or answer), nothing else."
+                continue
+            if reply["action"] == "answer":
+                break
+            if len(queries) >= MAX_QUERIES:
+                prompt = "That is the query limit. Answer now with the results you have (action answer)."
+                continue
+            qid = f"q{len(queries) + 1}"
+            try:
+                r = run_query(ctx["engines"], str(reply.get("engine", "")), str(reply.get("sql", "")), u)
+                queries.append({"id": qid, **r, "why": reply.get("why")})
+                preview = {"columns": r["columns"], "rows": r["rows"][:PREVIEW_ROWS], "row_count": r["row_count"], "limited": r["limited"]}
+                prompt = f"Result of {qid} ({r['where']}): " + json.dumps(preview, default=str)[:20000]
+            except (AskError, connectors.ConnectorError) as e:
+                queries.append({"id": qid, "engine": reply.get("engine"), "sql": reply.get("sql"), "error": str(e)})
+                prompt = f"{qid} was refused or failed: {e}. Fix the query (or answer if you cannot)."
+            except Exception as e:  # noqa: BLE001 - the warehouse's message helps Claude correct the SQL
+                queries.append({"id": qid, "engine": reply.get("engine"), "sql": reply.get("sql"), "error": str(e)[:300]})
+                prompt = f"{qid} failed in the warehouse: {str(e)[:300]}. Fix the query (or answer if you cannot)."
+    finally:
+        await _forget(u, used)
     if not reply or reply["action"] != "answer":
         raise AskError("Ask D could not finish an answer. Try asking more specifically.")
     body = _finish(reply, queries, ctx, usage)

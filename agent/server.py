@@ -23,6 +23,8 @@ never waits behind a build. One run at a time in each lane.
 import asyncio
 import json
 import os
+import re
+import shutil
 import time
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
@@ -438,3 +440,99 @@ def snapshot(req: Snapshot):
         finally:
             browser.close()
     return {"png": base64.b64encode(png).decode()}
+
+
+# ---------------------------------------------------------------- forgetting runs (data governance, item 22)
+CLAUDE_HOME = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
+SESSION_ID = re.compile(r"^[0-9a-fA-F][0-9a-fA-F-]{7,63}$")
+PER_SESSION = ("tasks", "session-env", "file-history", "debug", "todos")     # Claude Code's other records, by session id
+
+
+class Forget(BaseModel):
+    workdir: str | None = None          # a folder the runs used, as POST /runs takes it
+    sessions: list[str] | None = None   # only these sessions of it (an Ask D answer); none: every run it had
+    missing: bool = False               # instead: every folder under the projects root that no longer exists
+    older_than_days: float | None = None   # with missing: also every transcript not touched for this long
+
+
+def _slug(path: Path) -> str:
+    """Where Claude Code keeps a working folder's sessions: ~/.claude/projects/<the path, every other character a dash>."""
+    return re.sub(r"[^A-Za-z0-9]", "-", str(path))
+
+
+def _drop_session(sid: str) -> int:
+    n = 0
+    for sub in PER_SESSION:
+        base = CLAUDE_HOME / sub
+        for p in list(base.glob(sid + "*")) if base.is_dir() else []:
+            if p.is_dir():
+                shutil.rmtree(p, ignore_errors=True)
+            else:
+                p.unlink(missing_ok=True)
+            n += 1
+    return n
+
+
+def _drop(folder: Path, sessions: list[str] | None = None) -> int:
+    if not folder.is_dir():
+        return 0
+    n = 0
+    for sid in ([p.stem for p in folder.glob("*.jsonl")] if sessions is None else sessions):
+        if not SESSION_ID.match(sid):
+            continue
+        n += _drop_session(sid)
+        if sessions is not None:
+            for p in (folder / f"{sid}.jsonl", folder / sid):
+                if p.is_dir():
+                    shutil.rmtree(p, ignore_errors=True)
+                    n += 1
+                elif p.exists():
+                    p.unlink(missing_ok=True)
+                    n += 1
+    if sessions is None:
+        shutil.rmtree(folder, ignore_errors=True)
+        n += 1
+    return n
+
+
+def _live_folders() -> set[str]:
+    """The slugs of every folder a run can use today: the projects root, its folders, and each tenant's folders."""
+    out = {ROOT}
+    for p in ROOT.iterdir():
+        if p.is_dir():
+            out.add(p)
+    tenants = ROOT / ".tenants"
+    for t in tenants.iterdir() if tenants.is_dir() else []:
+        if t.is_dir():
+            out.add(t)
+            out.update(p for p in t.iterdir() if p.is_dir())
+    return {_slug(p) for p in out}
+
+
+@app.post("/forget")
+def forget(req: Forget):
+    """Delete Claude Code's own record of runs (the transcripts with the tool output saved beside them, task lists,
+    shell state) once what they read is deleted: a dashboard, an Ask D answer, an organisation (missing: every folder
+    that is gone). The transcripts hold what the AI read, so they must not outlive it. Claude Code also drops any
+    transcript older than cleanupPeriodDays by itself (managed settings)."""
+    projects = CLAUDE_HOME / "projects"
+    if req.missing:
+        root, live = _slug(ROOT), _live_folders()
+        mine = [d for d in (projects.glob(root + "*") if projects.is_dir() else [])
+                if d.is_dir() and (d.name == root or d.name.startswith(root + "-"))]
+        gone = [d for d in mine if d.name not in live]
+        removed = sum(_drop(d) for d in gone)
+        if req.older_than_days:                 # Claude Code's own clean-up runs only when a run starts: this one nightly
+            cutoff = time.time() - req.older_than_days * 86400
+            for d in mine:
+                old = [f.stem for f in d.glob("*.jsonl") if d.name in live and f.stat().st_mtime < cutoff]
+                removed += _drop(d, old) if old else 0
+        return {"removed": removed, "folders": len(gone)}
+    if not req.workdir:
+        raise HTTPException(400, "workdir or missing")
+    target = (ROOT / req.workdir).resolve()
+    if ROOT not in target.parents:
+        raise HTTPException(400, "workdir must be inside the projects root")
+    if req.sessions is not None and not all(SESSION_ID.match(s) for s in req.sessions):
+        raise HTTPException(400, "unknown session id")
+    return {"removed": _drop(projects / _slug(target), req.sessions)}

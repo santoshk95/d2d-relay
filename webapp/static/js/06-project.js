@@ -30,8 +30,22 @@ function header(st) {
       h('button', {class: 'btn' + ((S.pins || []).includes(st.id) ? ' on' : ''), 'aria-pressed': String((S.pins || []).includes(st.id)),
         title: (S.pins || []).includes(st.id) ? 'Unpin from the sidebar' : 'Pin to the sidebar', onclick: async e => { await togglePin(st.id); S.key = null; render(); }},
         icon('pin'), (S.pins || []).includes(st.id) ? 'Pinned' : 'Pin'),
-      st.access && st.access.can_share ? h('button', {class: 'btn', onclick: () => shareDialog(st)}, icon('share'), 'Share') : null),
+      st.access && st.access.can_share ? h('button', {class: 'btn', onclick: () => shareDialog(st)}, icon('share'), 'Share') : null,
+      st.access && st.access.can_delete ? h('button', {class: 'btn ghost danger', title: 'Delete this dashboard and everything made for it', onclick: () => deleteDashboard(st)}, icon('x'), 'Delete') : null),
     null);   // P14's "numbers under review" banner (observeWarnings): D2D Relay has no data observability, its API answers 404
+}
+/* item 22: a dashboard and everything made for it, deleted for everyone (app/governance.py) */
+async function deleteDashboard(st) {
+  if (!await confirmBox(`Delete ${st.name}?`, 'Its uploaded data, plan, versions, Power BI files and activity log, and the Ask Relay conversations '
+    + 'about it, are deleted for everyone it is shared with. Nightly backups keep a copy for up to 14 days. Credits already used are not returned. '
+    + 'This cannot be undone.', 'Delete dashboard')) return;
+  try {
+    await api(`/api/projects/${st.id}`, {method: 'DELETE'});
+    S.projects = (S.projects || []).filter(p => p.id !== st.id);
+    S.key = null;
+    notify(`${st.name} deleted`, 'ok');
+    location.hash = '#/d2d';
+  } catch (e) { notify(e.message, 'err'); }
 }
 function stepper(st) {
   // generated demo data adds a first step

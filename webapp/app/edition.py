@@ -15,6 +15,8 @@ Everything else in the copied code base is switched off here, in one place:
 """
 from __future__ import annotations
 
+import re
+
 NAME = "D2D Relay"
 KEEP_MODULES = {"d2d", "bi", "connect", "gates", "visuals", "demodata", "runners", "ops", "govern"}
 # The connectors PASDACS can switch on for an organisation (connectors.KINDS), in the order they are listed, with what
@@ -38,6 +40,10 @@ EXTRA_BLOCKED = ("/api/schedules", "/api/schedules-draft", "/api/schedules-measu
 # The Connections module page; Ask Relay (Ask D); a reviewer's answer on a dashboard (/api/reviews/<id>/<review>; only
 # the list of everyone's reviews, /api/reviews, stays off)
 ALLOWED_UNDER_BLOCKED = ("/api/m/connect", "/api/askd", "/api/reviews/")
+
+# Item 22: routes left from RELAY that would send data out in ways D2D Relay does not offer: pushing a dashboard to
+# GitHub, writing back into a warehouse (D2D Relay only reads warehouses)
+EGRESS = re.compile(r"^/api/(projects/[^/]+/github|connections/[^/]+/write)/?$")
 
 BLOCKED_API: tuple[str, ...] = EXTRA_BLOCKED
 _applied = False
@@ -66,6 +72,8 @@ def apply() -> None:
 
 
 def blocked(path: str) -> bool:
+    if EGRESS.match(path):
+        return True
     if path.startswith(ALLOWED_UNDER_BLOCKED):
         return False
     return any(path == p or path.startswith(p if p.endswith("/") else p + "/") or path.startswith(p + "?") for p in BLOCKED_API)

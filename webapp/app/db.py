@@ -330,8 +330,8 @@ def _check_ready(t: str) -> None:
     if t in _ready or t in _initialising or t == PLATFORM:    # the platform's database is the one it always was
         return
     if _control_ready:
-        with use(PLATFORM):
-            known = one("SELECT 1 AS x FROM relay.tn_tenants WHERE id = ?", (t,))
+        with use(PLATFORM):         # never a closed one: an erased organisation's schema must not come back empty (item 22)
+            known = one("SELECT 1 AS x FROM relay.tn_tenants WHERE id = ? AND status <> 'closed'", (t,))
         if known:
             init_tenant(t)
             return

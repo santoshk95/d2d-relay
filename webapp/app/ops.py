@@ -5,7 +5,8 @@ on the host: output/backups). Files larger than BIG_MB are left out (big uploade
 project folder; say so in the manifest) and so are caches and staging folders that the app rebuilds.
 Retention: the last KEEP backups are kept; Parquet extract caches unused for CACHE_DAYS are removed (they are
 rebuilt from the CSVs on next use). Old prototype versions and activity logs are kept (no automatic deletion of
-anything a person made; an organisation can set rules later).
+anything a person made: they delete a dashboard or a conversation themselves). Logs, sign-in codes, the answer cache,
+manual dumps and the AI engine's transcripts follow governance.py (item 22).
 
 P17: one backup holds the platform's own workspace as before (index.db / index.jsonl.gz, secrets.enc, projects.zip),
 the control plane (control.db / control.jsonl.gz) and every other tenant under tenants/<id>/ (the same three files).
@@ -126,7 +127,9 @@ def retention() -> dict:
                 mine += 1
         if mine:
             db.audit("retention", "extract caches", {"cache_files_removed": mine, "older_than_days": CACHE_DAYS}, "system")
-    return {"cache_files_removed": removed, "mb_freed": round(freed / 1048576, 1), "older_than_days": CACHE_DAYS}
+    from . import governance                    # item 22: logs, sign-in codes, answer cache, manual dumps, AI transcripts
+    return {"cache_files_removed": removed, "mb_freed": round(freed / 1048576, 1), "older_than_days": CACHE_DAYS,
+            "governance": governance.sweep()}
 
 
 def _seconds_to_next_run() -> float:

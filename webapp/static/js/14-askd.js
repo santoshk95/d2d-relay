@@ -361,8 +361,12 @@ async function renderAskD() {
       h('div', {class: 'chips', style: 'justify-content:center'}, (opts.suggestions || []).map(x => h('button', {class: 'chip', type: 'button', onclick: () => ask(x)}, icon('spark'), ' ' + x))),
       h('div', {class: 'small muted', style: 'margin-top:16px'}, 'Tip: ask about a trend ("month by month"), a comparison ("vs last year"), the best or worst ("top 5") or a cause ("why did … drop?").')));
   }
+  const delConv = th ? h('button', {class: 'btn ghost danger', type: 'button', onclick: async () => {
+    if (!await confirmBox('Delete this conversation?', 'Its questions and answers are deleted. This cannot be undone.', 'Delete conversation')) return;
+    try { await api(`/api/askd/threads/${encodeURIComponent(th.id)}`, {method: 'DELETE'}); notify('Conversation deleted', 'ok'); location.hash = '#/askd'; }
+    catch (e) { notify(e.message, 'err'); } }}, icon('x'), 'Delete conversation') : null;
   page.append(h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('h1', {}, 'Ask Relay'),
-      h('div', {class: 'meta'}, 'Ask a question about your business. Get the answer, a chart and what to do next.'))),
+      h('div', {class: 'meta'}, 'Ask a question about your business. Get the answer, a chart and what to do next.')), delConv),
     h('div', {class: 'vwrap'}, h('div', {}, costBox, threadsBox),
       h('div', {class: 'stack'}, chat, h('div', {class: 'card', style: 'margin:0;position:sticky;bottom:8px'},
         h('div', {class: 'row', style: 'gap:8px;margin-bottom:8px'}, h('span', {class: 'small muted'}, 'Asking about'), scopeSel), input,

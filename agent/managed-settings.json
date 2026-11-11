@@ -19,6 +19,8 @@
   },
   "allowManagedHooksOnly": true,
   "enableAllProjectMcpServers": false,
+  "cleanupPeriodDays": 7,
+  "autoMemoryEnabled": false,
   "hooks": {
     "PreToolUse": [
       {

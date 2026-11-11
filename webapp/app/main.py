@@ -31,6 +31,7 @@ from . import home, mailer, monitor, notify, phases, registry, schedules, usage
 from . import doctor, errors
 from . import branding, edition, orgs, otp           # D2D Relay: the dashboard-only catalogue, organisations and credits, the email-code sign-in
 from . import portal                                 # D2D Relay: the public site or the admin portal (D2D_PORTAL)
+from . import governance                             # item 22: erasure, "Download my data", retention
 
 errors.install()                                # every traceback.print_exc() and thread crash reports Relay's own bugs (Relay Doctor)
 STATIC = Path(__file__).resolve().parent.parent / "static"
@@ -122,6 +123,7 @@ app.include_router(monitor.router)             # metrics, monitoring, alerts on 
 app.include_router(doctor.router)              # Relay Doctor: crashes found, fixed, proven and deployed by the service on the host
 app.include_router(registry.router)            # module registry, brand settings (P9)
 app.include_router(home.router)                # Home insight dashboard (P9)
+app.include_router(governance.router)          # item 22: delete a dashboard or a conversation, download my data
 for _r in phases.ROUTERS:                      # P10 onwards: one router per phase module (app/phases.py)
     app.include_router(_r)
 app.include_router(branding.router)            # D2D Relay: Branding (logo + description -> palettes)
@@ -548,7 +550,8 @@ def get_project(pid: str):
     except Exception:  # noqa: BLE001 - never break the project page for the badge
         st["certification"] = {}
     st["access"] = {"level": level, "via": via, "can_edit": auth.can_project(me, "edit", db.project(pid)),
-                    "can_publish": auth.can_project(me, "publish", db.project(pid)), "can_share": level == "owner"}
+                    "can_publish": auth.can_project(me, "publish", db.project(pid)), "can_share": level == "owner",
+                    "can_delete": level == "owner"}
     st["runs"] = [_no_costs(r) for r in st.get("runs") or []]      # D2D Relay: AI costs and tokens stay on the server
     st["credits"] = {**orgs.project_credits(pid), "retry": orgs.retry_cost(st), "costs": orgs.costs()}
     st.setdefault("model", worker.DEFAULT_MODEL)
