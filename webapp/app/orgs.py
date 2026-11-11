@@ -204,9 +204,15 @@ def join(tid: str, email: str) -> str:
         db.run("INSERT INTO relay.tn_accounts (user_id, email, home_tenant, created) VALUES (?, ?, ?, ?)", (uid, email, tid, now))
         db.audit("org.joined", uid, {"email": email}, uid)
         if o:
-            notify.add(o["owner_id"], "share", f"{name} joined {o['name']}",
-                       f"{email} signed in for the first time and joined your organisation. Credits are shared.", "#/org")
+            for oid in owner_ids():
+                notify.add(oid, "share", f"{name} joined {o['name']}",
+                           f"{email} signed in for the first time and joined your organisation. Credits are shared.", "#/org")
     return uid
+
+
+def owner_ids() -> list[str]:
+    """The current workspace's owners (people management: an organisation can have several; its admins)."""
+    return [r["id"] for r in db.q("SELECT id FROM users WHERE org_role = 'admin' AND active = 1 AND home_tenant IS NULL")]
 
 
 # ---------------------------------------------------------------- connectors (switched on per organisation by PASDACS)
@@ -264,12 +270,12 @@ def _tell_platform(title: str, text: str, link: str) -> None:
 
 
 def _tell_owners(tid: str, title: str, text: str, link: str) -> None:
-    """A notification for the organisation's owner."""
-    o = row(tid)
-    if not o:
+    """A notification for every owner of the organisation."""
+    if not row(tid):
         return
     with db.use(tid):
-        notify.add(o["owner_id"], "ops", title, text, link)
+        for oid in owner_ids():
+            notify.add(oid, "ops", title, text, link)
 
 
 # ---------------------------------------------------------------- credits
@@ -395,9 +401,10 @@ def me_info(u: dict | None) -> dict:
     out = {"platform_admin": platform_admin(u), "portal": portal.NAME, "costs": COST, "contact": CONTACT}
     if not o:
         return out
-    owner = u["id"] == o["owner_id"]
+    primary = u["id"] == o["owner_id"]
     return {**out, "id": o["tenant_id"], "name": o["name"], "domain": o["domain"], "credits": o["credits"], "owner": _owner(o),
-            "is_owner": owner, "setup_needed": owner and not o["setup_done"],      # only the owner sets the organisation up
+            "is_owner": is_owner(u), "is_primary": primary,                       # people management: several owners, one main
+            "setup_needed": primary and not o["setup_done"],                      # only the main owner sets the organisation up
             "connectors": connectors_of(o["tenant_id"]),                          # none: CSV files only
             "pending_request": _pending(o["tenant_id"])}                          # credits asked for, not answered yet
 
@@ -423,24 +430,32 @@ def _must() -> tuple[dict, dict]:
     return u, o
 
 
+def is_owner(u: dict | None) -> bool:
+    """One of the organisation's owners: its admins, in their own workspace (never a guest row)."""
+    return bool(u) and u.get("org_role") == "admin" and not u.get("home_tenant") and bool(u.get("active", 1))
+
+
 def _may_manage(u: dict, o: dict) -> bool:
-    return u["id"] == o["owner_id"] or platform_admin(u)
+    return is_owner(u) or platform_admin(u)
 
 
 @router.get("/api/org")
 def get_org():
-    """The person's organisation: owner, people, credits and their history."""
+    """The person's organisation: its owners and people, credits and their history, credit requests. Owners also get
+    the people they removed (to add them back)."""
     u, o = _must()
-    people = db.q("SELECT id, name, email, org_role, last_login, created FROM users WHERE active = 1 AND home_tenant IS NULL "
-                  "ORDER BY created")
-    for p in people:
-        p["owner"] = p["id"] == o["owner_id"]
+    everyone = db.q("SELECT id, name, email, org_role, active, last_login, created, deactivated FROM users WHERE home_tenant IS NULL "
+                    "ORDER BY created")
+    for p in everyone:
+        p["owner"], p["primary"] = p["org_role"] == "admin", p["id"] == o["owner_id"]
+    people = [p for p in everyone if p["active"]]
+    removed = [p for p in everyone if not p["active"]] if _may_manage(u, o) else []
     dashboards = db.one("SELECT count(*) AS n FROM projects")["n"]
     rows = ledger(o["tenant_id"])
     can_open = auth.access_map(u, list({r["project_id"] for r in rows if r["project_id"]}))   # a private dashboard is named, not linked
     for r in rows:
         r["project_open"] = bool(r["project_id"]) and r["project_id"] in can_open
-    return {**me_info(u), "created": o["created"], "people": people, "dashboards": dashboards, "ledger": rows,
+    return {**me_info(u), "created": o["created"], "people": people, "removed": removed, "dashboards": dashboards, "ledger": rows,
             "may_manage": _may_manage(u, o), "requests": _requests_of(o["tenant_id"])}
 
 
@@ -461,6 +476,152 @@ def rename_org(body: OrgPatch):
     from . import tenancy
     tenancy._invalidate()                                               # noqa: SLF001
     db.audit("org.renamed", o["tenant_id"], {"from": o["name"], "to": name}, u["id"])
+    return get_org()
+
+
+# ---------------------------------------------------------------- people (the organisation's owners manage them)
+
+PEOPLE_EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _must_owner() -> tuple[dict, dict]:
+    u, o = _must()
+    if not is_owner(u):
+        raise HTTPException(403, "Only the organisation's owners manage its people.")
+    return u, o
+
+
+def _person(uid: str) -> dict:
+    p = db.one("SELECT * FROM users WHERE id = ? AND home_tenant IS NULL AND active = 1", (uid,))
+    if not p:
+        raise HTTPException(404, "There is no such person in this organisation.")
+    return p
+
+
+def _invite_mail(email: str, name: str, by: dict, o: dict, role: str) -> bool:
+    """Tell a person they were added (best effort: they can sign in anyway, with their email address)."""
+    from . import identity, otp_mail
+    url = identity.PUBLIC_URL or "D2D Relay"
+    lines = [f"Hello {name},", f"{by.get('name') or 'A colleague'} added you to {o['name']} on D2D Relay"
+             + (", as one of its owners." if role == "admin" else "."),
+             "D2D Relay turns your CSV files into checked Power BI dashboards.",
+             f"Sign in at {url} with {email}: we email you a 6-digit code, no password needed.",
+             f"D2D Relay by PASDACS · {CONTACT}"]
+    try:
+        otp_mail.send(email, f"You were added to {o['name']} on D2D Relay", "".join(f"<p>{html.escape(x)}</p>" for x in lines),
+                      reply_to=by.get("email"))
+        return True
+    except Exception:  # noqa: BLE001 - they can still sign in; the owner is told it was not emailed
+        traceback.print_exc()
+        return False
+
+
+class PersonAdd(BaseModel):
+    email: str = ""
+    role: str = "member"                # member | owner
+
+
+@router.post("/api/org/people")
+def add_person(body: PersonAdd):
+    """An owner adds someone from the organisation's own email domain (or adds back someone they removed), as a member
+    or an owner. They are emailed an invitation; they sign in with a code like everyone else."""
+    u, o = _must_owner()
+    email = (body.email or "").strip().lower()
+    role = {"owner": "admin", "member": "member"}.get((body.role or "member").strip().lower())
+    if not role:
+        raise HTTPException(400, "The role is owner or member.")
+    if not PEOPLE_EMAIL.match(email):
+        raise HTTPException(400, "Type their email address.")
+    if domain_of(email) != o["domain"]:
+        raise HTTPException(400, f"Only @{o['domain']} addresses can join {o['name']}.")
+    acct = db.one("SELECT home_tenant FROM relay.tn_accounts WHERE email = ?", (email,))
+    if acct and acct["home_tenant"] != o["tenant_id"]:
+        raise HTTPException(409, "This address already belongs to another organisation on D2D Relay.")
+    old = db.one("SELECT * FROM users WHERE lower(email) = ? AND home_tenant IS NULL", (email,))
+    if old and old["active"]:
+        raise HTTPException(409, f"{old['name']} is already in {o['name']}.")
+    now = time.time()
+    if old:                                                     # someone an owner removed earlier: back in
+        uid, name = old["id"], old["name"]
+        db.run("UPDATE users SET active = 1, deactivated = NULL, deactivated_by = NULL, org_role = ? WHERE id = ?", (role, uid))
+        db.run("INSERT OR IGNORE INTO memberships (user_id, team_id, role) VALUES (?, ?, 'dev')", (uid, db.DEFAULT_TEAM))
+        db.run("INSERT OR IGNORE INTO relay.tn_accounts (user_id, email, home_tenant, created) VALUES (?, ?, ?, ?)", (uid, email, o["tenant_id"], now))
+    else:
+        uid, name = "u-" + secrets.token_hex(6), name_from(email)
+        db.run("INSERT INTO users (id, email, name, org_role, created) VALUES (?, ?, ?, ?, ?)", (uid, email, name, role, now))
+        db.run("INSERT INTO memberships (user_id, team_id, role) VALUES (?, ?, 'dev')", (uid, db.DEFAULT_TEAM))
+        db.run("INSERT INTO relay.tn_accounts (user_id, email, home_tenant, created) VALUES (?, ?, ?, ?)", (uid, email, o["tenant_id"], now))
+    db.audit("org.person_added", uid, {"email": email, "role": role, "back": bool(old)}, u["id"])
+    invited = _invite_mail(email, name, u, o, role)
+    return {**get_org(), "added": {"id": uid, "name": name, "email": email, "back": bool(old), "invited": invited}}
+
+
+class PersonPatch(BaseModel):
+    role: str = ""
+
+
+@router.patch("/api/org/people/{uid}")
+def change_role(uid: str, body: PersonPatch):
+    """An owner makes someone an owner, or an owner a member again (never the main owner: hand that over first)."""
+    u, o = _must_owner()
+    p = _person(uid)
+    role = {"owner": "admin", "member": "member"}.get((body.role or "").strip().lower())
+    if not role:
+        raise HTTPException(400, "The role is owner or member.")
+    if role == p["org_role"]:
+        return get_org()
+    if role == "member" and p["id"] == o["owner_id"]:
+        raise HTTPException(409, f"{p['name']} is the main owner. Hand the main ownership to someone else first (Transfer ownership).")
+    db.run("UPDATE users SET org_role = ? WHERE id = ?", (role, uid))
+    db.audit("org.role", uid, {"email": p["email"], "role": role}, u["id"])
+    if uid != u["id"]:
+        notify.add(uid, "share", f"You are {'an owner' if role == 'admin' else 'a member'} of {o['name']}",
+                   f"{u.get('name')} changed your role." + (" Owners manage the people, the organisation and its credit requests."
+                                                             if role == "admin" else ""), "#/org")
+    return get_org()
+
+
+@router.delete("/api/org/people/{uid}")
+def remove_person(uid: str):
+    """An owner removes someone: they cannot sign in any more (their address stays this organisation's, so signing in
+    again does not bring them back; an owner can add them back). Their dashboards stay, and the owners can open them."""
+    from . import identity
+    u, o = _must_owner()
+    p = _person(uid)
+    if p["id"] == o["owner_id"]:
+        raise HTTPException(409, f"{p['name']} is the main owner and cannot be removed. Hand the main ownership to someone else first.")
+    db.run("UPDATE users SET active = 0, deactivated = ?, deactivated_by = ? WHERE id = ?", (time.time(), u["id"], uid))
+    identity.end_user_sessions(uid)
+    db.audit("org.person_removed", uid, {"email": p["email"]}, u["id"])
+    if uid == u["id"]:
+        return {"signed_out": True}
+    return get_org()
+
+
+class Transfer(BaseModel):
+    uid: str
+    stay_owner: bool = True
+
+
+@router.post("/api/org/transfer")
+def transfer_ownership(body: Transfer):
+    """The main owner hands the main ownership to someone else in the organisation, who becomes an owner too; the
+    previous main owner stays an owner unless they say otherwise."""
+    from . import tenancy
+    u, o = _must()
+    if u["id"] != o["owner_id"]:
+        raise HTTPException(403, "Only the main owner can hand over the main ownership.")
+    p = _person(body.uid)
+    if p["id"] == u["id"]:
+        raise HTTPException(400, "Choose someone else.")
+    with db.transaction():
+        db.run("UPDATE users SET org_role = 'admin' WHERE id = ?", (p["id"],))
+        db.run("UPDATE relay.tn_orgs SET owner_id = ? WHERE tenant_id = ?", (p["id"], o["tenant_id"]))
+        if not body.stay_owner:
+            db.run("UPDATE users SET org_role = 'member' WHERE id = ?", (u["id"],))
+    tenancy.ctl_audit("d2d.owner_transferred", o["tenant_id"], p["id"], {"from": u["id"], "to": p["id"], "stay_owner": body.stay_owner})
+    notify.add(p["id"], "share", f"You are now the main owner of {o['name']}",
+               f"{u.get('name')} handed the main ownership of {o['name']} to you.", "#/org")
     return get_org()
 
 
@@ -642,9 +803,9 @@ def _answer_mail(r: dict, o: dict, subject: str, lines: list[str]) -> bool:
 
 
 def _tell_asker(r: dict, o: dict, title: str, text: str) -> None:
-    """The person who asked and the organisation's owner, in the app."""
+    """The person who asked and the organisation's owners, in the app."""
     with db.use(r["tenant_id"]):
-        for uid in {r.get("user_id"), o["owner_id"]} - {None}:
+        for uid in {r.get("user_id"), *owner_ids()} - {None}:
             notify.add(uid, "ops", title, text, "#/org")
 
 
@@ -754,6 +915,5 @@ def adjust(tid: str, body: Adjust):
         raise HTTPException(400, f"{o['name']} has {o['credits']} credits; you cannot take away more than that.")
     from . import tenancy
     tenancy.ctl_audit("d2d.credits", tid, tid, {"credits": n, "note": note})
-    with db.use(tid):
-        notify.add(o["owner_id"], "ops", f"{n:+,} credits for {o['name']}", note, "#/org")
+    _tell_owners(tid, f"{n:+,} credits for {o['name']}", note, "#/org")
     return all_orgs()

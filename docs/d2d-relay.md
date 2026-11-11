@@ -139,9 +139,15 @@ Anyone with a business email address can sign in. Free and disposable mail (Gmai
 Mailinator …) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTRA` / `RELAY_PUBLIC_DOMAINS_ALLOW`
 (comma-separated).
 
-- **The first person from a domain** names their organisation after the code and becomes its owner. They then see the
-  first-time setup: the brand (logo, description, palette), which they can skip. Everyone who signs in later from
-  the same domain joins that organisation, and the owner is told.
+- **The first person from a domain** names their organisation after the code and becomes its main owner. They then
+  see the first-time setup: the brand (logo, description, palette), which they can skip. Everyone who signs in later
+  from the same domain joins that organisation as a member, and the owners are told.
+- **People** (Organisation page). An organisation can have several owners. Owners add people from the
+  organisation's own domain as members or owners (each gets an invitation email and signs in with a code), change
+  anyone's role, and remove people: a removed person is signed out and cannot sign in again until an owner adds them
+  back; their dashboards stay, and owners can open them. The main owner (PASDACS's contact and the one who does the
+  first-time setup) cannot be removed or made a member; they hand the main ownership to someone else first (Transfer
+  ownership), staying an owner or not.
 - **Each organisation is its own workspace.** Dashboards, connections, branding, Ask Relay conversations and people
   are never visible to another organisation. Inside one, each person's dashboards are private until shared; the owner
   can open them all.

@@ -159,13 +159,14 @@ async function renderOrg() {
           h('dt', {}, 'Free'), h('dd', {}, 'Confirming the plan, fixing failed review gates, approving and publishing, Ask Relay questions')),
         h('div', {class: 'row', style: 'margin-top:12px;gap:10px;flex-wrap:wrap'}, h('button', {class: 'btn primary', type: 'button', onclick: () => creditsDialog()}, icon('plus'), 'Request credits'),
           h('span', {class: 'small muted'}, 'PASDACS approves every request. When a run fails or is stopped, its credits come back.'))),
-      h('div', {class: 'card'}, h('h3', {}, 'Owner'),
-        d.owner ? [h('b', {}, d.owner.name + (d.is_owner ? ' (you)' : '')), h('div', {class: 'small muted'}, d.owner.email)] : h('div', {class: 'muted'}, '—'),
-        h('p', {class: 'small muted'}, `The first person from @${d.domain} created ${d.name} and owns it. Everyone who signs in with an @${d.domain} `
-          + 'address joins it and shares its credits. Each person\'s dashboards are private until they share them.'))),
-    h('div', {class: 'card'}, h('h3', {}, `People (${d.people.length})`), h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['Name', 'Email', 'Role', 'Joined', 'Last sign-in'], 3),
-      h('tbody', {}, d.people.map(p => h('tr', {}, h('td', {}, p.name), h('td', {}, p.email), h('td', {}, p.owner ? h('span', {class: 'tag acc'}, 'Owner') : 'Member'),
-        h('td', {class: 'n'}, when(p.created)), h('td', {class: 'n'}, p.last_login ? ago(p.last_login) : '—'))))))),
+      h('div', {class: 'card'}, h('h3', {}, 'Owners'),
+        h('div', {class: 'stack', style: 'gap:6px'}, d.people.filter(p => p.owner).map(p => h('div', {},
+          h('b', {}, p.name + (p.id === (S.me || {}).id ? ' (you)' : '')), p.primary ? h('span', {class: 'tag acc', style: 'margin-left:6px'}, 'Main owner') : null,
+          h('div', {class: 'small muted'}, p.email)))),
+        h('p', {class: 'small muted'}, `Owners manage the people, the organisation's name and its credit requests, and can open every dashboard in it. `
+          + `Everyone who signs in with an @${d.domain} address joins ${d.name} as a member and shares its credits; each person's dashboards are private until they share them.`),
+        d.is_primary && d.people.length > 1 ? h('button', {class: 'btn sm', type: 'button', onclick: () => transferDialog(d)}, icon('swap'), 'Transfer ownership') : null)),
+    peopleCard(d, th),
     h('div', {class: 'card'}, h('h3', {}, 'Credit history'),
       d.ledger.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'What', 'Who', 'Dashboard', 'Credits', 'Left'], 4),
         h('tbody', {}, d.ledger.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, LEDGER(r)), h('td', {}, r.user_name || 'Relay'),
@@ -181,6 +182,79 @@ async function renderOrg() {
                 try { await api(`/api/org/credit-request/${encodeURIComponent(r.id)}/withdraw`, {method: 'POST'}); await refreshOrg(true); renderOrg(); }
                 catch (e) { notify(e.message, 'err'); } }}, 'Withdraw') : null))))))
         : h('div', {class: 'muted small'}, 'None yet. PASDACS approves every credit request: use Request credits.')));
+}
+/* ---------------- people: owners add people, make owners or members, remove and add back (app/orgs.py) ---------------- */
+function peopleCard(d, th) {
+  const me = (S.me || {}).id, manage = d.may_manage;
+  const act = async (fn, ok) => { try { const r = await fn(); if (r && r.signed_out) { location.href = '/login.html'; return; }
+    if (ok) notify(ok, 'ok'); await refreshOrg(true); renderOrg(); } catch (e) { notify(e.message, 'err'); } };
+  const roleSel = p => {
+    if (!manage || p.primary) return p.primary ? h('span', {class: 'tag acc'}, 'Main owner') : p.owner ? h('span', {class: 'tag acc'}, 'Owner') : 'Member';
+    const sel = h('select', {class: 'sel', style: 'max-width:130px', 'aria-label': `Role of ${p.name}`},
+      [['owner', 'Owner'], ['member', 'Member']].map(([v, t]) => h('option', {value: v, selected: (p.owner ? 'owner' : 'member') === v}, t)));
+    sel.onchange = () => act(() => api(`/api/org/people/${encodeURIComponent(p.id)}`, {method: 'PATCH', json: {role: sel.value}}), `${p.name} is now ${sel.value === 'owner' ? 'an owner' : 'a member'}`);
+    return sel;
+  };
+  const remove = p => manage && !p.primary ? h('button', {class: 'btn sm ghost danger', type: 'button', onclick: async () => {
+    const self = p.id === me;
+    if (await confirmBox(self ? `Leave ${d.name}?` : `Remove ${p.name}?`, (self ? 'You will be signed out and cannot sign in to it again unless an owner adds you back. '
+      : `${p.name} is signed out and cannot sign in to ${d.name} again unless an owner adds them back. `) + 'Their dashboards stay; owners can still open them.', self ? 'Leave' : 'Remove'))
+      act(() => api(`/api/org/people/${encodeURIComponent(p.id)}`, {method: 'DELETE'}), self ? null : `${p.name} removed`);
+  }}, p.id === me ? 'Leave' : 'Remove') : null;
+  return h('div', {class: 'card'},
+    h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap;align-items:center'}, h('h3', {style: 'margin:0'}, `People (${d.people.length})`), h('span', {class: 'spacer'}),
+      manage ? h('button', {class: 'btn sm primary', type: 'button', onclick: () => addPersonDialog(d)}, icon('plus'), 'Add people') : null),
+    h('div', {class: 'orgwrap', style: 'margin-top:10px'}, h('table', {class: 'utable'}, th(['Name', 'Email', 'Role', 'Joined', 'Last sign-in', ''], 3),
+      h('tbody', {}, d.people.map(p => h('tr', {}, h('td', {}, p.name + (p.id === me ? ' (you)' : '')), h('td', {}, p.email), h('td', {}, roleSel(p)),
+        h('td', {class: 'n'}, when(p.created)), h('td', {class: 'n'}, p.last_login ? ago(p.last_login) : h('span', {class: 'muted'}, 'not yet')),
+        h('td', {class: 'n'}, remove(p))))))),
+    (d.removed || []).length ? h('details', {class: 'more', style: 'margin-top:10px'}, h('summary', {}, `Removed (${d.removed.length})`),
+      h('div', {class: 'stack', style: 'gap:6px;margin-top:8px'}, d.removed.map(p => h('div', {class: 'row', style: 'gap:8px;flex-wrap:wrap'},
+        h('span', {}, h('b', {}, p.name), ` · ${p.email}`, h('span', {class: 'small faint'}, ` · removed ${when(p.deactivated)}`)), h('span', {class: 'spacer'}),
+        h('button', {class: 'btn sm', type: 'button', onclick: () => act(() => api('/api/org/people', {json: {email: p.email, role: 'member'}}), `${p.name} is back in ${d.name}`)}, 'Add back')))))
+      : null);
+}
+function addPersonDialog(d) {
+  const emails = h('textarea', {rows: 3, placeholder: `name@${d.domain}, one or more (one a line, or separated by commas)`});
+  const role = h('select', {class: 'sel', style: 'max-width:200px'}, [['member', 'Member'], ['owner', 'Owner']].map(([v, t]) => h('option', {value: v}, t)));
+  const out = h('div', {role: 'status'});
+  const ok = h('button', {class: 'btn primary', type: 'button'}, icon('plus'), 'Add');
+  const m = modal(`Add people to ${d.name}`, h('div', {class: 'mbody'},
+    h('p', {class: 'muted small', style: 'margin-top:0'}, `@${d.domain} addresses only. They get an email; they sign in with a code like everyone else. Members build dashboards and share the credits; owners also manage the people.`),
+    h('label', {class: 'f', style: 'margin-top:0'}, 'Email addresses'), emails, h('label', {class: 'f'}, 'As'), role, out,
+    h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, ok)));
+  ok.onclick = async () => {
+    const list = [...new Set(emails.value.split(/[\s,;]+/).map(x => x.trim()).filter(Boolean))];
+    if (!list.length) return out.replaceChildren(h('div', {class: 'note warn'}, 'Type at least one email address.'));
+    ok.disabled = true;
+    const lines = [];
+    for (const e of list) {
+      try { const r = await api('/api/org/people', {json: {email: e, role: role.value}});
+        lines.push(h('div', {class: 'small'}, '✓ ', `${r.added.name} (${e}) `, r.added.back ? 'is back' : 'added', r.added.invited ? ', invitation emailed' : ', not emailed: tell them to sign in')); }
+      catch (err) { lines.push(h('div', {class: 'small', style: 'color:var(--err)'}, `✗ ${e}: ${err.message}`)); }
+    }
+    out.replaceChildren(h('div', {class: 'note'}, lines));
+    ok.disabled = false; emails.value = '';
+    await refreshOrg(true); renderOrg();
+  };
+}
+function transferDialog(d) {
+  const others = d.people.filter(p => p.id !== (S.me || {}).id);
+  const who = h('select', {class: 'sel'}, others.map(p => h('option', {value: p.id}, `${p.name} · ${p.email}${p.owner ? ' (owner)' : ''}`)));
+  const stay = h('input', {type: 'checkbox', checked: true});
+  const err = h('div', {class: 'err-msg', role: 'alert'});
+  const ok = h('button', {class: 'btn primary', type: 'button'}, 'Transfer');
+  const m = modal(`Transfer the main ownership of ${d.name}`, h('div', {class: 'mbody'},
+    h('p', {class: 'muted small', style: 'margin-top:0'}, 'The main owner is the organisation\'s contact for PASDACS and its first-time setup. They become an owner too, and are told.'),
+    h('label', {class: 'f', style: 'margin-top:0'}, 'New main owner'), who,
+    h('label', {class: 'chk', style: 'margin-top:10px'}, stay, h('span', {}, 'Keep me as an owner')), err,
+    h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, ok)));
+  ok.onclick = async () => {
+    ok.disabled = true;
+    try { await api('/api/org/transfer', {json: {uid: who.value, stay_owner: stay.checked}}); m.remove(); notify('Main ownership transferred', 'ok');
+      await loadMe(); renderOrg(); }
+    catch (e) { ok.disabled = false; err.textContent = e.message; }
+  };
 }
 /* a credit request's answer, in words (the Organisation page and the admin portal's Requests) */
 function requestState(r) {

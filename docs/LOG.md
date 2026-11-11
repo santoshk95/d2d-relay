@@ -149,6 +149,17 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     - Checked on the split test stack: 26 API checks (no credits at the start, 402, one request at a time,
       withdrawing, approving another amount, once only, declining with a reason, a charge after approval), and the
       screens on both sites.
+14. **People management** (the user's request of 2026-11-11; Organisation page, `/api/org/people`, `/api/org/transfer`).
+    - **Several owners** (the workspace's admins, `users.org_role = 'admin'`) and one **main owner**
+      (`relay.tn_orgs.owner_id`: PASDACS's contact and the first-time setup). Owners are told when someone joins.
+    - **Owners** add people from the organisation's own domain as members or owners (an invitation email; they sign in
+      with a code), change roles, and remove people (signed out at once; they cannot sign in again until an owner adds
+      them back, from "Removed"; their dashboards stay). An owner can leave.
+    - **The main owner** cannot be made a member or removed; only they hand the main ownership over (Transfer
+      ownership), staying an owner or not, and the new main owner is told.
+    - Checked on the split test stack: 27 API checks (roles, the domain rule, members refused, the main owner's
+      protection, removing and signing in again refused, adding back, transfer, leaving), and the screens. With the
+      earlier groups, 109 checks pass.
 
 Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
 (JPEG) on Branding but has not picked a palette yet; leave it.
@@ -218,8 +229,6 @@ Cloudflare tunnel always carries `cf-connecting-ip` and still needs the emailed 
 - **Connector sign-in for clients.** BigQuery's "Sign in with Google", and the OAuth options of Snowflake and Fabric,
   need an OAuth client in that organisation's own workspace, and nobody can set one up there yet. Client
   organisations use a service-account key, a password or a key pair instead.
-- People management for owners (remove a colleague, transfer ownership) is not built. A platform admin can do it in
-  the database.
 - **NOT DONE (from item 2):** an Exchange ApplicationAccessPolicy that limits the mail app to info@pasdacs.com. Codes
   now go to any business address; the sender stays info@pasdacs.com.
 - **Row-level security (backlog, 2026-11-10).** D2D can't set up RLS yet. The plan has no roles and the Power BI project
