@@ -377,20 +377,22 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   `daxcheck\start-daxcheck.cmd` and `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC
   restarts"); Claude Code may not add them. Until then, after a restart of the PC someone signs in and starts both
   by hand; the watchdog warns PASDACS after 10 minutes without either.
-- **Going back, if ever needed.** The code: `docker tag d2d-relay:ae18feb d2d-relay:latest` (the version before item
-  17), then `docker compose up -d --no-deps web admin`. The data before the fresh start: stop web and admin, load
+- **Going back, if ever needed.** The code: every deployed version is tagged by its commit; `docker tag
+  d2d-relay:<sha> d2d-relay:latest`, then `docker compose up -d --no-deps web admin` (before item 20: `939b135`;
+  before item 19: `5f59c2e`). The data before the fresh start: stop web and admin, load
   `data\backups\relay-db-20261111-064453.dump` into an emptied `relay` database (`pg_restore --no-owner
   --role=relay_app`) and move the folders in `data\backups\pre-fresh-20261111-121538\projects` back.
 - **Older images:** `d2d-relay:aec0d13` is still the database container's image (its database role has not changed
-  since, so it was left running) and `d2d-relay:ae18feb` is kept for going back; both can go once the database
-  container is recreated on the current image.
+  since, so it was left running); `ae18feb`, `5f59c2e` and `939b135` are kept for going back. They can go once the
+  database container is recreated on the current image (a few seconds without the database).
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
 - **Payments.** Online payment is not built: an organisation requests credits and PASDACS approves them (item 13).
-- **Abuse.** Anyone with a business mailbox can still sign up and create an organisation (as asked), but since item
-  13 it gets no credits, and so no AI time, until PASDACS approves a request.
-- **Ask Relay questions and brand palettes cost no credits** (as asked). Their AI cost is recorded in `usage` only.
+- **Abuse.** Anyone with a business mailbox can sign up and create an organisation (as asked). Since item 19 it gets
+  50 credits at once (about two dashboards' AI time) without anyone's approval; more need PASDACS's approval.
+- **Brand palettes cost no credits** (as asked; Ask Relay has cost credits since item 19). Their AI cost is recorded in
+  `usage` only.
 - **Connector sign-in for clients.** BigQuery's "Sign in with Google", and the OAuth options of Snowflake and Fabric,
   need an OAuth client in that organisation's own workspace, and nobody can set one up there yet. Client
   organisations use a service-account key, a password or a key pair instead.
