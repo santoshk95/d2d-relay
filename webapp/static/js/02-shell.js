@@ -30,8 +30,8 @@ function applyBrand() {
   $('#mlogo').replaceChildren(...(b.partner ? [partnerMark(b), h('b', {}, b.name)] : [markEl(), h('b', {}, 'RELAY')]));   // spread: an array is printed as "[object …]"
   $('#powered').replaceChildren(...(b.partner ? [markEl(), h('span', {}, 'Powered by ', h('b', {}, 'PASDACS Relay'))]
     : [isAdminPortal() ? h('span', {class: 'faint'}, 'D2D Relay admin · PASDACS only')
-      : h('span', {class: 'faint', style: 'line-height:1.35', title: 'D2D Relay: D2D means Data to Dashboard, a product of the Relay Platform by PASDACS'},
-        h('b', {}, 'D2D'), ' · Data to Dashboard', h('br'), 'a Relay Platform product · PASDACS')]));
+      : h('span', {class: 'faint', style: 'line-height:1.35', title: 'D2D Relay: D2D means Data to Decision, a product of the Relay Platform by PASDACS'},
+        h('b', {}, 'D2D'), ' · Data to Decision', h('br'), 'a Relay Platform product · PASDACS')]));
 }
 function setTheme(t, keep) {
   const root = document.documentElement;

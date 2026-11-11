@@ -119,7 +119,7 @@ MODULES = [
     M("finops", "Cost & licence optimisation", "Pay for what you use", "Cloud, warehouse and BI licence spend analysed; unused reports, capacity and seats found and cut.", "consulting", "gauge", ["Power BI capacity", "Snowflake credits", "Azure / AWS / GCP", "RPA licences"], [], short="Cost & licences", status="available", route="#/m/finops", stat="Licence and cloud-cost exports, findings and approved savings plans live", links={"engage": "finops"}, api=["/api/m/finops"]),
     M("enable", "Adoption & enablement", "People ready for the new way", "Learning paths, playbooks and adoption tracking so validating agent work becomes the team’s habit.", "consulting", "users", ["Learning paths", "Playbooks", "Adoption tracking"], [], status="available", route="#/m/enable", stat="Learning paths, guides, playbook and adoption scorecard live", links={"engage": "enable"}, api=["/api/m/enable"]),
     # ---- screens reached through links and the Platform group (not shown as cards)
-    M("d2d", "D2D", "Data to Dashboard", "Describe the dashboard you need — D2D plans it with you, builds a prototype, proves every number and hands you a Power BI file (.pbix).", "hidden", "chart", [], [], status="available", route="#/d2d", roles=["admin", "dev"], ed="ent"),
+    M("d2d", "D2D", "Data to Decision", "Describe the dashboard you need — D2D plans it with you, builds a prototype, proves every number and hands you a Power BI file (.pbix).", "hidden", "chart", [], [], status="available", route="#/d2d", roles=["admin", "dev"], ed="ent"),
     M("migbi", "BI migration", "Reports to Power BI, proven", "Discover → Decide → Convert → Prove → Hand over → Run for a whole BI estate.", "hidden", "swap", [], [], status="available", route="#/migrate-bi", roles=["admin", "dev"], ed="partner", api=["/api/migrate-bi"]),
     M("gates", "Proof & gates", "Nothing ships unproven", "Twelve review gates and Power BI’s own engine check every version before it is approved or published.", "hidden", "shield", [], [], status="available", route="#/d2d", roles=["admin", "dev"]),
     M("publish", "Pages & publishing", "Pages, exports & GitHub", "Insight pages, reviews, GitHub push, Slack / Teams, PDF and PNG exports.", "hidden", "send", [], [], status="available", route="#/pages", roles=["admin", "dev", "viewer"], ed="ent", api=["/api/pages", "/api/reviews"]),
@@ -228,7 +228,7 @@ def confirm_for(m: dict, work: str) -> list:
 
 # ------------------------------------------------------------------ brand settings (Admin › Branding)
 
-DEFAULT_BRAND = {"name": "D2D Relay", "full": "D2D Relay", "tagline": "Data to Dashboard", "partner": False, "mark": "R",
+DEFAULT_BRAND = {"name": "D2D Relay", "full": "D2D Relay", "tagline": "Data to Decision", "partner": False, "mark": "R",
                  "color": "#111111", "accent": "signal", "logo_light": "", "logo_dark": "", "sender": "Relay", "contact": "info@pasdacs.com",
                  "edition": "both", "hourly_rate": 0, "currency": "₹", "usd_rate": 1.0, "powered": "Powered by PASDACS Relay"}
 ACCENTS = ("signal", "gold", "teal", "ink")

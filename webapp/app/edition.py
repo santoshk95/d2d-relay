@@ -1,4 +1,4 @@
-"""D2D Relay (D2D: Data to Dashboard): the dashboard product of the Relay Platform by PASDACS, cut down from RELAY.
+"""D2D Relay (D2D: Data to Decision): the dashboard product of the Relay Platform by PASDACS, cut down from RELAY.
 
 What stays: Ask Relay (Ask D: questions about your data, answered with charts), Dashboards (describe -> plan -> KPIs -> prototype -> review -> Power BI file, .pbix), the visual library,
 CSV / flat-file uploads, and Connections. Platform administration is the admin portal's (portal.py), not the public site's.
