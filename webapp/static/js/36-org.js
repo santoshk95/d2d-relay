@@ -209,21 +209,53 @@ async function renderOrgs() {
       catch (e) { ok.disabled = false; err.textContent = e.message; }
     };
   };
+  const kindLabel = k => (d.catalogue.find(c => c.kind === k) || {}).label || k;
+  const connectorsDialog = o => {             // switch connectors on for one organisation (the public side is CSV only)
+    const picked = new Set(o.connectors || []);
+    const boxes = h('div', {class: 'stack', style: 'gap:6px'}, d.catalogue.map(c => {
+      const cb = h('input', {type: 'checkbox', checked: picked.has(c.kind)});
+      cb.onchange = () => { if (cb.checked) picked.add(c.kind); else picked.delete(c.kind); };
+      return h('label', {class: 'chk'}, cb, h('span', {}, c.label));
+    }));
+    const err = h('div', {class: 'err-msg', role: 'alert'});
+    const ok = h('button', {class: 'btn primary', type: 'button'}, 'Save');
+    const m = modal(`Connectors for ${o.name}`, h('div', {class: 'mbody'},
+      h('p', {class: 'muted small', style: 'margin-top:0'}, `Switched on, ${o.name} can add connections for it and build dashboards from it. `
+        + 'Switched off, its connections stop working at once; they are kept, so switching it on again brings them back. The owner is told.'),
+      boxes, err, h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, ok)));
+    ok.onclick = async () => {
+      ok.disabled = true;
+      try { await api(`/api/admin/orgs/${encodeURIComponent(o.id)}/connectors`, {method: 'PUT', json: {kinds: [...picked]}}); m.remove();
+        notify(`Saved: ${o.name}`, 'ok'); refreshOrg(true); renderOrgs(); }
+      catch (e) { ok.disabled = false; err.textContent = e.message; }
+    };
+  };
   const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('div', {class: 'eyebrow'}, 'Platform'), h('h1', {}, 'Organisations'),
       h('div', {class: 'meta'}, `Every organisation on D2D Relay, each in its own workspace. Each starts with ${credits(d.start)}; `
-        + `a new dashboard uses ${d.costs.dashboard}, a change ${d.costs.change}.`))),
+        + `a new dashboard uses ${d.costs.dashboard}, a change ${d.costs.change}. Organisations use CSV files until you switch a connector on.`))),
     h('div', {class: 'card'}, h('div', {class: 'orgwrap'}, h('table', {class: 'utable'},
-      th(['Organisation', 'Owner', 'People', 'Dashboards', 'Credits used', 'Credits left', 'Last sign-in', ''], 2),
+      th(['Organisation', 'Owner', 'Connectors', 'People', 'Dashboards', 'Credits used', 'Credits left', 'Last sign-in', ''], 3),
       h('tbody', {}, d.orgs.map(o => h('tr', {},
         h('td', {}, h('b', {}, o.name), o.platform ? h('span', {class: 'tag', style: 'margin-left:6px'}, 'Platform') : null,
           o.status && o.status !== 'active' ? h('span', {class: 'tag err', style: 'margin-left:6px'}, o.status) : null,
           h('div', {class: 'small muted'}, '@' + o.domain)),
         h('td', {}, o.owner ? [o.owner.name, h('div', {class: 'small muted'}, o.owner.email)] : '—'),
+        h('td', {class: 'small', style: 'white-space:nowrap', title: (o.connectors || []).map(kindLabel).join(', ') || null},
+          !(o.connectors || []).length ? h('span', {class: 'muted'}, 'CSV only') : o.connectors.length === d.catalogue.length ? `All ${o.connectors.length}`
+            : o.connectors.length > 2 ? `${kindLabel(o.connectors[0])} +${o.connectors.length - 1}` : o.connectors.map(kindLabel).join(', ')),
         h('td', {class: 'n'}, o.people), h('td', {class: 'n'}, o.dashboards), h('td', {class: 'n'}, o.spent), h('td', {class: 'n'}, h('b', {}, o.credits)),
         h('td', {class: 'n'}, o.last_login ? ago(o.last_login) : '—'),
-        h('td', {class: 'n'}, h('button', {class: 'btn sm', type: 'button', onclick: () => adjust(o)}, icon('plus'), 'Credits')))))))),
+        h('td', {class: 'n'}, h('div', {class: 'row', style: 'gap:6px;justify-content:flex-end;flex-wrap:nowrap'},
+          h('button', {class: 'btn sm', type: 'button', onclick: () => connectorsDialog(o)}, icon('plug'), 'Connectors'),
+          h('button', {class: 'btn sm', type: 'button', onclick: () => adjust(o)}, icon('plus'), 'Credits'))))))))),
+    h('div', {class: 'card'}, h('h3', {}, 'Connector requests'), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
+      'Sent from Connections. Each one also went to the contact mailbox by email (unless shown otherwise). Switch the connector on with Connectors above.'),
+      (d.connector_requests || []).length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Organisation', 'Who', 'Connectors', 'Message', 'Emailed'], 5),
+        h('tbody', {}, d.connector_requests.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, r.org_name), h('td', {}, `${r.name || ''} · ${r.email || ''}`),
+          h('td', {}, (r.kinds || []).map(kindLabel).join(', ')), h('td', {}, r.message || '—'), h('td', {class: 'n'}, r.sent ? 'yes' : h('span', {class: 'tag warn'}, 'no')))))))
+        : h('div', {class: 'muted small'}, 'None yet.')),
     h('div', {class: 'card'}, h('h3', {}, 'Credit requests'), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
       'Sent from Add credits. Each one also went to the contact mailbox by email (unless shown otherwise).'),
       d.requests.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Organisation', 'Who', 'Message', 'Credits', 'Emailed'], 4),

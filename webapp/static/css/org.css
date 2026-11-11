@@ -20,5 +20,12 @@
 .orggrid .card{margin:0}
 .delta.plus{color:var(--ok);font-weight:650}
 .orgwrap{overflow-x:auto}
+/* Connections: every connector, switched on by PASDACS per organisation (js/12-connections.js) */
+.conncat{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));margin:0 0 8px}
+.conncat .card{margin:0;display:flex;flex-direction:column}
+.conncat .card .grow{flex:1}
+.conncat .card.on{border-color:var(--accent)}
+.conncat .card svg{width:17px;height:17px;flex:none;color:var(--ink-2)}
+.conncat .card .btn{align-self:flex-start}
 @media (max-width:900px){.orggrid{grid-template-columns:1fr}.orgbtn .oname{max-width:96px}.orgbtn .ocred{font-size:11px}}
 @media (max-width:560px){.orgbtn .oname{display:none}}

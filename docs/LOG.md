@@ -1,6 +1,6 @@
 # D2D Relay: work log and hand-over
 
-Last updated: 2026-11-10 (IST). This file says where the project stands for anyone who clones it.
+Last updated: 2026-11-11 (IST). This file says where the project stands for anyone who clones it.
 
 ## What D2D Relay is
 
@@ -99,6 +99,20 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     `thread_usd`). The APIs no longer send costs (`get_project` drops `usage` and run costs; activity events,
     answers and the list strip them). `/api/home` and `/api/me/usage` are blocked. Every cost is still recorded in
     the `usage` table on the server. The Details tab shows the credits the dashboard used instead.
+11. **Connectors on request** (the user's request of 2026-11-11). The public side takes CSV files (and demo data
+    Relay generates). Connections lists every connector D2D Relay can read (`edition.CONNECTORS`: Google BigQuery,
+    Snowflake, Microsoft Fabric, Amazon Redshift, Amazon Athena, Oracle Database), each marked "On request".
+    - **Asking:** "Ask PASDACS to connect it" emails the request to info@pasdacs.com and notifies the platform admins
+      (`POST /api/org/connector-request`, audited as `d2d.connector_request`). A prefilled email link is the fallback.
+    - **Switching on:** a platform admin ticks connectors per organisation on Organisations
+      (`PUT /api/admin/orgs/{id}/connectors`, column `relay.tn_orgs.connectors`), and the owner is told. PASDACS's
+      own workspace has all of them.
+    - **Enforced on the server** (`orgs.require_connector`): adding, testing, browsing, querying, choosing tables,
+      signing in again, pulling and refreshing need the connector switched on. Switched off, connections stay but are
+      marked so, scheduled refreshes pause with a note, and Ask Relay leaves them out. Listing, sharing, disabling and
+      removing still work. New dashboard offers "From a warehouse" only when a connector is on.
+    - Checked on an isolated container: 28 API checks, and the screens (Connections, the request dialog, New
+      dashboard, Organisations).
 
 Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
 (JPEG) on Branding but has not picked a palette yet; leave it.
@@ -162,8 +176,9 @@ Cloudflare tunnel always carries `cf-connecting-ip` and still needs the emailed 
 - **Abuse.** Anyone with a business mailbox can create an organisation and spend 100 credits of AI time. If that
   happens, lower `RELAY_CREDITS_START` or add an approval step for new organisations.
 - **Ask Relay questions and brand palettes cost no credits** (as asked). Their AI cost is recorded in `usage` only.
-- **BigQuery "Sign in with Google"** needs a Google OAuth client per workspace (Administration, platform admin only),
-  so for client organisations the service-account JSON is the way in.
+- **Connector sign-in for clients.** BigQuery's "Sign in with Google", and the OAuth options of Snowflake and Fabric,
+  need an OAuth client in that organisation's own workspace, and nobody can set one up there yet. Client
+  organisations use a service-account key, a password or a key pair instead.
 - People management for owners (remove a colleague, transfer ownership) is not built. A platform admin can do it in
   the database.
 - **NOT DONE (from item 2):** an Exchange ApplicationAccessPolicy that limits the mail app to info@pasdacs.com. Codes

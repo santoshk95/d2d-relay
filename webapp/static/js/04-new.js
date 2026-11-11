@@ -102,7 +102,9 @@ function renderNew() {
       brief.value = b; if (!prompt.value.trim()) prompt.value = p; if (!name.value.trim()) name.value = t; }}, t))),
     h('div', {class: 'opts', style: 'margin-top:12px'}, h('div', {}, h('label', {class: 'f'}, 'Size'), dsize), h('div', {}, h('label', {class: 'f'}, 'Period'), dmonths)),
     h('div', {class: 'hint', style: 'margin-top:8px'}, 'Relay designs the tables, keys and realistic values — with trends, seasonality and a few stories for the dashboard to find — and the app generates them. The same recipe always gives the same data.'));
-  // a warehouse: one of my connections and the tables I configured on it (they are pulled with my own login)
+  // a warehouse: one of my connections and the tables I configured on it (they are pulled with my own login).
+  // D2D Relay: only once PASDACS has switched a connector on for the organisation; otherwise CSV files (or demo data).
+  const connectorsOn = typeof ORG === 'function' && (ORG().connectors || []).length > 0;
   const whSel = h('select', {class: 'sel'}), whTables = h('div', {class: 'tables', style: 'margin-top:8px'});
   const whPanel = h('div', {class: 'genpanel', style: 'display:none'}, h('div', {class: 'muted small'}, 'Loading your connections…'));
   let whConns = [];
@@ -114,19 +116,22 @@ function renderNew() {
       h('span', {}, h('b', {}, t.object), h('small', {class: 'muted', style: 'display:block'}, t.rows != null ? `${t.rows.toLocaleString()} rows` : 'not pulled yet'))))
       : [h('div', {class: 'muted small'}, 'No tables configured on this connection yet — ', h('a', {href: '#/connections'}, 'choose them'), '.')])); };
   whSel.onchange = drawTables;
-  api('/api/connections').then(r => {
-    whConns = r.connections.filter(c => c.tables.length);
+  if (connectorsOn) api('/api/connections').then(r => {
+    whConns = r.connections.filter(c => c.tables.length && c.allowed !== false);
     whPanel.replaceChildren(...(whConns.length ? [h('label', {class: 'f', style: 'margin-top:0'}, 'Connection'), whSel, whTables, whHint]
-      : [h('div', {}, 'You have no warehouse connection with tables yet. ', h('a', {href: '#/connections'}, 'Connect Google BigQuery'), ' first.')]));
+      : [h('div', {}, 'You have no warehouse connection with tables yet. ', h('a', {href: '#/connections'}, 'Add one on Connections'), ' first.')]));
     whSel.replaceChildren(...whConns.map(c => h('option', {value: c.id}, `${c.name} · ${c.label}`)));
     drawTables();
   }).catch(() => {});
-  const modeBtns = [['upload', 'file', 'Upload my CSV files'], ['warehouse', 'layers', 'From a warehouse'], ['generate', 'spark', 'Generate demo data']].map(([m, ic, t]) =>
-    h('button', {type: 'button', class: m === mode ? 'on' : '', onclick: () => setMode(m)}, icon(ic), t));
+  const MODES = [['upload', 'file', 'Upload my CSV files'], ...(connectorsOn ? [['warehouse', 'layers', 'From a warehouse']] : []), ['generate', 'spark', 'Generate demo data']];
+  const modeBtns = MODES.map(([m, ic, t]) => h('button', {type: 'button', class: m === mode ? 'on' : '', onclick: () => setMode(m)}, icon(ic), t));
+  const onRequest = connectorsOn ? null : h('div', {class: 'hint', style: 'margin-top:8px'},
+    'Data in a warehouse or database (Google BigQuery, Snowflake and others)? PASDACS connects it for your organisation on request: ',
+    h('a', {href: '#/connections'}, 'see Connections'), '.');
   const startText = () => mode === 'generate' ? 'Start — Relay generates the data, then plans' : mode === 'warehouse' ? 'Start — pull the tables, then Relay plans' : 'Start — Relay plans first';
   function setMode(m) {
     mode = m;
-    modeBtns.forEach((b, i) => b.classList.toggle('on', ['upload', 'warehouse', 'generate'][i] === m));
+    modeBtns.forEach((b, i) => b.classList.toggle('on', MODES[i][0] === m));
     genPanel.style.display = m === 'generate' ? '' : 'none';
     whPanel.style.display = m === 'warehouse' ? '' : 'none';
     csv.zone.style.display = m === 'warehouse' ? 'none' : '';
@@ -137,7 +142,7 @@ function renderNew() {
   const form = h('form', {class: 'card formcard'},
     sect('1', 'What do you need?', null, h('label', {class: 'f'}, 'Dashboard name', h('small', {}, 'optional')), name,
       h('label', {class: 'f'}, 'Describe it in your own words'), prompt),
-    sect('2', 'Your data', null, h('div', {class: 'dmode'}, modeBtns), genPanel, whPanel, h('div', {style: 'margin-top:10px'}, csv.zone)),
+    sect('2', 'Your data', null, h('div', {class: 'dmode'}, modeBtns), onRequest, genPanel, whPanel, h('div', {style: 'margin-top:10px'}, csv.zone)),
     sect('3', 'Design reference', ' optional', h('div', {style: 'margin-top:10px'}, img.zone)),
     sect('4', 'Options', ' you can keep the defaults',
       houseBox,

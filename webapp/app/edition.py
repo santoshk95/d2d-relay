@@ -1,19 +1,33 @@
 """D2D Relay: the dashboard product, cut down from RELAY by PASDACS.
 
 What stays: Ask Relay (Ask D: questions about your data, answered with charts), Dashboards (describe -> plan -> KPIs -> prototype -> review -> Power BI project), the visual library,
-CSV / flat-file uploads, and Connections with Google BigQuery only. Administration stays for the one admin.
+CSV / flat-file uploads, and Connections. Administration stays for the one admin.
+
+Data: the public side takes CSV files (and demo data Relay generates). The warehouses and databases in CONNECTORS are
+listed for everyone, but each one is switched on per organisation by PASDACS, on request (orgs.py: relay.tn_orgs
+.connectors, set by a platform admin): until then the organisation cannot add, test, query or pull from it.
 
 Everything else in the copied code base is switched off here, in one place:
   - the module catalogue (registry.MODULES) keeps only KEEP_MODULES, so menus, Home and search never show the rest;
   - the APIs of every other module answer 404 (BLOCKED_API, checked by auth.check);
-  - Connections offers only KEEP_KINDS;
+  - Connections offers only KEEP_KINDS, and only the ones switched on for the organisation;
   - the other modules' background pollers are not started (main.lifespan asks `wanted`).
 """
 from __future__ import annotations
 
 NAME = "D2D Relay"
 KEEP_MODULES = {"d2d", "bi", "connect", "gates", "visuals", "demodata", "runners", "ops", "govern"}
-KEEP_KINDS = {"bigquery"}
+# The connectors PASDACS can switch on for an organisation (connectors.KINDS), in the order they are listed, with what
+# each one reads. Every one has a Power BI connector of its own (genbi_kit.report_builder.NATIVE_KINDS).
+CONNECTORS = {
+    "bigquery": "Tables and views in Google BigQuery, with a service account or Sign in with Google.",
+    "snowflake": "Snowflake tables and views, with OAuth, a password or a key pair.",
+    "fabric": "A Microsoft Fabric warehouse or lakehouse (its SQL endpoint), with your Microsoft sign-in.",
+    "redshift": "Amazon Redshift tables and views.",
+    "athena": "Amazon Athena tables over your S3 data lake.",
+    "oracle_db": "Oracle Database, including Autonomous Database.",
+}
+KEEP_KINDS = set(CONNECTORS)
 
 # APIs of screens that are not part of D2D Relay (on top of the dropped modules' own `api=[…]` prefixes)
 EXTRA_BLOCKED = ("/api/schedules", "/api/semantic", "/api/pages", "/api/reviews", "/api/studio", "/api/rfp",

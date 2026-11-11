@@ -221,7 +221,8 @@ def scope_sources(u: dict, scope: dict) -> dict:
         pids = [p for p, a in access.items() if a.get("team_id") in my_teams or a["access"] == "owner" and a["via"] == "owner"]
     else:
         pids = list(access)
-    conns = db.q("SELECT id FROM connections WHERE owner_id = ?", (u["id"],))
+    from . import orgs                              # D2D Relay: live only while PASDACS keeps the connector switched on
+    conns = [c for c in db.q("SELECT id, kind FROM connections WHERE owner_id = ?", (u["id"],)) if orgs.connector_on(c["kind"])]
     return {"kind": kind, "projects": sorted(pids), "connections": [c["id"] for c in conns],
             "team_id": next(iter(my_teams), db.DEFAULT_TEAM)}
 

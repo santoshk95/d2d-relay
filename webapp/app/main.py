@@ -393,6 +393,7 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
             conn = connectors.connection(connection_id, auth.who() or db.ADMIN_ID)
         except connectors.ConnectorError:
             raise HTTPException(400, "Choose one of your warehouse connections.")
+        orgs.require_connector(conn["kind"])    # D2D Relay: only a connector PASDACS switched on for the organisation
         configured = {r["object"]: r["alias"] for r in conn_tables(conn["id"])}
         try:
             wanted = json.loads(tables or "[]")

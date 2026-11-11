@@ -1,8 +1,8 @@
 # D2D Relay
 
 D2D Relay is the dashboard part of RELAY by PASDACS, run as a separate product for a client. A person brings CSV files
-or connects Google BigQuery and describes the dashboard. D2D Relay plans it, agrees the KPIs, builds a prototype and
-reviews it. The result is a checked Power BI project (PBIP).
+and describes the dashboard. D2D Relay plans it, agrees the KPIs, builds a prototype and reviews it. The result is a
+checked Power BI project (PBIP). Warehouses and databases are connected by PASDACS for an organisation on request.
 
 It is separate from RELAY. It lives in its own folder (`Downloads\D2D Relay`) with its own git repository. It has its
 own image (`d2d-relay:latest`), container (`d2d-relay`), database volume (`d2d-relay-data`), projects folder
@@ -18,14 +18,15 @@ apps use the same Claude subscription.
 | Credits | 100 per organisation to start; a new dashboard uses 30, a change 15 (see "Organisations and credits") |
 | Platform admin | **info@pasdacs.com**: Administration and Organisations (every organisation, adding credits) |
 | Code sender | info@pasdacs.com through Microsoft Graph (delegated Mail.Send, signed in once) |
-| Data sources | CSV / flat files (New dashboard → upload) and Google BigQuery (Connections) |
+| Data sources | CSV / flat files (New dashboard → upload), or demo data Relay generates. Connectors (BigQuery, Snowflake, Fabric, Redshift, Athena, Oracle) only once PASDACS switches them on for the organisation (see "Connectors") |
 
 ## What was kept and what was switched off
 
 `webapp/app/edition.py` is the one place that decides this.
 
 - **Kept:** Dashboards (D2D: plan → KPIs → prototype → review → PBIP), the review gates and the Power BI engine
-  check, the visual library, sample data, Connections (BigQuery only), Ask Relay, Branding, organisations and credits.
+  check, the visual library, sample data, Connections (connectors on request), Ask Relay, Branding, organisations
+  and credits.
   Administration's APIs stay for the platform admin only (not in the menu).
 - **Switched off:** all other modules (process, automation, systems, AI, consulting), schedules, pages, the
   semantic layer, the service desk, Migrate BI, self-healing, AI SDLC, the workbench and the tenants console. Their APIs
@@ -128,15 +129,24 @@ pasdacs.com's DNS is on Cloudflare, so no port is opened on this PC.
 Cloudflare provides the certificate. pasdacs.com sends HSTS includeSubDomains, so the address must be https, and it
 is. Optional extra lock: a Cloudflare Access policy (email one-time PIN for the same address) in front of the hostname.
 
-### 3. Google BigQuery
+### 3. Connectors (on request)
 
-In **Connections → Add → Google BigQuery**, use one of these:
-- **Service account:** paste the client's service-account JSON (roles BigQuery Data Viewer + BigQuery Job User). This
-  is the simplest option for a client.
-- **Sign in with Google:** first an admin adds a Google OAuth client under Administration → Connections sign-in. Its
-  redirect URI is `https://d2d-relay.pasdacs.com/auth/connector/callback` (shown on that screen).
+The public side takes CSV files only. **Connections** lists every connector D2D Relay can read: Google BigQuery,
+Snowflake, Microsoft Fabric, Amazon Redshift, Amazon Athena and Oracle Database (`edition.CONNECTORS`). Each one is
+"On request" until PASDACS switches it on for that organisation.
 
-Queries are read-only and limited to 1 GB scanned by default (Administration → guardrails).
+1. A person clicks **Ask PASDACS to connect it** (Connections), picks the connectors and adds a message. The request
+   goes to info@pasdacs.com (`RELAY_CREDITS_CONTACT`) by email, Reply-To the person, and to the platform admins'
+   notifications. A prefilled email link is the fallback.
+2. When it is agreed, the platform admin opens **Organisations**, clicks **Connectors** for the organisation and ticks
+   the ones to switch on. The owner is told, and the organisation can then add connections for them (and pick
+   "From a warehouse" on New dashboard).
+3. Switching a connector off stops it at once for that organisation: its connections stay but cannot be tested,
+   queried or pulled from, and scheduled refreshes pause with a note on the dashboard. They can still be removed.
+
+PASDACS's own workspace has every connector switched on. For BigQuery, the simplest way in for a client is a
+service-account JSON (roles BigQuery Data Viewer + BigQuery Job User). Queries are read-only and limited to 1 GB
+scanned by default.
 
 ## Updating
 

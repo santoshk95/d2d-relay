@@ -301,6 +301,16 @@ ADDED_COLUMNS = {
     # v8: an entity's business definition, examples, and whether they are an AI draft awaiting review
     "entities": {"definition": "TEXT", "examples": "TEXT NOT NULL DEFAULT '[]'", "drafted_by": "TEXT", "drafted": "REAL"},
 }
+# D2D Relay: columns added to control-plane tables (relay.<table>) after they were first created; _init_control adds
+# the missing ones at every start (orgs.py registers its own)
+CONTROL_ADDED_COLUMNS: dict[str, dict[str, str]] = {}
+
+
+def register_control_columns(table: str, cols: dict[str, str]) -> None:
+    """Columns a module adds to a control-plane table, e.g. ("tn_orgs", {"connectors": "TEXT NOT NULL DEFAULT '[]'"})."""
+    CONTROL_ADDED_COLUMNS.setdefault(table, {}).update(cols)
+
+
 USER_COLUMNS = {"password_hash": "TEXT", "last_login": "REAL", "auth_provider": "TEXT", "deactivated": "REAL",
                 "deactivated_by": "TEXT", "tz": "TEXT",
                 # P17: a guest from another tenant (their home tenant id; NULL = this tenant's own person) and whether
@@ -522,6 +532,17 @@ def _init_control() -> None:
             else:
                 STATE.mkdir(parents=True, exist_ok=True)
                 conn().executescript(CONTROL_SCHEMA)
+            for table, cols in CONTROL_ADDED_COLUMNS.items():          # D2D Relay: columns added since (orgs.py)
+                if BACKEND == "postgres":
+                    have = {r["column_name"] for r in q("SELECT column_name FROM information_schema.columns "
+                                                        "WHERE table_schema = 'relay' AND table_name = ?", (table,))}
+                else:
+                    have = {r["name"] for r in conn().execute(f"PRAGMA relay.table_info({table})").fetchall()}
+                for col, kind in cols.items():
+                    if col not in have:
+                        if BACKEND == "postgres":
+                            kind = re.sub(r"\bREAL\b", "DOUBLE PRECISION", re.sub(r"\bINTEGER\b", "BIGINT", kind))
+                        conn().execute(f"ALTER TABLE relay.{table} ADD COLUMN {col} {kind}")
             now = time.time()
             run("INSERT OR IGNORE INTO relay.tn_tenants (id, kind, parent_id, name, edition, status, deployment, partner_access, created, "
                 "created_by, updated) VALUES (?, 'platform', NULL, ?, 'both', 'active', 'shared', 'open', ?, 'system', ?)",

@@ -19,6 +19,11 @@ Credits are pooled per organisation (relay.tn_orgs.credits); every change is a r
 Free: confirming the plan, asking Relay to fix failed review gates, approving and publishing, Ask Relay questions and
 brand palettes. A run carries the id of the charge it delivers (job args `charge`); worker.py gives it back when the
 run fails, is stopped, or is cut off by a restart.
+
+Connectors (relay.tn_orgs.connectors, a JSON list of connector kinds): the public side takes CSV files only. Every
+connector in edition.CONNECTORS is listed for everyone, and PASDACS switches it on for one organisation at a time, on
+request (Connections -> Ask PASDACS sends the request by email; a platform admin switches it on). An organisation can
+add, test, query and pull from a connector only while it is on (require_connector, data_routes.py and main.py).
 """
 from __future__ import annotations
 
@@ -34,9 +39,10 @@ import traceback
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from . import auth, db, notify, public_domains
+from . import auth, db, edition, notify, public_domains
 
 router = APIRouter()
+db.register_control_columns("tn_orgs", {"connectors": "TEXT NOT NULL DEFAULT '[]'"})   # the connectors switched on
 
 START = int(os.environ.get("D2D_CREDITS_START") or 100)
 COST = {"dashboard": int(os.environ.get("D2D_CREDITS_DASHBOARD") or 30), "change": int(os.environ.get("D2D_CREDITS_CHANGE") or 15)}
@@ -106,20 +112,24 @@ def platform_admin(u: dict | None) -> bool:
 
 def init() -> None:
     """At start: the platform's own workspace is an organisation too (the platform admin's domain), with its starting
-    credits the first time. Idempotent."""
+    credits the first time, and every connector switched on (once). Idempotent."""
     with db.use(db.PLATFORM):
-        if row(db.PLATFORM):
-            return
-        admin = db.one("SELECT email FROM users WHERE id = ?", (db.ADMIN_ID,)) or {}
-        email = PLATFORM_EMAIL or (admin.get("email") or "").lower()
-        domain = domain_of(email) if "@" in email else ""
-        if not domain or by_domain(domain):
-            print(f"[orgs] the platform workspace has no organisation (admin address {email!r})", flush=True)
-            return
-        t = db.one("SELECT name FROM relay.tn_tenants WHERE id = ?", (db.PLATFORM,)) or {}
-        db.run("INSERT OR IGNORE INTO relay.tn_orgs (tenant_id, name, domain, owner_id, credits, setup_done, created, created_by) "
-               "VALUES (?, ?, ?, ?, 0, 1, ?, 'system')", (db.PLATFORM, t.get("name") or db.PLATFORM_NAME, domain, db.ADMIN_ID, time.time()))
-        _entry(db.PLATFORM, "start", START, note="Starting credits", who={})
+        if not row(db.PLATFORM):
+            admin = db.one("SELECT email FROM users WHERE id = ?", (db.ADMIN_ID,)) or {}
+            email = PLATFORM_EMAIL or (admin.get("email") or "").lower()
+            domain = domain_of(email) if "@" in email else ""
+            if not domain or by_domain(domain):
+                print(f"[orgs] the platform workspace has no organisation (admin address {email!r})", flush=True)
+                return
+            t = db.one("SELECT name FROM relay.tn_tenants WHERE id = ?", (db.PLATFORM,)) or {}
+            db.run("INSERT OR IGNORE INTO relay.tn_orgs (tenant_id, name, domain, owner_id, credits, setup_done, created, created_by) "
+                   "VALUES (?, ?, ?, ?, 0, 1, ?, 'system')", (db.PLATFORM, t.get("name") or db.PLATFORM_NAME, domain, db.ADMIN_ID, time.time()))
+            _entry(db.PLATFORM, "start", START, note="Starting credits", who={})
+        if not db.one("SELECT 1 AS x FROM relay.tn_meta WHERE key = 'd2d_platform_connectors'"):
+            # PASDACS's own workspace may use every connector it offers (once: a platform admin may change it later)
+            db.run("UPDATE relay.tn_orgs SET connectors = ? WHERE tenant_id = ? AND connectors = '[]'",
+                   (json.dumps(list(edition.CONNECTORS)), db.PLATFORM))
+            db.run("INSERT OR REPLACE INTO relay.tn_meta (key, value) VALUES ('d2d_platform_connectors', ?)", (str(time.time()),))
 
 
 def create(name: str, email: str, person: str) -> tuple[str, str]:
@@ -190,6 +200,68 @@ def join(tid: str, email: str) -> str:
             notify.add(o["owner_id"], "share", f"{name} joined {o['name']}",
                        f"{email} signed in for the first time and joined your organisation. Credits are shared.", "#/org")
     return uid
+
+
+# ---------------------------------------------------------------- connectors (switched on per organisation by PASDACS)
+
+def connectors_of(tid: str | None) -> list[str]:
+    """The connectors switched on for an organisation, in the order they are listed (none: CSV files only)."""
+    o = row(tid)
+    try:
+        on = set(json.loads((o or {}).get("connectors") or "[]"))
+    except (TypeError, ValueError):
+        on = set()
+    return [k for k in edition.CONNECTORS if k in on]
+
+
+def connector_on(kind: str | None, tid: str | None = None) -> bool:
+    return bool(kind) and kind in connectors_of(tid or db.tenant())
+
+
+def connector_label(kind: str | None) -> str:
+    from . import connectors
+    return (connectors.KINDS.get(kind or "") or {}).get("label") or kind or "This connector"
+
+
+def require_connector(kind: str | None) -> None:
+    """Before a connection is added, tested, queried or pulled from: refused (403) unless PASDACS switched its
+    connector on for this organisation."""
+    if not connector_on(kind):
+        o = row(db.tenant()) or {}
+        raise HTTPException(403, f"{connector_label(kind)} is not switched on for {o.get('name') or 'your organisation'}. "
+                                 f"PASDACS connects warehouses and databases on request: ask on the Connections page, or "
+                                 f"write to {CONTACT}.")
+
+
+def _to_pasdacs(subject: str, intro: str, rows: list[tuple[str, str]], reply_to: str | None, outro: str = "") -> bool:
+    """A request to PASDACS by email (CONTACT, through the sign-in mailbox), Reply-To the person. False: not sent."""
+    from . import otp_mail
+    e = html.escape
+    body = (f"<p>{e(intro)}</p><table cellpadding=\"4\" style=\"border-collapse:collapse\">"
+            + "".join(f"<tr><td><b>{e(k)}</b></td><td>{e(str(v)).replace(chr(10), '<br>')}</td></tr>" for k, v in rows)
+            + "</table>" + (f"<p>{e(outro)}</p>" if outro else ""))
+    try:
+        otp_mail.send(CONTACT, subject, body, reply_to=reply_to)
+        return True
+    except Exception:  # noqa: BLE001 - the request is still recorded and shown to the platform admins in the app
+        traceback.print_exc()
+        return False
+
+
+def _tell_platform(title: str, text: str, link: str) -> None:
+    """A notification for every admin of the platform's own workspace."""
+    with db.use(db.PLATFORM):
+        for a in db.q("SELECT id FROM users WHERE org_role = 'admin' AND active = 1 AND home_tenant IS NULL"):
+            notify.add(a["id"], "ops", title, text, link)
+
+
+def _tell_owners(tid: str, title: str, text: str, link: str) -> None:
+    """A notification for the organisation's owner."""
+    o = row(tid)
+    if not o:
+        return
+    with db.use(tid):
+        notify.add(o["owner_id"], "ops", title, text, link)
 
 
 # ---------------------------------------------------------------- credits
@@ -316,7 +388,8 @@ def me_info(u: dict | None) -> dict:
         return out
     owner = u["id"] == o["owner_id"]
     return {**out, "id": o["tenant_id"], "name": o["name"], "domain": o["domain"], "credits": o["credits"], "owner": _owner(o),
-            "is_owner": owner, "setup_needed": owner and not o["setup_done"]}     # only the owner sets the organisation up
+            "is_owner": owner, "setup_needed": owner and not o["setup_done"],      # only the owner sets the organisation up
+            "connectors": connectors_of(o["tenant_id"])}                          # none: CSV files only
 
 
 def _must() -> tuple[dict, dict]:
@@ -389,35 +462,68 @@ class CreditRequest(BaseModel):
 def credit_request(body: CreditRequest):
     """Add credits: until online payment exists, the request goes to PASDACS by email (and to the platform admins in the
     app); a platform admin adds the credits on Organisations."""
-    from . import otp_mail, tenancy
+    from . import tenancy
     u, o = _must()
     n = int(body.credits or 0)
     if not 1 <= n <= 100000:
         raise HTTPException(400, "Ask for 1 to 100,000 credits.")
     msg = (body.message or "").strip()[:1500]
-    recent = db.one("SELECT count(*) AS n FROM relay.tn_audit WHERE action = 'd2d.credit_request' AND who = ? AND ts > ?",
-                    (u["id"], time.time() - 3600))["n"]
-    if recent >= REQUESTS_PER_HOUR:
-        raise HTTPException(429, f"You sent several requests this hour. We will answer them; for anything urgent write to {CONTACT}.")
-    e = html.escape
+    _not_too_many(u, "d2d.credit_request")
     rows = [("Organisation", o["name"]), ("Email domain", o["domain"]), ("Workspace id", o["tenant_id"]),
             ("Requested by", f"{u.get('name') or ''} <{u.get('email') or ''}>"), ("Credits requested", f"{n:,}"),
             ("Credits now", f"{o['credits']:,}"), ("Message", msg or "(none)")]
-    body_html = ("<p>A D2D Relay organisation asks for more credits.</p><table cellpadding=\"4\" style=\"border-collapse:collapse\">"
-                 + "".join(f"<tr><td><b>{e(k)}</b></td><td>{e(str(v)).replace(chr(10), '<br>')}</td></tr>" for k, v in rows)
-                 + "</table><p>Add them in D2D Relay under Organisations once the payment is agreed.</p>")
-    sent = False
-    try:
-        otp_mail.send(CONTACT, f"D2D Relay: {o['name']} asks for {n:,} credits", body_html, reply_to=u.get("email"))
-        sent = True
-    except Exception:  # noqa: BLE001 - the request is still recorded and shown to the platform admins in the app
-        traceback.print_exc()
+    sent = _to_pasdacs(f"D2D Relay: {o['name']} asks for {n:,} credits", "A D2D Relay organisation asks for more credits.", rows,
+                       u.get("email"), "Add them in D2D Relay under Organisations once the payment is agreed.")
     tenancy.ctl_audit("d2d.credit_request", o["tenant_id"], u["id"], {"credits": n, "message": msg[:500], "email": u.get("email"),
                                                                        "name": u.get("name"), "sent": sent})
-    with db.use(db.PLATFORM):
-        for a in db.q("SELECT id FROM users WHERE org_role = 'admin' AND active = 1 AND home_tenant IS NULL"):
-            notify.add(a["id"], "ops", f"{o['name']} asks for {n:,} credits", f"{u.get('name')} ({u.get('email')}): {msg[:300] or 'no message'}",
-                       "#/orgs")
+    _tell_platform(f"{o['name']} asks for {n:,} credits", f"{u.get('name')} ({u.get('email')}): {msg[:300] or 'no message'}", "#/orgs")
+    return {"sent": sent, "contact": CONTACT}
+
+
+def _not_too_many(u: dict, action: str) -> None:
+    """At most REQUESTS_PER_HOUR requests of one kind an hour per person."""
+    recent = db.one("SELECT count(*) AS n FROM relay.tn_audit WHERE action = ? AND who = ? AND ts > ?",
+                    (action, u["id"], time.time() - 3600))["n"]
+    if recent >= REQUESTS_PER_HOUR:
+        raise HTTPException(429, f"You sent several requests this hour. We will answer them; for anything urgent write to {CONTACT}.")
+
+
+@router.get("/api/org/connectors")
+def org_connectors():
+    """Every connector D2D Relay offers, and which ones PASDACS has switched on for this organisation."""
+    u, o = _must()
+    on = set(connectors_of(o["tenant_id"]))
+    return {"connectors": [{"kind": k, "label": connector_label(k), "note": note, "on": k in on} for k, note in edition.CONNECTORS.items()],
+            "contact": CONTACT, "org": o["name"]}
+
+
+class ConnectorRequest(BaseModel):
+    kinds: list[str] = []
+    message: str = ""
+
+
+@router.post("/api/org/connector-request")
+def connector_request(body: ConnectorRequest):
+    """Ask PASDACS to connect a warehouse or database for this organisation: by email, and in the platform admins'
+    notifications; a platform admin switches the connector on (Organisations)."""
+    from . import tenancy
+    u, o = _must()
+    kinds = [k for k in edition.CONNECTORS if k in set(body.kinds or [])]
+    if not kinds or len(kinds) != len(set(body.kinds or [])):
+        raise HTTPException(400, "Choose the connectors you need from the list.")
+    msg = (body.message or "").strip()[:1500]
+    _not_too_many(u, "d2d.connector_request")
+    names = ", ".join(connector_label(k) for k in kinds)
+    on = connectors_of(o["tenant_id"])
+    rows = [("Organisation", o["name"]), ("Email domain", o["domain"]), ("Workspace id", o["tenant_id"]),
+            ("Requested by", f"{u.get('name') or ''} <{u.get('email') or ''}>"), ("Connectors requested", names),
+            ("Switched on now", ", ".join(connector_label(k) for k in on) or "none (CSV files only)"), ("Message", msg or "(none)")]
+    sent = _to_pasdacs(f"D2D Relay: {o['name']} asks to connect {names}", "A D2D Relay organisation asks PASDACS to connect a "
+                       "warehouse or database.", rows, u.get("email"),
+                       "Switch the connector on for the organisation under Organisations once it is agreed.")
+    tenancy.ctl_audit("d2d.connector_request", o["tenant_id"], u["id"], {"kinds": kinds, "message": msg[:500], "email": u.get("email"),
+                                                                          "name": u.get("name"), "sent": sent})
+    _tell_platform(f"{o['name']} asks to connect {names}", f"{u.get('name')} ({u.get('email')}): {msg[:300] or 'no message'}", "#/orgs")
     return {"sent": sent, "contact": CONTACT}
 
 
@@ -448,12 +554,43 @@ def all_orgs():
                          (o["tenant_id"],))["s"] or 0)
         out.append({"id": o["tenant_id"], "name": o["name"], "domain": o["domain"], "credits": o["credits"], "spent": spent,
                     "owner": owner, "people": people, "dashboards": dashboards, "created": o["created"], "last_login": last,
-                    "status": t.get("status"), "platform": o["tenant_id"] == db.PLATFORM})
-    reqs = db.q("SELECT ts, tenant_id, detail FROM relay.tn_audit WHERE action = 'd2d.credit_request' ORDER BY id DESC LIMIT 30")
+                    "status": t.get("status"), "platform": o["tenant_id"] == db.PLATFORM, "connectors": connectors_of(o["tenant_id"])})
     names = {o["id"]: o["name"] for o in out}
-    requests = [{"ts": r["ts"], "org": r["tenant_id"], "org_name": names.get(r["tenant_id"], r["tenant_id"]), **json.loads(r["detail"] or "{}")}
-                for r in reqs]
-    return {"orgs": out, "requests": requests, "costs": COST, "start": START}
+
+    def asked(action: str) -> list[dict]:
+        rows = db.q("SELECT ts, tenant_id, detail FROM relay.tn_audit WHERE action = ? ORDER BY id DESC LIMIT 30", (action,))
+        return [{"ts": r["ts"], "org": r["tenant_id"], "org_name": names.get(r["tenant_id"], r["tenant_id"]), **json.loads(r["detail"] or "{}")}
+                for r in rows]
+    return {"orgs": out, "requests": asked("d2d.credit_request"), "connector_requests": asked("d2d.connector_request"),
+            "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": COST, "start": START}
+
+
+class Connectors(BaseModel):
+    kinds: list[str] = []
+
+
+@router.put("/api/admin/orgs/{tid}/connectors")
+def set_connectors(tid: str, body: Connectors):
+    """A platform admin switches connectors on (or off) for an organisation; its owner is told. A connector switched
+    off stops working at once for that organisation: its connections stay, but cannot be tested, queried or pulled."""
+    from . import tenancy
+    _admin()
+    o = row(tid)
+    if not o:
+        raise HTTPException(404, "No such organisation.")
+    wanted = set(body.kinds or [])
+    if wanted - set(edition.CONNECTORS):
+        raise HTTPException(400, "Unknown connector: " + ", ".join(sorted(wanted - set(edition.CONNECTORS))))
+    kinds, before = [k for k in edition.CONNECTORS if k in wanted], connectors_of(tid)
+    db.run("UPDATE relay.tn_orgs SET connectors = ? WHERE tenant_id = ?", (json.dumps(kinds), tid))
+    tenancy.ctl_audit("d2d.connectors", tid, tid, {"from": before, "to": kinds})
+    added, removed = [k for k in kinds if k not in before], [k for k in before if k not in kinds]
+    if added or removed:
+        text = " ".join(filter(None, [
+            f"Switched on: {', '.join(connector_label(k) for k in added)}. Add a connection under Connections." if added else "",
+            f"Switched off: {', '.join(connector_label(k) for k in removed)}." if removed else ""]))
+        _tell_owners(tid, f"Connectors for {o['name']}", text, "#/connections")
+    return all_orgs()
 
 
 class Adjust(BaseModel):

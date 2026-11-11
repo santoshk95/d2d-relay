@@ -2,6 +2,10 @@
 
 Connections are personal: every endpoint here works on the asking person's own connections only. Project extract
 endpoints sit under /api/projects/{id}/… so auth.middleware applies the dashboard's view / edit rules first.
+
+D2D Relay: a connection is used (added, tested, browsed, queried, pulled from, signed in again) only while PASDACS has
+its connector switched on for the organisation (orgs.require_connector, use=True below). Listing, sharing, disabling and
+removing a connection always work, so an organisation can tidy up after a connector was switched off.
 """
 import asyncio
 import json
@@ -14,7 +18,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
-from . import auth, connectors, db, store
+from . import auth, connectors, db, orgs, store
 
 router = APIRouter()
 
@@ -23,18 +27,21 @@ def _me() -> str:
     return auth.who() or db.ADMIN_ID
 
 
-def _mine(cid: str) -> dict:
-    """A connection this person may use: their own or one shared with them (P10)."""
+def _mine(cid: str, use: bool = False) -> dict:
+    """A connection this person may use: their own or one shared with them (P10). use=True: it is about to be used,
+    so its connector must be switched on for the organisation (D2D Relay)."""
     try:
         c = connectors.connection(cid, _me())
     except connectors.ConnectorError:
         raise HTTPException(404, "Unknown connection")
+    if use:
+        orgs.require_connector(c["kind"])
     c["_who"] = _me()
     return c
 
 
-def _owned(cid: str, admin_ok: bool = False) -> dict:
-    _mine(cid)
+def _owned(cid: str, admin_ok: bool = False, use: bool = False) -> dict:
+    _mine(cid, use)
     try:
         return connectors.owned(cid, _me(), admin_ok)
     except connectors.ConnectorError as e:
@@ -56,12 +63,14 @@ def _vocab() -> dict:
 
 @router.get("/api/connectors")
 def connector_kinds():
-    return {"kinds": connectors.kinds_public(), "guardrails": connectors.guardrails(), **_vocab()}
+    """The connectors this organisation may add connections for (D2D Relay: the ones PASDACS switched on)."""
+    kinds = {k: v for k, v in connectors.kinds_public().items() if orgs.connector_on(k)}
+    return {"kinds": kinds, "guardrails": connectors.guardrails(), **_vocab()}
 
 
 @router.get("/api/connections")
 def my_connections():
-    return {"connections": connectors.mine(_me()), **_vocab()}
+    return {"connections": [{**c, "allowed": orgs.connector_on(c["kind"])} for c in connectors.mine(_me())], **_vocab()}
 
 
 class ConnectionBody(BaseModel):
@@ -79,6 +88,7 @@ class ConnectionBody(BaseModel):
 
 @router.post("/api/connections")
 def add_connection(body: ConnectionBody):
+    orgs.require_connector(body.kind)
     try:
         return connectors.save(_me(), body.model_dump())
     except connectors.ConnectorError as e:
@@ -87,7 +97,7 @@ def add_connection(body: ConnectionBody):
 
 @router.patch("/api/connections/{cid}")
 def change_connection(cid: str, body: ConnectionBody):
-    _owned(cid)
+    _owned(cid, use=True)
     try:
         return connectors.save(_me(), body.model_dump(), cid)
     except connectors.ConnectorError as e:
@@ -103,7 +113,7 @@ def remove_connection(cid: str):
 
 @router.post("/api/connections/{cid}/test")
 async def test_connection(cid: str):
-    c = _mine(cid)
+    c = _mine(cid, use=True)
     try:
         return await asyncio.to_thread(connectors.test, c)
     except connectors.ConnectorError as e:
@@ -147,7 +157,7 @@ def disable_connection(cid: str):
 
 @router.post("/api/connections/{cid}/enable")
 def enable_connection(cid: str):
-    _owned(cid, admin_ok=True)
+    _owned(cid, admin_ok=True, use=True)
     return connectors.set_enabled(cid, _me(), True)
 
 
@@ -157,7 +167,7 @@ class RenewBody(BaseModel):
 
 @router.post("/api/connections/{cid}/renew")
 def renew_connection(cid: str, body: RenewBody | None = None):
-    _owned(cid)
+    _owned(cid, use=True)
     try:
         return connectors.renew(cid, _me(), body.secrets if body else None)
     except connectors.ConnectorError as e:
@@ -178,7 +188,7 @@ class ReadBody(BaseModel):
 @router.post("/api/connections/{cid}/read")
 async def read_object(cid: str, body: ReadBody):
     """One object of a connected platform, read-only (an SDK adapter's read; a warehouse table as a guarded query)."""
-    c = _mine(cid)
+    c = _mine(cid, use=True)
     try:
         return await asyncio.to_thread(connectors.read_object, c, body.object, _me(), max(1, min(body.limit, 1000)))
     except connectors.ConnectorError as e:
@@ -197,7 +207,7 @@ class WriteBody(BaseModel):
 def request_write(cid: str, body: WriteBody):
     """Never a direct write: the scope must allow it and a checkpoint opens for a named person (Validation queue);
     the adapter writes when it is accepted."""
-    c = _mine(cid)
+    c = _mine(cid, use=True)
     try:
         cp = connectors.request_write(c, body.object, body.payload, _me(), what=body.what)
     except (connectors.ConnectorError, connectors.sdk.ScopeError) as e:
@@ -207,7 +217,10 @@ def request_write(cid: str, body: WriteBody):
 
 @router.get("/api/connections/{cid}/oauth/start")
 def connection_signin(cid: str, request: Request):
-    _owned(cid)
+    try:
+        _owned(cid, use=True)
+    except HTTPException as e:                  # a browser navigation: back to Connections with the reason
+        return RedirectResponse("/#/connections?error=" + quote(str(e.detail)), 303)
     try:
         return RedirectResponse(connectors.oauth_start(cid, _me(), str(request.base_url)), 303)
     except connectors.ConnectorError as e:
@@ -230,7 +243,7 @@ def connection_signin_done(request: Request, code: str = "", state: str = "", er
 
 @router.get("/api/connections/{cid}/browse")
 async def browse_connection(cid: str, q: str = ""):
-    c = _mine(cid)
+    c = _mine(cid, use=True)
     try:
         return {"tables": await asyncio.to_thread(connectors.browse, c, q)}
     except (connectors.ConnectorError, connectors.sdk.ScopeError) as e:
@@ -245,7 +258,7 @@ class Tables(BaseModel):
 
 @router.put("/api/connections/{cid}/tables")
 def configure_tables(cid: str, body: Tables):
-    c = _owned(cid)
+    c = _owned(cid, use=True)
     try:
         return connectors.set_tables(c, body.objects)
     except connectors.ConnectorError as e:
@@ -259,7 +272,7 @@ class Query(BaseModel):
 @router.post("/api/connections/{cid}/query")
 async def live_query(cid: str, body: Query):
     """A guarded live query (Ask D's engine): read-only, row limit, timeout, BigQuery scan limit."""
-    c = _mine(cid)
+    c = _mine(cid, use=True)
     try:
         return await asyncio.to_thread(connectors.query, c, body.sql, _me())
     except connectors.ConnectorError as e:
@@ -283,6 +296,8 @@ def project_extracts(pid: str):
 @router.post("/api/projects/{pid}/extracts/refresh")
 async def refresh_extracts(pid: str):
     d = store.project_dir(pid)
+    for e in connectors.manifest(d).values():          # D2D Relay: every source's connector must still be switched on
+        orgs.require_connector(e.get("kind"))
     try:
         done = await asyncio.to_thread(connectors.refresh_project, d, _me())
     except connectors.ConnectorError as e:
@@ -324,6 +339,12 @@ async def scheduler() -> None:
                     if not sch.get("daily") or sch.get("hour_utc") != hour or st.get("extract_last_day") == today:
                         continue
                     store.update(p["id"], extract_last_day=today)
+                    off = sorted({orgs.connector_label(e.get("kind")) for e in connectors.manifest(store.project_dir(p["id"])).values()
+                                  if not orgs.connector_on(e.get("kind"))})
+                    if off:                             # D2D Relay: PASDACS switched the connector off for this organisation
+                        worker.app_note(p["id"], "extract", f"Scheduled refresh paused: {', '.join(off)} is switched off for "
+                                        "this organisation. Ask PASDACS on the Connections page.", "warn")
+                        continue
                     try:
                         done = await asyncio.to_thread(connectors.refresh_project, store.project_dir(p["id"]), None, False)
                         worker.refresh_files(p["id"])

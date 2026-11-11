@@ -12,7 +12,8 @@ const CONN_STATE = {connected: ['Connected', 'ok'], connected_no_offline: ['Conn
 const SCOPE_TEXT = {read: ['Read-only', 'recommended — discover, read and compare'], comment: ['Read & comment', 'also post comments or summaries (e.g. on tickets)'],
   write: ['Read & write — with approval', 'changes only after a named person approves each one']};
 const SHARE_TEXT = {me: 'Only me', team: 'My teams', org: 'The whole organisation'};
-const connPill = c => { if (c.enabled === false) return h('span', {class: 'tag'}, 'Disabled'); const [t, k] = CONN_STATE[c.status] || [c.status, '']; return h('span', {class: 'tag ' + k, title: c.error || ''}, t); };
+const connPill = c => { if (c.allowed === false) return h('span', {class: 'tag warn', title: 'PASDACS switched this connector off for your organisation'}, 'Switched off');
+  if (c.enabled === false) return h('span', {class: 'tag'}, 'Disabled'); const [t, k] = CONN_STATE[c.status] || [c.status, '']; return h('span', {class: 'tag ' + k, title: c.error || ''}, t); };
 const connDot = c => h('span', {class: 'cdot ' + (c.enabled === false ? '' : c.status === 'connected' ? 'ok' : c.status === 'reconsent' || c.status === 'error' ? 'err' : c.status === 'connected_no_offline' ? 'warn' : '')});
 const CH = {cat: 'all', q: ''};
 S.connCache = null;
@@ -55,17 +56,80 @@ function moduleSourceDetail(x, cats) {
   return m;
 }
 
+/* ---------- D2D Relay: every connector, and the ones PASDACS switched on for this organisation (orgs.py) ---------- */
+function connectorCards(cat, onAdd) {
+  return h('div', {class: 'conncat'}, cat.connectors.map(c => h('div', {class: 'card' + (c.on ? ' on' : '')},
+    h('div', {class: 'row', style: 'gap:8px;align-items:center;flex-wrap:nowrap'}, icon('db'), h('b', {}, c.label), h('span', {class: 'spacer'}),
+      c.on ? h('span', {class: 'tag ok'}, 'Switched on') : h('span', {class: 'tag'}, 'On request')),
+    h('div', {class: 'small muted grow', style: 'margin:6px 0 10px'}, c.note),
+    c.on ? (onAdd ? h('button', {class: 'btn sm', type: 'button', onclick: () => onAdd(c.kind)}, icon('plus'), 'Add a connection') : null)
+      : h('button', {class: 'btn sm', type: 'button', onclick: () => connectorRequestDialog(cat, [c.kind])}, icon('send'), 'Ask PASDACS to connect it'))));
+}
+function connectorRequestDialog(cat, preselect = []) {
+  const me = S.me || {}, o = ORG(), org = o.name || cat.org, contact = cat.contact || 'info@pasdacs.com';
+  const off = cat.connectors.filter(c => !c.on);
+  if (!off.length) return notify('Every connector is already switched on for your organisation.', 'ok');
+  const picked = new Set(preselect.filter(k => off.some(c => c.kind === k)));
+  const boxes = h('div', {class: 'stack', style: 'gap:6px'}, off.map(c => {
+    const cb = h('input', {type: 'checkbox', checked: picked.has(c.kind)});
+    cb.onchange = () => { if (cb.checked) picked.add(c.kind); else picked.delete(c.kind); };
+    return h('label', {class: 'chk', style: 'align-items:flex-start'}, cb, h('span', {}, h('b', {}, c.label), h('small', {class: 'muted', style: 'display:block'}, c.note)));
+  }));
+  const msg = h('textarea', {rows: 3, placeholder: 'Which data, roughly how much, and by when (optional). For example: our sales and stock tables, about 10 million rows, for a board report next month.'});
+  const names = () => off.filter(c => picked.has(c.kind)).map(c => c.label).join(', ') || 'a warehouse';
+  const mailto = () => {
+    const body = `Hello PASDACS,\n\nPlease connect ${names()} for our D2D Relay organisation.\n\nOrganisation: ${org}${o.domain ? ` (@${o.domain})` : ''}\n`
+      + `Requested by: ${me.name || ''} <${me.email || ''}>\n` + (msg.value.trim() ? `\n${msg.value.trim()}\n` : '');
+    return `mailto:${contact}?subject=${encodeURIComponent(`D2D Relay: connect ${names()} for ${org}`)}&body=${encodeURIComponent(body)}`;
+  };
+  const mailLink = label => h('a', {href: mailto(), onclick: e => { e.currentTarget.href = mailto(); }}, label);
+  const out = h('div', {role: 'status'});
+  const send = h('button', {class: 'btn primary', type: 'button'}, icon('send'), 'Send request');
+  send.onclick = async () => {
+    if (!picked.size) return out.replaceChildren(h('div', {class: 'note warn'}, 'Choose at least one connector.'));
+    send.disabled = true;
+    try {
+      const r = await api('/api/org/connector-request', {json: {kinds: [...picked], message: msg.value}});
+      out.replaceChildren(r.sent ? h('div', {class: 'note ok'}, `Sent to ${r.contact}. PASDACS replies to ${me.email} and switches the connector on for ${org}.`)
+        : h('div', {class: 'note warn'}, 'Your request is recorded, but the email could not be sent from here. Please ', mailLink(`email ${r.contact}`), ' as well.'));
+      send.lastChild.textContent = 'Sent';
+    } catch (e) {
+      send.disabled = false;
+      out.replaceChildren(h('div', {class: 'note err'}, e.message, ' You can also ', mailLink(`email ${contact}`), '.'));
+    }
+  };
+  modal('Ask PASDACS to connect your data', h('div', {class: 'mbody'},
+    h('p', {style: 'margin-top:0'}, `D2D Relay takes CSV files on its own. PASDACS connects warehouses and databases for ${org} on request and replies by email.`),
+    h('label', {class: 'f', style: 'margin-top:0'}, 'Connectors'), boxes,
+    h('label', {class: 'f'}, 'Message ', h('small', {}, 'optional')), msg, out,
+    h('div', {class: 'row', style: 'justify-content:flex-end;gap:12px;margin-top:12px;align-items:center;flex-wrap:wrap'},
+      h('span', {class: 'small muted'}, 'or ', mailLink(`email ${contact}`)), send)));
+}
+
 /* ---------- the hub ---------- */
 async function renderConnections() {
   const page = h('div', {class: 'page'});
   $('#main').replaceChildren(skel('page'));
   const qs = new URLSearchParams(location.hash.split('?')[1] || '');
-  let d, kinds, mods;
-  try { [{d, kinds}, mods] = await Promise.all([loadConnections(), moduleSources()]); }
+  let d, kinds, mods, cat;
+  try { [{d, kinds}, mods, cat] = await Promise.all([loadConnections(), moduleSources(), api('/api/org/connectors')]); }
   catch (e) { return $('#main').replaceChildren(h('div', {class: 'page'}, h('div', {class: 'note err'}, e.message))); }
   if (!location.hash.startsWith('#/connections')) return;
   $('#main').replaceChildren(page);
   const all = d.connections, cats = d.categories, ms = mods.items;
+  const onKinds = cat.connectors.filter(c => c.on);
+  document.title = `Connections · ${S.brand ? S.brand.full : 'D2D Relay'}`;
+  if (!onKinds.length && !all.length) {          // CSV files only: what PASDACS can connect, and how to ask
+    page.append(...[
+      pageHead({crumbs: [['Home', '#/'], ['Connections']], eyebrow: brandName() + ' · Connections', title: 'Connections',
+        promise: `Upload CSV files on New dashboard. To use a warehouse or database, PASDACS connects it for ${cat.org} on request.`,
+        actions: h('a', {class: 'btn primary', href: '#/new'}, icon('file'), 'Upload CSV files')}),
+      qs.get('error') ? h('div', {class: 'note err'}, qs.get('error')) : null,
+      h('div', {class: 'section-title'}, h('h2', {}, 'Connectors'), h('span', {class: 'hint'}, 'switched on by PASDACS for your organisation, on request')),
+      connectorCards(cat),
+      h('p', {class: 'small muted', style: 'margin-top:14px'}, `Questions about your data? Write to ${cat.contact}.`)].filter(Boolean));
+    return;
+  }
   const byCat = Object.fromEntries(cats.map(c => [c.id, kinds.kinds ? Object.values(kinds.kinds).filter(k => k.category === c.id).length : 0]));
   const shownMods = () => ms.filter(x => (CH.cat === 'all' || x.category === CH.cat) && (!CH.q || `${x.name} ${x.label} ${x.module}`.toLowerCase().includes(CH.q.toLowerCase())));
   const attention = all.filter(c => c.status === 'reconsent' || c.status === 'error').length + ms.filter(x => x.state === 'sign_in' || x.state === 'error').length;
@@ -100,13 +164,14 @@ async function renderConnections() {
         h('td', {class: 'small'}, c.last_test ? ago(c.last_test) : '—'), h('td', {}, connPill(c)),
         h('td', {}, h('button', {class: 'btn sm', type: 'button', onclick: () => connectionDetail(c.id)}, 'Open'))))))
       : h('div', {class: 'card empty', style: 'margin:0'}, h('h3', {}, all.length ? 'Nothing matches' : 'No connections yet'),
-        h('div', {}, all.length ? 'Try another category or search.' : 'Connect Google BigQuery to build dashboards straight from your tables — read-only. CSV files are uploaded on New dashboard.')));
+        h('div', {}, all.length ? 'Try another category or search.' : `Connect ${onKinds.length > 2 ? 'one of the connectors below' : onKinds.map(c => c.label).join(' or ')} to build dashboards straight from your tables, read-only. CSV files are uploaded on New dashboard.`)));
   };
   drawTable(); drawMods();
+  const wizard = kind => connectionWizard({kind, onDone: () => renderConnections()});
   page.append(...[
-    pageHead({crumbs: [['Home', '#/'], ['Connections']], eyebrow: brandName() + ' · Platform · Connections', title: 'Connections',
-      promise: 'Your Google BigQuery connections: how each signs in and which dashboards use it. Read-only; CSV files are uploaded on New dashboard.',
-      actions: h('button', {class: 'btn primary', type: 'button', onclick: () => connectionWizard({onDone: () => renderConnections()})}, icon('plus'), 'New connection')}),
+    pageHead({crumbs: [['Home', '#/'], ['Connections']], eyebrow: brandName() + ' · Connections', title: 'Connections',
+      promise: 'Your warehouse and database connections: how each signs in and which dashboards use it. Read-only; CSV files are uploaded on New dashboard.',
+      actions: onKinds.length ? h('button', {class: 'btn primary', type: 'button', onclick: () => wizard(null)}, icon('plus'), 'New connection') : null}),
     qs.get('error') ? h('div', {class: 'note err'}, qs.get('error')) : null,
     qs.get('connected') ? h('div', {class: 'note ok'}, 'Signed in. Choose the tables Relay may use.') : null,
     h('div', {class: 'g5', style: 'margin-bottom:16px'},
@@ -120,8 +185,10 @@ async function renderConnections() {
     h('div', {class: 'toolbar'}, search, CH.cat !== 'all' ? h('button', {class: 'btn sm', type: 'button', onclick: () => { CH.cat = 'all'; renderConnections(); }}, 'All categories') : null,
       h('span', {class: 'spacer'}), count),
     tableWrap, modWrap,
-    h('p', {class: 'small muted', style: 'margin-top:14px'}, 'Secrets live in the secrets store by name and are never shown again; every use is audited with who and why. A connection created here is available at once in Start and on every module page.')].filter(Boolean));
-  document.title = `Connections · ${S.brand ? S.brand.full : 'RELAY by PASDACS'}`;
+    h('div', {class: 'section-title', style: 'margin-top:22px'}, h('h2', {}, 'Connectors'),
+      h('span', {class: 'hint'}, `${onKinds.length} of ${cat.connectors.length} switched on for ${cat.org} · PASDACS switches the others on, on request`)),
+    connectorCards(cat, wizard),
+    h('p', {class: 'small muted', style: 'margin-top:14px'}, 'Secrets live in the secrets store by name and are never shown again; every use is audited with who and why.')].filter(Boolean));
 }
 
 /* ---------- one connection: the detail dialog with every action ---------- */
@@ -171,6 +238,7 @@ async function connectionDetail(cid) {
     return mm;
   };
   body.append(...[                                  // native append renders a null as the text "null": filtered below
+    c.allowed === false ? h('div', {class: 'note warn', style: 'margin-top:0'}, `PASDACS has switched ${c.label} off for your organisation, so this connection cannot be tested, queried or pulled from. You can still share, disable or remove it.`) : null,
     h('div', {class: 'row', style: 'gap:8px'}, connPill(c), h('span', {class: 'chipx'}, SCOPE_TEXT[c.scope] ? SCOPE_TEXT[c.scope][0] : c.scope), h('span', {class: 'small muted'}, c.last_test ? `tested ${ago(c.last_test)}` : 'never tested')),
     c.error ? h('div', {class: 'note ' + (c.status === 'connected_no_offline' ? 'warn' : 'err'), style: 'margin:8px 0 0'}, c.error) : null,
     h('dl', {class: 'kv', style: 'margin-top:12px'}, kv('System', `${c.label} · ${(d.categories.find(x => x.id === c.category) || {}).name || ''}`), kv('Sign-in', d.signin[c.signin] || c.signin),
