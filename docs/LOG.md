@@ -301,6 +301,24 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       guarded version and the watchdog sees it and the DAX checker online; no errors in the logs. Everyone signs in
       again; PASDACS gives itself credits on the admin portal when it needs them.
 
+19. **New prices** (the user's request of 2026-11-11: "by default grant 50 credits only and 25 for new dashboard and
+    10 for changes or enhancements and 10 for Ask Relay upto 5 messages").
+    - A new organisation starts with 50 credits (`RELAY_CREDITS_START`); more still only with PASDACS's approval. A new
+      dashboard uses 25, a change 10.
+    - Ask Relay was free; now 10 credits (`RELAY_CREDITS_ASK`) pay for up to 5 answered questions in one conversation
+      (`RELAY_CREDITS_ASK_QUESTIONS`): its 1st, 6th, 11th ... question is charged (`askd_routes.ask`), and the credits
+      come back when that question gets no answer. Without enough credits a new conversation is refused (402, with
+      the reason); a conversation with questions left goes on. Its page shows the conversation's credits and the
+      questions left in them instead of its AI cost; the Ask button shows " · 10 credits" when the next question is
+      charged; the credits chip updates after every answer. The credit history says "Ask Relay questions".
+    - Every screen that lists prices (Organisation, the chip's menu, Add credits, Organisations on the admin portal)
+      and the docs list all four.
+    - Checked on a fresh test stack: the 120 API checks (two new: the prices, and running out after PASDACS takes
+      the 50 back) and 14 Ask Relay credit checks (charged and given back when unanswered; the 2nd question free,
+      the 6th charged; credits used and questions left after 1, 5 and 6 answers; 402 with the reason; a
+      conversation with questions left goes on with 5 credits). The screens: the chip, Ask Relay, Organisation.
+    - Also, to give PASDACS (made in the fresh start with 0) the new default: a "Starting credits" entry of 50.
+
 Test data in the live install: none since the fresh start (item 18).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -340,6 +358,11 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
+- **Item 19 is built and tested, not live yet:** Claude Code's auto mode refused the restart without the user's
+  go-ahead. The deploy folder is on `939b135` and the image `d2d-relay:939b135` is `latest`. To go live, in the deploy
+  folder (nobody building): `docker compose up -d --no-deps web admin`, then give PASDACS its 50 starting credits:
+  `docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -c "from app import db, orgs;
+  orgs._entry(db.PLATFORM, 'start', 50, note='Starting credits', who={})"`.
 - **The two PC helpers do not start by themselves yet (one-time, for the user).** Put shortcuts to
   `daxcheck\start-daxcheck.cmd` and `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC
   restarts"); Claude Code may not add them. Until then, after a restart of the PC someone signs in and starts both
