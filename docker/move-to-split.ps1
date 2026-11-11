@@ -65,8 +65,11 @@ if (-not (Select-String -Path .env -Pattern '^\s*RELAY_DB_PASSWORD=\S' -Quiet)) 
   Say 'added RELAY_DB_PASSWORD to .env'
 }
 
-# 5. the dump into the new database volume
+# 5. the dump into the new database volume (made here, so compose is told it already exists: RELAY_DB_EXTERNAL)
 docker volume create d2d-relay-db-data | Out-Null
+if (-not (Select-String -Path .env -Pattern '^\s*RELAY_DB_EXTERNAL=' -Quiet)) {
+  [IO.File]::AppendAllText((Resolve-Path .env), "RELAY_DB_EXTERNAL=true`n", (New-Object Text.UTF8Encoding $false))
+}
 $dir = Split-Path $dumpPath
 docker run --rm --entrypoint sh -v d2d-relay-db-data:/data -v "${dir}:/in:ro" d2d-relay:latest -c "mkdir -p /data/import && cp /in/$dump /data/import/relay.dump && chmod 600 /data/import/relay.dump" | Out-Host
 if ($LASTEXITCODE) { Fail 'could not put the dump into the new database volume' }
@@ -88,5 +91,5 @@ foreach ($c in 'd2d-relay-db', 'd2d-relay-web', 'd2d-relay-admin') {
   Say "$c is healthy"
 }
 docker logs d2d-relay-db 2>&1 | Select-String 'relay-init' | ForEach-Object { Say $_.Line }
-Say 'done. Public site: http://127.0.0.1:8100 · admin portal: http://127.0.0.1:8102 (this PC only until Cloudflare Access is set up)'
+Say 'done. Public site: http://127.0.0.1:8100, admin portal: http://127.0.0.1:8102 (this PC only until Cloudflare Access is set up)'
 Say "the old container d2d-relay stays stopped for a rollback; remove it when you are sure: docker rm d2d-relay"

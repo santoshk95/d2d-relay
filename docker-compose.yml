@@ -125,7 +125,8 @@ volumes:
   d2d-data:
     name: d2d-relay-data           # the public site's keys and settings (and, from before the split, the old database)
   db-data:
-    name: d2d-relay-db-data        # the database
+    name: d2d-relay-db-data        # the database (made by docker\move-to-split.ps1 on a moved install: RELAY_DB_EXTERNAL=true)
+    external: ${RELAY_DB_EXTERNAL:-false}
   admin-data:
     name: d2d-relay-admin-data     # the admin portal's own keys
   claude-login:

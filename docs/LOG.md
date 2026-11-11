@@ -174,6 +174,15 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     - Checked on a test stack from the final image (no code mounted) with a fresh copy of the live database, signing
       in the real way (codes read from the container log): 121 API checks (the copied data, the clean-up and the code
       limits, the admin portal, connectors, credits, people) and the 10 Cloudflare Access token checks.
+    - **Deployed on 2026-11-11 at 09:00 IST** (image `d2d-relay:aec0d13`, built from `aec0d13`), with
+      `docker\move-to-split.ps1`. The live database was dumped (`data\backups\pre-split-20261111-090052.dump`) and
+      loaded into `d2d-relay-db` (126 tables); the three containers came up healthy in about a minute. Checked
+      afterwards: https://d2d-relay.pasdacs.com answers through the tunnel from `d2d-relay-web`; the admin portal
+      answers on this PC and refuses requests through Cloudflare until Access is set up; the test login is gone;
+      PASDACS has its 70 credits, all six connectors and its 4 dashboards; the DAX checker's heartbeat is seen; both
+      sites got a token from Microsoft for the sign-in mail (nothing sent); no errors in the logs. The old container
+      was removed. Its database files stay in the volume `d2d-relay-data` (`/data/postgres`, 67 MB) until someone
+      deletes them; the dump above is the backup.
 
 Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
 (JPEG) on Branding but has not picked a palette yet; leave it.
@@ -215,23 +224,6 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-- **Items 11-15 are not deployed yet.** The live site still runs `eff2f2d` in the one container `d2d-relay`. The move
-  to the split containers was rehearsed twice on copies of the live database, but Claude Code's permission check
-  refuses to run a production deploy, so a person runs it (or allows it). Ready on this PC: the production image
-  `d2d-relay:aec0d13`, and `RELAY_DB_PASSWORD` in the live `.env` (backup `.env.bak-20261111-split`). In
-  `Downloads\D2D Relay`, while nobody is building:
-
-  ```
-  git fetch C:\Users\santosh.k\Downloads\d2d.relay main
-  git merge --ff-only FETCH_HEAD
-  docker tag d2d-relay:aec0d13 d2d-relay:latest
-  powershell -ExecutionPolicy Bypass -File docker\move-to-split.ps1 -Tunnel -NoBuild
-  ```
-
-  It takes about two minutes and ends with the three containers healthy. Then check https://d2d-relay.pasdacs.com
-  and sign in once. When all is well, `docker rm d2d-relay` removes the old, stopped container (its database stays
-  in the volume, and the dump `data\backups\pre-split-<time>.dump`). Until the move, do not run `docker compose up`
-  there with the new `docker-compose.yml`.
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
