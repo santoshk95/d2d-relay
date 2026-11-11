@@ -137,7 +137,8 @@ function orgStep(o) {
   $('orglead').textContent = `You are the first person from ${o.domain} on D2D Relay. Name your organisation: everyone who signs in later with an @${o.domain} address joins it and shares its credits, and you are its owner.`;
   $('orgname').value = $('orgname').value || o.suggested || '';
   $('person').value = $('person').value || o.person || '';
-  $('orgcredits').textContent = `It starts with ${o.credits} credits. Next you set up your brand.`;
+  $('orgcredits').textContent = o.credits ? `It starts with ${o.credits} credits. Next you set up your brand.`
+    : 'Next you set up your brand. Credits come from PASDACS: ask for them under Request credits, and PASDACS approves them.';
   $('orgname').focus(); $('orgname').select();
 }
 $('orgform').addEventListener('submit', async e => {

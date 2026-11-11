@@ -125,7 +125,7 @@ for _r in phases.ROUTERS:                      # P10 onwards: one router per pha
     app.include_router(_r)
 app.include_router(branding.router)            # D2D Relay: Branding (logo + description -> palettes)
 app.include_router(otp.router)                 # D2D Relay: sign-in with a one-time email code
-app.include_router(orgs.router)                # D2D Relay: organisations, credits, Add credits, every organisation (platform admins)
+app.include_router(orgs.router)                # D2D Relay: organisations, credits and their requests, every organisation (admin portal)
 edition.apply()                                # D2D Relay: keep dashboards, the visual library and BigQuery; switch the rest off
 
 
@@ -136,7 +136,7 @@ async def _quota_stop(_request, exc: usage.QuotaError):
 
 @app.exception_handler(orgs.NoCredits)
 async def _no_credits(_request, exc: orgs.NoCredits):
-    """D2D Relay: not enough credits for a new dashboard or a change (the screen offers Add credits)."""
+    """D2D Relay: not enough credits for a new dashboard or a change (the screen offers Request credits)."""
     return JSONResponse({"detail": str(exc), "credits": True}, status_code=402)
 
 

@@ -15,7 +15,7 @@ Only the Claude sign-in volume (`claude-api-auth`) is shared, so both apps use t
 | On this PC | public site http://127.0.0.1:8100, admin portal http://127.0.0.1:8102 |
 | Sign-in | a 6-digit code emailed to any **business** address (no passwords, no SSO); free and disposable mail refused |
 | Organisations | one per email domain, each in its own workspace; the first person creates and owns it |
-| Credits | 100 per organisation to start; a new dashboard uses 30, a change 15 (see "Organisations and credits") |
+| Credits | none to start: PASDACS approves every credit request; a new dashboard uses 30, a change 15 (see "Organisations and credits") |
 | Platform admins | every **@pasdacs.com** address, on the admin portal only (every organisation, credits, connectors, requests) |
 
 ## Containers
@@ -150,7 +150,7 @@ Mailinator …) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTR
 
 | What | Credits |
 |---|---|
-| Start | 100 (`RELAY_CREDITS_START`) |
+| Start | none (`RELAY_CREDITS_START`, empty = 0): credits come only when PASDACS approves a request |
 | New dashboard (plan, KPIs and first prototype) | 30 (`RELAY_CREDITS_DASHBOARD`) |
 | A change: revise the plan, a change request, building a suggested custom visual, an Ask Relay answer sent to a dashboard | 15 (`RELAY_CREDITS_CHANGE`) |
 | Confirming the plan, fixing failed review gates, approving and publishing, Ask Relay questions, brand palettes | free |
@@ -160,11 +160,19 @@ fails, is stopped, or is cut off by a restart, its credits come back on their ow
 AI cost is still recorded on the server (the `usage` table); the screens show no tokens and no cost breakdown. Ask
 Relay shows only a conversation's overall cost.
 
-**Adding credits.** Online payment is not built yet. "Add credits" sends a request to info@pasdacs.com
-(`RELAY_CREDITS_CONTACT`) from the code mailbox, with the organisation, the person and the amount, and Reply-To set
-to the person. It also shows a prefilled email link. When the payment is agreed, a platform admin opens
-**Organisations** on the admin portal, clicks **Credits** for the organisation and writes why (for example the
-invoice); the organisation sees it in its credit history. A negative number takes credits back.
+**Getting credits (PASDACS approves every one).** Anyone with a business mailbox can sign up, but an organisation
+gets no credits, and so no AI time, until PASDACS approves them. Online payment is not built yet.
+
+1. Someone in the organisation clicks **Request credits** (top-bar chip, Organisation, Dashboards, or the message
+   when credits run short), picks an amount and adds a message. One request can wait at a time; the person who asked,
+   or the owner, can withdraw it to ask for a different amount. The request also goes to info@pasdacs.com
+   (`RELAY_CREDITS_CONTACT`) by email with Reply-To set to the person, and to every PASDACS person's notifications.
+   They can also simply email info@pasdacs.com.
+2. On the admin portal, **Requests** lists it as waiting (and Organisations shows what each organisation asks for).
+   **Approve** adds the credits at once, the amount asked or another one, with an optional note for their credit
+   history. **Decline** needs a reason. Either way the person who asked and the owner are told in the app and by email.
+3. For a request that came by email, **Organisations → Credits** adds credits by hand with a note (a negative number
+   takes credits back).
 
 ### 2. Public address (Cloudflare tunnel)
 

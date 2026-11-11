@@ -29,8 +29,10 @@ function orgMenu(anchor) {
     h('div', {class: 'pmhead'}, h('div', {class: 'small faint'}, 'Your organisation'), h('b', {}, o.name),
       h('div', {class: 'small muted'}, 'Owner: ', o.owner ? (o.is_owner ? 'you' : o.owner.name) : '—', ` · @${o.domain}`)),
     h('div', {style: 'padding:2px 12px 10px'}, h('div', {class: 'credbig'}, Number(o.credits || 0).toLocaleString()),
-      h('div', {class: 'small muted'}, `credits left · a new dashboard uses ${costOf('dashboard')}, a change ${costOf('change')}`)),
-    h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); creditsDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Add credits')),
+      h('div', {class: 'small muted'}, `credits left · a new dashboard uses ${costOf('dashboard')}, a change ${costOf('change')}`),
+      o.pending_request ? h('div', {class: 'small', style: 'margin-top:6px'}, h('span', {class: 'tag warn'}, 'Waiting for PASDACS'),
+        ` ${Number(o.pending_request.credits).toLocaleString()} credits asked for`) : null),
+    h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); creditsDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Request credits')),
     h('a', {class: 'pmitem', href: '#/org', onclick: closePopover}, icon('building'), h('span', {class: 'grow'}, 'Organisation, people and credit history')),
   ], 'profile');
 }
@@ -54,14 +56,33 @@ function creditsLine() {
   if (!o.id) return null;
   return h('div', {class: 'credline'}, icon('coin'), h('span', {}, h('b', {}, credits(o.credits)), ` left in ${o.name}`),
     h('span', {}, `· a new dashboard uses ${costOf('dashboard')}, a change ${costOf('change')}`),
-    h('button', {class: 'btn sm ghost', type: 'button', onclick: () => creditsDialog()}, icon('plus'), 'Add credits'));
+    o.pending_request ? h('span', {class: 'tag warn'}, `${Number(o.pending_request.credits).toLocaleString()} credits asked for, waiting for PASDACS`) : null,
+    h('button', {class: 'btn sm ghost', type: 'button', onclick: () => creditsDialog()}, icon('plus'), 'Request credits'));
 }
 
-/* ---------------- Add credits: online payment is coming; until then a request to PASDACS ---------------- */
+/* ---------------- Request credits: PASDACS approves every request (the admin portal); one waiting at a time ---------------- */
 function creditsDialog(reason) {
   const o = ORG(), me = S.me || {};
   if (!o.id) return;
   const contact = o.contact || 'info@pasdacs.com';
+  if (o.pending_request) {                     // one request at a time: show it, and let it be withdrawn
+    const p = o.pending_request, out = h('div', {role: 'status'});
+    const wd = h('button', {class: 'btn', type: 'button'}, 'Withdraw it');
+    wd.onclick = async () => {
+      wd.disabled = true;
+      try { await api(`/api/org/credit-request/${encodeURIComponent(p.id)}/withdraw`, {method: 'POST'}); await refreshOrg(true); m.remove();
+        notify('Withdrawn. You can ask for a different amount now.', 'ok'); }
+      catch (e) { wd.disabled = false; out.replaceChildren(h('div', {class: 'note err'}, e.message)); }
+    };
+    const m = modal('Request credits', h('div', {class: 'mbody'},
+      reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
+      h('p', {style: 'margin-top:0'}, h('b', {}, `${p.user_name || 'Someone'} asked PASDACS for ${Number(p.credits).toLocaleString()} credits `),
+        `${ago(p.created)}. PASDACS approves every request and replies by email; the credits then appear here at once.`),
+      h('p', {class: 'small muted'}, `To ask for a different amount, withdraw this request first. For anything urgent, write to ${contact}.`),
+      out, h('div', {class: 'row', style: 'justify-content:flex-end;gap:10px;margin-top:12px'}, wd,
+        h('button', {class: 'btn primary', type: 'button', onclick: () => m.remove()}, 'OK'))));
+    return;
+  }
   let amount = 100;
   const custom = h('input', {type: 'number', min: 1, max: 100000, step: 1, placeholder: 'Other', 'aria-label': 'Other number of credits', style: 'max-width:120px'});
   const picks = h('div', {class: 'segbtn', role: 'group', 'aria-label': 'Credits to add'}, [100, 250, 500, 1000].map(n =>
@@ -84,20 +105,21 @@ function creditsDialog(reason) {
     send.disabled = true;
     try {
       const r = await api('/api/org/credit-request', {json: {credits: amount, message: msg.value}});
-      out.replaceChildren(r.sent ? h('div', {class: 'note ok'}, `Sent to ${r.contact}. PASDACS will reply to ${me.email} and add the credits to ${o.name}.`)
-        : h('div', {class: 'note warn'}, 'Your request is recorded, but the email could not be sent from here. Please ', mailLink(`email ${r.contact}`), ' as well.'));
+      out.replaceChildren(r.sent ? h('div', {class: 'note ok'}, `Sent to PASDACS (${r.contact}). You will hear back at ${me.email}; once it is approved, the credits appear in ${o.name} at once.`)
+        : h('div', {class: 'note warn'}, 'Your request is recorded and PASDACS sees it, but the email could not be sent from here. You can also ', mailLink(`email ${r.contact}`), '.'));
       send.lastChild.textContent = 'Sent';
+      refreshOrg(true);
     } catch (e) {
       send.disabled = false;
       out.replaceChildren(h('div', {class: 'note err'}, e.message, ' You can also ', mailLink(`email ${contact}`), '.'));
     }
   };
-  modal('Add credits', h('div', {class: 'mbody'},
+  modal('Request credits', h('div', {class: 'mbody'},
     reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
-    h('p', {style: 'margin-top:0'}, h('b', {}, 'Paying online is coming soon. '), `For now, tell us how many credits you need: PASDACS replies by email and adds them to ${o.name}.`),
+    h('p', {style: 'margin-top:0'}, h('b', {}, 'PASDACS approves every credit request. '), `Tell us how many credits ${o.name} needs: we reply by email, and once it is approved the credits appear here at once. Paying online is coming later.`),
     h('dl', {class: 'kv small'}, h('dt', {}, 'Organisation'), h('dd', {}, `${o.name} · @${o.domain}`),
       h('dt', {}, 'Requested by'), h('dd', {}, `${me.name || ''} · ${me.email || ''}`), h('dt', {}, 'Credits now'), h('dd', {}, credits(o.credits))),
-    h('label', {class: 'f'}, 'Credits to add'), h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, picks, custom),
+    h('label', {class: 'f'}, 'Credits you need'), h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, picks, custom),
     h('div', {class: 'hint'}, `A new dashboard uses ${costOf('dashboard')} credits; a change uses ${costOf('change')}.`),
     h('label', {class: 'f'}, 'Message ', h('small', {}, 'optional')), msg,
     out,
@@ -135,8 +157,8 @@ async function renderOrg() {
           h('dt', {}, 'New dashboard'), h('dd', {}, credits(d.costs.dashboard)),
           h('dt', {}, 'A change'), h('dd', {}, `${credits(d.costs.change)}: revising the plan, a change request, building a custom visual Relay suggested`),
           h('dt', {}, 'Free'), h('dd', {}, 'Confirming the plan, fixing failed review gates, approving and publishing, Ask Relay questions')),
-        h('div', {class: 'row', style: 'margin-top:12px;gap:10px;flex-wrap:wrap'}, h('button', {class: 'btn primary', type: 'button', onclick: () => creditsDialog()}, icon('plus'), 'Add credits'),
-          h('span', {class: 'small muted'}, 'When a run fails or is stopped, its credits come back.'))),
+        h('div', {class: 'row', style: 'margin-top:12px;gap:10px;flex-wrap:wrap'}, h('button', {class: 'btn primary', type: 'button', onclick: () => creditsDialog()}, icon('plus'), 'Request credits'),
+          h('span', {class: 'small muted'}, 'PASDACS approves every request. When a run fails or is stopped, its credits come back.'))),
       h('div', {class: 'card'}, h('h3', {}, 'Owner'),
         d.owner ? [h('b', {}, d.owner.name + (d.is_owner ? ' (you)' : '')), h('div', {class: 'small muted'}, d.owner.email)] : h('div', {class: 'muted'}, '—'),
         h('p', {class: 'small muted'}, `The first person from @${d.domain} created ${d.name} and owns it. Everyone who signs in with an @${d.domain} `
@@ -149,7 +171,25 @@ async function renderOrg() {
         h('tbody', {}, d.ledger.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, LEDGER(r)), h('td', {}, r.user_name || 'Relay'),
           h('td', {}, r.project_open ? h('a', {href: '#/p/' + r.project_id}, r.project_name || r.project_id) : r.project_name || '—'),
           h('td', {class: 'n delta' + (r.delta > 0 ? ' plus' : '')}, (r.delta > 0 ? '+' : '') + r.delta), h('td', {class: 'n'}, r.balance))))))
-        : h('div', {class: 'muted small'}, 'Nothing yet.')));
+        : h('div', {class: 'muted small'}, 'Nothing yet.')),
+    h('div', {class: 'card'}, h('h3', {}, 'Credit requests'),
+      (d.requests || []).length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['Asked', 'Who', 'Credits', 'Answer', ''], 2),
+        h('tbody', {}, d.requests.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, r.user_name || '—'),
+          h('td', {class: 'n'}, Number(r.credits).toLocaleString()), h('td', {}, requestState(r)),
+          h('td', {class: 'n'}, r.status === 'pending' && (d.may_manage || r.user_id === (S.me || {}).id)
+            ? h('button', {class: 'btn sm ghost', type: 'button', onclick: async () => {
+                try { await api(`/api/org/credit-request/${encodeURIComponent(r.id)}/withdraw`, {method: 'POST'}); await refreshOrg(true); renderOrg(); }
+                catch (e) { notify(e.message, 'err'); } }}, 'Withdraw') : null))))))
+        : h('div', {class: 'muted small'}, 'None yet. PASDACS approves every credit request: use Request credits.')));
+}
+/* a credit request's answer, in words (the Organisation page and the admin portal's Requests) */
+function requestState(r) {
+  if (r.status === 'pending') return h('span', {class: 'tag warn'}, 'Waiting for PASDACS');
+  if (r.status === 'approved') return h('span', {}, h('span', {class: 'tag ok'}, `Approved +${Number(r.granted || 0).toLocaleString()}`),
+    r.note ? h('span', {class: 'small muted'}, ` ${r.note}`) : null, h('span', {class: 'small faint'}, ` · ${when(r.decided)}`));
+  if (r.status === 'declined') return h('span', {}, h('span', {class: 'tag err'}, 'Declined'), h('span', {class: 'small muted'}, ` ${r.note || ''}`),
+    h('span', {class: 'small faint'}, ` · ${when(r.decided)}`));
+  return h('span', {class: 'small muted'}, `Withdrawn${r.decided_name ? ' by ' + r.decided_name : ''}`);
 }
 
 /* ---------------- the first-time setup of a new organisation (its owner, once): the brand ---------------- */
@@ -175,7 +215,8 @@ function renderSetup() {
     h('div', {class: 'card'}, h('h3', {}, `${o.name} is ready`),
       h('dl', {class: 'kv small'}, h('dt', {}, 'Owner'), h('dd', {}, `you (${(S.me || {}).email || ''})`),
         h('dt', {}, 'Who joins'), h('dd', {}, `everyone who signs in with an @${o.domain} address`),
-        h('dt', {}, 'Credits'), h('dd', {}, `${credits(o.credits)} to start · a new dashboard uses ${costOf('dashboard')}, a change ${costOf('change')}`))),
+        h('dt', {}, 'Credits'), h('dd', {}, (o.credits ? `${credits(o.credits)} to start` : 'none yet: PASDACS approves every credit request (Request credits)')
+          + ` · a new dashboard uses ${costOf('dashboard')}, a change ${costOf('change')}`))),
     h('h2', {style: 'margin:22px 0 4px'}, 'Your brand'),
     h('div', {class: 'muted', style: 'margin-bottom:10px'}, 'Add your logo and a few words about your brand. Relay makes report palettes from them; pick one and every new dashboard uses it.'),
     brandBox,
@@ -232,7 +273,7 @@ async function renderOrgs() {
   const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('div', {class: 'eyebrow'}, 'Platform'), h('h1', {}, 'Organisations'),
-      h('div', {class: 'meta'}, `Every organisation on D2D Relay, each in its own workspace. Each starts with ${credits(d.start)}; `
+      h('div', {class: 'meta'}, `Every organisation on D2D Relay, each in its own workspace. ${d.start ? `Each starts with ${credits(d.start)}` : 'They start with no credits and get them when you approve a request'}; `
         + `a new dashboard uses ${d.costs.dashboard}, a change ${d.costs.change}. Organisations use CSV files until you switch a connector on.`))),
     h('div', {class: 'card'}, h('div', {class: 'orgwrap'}, h('table', {class: 'utable'},
       th(['Organisation', 'Owner', 'Connectors', 'People', 'Dashboards', 'Credits used', 'Credits left', 'Last sign-in', ''], 3),
@@ -244,7 +285,9 @@ async function renderOrgs() {
         h('td', {class: 'small', style: 'white-space:nowrap', title: (o.connectors || []).map(kindLabel).join(', ') || null},
           !(o.connectors || []).length ? h('span', {class: 'muted'}, 'CSV only') : o.connectors.length === d.catalogue.length ? `All ${o.connectors.length}`
             : o.connectors.length > 2 ? `${kindLabel(o.connectors[0])} +${o.connectors.length - 1}` : o.connectors.map(kindLabel).join(', ')),
-        h('td', {class: 'n'}, o.people), h('td', {class: 'n'}, o.dashboards), h('td', {class: 'n'}, o.spent), h('td', {class: 'n'}, h('b', {}, o.credits)),
+        h('td', {class: 'n'}, o.people), h('td', {class: 'n'}, o.dashboards), h('td', {class: 'n'}, o.spent),
+        h('td', {class: 'n'}, h('b', {}, o.credits), o.pending ? h('div', {}, h('a', {href: '#/requests', class: 'tag warn', style: 'text-decoration:none'},
+          `asks for ${Number(o.pending.credits).toLocaleString()}`)) : null),
         h('td', {class: 'n'}, o.last_login ? ago(o.last_login) : '—'),
         h('td', {class: 'n'}, h('div', {class: 'row', style: 'gap:6px;justify-content:flex-end;flex-wrap:nowrap'},
           h('button', {class: 'btn sm', type: 'button', onclick: () => connectorsDialog(o)}, icon('plug'), 'Connectors'),
@@ -263,14 +306,38 @@ async function renderRequests() {
   const kindLabel = k => (d.catalogue.find(c => c.kind === k) || {}).label || k;
   const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
   const sent = r => r.sent ? 'yes' : h('span', {class: 'tag warn', title: 'The email could not be sent; the request is only here'}, 'no');
+  const answer = (r, approve) => {           // approve (the amount may differ) or decline (with the reason they are told)
+    const n = h('input', {type: 'number', min: 1, step: 1, value: r.credits, style: 'max-width:160px'});
+    const note = h('input', {type: 'text', placeholder: approve ? 'Optional, shown in their credit history: e.g. Invoice 2026-031 paid' : 'For example: please write to us about a plan first'});
+    const err = h('div', {class: 'err-msg', role: 'alert'});
+    const ok = h('button', {class: 'btn primary' + (approve ? '' : ' danger'), type: 'button'}, approve ? 'Approve and add the credits' : 'Decline');
+    const m = modal(`${approve ? 'Approve' : 'Decline'}: ${r.org_name} asks for ${Number(r.credits).toLocaleString()} credits`, h('div', {class: 'mbody'},
+      h('p', {class: 'muted small', style: 'margin-top:0'}, `${r.user_name || ''} · ${r.email || ''} · ${when(r.created)}. ${r.org_name} has ${credits(r.org_credits)} now.`),
+      r.message ? h('div', {class: 'note small', style: 'margin-top:0'}, r.message) : null,
+      approve ? [h('label', {class: 'f'}, 'Credits to add'), n] : null,
+      h('label', {class: 'f'}, approve ? 'Note ' : 'Why ', h('small', {}, approve ? 'optional' : 'they are told, in the app and by email')), note, err,
+      h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, ok)));
+    ok.onclick = async () => {
+      ok.disabled = true;
+      try { await api(`/api/admin/requests/${encodeURIComponent(r.id)}/${approve ? 'approve' : 'decline'}`, {json: approve ? {credits: parseInt(n.value, 10) || 0, note: note.value} : {note: note.value}});
+        m.remove(); notify(approve ? `Approved: ${r.org_name}` : `Declined: ${r.org_name}`, 'ok'); renderRequests(); }
+      catch (e) { ok.disabled = false; err.textContent = e.message; }
+    };
+  };
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('div', {class: 'eyebrow'}, 'Platform'), h('h1', {}, 'Requests'),
       h('div', {class: 'meta'}, 'What organisations asked PASDACS for. Each request also went to the contact mailbox by email, unless shown otherwise.'))),
-    h('div', {class: 'card'}, h('h3', {}, 'Credit requests'), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
-      'Sent from Add credits. Add the credits on Organisations once the payment is agreed.'),
-      d.credits.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Organisation', 'Who', 'Message', 'Credits', 'Emailed'], 4),
-        h('tbody', {}, d.credits.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, r.org_name), h('td', {}, `${r.name || ''} · ${r.email || ''}`),
-          h('td', {}, r.message || '—'), h('td', {class: 'n'}, Number(r.credits || 0).toLocaleString()), h('td', {class: 'n'}, sent(r)))))))
+    h('div', {class: 'card'}, h('h3', {}, `Credit requests${d.pending ? ` · ${d.pending} waiting` : ''}`), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
+      'Organisations get credits only when you approve a request. Approving adds them at once; the organisation is told either way.'),
+      d.credits.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['Asked', 'Organisation', 'Who', 'Message', 'Credits', 'Answer', ''], 4),
+        h('tbody', {}, d.credits.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, h('b', {}, r.org_name)),
+          h('td', {}, r.user_name || '', h('div', {class: 'small muted'}, r.email || '')), h('td', {class: 'small'}, r.message || '—'),
+          h('td', {class: 'n'}, Number(r.credits || 0).toLocaleString()),
+          h('td', {}, requestState(r), r.status === 'pending' && !r.emailed ? h('div', {class: 'small muted'}, 'not emailed') : null,
+            r.decided_name && (r.status === 'approved' || r.status === 'declined') ? h('div', {class: 'small faint'}, 'by ' + r.decided_name) : null),
+          h('td', {class: 'n'}, r.status === 'pending' ? h('div', {class: 'row', style: 'gap:6px;justify-content:flex-end;flex-wrap:nowrap'},
+            h('button', {class: 'btn sm primary', type: 'button', onclick: () => answer(r, true)}, icon('check'), 'Approve'),
+            h('button', {class: 'btn sm', type: 'button', onclick: () => answer(r, false)}, 'Decline')) : null))))))
         : h('div', {class: 'muted small'}, 'None yet.')),
     h('div', {class: 'card'}, h('h3', {}, 'Connector requests'), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
       'Sent from Connections. Switch a connector on with Connectors on Organisations.'),

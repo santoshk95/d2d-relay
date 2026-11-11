@@ -163,9 +163,15 @@ CREATE TABLE IF NOT EXISTS relay.tn_credits (
   kind TEXT NOT NULL CHECK (kind IN ('start', 'charge', 'refund', 'adjust')), delta INTEGER NOT NULL,
   balance INTEGER NOT NULL, what TEXT, user_id TEXT, user_name TEXT, project_id TEXT, project_name TEXT, note TEXT,
   ref TEXT);
+CREATE TABLE IF NOT EXISTS relay.tn_credit_requests (
+  id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, user_id TEXT, user_name TEXT, email TEXT, credits INTEGER NOT NULL,
+  message TEXT, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'declined', 'withdrawn')),
+  created REAL NOT NULL, emailed INTEGER NOT NULL DEFAULT 0, decided REAL, decided_by TEXT, decided_name TEXT,
+  granted INTEGER, note TEXT);
 """
 # D2D Relay (orgs.py): tn_orgs = an organisation per tenant (its email domain, owner and pooled credits);
-# tn_credits = every change to those credits (starting credits, charges, refunds, admin adjustments).
+# tn_credits = every change to those credits (starting credits, charges, refunds, admin adjustments);
+# tn_credit_requests = what organisations asked for, and PASDACS's answer (credits are added only by approving one).
 CONTROL_TABLES = re.findall(r"CREATE TABLE IF NOT EXISTS relay\.(\w+)", CONTROL_SCHEMA)
 
 SCHEMA = """

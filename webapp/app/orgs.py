@@ -8,17 +8,23 @@ disposable mail domains (public_domains.py) cannot sign in at all. The platform'
 platform admin works) is an organisation too, for the platform admin's domain.
 
 Credits are pooled per organisation (relay.tn_orgs.credits); every change is a row in relay.tn_credits:
-  start   the starting credits (D2D_CREDITS_START, 100)
+  start   the starting credits (D2D_CREDITS_START, none by default: a new organisation asks PASDACS first)
   charge  a new dashboard (D2D_CREDITS_DASHBOARD, 30) or a change (D2D_CREDITS_CHANGE, 15): asking Relay to revise the
           plan, a change request on a prototype, building a custom visual Relay suggested, an Ask Relay answer sent to
           a dashboard
   refund  the run a charge paid for failed or was stopped before it delivered, so the credits come back (Retry charges
           again). A new dashboard is delivered with its first prototype (planning and building are both part of it);
           a change with its new plan or version.
-  adjust  a platform admin added (or took back) credits, e.g. after a payment
+  adjust  a platform admin added (or took back) credits: approving a request, or by hand (e.g. after a payment)
 Free: confirming the plan, asking Relay to fix failed review gates, approving and publishing, Ask Relay questions and
 brand palettes. A run carries the id of the charge it delivers (job args `charge`); worker.py gives it back when the
 run fails, is stopped, or is cut off by a restart.
+
+Credits only come with PASDACS's approval (against abuse: anyone with a business mailbox can sign up). An organisation
+asks for them (Request credits: relay.tn_credit_requests, one pending request at a time, also emailed to PASDACS) or
+writes to PASDACS; a platform admin approves the request on the admin portal (the amount may differ) or declines it with
+a reason, and the organisation is told either way. A platform admin can also add or take back credits by hand.
+The public site charges and refunds, the admin portal adds: every change is one database transaction (_entry).
 
 Connectors (relay.tn_orgs.connectors, a JSON list of connector kinds): the public side takes CSV files only. Every
 connector in edition.CONNECTORS is listed for everyone, and PASDACS switches it on for one organisation at a time, on
@@ -44,13 +50,13 @@ from . import auth, db, edition, notify, portal, public_domains
 router = APIRouter()
 db.register_control_columns("tn_orgs", {"connectors": "TEXT NOT NULL DEFAULT '[]'"})   # the connectors switched on
 
-START = int(os.environ.get("D2D_CREDITS_START") or 100)
+START = int(os.environ.get("D2D_CREDITS_START") or 0)     # none: a new organisation asks PASDACS for credits first
 COST = {"dashboard": int(os.environ.get("D2D_CREDITS_DASHBOARD") or 30), "change": int(os.environ.get("D2D_CREDITS_CHANGE") or 15)}
 WHAT = {"dashboard": "New dashboard", "change": "Change"}
 CONTACT = (os.environ.get("D2D_CREDITS_CONTACT") or "info@pasdacs.com").strip()
 PLATFORM_EMAIL = (os.environ.get("D2D_OTP_EMAIL") or os.environ.get("D2D_ADMIN_EMAIL") or "").strip().lower()
 REQUESTS_PER_HOUR = 5
-_lock = threading.RLock()                 # credits: one change at a time (the app is one process)
+_lock = threading.RLock()                 # credits: one change at a time in this process (and each one transaction)
 _create_lock = threading.Lock()           # two people of a new domain signing up at once make one organisation
 
 
@@ -123,7 +129,8 @@ def init() -> None:
             t = db.one("SELECT name FROM relay.tn_tenants WHERE id = ?", (db.PLATFORM,)) or {}
             db.run("INSERT OR IGNORE INTO relay.tn_orgs (tenant_id, name, domain, owner_id, credits, setup_done, created, created_by) "
                    "VALUES (?, ?, ?, ?, 0, 1, ?, 'system')", (db.PLATFORM, t.get("name") or db.PLATFORM_NAME, domain, db.ADMIN_ID, time.time()))
-            _entry(db.PLATFORM, "start", START, note="Starting credits", who={})
+            if START:
+                _entry(db.PLATFORM, "start", START, note="Starting credits", who={})
         if not db.one("SELECT 1 AS x FROM relay.tn_meta WHERE key = 'd2d_platform_connectors'"):
             # PASDACS's own workspace may use every connector it offers (once: a platform admin may change it later)
             db.run("UPDATE relay.tn_orgs SET connectors = ? WHERE tenant_id = ? AND connectors = '[]'",
@@ -164,7 +171,8 @@ def create(name: str, email: str, person: str) -> tuple[str, str]:
                 db.run("INSERT INTO relay.tn_accounts (user_id, email, home_tenant, created) VALUES (?, ?, ?, ?)", (uid, email, tid, now))
                 db.run("INSERT INTO relay.tn_orgs (tenant_id, name, domain, owner_id, credits, setup_done, created, created_by) "
                        "VALUES (?, ?, ?, ?, 0, 0, ?, ?)", (tid, name, domain, uid, now, uid))
-                _entry(tid, "start", START, note="Starting credits", who={"id": uid, "name": person})
+                if START:
+                    _entry(tid, "start", START, note="Starting credits", who={"id": uid, "name": person})
         except Exception:
             with db.use(db.PLATFORM):
                 for sql in ("DELETE FROM relay.tn_credits WHERE tenant_id = ?", "DELETE FROM relay.tn_orgs WHERE tenant_id = ?",
@@ -287,7 +295,8 @@ def _entry(tid: str, kind: str, delta: int, *, what: str | None = None, pid: str
 
 def _short(o: dict, what: str) -> str:
     noun = "A new dashboard" if what == "dashboard" else "A change"
-    return f"Not enough credits. {noun} uses {COST[what]} credits and {o['name']} has {o['credits']} left. Add credits to continue."
+    return (f"Not enough credits. {noun} uses {COST[what]} credits and {o['name']} has {o['credits']} left. "
+            "Ask PASDACS for credits (Request credits) to continue.")
 
 
 def require(what: str) -> None:
@@ -389,7 +398,19 @@ def me_info(u: dict | None) -> dict:
     owner = u["id"] == o["owner_id"]
     return {**out, "id": o["tenant_id"], "name": o["name"], "domain": o["domain"], "credits": o["credits"], "owner": _owner(o),
             "is_owner": owner, "setup_needed": owner and not o["setup_done"],      # only the owner sets the organisation up
-            "connectors": connectors_of(o["tenant_id"])}                          # none: CSV files only
+            "connectors": connectors_of(o["tenant_id"]),                          # none: CSV files only
+            "pending_request": _pending(o["tenant_id"])}                          # credits asked for, not answered yet
+
+
+def _pending(tid: str) -> dict | None:
+    """The organisation's credit request that PASDACS has not answered yet (there is at most one)."""
+    return db.one("SELECT id, credits, created, user_name FROM relay.tn_credit_requests WHERE tenant_id = ? AND status = 'pending' "
+                  "ORDER BY created DESC LIMIT 1", (tid,))
+
+
+def _requests_of(tid: str, limit: int = 20) -> list[dict]:
+    return db.q("SELECT id, credits, message, status, created, user_id, user_name, decided, decided_name, granted, note "
+                "FROM relay.tn_credit_requests WHERE tenant_id = ? ORDER BY created DESC LIMIT ?", (tid, limit))
 
 
 def _must() -> tuple[dict, dict]:
@@ -420,7 +441,7 @@ def get_org():
     for r in rows:
         r["project_open"] = bool(r["project_id"]) and r["project_id"] in can_open
     return {**me_info(u), "created": o["created"], "people": people, "dashboards": dashboards, "ledger": rows,
-            "may_manage": _may_manage(u, o)}
+            "may_manage": _may_manage(u, o), "requests": _requests_of(o["tenant_id"])}
 
 
 class OrgPatch(BaseModel):
@@ -460,24 +481,49 @@ class CreditRequest(BaseModel):
 
 @router.post("/api/org/credit-request")
 def credit_request(body: CreditRequest):
-    """Add credits: until online payment exists, the request goes to PASDACS by email (and to the platform admins in the
-    app); a platform admin adds the credits on Organisations."""
+    """Request credits: PASDACS approves every one (the admin portal's Requests). One pending request per organisation;
+    it also goes to PASDACS by email, Reply-To the person, and to the platform admins' notifications."""
     from . import tenancy
     u, o = _must()
     n = int(body.credits or 0)
     if not 1 <= n <= 100000:
         raise HTTPException(400, "Ask for 1 to 100,000 credits.")
     msg = (body.message or "").strip()[:1500]
+    waiting = _pending(o["tenant_id"])
+    if waiting:
+        raise HTTPException(409, f"{waiting['user_name'] or 'Someone'} already asked PASDACS for {waiting['credits']:,} credits for "
+                                 f"{o['name']}, and the answer is on its way. Withdraw that request first to ask for a different amount.")
     _not_too_many(u, "d2d.credit_request")
+    rid = "crq-" + secrets.token_hex(6)
+    db.run("INSERT INTO relay.tn_credit_requests (id, tenant_id, user_id, user_name, email, credits, message, status, created) "
+           "VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)", (rid, o["tenant_id"], u["id"], u.get("name"), u.get("email"), n, msg or None, time.time()))
     rows = [("Organisation", o["name"]), ("Email domain", o["domain"]), ("Workspace id", o["tenant_id"]),
             ("Requested by", f"{u.get('name') or ''} <{u.get('email') or ''}>"), ("Credits requested", f"{n:,}"),
             ("Credits now", f"{o['credits']:,}"), ("Message", msg or "(none)")]
-    sent = _to_pasdacs(f"D2D Relay: {o['name']} asks for {n:,} credits", "A D2D Relay organisation asks for more credits.", rows,
-                       u.get("email"), "Add them on the D2D Relay admin portal once the payment is agreed.")
-    tenancy.ctl_audit("d2d.credit_request", o["tenant_id"], u["id"], {"credits": n, "message": msg[:500], "email": u.get("email"),
-                                                                       "name": u.get("name"), "sent": sent})
+    sent = _to_pasdacs(f"D2D Relay: {o['name']} asks for {n:,} credits", "A D2D Relay organisation asks for credits.", rows,
+                       u.get("email"), "Approve or decline it on the D2D Relay admin portal, under Requests.")
+    db.run("UPDATE relay.tn_credit_requests SET emailed = ? WHERE id = ?", (1 if sent else 0, rid))
+    tenancy.ctl_audit("d2d.credit_request", o["tenant_id"], rid, {"credits": n, "message": msg[:500], "email": u.get("email"),
+                                                                  "name": u.get("name"), "sent": sent})
     _tell_platform(f"{o['name']} asks for {n:,} credits", f"{u.get('name')} ({u.get('email')}): {msg[:300] or 'no message'}", "#/requests")
-    return {"sent": sent, "contact": CONTACT}
+    return {"sent": sent, "contact": CONTACT, "request": _pending(o["tenant_id"])}
+
+
+@router.post("/api/org/credit-request/{rid}/withdraw")
+def withdraw_request(rid: str):
+    """The person who asked, or the owner, takes back a request PASDACS has not answered yet."""
+    from . import tenancy
+    u, o = _must()
+    r = db.one("SELECT * FROM relay.tn_credit_requests WHERE id = ? AND tenant_id = ?", (rid, o["tenant_id"]))
+    if not r:
+        raise HTTPException(404, "No such request.")
+    if r["user_id"] != u["id"] and not _may_manage(u, o):
+        raise HTTPException(403, "Only the person who asked, or the owner, can withdraw it.")
+    if not db.run("UPDATE relay.tn_credit_requests SET status = 'withdrawn', decided = ?, decided_by = ?, decided_name = ? "
+                  "WHERE id = ? AND status = 'pending'", (time.time(), u["id"], u.get("name"), rid)):
+        raise HTTPException(409, "PASDACS has already answered this request.")
+    tenancy.ctl_audit("d2d.credit_withdrawn", o["tenant_id"], rid, {"credits": r["credits"]})
+    return {"requests": _requests_of(o["tenant_id"]), "pending_request": None}
 
 
 def _not_too_many(u: dict, action: str) -> None:
@@ -554,7 +600,8 @@ def all_orgs():
                          (o["tenant_id"],))["s"] or 0)
         out.append({"id": o["tenant_id"], "name": o["name"], "domain": o["domain"], "credits": o["credits"], "spent": spent,
                     "owner": owner, "people": people, "dashboards": dashboards, "created": o["created"], "last_login": last,
-                    "status": t.get("status"), "platform": o["tenant_id"] == db.PLATFORM, "connectors": connectors_of(o["tenant_id"])})
+                    "status": t.get("status"), "platform": o["tenant_id"] == db.PLATFORM, "connectors": connectors_of(o["tenant_id"]),
+                    "pending": _pending(o["tenant_id"])})
     return {"orgs": out, "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": COST, "start": START}
 
 
@@ -568,10 +615,94 @@ def _asked(action: str) -> list[dict]:
 
 @router.get("/api/admin/requests")
 def all_requests():
-    """Credit and connector requests from every organisation (the admin portal's Requests page)."""
+    """Credit requests (pending first, then the latest answers) and connector requests from every organisation (the
+    admin portal's Requests page)."""
     _admin()
-    return {"credits": _asked("d2d.credit_request"), "connectors": _asked("d2d.connector_request"),
+    names = {o["tenant_id"]: (o["name"], o["credits"]) for o in db.q("SELECT tenant_id, name, credits FROM relay.tn_orgs")}
+    rows = db.q("SELECT * FROM relay.tn_credit_requests ORDER BY CASE WHEN status = 'pending' THEN 0 ELSE 1 END, created DESC LIMIT 100")
+    credits = [{**r, "org_name": names.get(r["tenant_id"], (r["tenant_id"], 0))[0], "org_credits": names.get(r["tenant_id"], ("", 0))[1]}
+               for r in rows]
+    return {"credits": credits, "pending": sum(r["status"] == "pending" for r in rows), "connectors": _asked("d2d.connector_request"),
             "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": COST}
+
+
+def _answer_mail(r: dict, o: dict, subject: str, lines: list[str]) -> bool:
+    """Tell the person who asked, by email (best effort; they are also told in the app)."""
+    if not r.get("email"):
+        return False
+    from . import otp_mail
+    body = "".join(f"<p>{html.escape(x)}</p>" for x in [f"Hello {r.get('user_name') or ''},".replace(" ,", ","), *lines,
+                                                          f"D2D Relay by PASDACS · {CONTACT}"])
+    try:
+        otp_mail.send(r["email"], subject, body, reply_to=CONTACT)
+        return True
+    except Exception:  # noqa: BLE001 - the in-app notification still tells them
+        traceback.print_exc()
+        return False
+
+
+def _tell_asker(r: dict, o: dict, title: str, text: str) -> None:
+    """The person who asked and the organisation's owner, in the app."""
+    with db.use(r["tenant_id"]):
+        for uid in {r.get("user_id"), o["owner_id"]} - {None}:
+            notify.add(uid, "ops", title, text, "#/org")
+
+
+class Answer(BaseModel):
+    credits: int | None = None          # approve: the credits to add (default: what was asked)
+    note: str = ""                      # approve: shown in the credit history (optional); decline: the reason (required)
+
+
+@router.post("/api/admin/requests/{rid}/approve")
+def approve_request(rid: str, body: Answer):
+    """Approve a credit request: the credits (what was asked, or another amount) are added to the organisation in the
+    same transaction that marks the request approved, so a request is never approved twice."""
+    from . import tenancy
+    u = _admin()
+    r = db.one("SELECT * FROM relay.tn_credit_requests WHERE id = ?", (rid,))
+    if not r:
+        raise HTTPException(404, "No such request.")
+    o = row(r["tenant_id"])
+    if not o:
+        raise HTTPException(404, "That organisation is gone.")
+    n = int(body.credits if body.credits is not None else r["credits"])
+    if not 1 <= n <= 1_000_000:
+        raise HTTPException(400, "Add between 1 and 1,000,000 credits.")
+    note = " ".join((body.note or "").split())[:300]
+    with _lock, db.transaction():
+        if not db.run("UPDATE relay.tn_credit_requests SET status = 'approved', decided = ?, decided_by = ?, decided_name = ?, granted = ?, "
+                      "note = ? WHERE id = ? AND status = 'pending'", (time.time(), u["id"], u.get("name"), n, note or None, rid)):
+            raise HTTPException(409, "This request was already answered or withdrawn.")
+        _entry(r["tenant_id"], "adjust", n, note=f"Request approved{': ' + note if note else ''}", ref=rid, who=u)
+    tenancy.ctl_audit("d2d.credit_approved", r["tenant_id"], rid, {"asked": r["credits"], "granted": n, "note": note})
+    text = f"PASDACS approved {n:,} credits for {o['name']}" + (f" (you asked for {r['credits']:,})" if n != r["credits"] else "") + \
+        (f". {note}" if note else ".")
+    _tell_asker(r, o, f"{n:+,} credits for {o['name']}", text)
+    _answer_mail(r, o, f"D2D Relay: {n:,} credits added to {o['name']}",
+                 [text, f"{o['name']} now has {(row(r['tenant_id']) or {}).get('credits', 0):,} credits."])
+    return all_requests()
+
+
+@router.post("/api/admin/requests/{rid}/decline")
+def decline_request(rid: str, body: Answer):
+    """Decline a credit request, with the reason the organisation is told."""
+    from . import tenancy
+    u = _admin()
+    r = db.one("SELECT * FROM relay.tn_credit_requests WHERE id = ?", (rid,))
+    if not r:
+        raise HTTPException(404, "No such request.")
+    o = row(r["tenant_id"]) or {"name": r["tenant_id"], "owner_id": None}
+    note = " ".join((body.note or "").split())[:300]
+    if not note:
+        raise HTTPException(400, "Say why, so the organisation knows what to do next.")
+    if not db.run("UPDATE relay.tn_credit_requests SET status = 'declined', decided = ?, decided_by = ?, decided_name = ?, note = ? "
+                  "WHERE id = ? AND status = 'pending'", (time.time(), u["id"], u.get("name"), note, rid)):
+        raise HTTPException(409, "This request was already answered or withdrawn.")
+    tenancy.ctl_audit("d2d.credit_declined", r["tenant_id"], rid, {"asked": r["credits"], "note": note})
+    text = f"PASDACS declined the request for {r['credits']:,} credits: {note}"
+    _tell_asker(r, o, f"Credit request for {o['name']} declined", text)
+    _answer_mail(r, o, f"D2D Relay: your request for {r['credits']:,} credits", [text, f"Questions? Reply to this email or write to {CONTACT}."])
+    return all_requests()
 
 
 class Connectors(BaseModel):

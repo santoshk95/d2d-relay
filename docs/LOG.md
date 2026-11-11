@@ -136,6 +136,19 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       again), 10 checks of the Cloudflare Access token with a stand-in key (team, application, expiry, signature,
       address; fail closed), the screens of both sites, and a rehearsal of the move with a copy of the live database
       (126 tables loaded; PASDACS with its 70 credits and 4 dashboards).
+13. **Credits only with PASDACS's approval** (the user's request of 2026-11-11, against abuse). A new organisation
+    starts with no credits (`RELAY_CREDITS_START` empty = 0), so it cannot spend AI time until PASDACS says yes.
+    - **Request credits** (was "Add credits") makes a request in `relay.tn_credit_requests` (pending, approved,
+      declined, withdrawn); one can wait per organisation, and the person who asked or the owner can withdraw it. It
+      is still emailed to info@pasdacs.com and notified to every PASDACS person. The Organisation page lists the
+      requests and their answers; the chip shows one that is waiting.
+    - **Admin portal → Requests:** Approve (the amount may differ; the credits are added in the same transaction that
+      marks the request approved, so never twice) or Decline (a reason is required). The person who asked and the
+      owner are told in the app and by email. Organisations shows what each organisation asks for; adding credits by
+      hand stays, for requests that came by email.
+    - Checked on the split test stack: 26 API checks (no credits at the start, 402, one request at a time,
+      withdrawing, approving another amount, once only, declining with a reason, a charge after approval), and the
+      screens on both sites.
 
 Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
 (JPEG) on Branding but has not picked a palette yet; leave it.
@@ -199,8 +212,8 @@ Cloudflare tunnel always carries `cf-connecting-ip` and still needs the emailed 
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
 - **Payments.** Add credits is a request by email until online payment exists; a platform admin adds the credits.
-- **Abuse.** Anyone with a business mailbox can create an organisation and spend 100 credits of AI time. If that
-  happens, lower `RELAY_CREDITS_START` or add an approval step for new organisations.
+- **Abuse.** Anyone with a business mailbox can still sign up and create an organisation (as asked), but since item
+  13 it gets no credits, and so no AI time, until PASDACS approves a request.
 - **Ask Relay questions and brand palettes cost no credits** (as asked). Their AI cost is recorded in `usage` only.
 - **Connector sign-in for clients.** BigQuery's "Sign in with Google", and the OAuth options of Snowflake and Fabric,
   need an OAuth client in that organisation's own workspace, and nobody can set one up there yet. Client
