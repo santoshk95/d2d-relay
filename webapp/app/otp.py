@@ -34,7 +34,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from . import auth, db, identity, orgs, otp_mail, portal
+from . import auth, db, identity, orgs, otp_mail, portal, signin_alerts
 
 router = APIRouter()
 ADMIN_ONLY_TEXT = "Only PASDACS addresses can sign in to the D2D Relay admin portal."
@@ -181,11 +181,13 @@ def _check_code(email: str, code: str, request: Request) -> bool:
     return True
 
 
-def _signed_in(tid: str, uid: str, request: Request, next_hash: str) -> JSONResponse:
-    """A session in the person's own workspace; the cookie carries that workspace (identity.cookie_value)."""
+def _signed_in(tid: str, uid: str, request: Request, next_hash: str, kind: str = "signed_in") -> JSONResponse:
+    """A session in the person's own workspace; the cookie carries that workspace (identity.cookie_value). PASDACS is
+    emailed about it (signin_alerts: in the background, never in the way of the sign-in)."""
     with db.use(tid):
         sid = identity.create_session(uid, portal.SESSION_KIND if portal.ADMIN else "otp", _ip(request), request.headers.get("user-agent", ""))
         value = identity.cookie_value(sid)
+    signin_alerts.sign_in(tid, uid, "admin" if portal.ADMIN else kind, request)
     r = JSONResponse({"ok": True, "next": "/" + (next_hash if (next_hash or "").startswith("#/") else "")})
     r.set_cookie(identity.COOKIE, value, max_age=int(identity.SESSION_HOURS * 3600), httponly=True,
                  samesite="lax", secure=identity.SECURE_COOKIE, path="/")
@@ -234,7 +236,7 @@ def verify(body: VerifyBody, request: Request):
         if not auth.tenant_row(o["tenant_id"]):
             return _err("Your organisation's account has been closed. Write to info@pasdacs.com.", 403)
         uid = orgs.join(o["tenant_id"], email)
-        return _signed_in(o["tenant_id"], uid, request, body.next or "#/d2d")
+        return _signed_in(o["tenant_id"], uid, request, body.next or "#/d2d", "joined")
     # the first person from this domain: they name the organisation next (POST /auth/otp/organisation)
     token, now = secrets.token_urlsafe(32), time.time()
     with db.use(db.PLATFORM):
@@ -307,4 +309,4 @@ def create_organisation(body: OrgBody, request: Request):
         tid, uid = o["tenant_id"], orgs.join(o["tenant_id"], s["email"])
     with db.use(db.PLATFORM):
         db.run("UPDATE otp_signup SET used = ? WHERE token_hash = ?", (time.time(), s["token_hash"]))
-    return _signed_in(tid, uid, request, "#/setup")
+    return _signed_in(tid, uid, request, "#/setup", "created")
