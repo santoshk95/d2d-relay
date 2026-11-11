@@ -175,11 +175,14 @@ CREATE TABLE IF NOT EXISTS relay.tn_payments (
   status TEXT NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'paid', 'failed', 'refunded')),
   order_id TEXT UNIQUE, payment_id TEXT, method TEXT, error TEXT, credit_id TEXT, refunded INTEGER NOT NULL DEFAULT 0,
   refunds TEXT NOT NULL DEFAULT '[]', created REAL NOT NULL, paid REAL, checked REAL, updated REAL);
+CREATE TABLE IF NOT EXISTS relay.tn_invoice_seq (
+  series TEXT NOT NULL, fy TEXT NOT NULL, last INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (series, fy));
 """
 # D2D Relay (orgs.py): tn_orgs = an organisation per tenant (its email domain, owner and pooled credits);
 # tn_credits = every change to those credits (starting credits, charges, refunds, admin adjustments);
 # tn_credit_requests = what organisations asked for, and PASDACS's answer (credits are added by approving one);
-# tn_payments = credits bought online with Razorpay (payments.py): one row per checkout, amounts in paise.
+# tn_payments = credits bought online with Razorpay (payments.py): one row per checkout, amounts in the currency's
+# smallest unit; tn_invoice_seq = the last GST invoice number of each series and financial year (invoices.py).
 CONTROL_TABLES = re.findall(r"CREATE TABLE IF NOT EXISTS relay\.(\w+)", CONTROL_SCHEMA)
 
 SCHEMA = """

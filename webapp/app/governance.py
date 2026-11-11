@@ -207,8 +207,8 @@ def my_data(u: dict) -> dict:
                                 "WHERE tenant_id = ? AND user_id = ? ORDER BY created", (db.tenant(), uid)),
         "credits_used": db.q("SELECT ts, kind, delta, what, project_name FROM relay.tn_credits WHERE tenant_id = ? AND user_id = ? "
                              "ORDER BY ts", (db.tenant(), uid)),
-        "payments": db.q("SELECT id AS receipt, created, paid, status, credits, amount / 100.0 AS amount, currency, method, payment_id, "
-                         "refunded / 100.0 AS refunded FROM relay.tn_payments WHERE tenant_id = ? AND user_id = ? ORDER BY created",
+        "payments": db.q("SELECT id AS receipt, invoice_no, created, paid, status, credits, amount / 100.0 AS amount, currency, method, "
+                         "payment_id, refunded / 100.0 AS refunded FROM relay.tn_payments WHERE tenant_id = ? AND user_id = ? ORDER BY created",
                          (db.tenant(), uid)),
         f"activity_last_{LOG_DAYS}_days": audit,
     }
@@ -263,7 +263,8 @@ def erase_org(tid: str, who: str) -> dict:
             db.run("UPDATE relay.tn_credits SET user_id = NULL, user_name = NULL, project_name = NULL, note = NULL WHERE tenant_id = ?", (tid,))
             db.run("UPDATE relay.tn_credit_requests SET user_id = NULL, user_name = NULL, email = NULL, message = NULL, "
                    "decided_name = NULL, note = NULL WHERE tenant_id = ?", (tid,))
-            # payments are accounting records (kept eight years): the organisation's name and the amounts stay, the people go
+            # payments and their GST invoices are accounting records (kept eight years): the organisation's name, its billing
+            # details on the invoices and the amounts stay, the people go
             db.run("UPDATE relay.tn_payments SET user_id = NULL, user_name = NULL, email = NULL WHERE tenant_id = ?", (tid,))
     tenancy._invalidate()                                           # noqa: SLF001
     ai = forget_ai(missing=True)

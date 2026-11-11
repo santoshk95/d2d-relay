@@ -307,10 +307,34 @@ added once Razorpay has captured the payment, by whichever of these comes first,
    the rupee prices, who may buy (each organisation's owners, or everyone in it), and **Sell credits online**. The
    page also shows which keys are in use, the webhook URL, and the takings in each currency.
 
+**GST invoices** (`app/invoices.py`). Every payment that adds credits gets a numbered tax invoice, issued in the same
+database transaction that marks it paid: `PREFIX/YY-YY/00001` (one series per financial year, April to March, at most
+16 characters, consecutive and never reused; test-key payments get `TEST/...` invoices, marked as tests, so the real
+series starts clean). It carries PASDACS's legal name, address, state, PIN and GSTIN, the buyer's billing details,
+the place of supply, the SAC code, the taxable value and the tax: CGST and SGST (UTGST in a union territory without a
+legislature) when the buyer's state is PASDACS's, otherwise IGST. Dollar sales to buyers abroad are exports of
+services: zero-rated under a Letter of Undertaking (its ARN on the admin portal), else IGST included in the dollar
+price; the rupee value is the one Razorpay converted at. The buyer gets the invoice by email and on Organisation →
+Payments → Invoice (printable); PASDACS gets a copy, and **Payments → Tax invoices → invoices 20YY-YY (CSV)** gives
+a year's invoices for the GST returns (GSTR-1).
+
+- **PASDACS's details** go on the admin portal: Payments → Tax invoices (legal name, address, state, PIN, GSTIN, SAC
+  code, invoice prefix, LUT ARN, description), and the GST rate with whether rupee prices include GST or have it
+  added. With live keys, selling stays shut until they are complete. Have the accountant confirm the SAC code and
+  rate.
+- **The buyer's billing details** are asked for once, in Buy credits, before the first purchase: the legal name and
+  address, and in India the state and PIN, or a GSTIN (which gives the state and lets the buyer claim the GST
+  back); outside India the country. Owners change them on the Organisation page (Billing details); invoices already
+  issued keep theirs.
+- **No refunds:** credits are not refundable (Buy credits, the invoices and the Payments card say so). A refund made
+  on the Razorpay Dashboard anyway (say, for a duplicate payment) is still recorded and PASDACS is told; issuing a
+  credit note for it is PASDACS's.
+
 **Currencies.** Where the buyer is decides, by the country Cloudflare gives each request (`cf-ipcountry`; nobody can
 set it through Cloudflare): **rupees only in India, US dollars everywhere else**, also where Cloudflare cannot tell
-the country (and on this PC itself). The server offers and accepts only that currency, so the dollar price, which
-carries no GST, is not open to buyers in India. A pack without a dollar price is not sold outside India; with no
+the country (and on this PC itself). An organisation whose billing address is in India pays in rupees wherever its
+people are (GST follows the billing address). The server offers and accepts only that currency, so the dollar price,
+which carries no GST, is not open to buyers in India. A pack without a dollar price is not sold outside India; with no
 dollar prices at all, everyone pays in rupees. GST and the note under the prices are shown in India only. Dollar
 buyers pay by card. Test keys take dollar orders as they are; with live keys, dollars need Razorpay's international
 payments switched on for the account (Razorpay Dashboard → Account & Settings → International payments). Whether a
@@ -330,9 +354,9 @@ receipt by email and on Organisation → Payments (a printable page: a payment r
 are told in the app; PASDACS gets an email and a notification for each payment. Owners see all of the organisation's
 payments, others their own. **Request credits** stays, for invoices and bank transfers.
 
-**Refunds** are made on the Razorpay Dashboard. The webhook records them (Payments shows Refunded, or the amount
-refunded) and tells PASDACS; the credits are not taken back on their own: take them back on Organisations → Credits
-when that is the rule. A payment that does not match its checkout, or a second payment for one order, adds no
+**Refunds:** none (the user's rule: credits are not refundable). One made on the Razorpay Dashboard anyway is recorded
+by the webhook (Payments shows Refunded, or the amount refunded) and PASDACS is told; the credits are not taken back on
+their own: take them back on Organisations → Credits. A payment that does not match its checkout, or a second payment for one order, adds no
 credits and alerts PASDACS to refund it.
 
 **Records.** `relay.tn_payments`, one row per checkout, amounts in the currency's smallest unit (paise, cents) with the

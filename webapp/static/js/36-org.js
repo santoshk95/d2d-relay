@@ -158,8 +158,8 @@ async function renderOrg() {
     try { await api('/api/org', {method: 'PATCH', json: {name}}); notify('Renamed', 'ok'); await refreshOrg(true); renderOrg(); } catch (e) { notify(e.message, 'err'); }
   }}, icon('edit'), 'Rename') : null;
   const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
-  const payBox = h('div');                     // credits bought online (37-payments.js), filled in once they are fetched
-  fillPayments(payBox);
+  const payBox = h('div'), billBox = h('div');   // credits bought online and the billing details (37-payments.js), filled in once fetched
+  fillPayments(payBox, billBox);
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1;min-width:0'}, h('div', {class: 'eyebrow'}, 'Organisation'),
       h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, h('h1', {}, d.name), rename),
@@ -193,6 +193,7 @@ async function renderOrg() {
           h('td', {class: 'n delta' + (r.delta > 0 ? ' plus' : '')}, (r.delta > 0 ? '+' : '') + r.delta), h('td', {class: 'n'}, r.balance))))))
         : h('div', {class: 'muted small'}, 'Nothing yet.')),
     payBox,
+    billBox,
     h('div', {class: 'card'}, h('h3', {}, 'Credit requests'),
       (d.requests || []).length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['Asked', 'Who', 'Credits', 'Answer', ''], 2),
         h('tbody', {}, d.requests.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, r.user_name || '—'),

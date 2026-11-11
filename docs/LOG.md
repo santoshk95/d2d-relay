@@ -561,6 +561,34 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       country and no country, dollars); still test keys, so only PASDACS can buy; through Cloudflare signed-out payment
       calls get 401, an unsigned webhook call 400 and a signed one 200; no errors in the logs.
 
+25. **GST invoices, no refunds, exports as the law says** (the user, 2026-11-11: "GST invoice is required, no refunds,
+    dollar sales as per govt"). `app/invoices.py` (new), `app/payments.py`, `js/37-payments.js`; `docs/d2d-relay.md`,
+    "GST invoices"; `/privacy.html`.
+    - **Invoices:** every payment that adds credits gets a tax invoice with the fields of the CGST Rules' rule 46:
+      PASDACS's name, address, state and GSTIN, a consecutive number (`PREFIX/YY-YY/00001`, one series per financial
+      year, at most 16 characters, taken in the transaction that marks the payment paid, so never lost or repeated;
+      test-key payments get `TEST/...`), the date, the buyer's name, address, state or country and GSTIN, the place of
+      supply, the SAC code, quantity, taxable value, CGST and SGST (UTGST in a union territory without a legislature)
+      or IGST, the total, reverse charge "No", and a signature line. Kept as a snapshot on the payment; emailed to the
+      buyer (and PASDACS); printable from Organisation → Payments; a year's invoices as CSV for GSTR-1 on the admin
+      portal.
+    - **Tax:** the buyer's state decides CGST and SGST (PASDACS's own state) or IGST (another state, or a buyer abroad
+      paying rupees). Dollar sales to buyers abroad are exports of services: zero-rated with the LUT's ARN on the
+      admin portal ("SUPPLY MEANT FOR EXPORT UNDER LETTER OF UNDERTAKING WITHOUT PAYMENT OF INTEGRATED TAX"), else on
+      payment of IGST, included in the dollar price; the rupee value is Razorpay's conversion (the payment's
+      `base_amount`: $100 was ₹9,367.41 in test mode). Rupee prices include GST or have it added (a setting).
+    - **Billing details** are asked for once, before the first purchase (owners change them on the Organisation page):
+      legal name and address; in India the state and PIN, or a GSTIN (checked: format, state and its check
+      character); abroad the country. A billing address in India means rupees wherever the buyer is.
+    - **No refunds:** Buy credits, the invoice and the Payments card say credits are not refundable.
+    - **Live selling** (live keys) stays shut until PASDACS's invoice details are complete and a GST rate is set.
+    - **Checked** on a test stack with the stand-in Razorpay: 113 payment checks (the earlier ones, plus billing details
+      asked first and what they refuse, invoices numbered one after another, CGST and SGST in PASDACS's state, IGST
+      in another state with the buyer's GSTIN, an export under the LUT and one without it, GST included in the
+      price, the invoice page and email, the CSV, test payments in their own series, invoices kept when an
+      organisation is erased) and 37 in Chromium (the billing form in Buy credits, who the invoices go to, no
+      refunds, the GST invoice page, a foreign organisation paying dollars, the admin's Tax invoices card).
+
 Test data in the live install: none since the fresh start (item 18).
 
 ## How items 9-10 were checked (2026-11-10)
