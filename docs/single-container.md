@@ -1,5 +1,9 @@
 # Relay in one container
 
+> **D2D Relay** runs this image as four containers, one role each (`docs/d2d-relay.md`, "Containers"). This guide is
+> RELAY's: the parts inside the image, the users they run as and the tools below still apply, and `RELAY_ROLE=all`
+> still runs everything in one container.
+
 Relay runs as **one Docker container, `relay`**, from one image (`Dockerfile` at the repository root). The web app,
 the AI engine, the database and the AI gateway all run inside it, each part under its own Linux user, started and
 watched by a process supervisor. On a Windows PC, two helpers run next to it: the **DAX checker** and **Relay Doctor**.

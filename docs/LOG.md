@@ -10,10 +10,13 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
 
 - Live at https://d2d-relay.pasdacs.com, served through a Cloudflare tunnel (container `d2d-relay-tunnel`, token in the
   git-ignored `tunnel.env`). On the host PC it is http://127.0.0.1:8100.
-- One container, `d2d-relay` (image `d2d-relay:latest`, volume `d2d-relay-data`, projects in `./data/projects`). It
-  shares the Claude sign-in volume `claude-api-auth` with RELAY.
+- The admin portal, https://admin-d2d.pasdacs.com (PASDACS only; on the host PC http://127.0.0.1:8102).
+- Four containers from one image (item 12): `d2d-relay-db` (volume `d2d-relay-db-data`), `d2d-relay-web` (volume
+  `d2d-relay-data`, projects in `./data/projects`), `d2d-relay-admin` (volume `d2d-relay-admin-data`) and the tunnel.
+  The public site shares the Claude sign-in volume `claude-api-auth` with RELAY.
 - Its own DAX checker runs on the host: `daxcheck\start-daxcheck.cmd`, with the queue `data\projects\.daxcheck`.
-- Deploy: `docker compose build` (with `RELAY_COMMIT=<sha>`), then `docker compose --profile tunnel up -d`.
+- Deploy (in the deploy folder `Downloads\D2D Relay`, while nobody is building): `docker compose build web` (with
+  `RELAY_COMMIT=<sha>`), then `docker compose --profile tunnel up -d`.
 
 ## Done so far (in commit order)
 
@@ -160,13 +163,24 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     - Checked on the split test stack: 27 API checks (roles, the domain rule, members refused, the main owner's
       protection, removing and signing in again refused, adding back, transfer, leaving), and the screens. With the
       earlier groups, 109 checks pass.
+15. **Production clean-up** (the user's request of 2026-11-11).
+    - **The temporary test login is gone** (`otp.py`, `login.html`, its section here): the per-address and
+      per-network code limits always apply, and nobody signs in without an emailed code. Local tests read the code
+      from the container's log instead (`RELAY_OTP_DEV_LOG=1`, only when no mail is set up).
+    - `README.md` describes D2D Relay (it described RELAY, with folders and commands this repository does not have).
+      `docs/single-container.md` says it is RELAY's guide; the setup guide's commands use the new container names.
+    - An owner can add at most 30 people an hour (each one is emailed). The database container sees `data\backups`,
+      so `docker exec d2d-relay-db relay-ctl db-dump` lands there (`docs/d2d-relay.md`, "Backups").
+    - Checked on a test stack from the final image (no code mounted) with a fresh copy of the live database, signing
+      in the real way (codes read from the container log): 121 API checks (the copied data, the clean-up and the code
+      limits, the admin portal, connectors, credits, people) and the 10 Cloudflare Access token checks.
 
 Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
 (JPEG) on Branding but has not picked a palette yet; leave it.
 
 ## How items 9-10 were checked (2026-11-10)
 
-Not deployed yet: the live container still runs commit 3a23b25 until someone redeploys.
+(Deployed on 2026-11-10 with the second sweep, commit `eff2f2d`.)
 
 - An isolated container from the live image with this code mounted (port 8101, its own empty volume, codes printed
   in its log with `RELAY_OTP_DEV_LOG=1`, no Claude sign-in, so every AI run fails, which exercises the refunds).
@@ -199,24 +213,6 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 - the notification texts promised pages, alerts and schedules that D2D Relay does not have;
 - every dashboard page asked the switched-off data observability API.
 
-## TEMPORARY: test login (delete when testing is done)
-
-Added on 2026-11-10 at the user's request, to test organisations without real mailboxes. It is off unless
-`RELAY_TEST_LOGIN=1` is in `.env`. When on, it works only on this PC (http://127.0.0.1:8100): a request through the
-Cloudflare tunnel always carries `cf-connecting-ip` and still needs the emailed code.
-
-- With it on, no code is emailed (so test addresses at made-up domains get no mail). The sign-in page fills the code
-  in, the per-address and per-network limits are skipped, and every use is in the platform audit as
-  `auth.test_login`.
-- `/login.html?as=name@company.com` signs in as that address in one step, including "Create your organisation"
-  for a new domain. Public domains are still refused.
-- **To delete it:** `git revert` the commit "D2D Relay: TEMPORARY test login …" (it holds the test login and this
-  section only), then remove `RELAY_TEST_LOGIN` from `.env`.
-  - By hand instead: in `webapp/app/otp.py`, delete the "TEMPORARY TEST LOGIN" block (`TEST_LOGIN`, `_test_login`),
-    the two "TEMPORARY" parts of `start()` and `test_login_state()`.
-  - In `webapp/static/login.html`, delete the `.test` styles, the `testbanner` div, the `test_code` line in `ask()`
-    and the "TEMPORARY test login" script block.
-
 ## Still open
 
 - **Items 11-14 are not deployed yet.** The live site still runs `eff2f2d` in the one container `d2d-relay`. The
@@ -235,7 +231,7 @@ Cloudflare tunnel always carries `cf-connecting-ip` and still needs the emailed 
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
-- **Payments.** Add credits is a request by email until online payment exists; a platform admin adds the credits.
+- **Payments.** Online payment is not built: an organisation requests credits and PASDACS approves them (item 13).
 - **Abuse.** Anyone with a business mailbox can still sign up and create an organisation (as asked), but since item
   13 it gets no credits, and so no AI time, until PASDACS approves a request.
 - **Ask Relay questions and brand palettes cost no credits** (as asked). Their AI cost is recorded in `usage` only.

@@ -34,6 +34,8 @@ services:
       TZ: ${TZ:-UTC}
     volumes:
       - db-data:/data
+      # docker exec d2d-relay-db relay-ctl db-dump  ->  data\backups\relay-db-<time>.dump on this PC
+      - ${RELAY_BACKUPS:-./data/backups}:/data/backups
     healthcheck:                   # the image's own check (relay-ctl health: here, the database only), sooner at start
       test: ["CMD", "/opt/relay/bin/relay-ctl", "health"]
       interval: 30s

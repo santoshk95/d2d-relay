@@ -44,18 +44,6 @@ SENDER = (os.environ.get("D2D_OTP_FROM") or EMAIL).strip()
 # Testing only: with no Microsoft app set, print the code in the log instead of sending it. Ignored once mail is set up.
 DEV_LOG = os.environ.get("D2D_OTP_DEV_LOG") == "1"
 
-# ---- TEMPORARY TEST LOGIN (delete when testing is done: this block, the two "TEMPORARY" parts of start() below,
-# test_login_state(), and the TEMPORARY block in static/login.html) ------------------------------------------------
-# RELAY_TEST_LOGIN=1: sign in as any business address without an emailed code, from this PC only. Nothing is emailed;
-# start() returns the code and the sign-in page fills it in (/login.html?as=name@company.com does it in one step).
-# A request through the Cloudflare tunnel (the public address) always carries cf-connecting-ip and never gets this.
-TEST_LOGIN = os.environ.get("D2D_TEST_LOGIN") == "1"
-
-
-def _test_login(request: Request) -> bool:
-    return TEST_LOGIN and not request.headers.get("cf-connecting-ip")
-# ---- end of the temporary test login -------------------------------------------------------------------------------
-
 TTL = 600
 TRIES = 5
 GAP = 60
@@ -153,24 +141,19 @@ def start(body: StartBody, request: Request):
             db.audit("auth.otp_refused", None, {"ip": _ip(request), "reason": "public domain"}, "system")
         return _err(PUBLIC_TEXT)
     now, ip = time.time(), _ip(request)
-    test = _test_login(request)                     # TEMPORARY (testing): no limits and no email, on this PC only
     with _lock, db.use(db.PLATFORM):
         recent = db.q("SELECT created FROM otp_codes WHERE email = ? AND created > ? ORDER BY created DESC", (email, now - 3600))
-        if not test and recent and now - recent[0]["created"] < GAP:
+        if recent and now - recent[0]["created"] < GAP:
             return _err(f"A code was sent less than a minute ago. Wait {int(GAP - (now - recent[0]['created'])) + 1} seconds.", 429)
-        if not test and len(recent) >= PER_HOUR:
+        if len(recent) >= PER_HOUR:
             return _err("Too many codes this hour. Try again later.", 429)
-        if not test and ip and db.one("SELECT count(*) AS n FROM otp_codes WHERE ip = ? AND created > ?", (ip, now - 3600))["n"] >= PER_IP_HOUR:
+        if ip and db.one("SELECT count(*) AS n FROM otp_codes WHERE ip = ? AND created > ?", (ip, now - 3600))["n"] >= PER_IP_HOUR:
             return _err("Too many codes were asked for from this network this hour. Try again later.", 429)
         code = f"{secrets.randbelow(1_000_000):06d}"
         salt = secrets.token_hex(8)
         db.run("UPDATE otp_codes SET used = ? WHERE email = ? AND used IS NULL", (now, email))      # one live code at a time
         db.run("INSERT INTO otp_codes (id, email, code_hash, salt, created, expires, ip) VALUES (?, ?, ?, ?, ?, ?, ?)",
                (secrets.token_hex(8), email, _hash(code, salt), salt, now, now + TTL, ip))
-    if test:                                        # TEMPORARY (testing): the sign-in page fills the code in
-        with db.use(db.PLATFORM):
-            db.audit("auth.test_login", None, {"email": email, "ip": ip}, "system")
-        return {"ok": True, "message": "Testing mode: no email was sent. Signing you in…", "test_code": code}
     try:
         _mail(email, code)
     except Exception:  # noqa: BLE001 - the person is told the code could not be sent; the reason goes to the log
@@ -181,12 +164,6 @@ def start(body: StartBody, request: Request):
     with db.use(db.PLATFORM):
         db.audit("auth.otp_sent", None, {"ip": ip, "domain": orgs.domain_of(email)}, "system")
     return {"ok": True, "message": f"A 6-digit code is on its way to {email}. It works for 10 minutes."}
-
-
-@router.get("/auth/otp/test-login")
-def test_login_state(request: Request):
-    """TEMPORARY (testing): whether this sign-in page signs in without an emailed code (RELAY_TEST_LOGIN, this PC only)."""
-    return {"on": _test_login(request)}
 
 
 def _check_code(email: str, code: str, request: Request) -> bool:

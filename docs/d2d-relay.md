@@ -45,7 +45,8 @@ as separate Linux users that cannot read each other's keys.
 - **Kept:** Dashboards (D2D: plan → KPIs → prototype → review → PBIP), the review gates and the Power BI engine
   check, the visual library, sample data, Connections (connectors on request), Ask Relay, Branding, organisations
   and credits.
-  Administration's APIs stay for the platform admin only (not in the menu).
+  There is no administration on the public site: every `/api/admin` path answers 404 there. PASDACS works on the
+  admin portal (Organisations, Requests).
 - **Switched off:** all other modules (process, automation, systems, AI, consulting), schedules, pages, the
   semantic layer, the service desk, Migrate BI, self-healing, AI SDLC, the workbench and the tenants console. Their APIs
   answer 404 and their background pollers do not start. Old links open the dashboards list.
@@ -61,6 +62,11 @@ docker logs -f d2d-relay-web
 ```
 
 `.env` needs `RELAY_DB_PASSWORD` (letters and digits; `.env.example` says how to make one).
+
+**Backups.** Every night (21:00 UTC, `RELAY_BACKUP_HOUR_UTC`) the public site writes every workspace's data and
+project folders to `data\backups` and keeps the last 14 (`RELAY_BACKUP_KEEP`). A full database dump at any time:
+`docker exec d2d-relay-db relay-ctl db-dump` writes `data\backups\relay-db-<time>.dump`. A dump goes into a new
+install with `relay-ctl stage-import <dump>` in its database container before its first start.
 
 **Moving from the one container** (`d2d-relay`, before 2026-11-11): after `git pull`, run
 `powershell -ExecutionPolicy Bypass -File docker\move-to-split.ps1 -Tunnel` in the deploy folder while nobody is
@@ -89,7 +95,7 @@ blocks them), and no Exchange policy is needed: a delegated app can only send as
    **info@pasdacs.com**:
 
    ```
-   docker exec -it -u relay -w /srv d2d-relay /opt/relay/bin/launch web python -m app.otp_mail login
+   docker exec -it -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.otp_mail login
    ```
 
    Check it with `... python -m app.otp_mail status`, or send yourself a test with `... python -m app.otp_mail test`.
@@ -98,8 +104,10 @@ The sign-in is kept encrypted in the app's secrets store, in the d2d-relay-data 
 Microsoft never ends it for being unused. If info@pasdacs.com's password changes, or an admin revokes its sessions,
 run `login` again. If a sign-in policy blocks device-code sign-in, an admin can allow it for this one app.
 
-For a local test only, set `RELAY_OTP_DEV_LOG=1` and codes are printed in `docker logs d2d-relay` instead. This is
-ignored once mail is set up.
+For a local test only, set `RELAY_OTP_DEV_LOG=1` and codes are printed in `docker logs d2d-relay-web` (and
+`d2d-relay-admin`) instead. This is ignored once mail is set up. The admin portal sends its codes with the same
+settings: app mode (a client secret) needs nothing more; in delegated mode, run the `login` command above in
+`d2d-relay-admin` too.
 
 Code rules: 6 digits, valid for 10 minutes, 5 tries. Per address: 1 code a minute and 6 codes an hour. Per network
 (Cloudflare's `cf-connecting-ip`): 20 codes an hour. Only a salted hash is stored. A session lasts 12 hours

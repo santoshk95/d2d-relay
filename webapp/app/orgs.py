@@ -482,6 +482,7 @@ def rename_org(body: OrgPatch):
 # ---------------------------------------------------------------- people (the organisation's owners manage them)
 
 PEOPLE_EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+PEOPLE_PER_HOUR = 30                    # people one owner may add in an hour (each one is emailed an invitation)
 
 
 def _must_owner() -> tuple[dict, dict]:
@@ -534,6 +535,9 @@ def add_person(body: PersonAdd):
         raise HTTPException(400, "Type their email address.")
     if domain_of(email) != o["domain"]:
         raise HTTPException(400, f"Only @{o['domain']} addresses can join {o['name']}.")
+    if db.one("SELECT count(*) AS n FROM audit WHERE action = 'org.person_added' AND who = ? AND ts > ?",
+              (u["id"], time.time() - 3600))["n"] >= PEOPLE_PER_HOUR:
+        raise HTTPException(429, f"You added {PEOPLE_PER_HOUR} people this hour. Add the others a little later.")
     acct = db.one("SELECT home_tenant FROM relay.tn_accounts WHERE email = ?", (email,))
     if acct and acct["home_tenant"] != o["tenant_id"]:
         raise HTTPException(409, "This address already belongs to another organisation on D2D Relay.")
