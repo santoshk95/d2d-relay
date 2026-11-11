@@ -8,19 +8,20 @@ disposable mail domains (public_domains.py) cannot sign in at all. The platform'
 platform admin works) is an organisation too, for the platform admin's domain.
 
 Credits are pooled per organisation (relay.tn_orgs.credits); every change is a row in relay.tn_credits:
-  start   the starting credits (D2D_CREDITS_START, none by default: a new organisation asks PASDACS first)
-  charge  a new dashboard (D2D_CREDITS_DASHBOARD, 30) or a change (D2D_CREDITS_CHANGE, 15): asking Relay to revise the
+  start   the starting credits (D2D_CREDITS_START, 50)
+  charge  a new dashboard (D2D_CREDITS_DASHBOARD, 25); a change (D2D_CREDITS_CHANGE, 10): asking Relay to revise the
           plan, a change request on a prototype, building a custom visual Relay suggested, an Ask Relay answer sent to
-          a dashboard
+          a dashboard; Ask Relay (D2D_CREDITS_ASK, 10) for up to D2D_CREDITS_ASK_QUESTIONS (5) answered questions in
+          one conversation: charged at its 1st, 6th, 11th ... question (askd_routes.py)
   refund  the run a charge paid for failed or was stopped before it delivered, so the credits come back (Retry charges
           again). A new dashboard is delivered with its first prototype (planning and building are both part of it);
-          a change with its new plan or version.
+          a change with its new plan or version; Ask Relay's credits with the answer.
   adjust  a platform admin added (or took back) credits: approving a request, or by hand (e.g. after a payment)
-Free: confirming the plan, asking Relay to fix failed review gates, approving and publishing, Ask Relay questions and
-brand palettes. A run carries the id of the charge it delivers (job args `charge`); worker.py gives it back when the
-run fails, is stopped, or is cut off by a restart.
+Free: confirming the plan, asking Relay to fix failed review gates, approving and publishing, and brand palettes. A run
+carries the id of the charge it delivers (job args `charge`); worker.py gives it back when the run fails, is stopped,
+or is cut off by a restart.
 
-Credits only come with PASDACS's approval (against abuse: anyone with a business mailbox can sign up). An organisation
+More credits only come with PASDACS's approval (against abuse: anyone with a business mailbox can sign up). An organisation
 asks for them (Request credits: relay.tn_credit_requests, one pending request at a time, also emailed to PASDACS) or
 writes to PASDACS; a platform admin approves the request on the admin portal (the amount may differ) or declines it with
 a reason, and the organisation is told either way. A platform admin can also add or take back credits by hand.
@@ -50,8 +51,15 @@ from . import auth, db, edition, notify, portal, public_domains
 router = APIRouter()
 db.register_control_columns("tn_orgs", {"connectors": "TEXT NOT NULL DEFAULT '[]'"})   # the connectors switched on
 
-START = int(os.environ.get("D2D_CREDITS_START") or 0)     # none: a new organisation asks PASDACS for credits first
-COST = {"dashboard": int(os.environ.get("D2D_CREDITS_DASHBOARD") or 30), "change": int(os.environ.get("D2D_CREDITS_CHANGE") or 15)}
+START = int(os.environ.get("D2D_CREDITS_START") or 50)    # a new organisation's credits; more come on request
+COST = {"dashboard": int(os.environ.get("D2D_CREDITS_DASHBOARD") or 25), "change": int(os.environ.get("D2D_CREDITS_CHANGE") or 10),
+        "ask": int(os.environ.get("D2D_CREDITS_ASK") or 10)}
+ASK_QUESTIONS = int(os.environ.get("D2D_CREDITS_ASK_QUESTIONS") or 5)   # the Ask Relay questions COST["ask"] pays for
+
+
+def costs() -> dict:
+    """What the screens show: each kind of work's credits, and how many Ask Relay questions COST["ask"] covers."""
+    return {**COST, "ask_questions": ASK_QUESTIONS}
 WHAT = {"dashboard": "New dashboard", "change": "Change"}
 CONTACT = (os.environ.get("D2D_CREDITS_CONTACT") or "info@pasdacs.com").strip()
 PLATFORM_EMAIL = (os.environ.get("D2D_OTP_EMAIL") or os.environ.get("D2D_ADMIN_EMAIL") or "").strip().lower()
@@ -300,8 +308,9 @@ def _entry(tid: str, kind: str, delta: int, *, what: str | None = None, pid: str
 
 
 def _short(o: dict, what: str) -> str:
-    noun = "A new dashboard" if what == "dashboard" else "A change"
-    return (f"Not enough credits. {noun} uses {COST[what]} credits and {o['name']} has {o['credits']} left. "
+    uses = (f"Ask Relay uses {COST['ask']} credits for up to {ASK_QUESTIONS} questions" if what == "ask" else
+            f"{'A new dashboard' if what == 'dashboard' else 'A change'} uses {COST[what]} credits")
+    return (f"Not enough credits. {uses} and {o['name']} has {o['credits']} left. "
             "Ask PASDACS for credits (Request credits) to continue.")
 
 
@@ -398,7 +407,7 @@ def me_info(u: dict | None) -> dict:
     if not u:
         return {}
     o = row(auth.tenant_of(u))
-    out = {"platform_admin": platform_admin(u), "portal": portal.NAME, "costs": COST, "contact": CONTACT}
+    out = {"platform_admin": platform_admin(u), "portal": portal.NAME, "costs": costs(), "contact": CONTACT}
     if not o:
         return out
     primary = u["id"] == o["owner_id"]
@@ -767,7 +776,7 @@ def all_orgs():
                     "owner": owner, "people": people, "dashboards": dashboards, "created": o["created"], "last_login": last,
                     "status": t.get("status"), "platform": o["tenant_id"] == db.PLATFORM, "connectors": connectors_of(o["tenant_id"]),
                     "pending": _pending(o["tenant_id"])})
-    return {"orgs": out, "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": COST, "start": START}
+    return {"orgs": out, "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": costs(), "start": START}
 
 
 def _asked(action: str) -> list[dict]:
@@ -788,7 +797,7 @@ def all_requests():
     credits = [{**r, "org_name": names.get(r["tenant_id"], (r["tenant_id"], 0))[0], "org_credits": names.get(r["tenant_id"], ("", 0))[1]}
                for r in rows]
     return {"credits": credits, "pending": sum(r["status"] == "pending" for r in rows), "connectors": _asked("d2d.connector_request"),
-            "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": COST}
+            "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": costs()}
 
 
 def _answer_mail(r: dict, o: dict, subject: str, lines: list[str]) -> bool:

@@ -68,7 +68,8 @@ Two helpers run on Windows next to them, because Power BI only runs there. Publi
 5. **Publish:** a zip with the Power BI file (`<Report>.pbix`, the data inside) and its CSV files, ready to open in
    Power BI Desktop.
 
-A new dashboard uses 30 credits and a change 15. Credits come from PASDACS, which approves every request.
+A new organisation starts with 50 credits. A new dashboard uses 25, a change 10, and Ask Relay 10 for up to 5
+questions in a conversation. More credits come from PASDACS, which approves every request.
 
 Internal names (`genbi`, `genbi_kit`, and the `D2D_*` settings the code reads) are kept from RELAY; `.env` uses
 `RELAY_*` names, which are copied to them.

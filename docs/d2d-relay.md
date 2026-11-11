@@ -17,7 +17,7 @@ Only the Claude sign-in volume (`claude-api-auth`) is shared, so both apps use t
 | On this PC | public site http://127.0.0.1:8100, admin portal http://127.0.0.1:8102 |
 | Sign-in | a 6-digit code emailed to any **business** address (no passwords, no SSO); free and disposable mail refused |
 | Organisations | one per email domain, each in its own workspace; the first person creates and owns it |
-| Credits | none to start: PASDACS approves every credit request; a new dashboard uses 30, a change 15 (see "Organisations and credits") |
+| Credits | 50 to start, more when PASDACS approves a request; a new dashboard uses 25, a change 10, Ask Relay 10 for up to 5 questions (see "Organisations and credits") |
 | Platform admins | every **@pasdacs.com** address, on the admin portal only (every organisation, credits, connectors, requests) |
 
 ## Containers
@@ -216,18 +216,20 @@ Mailinator …) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTR
 
 | What | Credits |
 |---|---|
-| Start | none (`RELAY_CREDITS_START`, empty = 0): credits come only when PASDACS approves a request |
-| New dashboard (plan, KPIs and first prototype) | 30 (`RELAY_CREDITS_DASHBOARD`) |
-| A change: revise the plan, a change request, building a suggested custom visual, an Ask Relay answer sent to a dashboard | 15 (`RELAY_CREDITS_CHANGE`) |
-| Confirming the plan, fixing failed review gates, approving and publishing, Ask Relay questions, brand palettes | free |
+| Start | 50 (`RELAY_CREDITS_START`); more come only when PASDACS approves a request |
+| New dashboard (plan, KPIs and first prototype) | 25 (`RELAY_CREDITS_DASHBOARD`) |
+| A change: revise the plan, a change request, building a suggested custom visual, an Ask Relay answer sent to a dashboard | 10 (`RELAY_CREDITS_CHANGE`) |
+| Ask Relay: up to 5 answered questions in one conversation (`RELAY_CREDITS_ASK_QUESTIONS`), charged at its 1st, 6th, 11th … question | 10 (`RELAY_CREDITS_ASK`) |
+| Confirming the plan, fixing failed review gates, approving and publishing, brand palettes | free |
 
 A request without enough credits is refused before anything starts, with the balance in the message. When a run
 fails, is stopped, or is cut off by a restart, its credits come back on their own; Retry then uses them again. Every
 AI cost is still recorded on the server (the `usage` table); the screens show no tokens and no cost breakdown. Ask
-Relay shows only a conversation's overall cost.
+Relay shows the credits a conversation used and the questions left in them; a question that gets no answer gives
+its credits back.
 
-**Getting credits (PASDACS approves every one).** Anyone with a business mailbox can sign up, but an organisation
-gets no credits, and so no AI time, until PASDACS approves them. Online payment is not built yet.
+**Getting more credits (PASDACS approves every request).** Anyone with a business mailbox can sign up; a new
+organisation gets its 50 starting credits at once, and more only when PASDACS approves them. Online payment is not built yet.
 
 1. Someone in the organisation clicks **Request credits** (top-bar chip, Organisation, Dashboards, or the message
    when credits run short), picks an amount and adds a message. One request can wait at a time; the person who asked,

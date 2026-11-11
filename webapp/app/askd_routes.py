@@ -28,16 +28,44 @@ def _no_cost(body: dict) -> dict:
     return {k: v for k, v in body.items() if k != "usage"} if isinstance(body, dict) else body
 
 
+def _answered(tid: str | None, uid: str) -> int:
+    """How many of this person's questions in the conversation have an answer (0 for a new conversation)."""
+    if not tid:
+        return 0
+    return db.one("SELECT count(*) AS n FROM askd_messages m JOIN askd_threads t ON t.id = m.thread_id "
+                  "WHERE t.id = ? AND t.user_id = ? AND m.role = 'assistant'", (tid, uid))["n"]
+
+
+def _credits(tid: str | None, uid: str) -> dict:
+    """D2D Relay: a conversation's credits: what it used, and the questions left before the next charge."""
+    n, per, block = _answered(tid, uid), orgs.COST["ask"], orgs.ASK_QUESTIONS
+    return {"answered": n, "used": -(-n // block) * per, "left": (-n) % block, "per": per, "questions": block}
+
+
 @router.post("/api/askd/ask")
 async def ask(body: Ask):
     if body.scope.get("kind") not in ("dashboard", "team", "org"):
         raise HTTPException(400, "Scope must be dashboard, team or org.")
+    if not body.question.strip():
+        raise HTTPException(400, "Ask a question.")
+    u = _u()
+    cid = None
+    # D2D Relay: Ask Relay's credits pay for up to ASK_QUESTIONS answers in one conversation: its 1st, 6th, 11th ...
+    # question is charged (NoCredits -> 402), and given back when that question gets no answer
+    if _answered(body.thread_id, u["id"]) % orgs.ASK_QUESTIONS == 0:
+        cid = orgs.charge("ask", note='"' + body.question.strip()[:60] + '"')
     try:
-        return _no_cost(await askd.ask(_u(), body.question, body.scope, body.thread_id, body.model))
+        r = _no_cost(await askd.ask(u, body.question, body.scope, body.thread_id, body.model))
     except (askd.AskError, connectors.ConnectorError, instances.InstanceError) as e:
+        orgs.refund(cid, "The question was not answered.")
         raise HTTPException(400, str(e))
     except httpx.HTTPError as e:
+        orgs.refund(cid, "The question was not answered.")
         raise HTTPException(503, f"Could not reach the AI service ({e.__class__.__name__}).")
+    except BaseException:
+        orgs.refund(cid, "The question was not answered.")
+        raise
+    return {**r, "credits": _credits(r.get("thread_id"), u["id"])}
 
 
 @router.get("/api/askd/models")
@@ -106,14 +134,9 @@ def _brand_colors() -> list[str]:
 
 @router.get("/api/askd/costs")
 def ai_costs(thread: str = ""):
-    """D2D Relay: the overall AI cost of one conversation, nothing else (no tokens, no breakdown: every cost record
-    stays in the usage table on the server)."""
-    u = _u()
-    if not thread:
-        return {}
-    t = db.one("SELECT coalesce(sum(cost_usd), 0) AS usd FROM usage WHERE user_id = ? AND kind = 'llm' AND step = 'askd' AND object = ?",
-               (u["id"], thread))
-    return {"thread_usd": round(t["usd"], 4)}
+    """D2D Relay: the credits one conversation used and the questions left in them (its AI cost stays in the usage
+    table on the server; people pay in credits)."""
+    return _credits(thread or None, _u()["id"])
 
 
 @router.get("/api/projects/{pid}/askd-context")

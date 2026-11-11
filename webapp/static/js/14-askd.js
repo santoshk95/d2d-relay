@@ -275,7 +275,6 @@ async function pickDashboard(mid) {
 }
 
 /* the Ask Relay page (D2D Relay): a plain-words conversation with your data */
-const aiUsd = x => !x ? '$0.00' : x < 0.01 ? 'under $0.01' : '$' + x.toFixed(2);
 const ASK_STEPS = ['Looking at your data…', 'Running the numbers…', 'Double-checking every figure…', 'Drawing the chart…', 'Writing it up in plain words…'];
 async function renderAskD() {
   const tid = (location.hash.split('/')[2] || '').split('?')[0] || null;
@@ -298,14 +297,18 @@ async function renderAskD() {
     opts.dashboards.map(d => h('option', {value: d.id, selected: scope.kind === 'dashboard' && scope.project === d.id}, 'Dashboard: ' + d.name)));
   scopeSel.onchange = () => { scope = scopeSel.value ? {kind: 'dashboard', project: scopeSel.value} : {kind: 'team'}; };
 
-  // D2D Relay: the conversation's overall AI cost and nothing else (no cost per answer, no tokens, no breakdown)
+  // D2D Relay: the conversation's credits (Ask Relay's credits pay for up to N answered questions) and nothing else
   const costBox = h('div', {class: 'card flat askcost', style: 'margin:0 0 12px'});
+  const go = h('button', {class: 'btn primary'}, icon('send'), 'Ask');
   const drawCost = () => {
-    const show = !!(cost && cost.thread_usd != null);
-    costBox.style.display = show ? '' : 'none';
-    if (!show) return costBox.replaceChildren();
-    costBox.replaceChildren(h('div', {class: 'row', style: 'gap:6px'}, icon('gauge'), h('b', {class: 'small'}, 'This conversation')),
-      h('div', {class: 'small', style: 'margin-top:4px'}, 'AI cost so far: ', h('b', {}, aiUsd(cost.thread_usd))));
+    const per = costOf('ask'), n = costOf('ask_questions') || 5, c = cost || {used: 0, left: 0};
+    go.replaceChildren(icon('send'), 'Ask', per && !c.left ? costTag('ask') : '');         // the next question is charged
+    costBox.style.display = per && ORG().id ? '' : 'none';
+    if (!per || !ORG().id) return costBox.replaceChildren();
+    costBox.replaceChildren(h('div', {class: 'row', style: 'gap:6px'}, icon('coin'), h('b', {class: 'small'}, th ? 'This conversation' : 'Ask Relay')),
+      h('div', {class: 'small', style: 'margin-top:4px'}, th && c.used ? [h('b', {}, credits(c.used)), ' so far · '] : '',
+        c.left ? `${c.left} of ${n} questions left before the next ${per} credits`
+          : `${th ? 'The next question uses' : 'A conversation uses'} ${per} credits for up to ${n} questions`));
   };
   const refreshCost = async id => { try { cost = await api('/api/askd/costs' + (id ? '?thread=' + encodeURIComponent(id) : '')); drawCost(); } catch (e) { /* the answer matters more */ } };
   drawCost();
@@ -319,7 +322,6 @@ async function renderAskD() {
 
   const chat = h('div', {class: 'stack', 'aria-live': 'polite'});
   const input = h('textarea', {rows: 2, placeholder: 'Ask a question about your business, in your own words…', 'aria-label': 'Your question'});
-  const go = h('button', {class: 'btn primary'}, icon('send'), 'Ask');
   const you = q => h('div', {class: 'row', style: 'justify-content:flex-end'},
     h('div', {class: 'card flat askq', style: 'margin:0;background:var(--ink);color:var(--bg);max-width:75%'}, q));
   const ask = async q => {
@@ -336,9 +338,10 @@ async function renderAskD() {
     try {
       const r = await api('/api/askd/ask', {json: {question: q, scope, thread_id: th ? th.id : null, model: CATALOG.default}});
       clearInterval(tick); wait.remove();
+      if (typeof refreshOrg === 'function') refreshOrg(true);                 // D2D Relay: the credits chip
       if (!th) { location.hash = `#/askd/${r.thread_id}`; return; }
       chat.append(answerCard({id: r.message_id, body: {...r, seconds: Math.round((Date.now() - t0) / 1000)}}, {onAsk: ask}));
-      refreshCost(th.id);
+      if (r.credits) { cost = r.credits; drawCost(); } else refreshCost(th.id);
     } catch (e) {
       clearInterval(tick);
       wait.replaceChildren(h('div', {class: 'note err', style: 'margin:0'}, 'Relay could not answer that: ' + e.message + ' Try asking it a different way.'));
@@ -372,9 +375,11 @@ async function renderAskD() {
 function askPanel(st) {
   const card = h('div', {class: 'card', id: 'askpanel'});
   const filters = {}, out = h('div', {class: 'stack', style: 'margin-top:10px'});
-  let page = '', thread = null;
+  let page = '', thread = null, left = 0;
   const input = h('input', {type: 'text', placeholder: `Ask about ${st.name}, e.g. "Which store grew fastest?"`});
-  const go = h('button', {class: 'btn primary'}, icon('spark'), 'Ask');
+  const go = h('button', {class: 'btn primary'});
+  const label = () => go.replaceChildren(icon('spark'), 'Ask', left ? '' : costTag('ask'));    // D2D Relay: when the next question is charged
+  label();
   const bar = h('div', {class: 'chips', style: 'margin-top:8px'});
   const msel = askModelSel();
   api(`/api/projects/${st.id}/askd-context`).then(ctx => {
@@ -391,13 +396,16 @@ function askPanel(st) {
     try {
       const r = await api('/api/askd/ask', {json: {question: q, thread_id: thread, model: msel.value(), scope: {kind: 'dashboard', project: st.id, page: page || null, filters: {...filters}}}});
       thread = r.thread_id; wait.replaceWith(answerCard({id: r.message_id, body: r}, {project: st.access && st.access.can_edit ? st.id : null, thread, onAsk: ask}));
+      left = (r.credits || {}).left || 0; label();
+      if (typeof refreshOrg === 'function') refreshOrg(true);
     } catch (e) { wait.replaceWith(h('div', {class: 'note err'}, e.message)); }
     go.disabled = false;
   };
   go.onclick = () => ask();
   input.onkeydown = e => { if (e.key === 'Enter') ask(); };
   card.append(h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, icon('spark'), ' Ask about this dashboard'), h('span', {class: 'spacer'}), h('a', {class: 'small', href: '#/askd'}, 'Open Ask Relay →')),
-    h('div', {class: 'muted small'}, 'Answers use this dashboard\'s model, its measures and the filters you set here, on its data.'), bar,
+    h('div', {class: 'muted small'}, 'Answers use this dashboard\'s model, its measures and the filters you set here, on its data.'
+      + (costOf('ask') && ORG().id ? ` A conversation uses ${costOf('ask')} credits for up to ${costOf('ask_questions') || 5} questions.` : '')), bar,
     h('div', {class: 'row askrow', style: 'margin-top:8px'}, input, msel.el, go), out);
   return card;
 }

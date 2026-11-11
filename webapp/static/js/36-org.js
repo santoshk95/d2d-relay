@@ -11,6 +11,9 @@ const credits = n => `${Number(n || 0).toLocaleString()} credit${n === 1 ? '' : 
 const costOf = what => (ORG().costs || {})[what] || 0;
 /* " · 15 credits" after a button's label (nothing outside an organisation) */
 const costTag = what => ORG().id && costOf(what) ? h('span', {class: 'cost'}, ` · ${costOf(what)} credits`) : null;
+/* every price in one line: "a new dashboard uses 25, a change 10, Ask Relay 10 for up to 5 questions" */
+const costLine = (c = ORG().costs || {}) => `a new dashboard uses ${c.dashboard || 0}, a change ${c.change || 0}`
+  + (c.ask ? `, Ask Relay ${c.ask} for up to ${c.ask_questions || 5} questions` : '');
 
 /* ---------------- the chip in the top bar ---------------- */
 function renderOrgChip() {
@@ -29,7 +32,7 @@ function orgMenu(anchor) {
     h('div', {class: 'pmhead'}, h('div', {class: 'small faint'}, 'Your organisation'), h('b', {}, o.name),
       h('div', {class: 'small muted'}, 'Owner: ', o.owner ? (o.is_owner ? 'you' : o.owner.name) : '—', ` · @${o.domain}`)),
     h('div', {style: 'padding:2px 12px 10px'}, h('div', {class: 'credbig'}, Number(o.credits || 0).toLocaleString()),
-      h('div', {class: 'small muted'}, `credits left · a new dashboard uses ${costOf('dashboard')}, a change ${costOf('change')}`),
+      h('div', {class: 'small muted'}, `credits left · ${costLine()}`),
       o.pending_request ? h('div', {class: 'small', style: 'margin-top:6px'}, h('span', {class: 'tag warn'}, 'Waiting for PASDACS'),
         ` ${Number(o.pending_request.credits).toLocaleString()} credits asked for`) : null),
     h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); creditsDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Request credits')),
@@ -55,7 +58,7 @@ function creditsLine() {
   const o = ORG();
   if (!o.id) return null;
   return h('div', {class: 'credline'}, icon('coin'), h('span', {}, h('b', {}, credits(o.credits)), ` left in ${o.name}`),
-    h('span', {}, `· a new dashboard uses ${costOf('dashboard')}, a change ${costOf('change')}`),
+    h('span', {}, `· ${costLine()}`),
     o.pending_request ? h('span', {class: 'tag warn'}, `${Number(o.pending_request.credits).toLocaleString()} credits asked for, waiting for PASDACS`) : null,
     h('button', {class: 'btn sm ghost', type: 'button', onclick: () => creditsDialog()}, icon('plus'), 'Request credits'));
 }
@@ -120,7 +123,7 @@ function creditsDialog(reason) {
     h('dl', {class: 'kv small'}, h('dt', {}, 'Organisation'), h('dd', {}, `${o.name} · @${o.domain}`),
       h('dt', {}, 'Requested by'), h('dd', {}, `${me.name || ''} · ${me.email || ''}`), h('dt', {}, 'Credits now'), h('dd', {}, credits(o.credits))),
     h('label', {class: 'f'}, 'Credits you need'), h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, picks, custom),
-    h('div', {class: 'hint'}, `A new dashboard uses ${costOf('dashboard')} credits; a change uses ${costOf('change')}.`),
+    h('div', {class: 'hint'}, `Credits: ${costLine()}.`),
     h('label', {class: 'f'}, 'Message ', h('small', {}, 'optional')), msg,
     out,
     h('div', {class: 'row', style: 'justify-content:flex-end;gap:12px;margin-top:12px;align-items:center;flex-wrap:wrap'},
@@ -130,7 +133,8 @@ function creditsDialog(reason) {
 /* ---------------- Organisation (#/org) ---------------- */
 const LEDGER = r => r.kind === 'start' ? 'Starting credits'
   : r.kind === 'adjust' ? (r.delta > 0 ? 'Added by PASDACS' : 'Taken back by PASDACS') + (r.note ? ` · ${r.note}` : '')
-  : (r.kind === 'refund' ? 'Given back: ' : '') + (r.what === 'dashboard' ? 'new dashboard' : 'change') + (r.note && r.kind === 'charge' ? ` · ${r.note}` : '');
+  : (r.kind === 'refund' ? 'Given back: ' : '') + (r.what === 'dashboard' ? 'new dashboard' : r.what === 'ask' ? 'Ask Relay questions' : 'change')
+    + (r.note && r.kind === 'charge' ? ` · ${r.note}` : '');
 async function renderOrg() {
   const page = h('div', {class: 'page'});
   $('#main').replaceChildren(page);
@@ -156,7 +160,8 @@ async function renderOrg() {
         h('dl', {class: 'kv small', style: 'margin-top:12px'},
           h('dt', {}, 'New dashboard'), h('dd', {}, credits(d.costs.dashboard)),
           h('dt', {}, 'A change'), h('dd', {}, `${credits(d.costs.change)}: revising the plan, a change request, building a custom visual Relay suggested`),
-          h('dt', {}, 'Free'), h('dd', {}, 'Confirming the plan, fixing failed review gates, approving and publishing, Ask Relay questions')),
+          d.costs.ask ? [h('dt', {}, 'Ask Relay'), h('dd', {}, `${credits(d.costs.ask)} for up to ${d.costs.ask_questions || 5} questions in a conversation`)] : null,
+          h('dt', {}, 'Free'), h('dd', {}, 'Confirming the plan, fixing failed review gates, approving and publishing')),
         h('div', {class: 'row', style: 'margin-top:12px;gap:10px;flex-wrap:wrap'}, h('button', {class: 'btn primary', type: 'button', onclick: () => creditsDialog()}, icon('plus'), 'Request credits'),
           h('span', {class: 'small muted'}, 'PASDACS approves every request. When a run fails or is stopped, its credits come back.'))),
       h('div', {class: 'card'}, h('h3', {}, 'Owners'),
@@ -290,7 +295,7 @@ function renderSetup() {
       h('dl', {class: 'kv small'}, h('dt', {}, 'Owner'), h('dd', {}, `you (${(S.me || {}).email || ''})`),
         h('dt', {}, 'Who joins'), h('dd', {}, `everyone who signs in with an @${o.domain} address`),
         h('dt', {}, 'Credits'), h('dd', {}, (o.credits ? `${credits(o.credits)} to start` : 'none yet: PASDACS approves every credit request (Request credits)')
-          + ` · a new dashboard uses ${costOf('dashboard')}, a change ${costOf('change')}`))),
+          + ` · ${costLine()}`))),
     h('h2', {style: 'margin:22px 0 4px'}, 'Your brand'),
     h('div', {class: 'muted', style: 'margin-bottom:10px'}, 'Add your logo and a few words about your brand. Relay makes report palettes from them; pick one and every new dashboard uses it.'),
     brandBox,
@@ -348,7 +353,7 @@ async function renderOrgs() {
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('div', {class: 'eyebrow'}, 'Platform'), h('h1', {}, 'Organisations'),
       h('div', {class: 'meta'}, `Every organisation on D2D Relay, each in its own workspace. ${d.start ? `Each starts with ${credits(d.start)}` : 'They start with no credits and get them when you approve a request'}; `
-        + `a new dashboard uses ${d.costs.dashboard}, a change ${d.costs.change}. Organisations use CSV files until you switch a connector on.`))),
+        + `${costLine(d.costs)}. Organisations use CSV files until you switch a connector on.`))),
     h('div', {class: 'card'}, h('div', {class: 'orgwrap'}, h('table', {class: 'utable'},
       th(['Organisation', 'Owner', 'Connectors', 'People', 'Dashboards', 'Credits used', 'Credits left', 'Last sign-in', ''], 3),
       h('tbody', {}, d.orgs.map(o => h('tr', {},

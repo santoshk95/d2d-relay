@@ -550,7 +550,7 @@ def get_project(pid: str):
     st["access"] = {"level": level, "via": via, "can_edit": auth.can_project(me, "edit", db.project(pid)),
                     "can_publish": auth.can_project(me, "publish", db.project(pid)), "can_share": level == "owner"}
     st["runs"] = [_no_costs(r) for r in st.get("runs") or []]      # D2D Relay: AI costs and tokens stay on the server
-    st["credits"] = {**orgs.project_credits(pid), "retry": orgs.retry_cost(st), "costs": orgs.COST}
+    st["credits"] = {**orgs.project_credits(pid), "retry": orgs.retry_cost(st), "costs": orgs.costs()}
     st.setdefault("model", worker.DEFAULT_MODEL)
     st.setdefault("custom_visuals", "ask")
     st.setdefault("visuals_mode", "relay")
