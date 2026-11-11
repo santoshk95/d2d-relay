@@ -153,18 +153,24 @@ async function previewData(st, file) {
       h('tbody', {}, r.rows.map(row => h('tr', {}, row.map(v => h('td', {}, v === null ? '' : String(v)))))))),
     h('div', {class: 'muted small', style: 'margin-top:8px'}, `The first ${r.rows.length} of ${r.total.toLocaleString()} rows.`)), true);
 }
+// The prototype is a page the AI made: it runs sandboxed (scripts only, a page of its own, no network; the server
+// says so too) and tells this page its height by message, the one thing read from it (a number, capped).
 function protoFrame(src) {
   const wrap = h('div', {class: 'proto'});
-  const frame = h('iframe', {src, title: 'Prototype'});
+  const frame = h('iframe', {src, title: 'Prototype', sandbox: 'allow-scripts', referrerpolicy: 'no-referrer'});
   wrap.append(frame);
-  let lastW = 0;
+  let lastW = 0, ht = 720;
   const fit = () => {
-    const doc = frame.contentDocument;
-    if (!doc || !doc.documentElement) return;
-    const s = Math.min(1, wrap.clientWidth / 1300), ht = doc.documentElement.scrollHeight;
+    const s = Math.min(1, wrap.clientWidth / 1300);
     frame.style.height = ht + 'px'; frame.style.transform = `scale(${s})`; wrap.style.height = Math.ceil(ht * s) + 'px';
   };
-  frame.addEventListener('load', () => { fit(); try { new ResizeObserver(fit).observe(frame.contentDocument.body); } catch (e) {} });
+  const onMsg = e => {
+    if (!frame.isConnected) { window.removeEventListener('message', onMsg); return; }
+    if (e.source !== frame.contentWindow || !e.data || typeof e.data.relayPrototypeHeight !== 'number') return;
+    ht = Math.max(200, Math.min(20000, Math.round(e.data.relayPrototypeHeight))); fit();
+  };
+  window.addEventListener('message', onMsg);
+  frame.addEventListener('load', fit);
   new ResizeObserver(() => { if (wrap.clientWidth !== lastW) { lastW = wrap.clientWidth; fit(); } }).observe(wrap);
   return wrap;
 }

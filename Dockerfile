@@ -113,7 +113,10 @@ COPY --chown=agent:agent agent/runner-config/antigravity-settings.json /home/age
 # lists, the visual library a new install starts with, and the container's own scripts.
 COPY genbi_kit /opt/genbi/genbi_kit
 COPY custom_visuals /opt/genbi/visuals
-COPY agent/server.py agent/runners.py agent/probe_models.py /opt/genbi/
+COPY agent/server.py agent/runners.py agent/probe_models.py agent/bash_guard.py /opt/genbi/
+# Claude Code's policy for the AI engine (managed settings: nothing in a project folder or the agent's home can change
+# it): file tools only inside the dashboard's folder, the shell only for `genbi` (bash_guard.py), no web, no sub-agents
+COPY agent/managed-settings.json /etc/claude-code/managed-settings.json
 COPY config/models.json config/house-models.json /opt/genbi/config/
 COPY webapp/app /srv/app
 COPY webapp/static /srv/static

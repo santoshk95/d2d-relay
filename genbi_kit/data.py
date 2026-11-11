@@ -76,7 +76,21 @@ def connect(workdir: Path, defn: dict | None = None) -> duckdb.DuckDBPyConnectio
                   file=sys.stderr)
     if defn:
         _model_views(con, sources, defn)
+    confine(con, [workdir])
     return con
+
+
+def confine(con: duckdb.DuckDBPyConnection, folders: list) -> None:
+    """From now on this connection reads and writes only inside these folders (a dashboard's own), and the setting
+    cannot be undone: SQL that a person or the agent wrote (genbi sql, a prototype's queries, Ask Relay) cannot reach
+    another organisation's dashboards, the app's secrets or the network, whatever it asks for. DuckDB >= 1.2."""
+    allowed = []
+    for f in folders:
+        for p in {str(Path(f)), str(Path(f).resolve())}:
+            allowed.append(_lit(p.rstrip("/") + "/"))
+    con.execute(f"SET allowed_directories = [{', '.join(allowed)}]")
+    con.execute("SET enable_external_access = false")
+    con.execute("SET lock_configuration = true")
 
 
 def _model_views(con, sources: dict, d: dict) -> None:

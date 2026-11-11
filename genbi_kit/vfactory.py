@@ -436,9 +436,11 @@ def _browse(page_path: Path, png: Path) -> tuple[list[dict], list[str]]:
     from playwright.sync_api import sync_playwright
     errors: list[str] = []
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(args=["--no-sandbox", "--disable-dev-shm-usage"])
+        from .display import OFFLINE_ARGS, offline
+        browser = pw.chromium.launch(args=["--no-sandbox", "--disable-dev-shm-usage", *OFFLINE_ARGS])
         try:
             page = browser.new_page(viewport={"width": 1280, "height": 900})
+            offline(page, page_path.as_uri())       # the visual's code is the AI's: it loads nothing (BANNED) and reaches nothing
             page.on("pageerror", lambda e: errors.append(f"uncaught: {e}"))
             page.on("console", lambda m: errors.append(m.text) if m.type == "error" or (
                 m.type == "warning" and m.text.startswith("render failed")) else None)

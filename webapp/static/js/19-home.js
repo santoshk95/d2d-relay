@@ -1,6 +1,8 @@
 /* ---------------- Home (P9): the platform's insight dashboard on real records (GET /api/home) ---------------- */
 const NS_SVG = 'http://www.w3.org/2000/svg';
 const sv = (t, a, txt) => { const e = document.createElementNS(NS_SVG, t); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; return e; };
+// a label in a tooltip is text (a dashboard's or a person's name can hold anything), never markup
+const tipEsc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 function tipOn(e, html) { const t = $('#tip'); t.innerHTML = html; t.hidden = false; const r = t.getBoundingClientRect(); t.style.left = Math.min(e.clientX + 14, innerWidth - r.width - 8) + 'px'; t.style.top = Math.max(4, e.clientY - r.height - 10) + 'px'; }
 function tipOff() { $('#tip').hidden = true; }
 const fmtN = (n, d = 1) => n == null ? '—' : Number(n).toLocaleString(undefined, {maximumFractionDigits: d});
@@ -18,7 +20,7 @@ function colChart(rows, {height = 190, unit = '', fmtv = v => fmtN(v), label = '
     if (last) svg.append(sv('text', {x: x + bw / 2, y: y - 6, 'text-anchor': 'middle', class: 'lbl'}, fmtv(v) + unit));
     svg.append(sv('text', {x: x + bw / 2, y: H - 8, 'text-anchor': 'middle', class: 'ax'}, l));
     const hit = sv('rect', {x: padL + step * i, y: padT, width: step, height: H - padB - padT, fill: 'transparent'});
-    hit.addEventListener('mousemove', e => tipOn(e, `<b>${l}</b><br>${fmtv(v)}${unit}`)); hit.addEventListener('mouseleave', tipOff);
+    hit.addEventListener('mousemove', e => tipOn(e, `<b>${tipEsc(l)}</b><br>${tipEsc(fmtv(v) + unit)}`)); hit.addEventListener('mouseleave', tipOff);
     svg.append(hit);
   });
   return svg;
@@ -41,7 +43,7 @@ function lineChart(rows, {height = 160, min, max, fmtv = v => fmtN(v), unit = ''
   svg.append(cross, dot);
   const hit = sv('rect', {x: padL, y: padT, width: W - padL, height: H - padB - padT, fill: 'transparent'});
   hit.addEventListener('mousemove', e => { const b = svg.getBoundingClientRect(); const xv = (e.clientX - b.left) / b.width * W; const i = Math.max(0, Math.min(lastI, Math.round((xv - padL) / (W - padL - 12) * lastI)));
-    cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.style.display = ''; dot.setAttribute('cx', X(i)); dot.setAttribute('cy', Y(rows[i][1])); dot.style.display = ''; tipOn(e, `<b>${rows[i][0]}</b><br>${fmtv(rows[i][1])}${unit}`); });
+    cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.style.display = ''; dot.setAttribute('cx', X(i)); dot.setAttribute('cy', Y(rows[i][1])); dot.style.display = ''; tipOn(e, `<b>${tipEsc(rows[i][0])}</b><br>${tipEsc(fmtv(rows[i][1]) + unit)}`); });
   hit.addEventListener('mouseleave', () => { cross.style.display = 'none'; dot.style.display = 'none'; tipOff(); });
   svg.append(hit);
   return svg;

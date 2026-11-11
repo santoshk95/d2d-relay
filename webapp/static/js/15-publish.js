@@ -133,7 +133,7 @@ async function renderPage(id) {
       return h('div', {class: 'card', style: 'margin:0'}, tools, ta);
     }
     if (b.type === 'prototype') return h('div', {class: 'card', style: 'margin:0'}, tools, h('div', {class: 'row'}, h('b', {}, `${b.name} · v${b.version}`), h('span', {class: 'spacer'}), h('a', {href: `#/p/${b.project}`}, 'Open dashboard →')),
-      h('div', {class: 'proto', style: 'height:620px'}, h('iframe', {src: `/api/projects/${b.project}/prototype/${b.version}`, style: 'width:100%;height:100%;transform:none'})));
+      h('div', {class: 'proto', style: 'height:620px'}, h('iframe', {src: `/api/projects/${b.project}/prototype/${b.version}`, sandbox: 'allow-scripts', referrerpolicy: 'no-referrer', style: 'width:100%;height:100%;transform:none'})));
     return h('div', {style: 'position:relative'}, tools, answerCard({body: {result: {headline: b.headline, chart: b.chart}, summary: b.summary, actions: b.actions, data: b.data,
       validation: {certified: b.certified, certified_metrics: b.certified_metrics, where: b.where, queries: []}}, id: null}, null), h('div', {class: 'faint small'}, b.question));
   }

@@ -303,6 +303,10 @@ def cmd_catalog(args):
 def cmd_visual(args):
     """The visual factory: build a new Power BI custom visual when nothing in the catalog fits."""
     from . import vfactory as vf
+    for key in ("name", "like"):                   # a name, never a path: visuals/<name>/, a template, the library
+        value = getattr(args, key, None)
+        if value is not None and not vf.NAME.match(value):
+            sys.exit(f"{value!r} is not a visual's name: camelCase letters and digits, e.g. radialBars")
     try:
         VISUAL[args.action](vf, args)
     except vf.VisualError as e:
@@ -513,8 +517,27 @@ def main(argv=None):
         sp.add_argument("--dir", default="repo", help="the clone folder (default repo/)")
     p.set_defaults(fn=lambda a: __import__("genbi_kit.repo", fromlist=["cmd_repo"]).cmd_repo(a))
     args = ap.parse_args(argv)
+    _inside_project(args)
     use_project(CWD)
     args.fn(args)
+
+
+PATH_ARGS = ("file", "out", "paths", "dir", "template")
+
+
+def _inside_project(args) -> None:
+    """Every file or folder a command names is inside the project folder, the dashboard's own: whatever a data file or
+    an attachment asks the AI to do, the toolkit reads and writes nothing of another dashboard's, another
+    organisation's or the system's (absolute paths, .., ~ and links that lead out are refused)."""
+    root = CWD.resolve()
+    for key in PATH_ARGS:
+        value = getattr(args, key, None)
+        for v in (value if isinstance(value, list) else [value] if value else []):
+            p = Path(str(v)).expanduser()
+            p = (p if p.is_absolute() else CWD / p).resolve()
+            if p != root and root not in p.parents:
+                sys.exit(f"{v}: outside this project folder — name files inside it (relative paths such as "
+                         f"data/sales.csv or prototype/index.html)")
 
 
 if __name__ == "__main__":

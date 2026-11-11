@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 python3
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g @anthropic-ai/claude-code powerbi-visuals-tools@7.2.1 && npm cache clean --force
 RUN python3 -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir \
-    fastapi==0.115.6 uvicorn==0.32.1 duckdb==1.1.3 pyyaml==6.0.2 playwright==1.63.0
+    fastapi==0.115.6 uvicorn==0.32.1 duckdb==1.2.2 pyyaml==6.0.2 playwright==1.63.0
 # Headless Chromium: `genbi visual test` renders a new custom visual and screenshots it for Claude to look at.
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 RUN /opt/venv/bin/playwright install --with-deps --only-shell chromium && rm -rf /var/lib/apt/lists/*
@@ -30,7 +30,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -r
 RUN /opt/venv/bin/pip install --no-cache-dir dulwich==1.2.21
 COPY genbi_kit /opt/genbi/genbi_kit
 COPY custom_visuals /opt/genbi/visuals
-COPY agent/server.py agent/runners.py agent/probe_models.py /opt/genbi/
+COPY agent/server.py agent/runners.py agent/probe_models.py agent/bash_guard.py /opt/genbi/
+COPY agent/managed-settings.json /etc/claude-code/managed-settings.json
 RUN printf '#!/bin/sh\nexec /opt/venv/bin/python -m genbi_kit.cli "$@"\n' > /usr/local/bin/genbi && chmod +x /usr/local/bin/genbi \
     && mkdir -p /home/node/.claude /data/projects /opt/genbi/library && chown -R node:node /home/node /data
 # node (uid 1000) also owns the Claude login in the shared claude-api-auth volume.

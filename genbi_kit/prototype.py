@@ -8,6 +8,7 @@ and the report look the same. Output: one self-contained HTML file with page tab
 Visual Atlas visuals run their own packaged code in a mock Power BI host: their SQL returns one column per
 field, named after the field (measure or column name), and is shaped into the data view Power BI would send.
 """
+import html as html_mod
 import json
 import re
 from pathlib import Path
@@ -301,7 +302,8 @@ function draw() {
       box.querySelector('small').textContent = v.label || '';
       box.querySelector('b span').textContent = v.default ?? 'All';
     } else if (v.type === 'textbox') {
-      box.innerHTML = (v.paragraphs || []).map(rs => '<div>' + rs.map(r => r.text).join('') + '</div>').join('');
+      (v.paragraphs || []).forEach(rs => { const p = document.createElement('div');
+        p.textContent = (rs || []).map(r => (r && r.text != null) ? r.text : '').join(''); box.appendChild(p); });
     } else if (v.error) {
       box.innerHTML = '<div class="err"><b></b><div></div></div>';
       box.querySelector('b').textContent = (v.header && v.header.title) || v.id;
@@ -339,6 +341,22 @@ draw();
 
 FRAME ={"flat": "border:1px solid {border}", "soft": "box-shadow:0 3px 12px rgba(31,26,23,.13)",
          "3d": "box-shadow:6px 6px 14px rgba(31,26,23,.28)"}      # Power BI container look per Atlas look
+CSS_COLOR = re.compile(r"#[0-9A-Fa-f]{3,8}|[A-Za-z]{3,24}|rgba?\(\s*[\d.]+%?\s*(,\s*[\d.]+%?\s*){2,3}\)")
+
+
+def _color(value, default: str) -> str:
+    """A theme colour for the page's style sheet. The definition is written by the AI, and nothing it read (a data
+    file, an attachment) may close the style block and add markup: anything but a colour gets the default."""
+    s = str(value).strip() if value is not None else ""
+    return s if CSS_COLOR.fullmatch(s) else default
+
+
+def _radius(value, default: int = 10) -> str:
+    try:
+        r = float(value)
+    except (TypeError, ValueError):
+        return str(default)
+    return f"{max(0.0, min(r, 60.0)):g}"
 
 
 def render(d: dict, con, out: Path) -> list[str]:
@@ -360,10 +378,11 @@ def render(d: dict, con, out: Path) -> list[str]:
                       "border": t.get("card_border", "#E7E0D7"), "radius": t.get("radius", 10), "text": t.get("text", "#1F1A17"),
                       "muted": t.get("muted", "#6F6761"), "font": t.get("font", "Segoe UI"),
                       "frame": FRAME.get(look, FRAME["soft"]).format(border=t.get("card_border", "#E7E0D7"))}}
-    subs = {"NAME": d.get("name", "Report"), "BG": t.get("page_bg", "#F7F3EE"), "TINT": t.get("accent_tint", "#FBE7CC"),
-            "ACCENT": t.get("accent", "#DD7A12"), "CARD": t.get("card_bg", "#FFFFFF"), "INK": t.get("text", "#1F1A17"),
-            "MUTED": t.get("muted", "#6F6761"), "RADIUS": str(t.get("radius", 10)),
-            "FRAME": FRAME.get(look, FRAME["soft"]).format(border=t.get("card_border", "#E7E0D7")),
+    subs = {"NAME": html_mod.escape(str(d.get("name") or "Report")), "BG": _color(t.get("page_bg"), "#F7F3EE"),
+            "TINT": _color(t.get("accent_tint"), "#FBE7CC"), "ACCENT": _color(t.get("accent"), "#DD7A12"),
+            "CARD": _color(t.get("card_bg"), "#FFFFFF"), "INK": _color(t.get("text"), "#1F1A17"),
+            "MUTED": _color(t.get("muted"), "#6F6761"), "RADIUS": _radius(t.get("radius", 10)),
+            "FRAME": FRAME.get(look, FRAME["soft"]).format(border=_color(t.get("card_border"), "#E7E0D7")),
             "CSS": (bundle / "genbi-visuals.css").read_text(encoding="utf-8"), "ATLAS_CSS": "\n".join(css for _, css in codes),
             "DATA": json.dumps(data, default=str).replace("</", "<\\/"), "ATLAS_JS": atlas_js,
             "STOCK_JS": (KIT / "assets" / "stock_visuals.js").read_text(encoding="utf-8").replace("</script", "<\\/script") if uses_stock else "",

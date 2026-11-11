@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "blockReadsOutsideWorkingDirectories": true,
+    "blockWritesOutsideWorkingDirectories": true,
+    "disableBypassPermissionsMode": "disable",
+    "deny": [
+      "WebFetch",
+      "WebSearch",
+      "Task",
+      "Agent",
+      "NotebookEdit",
+      "Edit(CLAUDE.md)",
+      "Edit(AGENTS.md)",
+      "Edit(GEMINI.md)",
+      "Edit(project.json)",
+      "Edit(.claude/**)",
+      "Edit(.mcp.json)"
+    ]
+  },
+  "allowManagedHooksOnly": true,
+  "enableAllProjectMcpServers": false,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {"type": "command", "command": "python3 -I /opt/genbi/bash_guard.py", "timeout": 20}
+        ]
+      }
+    ]
+  }
+}

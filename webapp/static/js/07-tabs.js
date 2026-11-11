@@ -133,7 +133,8 @@ function friendly(e) {
   const f = fileLabel(d);
   // Claude Code's tool names, and the other runners' (Codex, Gemini, Antigravity), in words; anything else as "Used …"
   const said = {Read: 'Read ' + f, Write: 'Wrote ' + f, Edit: 'Edited ' + f, MultiEdit: 'Edited ' + f, Glob: 'Searched for files', Grep: 'Searched in files',
-    TodoWrite: 'Updated its task list', WebFetch: 'Read a web page', WebSearch: 'Searched the web', run_command: 'Ran a command', shell: 'Ran a command',
+    TodoWrite: 'Updated its task list', TaskCreate: 'Updated its task list', TaskUpdate: 'Updated its task list',
+    TaskList: 'Looked at its task list', TaskGet: 'Looked at its task list', WebFetch: 'Read a web page', WebSearch: 'Searched the web', run_command: 'Ran a command', shell: 'Ran a command',
     exec_command: 'Ran a command', read_file: 'Read ' + f, read_many_files: 'Read some files', write_file: 'Wrote ' + f, edit_file: 'Edited ' + f, replace: 'Edited ' + f,
     apply_patch: 'Edited ' + f, list_directory: 'Listed files', list_dir: 'Listed files', glob: 'Searched for files', search_file_content: 'Searched in files',
     grep_search: 'Searched in files', web_fetch: 'Read a web page', google_web_search: 'Searched the web', update_plan: 'Updated its task list'}[e.tool];
@@ -153,7 +154,7 @@ const brandSay = t => typeof t === 'string' ? t.replace(/\bClaude Code\b/g, 'the
 function doing(e) {
   const f = fileLabel(e.detail);
   return {Read: 'reading ' + f, Write: 'writing ' + f, Edit: 'editing ' + f, Glob: 'looking for files', Grep: 'searching the files',
-    TodoWrite: 'updating its task list'}[e.tool] || friendly(e).replace(/^\w/, c => c.toLowerCase());
+    TodoWrite: 'updating its task list', TaskCreate: 'updating its task list', TaskUpdate: 'updating its task list'}[e.tool] || friendly(e).replace(/^\w/, c => c.toLowerCase());
 }
 const isStep = e => e.kind === 'tool' || e.kind === 'result';
 function eventRow(e) {

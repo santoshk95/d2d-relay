@@ -76,8 +76,16 @@ def _mask(ev: dict, alias: str, real: str) -> dict:
     if ev.get("kind") == "error" and isinstance(ev.get("text"), str):
         ev["text"] = ev["text"].replace(real, alias)
     return ev
-TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "TodoWrite", "Bash(genbi:*)"]
+# (TodoWrite: older Claude Code; its task list is TaskCreate/TaskUpdate/TaskList/TaskGet since 2.1)
+TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "TodoWrite", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet",
+         "Bash(genbi:*)"]
 DENY = ["WebFetch", "WebSearch", "Task", "Agent", "NotebookEdit"]   # no web, no sub-agents
+# Whatever a data file or an attachment tells the AI, it works inside its own dashboard's folder. The limits are Claude
+# Code's managed settings (/etc/claude-code/managed-settings.json, above every other settings file): reads and writes
+# outside the folder refused, only managed hooks run (bash_guard.py: the shell runs one `genbi` command), no web, no
+# sub-agents, CLAUDE.md and the folder's .claude/ not editable. Here: no MCP servers, no skills or slash commands.
+# (Not --restricted: it confines the same way but leaves out the folder's CLAUDE.md, the agent's manual.)
+LOCKDOWN = ["--strict-mcp-config", "--disable-slash-commands"]
 
 app = FastAPI(title="Relay agent")
 LANES = ("build", "chat")
@@ -155,6 +163,8 @@ def _detail(name: str, inp: dict) -> str:
         todos = inp.get("todos") or []
         now = next((t.get("content") for t in todos if t.get("status") == "in_progress"), None)
         return f"{sum(t.get('status') == 'completed' for t in todos)}/{len(todos)} done" + (f" · {now}" if now else "")
+    if name in ("TaskCreate", "TaskUpdate"):
+        return _short(" · ".join(str(inp[k]) for k in ("subject", "status") if inp.get(k)), 200)
     return _short(json.dumps(inp), 200)
 
 
@@ -223,7 +233,7 @@ class ClaudeCodeRunner(Runner):
         real = house["target"] if house else model
         args = ["claude", "-p", "--output-format", "stream-json", "--verbose", "--model", real,
                 "--max-turns", str(run.max_turns), "--permission-mode", "acceptEdits",
-                *_tool_args(run)]
+                *LOCKDOWN, *_tool_args(run)]
         system = "\n\n".join(x for x in (run.system, HOUSE_SYSTEM.format(label=house.get("label") or model) if house else None) if x)
         if system:
             args += ["--append-system-prompt", system]
@@ -265,11 +275,17 @@ class ClaudeCodeRunner(Runner):
 
 
 def _tool_args(run: "Run") -> list[str]:
+    """--tools: the only built-in tools the run has (a subset never has the shell; [] = none at all: Ask Relay, where
+    the web app runs every query itself); --allowedTools: what runs without asking (anything else is refused: -p)."""
     if run.tools is None:
-        return ["--allowedTools", *TOOLS, "--disallowedTools", *DENY]
-    allowed = [t for t in run.tools if t in TOOLS]
-    banned = DENY + ["Bash"] + [t for t in TOOLS if t not in allowed and not t.startswith("Bash")]
-    return (["--allowedTools", *allowed] if allowed else []) + ["--disallowedTools", *banned]
+        allowed = list(TOOLS)
+    else:
+        allowed = [t for t in run.tools if t in TOOLS and not t.startswith("Bash")]
+    builtin = list(dict.fromkeys(t.split("(")[0] for t in allowed))      # Bash(genbi:*) -> Bash
+    args = ["--tools", ",".join(builtin)]
+    if allowed:
+        args += ["--allowedTools", *allowed]
+    return args + ["--disallowedTools", *DENY, *([] if "Bash" in builtin else ["Bash"])]
 
 
 class CliAdapter(Runner):
@@ -385,11 +401,12 @@ def render(req: Render):
         raise HTTPException(400, "png or pdf")
     if len(req.html) > 30_000_000:
         raise HTTPException(413, "too large")
+    from genbi_kit.display import OFFLINE_ARGS, offline
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        browser = p.chromium.launch(args=OFFLINE_ARGS)
         try:
             page = browser.new_page(viewport={"width": max(320, min(req.width, 2000)), "height": 900}, device_scale_factor=1 if req.format == "pdf" else 2)
-            page.route("**/*", lambda route: route.continue_() if route.request.url.startswith(("data:", "about:", "blob:")) else route.abort())
+            offline(page)
             page.set_content(req.html, wait_until="load", timeout=60000)
             page.wait_for_timeout(1500)                   # let the page's own scripts finish drawing
             if req.format == "pdf":
@@ -410,11 +427,12 @@ def snapshot(req: Snapshot):
     from playwright.sync_api import sync_playwright
     if len(req.html) > 2_000_000:
         raise HTTPException(413, "too large")
+    from genbi_kit.display import OFFLINE_ARGS, offline
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        browser = p.chromium.launch(args=OFFLINE_ARGS)
         try:
             page = browser.new_page(viewport={"width": max(320, min(req.width, 1600)), "height": 600}, device_scale_factor=2)
-            page.route("**/*", lambda route: route.abort() if not route.request.url.startswith("data:") else route.continue_())
+            offline(page)
             page.set_content(req.html, wait_until="load", timeout=15000)
             png = page.screenshot(full_page=True, type="png")
         finally:

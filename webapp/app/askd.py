@@ -107,6 +107,7 @@ def _extract_engine(pids: list[str], combined: bool) -> tuple[duckdb.DuckDBPyCon
                     con.execute(f"CREATE OR REPLACE VIEW {_q(schema)}.{_q(data_mod.raw_name(f))} AS SELECT * FROM {src}")
                 except duckdb.Error:
                     continue
+        data_mod.confine(con, [store.project_dir(pid) for pid in pids])   # only the dashboards this person asked about
     for schema, name in con.execute("SELECT schema_name, view_name FROM duckdb_views() WHERE NOT internal").fetchall():
         key = name if schema == "main" else f"{schema}.{name}"
         try:

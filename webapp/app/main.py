@@ -603,6 +603,18 @@ def project_file(pid: str, name: str):
     return PlainTextResponse(path.read_text(encoding="utf-8", errors="replace"))
 
 
+# A prototype is a page the AI made from data people uploaded, so whatever a data file or an attachment told the AI to
+# put in it runs sandboxed: a page of its own (no sign-in, no access to the app or its cookies), with no network at all
+# (it holds its data inline), framed only by the app. It reports its height to the app by message (protoFrame).
+PROTOTYPE_CSP = ("sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; "
+                 "style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; "
+                 "form-action 'none'; base-uri 'none'; frame-ancestors 'self'")
+PROTOTYPE_SIZE = ("<script>(function(){var last=0;function post(){var h=document.documentElement.scrollHeight;"
+                  "if(h!==last){last=h;try{parent.postMessage({relayPrototypeHeight:h},'*');}catch(e){}}}"
+                  "addEventListener('load',post);try{new ResizeObserver(post).observe(document.documentElement);}"
+                  "catch(e){setInterval(post,1000);}})();</script>")
+
+
 @app.get("/api/projects/{pid}/prototype/{v}", response_class=HTMLResponse)
 def prototype_page(pid: str, v: str):
     _get(pid)
@@ -610,7 +622,11 @@ def prototype_page(pid: str, v: str):
     path = d / "prototype" / "index.html" if v == "live" else d / "versions" / f"v{v}" / "prototype.html"
     if not re.fullmatch(r"live|\d+", v) or not path.exists():
         raise HTTPException(404, "No such prototype")
-    return HTMLResponse(path.read_text(encoding="utf-8"), headers={"Cache-Control": "no-store"})
+    page = path.read_text(encoding="utf-8")
+    end = page.lower().rfind("</body>")
+    page = page[:end] + PROTOTYPE_SIZE + page[end:] if end >= 0 else page + PROTOTYPE_SIZE
+    return HTMLResponse(page, headers={"Cache-Control": "no-store", "Content-Security-Policy": PROTOTYPE_CSP,
+                                       "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer"})
 
 
 class KpiReview(BaseModel):

@@ -10,6 +10,21 @@ from pathlib import Path
 
 from .gates import fail, gate, warn
 
+# Chromium for pages the AI made (a prototype, a custom visual's test page, a card to render): no name lookups, every
+# request through a proxy that is not there (this container's own services too), no WebRTC around it. With offline()
+# below, nothing such a page runs can reach the web or a service here, whatever a data file asked the AI to put in it.
+OFFLINE_ARGS = ["--host-resolver-rules=MAP * ~NOTFOUND", "--proxy-server=http://127.0.0.1:9", "--proxy-bypass-list=<-loopback>",
+                "--force-webrtc-ip-handling-policy=disable_non_proxied_udp", "--webrtc-ip-handling-policy=disable_non_proxied_udp"]
+
+
+def offline(page, own: str | None = None) -> None:
+    """Only the page's own file and data:/blob: URLs load; every other request (and every WebSocket) is refused."""
+    page.route("**/*", lambda route: route.continue_() if (own and route.request.url.split("#")[0] == own)
+               or route.request.url.startswith(("data:", "blob:", "about:")) else route.abort())
+    if hasattr(page, "route_web_socket"):
+        page.route_web_socket(re.compile(".*"), lambda ws: None)      # never connected to a server
+
+
 BROKEN = [(re.compile(r"\bNaN\b"), "shows NaN"), (re.compile(r"\bundefined\b"), 'shows "undefined"'),
           (re.compile(r"\bInfinity\b|∞"), "shows ∞ (a division by zero?)"), (re.compile(r"\[object \w+\]"), "shows [object …]"),
           (re.compile(r"\d(?:[KMB]|bn)\s?[KMB]\b"), "shows doubled display units")]
@@ -50,12 +65,14 @@ def check(html: Path, timeout_s: int = 120) -> dict:
         return gate("display", skip="no headless browser here (Playwright is in the agent image)")
     errors: list[str] = []
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        browser = p.chromium.launch(args=OFFLINE_ARGS)
         try:
             page = browser.new_page(viewport={"width": 1320, "height": 900})
             page.on("pageerror", lambda e: errors.append(str(e)))
-            page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-            page.goto(Path(html).resolve().as_uri(), wait_until="load", timeout=timeout_s * 1000)
+            page.on("console", lambda m: errors.append(m.text) if m.type == "error" and "ERR_" not in m.text else None)
+            own = Path(html).resolve().as_uri()
+            offline(page, own)
+            page.goto(own, wait_until="load", timeout=timeout_s * 1000)
             res = page.evaluate(READ)
         finally:
             browser.close()
