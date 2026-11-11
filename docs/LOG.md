@@ -512,6 +512,17 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       (`pay_TytUHj3Zh277OD`). Seen there: Razorpay's checkout asks every buyer for a mobile number; this account
       offers cards, netbanking and wallets, not UPI (switched on in the Razorpay Dashboard if wanted). Not checked yet:
       the webhook, which Razorpay cannot reach on the test stack (after the deploy).
+    - **Deployed on 2026-11-11 at about 19:45 IST with the test keys** (the user: "each credit is 1$ and INR 100, so
+      plan accordingly and deploy"). The deploy folder fast-forwarded to 93de489; the keys and a new webhook secret
+      added to the live `.env`; web and admin on the tested image `d2d-relay:c8e615f` (`docker compose up -d
+      --no-deps web admin`; the database container untouched; nothing was running). The packs, at ₹100 a credit with
+      no GST added (one setting if GST is to be added): 25 credits ₹2,500, 50 ₹5,000, 100 ₹10,000, 250 ₹25,000, 500
+      ₹50,000; who may buy: owners; selling switched off (with test keys only PASDACS's own workspace can buy anyway).
+      Checked afterwards: test mode, both secrets set, PASDACS offered the packs, no other organisation; signed-out
+      payment calls get 401; through Cloudflare an unsigned webhook call is refused (400) and a signed one is accepted
+      (200, an order it does not know ignored), so Razorpay's webhook reaches the app; the privacy notice names
+      Razorpay; no errors in the logs. The $1 a credit the user also named needs a US-dollar checkout: Razorpay's
+      international payments switched on for the account, then a USD price beside the rupee one (not built).
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -561,23 +572,22 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   admin`. The data before the fresh start: `data\backups\relay-db-20261111-064453.dump` (no dashboards are left
   from then but the sample below). Since item 22 the nightly sweep deletes hand-made dumps after 30 days: this one
   and the three others of 10-11 November go around 10-11 December; move any that must stay out of `data\backups`.
-- **Images:** since 2026-11-11 17:11 IST web and admin run `d2d-relay:8f39265` (= latest: items 21 and 22); the
-  database container still runs `d2d-relay:8689305`'s image, which stays tagged for going back.
+- **Images:** since 2026-11-11 ~19:45 IST web and admin run `d2d-relay:c8e615f` (= latest: item 23); the previous
+  `d2d-relay:8f39265` stays tagged for going back (`docker tag d2d-relay:8f39265 d2d-relay:latest`, then `docker
+  compose up -d --no-deps web admin`); the database container still runs `d2d-relay:8689305`'s image.
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
-- **Payments with Razorpay (item 23) are built and tested against Razorpay's test mode; not deployed.** The test keys
-  arrived on 2026-11-11 (they go in the live `.env` only, never in commits; the key secret was pasted in the chat,
-  so live keys should go into `.env` by hand). Next, with the user's go-ahead: the keys and a webhook secret in the
-  live `.env`; the deploy (the release image `d2d-relay:c8e615f`; the work log commits after it change no code);
-  the packs set (the admin portal works on the PC only until Cloudflare Access is set up); the webhook added in the
-  Razorpay Dashboard (test mode: URL https://d2d-relay.pasdacs.com/api/payments/webhook, the secret from `.env`,
-  events payment.captured, order.paid, payment.failed and refund.processed, OTP 754081); a test purchase on live by
-  the user as info@pasdacs.com (test keys let only PASDACS buy), which also tries the webhook. If it goes live after
-  11 November, give the privacy notice the new date. The user's choices, all on the admin portal: the packs and
-  prices in ₹, GST included or added, who may buy (owners by default); and whether a GST invoice is needed (not
-  built), and the refund rule (refunds are made by hand on Razorpay). Live keys come after Razorpay activates the
-  account.
+- **Payments with Razorpay (item 23) are live in test mode** (since 2026-11-11 ~19:45 IST; test keys, so only PASDACS
+  can buy and no money moves). Left: (1) the user adds the webhook in the Razorpay Dashboard, test mode, Settings →
+  Webhooks: URL https://d2d-relay.pasdacs.com/api/payments/webhook, the secret that is in the live `.env`
+  (`RELAY_RAZORPAY_WEBHOOK_SECRET`), events payment.captured, order.paid, payment.failed and refund.processed (OTP
+  754081 if asked); (2) a test purchase on live by the user as info@pasdacs.com (Organisation → Buy credits,
+  Razorpay's test card), which also exercises the webhook; (3) going live: live keys from Razorpay (after it
+  activates the account) into the live `.env` by hand, a live-mode webhook with its own secret, a restart of web and
+  admin, then Sell credits online switched on (admin portal, Payments). Open choices: GST added or not (now: not),
+  whether a GST invoice is needed (not built), the refund rule (refunds are made by hand on Razorpay), and a US-dollar
+  price ($1 a credit, the user's figure; needs Razorpay's international payments, not built).
 - **Abuse.** Anyone with a business mailbox can sign up and create an organisation (as asked). Since item 19 it gets
   50 credits at once (about two dashboards' AI time) without anyone's approval; more need PASDACS's approval. Since
   item 21 PASDACS gets an email for every sign-in, and pauses an organisation or switches a person off on the admin
