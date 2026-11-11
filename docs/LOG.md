@@ -264,6 +264,20 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
+- **Item 16 is built, tested and staged, not live yet (2026-11-11 10:36 IST).** The deploy folder is on `335c2b7`,
+  the image is built (`d2d-relay:latest` = `d2d-relay:335c2b7`; the running one stays `d2d-relay:aec0d13`), and the
+  Power BI file maker is already running on the D2D Relay PC (started from the deploy folder; it waits for requests).
+  Claude Code's auto mode refused the restart as a production deploy. To go live, in the deploy folder (nobody
+  building; the database container is not touched):
+
+  ```
+  docker compose up -d --no-deps web admin
+  docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -c "from app import worker; [worker.enqueue(p, 'pbix') for p in ('d2d-smoke-test-972d', 'brand-palette-test-dcef', 'retail-performance-360-759e', 'global-ports-enterprise-demo-10c1')]"
+  ```
+
+  The second command makes the .pbix of the four dashboards published before (about 5 minutes in all; or press
+  "Make the Power BI file" on each). Rollback: `docker tag d2d-relay:aec0d13 d2d-relay:latest`, then the first
+  command again.
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
