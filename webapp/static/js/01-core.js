@@ -13,6 +13,8 @@ const S = {projects: [], pid: null, tab: 'overview', project: null, events: [], 
 
 /* ---------------- helpers ---------------- */
 const $ = (s, el = document) => el.querySelector(s);
+// D2D Relay: the admin portal (admin-d2d.pasdacs.com) runs the same screens with its own menu (portal.js, set by the server)
+const isAdminPortal = () => !!(window.D2D_PORTAL && window.D2D_PORTAL.portal === 'admin');
 function h(tag, attrs, ...kids) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {

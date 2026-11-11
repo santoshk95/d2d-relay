@@ -5,18 +5,36 @@ and describes the dashboard. D2D Relay plans it, agrees the KPIs, builds a proto
 checked Power BI project (PBIP). Warehouses and databases are connected by PASDACS for an organisation on request.
 
 It is separate from RELAY. It lives in its own folder (`Downloads\D2D Relay`) with its own git repository. It has its
-own image (`d2d-relay:latest`), container (`d2d-relay`), database volume (`d2d-relay-data`), projects folder
-(`data\projects`), DAX checker queue and sign-in. Only the Claude sign-in volume (`claude-api-auth`) is shared, so both
-apps use the same Claude subscription.
+own image (`d2d-relay:latest`), containers, volumes, projects folder (`data\projects`), DAX checker queue and sign-in.
+Only the Claude sign-in volume (`claude-api-auth`) is shared, so both apps use the same Claude subscription.
 
 | | |
 |---|---|
 | Public address | https://d2d-relay.pasdacs.com (Cloudflare tunnel) |
-| On this PC | http://127.0.0.1:8100 |
+| Admin portal | https://admin-d2d.pasdacs.com: PASDACS only, behind Cloudflare Access and its own email code (see "Admin portal") |
+| On this PC | public site http://127.0.0.1:8100, admin portal http://127.0.0.1:8102 |
 | Sign-in | a 6-digit code emailed to any **business** address (no passwords, no SSO); free and disposable mail refused |
 | Organisations | one per email domain, each in its own workspace; the first person creates and owns it |
 | Credits | 100 per organisation to start; a new dashboard uses 30, a change 15 (see "Organisations and credits") |
-| Platform admin | **info@pasdacs.com**: Administration and Organisations (every organisation, adding credits) |
+| Platform admins | every **@pasdacs.com** address, on the admin portal only (every organisation, credits, connectors, requests) |
+
+## Containers
+
+Four containers, split where the trust and the work differ (`docker-compose.yml`). The first three run the same image,
+each in its own role (`RELAY_ROLE`, `docker/relay_init.py`), so they always run the same tested build.
+
+| Container | Role | What runs | Reachable |
+|---|---|---|---|
+| `d2d-relay-db` | database | PostgreSQL 17 (volume `d2d-relay-db-data`) | the private Docker network only, with `RELAY_DB_PASSWORD` |
+| `d2d-relay-web` | web | the public site: web app and AI engine (volume `d2d-relay-data`, `data\projects`) | 127.0.0.1:8100, d2d-relay.pasdacs.com |
+| `d2d-relay-admin` | admin | the admin portal: web app only, no AI engine or jobs (volume `d2d-relay-admin-data`) | 127.0.0.1:8102, admin-d2d.pasdacs.com |
+| `d2d-relay-tunnel` | | Cloudflare tunnel (profile `tunnel`) | outbound only |
+
+Why split this way and not further: the admin portal is a separate trust boundary (the public container has no
+admin APIs at all, so a bug on the public side cannot reach them), and both portals need one database, which the old
+one-container layout kept behind its own Unix socket. The web app and the AI engine stay together: every build is
+streamed from the engine to the web app, so they restart together anyway, and inside the container they already run
+as separate Linux users that cannot read each other's keys.
 | Code sender | info@pasdacs.com through Microsoft Graph (delegated Mail.Send, signed in once) |
 | Data sources | CSV / flat files (New dashboard → upload), or demo data Relay generates. Connectors (BigQuery, Snowflake, Fabric, Redshift, Athena, Oracle) only once PASDACS switches them on for the organisation (see "Connectors") |
 
@@ -35,11 +53,20 @@ apps use the same Claude subscription.
 ## Start and stop
 
 ```
-docker compose up -d                       # the app only (this PC)
-docker compose --profile tunnel up -d      # the app + the public tunnel
-docker compose --profile tunnel down       # stop both (data stays in the volume and data\)
-docker logs -f d2d-relay
+docker compose up -d                       # database, public site and admin portal (this PC)
+docker compose --profile tunnel up -d      # plus the public tunnel
+docker compose --profile tunnel down       # stop everything (data stays in the volumes and data\)
+docker compose restart admin               # one container only (here the admin portal; the public site keeps running)
+docker logs -f d2d-relay-web
 ```
+
+`.env` needs `RELAY_DB_PASSWORD` (letters and digits; `.env.example` says how to make one).
+
+**Moving from the one container** (`d2d-relay`, before 2026-11-11): after `git pull`, run
+`powershell -ExecutionPolicy Bypass -File docker\move-to-split.ps1 -Tunnel` in the deploy folder while nobody is
+building. It dumps the database into `data\backups`, stops the old container (kept for a rollback), adds
+`RELAY_DB_PASSWORD`, loads the dump into the new database container and starts everything. Rollback:
+`docker compose down` then `docker start d2d-relay`.
 
 Start the DAX checker for D2D Relay too (it watches `data\projects\.daxcheck`, not RELAY's queue). Run
 `daxcheck\start-daxcheck.cmd`. It runs side by side with RELAY's checker.
@@ -78,8 +105,33 @@ Code rules: 6 digits, valid for 10 minutes, 5 tries. Per address: 1 code a minut
 (Cloudflare's `cf-connecting-ip`): 20 codes an hour. Only a salted hash is stored. A session lasts 12 hours
 (`RELAY_SESSION_HOURS`).
 
-`RELAY_OTP_EMAIL` (and `RELAY_ADMIN_EMAIL`) is the platform admin's address, info@pasdacs.com. It signs in to the
-platform's own workspace, the organisation "PASDACS".
+`RELAY_OTP_EMAIL` (and `RELAY_ADMIN_EMAIL`) is info@pasdacs.com, the owner of the platform's own workspace, the
+organisation "PASDACS". On the public site it is an organisation like any other; platform work is on the admin portal.
+
+## Admin portal
+
+https://admin-d2d.pasdacs.com is PASDACS's own site: **Organisations** (every organisation, its credits and
+connectors), **Requests** (credits and connectors organisations asked for) and **Notifications**. It is a container
+of its own (`d2d-relay-admin`); the public site answers none of its APIs. Two locks, both required:
+
+1. **Cloudflare Access** in front of the hostname. The admin portal checks Access's signed token on every request that
+   comes through Cloudflare (`app/portal.py`): the right application (AUD), the right team, not expired, and an
+   @pasdacs.com address. Until `RELAY_ADMIN_ACCESS_TEAM` and `RELAY_ADMIN_ACCESS_AUD` are set, it refuses everything
+   from the tunnel, so it works on this PC only (http://127.0.0.1:8102).
+2. **The app's own email code**, for `RELAY_ADMIN_DOMAINS` addresses only (pasdacs.com). Every such address is a
+   platform admin there; a new one joins the PASDACS workspace on its first sign-in. Its sessions have their own
+   cookie and kind, so a session from the public site is not accepted there, and the other way round.
+
+To open it through the internet (Cloudflare dashboard, once):
+
+1. **Zero Trust → Access → Applications → Add an application → Self-hosted.** Name "D2D Relay admin", domain
+   `admin-d2d.pasdacs.com`. Add a policy: Action **Allow**, Include **Emails ending in** `@pasdacs.com`. Login method:
+   One-time PIN, or PASDACS's Microsoft sign-in if it is set up in Zero Trust.
+2. From the application's overview, copy the **Application Audience (AUD) Tag**. The team name is the first part of
+   your team domain (`<team>.cloudflareaccess.com`, Zero Trust → Settings).
+3. In `.env`: `RELAY_ADMIN_ACCESS_TEAM=<team>` and `RELAY_ADMIN_ACCESS_AUD=<tag>`, then `docker compose up -d admin`.
+4. **Networks → Tunnels → d2d-relay → Public hostname → Add:** subdomain `admin-d2d`, domain `pasdacs.com`, service
+   **HTTP**, URL `d2d-relay-admin:8000`. Do this last, so the hostname never exists without Access in front of it.
 
 ## Organisations and credits
 
@@ -110,9 +162,9 @@ Relay shows only a conversation's overall cost.
 
 **Adding credits.** Online payment is not built yet. "Add credits" sends a request to info@pasdacs.com
 (`RELAY_CREDITS_CONTACT`) from the code mailbox, with the organisation, the person and the amount, and Reply-To set
-to the person. It also shows a prefilled email link. When the payment is agreed, the platform admin opens
-**Organisations** (`#/orgs`), clicks **+ Credits** for the organisation and writes why (for example the invoice);
-the organisation sees it in its credit history. A negative number takes credits back.
+to the person. It also shows a prefilled email link. When the payment is agreed, a platform admin opens
+**Organisations** on the admin portal, clicks **Credits** for the organisation and writes why (for example the
+invoice); the organisation sees it in its credit history. A negative number takes credits back.
 
 ### 2. Public address (Cloudflare tunnel)
 
@@ -121,7 +173,7 @@ pasdacs.com's DNS is on Cloudflare, so no port is opened on this PC.
 1. In Cloudflare, go to **Zero Trust → Networks → Tunnels → Create a tunnel** (type Cloudflared) and name it
    `d2d-relay`. Copy the token from the "Install connector" step.
 2. In the tunnel, go to **Public hostname → Add**. Set subdomain `d2d-relay`, domain `pasdacs.com`, service
-   **HTTP**, and URL `d2d-relay:8000`.
+   **HTTP**, and URL `d2d-relay:8000` (the public site's container answers to that name too).
 3. Create `tunnel.env` next to `docker-compose.yml` with one line, `TUNNEL_TOKEN=<token>`. Git ignores this file, and
    the app container never sees it.
 4. Run `docker compose --profile tunnel up -d`. Then open https://d2d-relay.pasdacs.com.
@@ -138,8 +190,8 @@ Snowflake, Microsoft Fabric, Amazon Redshift, Amazon Athena and Oracle Database 
 1. A person clicks **Ask PASDACS to connect it** (Connections), picks the connectors and adds a message. The request
    goes to info@pasdacs.com (`RELAY_CREDITS_CONTACT`) by email, Reply-To the person, and to the platform admins'
    notifications. A prefilled email link is the fallback.
-2. When it is agreed, the platform admin opens **Organisations**, clicks **Connectors** for the organisation and ticks
-   the ones to switch on. The owner is told, and the organisation can then add connections for them (and pick
+2. When it is agreed, a platform admin opens **Organisations** on the admin portal, clicks **Connectors** for the
+   organisation and ticks the ones to switch on. The owner is told, and the organisation can then add connections for them (and pick
    "From a warehouse" on New dashboard).
 3. Switching a connector off stops it at once for that organisation: its connections stay but cannot be tested,
    queried or pulled from, and scheduled refreshes pause with a note on the dashboard. They can still be removed.
@@ -150,9 +202,12 @@ scanned by default.
 
 ## Updating
 
-Build from a clean commit and restart while nothing is running:
+Build from a clean commit and restart while nothing is running (a restart of `d2d-relay-web` cuts off a build):
 
 ```
 git status            # clean
-set RELAY_COMMIT=<git rev-parse HEAD> && docker compose build && docker compose up -d
+set RELAY_COMMIT=<git rev-parse HEAD> && docker compose build web && docker compose up -d
 ```
+
+`docker compose up -d` starts again only the containers whose image or settings changed; a change for the admin
+portal alone can go out with `docker compose up -d admin` while builds run on the public site.

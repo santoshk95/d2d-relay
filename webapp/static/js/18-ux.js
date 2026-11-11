@@ -70,7 +70,7 @@ async function togglePin(pid) {
   try { S.pins = (await api('/api/me/pins', {method: 'PUT', json: {pins}})).pins; renderShell(); notify(S.pins.includes(pid) ? 'Pinned to the sidebar' : 'Unpinned', 'ok'); }
   catch (e) { notify(e.message, 'err'); }
 }
-setTimeout(loadPins, 600);
+setTimeout(() => { if (!isAdminPortal()) loadPins(); }, 600);
 
 /* C: command palette — every page, dashboard, insight page and the common actions, from the keyboard */
 async function palette() {
@@ -118,7 +118,7 @@ async function palette() {
   // D2D Relay: insight pages are switched off (their API answers 404), so the palette no longer asks for them
 }
 document.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (!$('.modal.palette')) palette(); }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !isAdminPortal()) { e.preventDefault(); if (!$('.modal.palette')) palette(); }
 });
 
 /* H: the profile menu under the avatar */
@@ -137,9 +137,9 @@ function profileMenu(anchor) {
       h('div', {class: 'small faint'}, role + (me.teams && me.teams.length ? ' · ' + me.teams.map(t => t.name).join(', ') : '') + (me.auth === 'single' ? ' · single-user mode' : ''))),
     me.tenant && me.tenant.name ? h('div', {class: 'small muted', style: 'padding:0 12px 6px'}, 'Workspace: ', h('b', {}, me.tenant.name), me.tenant.acting ? ' (as a guest)' : '') : null,
     me.tenant && ((me.tenant.enter || []).length || me.tenant.acting) ? item('building', 'Switch workspace', () => workspaceMenu($('#ws button') || $('#me button'))) : null,
-    me.org && me.org.id ? item('building', 'Organisation and credits', () => { location.hash = '/org'; }) : null,   // D2D Relay
+    me.org && me.org.id && !isAdminPortal() ? item('building', 'Organisation and credits', () => { location.hash = '/org'; }) : null,   // D2D Relay
     item('bell', 'Notifications', () => { location.hash = '/notifications'; }),
-    item('search', 'Search and go anywhere', palette, 'Ctrl K'),
+    isAdminPortal() ? null : item('search', 'Search and go anywhere', palette, 'Ctrl K'),
     item('info', 'Keyboard shortcuts', shortcutsDialog),
     me.auth === 'sso' || me.auth === 'otp' ? item('external', 'Sign out', async () => { await fetch('/auth/logout', {method: 'POST'}); location.href = '/login.html'; }) : null,
   ], 'profile');

@@ -56,6 +56,11 @@ async function poll() {
   }
   timer = setTimeout(poll, S.project && RUN.has(S.project.status) ? 1500 : 5000);
 }
-setInterval(() => { refreshList(); refreshSys(); if (typeof refreshOrg === 'function') refreshOrg(); }, 5000);   // refreshOrg: at most every 30 s
-loadMe().then(ensureWorkspace);
-Promise.all([loadModels(), loadRegistry()]).then(() => { refreshList(); refreshSys(); route(); });
+if (isAdminPortal()) {             // D2D Relay's admin portal: organisations and requests only (no dashboards, agent or models)
+  loadMe();
+  loadRegistry().then(() => route());
+} else {
+  setInterval(() => { refreshList(); refreshSys(); if (typeof refreshOrg === 'function') refreshOrg(); }, 5000);   // refreshOrg: at most every 30 s
+  loadMe().then(ensureWorkspace);
+  Promise.all([loadModels(), loadRegistry()]).then(() => { refreshList(); refreshSys(); route(); });
+}

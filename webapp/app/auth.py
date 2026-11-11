@@ -16,16 +16,18 @@ the directory; SSO: the session cookie's prefix; single mode: the platform). Wit
 in another tenant (relay.tn_acting, re-checked on every request): the request then runs in that tenant as their guest
 row there. A module that is switched off for the tenant answers 403 (entitlements, tenancy.py).
 """
+import asyncio
 import contextvars
+import html
 import os
 import re
 import time
 from urllib.parse import quote, urlparse
 
 from fastapi import Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from . import db, edition, identity, instances, store
+from . import db, edition, identity, instances, portal, store
 
 MODE = os.environ.get("D2D_AUTH", "single")
 current: contextvars.ContextVar[dict | None] = contextvars.ContextVar("d2d_user", default=None)
@@ -36,7 +38,8 @@ LIBRARY = re.compile(r"^/api/library/([^/]+)$")
 PUBLISH = {"/approve"}
 SHARE = {"/shares"}
 OPEN_PATHS = ("/login.html", "/auth/", "/css/login.css", "/css/fonts.css", "/fonts/", "/relay-mark.svg", "/favicon.ico", "/powered-by.svg", "/icons/", "/manifest.webmanifest",
-              "/favicon", "/metrics", "/healthz")   # reachable without signing in (/metrics checks its own token)
+              "/favicon", "/metrics", "/healthz", "/portal.js")   # reachable without signing in (/metrics checks its own token)
+ADMIN_AUTH = ("/auth/otp/", "/auth/providers", "/auth/logout", "/auth/brand")   # D2D Relay: the admin portal's sign-in paths
 SAFE = {"GET", "HEAD", "OPTIONS"}
 
 
@@ -229,14 +232,20 @@ def check(u: dict | None, method: str, path: str) -> JSONResponse | None:
         return None                                    # the app shell and static files (sign-in handled in middleware)
     if edition.blocked(path):
         return _deny(404, "That is not part of D2D Relay.")
+    if portal.ADMIN:
+        # D2D Relay's admin portal (portal.py): its own few APIs, for PASDACS people only
+        if not portal.api_allowed(path):
+            return _deny(404, "That is not part of the D2D Relay admin portal.")
+        if u is None:
+            return _deny(401, "Sign in to the D2D Relay admin portal.")
+        return None if portal.is_admin(u) else _deny(403, "The admin portal is for PASDACS people only.")
     if u is None:
         return _deny(401, "Sign in to D2D Relay.")
     if path.startswith("/api/admin"):
-        # D2D Relay: an organisation's owner is the admin of their own workspace only; Administration (people, AI
-        # providers, monitoring, backups, Relay Doctor, every organisation) is the platform admin's, working at home.
-        t = u.get("_tenancy") or {}
-        platform = t.get("home") == db.PLATFORM and t.get("tenant") == db.PLATFORM and not u.get("home_tenant")
-        return None if is_admin(u) and platform else _deny(403, "Admins only.")
+        # D2D Relay: no platform powers on the public site. Every organisation, credits and connectors are on the
+        # admin portal (admin-d2d.pasdacs.com, its own container); an organisation's owner manages their own
+        # workspace through /api/org.
+        return _deny(404, "Administration is on the D2D Relay admin portal.")
     if path == "/api/projects" and method == "POST":
         return None if is_dev(u) else _deny(403, "Only BI Devs / Analysts can create dashboards.")
     m = PROJECT.match(path)
@@ -269,8 +278,22 @@ def _same_origin(request: Request) -> bool:
     return urlparse(origin).netloc == host or (identity.PUBLIC_URL and origin == identity.PUBLIC_URL)
 
 
+def _refused_page(text: str) -> HTMLResponse:
+    return HTMLResponse("<!doctype html><meta charset=utf-8><title>D2D Relay admin</title><body style=\"font:15px system-ui;"
+                        f"max-width:560px;margin:15vh auto;padding:0 16px\"><h2>D2D Relay admin</h2><p>{html.escape(text)}</p>",
+                        status_code=403)
+
+
 async def middleware(request: Request, call_next):
     path = request.url.path
+    if portal.ADMIN and path not in ("/healthz",):
+        # D2D Relay's admin portal: through Cloudflare, only with a valid Cloudflare Access token (portal.py)
+        why = await asyncio.to_thread(portal.access_refusal, request.headers, request.cookies) \
+            if request.headers.get("cf-connecting-ip") else None
+        if why:
+            return _deny(403, why) if path.startswith("/api/") else _refused_page(why)
+        if path.startswith("/auth/") and not path.startswith(ADMIN_AUTH):
+            return _deny(404, "That is not part of the D2D Relay admin portal.")
     if MODE in ("sso", "otp") and request.method not in SAFE and not _same_origin(request):
         return _deny(403, "Cross-site request refused.")
     u = resolve(request)

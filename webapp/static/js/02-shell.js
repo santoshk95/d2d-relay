@@ -19,7 +19,7 @@ function applyBrand() {
   const b = S.brand || {accent: 'signal', full: 'D2D Relay', name: 'D2D Relay', partner: false};
   const root = document.documentElement;
   if (b.accent && b.accent !== 'signal') root.dataset.accent = b.accent; else delete root.dataset.accent;
-  document.title = b.full;
+  document.title = isAdminPortal() ? 'D2D Relay admin' : b.full;
   const dark = root.dataset.theme === 'dark';
   const logo = $('#brandlogo');
   if (b.partner) {
@@ -28,7 +28,8 @@ function applyBrand() {
   } else logo.replaceChildren(svgEl(RELAY_LOGO, 'relaylogo'), svgEl(RELAY_MARK, 'railmark'));
   logo.setAttribute('aria-label', `${b.full} — Home`);
   $('#mlogo').replaceChildren(...(b.partner ? [partnerMark(b), h('b', {}, b.name)] : [markEl(), h('b', {}, 'RELAY')]));   // spread: an array is printed as "[object …]"
-  $('#powered').replaceChildren(...(b.partner ? [markEl(), h('span', {}, 'Powered by ', h('b', {}, 'PASDACS Relay'))] : [h('span', {class: 'faint'}, 'D2D Relay · by PASDACS')]));
+  $('#powered').replaceChildren(...(b.partner ? [markEl(), h('span', {}, 'Powered by ', h('b', {}, 'PASDACS Relay'))]
+    : [h('span', {class: 'faint'}, isAdminPortal() ? 'D2D Relay admin · PASDACS only' : 'D2D Relay · by PASDACS')]));
 }
 function setTheme(t, keep) {
   const root = document.documentElement;
@@ -51,6 +52,10 @@ const routeOn = href => { const r = location.hash || '#/'; if (href === '#/') re
 function navGroups(route) {          // D2D Relay: dashboards, Ask Relay, branding and connections only
   const on = p => route.startsWith(p);
   const me = S.me || {};
+  if (isAdminPortal()) return [{id: 'top', label: '', items: [   // the admin portal: every organisation and what they ask for
+    ['#/orgs', 'layers', 'Organisations', route === '#/orgs' || route === '' || route === '#/'],
+    ['#/requests', 'send', 'Requests', route === '#/requests'],
+    ['#/notifications', 'bell', 'Notifications', route === '#/notifications']]}];
   const top = {id: 'top', label: '', items: [['#/d2d', 'chart', 'Dashboards', routeOn('#/') || on('#/d2d') || !!S.pid]]};
   if (me.builder !== false) top.items.push(['#/new', 'plus', 'New dashboard', on('#/new')]);
   top.items.push(['#/askd', 'spark', 'Ask Relay', on('#/askd')]);
@@ -58,7 +63,6 @@ function navGroups(route) {          // D2D Relay: dashboards, Ask Relay, brandi
     ['#/branding', 'palette', 'Branding', on('#/branding')],
     ['#/connections', 'plug', 'Connections', on('#/connections')],
     ['#/notifications', 'bell', 'Notifications', route === '#/notifications']];
-  if (me.org && me.org.platform_admin) setup.push(['#/orgs', 'layers', 'Organisations', route === '#/orgs']);
   return [top, {id: 'platform', label: 'Setup', items: setup}];
 }
 function groupOpen(g, route) {
@@ -197,12 +201,17 @@ function route() {
   }
   if (tab !== S.tab) { S.tab = tab; S.key = null; S.act = null; }
   renderShell();
+  if (isAdminPortal()) {                     // D2D Relay's admin portal: three screens, everything else opens Organisations
+    if (location.hash === '#/requests') return renderRequests();
+    if (location.hash === '#/notifications') return renderNotes();
+    if (location.hash !== '#/orgs') history.replaceState(null, '', '#/orgs');
+    return renderOrgs();
+  }
   if (!pid) document.title = 'D2D Relay';
   // D2D Relay: only these screens exist; anything else (old links, bookmarks) opens the dashboards list
-  const D2D_ROUTES = ['#/new', '#/d2d', '#/askd', '#/branding', '#/notifications', '#/connections', '#/p/', '#/org', '#/orgs', '#/setup'];
+  const D2D_ROUTES = ['#/new', '#/d2d', '#/askd', '#/branding', '#/notifications', '#/connections', '#/p/', '#/org', '#/setup'];
   if (location.hash.startsWith('#/branding')) return renderBranding();
   if (location.hash === '#/org') return renderOrg();                               // D2D Relay: organisations and credits (36-org.js)
-  if (location.hash === '#/orgs') return renderOrgs();
   if (location.hash === '#/setup') return renderSetup();
   if (!pid && !D2D_ROUTES.some(r => location.hash === r || location.hash.startsWith(r.endsWith('/') ? r : r + '/'))) {
     if (location.hash && location.hash !== '#/' && location.hash !== '#') { history.replaceState(null, '', '#/d2d'); }
@@ -258,7 +267,7 @@ async function loadMe() {
       icon('chevr', 'mechev')));
     renderShell();
     if (typeof renderWorkspace === 'function') renderWorkspace();                  // P17: the workspace chip and band
-    if (typeof orgAfterMe === 'function') orgAfterMe(me);                         // D2D Relay: the organisation chip, first-time setup
+    if (typeof orgAfterMe === 'function' && !isAdminPortal()) orgAfterMe(me);     // D2D Relay: the organisation chip, first-time setup
     $('#me').title = `${me.email} · instance ${me.instance}`;
   } catch (e) {}
 }

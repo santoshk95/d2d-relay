@@ -8,6 +8,7 @@
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="relay-mark.svg">
 <link rel="stylesheet" href="css/fonts.css">
+<script src="portal.js"></script>
 <style>
 /* PASDACS brand (branding/pasdacs): mono plus one mint; the hero is the dark band (135deg brand-900 to brand-700). */
 :root{--ink:#111111;--ink-2:#525252;--paper:#FFFFFF;--line:#E5E5E5;--line-2:#D4D4D4;--accent:#007A57;--accent-2:#00664A;--primary:#111111;--primary-2:#1C1C1C;--on-primary:#fff;--focus:#007A57;--err:#DC2626;--err-tint:#FEF2F2;--surface:#fff;color-scheme:light}
@@ -90,6 +91,18 @@ document.getElementById('brand').innerHTML = RELAY_LOGO;
 const qs = new URLSearchParams(location.search), next = (qs.get('next') || '').startsWith('#/') ? qs.get('next') : '';
 const $ = id => document.getElementById(id);
 const show = (id, text) => { const e = $(id); e.textContent = text || ''; e.hidden = !text; };
+/* D2D Relay's admin portal (portal.js): PASDACS addresses only, no organisation step */
+const ADMIN = !!(window.D2D_PORTAL && D2D_PORTAL.portal === 'admin');
+if (ADMIN) {
+  const domains = (D2D_PORTAL.admin_domains || ['pasdacs.com']).map(d => '@' + d).join(' or ');
+  document.title = 'Sign in · D2D Relay admin';
+  document.querySelector('.hero h1').textContent = 'D2D Relay admin';
+  document.querySelector('.hero p').textContent = 'Every organisation, its credits and connectors, and what they ask PASDACS for.';
+  document.querySelector('.powered span').textContent = 'D2D Relay admin · PASDACS only';
+  $('signin').textContent = 'Sign in to D2D Relay admin';
+  $('lead').textContent = `PASDACS only: use your ${domains} address. We email you a 6-digit code, no password needed.`;
+  $('email').placeholder = 'name' + (D2D_PORTAL.admin_domains ? '@' + D2D_PORTAL.admin_domains[0] : '@pasdacs.com');
+}
 if (qs.get('error')) show('error', qs.get('error'));
 async function post(url, body) {
   const r = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body), credentials: 'same-origin'});
@@ -132,7 +145,7 @@ $('orgform').addEventListener('submit', async e => {
   try { const j = await post('/auth/otp/organisation', {name: $('orgname').value.trim(), person: $('person').value.trim()}); location.replace(j.next || '/'); }
   catch (err) { show('error', err.message); $('orgbtn').disabled = false; }
 });
-fetch('/auth/otp/organisation', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : null).then(o => { if (o && o.domain) orgStep(o); }).catch(() => {});
+if (!ADMIN) fetch('/auth/otp/organisation', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : null).then(o => { if (o && o.domain) orgStep(o); }).catch(() => {});
 /* ---- TEMPORARY test login (delete this block, the banner above and the test_code line in ask() when testing is done):
    with RELAY_TEST_LOGIN=1, on this PC only, the code is filled in for you; ?as=name@company.com signs in as that address. */
 fetch('/auth/otp/test-login', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : {}).then(t => {

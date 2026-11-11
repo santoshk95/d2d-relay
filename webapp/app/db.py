@@ -508,15 +508,21 @@ def init() -> None:
     """The control plane, then every tenant's schema (so tables added by a new phase reach every tenant), the
     platform first with the bootstrap organisation: one admin, one default team (single-user mode)."""
     with _lock:
-        _init_control()
-        init_tenant(PLATFORM, bootstrap=True)
-        with use(PLATFORM):
-            others = [r["id"] for r in q("SELECT id FROM relay.tn_tenants WHERE id != ? ORDER BY created, id", (PLATFORM,))]
-        for t in others:
-            init_tenant(t)
-        if BACKEND == "postgres":
+        if BACKEND == "postgres":            # D2D Relay: the public site and the admin portal start together; one at a time
+            conn().execute("SELECT pg_advisory_lock(735105)")
+        try:
+            _init_control()
+            init_tenant(PLATFORM, bootstrap=True)
             with use(PLATFORM):
-                _pg_path()                   # leave the connection in the platform's schema, as it always was
+                others = [r["id"] for r in q("SELECT id FROM relay.tn_tenants WHERE id != ? ORDER BY created, id", (PLATFORM,))]
+            for t in others:
+                init_tenant(t)
+            if BACKEND == "postgres":
+                with use(PLATFORM):
+                    _pg_path()               # leave the connection in the platform's schema, as it always was
+        finally:
+            if BACKEND == "postgres":
+                conn().execute("SELECT pg_advisory_unlock(735105)")
 
 
 def _init_control() -> None:

@@ -25,9 +25,9 @@ from urllib.parse import urlencode
 import httpx
 import jwt
 
-from . import db, secrets_store
+from . import db, portal, secrets_store
 
-COOKIE = "d2d_session"
+COOKIE = portal.COOKIE                 # D2D Relay: d2d_session on the public site, d2d_admin on the admin portal
 SEP = "~"                              # <tenant>~<session id> / <tenant>~<state>; ids from token_urlsafe never contain it
 SETUP_HOURS = 72
 SESSION_HOURS = float(os.environ.get("D2D_SESSION_HOURS", "12"))
@@ -181,6 +181,8 @@ def session_user(sid: str | None) -> dict | None:
         return None
     row = db.one("SELECT * FROM sessions WHERE id = ? AND expires > ?", (_hash(sid), time.time()))
     if not row:
+        return None
+    if (row["provider"] == portal.SESSION_KIND) != portal.ADMIN:   # D2D Relay: each site accepts only its own sessions
         return None
     u = db.user(row["user_id"])
     if not u:

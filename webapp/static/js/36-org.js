@@ -32,7 +32,6 @@ function orgMenu(anchor) {
       h('div', {class: 'small muted'}, `credits left · a new dashboard uses ${costOf('dashboard')}, a change ${costOf('change')}`)),
     h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); creditsDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Add credits')),
     h('a', {class: 'pmitem', href: '#/org', onclick: closePopover}, icon('building'), h('span', {class: 'grow'}, 'Organisation, people and credit history')),
-    o.platform_admin ? h('a', {class: 'pmitem', href: '#/orgs', onclick: closePopover}, icon('layers'), h('span', {class: 'grow'}, 'All organisations')) : null,
   ], 'profile');
 }
 /* the credits left, fetched again after something used or added credits (and now and then) */
@@ -188,7 +187,7 @@ function renderSetup() {
 async function renderOrgs() {
   const page = h('div', {class: 'page wide'});
   $('#main').replaceChildren(page);
-  document.title = 'Organisations · D2D Relay';
+  document.title = 'Organisations · D2D Relay admin';
   let d;
   try { d = await api('/api/admin/orgs'); } catch (e) { return page.append(h('div', {class: 'note err'}, e.message)); }
   if (location.hash !== '#/orgs') return;
@@ -250,17 +249,34 @@ async function renderOrgs() {
         h('td', {class: 'n'}, h('div', {class: 'row', style: 'gap:6px;justify-content:flex-end;flex-wrap:nowrap'},
           h('button', {class: 'btn sm', type: 'button', onclick: () => connectorsDialog(o)}, icon('plug'), 'Connectors'),
           h('button', {class: 'btn sm', type: 'button', onclick: () => adjust(o)}, icon('plus'), 'Credits'))))))))),
-    h('div', {class: 'card'}, h('h3', {}, 'Connector requests'), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
-      'Sent from Connections. Each one also went to the contact mailbox by email (unless shown otherwise). Switch the connector on with Connectors above.'),
-      (d.connector_requests || []).length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Organisation', 'Who', 'Connectors', 'Message', 'Emailed'], 5),
-        h('tbody', {}, d.connector_requests.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, r.org_name), h('td', {}, `${r.name || ''} · ${r.email || ''}`),
-          h('td', {}, (r.kinds || []).map(kindLabel).join(', ')), h('td', {}, r.message || '—'), h('td', {class: 'n'}, r.sent ? 'yes' : h('span', {class: 'tag warn'}, 'no')))))))
-        : h('div', {class: 'muted small'}, 'None yet.')),
+    h('p', {class: 'small muted'}, 'What organisations ask for (credits, connectors) is under ', h('a', {href: '#/requests'}, 'Requests'), '.'));
+}
+
+/* ---------------- Requests (#/requests, the admin portal): credits and connectors organisations asked for ---------------- */
+async function renderRequests() {
+  const page = h('div', {class: 'page wide'});
+  $('#main').replaceChildren(page);
+  document.title = 'Requests · D2D Relay admin';
+  let d;
+  try { d = await api('/api/admin/requests'); } catch (e) { return page.append(h('div', {class: 'note err'}, e.message)); }
+  if (location.hash !== '#/requests') return;
+  const kindLabel = k => (d.catalogue.find(c => c.kind === k) || {}).label || k;
+  const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
+  const sent = r => r.sent ? 'yes' : h('span', {class: 'tag warn', title: 'The email could not be sent; the request is only here'}, 'no');
+  page.append(
+    h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('div', {class: 'eyebrow'}, 'Platform'), h('h1', {}, 'Requests'),
+      h('div', {class: 'meta'}, 'What organisations asked PASDACS for. Each request also went to the contact mailbox by email, unless shown otherwise.'))),
     h('div', {class: 'card'}, h('h3', {}, 'Credit requests'), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
-      'Sent from Add credits. Each one also went to the contact mailbox by email (unless shown otherwise).'),
-      d.requests.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Organisation', 'Who', 'Message', 'Credits', 'Emailed'], 4),
-        h('tbody', {}, d.requests.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, r.org_name), h('td', {}, `${r.name || ''} · ${r.email || ''}`),
-          h('td', {}, r.message || '—'), h('td', {class: 'n'}, Number(r.credits || 0).toLocaleString()), h('td', {class: 'n'}, r.sent ? 'yes' : h('span', {class: 'tag warn'}, 'no')))))))
+      'Sent from Add credits. Add the credits on Organisations once the payment is agreed.'),
+      d.credits.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Organisation', 'Who', 'Message', 'Credits', 'Emailed'], 4),
+        h('tbody', {}, d.credits.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, r.org_name), h('td', {}, `${r.name || ''} · ${r.email || ''}`),
+          h('td', {}, r.message || '—'), h('td', {class: 'n'}, Number(r.credits || 0).toLocaleString()), h('td', {class: 'n'}, sent(r)))))))
+        : h('div', {class: 'muted small'}, 'None yet.')),
+    h('div', {class: 'card'}, h('h3', {}, 'Connector requests'), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
+      'Sent from Connections. Switch a connector on with Connectors on Organisations.'),
+      d.connectors.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Organisation', 'Who', 'Connectors', 'Message', 'Emailed'], 5),
+        h('tbody', {}, d.connectors.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, r.org_name), h('td', {}, `${r.name || ''} · ${r.email || ''}`),
+          h('td', {}, (r.kinds || []).map(kindLabel).join(', ')), h('td', {}, r.message || '—'), h('td', {class: 'n'}, sent(r)))))))
         : h('div', {class: 'muted small'}, 'None yet.')));
 }
 

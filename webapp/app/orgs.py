@@ -39,7 +39,7 @@ import traceback
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from . import auth, db, edition, notify, public_domains
+from . import auth, db, edition, notify, portal, public_domains
 
 router = APIRouter()
 db.register_control_columns("tn_orgs", {"connectors": "TEXT NOT NULL DEFAULT '[]'"})   # the connectors switched on
@@ -104,10 +104,9 @@ def by_domain(domain: str) -> dict | None:
 
 
 def platform_admin(u: dict | None) -> bool:
-    """An admin of the platform's own workspace, working there (info@pasdacs.com): sees every organisation."""
-    t = (u or {}).get("_tenancy") or {}
-    return bool(u) and t.get("home") == db.PLATFORM and t.get("tenant") == db.PLATFORM and bool(t.get("home_admin")) \
-        and not u.get("home_tenant")
+    """A PASDACS person on the admin portal (admin-d2d.pasdacs.com, portal.py): sees every organisation. On the public
+    site nobody is, the PASDACS workspace's own owner included."""
+    return portal.ADMIN and portal.is_admin(u)
 
 
 def init() -> None:
@@ -249,10 +248,11 @@ def _to_pasdacs(subject: str, intro: str, rows: list[tuple[str, str]], reply_to:
 
 
 def _tell_platform(title: str, text: str, link: str) -> None:
-    """A notification for every admin of the platform's own workspace."""
+    """A notification for every PASDACS person (the admin portal's people: portal.ADMIN_DOMAINS)."""
     with db.use(db.PLATFORM):
-        for a in db.q("SELECT id FROM users WHERE org_role = 'admin' AND active = 1 AND home_tenant IS NULL"):
-            notify.add(a["id"], "ops", title, text, link)
+        for a in db.q("SELECT id, email FROM users WHERE active = 1 AND home_tenant IS NULL"):
+            if portal.admin_email(a["email"]):
+                notify.add(a["id"], "ops", title, text, link)
 
 
 def _tell_owners(tid: str, title: str, text: str, link: str) -> None:
@@ -383,7 +383,7 @@ def me_info(u: dict | None) -> dict:
     if not u:
         return {}
     o = row(auth.tenant_of(u))
-    out = {"platform_admin": platform_admin(u), "costs": COST, "contact": CONTACT}
+    out = {"platform_admin": platform_admin(u), "portal": portal.NAME, "costs": COST, "contact": CONTACT}
     if not o:
         return out
     owner = u["id"] == o["owner_id"]
@@ -473,10 +473,10 @@ def credit_request(body: CreditRequest):
             ("Requested by", f"{u.get('name') or ''} <{u.get('email') or ''}>"), ("Credits requested", f"{n:,}"),
             ("Credits now", f"{o['credits']:,}"), ("Message", msg or "(none)")]
     sent = _to_pasdacs(f"D2D Relay: {o['name']} asks for {n:,} credits", "A D2D Relay organisation asks for more credits.", rows,
-                       u.get("email"), "Add them in D2D Relay under Organisations once the payment is agreed.")
+                       u.get("email"), "Add them on the D2D Relay admin portal once the payment is agreed.")
     tenancy.ctl_audit("d2d.credit_request", o["tenant_id"], u["id"], {"credits": n, "message": msg[:500], "email": u.get("email"),
                                                                        "name": u.get("name"), "sent": sent})
-    _tell_platform(f"{o['name']} asks for {n:,} credits", f"{u.get('name')} ({u.get('email')}): {msg[:300] or 'no message'}", "#/orgs")
+    _tell_platform(f"{o['name']} asks for {n:,} credits", f"{u.get('name')} ({u.get('email')}): {msg[:300] or 'no message'}", "#/requests")
     return {"sent": sent, "contact": CONTACT}
 
 
@@ -520,10 +520,10 @@ def connector_request(body: ConnectorRequest):
             ("Switched on now", ", ".join(connector_label(k) for k in on) or "none (CSV files only)"), ("Message", msg or "(none)")]
     sent = _to_pasdacs(f"D2D Relay: {o['name']} asks to connect {names}", "A D2D Relay organisation asks PASDACS to connect a "
                        "warehouse or database.", rows, u.get("email"),
-                       "Switch the connector on for the organisation under Organisations once it is agreed.")
+                       "Switch it on for the organisation on the D2D Relay admin portal (Organisations, Connectors) once it is agreed.")
     tenancy.ctl_audit("d2d.connector_request", o["tenant_id"], u["id"], {"kinds": kinds, "message": msg[:500], "email": u.get("email"),
                                                                           "name": u.get("name"), "sent": sent})
-    _tell_platform(f"{o['name']} asks to connect {names}", f"{u.get('name')} ({u.get('email')}): {msg[:300] or 'no message'}", "#/orgs")
+    _tell_platform(f"{o['name']} asks to connect {names}", f"{u.get('name')} ({u.get('email')}): {msg[:300] or 'no message'}", "#/requests")
     return {"sent": sent, "contact": CONTACT}
 
 
@@ -555,14 +555,23 @@ def all_orgs():
         out.append({"id": o["tenant_id"], "name": o["name"], "domain": o["domain"], "credits": o["credits"], "spent": spent,
                     "owner": owner, "people": people, "dashboards": dashboards, "created": o["created"], "last_login": last,
                     "status": t.get("status"), "platform": o["tenant_id"] == db.PLATFORM, "connectors": connectors_of(o["tenant_id"])})
-    names = {o["id"]: o["name"] for o in out}
+    return {"orgs": out, "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": COST, "start": START}
 
-    def asked(action: str) -> list[dict]:
-        rows = db.q("SELECT ts, tenant_id, detail FROM relay.tn_audit WHERE action = ? ORDER BY id DESC LIMIT 30", (action,))
-        return [{"ts": r["ts"], "org": r["tenant_id"], "org_name": names.get(r["tenant_id"], r["tenant_id"]), **json.loads(r["detail"] or "{}")}
-                for r in rows]
-    return {"orgs": out, "requests": asked("d2d.credit_request"), "connector_requests": asked("d2d.connector_request"),
-            "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": COST, "start": START}
+
+def _asked(action: str) -> list[dict]:
+    """The latest requests of one kind (audited when they were sent), newest first, with the organisation's name."""
+    names = {o["tenant_id"]: o["name"] for o in db.q("SELECT tenant_id, name FROM relay.tn_orgs")}
+    rows = db.q("SELECT ts, tenant_id, detail FROM relay.tn_audit WHERE action = ? ORDER BY id DESC LIMIT 50", (action,))
+    return [{"ts": r["ts"], "org": r["tenant_id"], "org_name": names.get(r["tenant_id"], r["tenant_id"]), **json.loads(r["detail"] or "{}")}
+            for r in rows]
+
+
+@router.get("/api/admin/requests")
+def all_requests():
+    """Credit and connector requests from every organisation (the admin portal's Requests page)."""
+    _admin()
+    return {"credits": _asked("d2d.credit_request"), "connectors": _asked("d2d.connector_request"),
+            "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": COST}
 
 
 class Connectors(BaseModel):

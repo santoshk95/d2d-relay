@@ -20,6 +20,9 @@
 .orggrid .card{margin:0}
 .delta.plus{color:var(--ok);font-weight:650}
 .orgwrap{overflow-x:auto}
+/* The admin portal (admin-d2d.pasdacs.com, portal.js): no dashboards, search, organisation chip or agent status */
+[data-portal=admin] #orgchip,[data-portal=admin] #ws,[data-portal=admin] #sys,[data-portal=admin] #searchbtn,
+[data-portal=admin] #msearchbtn,[data-portal=admin] #newbtn,[data-portal=admin] #recentbox,[data-portal=admin] #pinbox{display:none!important}
 /* Connections: every connector, switched on by PASDACS per organisation (js/12-connections.js) */
 .conncat{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));margin:0 0 8px}
 .conncat .card{margin:0;display:flex;flex-direction:column}

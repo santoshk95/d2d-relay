@@ -1,25 +1,68 @@
-# D2D Relay by PASDACS: Power BI dashboards from CSV files and Google BigQuery, in one container.
-# Separate from RELAY by PASDACS (the folder ../Gen BI): its own image, container, database, projects and sign-in.
-#   docker compose up -d                    the app on http://127.0.0.1:8100 (this PC only)
-#   docker compose --profile tunnel up -d   plus the Cloudflare tunnel that serves https://d2d-relay.pasdacs.com
-# Settings: .env (copy .env.example). Guide: docs/d2d-relay.md.
+# D2D Relay by PASDACS: Power BI dashboards from CSV files. Separate from RELAY by PASDACS (the folder ../Gen BI): its
+# own image, containers, database, projects and sign-in. Guide: docs/d2d-relay.md. Settings: .env (copy .env.example).
+#
+# Four containers, split where the trust and the work differ (one image, d2d-relay, runs the first three):
+#   d2d-relay-db      PostgreSQL 17, on the private Docker network only (no port on this PC)
+#   d2d-relay-web     the public site https://d2d-relay.pasdacs.com: the web app and the AI engine     127.0.0.1:8100
+#   d2d-relay-admin   the admin portal https://admin-d2d.pasdacs.com: PASDACS only, behind Cloudflare
+#                     Access and its own email code; no AI engine, no jobs                             127.0.0.1:8102
+#   d2d-relay-tunnel  the Cloudflare tunnel that serves both addresses (profile "tunnel")
+#
+#   docker compose up -d                    the database, the public site and the admin portal (this PC only)
+#   docker compose --profile tunnel up -d   plus the tunnel
 name: d2d-relay
 
+x-app: &app
+  image: ${RELAY_IMAGE:-d2d-relay:latest}
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
 services:
-  d2d-relay:
-    image: ${RELAY_IMAGE:-d2d-relay:latest}
+  db:
+    <<: *app
+    container_name: d2d-relay-db
+    hostname: d2d-relay-db
+    environment:
+      RELAY_ROLE: database
+      RELAY_DB_PASSWORD: ${RELAY_DB_PASSWORD:?set RELAY_DB_PASSWORD in .env (docs/d2d-relay.md)}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - db-data:/data
+    healthcheck:                   # the image's own check (relay-ctl health: here, the database only), sooner at start
+      test: ["CMD", "/opt/relay/bin/relay-ctl", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 180s
+      start_interval: 3s
+    stop_grace_period: 1m
+
+  web:
+    <<: *app
     build:
       context: .
       args:
         RELAY_VERSION: ${RELAY_VERSION:-1.0.0}
         RELAY_COMMIT: ${RELAY_COMMIT:-}
         AGY_IMAGE: ${RELAY_AGY_IMAGE:-agy-download}
-    container_name: d2d-relay
-    hostname: d2d-relay
+    container_name: d2d-relay-web
+    hostname: d2d-relay-web
+    networks:
+      default:
+        aliases:
+          - d2d-relay            # the tunnel's route for d2d-relay.pasdacs.com is http://d2d-relay:8000
     env_file:
       - path: .env
         required: false
     environment:
+      RELAY_ROLE: web
+      RELAY_DATABASE_URL: postgresql://relay_app:${RELAY_DB_PASSWORD}@d2d-relay-db:5432/relay
       HOST_PROJECTS_DIR: ${HOST_PROJECTS_DIR:-}
       HOST_LIBRARY_DIR: ${HOST_LIBRARY_DIR:-}
     volumes:
@@ -33,19 +76,34 @@ services:
       - agy-login:/opt/agy-login:ro
     ports:
       - "127.0.0.1:${RELAY_PORT:-8100}:8000"
-    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     stop_grace_period: 2m
-    security_opt:
-      - no-new-privileges:true
-    logging:
-      driver: json-file
-      options:
-        max-size: "20m"
-        max-file: "5"
 
-  # https://d2d-relay.pasdacs.com -> this container, through Cloudflare (no port is opened on this PC).
-  # The tunnel and its public hostname are made in the Cloudflare dashboard; its token goes in tunnel.env
-  # (one line: TUNNEL_TOKEN=...), a file of its own so the app container never sees it.
+  admin:
+    <<: *app
+    container_name: d2d-relay-admin
+    hostname: d2d-relay-admin
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      RELAY_ROLE: admin
+      RELAY_DATABASE_URL: postgresql://relay_app:${RELAY_DB_PASSWORD}@d2d-relay-db:5432/relay
+      RELAY_PUBLIC_URL: ${RELAY_ADMIN_PUBLIC_URL:-https://admin-d2d.pasdacs.com}
+    volumes:
+      - admin-data:/data
+    ports:
+      - "127.0.0.1:${RELAY_ADMIN_PORT:-8102}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    stop_grace_period: 1m
+
+  # https://d2d-relay.pasdacs.com -> d2d-relay-web and https://admin-d2d.pasdacs.com -> d2d-relay-admin, through
+  # Cloudflare (no port is opened on this PC). The tunnel and its public hostnames are made in the Cloudflare
+  # dashboard; its token goes in tunnel.env (one line: TUNNEL_TOKEN=...), a file of its own so no app container sees it.
   tunnel:
     image: cloudflare/cloudflared:2025.11.1
     container_name: d2d-relay-tunnel
@@ -55,14 +113,19 @@ services:
       - path: tunnel.env
         required: false
     depends_on:
-      - d2d-relay
+      - web
+      - admin
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
 
 volumes:
   d2d-data:
-    name: d2d-relay-data
+    name: d2d-relay-data           # the public site's keys and settings (and, from before the split, the old database)
+  db-data:
+    name: d2d-relay-db-data        # the database
+  admin-data:
+    name: d2d-relay-admin-data     # the admin portal's own keys
   claude-login:
     name: ${RELAY_CLAUDE_VOLUME:-d2d-relay-claude-login}
     external: ${RELAY_CLAUDE_EXTERNAL:-false}

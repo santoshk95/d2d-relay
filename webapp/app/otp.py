@@ -14,6 +14,10 @@ Who may sign in (orgs.py):
 The code: 6 digits, valid 10 minutes, 5 tries, then it dies. One code a minute and 6 an hour per address, 20 an hour
 per network. Only a salted hash is stored (in the platform's schema, whatever workspace the person belongs to). A
 session is made in the person's own workspace (their organisation's tenant), so the cookie carries it.
+
+The admin portal (portal.py, D2D_PORTAL=admin) uses the same codes for addresses at the admin domains (pasdacs.com)
+only. There is no "create your organisation" step there: a PASDACS address without an account joins the platform's
+own workspace (PASDACS). Its sessions are of their own kind (portal.SESSION_KIND) and cookie (d2d_admin).
 """
 from __future__ import annotations
 
@@ -30,9 +34,10 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from . import auth, db, identity, orgs, otp_mail
+from . import auth, db, identity, orgs, otp_mail, portal
 
 router = APIRouter()
+ADMIN_ONLY_TEXT = "Only PASDACS addresses can sign in to the D2D Relay admin portal."
 
 EMAIL = (os.environ.get("D2D_OTP_EMAIL") or "").strip().lower()
 SENDER = (os.environ.get("D2D_OTP_FROM") or EMAIL).strip()
@@ -139,6 +144,10 @@ def start(body: StartBody, request: Request):
     email = (body.email or "").strip().lower()
     if not EMAIL_RE.match(email):
         return _err("Type your email address.")
+    if portal.ADMIN and not portal.admin_email(email):
+        with db.use(db.PLATFORM):
+            db.audit("auth.otp_refused", None, {"ip": _ip(request), "reason": "admin portal", "domain": orgs.domain_of(email)}, "system")
+        return _err(ADMIN_ONLY_TEXT, 403)
     if orgs.public(email):
         with db.use(db.PLATFORM):
             db.audit("auth.otp_refused", None, {"ip": _ip(request), "reason": "public domain"}, "system")
@@ -197,7 +206,7 @@ def _check_code(email: str, code: str, request: Request) -> bool:
 def _signed_in(tid: str, uid: str, request: Request, next_hash: str) -> JSONResponse:
     """A session in the person's own workspace; the cookie carries that workspace (identity.cookie_value)."""
     with db.use(tid):
-        sid = identity.create_session(uid, "otp", _ip(request), request.headers.get("user-agent", ""))
+        sid = identity.create_session(uid, portal.SESSION_KIND if portal.ADMIN else "otp", _ip(request), request.headers.get("user-agent", ""))
         value = identity.cookie_value(sid)
     r = JSONResponse({"ok": True, "next": "/" + (next_hash if (next_hash or "").startswith("#/") else "")})
     r.set_cookie(identity.COOKIE, value, max_age=int(identity.SESSION_HOURS * 3600), httponly=True,
@@ -233,6 +242,8 @@ def verify(body: VerifyBody, request: Request):
     code = re.sub(r"\D", "", body.code or "")
     if len(code) != 6 or not EMAIL_RE.match(email) or orgs.public(email) or not _check_code(email, code, request):
         return _err("That code is wrong or has expired. Ask for a new one.")
+    if portal.ADMIN:
+        return _admin_signed_in(email, request, body.next)
     found = _account(email)
     if isinstance(found, JSONResponse):
         return found
@@ -259,6 +270,24 @@ def verify(body: VerifyBody, request: Request):
     return r
 
 
+def _admin_signed_in(email: str, request: Request, next_hash: str) -> JSONResponse:
+    """The admin portal, after a right code: a PASDACS person in the platform's own workspace (a new address joins
+    PASDACS first). Anyone else is refused, whatever the code."""
+    if not portal.admin_email(email):
+        return _err(ADMIN_ONLY_TEXT, 403)
+    found = _account(email)
+    if isinstance(found, JSONResponse):
+        return found
+    if found:
+        tid, u = found
+        if tid != db.PLATFORM:
+            return _err("This address belongs to another organisation's workspace, not PASDACS's.", 403)
+        uid = u["id"]
+    else:
+        uid = orgs.join(db.PLATFORM, email)
+    return _signed_in(db.PLATFORM, uid, request, next_hash or "#/orgs")
+
+
 def _signup(request: Request) -> dict | None:
     token = request.cookies.get(SIGNUP_COOKIE) or ""
     if not token:
@@ -283,6 +312,8 @@ def signup_pending(request: Request):
 def create_organisation(body: OrgBody, request: Request):
     """The first person from a business domain names their organisation: it is created, they own it, and they go on to
     the first-time setup (#/setup: the brand)."""
+    if portal.ADMIN:
+        return _err("Organisations are created on the public D2D Relay site.", 404)
     s = _signup(request)
     if not s:
         return _err("This step has expired. Sign in again to get a new code.", 401)

@@ -16,6 +16,9 @@
 <link rel="stylesheet" href="css/tenants.css">
 <link rel="stylesheet" href="css/org.css">
 <script>try{const t=JSON.parse(localStorage.getItem('d2d.theme'));if(t==='dark'||(t==null&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.dataset.theme='dark';}catch(e){}</script>
+<!-- D2D Relay: which site this is (the public site or the admin portal), before anything else runs -->
+<script src="portal.js"></script>
+<script>if(window.D2D_PORTAL&&D2D_PORTAL.portal==='admin'){document.documentElement.dataset.portal='admin';document.title='D2D Relay admin';}</script>
 </head>
 <body>
 <div class="app">

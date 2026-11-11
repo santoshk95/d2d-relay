@@ -29,6 +29,7 @@ from . import changes as changes_mod
 from . import home, mailer, monitor, notify, phases, registry, schedules, usage
 from . import doctor, errors
 from . import branding, edition, orgs, otp           # D2D Relay: the dashboard-only catalogue, organisations and credits, the email-code sign-in
+from . import portal                                 # D2D Relay: the public site or the admin portal (D2D_PORTAL)
 
 errors.install()                                # every traceback.print_exc() and thread crash reports Relay's own bugs (Relay Doctor)
 STATIC = Path(__file__).resolve().parent.parent / "static"
@@ -70,6 +71,10 @@ async def lifespan(_):
         orgs.init()                             # D2D Relay: the platform's own workspace is an organisation too
     except Exception:  # noqa: BLE001 - the other organisations still work; the log says why
         traceback.print_exc()
+    if portal.ADMIN:                            # D2D Relay's admin portal: no dashboards, AI engine, queue or schedules
+        db.audit("app.start", db.INSTANCE, {"auth": auth.MODE, "portal": portal.NAME}, "system")
+        yield
+        return
     _import_existing()
     try:
         usage.backfill()                        # once: cost rows for the runs recorded before phase 7
@@ -267,7 +272,15 @@ def _attachment_note(added: list[dict]) -> str:
 def healthz():
     """Liveness / readiness for Kubernetes and load balancers (no sign-in): the process and its database answer."""
     db.one("SELECT 1 AS ok")
-    return {"ok": True, "database": db.BACKEND, "instance": db.INSTANCE}
+    return {"ok": True, "database": db.BACKEND, "instance": db.INSTANCE, "portal": portal.NAME}
+
+
+@app.get("/portal.js")
+def portal_js():
+    """D2D Relay: which site this is, for the screens before anything else loads (index.html, login.html)."""
+    info = {"portal": portal.NAME, "admin_domains": portal.ADMIN_DOMAINS}
+    return Response(f"window.D2D_PORTAL = {json.dumps(info)};\n", media_type="text/javascript",
+                    headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/api/health")
@@ -498,8 +511,9 @@ def me():
     from . import tenancy
     u = auth.current.get()
     return {**{k: u[k] for k in ("id", "email", "name", "org_role")}, "teams": u["teams"],
-            "admin": auth.is_admin(u), "builder": auth.is_dev(u), "auth": auth.MODE, "instance": db.INSTANCE,
-            "tz": u.get("tz"), "guest": bool(u.get("home_tenant")), "tenant": tenancy.me_info(u), "org": orgs.me_info(u)}
+            "admin": auth.is_admin(u), "builder": auth.is_dev(u) and not portal.ADMIN, "auth": auth.MODE, "instance": db.INSTANCE,
+            "tz": u.get("tz"), "guest": bool(u.get("home_tenant")), "tenant": tenancy.me_info(u), "org": orgs.me_info(u),
+            "portal": portal.NAME}
 
 
 @app.get("/api/projects/{pid}")

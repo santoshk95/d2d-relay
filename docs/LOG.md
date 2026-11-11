@@ -113,6 +113,29 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       removing still work. New dashboard offers "From a warehouse" only when a connector is on.
     - Checked on an isolated container: 28 API checks, and the screens (Connections, the request dialog, New
       dashboard, Organisations).
+12. **Admin portal and split containers** (the user's request of 2026-11-11).
+    - **Containers** (`docker-compose.yml`): `d2d-relay-db` (PostgreSQL 17, private network only, password
+      `RELAY_DB_PASSWORD`), `d2d-relay-web` (the public site: web app and AI engine, also answers to `d2d-relay` so
+      the tunnel's route still works), `d2d-relay-admin` (the admin portal: web app only) and `d2d-relay-tunnel`. One
+      image, one role each (`RELAY_ROLE` in `docker/relay_init.py`: database | web | admin | all); the supervisor
+      starts only that role's parts and `relay-ctl health` checks only those. The reasons are in `docs/d2d-relay.md`
+      ("Containers"). `docker/move-to-split.ps1` moves the one-container install: dump, stop (kept for a rollback),
+      password, load, start.
+    - **Admin portal** (`app/portal.py`, `D2D_PORTAL=admin`): https://admin-d2d.pasdacs.com, PASDACS only.
+      Organisations, Requests (credit and connector requests) and Notifications. Two locks: Cloudflare Access (its
+      signed token is checked on every request through the tunnel: application, team, expiry, @pasdacs.com; until
+      `RELAY_ADMIN_ACCESS_TEAM` / `_AUD` are set, nothing gets through the tunnel) and the app's own email code for
+      `RELAY_ADMIN_DOMAINS` addresses, each of them a platform admin. Admin sessions have their own cookie
+      (`d2d_admin`) and kind (`otp-admin`): neither site accepts the other's sessions. The portal answers only its
+      own APIs and runs no AI engine, queue or schedules.
+    - **The public site has no platform powers any more:** every `/api/admin` path answers 404 there, the
+      Organisations page and menu item are gone, and info@pasdacs.com is the PASDACS workspace's owner like any
+      other owner. `orgs.platform_admin` is true only on the admin portal.
+    - `db.init` takes a PostgreSQL advisory lock, so the two sites starting together never change the schema at once.
+    - Checked on an isolated split stack built from this code: 56 API checks (the admin portal and the connectors
+      again), 10 checks of the Cloudflare Access token with a stand-in key (team, application, expiry, signature,
+      address; fail closed), the screens of both sites, and a rehearsal of the move with a copy of the live database
+      (126 tables loaded; PASDACS with its 70 credits and 4 dashboards).
 
 Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
 (JPEG) on Branding but has not picked a palette yet; leave it.
@@ -172,6 +195,9 @@ Cloudflare tunnel always carries `cf-connecting-ip` and still needs the emailed 
 
 ## Still open
 
+- **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
+  hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
+  Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
 - **Payments.** Add credits is a request by email until online payment exists; a platform admin adds the credits.
 - **Abuse.** Anyone with a business mailbox can create an organisation and spend 100 credits of AI time. If that
   happens, lower `RELAY_CREDITS_START` or add an approval step for new organisations.

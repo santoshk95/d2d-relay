@@ -62,10 +62,16 @@ def db_ready() -> bool:
 
 
 def health() -> int:
-    web, _ = answers("http://127.0.0.1:8000/healthz")
-    agent, _ = answers("http://127.0.0.1:8090/health")
-    db = db_ready() if embedded_db() else True
-    bad = [n for n, ok in (("web app", web), ("AI engine", agent), ("database", db)) if not ok]
+    """Only the parts this container's role runs (D2D Relay: RELAY_ROLE database | web | admin | all)."""
+    env = supervisor_env()
+    checks = []
+    if env.get("RELAY_WEB_AUTOSTART", "true") == "true":
+        checks.append(("web app", answers("http://127.0.0.1:8000/healthz")[0]))
+    if env.get("RELAY_AGENT_AUTOSTART", "true") == "true":
+        checks.append(("AI engine", answers("http://127.0.0.1:8090/health")[0]))
+    if embedded_db():
+        checks.append(("database", db_ready()))
+    bad = [n for n, ok in checks if not ok]
     print("healthy" if not bad else "not answering: " + ", ".join(bad))
     return 0 if not bad else 1
 
@@ -75,7 +81,8 @@ def ctl(*args: str) -> int:
 
 
 def status() -> int:
-    print(f"RELAY by PASDACS {os.environ.get('RELAY_VERSION', '')} · commit {os.environ.get('RELAY_COMMIT', '')[:12] or 'not recorded'}")
+    print(f"RELAY by PASDACS {os.environ.get('RELAY_VERSION', '')} · commit {os.environ.get('RELAY_COMMIT', '')[:12] or 'not recorded'}"
+          f" · role {supervisor_env().get('RELAY_ROLE', 'all')}")
     ctl("status")
     _, h = answers("http://127.0.0.1:8090/health", 5)
     if h:
