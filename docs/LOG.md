@@ -280,9 +280,28 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       dashboards (about 1.9 GB of scratch files), Python caches, and the merged `orgs-credits` branch (work is on
       `main`). No secrets in git or its history (scanned). Docker's build cache (about 10 GB) is kept: it makes a
       deploy build take minutes instead of much longer.
+18. **Deployed, cleaned up and reset to a fresh application** (the user's request of 2026-11-11: "deploy and clean up
+    and delete all organisations and making it fresh application").
+    - Before: one organisation (PASDACS, the platform's own), one person (info@pasdacs.com), four dashboards (Global
+      Ports Enterprise (demo), Retail Performance 360, Brand palette test, D2D smoke test), an uploaded logo. No
+      client organisation had signed up.
+    - Backed up first: the database (`data\backups\relay-db-20261111-064453.dump`), and the four dashboards and the
+      Ask Relay folder moved, not deleted, to `data\backups\pre-fresh-20261111-121538\projects` (1.3 GB; delete it
+      once nobody needs the old dashboards).
+    - **Deployed at 12:16 IST**, image `d2d-relay:5f59c2e` (item 17), web and admin only. While they were stopped,
+      the database `relay` was dropped and created again as a new install creates it (`CREATE DATABASE relay OWNER
+      relay_app ENCODING 'UTF8' TEMPLATE template0`); the app then set it up itself. The old single container's
+      database files (67 MB, `/data/postgres` in the volume `d2d-relay-data`) were deleted.
+    - Kept, as the site needs them: `.env`, `tunnel.env`, the state volumes (the encryption key, the sign-in mailbox's
+      token, the AI gateway's settings), the Claude sign-in, the visual library (the five visuals the image ships),
+      the helpers' queue folders and every backup.
+    - Checked afterwards: one organisation, PASDACS, made by the app (0 credits, all six connectors), one person,
+      info@pasdacs.com (its owner), no dashboards, sessions, requests or notifications; both sites answer; Microsoft
+      gives both sites a token for the sign-in mail (nothing sent); the Power BI file maker was restarted on its
+      guarded version and the watchdog sees it and the DAX checker online; no errors in the logs. Everyone signs in
+      again; PASDACS gives itself credits on the admin portal when it needs them.
 
-Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
-(JPEG) on Branding but has not picked a palette yet; leave it.
+Test data in the live install: none since the fresh start (item 18).
 
 ## How items 9-10 were checked (2026-11-10)
 
@@ -321,19 +340,17 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-- **Item 17 is committed and tested, not live yet.** It needs the user's go-ahead for the restart, then: in the
-  deploy folder `git fetch <repo> main` + `git merge --ff-only FETCH_HEAD`, `RELAY_COMMIT=<sha> docker compose
-  build web`, tag the image by commit, `docker compose up -d --no-deps web admin`, and restart the Power BI file
-  maker from the deploy folder (its guard lives in `pbix.ps1`; the converter is read on each request).
-- **Leftovers waiting for the user's yes before deletion:** the test dashboards "D2D smoke test" and "Brand palette
-  test", the old single container's database files (67 MB in the volume `d2d-relay-data`, `/data/postgres`; the dump
-  `data\backups\pre-split-20261111-090052.dump` is their backup), and the 16 files the old publish step left in the
-  four `powerbi\` folders (README.txt, Prototype.html, DAX check.txt, Review gates.txt; nothing reads them).
 - **The two PC helpers do not start by themselves yet (one-time, for the user).** Put shortcuts to
   `daxcheck\start-daxcheck.cmd` and `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC
   restarts"); Claude Code may not add them. Until then, after a restart of the PC someone signs in and starts both
-  by hand; the watchdog warns PASDACS after 10 minutes without either. Rollback of item 16 if ever needed:
-  `docker tag d2d-relay:aec0d13 d2d-relay:latest`, then `docker compose up -d --no-deps web admin`.
+  by hand; the watchdog warns PASDACS after 10 minutes without either.
+- **Going back, if ever needed.** The code: `docker tag d2d-relay:ae18feb d2d-relay:latest` (the version before item
+  17), then `docker compose up -d --no-deps web admin`. The data before the fresh start: stop web and admin, load
+  `data\backups\relay-db-20261111-064453.dump` into an emptied `relay` database (`pg_restore --no-owner
+  --role=relay_app`) and move the folders in `data\backups\pre-fresh-20261111-121538\projects` back.
+- **Older images:** `d2d-relay:aec0d13` is still the database container's image (its database role has not changed
+  since, so it was left running) and `d2d-relay:ae18feb` is kept for going back; both can go once the database
+  container is recreated on the current image.
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
@@ -348,8 +365,9 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   now go to any business address; the sender stays info@pasdacs.com.
 - **Row-level security (backlog, 2026-11-10).** D2D can't set up RLS yet. The plan has no roles and the Power BI file
   it makes has none, so everyone who opens a report sees every row. Large organisations will ask for it. What to build,
-  and when it counts as done, is in `docs/rls-backlog.md`. The enterprise demo in the PASDACS workspace, Global Ports
-  Enterprise (demo), has two roles added by hand. A change request on that dashboard would drop them.
+  and when it counts as done, is in `docs/rls-backlog.md`. The enterprise demo with two roles added by hand, Global
+  Ports Enterprise (demo), was archived in the fresh start (item 18); its .pbix with both roles is also in
+  `C:\Users\santosh.k\PbixBot\Output\Global Ports Enterprise Stress`.
 
 ## Hand-over rules for this repository
 
