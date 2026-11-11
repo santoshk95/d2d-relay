@@ -338,6 +338,73 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     meaning, room to grow) and the user chose it as written, singular. **Deployed on 2026-11-11 at 13:47 IST** (image
     `d2d-relay:8689305`, web and admin); the live sign-in page and screens show it, no errors in the logs.
 
+21. **Turnkey deployments, sign-in alerts, prompt injection** (the user's request of 2026-11-11: "drop rls and client
+    own warehouse it will be handle as turnkey deployment after their contact me, abuse monitor send me alerts when
+    ever a user logs in and ensure its safe from prompt injection in all places ... delete the old files, but keep the
+    large dashboard as sample").
+    - **Turnkey.** An organisation's own warehouse or database, and row-level security, are no longer backlog items
+      for the shared product: PASDACS sets them up as a turnkey deployment after the organisation gets in touch. The
+      Connections page, its request (email and notification) and the 403 for a switched-off connector say so;
+      `docs/rls-backlog.md` is marked dropped.
+    - **Sign-in alerts** (`app/signin_alerts.py`, called from `otp._signed_in` for every sign-in: public site, admin
+      portal, a colleague joining, a new organisation). One email to info@pasdacs.com per sign-in, sent in the
+      background, with who, organisation, site, time, network and country, browser, first sign-in or not, codes asked
+      from that network in the last hour and credits; audit `signin.alert`. `RELAY_SIGNIN_ALERTS=0` turns them off,
+      `RELAY_SIGNIN_ALERTS_TO` changes the address; without mail they go to the log (`docs/d2d-relay.md`).
+    - **Prompt injection** (data files and attachments are untrusted; `docs/d2d-relay.md`, "What the AI can reach"):
+      - Claude Code ran with Read/Glob/Grep allowed on every path, and Claude Code lets read-only shell commands
+        (`cat`, `ls`, `grep` ...) run without asking: an injected instruction could read another organisation's
+        dashboards (all project folders share one group) or the Claude sign-in. Runs also had Claude Code's
+        scheduling, remote-trigger, messaging and workflow tools and about 17 skills. Now a managed policy
+        (`agent/managed-settings.json` → `/etc/claude-code/managed-settings.json`, above every other settings file):
+        reads and writes outside the dashboard's folder refused, only its own hook runs, CLAUDE.md, project.json and
+        `.claude/` not editable; and `--tools` gives a run Read, Write, Edit, Glob, Grep, the shell and its task list
+        only, with `--strict-mcp-config` and `--disable-slash-commands` (no MCP servers, no skills). A managed hook
+        (`agent/bash_guard.py`) lets the shell run `genbi` dashboard commands, on their own or chained with `&&`/`;`
+        as the agent often does, and nothing else: no other program, pipe, redirection or substitution, no `repo`,
+        `deck` or `doc`. Replayed on the 49 shell commands of the Global Ports build, it refuses none of them.
+        (`--restricted` confines the same way but stops Claude Code loading the folder's CLAUDE.md, the agent's
+        manual, so it is not used.)
+      - The toolkit refused nothing: `genbi read /any/file`, `genbi visual source ../../..`, `--out` anywhere. Every
+        path it is given must now be inside the folder (`cli._inside_project`), visual names must be names.
+      - `genbi sql`, the prototype queries and Ask Relay ran DuckDB with full file and network access (any file,
+        any URL). Each connection is now confined to its folders, without network, locked (`data.confine`;
+        DuckDB 1.2.2, which has `allowed_directories`).
+      - The prototype (HTML from the AI) was served on the app's own origin with no sandbox, so a script in it could
+        have used the viewer's session. Now it is sandboxed (CSP `sandbox allow-scripts`, no network, framed by the
+        app only, and `sandbox` on every frame); it reports its height by message. The dashboard name and theme
+        values are written into it as text (a theme value that is not a colour gets the default), text boxes as text.
+      - Headless Chromium in the container (display check, custom-visual test, renders) had network: now none (no
+        name lookups, a dead proxy for everything including this container's services, WebSockets refused).
+      - A home-page tooltip put labels in as HTML: escaped.
+      - Checked and fine as they were: Ask Relay's AI has no tools and its SQL is checked read-only; the branding
+        palettes are validated hex colours; the other screens build text with `textContent` or escape it; customers
+        cannot pick the Codex, Gemini or Antigravity engines (the AI policy allows Claude-based providers only and
+        `/api/admin` answers 404 on the public site); the DAX checker runs DAX over inline tables only.
+    - **Database reconnect** (`db.py`): after the database container is recreated, the web app's connection is closed;
+      it answered 500 until a restart. A query outside a transaction now reconnects and retries once.
+    - **Housekeeping:** the old archive folders are deleted; the Global Ports enterprise dashboard is kept as a sample
+      (`data\samples\global-ports-enterprise-demo-10c1`, with a README); old images removed, all containers on the
+      current image.
+    - **Checked** (a test image from this code; a fresh test stack, removed afterwards):
+      - the 120 API checks and the 14 Ask Relay credit checks pass; 13 sign-ins gave 13 alerts (3 from the admin
+        portal) and 13 audit entries;
+      - real Claude Code through the agent service, with files planted outside the folder: all 14 ways out refused
+        (Read, Glob and Grep outside, `cat`, `ls`, `curl`, `genbi profile; cat ...`, `genbi read` and `genbi sql`
+        on another folder, writes to /tmp, `~/.claude`, `.claude/settings.json`, an edit of CLAUDE.md, `genbi repo`),
+        the normal steps work, and CLAUDE.md is loaded; another session's transcript and saved output: 5 ways in,
+        all refused (a run reads only its own saved output); Claude Code's start-up report: Read, Write, Edit, Glob,
+        Grep, Bash and the task list, no MCP servers, no skills; Ask Relay's runs: no tools;
+      - the shell guard: 64 cases, and the 49 shell commands of the Global Ports build: none refused;
+      - a hostile prototype (23 checks): no cookie, no use of the app's API as the person (read or write), no
+        internet, no storage, its height still reported, nobody added to the organisation;
+      - one real dashboard build with Claude on the test stack: plan in 45 s, prototype in 6.5 min, 38 `genbi`
+        commands, nothing refused; the gates pass, the display check included (3 pages, 25 visuals drawn, no
+        network); the DAX check was skipped (the test stack cannot reach this PC's DAX checker);
+      - the dashboard page shows that prototype sandboxed and sized from its height message (7 checks, Chromium).
+        Claude's built-in browser pane refuses every frame with a `sandbox` attribute (ERR_BLOCKED_BY_CLIENT): a
+        quirk of that pane, not of the site.
+
 Test data in the live install: none since the fresh start (item 18).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -381,32 +448,34 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   `daxcheck\start-daxcheck.cmd` and `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC
   restarts"); Claude Code may not add them. Until then, after a restart of the PC someone signs in and starts both
   by hand; the watchdog warns PASDACS after 10 minutes without either.
-- **Going back, if ever needed.** The code: every deployed version is tagged by its commit; `docker tag
-  d2d-relay:<sha> d2d-relay:latest`, then `docker compose up -d --no-deps web admin` (before item 20: `939b135`;
-  before item 19: `5f59c2e`). The data before the fresh start: stop web and admin, load
-  `data\backups\relay-db-20261111-064453.dump` into an emptied `relay` database (`pg_restore --no-owner
-  --role=relay_app`) and move the folders in `data\backups\pre-fresh-20261111-121538\projects` back.
-- **Older images:** `d2d-relay:aec0d13` is still the database container's image (its database role has not changed
-  since, so it was left running); `ae18feb`, `5f59c2e` and `939b135` are kept for going back. They can go once the
-  database container is recreated on the current image (a few seconds without the database).
+- **Going back, if ever needed.** The code: every version is a commit on GitHub; build it in the deploy folder
+  (`git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`), then `docker compose up -d --no-deps web
+  admin`. The data before the fresh start: `data\backups\relay-db-20261111-064453.dump` (no dashboards are left
+  from then but the sample below).
+- **Images:** since 2026-11-11 (item 21) all three containers run the current image; older images were removed.
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
-- **Payments.** Online payment is not built: an organisation requests credits and PASDACS approves them (item 13).
+- **Payments: Razorpay** is next (the user will provide test keys). Until then an organisation requests credits
+  and PASDACS approves them (item 13). Needed to build it: the test Key ID and Key Secret, a webhook secret (all
+  three go in `.env`, never in commits), the credit packs and their prices in ₹ (GST included or added), who may pay
+  (owners only, or anyone in the organisation), invoices (Razorpay's receipt, or a GST invoice from D2D Relay) and
+  the refund rule.
 - **Abuse.** Anyone with a business mailbox can sign up and create an organisation (as asked). Since item 19 it gets
-  50 credits at once (about two dashboards' AI time) without anyone's approval; more need PASDACS's approval.
+  50 credits at once (about two dashboards' AI time) without anyone's approval; more need PASDACS's approval. Since
+  item 21 PASDACS gets an email for every sign-in, and pauses an organisation or switches a person off on the admin
+  portal.
 - **Brand palettes cost no credits** (as asked; Ask Relay has cost credits since item 19). Their AI cost is recorded in
   `usage` only.
-- **Connector sign-in for clients.** BigQuery's "Sign in with Google", and the OAuth options of Snowflake and Fabric,
-  need an OAuth client in that organisation's own workspace, and nobody can set one up there yet. Client
-  organisations use a service-account key, a password or a key pair instead.
+- **Turnkey deployments (the user's decision of 2026-11-11):** an organisation that wants its own warehouse or
+  database connected, or row-level security, gets a turnkey deployment after it contacts PASDACS. Neither is built
+  into the shared D2D Relay (the backlog items for client connector sign-in and RLS are dropped); the Connections
+  page and its request say so.
 - **NOT DONE (from item 2):** an Exchange ApplicationAccessPolicy that limits the mail app to info@pasdacs.com. Codes
   now go to any business address; the sender stays info@pasdacs.com.
-- **Row-level security (backlog, 2026-11-10).** D2D can't set up RLS yet. The plan has no roles and the Power BI file
-  it makes has none, so everyone who opens a report sees every row. Large organisations will ask for it. What to build,
-  and when it counts as done, is in `docs/rls-backlog.md`. The enterprise demo with two roles added by hand, Global
-  Ports Enterprise (demo), was archived in the fresh start (item 18); its .pbix with both roles is also in
-  `C:\Users\santosh.k\PbixBot\Output\Global Ports Enterprise Stress`.
+- **The enterprise sample:** Global Ports Enterprise (demo), with two row-level security roles added by hand, is
+  kept in `data\samples\global-ports-enterprise-demo-10c1` (its README says how to use it); its .pbix with both
+  roles is also in `C:\Users\santosh.k\PbixBot\Output\Global Ports Enterprise Stress`.
 
 ## Hand-over rules for this repository
 

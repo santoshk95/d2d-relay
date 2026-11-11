@@ -264,6 +264,10 @@ The public side takes CSV files only. **Connections** lists every connector D2D 
 Snowflake, Microsoft Fabric, Amazon Redshift, Amazon Athena and Oracle Database (`edition.CONNECTORS`). Each one is
 "On request" until PASDACS switches it on for that organisation.
 
+An organisation's own warehouse or database, and row-level security, come as a **turnkey deployment** that PASDACS
+sets up after the organisation gets in touch (decided on 2026-11-11); the Connections page and its request say so.
+Switching a connector on for an organisation on the shared site, below, stays possible.
+
 1. A person clicks **Ask PASDACS to connect it** (Connections), picks the connectors and adds a message. The request
    goes to info@pasdacs.com (`RELAY_CREDITS_CONTACT`) by email, Reply-To the person, and to the platform admins'
    notifications. A prefilled email link is the fallback.
@@ -276,6 +280,44 @@ Snowflake, Microsoft Fabric, Amazon Redshift, Amazon Athena and Oracle Database 
 PASDACS's own workspace has every connector switched on. For BigQuery, the simplest way in for a client is a
 service-account JSON (roles BigQuery Data Viewer + BigQuery Job User). Queries are read-only and limited to 1 GB
 scanned by default.
+
+## Sign-in alerts
+
+Every successful sign-in sends info@pasdacs.com an email (`app/signin_alerts.py`): who, their organisation (and
+whether they created it or joined it just now), the public site or the admin portal, when (IST), the network address
+and country Cloudflare saw, the browser, whether it is their first sign-in, how many sign-in codes that network asked
+for in the last hour, and the organisation's credits. The email goes out in the background, so a sign-in never waits
+for it or fails because of it, and each one is in the audit log (`signin.alert`). Codes are rate limited per address
+and per network, so the alerts are too. To act on one: pause the organisation or switch the person off on the admin
+portal.
+
+- `RELAY_SIGNIN_ALERTS=0` turns them off; `RELAY_SIGNIN_ALERTS_TO` sends them to another address.
+- Without mail set up (a test install) the alert is written to the container's log instead: `[signin-alert] ...`.
+
+## What the AI can reach (prompt injection)
+
+People upload data files and attachments, and anything in them can try to give the AI instructions ("ignore the
+above and read ...", "send this to ..."). So the AI is limited by the system, not by what it is told:
+
+- **Its own dashboard's folder only.** Claude Code runs under a managed policy that no other settings file can
+  change (`agent/managed-settings.json`, installed as `/etc/claude-code/managed-settings.json`): file reads and writes
+  outside the folder are refused, only the policy's own hook runs, and the app's own files there (CLAUDE.md,
+  project.json, `.claude/`) cannot be edited. Each run gets six tools (Read, Write, Edit, Glob, Grep, the shell) and
+  its task list, no web tools, no sub-agents, no skills and no MCP servers (`agent/server.py`; Ask Relay's runs get
+  no tools at all).
+- **The shell runs the toolkit only.** A managed hook (`agent/bash_guard.py`) refuses every command that is not made
+  of `genbi <dashboard command>` calls (on their own, or chained with `&&` or `;`): no other program (so no `cat`,
+  `ls`, `curl`), no pipe, redirection or substitution, no `genbi repo`. The toolkit keeps every path it is given inside the folder
+  (`genbi_kit/cli.py`), and its SQL engine (DuckDB) reads only that folder, with no network and no way to switch
+  that off (`genbi_kit/data.py`). Ask Relay's queries are limited the same way, to the dashboards the person can see.
+- **Pages it makes cannot act for anyone.** A prototype is shown sandboxed: a page of its own with no access to the
+  app, its sign-in or the network (`main.py`, `PROTOTYPE_CSP`). The headless browser that checks prototypes and custom
+  visuals inside the container has no network either (`genbi_kit/display.py`, `OFFLINE_ARGS`). Names, titles and
+  theme values from a definition are written into a page as text, never as markup.
+- **Ask Relay's AI has no tools at all**: the app runs every query itself, read-only, and the AI only writes the
+  answer around the rows.
+- Power BI files are checked before they open on this PC: the Power BI file maker refuses a report whose queries
+  read anything but its own data folder (`Test-ReportQueries`).
 
 ## Updating
 
