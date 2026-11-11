@@ -317,7 +317,10 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       the 50 back) and 14 Ask Relay credit checks (charged and given back when unanswered; the 2nd question free,
       the 6th charged; credits used and questions left after 1, 5 and 6 answers; 402 with the reason; a
       conversation with questions left goes on with 5 credits). The screens: the chip, Ask Relay, Organisation.
-    - Also, to give PASDACS (made in the fresh start with 0) the new default: a "Starting credits" entry of 50.
+    - **Deployed on 2026-11-11 at 13:20 IST** (image `d2d-relay:939b135`, web and admin; the user's go-ahead). PASDACS,
+      made in the fresh start with 0, got the new default as a "Starting credits" entry of 50. Checked afterwards:
+      the prices on the server (25, 10, 10 for 5 questions, 50 to start), both sites answer, the new screens are
+      served, the watchdog sees both helpers online, the sign-in mail works, no errors in the logs.
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -358,11 +361,6 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-- **Item 19 is built and tested, not live yet:** Claude Code's auto mode refused the restart without the user's
-  go-ahead. The deploy folder is on `939b135` and the image `d2d-relay:939b135` is `latest`. To go live, in the deploy
-  folder (nobody building): `docker compose up -d --no-deps web admin`, then give PASDACS its 50 starting credits:
-  `docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -c "from app import db, orgs;
-  orgs._entry(db.PLATFORM, 'start', 50, note='Starting credits', who={})"`.
 - **The two PC helpers do not start by themselves yet (one-time, for the user).** Put shortcuts to
   `daxcheck\start-daxcheck.cmd` and `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC
   restarts"); Claude Code may not add them. Until then, after a restart of the PC someone signs in and starts both
