@@ -168,6 +168,10 @@ Cloudflare tunnel always carries `cf-connecting-ip` and still needs the emailed 
   the database.
 - **NOT DONE (from item 2):** an Exchange ApplicationAccessPolicy that limits the mail app to info@pasdacs.com. Codes
   now go to any business address; the sender stays info@pasdacs.com.
+- **Row-level security (backlog, 2026-11-10).** D2D can't set up RLS yet. The plan has no roles and the Power BI project
+  it writes has none, so everyone who opens a report sees every row. Large organisations will ask for it. What to build,
+  and when it counts as done, is in `docs/rls-backlog.md`. The enterprise demo in the PASDACS workspace, Global Ports
+  Enterprise (demo), has two roles added by hand. A change request on that dashboard would drop them.
 
 ## Hand-over rules for this repository
 
