@@ -223,6 +223,25 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
         finishes it. A second maker for the same data folder refuses to start.
       - The screens in a browser: the banners while making and when ready, "not made yet", the download card, the
         Versions, Activity and Details tabs, the sign-in page.
+    - **Deployed on 2026-11-11 at 10:55 IST** (image `d2d-relay:335c2b7`; `docker compose up -d --no-deps web admin`,
+      the database container untouched; the user's go-ahead). The Power BI file maker was started on the D2D Relay
+      PC first, from the deploy folder. Then the four dashboards published before got their .pbix through the `pbix`
+      job, queued without signing in: `docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -c
+      "from app import worker; worker.enqueue('<dashboard id>', 'pbix')"`. All four done by 11:01. Each live download holds
+      only `<Report>/<Report>.pbix` and its CSVs (Global Ports: the .pbix only, 170.2 MB) and refreshes from
+      `C:\D2D Relay Data\<Report>\data\`. The sign-in page says "Power BI file (.pbix)"; no errors in the logs.
+    - **Production readiness** (the user's request, same day):
+      - the app's watchdog warns PASDACS when the Power BI file maker has been offline for 10 minutes (critical when
+        a file is waiting), with the maker's own reason when it stopped on an error, and says when it is back; the
+        metrics have `d2d_pbix_up` and its queue (`monitor.py`, checked against a fake heartbeat in a throwaway
+        container: online, 5 and 11 minutes offline, a waiting request, an error, back again);
+      - the DAX checker refuses a second copy on the same queue, like the maker (checked);
+      - backups in the split layout: a backup taken in `d2d-relay-web` at 11:03 IST holds the control plane, the
+        database, the projects and the secrets (48 s, 13 MB; the demo's two big CSVs and its 170 MB download are
+        left out, as designed); the nightly one runs at 02:30 IST;
+      - the PC does not sleep (the user runs a keep-awake script). Adding the two helpers to the Startup folder was
+        refused to Claude Code as persistence, so that one-time step is the user's (`docs/d2d-relay.md`, "After the
+        PC restarts").
 
 Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
 (JPEG) on Branding but has not picked a palette yet; leave it.
@@ -264,20 +283,11 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-- **Item 16 is built, tested and staged, not live yet (2026-11-11 10:36 IST).** The deploy folder is on `335c2b7`,
-  the image is built (`d2d-relay:latest` = `d2d-relay:335c2b7`; the running one stays `d2d-relay:aec0d13`), and the
-  Power BI file maker is already running on the D2D Relay PC (started from the deploy folder; it waits for requests).
-  Claude Code's auto mode refused the restart as a production deploy. To go live, in the deploy folder (nobody
-  building; the database container is not touched):
-
-  ```
-  docker compose up -d --no-deps web admin
-  docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -c "from app import worker; [worker.enqueue(p, 'pbix') for p in ('d2d-smoke-test-972d', 'brand-palette-test-dcef', 'retail-performance-360-759e', 'global-ports-enterprise-demo-10c1')]"
-  ```
-
-  The second command makes the .pbix of the four dashboards published before (about 5 minutes in all; or press
-  "Make the Power BI file" on each). Rollback: `docker tag d2d-relay:aec0d13 d2d-relay:latest`, then the first
-  command again.
+- **The two PC helpers do not start by themselves yet (one-time, for the user).** Put shortcuts to
+  `daxcheck\start-daxcheck.cmd` and `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC
+  restarts"); Claude Code may not add them. Until then, after a restart of the PC someone signs in and starts both
+  by hand; the watchdog warns PASDACS after 10 minutes without either. Rollback of item 16 if ever needed:
+  `docker tag d2d-relay:aec0d13 d2d-relay:latest`, then `docker compose up -d --no-deps web admin`.
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.

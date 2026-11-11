@@ -27,7 +27,7 @@ from pydantic import BaseModel
 
 from genbi_kit import daxcheck
 
-from . import auth, db, instances, notify, worker
+from . import auth, db, instances, notify, pbix, worker
 
 router = APIRouter()
 
@@ -36,7 +36,8 @@ TICK_S = int(os.environ.get("D2D_WATCH_S", "60"))
 SLOW_S = 2.0
 DEFAULTS = {"chat_stuck_min": 15, "queue_stalled_min": 5, "queue_deep": 5, "daxcheck_backlog": 3, "daxcheck_wait_min": 10,
             "schedule_late_min": 10, "errors_15min": 10, "build_grace_min": 10,
-            "daxcheck_offline_min": 10, "backup_max_h": 36}            # pre-work 0.3 / 0.4 (build-plan v2)
+            "daxcheck_offline_min": 10, "backup_max_h": 36,            # pre-work 0.3 / 0.4 (build-plan v2)
+            "pbix_offline_min": 10}                                    # D2D Relay: the Power BI file maker
 
 HTTP: dict[tuple, list] = {}                       # (route, method, status class) -> [count, seconds]
 ERRORS: collections.deque = collections.deque(maxlen=500)   # times of 5xx responses
@@ -92,6 +93,16 @@ def daxcheck_queue() -> dict:
     files = [f for f in req.glob("*.json") if not f.name.endswith(".model.json")] if req.exists() else []
     oldest = min((f.stat().st_mtime for f in files), default=None)
     return {"online": bool(daxcheck.available()), "pending": len(files), "oldest_s": round(time.time() - oldest) if oldest else 0}
+
+
+def pbix_queue() -> dict:
+    """D2D Relay's Power BI file maker on the Windows PC: up, its waiting requests, and why it stopped (its own reason)."""
+    req = pbix.QUEUE / "requests"
+    files = list(req.glob("*.json")) if req.exists() else []
+    oldest = min((f.stat().st_mtime for f in files), default=None)
+    beat = pbix.heartbeat() or {}
+    return {"online": bool(pbix.available()), "pending": len(files), "oldest_s": round(time.time() - oldest) if oldest else 0,
+            "error": beat.get("error") if beat.get("state") == "error" else None}
 
 
 async def _agent() -> dict:
@@ -156,7 +167,7 @@ async def snapshot() -> dict:
     cost = {r["kind"]: r["c"] for r in db.q("SELECT kind, COALESCE(SUM(cost_usd), 0) c FROM usage WHERE ts >= ? GROUP BY kind", (start,))}
     return {"time": now, "instance": db.INSTANCE, "agent": agent, "jobs": jobs, "waiting": worker.waiting(),
             "running": {**cur, "age_s": round(now - cur["started"]) if cur.get("started") else None},
-            "daxcheck": daxcheck_queue(), "schedules": sched, "schedules_late": late["n"],
+            "daxcheck": daxcheck_queue(), "pbix": pbix_queue(), "schedules": sched, "schedules_late": late["n"],
             "sessions": db.one("SELECT count(*) n FROM sessions WHERE expires > ?", (now,))["n"],
             "cost_month": cost, "errors_15min": sum(1 for t in ERRORS if t > now - 900),
             "workspaces": await _workspaces(), "runners": await _runners(), "alerts": active(), "last_tick": STATE["last_tick"],
@@ -175,6 +186,8 @@ def metrics_text(s: dict) -> str:
         out += [f'd2d_agent_lane_busy{{lane="{lane}"}} {int(busy)}', f'd2d_agent_lane_busy_seconds{{lane="{lane}"}} {round(s["time"] - since) if since else 0}']
     d = s["daxcheck"]
     out += [f"d2d_daxcheck_up {int(d['online'])}", f"d2d_daxcheck_queue_pending {d['pending']}", f"d2d_daxcheck_queue_oldest_seconds {d['oldest_s']}"]
+    m = s["pbix"]
+    out += [f"d2d_pbix_up {int(m['online'])}", f"d2d_pbix_queue_pending {m['pending']}", f"d2d_pbix_queue_oldest_seconds {m['oldest_s']}"]
     out += [f'd2d_schedules{{status="{k}"}} {v}' for k, v in sorted(s["schedules"].items())] + [f"d2d_schedules_late {s['schedules_late']}"]
     out += [f"d2d_sessions_active {s['sessions']}"] + [f'd2d_cost_month_usd{{kind="{k}"}} {v:.4f}' for k, v in sorted(s["cost_month"].items())]
     out += ["# TYPE d2d_http_requests_total counter", "# TYPE d2d_http_request_seconds_total counter"]
@@ -239,6 +252,19 @@ def rules(s: dict) -> dict[str, dict]:
                                          "daxcheck\\start-daxcheck.cmd runs."}
     else:
         STATE.pop("dax_off_since", None)
+    m = s["pbix"]                                         # D2D Relay: every publish ends with the Power BI file maker
+    if not m["online"]:
+        STATE.setdefault("pbix_off_since", now)
+        why = f" It stopped: {m['error']}" if m.get("error") else ""
+        if m["pending"]:
+            found["pbix_down"] = {"severity": "critical", "text": f"{m['pending']} Power BI file(s) are waiting and the Power BI file maker on "
+                                  f"the Windows PC is not running (start pbix\\start-pbix.cmd).{why}"}
+        elif now - STATE["pbix_off_since"] > t["pbix_offline_min"] * 60:
+            found["pbix_offline"] = {"severity": "warning", "text": f"The Power BI file maker on the Windows PC has been offline for "
+                                     f"{round((now - STATE['pbix_off_since']) / 60)} min: nothing can be published until "
+                                     f"pbix\\start-pbix.cmd runs.{why}"}
+    else:
+        STATE.pop("pbix_off_since", None)
     lb = s.get("last_backup")
     if lb and now - lb > t["backup_max_h"] * 3600:
         found["backup_old"] = {"severity": "warning", "text": f"The last backup was {round((now - lb) / 3600)} h ago (the nightly one runs at "

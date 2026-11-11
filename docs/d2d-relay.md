@@ -78,6 +78,7 @@ building. It dumps the database into `data\backups`, stops the old container (ke
 
 Start the DAX checker for D2D Relay too (it watches `data\projects\.daxcheck`, not RELAY's queue). Run
 `daxcheck\start-daxcheck.cmd`. It runs side by side with RELAY's checker. Then start the Power BI file maker (below).
+To have both start by themselves after a restart, see "After the PC restarts".
 
 ### Power BI file maker
 
@@ -100,10 +101,26 @@ the app writes and checks the report, then asks the maker on this PC for the fil
 - **When it is not running:** publishing waits two minutes, then stops with "The Power BI file maker is not running
   on the D2D Relay PC", and every PASDACS person gets a notification (at most once an hour). Start it, then press
   Retry on the dashboard. A dashboard published earlier shows "Make the Power BI file" instead of the download.
+  The app's watchdog also warns PASDACS when the maker has been offline for 10 minutes (as it does for the DAX
+  checker), and says when it is back.
 - **When a file fails:** the dashboard shows the reason; the maker keeps that run's log and a picture of Power BI
   Desktop's window in `data\projects\.pbix\work\<id>` for a day.
 - It shares a lock (`Local\PbixBot-Convert`) with the UiPath PbixFromZip bot, so the two never drive Power BI
   Desktop at the same time.
+
+### After the PC restarts
+
+Docker Desktop starts when you sign in to Windows, and the containers come back by themselves. The two helpers
+start by themselves too once their shortcuts are in the Startup folder (one-time; Windows does not let an app put
+them there for you):
+
+1. Press Win+R, type `shell:startup` and press Enter: the Startup folder opens.
+2. In another window, open `C:\Users\santosh.k\Downloads\D2D Relay`. Right-drag `daxcheck\start-daxcheck.cmd` into
+   the Startup folder and choose **Create shortcuts here**. Do the same with `pbix\start-pbix.cmd`.
+
+Until someone signs in after a restart (a Windows update can restart the PC), the site is down. Keep the PC from
+sleeping (a keep-awake script does it) and signed in. A second copy of either helper refuses to start, so a
+shortcut plus a double-click never runs two.
 
 ## One-time setup
 

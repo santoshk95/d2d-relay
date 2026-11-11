@@ -25,6 +25,17 @@ function Find-PbiBin {
 
 $Bin = Find-PbiBin
 $Queue = [IO.Path]::GetFullPath($Queue)
+
+# One checker per queue: a second one would take the same requests (it starts at sign-in, and may be started by hand)
+$key = [BitConverter]::ToString([Security.Cryptography.SHA1]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($Queue.ToLowerInvariant()))).Replace('-', '').Substring(0, 16)
+$Single = New-Object Threading.Mutex($false, "Local\D2DRelay-DaxCheck-$key")
+$mine = $false
+try { $mine = $Single.WaitOne(0) } catch [Threading.AbandonedMutexException] { $mine = $true }
+if (-not $mine) {
+    Write-Host "The D2D Relay DAX checker is already running for $Queue (another window). This one closes."
+    Start-Sleep -Seconds 8
+    exit 1
+}
 $Requests = Join-Path $Queue "requests"
 $Results = Join-Path $Queue "results"
 New-Item -ItemType Directory -Force $Requests, $Results | Out-Null
