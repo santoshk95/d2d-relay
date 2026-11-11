@@ -330,6 +330,9 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     Decision"; it said "BI & dashboards"), in the sign-in code email and the other emails' footer, the module's
     description (it said "Data to Decisions dashboards"), the brand's tagline (it said "Data to dashboards"), the Ask
     Relay export footer (it said "Ask D"), the agent's instructions and the docs. The screens checked on a test stack.
+    Asked which was better, Claude Code recommended Data to Decision (what the product is for, the platform's own
+    meaning, room to grow) and the user chose it as written, singular. **Deployed on 2026-11-11 at 13:47 IST** (image
+    `d2d-relay:8689305`, web and admin); the live sign-in page and screens show it, no errors in the logs.
 
 Test data in the live install: none since the fresh start (item 18).
 
