@@ -158,10 +158,30 @@ def visuals_mode_errors(d: dict, mode: str) -> list[str]:
     return out
 
 
+PLAIN_FILE = re.compile(r'^[^\\/:*?"<>|.][^\\/:*?"<>|]*$')       # a file in data/: no folder, drive or leading dot
+
+
+def source_errors(raw: dict) -> list[str]:
+    """Where tables read from. The Power BI file is refreshed on the D2D Relay PC, so a table reads only a file of its
+    own data folder (csv / extract), DAX or a generated date table: never Power Query written by hand."""
+    out = []
+    for t in raw.get("tables") or []:
+        if not isinstance(t, dict):
+            continue
+        if "m" in t:
+            out.append(f"table {t.get('name')}: Power Query written by hand (m:) is not allowed; use csv:, extract:, "
+                       f"dax: or date_table")
+        for key in ("csv", "extract"):
+            if key in t and not (isinstance(t[key], str) and PLAIN_FILE.match(t[key])):
+                out.append(f"table {t.get('name')}: {key}: must name a file in data/, without a folder: {t[key]!r}")
+    return out
+
+
 def definition_errors(raw: dict, workdir: Path, check_sql: bool = True) -> tuple[list[str], dict | None]:
     """All problems with a definition (model, DAX references, visuals, optional prototype SQL)."""
     errors = [f"[{m.get('name')}]: {_unquoted(m['format'])}" for m in (raw.get("measures") or [])
               if isinstance(m, dict) and m.get("format") is not None and not isinstance(m["format"], str)]
+    errors += source_errors(raw)
     if errors:
         return errors, None
     try:

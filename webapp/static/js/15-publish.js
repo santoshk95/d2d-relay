@@ -30,7 +30,7 @@ function reviewCard(st) {
     });
     card.replaceChildren(...[h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Review'), d.policy.review_required ? h('span', {class: 'tag acc'}, 'Required before publishing') : h('span', {class: 'tag'}, 'Optional'),
         h('span', {class: 'spacer'}), can && latest && d.reviewers.length ? h('button', {class: 'btn', onclick: req}, 'Request review') : null),
-      rows.length ? h('div', {}, rows) : h('div', {class: 'muted small'}, 'No review yet. Development → review → published: ask another BI Dev / Analyst to review a version before you publish it.')].filter(Boolean));
+      rows.length ? h('div', {}, rows) : h('div', {class: 'muted small'}, 'No review yet. You can ask a colleague in your organisation to review a version before you publish it.')].filter(Boolean));
   }).catch(() => card.remove());
   return card;
 }
@@ -41,35 +41,13 @@ function publishCard(st) {
   const exp = fmt => async e => { e.target.disabled = true; notify(`Drawing the ${fmt.toUpperCase()}…`);
     try { const r = await fetch(`/api/export/project/${st.id}?fmt=${fmt}`, {method: 'POST'}); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'Export failed');
       h('a', {href: URL.createObjectURL(await r.blob()), download: `${st.name}.${fmt}`}).click(); } catch (err) { notify(err.message, 'err'); } e.target.disabled = false; };
-  // D2D Relay: the prototype as PDF / PNG, and a post to a channel (GitHub and insight pages are not part of D2D Relay)
+  // D2D Relay: the prototype as PDF / PNG (GitHub, Slack / Teams channels and insight pages are not part of D2D Relay)
   card.append(h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Publish & share'), h('span', {class: 'spacer'}),
-      h('button', {class: 'btn', onclick: exp('pdf')}, icon('download'), 'PDF'), h('button', {class: 'btn', onclick: exp('png')}, icon('download'), 'PNG'),
-      h('button', {class: 'btn', onclick: () => channelDialog('project', st.id, st.name)}, icon('share'), 'Post to a channel')),
+      h('button', {class: 'btn', onclick: exp('pdf')}, icon('download'), 'PDF'), h('button', {class: 'btn', onclick: exp('png')}, icon('download'), 'PNG')),
     last.v ? h('div', {class: 'small muted', style: 'margin-top:8px'}, `Published v${last.v} ${ago(last.when)}` + (last.review ? ' · reviewed and approved' : '')
       + ((last.github || []).length ? ` · on GitHub: ` : '')) : h('div', {class: 'small muted', style: 'margin-top:8px'}, 'PDF and PNG draw the prototype in a headless browser. Approving a version gives you the Power BI file (.pbix) to download; Relay does not publish to the Power BI Service.'),
     ...((last.github || []).map(g => h('div', {class: 'small'}, icon('check'), ' ', h('a', {href: g.url, target: '_blank', rel: 'noopener'}, `${g.repo}@${g.branch} ${g.commit.slice(0, 7)}`), ` · ${g.files} files · ${ago(g.when)}`))));
   return card;
-}
-
-async function githubDialog(st) {
-  let gh;
-  try { gh = await api('/api/me/github'); } catch (e) { return notify(e.message, 'err'); }
-  if (!gh.connected) return modal('Version to GitHub', h('div', {class: 'mbody'}, h('p', {}, gh.app_ready ? 'Connect your own GitHub account first; Relay commits with it, to a repository you choose.' : 'Your administrator has not set up GitHub yet (Admin › Publishing).'),
-    gh.app_ready ? h('a', {class: 'btn primary', href: '/api/me/github/start'}, 'Connect GitHub') : null));
-  const body = h('div', {class: 'mbody'}, h('div', {class: 'muted small'}, 'Loading your repositories…'));
-  const m = modal(`Version “${st.name}” v${st.approved} to GitHub`, body);
-  try {
-    const {repos} = await api('/api/me/github/repos');
-    const repo = h('select', {class: 'sel'}, repos.filter(r => r.can_push).map(r => h('option', {value: r.full_name, selected: r.full_name === gh.default_repo}, r.full_name + (r.private ? ' (private)' : ''))));
-    const branch = h('input', {type: 'text', value: 'main'}), folder = h('input', {type: 'text', value: (st.name || '').replace(/[^\w -]+/g, '').trim()});
-    const msg = h('input', {type: 'text', value: `${st.name} v${st.approved} (Relay)`});
-    body.replaceChildren(h('div', {class: 'small'}, `Signed in to GitHub as ${gh.login}. The commit contains definition.yaml, the report's files and the check reports.`),
-      h('label', {class: 'f'}, 'Repository'), repo, h('div', {class: 'opts'}, h('div', {}, h('label', {class: 'f'}, 'Branch'), branch, h('div', {class: 'hint'}, 'Created from the default branch if new.')),
-        h('div', {}, h('label', {class: 'f'}, 'Folder in the repository'), folder)), h('label', {class: 'f'}, 'Commit message'), msg,
-      h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, h('button', {class: 'btn', onclick: () => m.remove()}, 'Cancel'),
-        h('button', {class: 'btn primary', onclick: async e => { e.target.disabled = true; try { const r = await api(`/api/projects/${st.id}/github`, {json: {repo: repo.value, branch: branch.value, folder: folder.value, message: msg.value}});
-          notify(`Pushed ${r.files} files to ${r.repo}@${r.branch}`, 'ok'); m.remove(); S.key = null; poll(); } catch (err) { notify(err.message, 'err'); e.target.disabled = false; } }}, 'Commit and push')));
-  } catch (e) { body.replaceChildren(h('div', {class: 'note err'}, e.message)); }
 }
 
 async function channelDialog(kind, id, title) {

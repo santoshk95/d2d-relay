@@ -52,7 +52,8 @@ class Decision(BaseModel):
 @router.post("/api/reviews/{pid}/{rid}")
 def decide(pid: str, rid: str, body: Decision):
     """Reviewers may have view access only, so this lives outside /api/projects (checked here instead)."""
-    if not auth.can_project(_u(), "view", db.project(pid)):
+    p = db.project(pid)
+    if p is None or not auth.can_project(_u(), "view", p):            # unknown, or not this person's to see
         raise HTTPException(404, "Unknown dashboard")
     try:
         if body.decision:
@@ -148,7 +149,8 @@ def github_push(pid: str, body: Push):
 @router.post("/api/export/project/{pid}")
 async def export_prototype(pid: str, fmt: str = "pdf", version: int | None = None):
     """PDF or PNG of a dashboard's prototype: view access is enough (outside /api/projects, where POST means edit)."""
-    if not auth.can_project(_u(), "view", db.project(pid)):
+    p = db.project(pid)
+    if p is None or not auth.can_project(_u(), "view", p):
         raise HTTPException(404, "Unknown dashboard")
     if fmt not in ("pdf", "png"):
         raise HTTPException(400, "pdf or png")

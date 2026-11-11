@@ -30,11 +30,14 @@ CONNECTORS = {
 KEEP_KINDS = set(CONNECTORS)
 
 # APIs of screens that are not part of D2D Relay (on top of the dropped modules' own `api=[…]` prefixes)
-EXTRA_BLOCKED = ("/api/schedules", "/api/semantic", "/api/pages", "/api/reviews", "/api/studio", "/api/rfp",
+EXTRA_BLOCKED = ("/api/schedules", "/api/schedules-draft", "/api/schedules-measures", "/api/schedules-preview", "/api/semantic","/api/pages", "/api/reviews", "/api/studio", "/api/rfp",
                  "/api/servicedesk", "/api/lineage", "/api/graph", "/api/intan", "/api/observe", "/api/migrate-bi", "/api/heal",
                  "/api/sdlc", "/api/start", "/api/team", "/api/m/", "/api/tenancy/tenants", "/api/email",
-                 "/api/home", "/api/me/usage")          # AI costs and tokens are kept on the server only (orgs.py)
-ALLOWED_UNDER_BLOCKED = ("/api/m/connect", "/api/askd")   # the Connections module page; Ask Relay (Ask D)
+                 "/api/home", "/api/me/usage",          # AI costs and tokens are kept on the server only (orgs.py)
+                 "/api/me/github", "/api/me/channels", "/api/share/channel")   # no GitHub or Slack/Teams posting here
+# The Connections module page; Ask Relay (Ask D); a reviewer's answer on a dashboard (/api/reviews/<id>/<review>; only
+# the list of everyone's reviews, /api/reviews, stays off)
+ALLOWED_UNDER_BLOCKED = ("/api/m/connect", "/api/askd", "/api/reviews/")
 
 BLOCKED_API: tuple[str, ...] = EXTRA_BLOCKED
 _applied = False

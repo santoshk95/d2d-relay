@@ -40,6 +40,9 @@
     Optional. Put the data at <DataRoot>\<Report>\data and point DataFolder there: the path every
     .pbix is made with, so it is the same on any PC (D2D Relay: C:\D2D Relay Data). Default: next
     to the .pbix in <Root>\Output\<Report>\data.
+.PARAMETER NoRefresh
+    Save the .pbix without refreshing it: no query runs on this PC, and the file holds no data until
+    its owner refreshes it (D2D Relay: a report on a warehouse, which needs the owner's own sign-in).
 
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy Bypass -File Convert-D2DZip.ps1 -ZipPath "C:\Users\me\PbixBot\Inbox\Sales.zip" -RootFolder "C:\Users\me\PbixBot"
@@ -55,7 +58,8 @@ param(
     [int] $SaveTimeoutSeconds = 900,
     [switch] $KeepWorkFolder,
     [string] $DataSource,
-    [string] $DataRoot
+    [string] $DataRoot,
+    [switch] $NoRefresh
 )
 
 $ErrorActionPreference = 'Stop'
@@ -502,6 +506,9 @@ function Wait-ReportReady {
         $main = Get-PbiMainWindow
         if (-not $main) { return $null }
         if (-not $script:Shown) { Show-PowerBI; $script:Shown = $true }
+        $issues = $null       # Power BI could not read the report (it then opens an empty one): stop at once
+        try { $issues = $main.FindFirst($TS::Children, (New-Cond $AE::NameProperty 'Issues were found')) } catch { }
+        if ($issues) { throw 'Power BI Desktop could not open the report: it showed "Issues were found".' }
         if (Find-Named $main 'Refresh now' 'Button') {
             $script:BannerChecks++
             if ($script:BannerChecks -ge 3) { return 'banner' }    # there on three checks in a row
@@ -799,7 +806,8 @@ function Convert-Project([IO.FileInfo] $Pbip) {
             $refreshKind = Wait-ReportReady
             Write-Log 'Report open'
             Start-Sleep -Seconds 3
-            Invoke-Refresh $refreshKind
+            if ($NoRefresh) { Write-Log 'Not refreshed (-NoRefresh): the .pbix holds no data until its owner refreshes it' }
+            else { Invoke-Refresh $refreshKind }
             $saved = Save-AsPbix $projDir
             Close-PowerBI
         }
@@ -858,6 +866,18 @@ try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory($ZipPath, $script:WorkDir)
     Write-Log "Unzipped to $script:WorkDir"
+
+    # Power BI Desktop cannot read a file deeper than Windows' 260 characters (a folder: 248): say so now, not after a
+    # five-minute wait. The report's own folders (pages, visuals, custom visuals) take about 150 of them.
+    $deepest = 0
+    try {
+        foreach ($f in Get-ChildItem -LiteralPath $script:WorkDir -Recurse -File) {
+            $deepest = [Math]::Max($deepest, [Math]::Max($f.FullName.Length, $f.DirectoryName.Length + 12))
+        }
+    } catch { $deepest = 999 }
+    if ($deepest -ge 260) {
+        throw "The report's files lie too deep for Power BI Desktop ($deepest characters; Windows allows 259): give the report a shorter name, or use a shorter -RootFolder."
+    }
 
     $pbips = @(Get-ChildItem -LiteralPath $script:WorkDir -Recurse -File -Filter '*.pbip')
     $pbixes = @(Get-ChildItem -LiteralPath $script:WorkDir -Recurse -File -Filter '*.pbix')

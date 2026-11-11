@@ -61,7 +61,7 @@ def request_review(pid: str, version: int, reviewer_id: str, note: str, u: dict)
         raise PublishError("Unknown version")
     r = db.user(reviewer_id)
     if not r or not auth.is_dev(r):
-        raise PublishError("The reviewer must be a BI Dev / Analyst or an Admin.")
+        raise PublishError("The reviewer must be someone in your organisation who builds dashboards.")
     if reviewer_id == u["id"]:
         raise PublishError("Ask someone else to review.")
     p = db.project(pid)
@@ -79,7 +79,8 @@ def request_review(pid: str, version: int, reviewer_id: str, note: str, u: dict)
     store.log(pid, {"kind": "user", "text": f"Asked {r['name']} to review v{version}"})
     db.audit("review.request", pid, {"version": version, "reviewer": reviewer_id}, u["id"])
     from . import notify
-    notify.add(reviewer_id, "review", f"{u['name']} asked you to review {st.get('name') or pid} v{version}", note.strip()[:300], f"#/p/{pid}/versions")
+    notify.add(reviewer_id, "review", f"{u['name']} asked you to review {st.get('name') or pid} v{version}", note.strip()[:300],
+               f"#/p/{pid}")                        # D2D Relay: the Review card (Approve, Request changes) is on Overview
     return reviews(store.load(pid))[-1]
 
 
@@ -101,6 +102,9 @@ def decide_review(pid: str, rid: str, decision: str, comment: str, u: dict) -> d
     store.log(pid, {"kind": "user", "text": f"Review of v{r['v']}: " + ("approved" if decision == "approve" else "changes requested")
                     + (f" — {comment.strip()[:200]}" if comment.strip() else "")})
     db.audit("review.approve" if decision == "approve" else "review.changes", pid, {"version": r["v"]}, u["id"])
+    from . import notify                              # D2D Relay: the person who asked hears the answer
+    notify.add(r["requested_by"], "review", f"{u['name']} " + ("approved" if decision == "approve" else "asked for changes to")
+               + f" {st.get('name') or pid} v{r['v']}", comment.strip()[:300], f"#/p/{pid}")
     return r
 
 
@@ -128,7 +132,7 @@ def check_publish(pid: str, version: int, u: dict) -> dict | None:
         if not r:
             raise PublishError(f"v{version} needs an approved review before it is published (Request review).")
         if r["decided_by"] == u["id"]:
-            raise PublishError("The reviewer who approved it cannot also publish it: ask the requester or another BI Dev.")
+            raise PublishError("The reviewer who approved it cannot also publish it: ask the person who asked for the review, or another colleague.")
     return r
 
 

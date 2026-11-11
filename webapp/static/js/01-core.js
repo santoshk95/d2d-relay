@@ -87,8 +87,8 @@ const catalogEntry = id => CATALOG.models.find(m => m.id === id);
 // D2D Relay: "admins" here means the platform admin; an organisation's owner is an admin of their own workspace only.
 const modelSeen = id => !!(S.me && (S.me.org ? S.me.org.platform_admin : S.me.admin)) || !!catalogEntry(id);
 /* the person's role in words (D2D Relay: an organisation's owner, the platform admin) */
-const roleText = (me, dev = 'Builder / Analyst') => me.org && me.org.platform_admin ? 'Platform admin' : me.org && me.org.is_owner ? 'Owner'
-  : me.admin ? 'Admin' : me.builder ? dev : 'Viewer';
+const roleText = (me, dev = 'Builder / Analyst') => me.org ? (me.org.platform_admin ? 'Platform admin' : me.org.is_owner ? 'Owner' : 'Member')
+  : me.admin ? 'Admin' : me.builder ? dev : 'Viewer';           // D2D Relay: an organisation has owners and members
 const modelName = id => {
   if (id && !modelSeen(id)) return '';
   const m = /^claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?(?:-\d{8})?$/.exec(id || '');

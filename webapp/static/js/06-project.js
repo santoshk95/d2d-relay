@@ -375,7 +375,7 @@ function customCard(st, v) {
   const item = c => c.origin === 'project'
     ? h('a', {class: 'cvitem', href: `/api/projects/${st.id}/visuals/${c.name}/preview`, target: '_blank', title: 'Browser test of the visual'},
         h('img', {src: `/api/projects/${st.id}/visuals/${c.name}/preview`, alt: ''}), h('div', {}, h('b', {class: 'small'}, c.title), h('div', {class: 'muted small'}, `new · v${c.version}`)))
-    : h('a', {class: 'cvitem', href: '#/library', title: 'From the visual library'},
+    : h('a', {class: 'cvitem', href: `/api/library/${c.name}/preview`, target: '_blank', title: 'From the visual library: a preview'},
         h('img', {src: `/api/library/${c.name}/preview`, alt: ''}), h('div', {}, h('b', {class: 'small'}, c.title), h('div', {class: 'muted small'}, 'from the library')));
   return h('div', {class: 'note'},
     used.length ? h('div', {}, h('b', {}, 'Custom visuals in this version'), h('div', {class: 'cvlist'}, used.map(item))) : null,
@@ -454,7 +454,9 @@ function doneCard(st) {
       : o.dax ? daxLine(st, st.approved, {...o.dax, problems: 0}) : null,
     (o.custom_visuals || []).length ? h('div', {class: 'small', style: 'margin-top:6px'}, '✦ Custom visuals: ' + o.custom_visuals.join(', ') + ' (inside the .pbix).') : null,
     h('div', {class: 'done-grid'},
-      h('div', {}, h('b', {}, 'Open it'), h('div', {class: 'small muted'}, `Unzip the download and open ${o.pbix} in Power BI Desktop. The data is already inside it.`)),
+      h('div', {}, h('b', {}, 'Open it'), h('div', {class: 'small muted'}, o.refreshed === false
+        ? `Unzip the download, open ${o.pbix} in Power BI Desktop and press Refresh: it loads ${(o.warehouses || []).join(', ') || 'your warehouse'} with your own sign-in (the file holds no data until then).`
+        : `Unzip the download and open ${o.pbix} in Power BI Desktop. The data is already inside it.`)),
       h('div', {}, h('b', {}, 'Refresh it with new data'),
         h('div', {class: 'small muted'}, folder ? 'Put the CSVs in this folder (unzipping the download into C:\\D2D Relay Data does it), then press Refresh in Power BI Desktop:'
           : 'Point the DataFolder parameter at the folder with the CSVs (Transform data › Edit parameters), then press Refresh.'),

@@ -74,7 +74,8 @@ def _date_table(t: dict) -> dict | None:
     ]
     last = "WeekdayName"
     if events:
-        conds = [f'if md >= {_mmdd(e["from"])} and md <= {_mmdd(e["to"])} then "{e["name"]}"' for e in events]
+        conds = [f'if md >= {_mmdd(e["from"])} and md <= {_mmdd(e["to"])} then "{str(e["name"]).replace(chr(34), chr(34) * 2)}"'
+                 for e in events]                    # an M text literal: a quote in the name is doubled
         lines.append('    KeyEvent = Table.AddColumn(WeekdayName, "Key Event", each')
         lines.append("        let md = Date.Month([Date]) * 100 + Date.Day([Date]) in")
         lines.append("        " + "\n        else ".join(conds) + "\n        else null, type text)")

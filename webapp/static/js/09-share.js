@@ -55,10 +55,10 @@ async function shareDialog(st) {
     body.replaceChildren(...[
       h('div', {class: 'row', style: 'gap:8px'}, icon('user'), h('span', {}, h('b', {}, data.owner.name), h('span', {class: 'muted small'}, ` · owner · ${data.owner.email}`))),
       h('label', {class: 'f'}, 'General access'), visSel,
-      vis === 'team' ? h('div', {style: 'margin-top:8px'}, teamSel, h('div', {class: 'hint'}, "The team's BI Devs / Analysts can edit; its Viewers can view.")) : null,
+      vis === 'team' ? h('div', {style: 'margin-top:8px'}, teamSel, h('div', {class: 'hint'}, 'Everyone in this team can edit it.')) : null,
       h('label', {class: 'f'}, 'People and teams'), search, results,
       h('div', {class: 'grants'}, grants.length ? grants.map(row) : h('div', {class: 'muted small'}, 'Not shared with anyone yet.')),
-      h('div', {class: 'note small'}, icon('info'), ' Only BI Devs / Analysts can edit, even when a share says “Can edit”. Shares stay inside Relay.'),
+      h('div', {class: 'note small'}, icon('info'), ' Shares stay inside D2D Relay: people sign in to open the dashboard.'),
       h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'},
         h('button', {class: 'btn', onclick: () => m.remove()}, 'Cancel'),
         h('button', {class: 'btn primary', onclick: save}, 'Save'))].filter(Boolean));

@@ -10,7 +10,7 @@ function render() {
     const body = {overview: overviewTab, plan: planTab, versions: versionsTab, activity: activityTab, details: detailsTab}[S.tab](st);
     const ro = st.access && !st.access.can_edit;
     main.replaceChildren(h('div', {class: 'page' + (S.tab === 'overview' || S.tab === 'versions' ? ' wide' : '') + (ro ? ' readonly' : '')}, header(st), stepper(st),
-      ro ? h('div', {class: 'note'}, icon('lock'), ' You can view this dashboard. Changes, approval and publishing are for its owner and the BI Devs it is shared with.') : banner(st), tabsBar(st), body));
+      ro ? h('div', {class: 'note'}, icon('lock'), ' You can view this dashboard. Changes, approval and publishing are for its owner and the people it is shared with to edit.') : banner(st), tabsBar(st), body));
   }
   // in-place updates while Relay works
   const bt = $('#btext');

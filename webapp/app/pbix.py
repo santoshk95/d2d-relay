@@ -50,9 +50,11 @@ def not_running_text() -> str:
     return "The Power BI file maker is not running on the D2D Relay PC."
 
 
-def make(project: Path, checked_zip: Path, report: str) -> dict:
-    """Ask Power BI Desktop for the .pbix of this dashboard. Returns {"pbix": Path, "data_folder", "seconds", "mb"};
-    PbixError when the maker is not running, does not answer, or could not make it."""
+def make(project: Path, checked_zip: Path, report: str, refresh: bool = True) -> dict:
+    """Ask Power BI Desktop for the .pbix of this dashboard. Returns {"pbix": Path, "data_folder", "seconds", "mb",
+    "refreshed"}; PbixError when the maker is not running, does not answer, refused the report or could not make it.
+    refresh=False (a report on a warehouse): saved without data, for its owner to refresh with their own sign-in.
+    The maker refreshes only reports whose Power Query reads nothing but their own data files (pbix.ps1)."""
     QUEUE.mkdir(parents=True, exist_ok=True)
     rid = time.strftime("%Y%m%d-%H%M%S-") + secrets.token_hex(3)
     out = project / "pbix" / f"{report}.pbix"
@@ -62,7 +64,7 @@ def make(project: Path, checked_zip: Path, report: str) -> dict:
     req.mkdir(parents=True, exist_ok=True)
     tmp = req / f"{rid}.json.tmp"
     tmp.write_text(json.dumps({"id": rid, "report": report, "zip": rel(checked_zip), "data": rel(project / "data"),
-                               "out": rel(out), "created": time.time()}), encoding="utf-8")
+                               "out": rel(out), "refresh": refresh, "created": time.time()}), encoding="utf-8")
     tmp.rename(req / f"{rid}.json")
     answer, started, last_alive = QUEUE / "results" / f"{rid}.json", time.time(), time.time()
     while not answer.exists():
@@ -82,4 +84,5 @@ def make(project: Path, checked_zip: Path, report: str) -> dict:
         raise PbixError(f"Power BI Desktop could not make the .pbix: {result.get('error') or 'no reason given'}")
     if not out.exists():
         raise PbixError("The Power BI file maker said it was done, but the .pbix is not there.")
-    return {"pbix": out, "data_folder": result.get("data_folder"), "seconds": result.get("seconds"), "mb": result.get("mb")}
+    return {"pbix": out, "data_folder": result.get("data_folder"), "seconds": result.get("seconds"), "mb": result.get("mb"),
+            "refreshed": result.get("refreshed", refresh)}

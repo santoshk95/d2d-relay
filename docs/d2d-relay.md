@@ -46,12 +46,13 @@ as separate Linux users that cannot read each other's keys.
 
 - **Kept:** Dashboards (D2D: plan → KPIs → prototype → review → Power BI file), the review gates and the Power BI engine
   check, the visual library, sample data, Connections (connectors on request), Ask Relay, Branding, organisations
-  and credits.
+  and credits, sharing a dashboard, and asking a colleague to review a version (the Review card on its Overview).
   There is no administration on the public site: every `/api/admin` path answers 404 there. PASDACS works on the
   admin portal (Organisations, Requests).
 - **Switched off:** all other modules (process, automation, systems, AI, consulting), schedules, pages, the
-  semantic layer, the service desk, Migrate BI, self-healing, AI SDLC, the workbench and the tenants console. Their APIs
-  answer 404 and their background pollers do not start. Old links open the dashboards list.
+  semantic layer, the service desk, Migrate BI, self-healing, AI SDLC, the workbench and the tenants console, and
+  GitHub versioning and Slack / Teams channel posts. Their APIs answer 404 and their background pollers do not
+  start. Old links open the dashboards list.
 
 ## Start and stop
 
@@ -107,6 +108,12 @@ the app writes and checks the report, then asks the maker on this PC for the fil
   Desktop's window in `data\projects\.pbix\work\<id>` for a day.
 - It shares a lock (`Local\PbixBot-Convert`) with the UiPath PbixFromZip bot, so the two never drive Power BI
   Desktop at the same time.
+- **What a report may do on this PC:** the refresh runs here, on the PC that holds D2D Relay's settings and data, so
+  the maker first reads the report's Power Query and refuses it unless it only reads the dashboard's own data files
+  (`File.Contents(DataFolder & "<a file of its data folder>")`) with the functions D2D Relay writes: no other folder,
+  web address, database, `#shared` or `DataFolder` of its own. The app refuses such definitions too (hand-written
+  Power Query, file names with folders). A dashboard on a warehouse is saved without a refresh: nothing of it runs
+  here, and its owner presses Refresh in Power BI Desktop and signs in to their warehouse.
 
 ### After the PC restarts
 

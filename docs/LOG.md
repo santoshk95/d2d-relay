@@ -246,6 +246,40 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
         watchdog sees both helpers online. The D2D DAX checker was restarted on its guarded version from the deploy
         folder; RELAY's checker (`Gen BI`) was not touched. Running on the PC now: the D2D DAX checker and the Power
         BI file maker, both started from `Downloads\D2D Relay`.
+17. **Full clean-up and review** (the user's request of 2026-11-11, after item 16).
+    - **Security: what a report may do on the D2D Relay PC.** Since item 16 the file maker refreshes reports on the PC
+      that holds D2D Relay's settings and data, and nothing stopped a definition from carrying its own Power Query
+      (`m:`), a `csv:` name with folders, or a date-table event name with a quote (it went into the query unescaped),
+      so a dashboard could have been made to read this PC's files (`.env`, other organisations' data) into its .pbix.
+      Nobody did (only PASDACS has credits). Closed on both sides:
+      - the maker (`pbix.ps1`, `Test-ReportQueries`) reads the report's Power Query before Power BI Desktop opens it
+        and refuses anything but `File.Contents(DataFolder & "<a file of its data folder>")` and the functions the
+        report builder writes (no other folder, web, database, ODBC, `#shared`, `Expression.Evaluate`, or a
+        `DataFolder` of its own, however written: comments, quoted names, records, functions);
+      - the app refuses such definitions (`validate.source_errors`) and escapes event names (`definition.py`);
+      - a dashboard on a warehouse is saved without a refresh (`-NoRefresh`): nothing of it runs on the PC; its
+        owner presses Refresh in Power BI Desktop and signs in to the warehouse (the page and the note say so).
+    - **The file maker** stops at once when Power BI shows "Issues were found" while opening (it waited 5 minutes),
+      refuses a report whose files would lie past Windows' 260 characters with that reason, and keeps only the log
+      and the picture of a failed run (PowerShell 5.1 had ignored the filter and kept the whole report).
+    - **Dead ends removed:** "Post to a channel" (it sent people to a Settings page D2D does not have; Slack/Teams
+      and GitHub APIs now answer 404), the unreachable GitHub dialog, and library visuals linking to a library page
+      (they open their preview now). The schedule APIs whose names start `/api/schedules-` were still reachable.
+    - **Reviews work:** a reviewer's Approve / Request changes was blocked with the rest of `/api/reviews`; it is
+      allowed now (the list of everyone's reviews stays off), the reviewer's notification opens the Overview where
+      the buttons are, and the person who asked is told the answer. Unknown dashboards answer 404 instead of 500
+      there and on PDF/PNG export.
+    - **Words:** people are Owners and Members (not "Builder / Analyst", "BI Dev", "Viewer" or the "Default" team) in
+      the header, profile, Share dialog, read-only note, Review card and messages.
+    - **Checked** on fresh test stacks built from this code: the 118 API checks (organisations, admin portal,
+      connectors, credits, people, production) twice, 13 checks of the fixes, 27 checks of the maker's guard (the four
+      live reports pass in about 0.1 s each; every attack is refused), and through Power BI Desktop: a publish (23
+      checks), a warehouse dashboard (made in 30 s without a refresh), a tampered report (refused in 10 s, no
+      download), a too-deep report (refused in 10 s) and an ordinary file again (14 checks).
+    - **Cleaned up:** the superseded image `d2d-relay:335c2b7`, the test stacks, images, volumes and copies of live
+      dashboards (about 1.9 GB of scratch files), Python caches, and the merged `orgs-credits` branch (work is on
+      `main`). No secrets in git or its history (scanned). Docker's build cache (about 10 GB) is kept: it makes a
+      deploy build take minutes instead of much longer.
 
 Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
 (JPEG) on Branding but has not picked a palette yet; leave it.
@@ -287,6 +321,14 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
+- **Item 17 is committed and tested, not live yet.** It needs the user's go-ahead for the restart, then: in the
+  deploy folder `git fetch <repo> main` + `git merge --ff-only FETCH_HEAD`, `RELAY_COMMIT=<sha> docker compose
+  build web`, tag the image by commit, `docker compose up -d --no-deps web admin`, and restart the Power BI file
+  maker from the deploy folder (its guard lives in `pbix.ps1`; the converter is read on each request).
+- **Leftovers waiting for the user's yes before deletion:** the test dashboards "D2D smoke test" and "Brand palette
+  test", the old single container's database files (67 MB in the volume `d2d-relay-data`, `/data/postgres`; the dump
+  `data\backups\pre-split-20261111-090052.dump` is their backup), and the 16 files the old publish step left in the
+  four `powerbi\` folders (README.txt, Prototype.html, DAX check.txt, Review gates.txt; nothing reads them).
 - **The two PC helpers do not start by themselves yet (one-time, for the user).** Put shortcuts to
   `daxcheck\start-daxcheck.cmd` and `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC
   restarts"); Claude Code may not add them. Until then, after a restart of the PC someone signs in and starts both

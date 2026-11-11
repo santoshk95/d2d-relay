@@ -86,6 +86,113 @@ function Resolve-Inside([string]$rel) {
 
 function Quote([string]$s) { return '"' + $s + '"' }
 
+# ---------------------------------------------------------------- what a report may do on this PC
+# Reports are refreshed here, on the PC that runs D2D Relay, so their Power Query may only read their own data files:
+# File.Contents(DataFolder & "<a file of the dashboard's data folder>") and the functions D2D Relay's report builder
+# writes. Anything else (another folder, the web, a database, #shared, a DataFolder of its own) is refused before
+# Power BI Desktop opens the report. A warehouse report is not refreshed here at all (its owner refreshes it with
+# their own sign-in), so only then are the warehouse connectors allowed.
+$SafeFunctions = @('Csv.Document', 'File.Contents', 'Parquet.Document', 'QuoteStyle.Csv', 'QuoteStyle.None',
+    'Table.PromoteHeaders', 'Table.TransformColumnTypes', 'Table.RenameColumns', 'Table.SelectColumns', 'Table.ReplaceValue',
+    'Replacer.ReplaceValue', 'Replacer.ReplaceText', 'Table.DuplicateColumn', 'Table.AddColumn', 'Table.FromList',
+    'Splitter.SplitByNothing', 'List.Dates', 'Duration.Days', 'Date.Day', 'Date.DayOfWeek', 'Date.Month', 'Date.QuarterOfYear',
+    'Date.StartOfMonth', 'Date.ToText', 'Date.Year', 'Day.Monday', 'Text.From', 'Int64.Type', 'Currency.Type', 'Percentage.Type')
+$WarehouseFunctions = @('Snowflake.Databases', 'GoogleBigQuery.Database', 'Sql.Database', 'AmazonRedshift.Database',
+    'AmazonAthena.Databases', 'Oracle.Database')
+$SafeIntrinsics = @('#date', '#duration', '#datetime', '#time')
+$PlainFile = '^[^\\/:*?"<>|.][^\\/:*?"<>|]*$'
+
+# Power Query text as tokens @(kind, value): str (a text), qid (#"a name"), hash (#date ...), id (a name; with dots, a
+# library function) or p (any other character). Comments are dropped, as Power Query drops them.
+function Get-MTokens([string]$m) {
+    $t = New-Object 'System.Collections.Generic.List[string[]]'
+    $i = 0; $n = $m.Length
+    while ($i -lt $n) {
+        $c = $m[$i]
+        if ([char]::IsWhiteSpace($c)) { $i++; continue }
+        if ($c -eq '/' -and $i + 1 -lt $n -and $m[$i + 1] -eq '/') { $j = $m.IndexOf([char]10, $i); if ($j -lt 0) { $j = $n }; $i = $j; continue }
+        if ($c -eq '/' -and $i + 1 -lt $n -and $m[$i + 1] -eq '*') {
+            $j = $m.IndexOf('*/', $i + 2, [StringComparison]::Ordinal); if ($j -lt 0) { throw 'a comment does not end' }; $i = $j + 2; continue
+        }
+        if ($c -eq '"' -or ($c -eq '#' -and $i + 1 -lt $n -and $m[$i + 1] -eq '"')) {
+            $kind = 'str'; if ($c -eq '#') { $kind = 'qid'; $i++ }
+            $i++; $sb = New-Object Text.StringBuilder
+            while ($true) {
+                if ($i -ge $n) { throw 'a text does not end' }
+                if ($m[$i] -eq '"') { if ($i + 1 -lt $n -and $m[$i + 1] -eq '"') { [void]$sb.Append('"'); $i += 2; continue }; $i++; break }
+                [void]$sb.Append($m[$i]); $i++
+            }
+            $t.Add([string[]]@($kind, $sb.ToString())); continue
+        }
+        if ($c -eq '#' -or $c -eq '_' -or [char]::IsLetter($c)) {
+            $j = $i + 1
+            while ($j -lt $n -and ($m[$j] -eq '_' -or $m[$j] -eq '.' -or [char]::IsLetterOrDigit($m[$j]))) { $j++ }
+            $word = $m.Substring($i, $j - $i).TrimEnd('.')
+            $kind = 'id'; if ($c -eq '#') { $kind = 'hash' }
+            $t.Add([string[]]@($kind, $word)); $i += $word.Length; continue
+        }
+        $t.Add([string[]]@('p', [string]$c)); $i++
+    }
+    return , $t
+}
+
+# Why this report may not be opened here (refreshed, or only saved when -not $Refresh), or $null when it may
+function Test-ReportQueries([string]$ZipFile, [string]$DataDir, [bool]$Refresh) {
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zip = [IO.Compression.ZipFile]::OpenRead($ZipFile)
+    try {
+        $names = @($zip.Entries | ForEach-Object { $_.FullName })
+        $pbips = @($names | Where-Object { $_ -like '*.pbip' })
+        $bims = @($names | Where-Object { $_ -like '*.SemanticModel/model.bim' })
+        if ($pbips.Count -ne 1 -or $bims.Count -ne 1) { return "it should hold one report and one model, it holds $($pbips.Count) and $($bims.Count)" }
+        if (@($names | Where-Object { $_ -like '*.tmdl' -or $_ -like '*.pbix' }).Count -gt 0) { return 'it holds files D2D Relay does not write' }
+        $reader = New-Object IO.StreamReader($zip.GetEntry($bims[0]).Open(), (New-Object Text.UTF8Encoding($false)))
+        try { $json = $reader.ReadToEnd() } finally { $reader.Close() }
+    }
+    finally { $zip.Dispose() }
+    $model = ($json | ConvertFrom-Json).model
+    if ($model.dataSources -and @($model.dataSources).Count -gt 0) { return 'its model has data sources of its own' }
+    $allowed = $SafeFunctions; if (-not $Refresh) { $allowed = $SafeFunctions + $WarehouseFunctions }
+    $queries = New-Object 'System.Collections.Generic.List[string[]]'
+    foreach ($tb in @($model.tables)) {
+        if (-not $tb) { continue }
+        foreach ($pt in @($tb.partitions)) {
+            if (-not $pt) { continue }
+            if ($pt.source.type -eq 'calculated') { continue }
+            if ($pt.source.type -ne 'm') { return "table $($tb.name) reads its data in a way D2D Relay does not write" }
+            $queries.Add([string[]]@("table $($tb.name)", (@($pt.source.expression) -join "`n")))
+        }
+    }
+    foreach ($x in @($model.expressions)) { if ($x) { $queries.Add([string[]]@("query $($x.name)", (@($x.expression) -join "`n"))) } }
+    foreach ($q in $queries) {
+        $where = $q[0]
+        try { $tok = Get-MTokens $q[1] } catch { return "$where cannot be read ($($_.Exception.Message))" }
+        for ($k = 0; $k -lt $tok.Count; $k++) {
+            $kind = $tok[$k][0]; $v = $tok[$k][1]
+            if ($kind -eq 'hash' -and $SafeIntrinsics -notcontains $v) { return "$where uses $v" }
+            if ($kind -eq 'qid' -and ($v -eq 'DataFolder' -or $v.Contains('.'))) { return "$where uses the name `"$v`"" }
+            if ($kind -ne 'id') { continue }
+            if ($v -eq 'DataFolder') {        # only in File.Contents(DataFolder & "<file>")
+                $ok = $k -ge 2 -and $k + 3 -lt $tok.Count -and $tok[$k - 2][0] -eq 'id' -and $tok[$k - 2][1] -eq 'File.Contents' -and
+                    $tok[$k - 1][0] -eq 'p' -and $tok[$k - 1][1] -eq '(' -and $tok[$k + 1][0] -eq 'p' -and $tok[$k + 1][1] -eq '&' -and
+                    $tok[$k + 2][0] -eq 'str' -and $tok[$k + 3][0] -eq 'p' -and $tok[$k + 3][1] -eq ')'
+                if (-not $ok) { return "$where uses DataFolder other than to read one of its own files" }
+                $file = $tok[$k + 2][1]
+                if ($file -notmatch $PlainFile -or -not (Test-Path -LiteralPath (Join-Path $DataDir $file) -PathType Leaf)) {
+                    return "$where reads '$file', which is not one of the dashboard's data files"
+                }
+                continue
+            }
+            if (-not $v.Contains('.')) { continue }
+            if ($allowed -notcontains $v) { return "$where uses $v" }
+            if ($v -eq 'File.Contents' -and -not ($k + 2 -lt $tok.Count -and $tok[$k + 1][1] -eq '(' -and $tok[$k + 2][0] -eq 'id' -and $tok[$k + 2][1] -eq 'DataFolder')) {
+                return "$where reads a file that is not one of the dashboard's data files"
+            }
+        }
+    }
+    return $null
+}
+
 # Power BI Desktop works in a short folder: a report's own files sit about 100 characters deep (pages, visuals), and
 # Save as fails ("Object reference not set to an instance of an object") once a path passes Windows' 260 characters.
 $Short = Join-Path $DataRoot ".work"
@@ -107,7 +214,10 @@ function Invoke-Request([IO.FileInfo]$file) {
         $data = Resolve-Inside $req.data
         $out = Resolve-Inside $req.out
         if (-not (Test-Path -LiteralPath $zip -PathType Leaf)) { throw "The checked report is missing: $($req.zip)" }
-        Write-Host ("{0:HH:mm:ss}  {1}: making {2}.pbix" -f (Get-Date), $id, $report)
+        $refresh = -not ($req.PSObject.Properties['refresh'] -and $req.refresh -eq $false)      # false: a warehouse report
+        $refused = Test-ReportQueries $zip $data $refresh
+        if ($refused) { throw "This report was not opened on the D2D Relay PC: $refused." }
+        Write-Host ("{0:HH:mm:ss}  {1}: making {2}.pbix{3}" -f (Get-Date), $id, $report, $(if ($refresh) { '' } else { ' (not refreshed)' }))
         Clear-Short
         $inbox = Join-Path $Short "Inbox"
         New-Item -ItemType Directory -Force $inbox | Out-Null
@@ -118,6 +228,7 @@ function Invoke-Request([IO.FileInfo]$file) {
             " -ResultFile " + (Quote $resultFile) + " -DataRoot " + (Quote $DataRoot)
         if (Test-Path -LiteralPath $data -PathType Container) { $arguments += " -DataSource " + (Quote $data) }
         if ($PbiDesktopPath) { $arguments += " -PbiDesktopPath " + (Quote $PbiDesktopPath) }
+        if (-not $refresh) { $arguments += " -NoRefresh" }
         $p = Start-Process -FilePath "powershell.exe" -ArgumentList $arguments -PassThru -WindowStyle Minimized
         $deadline = $started.AddMinutes($TimeoutMinutes)
         while (-not $p.HasExited) {
@@ -136,7 +247,7 @@ function Invoke-Request([IO.FileInfo]$file) {
             Copy-Item -LiteralPath $pbix -Destination $out -Force
             $mb = [math]::Round((Get-Item -LiteralPath $out).Length / 1MB, 1)
             Write-Answer $id ([ordered]@{ id = $id; ok = $true; pbix = $req.out; data_folder = (Join-Path (Join-Path $DataRoot $report) "data") + "\";
-                                          seconds = [int]((Get-Date) - $started).TotalSeconds; mb = $mb })
+                                          seconds = [int]((Get-Date) - $started).TotalSeconds; mb = $mb; refreshed = $refresh })
             Write-Host ("{0:HH:mm:ss}  {1}: done, {2} MB in {3:n0} s" -f (Get-Date), $id, $mb, ((Get-Date) - $started).TotalSeconds)
             $ok = $true
         }
@@ -156,7 +267,8 @@ function Invoke-Request([IO.FileInfo]$file) {
         Write-Host ("{0:HH:mm:ss}  {1}: FAILED: {2}" -f (Get-Date), $id, $first)
         try {                           # keep the converter's log and picture of the window (not the report) for a day
             New-Item -ItemType Directory -Force $root | Out-Null
-            Get-ChildItem -LiteralPath $Short -Recurse -File -Include "*.log", "*.png", "*.txt" -ErrorAction SilentlyContinue |
+            Get-ChildItem -LiteralPath $Short -Recurse -File -ErrorAction SilentlyContinue |
+                Where-Object { @('.log', '.png', '.txt') -contains $_.Extension.ToLowerInvariant() } |
                 ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $root -Force }
         } catch { }
     }

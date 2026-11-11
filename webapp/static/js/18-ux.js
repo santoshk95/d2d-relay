@@ -134,7 +134,7 @@ function profileMenu(anchor) {
   const item = (ic, label, fn, hint) => h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); fn(); }}, icon(ic), h('span', {class: 'grow'}, label), hint ? h('kbd', {}, hint) : null);
   popover(anchor, [
     h('div', {class: 'pmhead'}, h('b', {}, me.name || me.email), h('div', {class: 'small muted'}, me.email),
-      h('div', {class: 'small faint'}, role + (me.teams && me.teams.length ? ' · ' + me.teams.map(t => t.name).join(', ') : '') + (me.auth === 'single' ? ' · single-user mode' : ''))),
+      h('div', {class: 'small faint'}, role + (!me.org && me.teams && me.teams.length ? ' · ' + me.teams.map(t => t.name).join(', ') : '') + (me.auth === 'single' ? ' · single-user mode' : ''))),
     me.tenant && me.tenant.name ? h('div', {class: 'small muted', style: 'padding:0 12px 6px'}, 'Workspace: ', h('b', {}, me.tenant.name), me.tenant.acting ? ' (as a guest)' : '') : null,
     me.tenant && ((me.tenant.enter || []).length || me.tenant.acting) ? item('building', 'Switch workspace', () => workspaceMenu($('#ws button') || $('#me button'))) : null,
     me.org && me.org.id && !isAdminPortal() ? item('building', 'Organisation and credits', () => { location.hash = '/org'; }) : null,   // D2D Relay

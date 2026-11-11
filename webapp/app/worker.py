@@ -965,9 +965,32 @@ def _published_report(d: Path, st: dict) -> str:
     return name
 
 
+NATIVE_M = {"Snowflake.Databases": "Snowflake", "GoogleBigQuery.Database": "Google BigQuery", "Sql.Database": "Microsoft Fabric",
+            "AmazonRedshift.Database": "Amazon Redshift", "AmazonAthena.Databases": "Amazon Athena", "Oracle.Database": "Oracle Database"}
+
+
+def _warehouses(d: Path, report: str) -> list[str]:
+    """The warehouses the report reads directly (their own Power BI connectors). Such a report is saved without a
+    refresh on the D2D Relay PC (that needs its owner's sign-in), and its owner refreshes it in Power BI Desktop."""
+    try:
+        bim = (d / "powerbi" / f"{report}.SemanticModel" / "model.bim").read_text(encoding="utf-8-sig")
+    except OSError:
+        return []
+    return sorted({label for fn, label in NATIVE_M.items() if fn + "(" in bim})
+
+
+def _ready_text(made: dict) -> str:
+    """What the note that the file is ready adds about its data."""
+    if made.get("refreshed") is False:
+        return (f" It holds no data yet: open it and press Refresh to load it from {', '.join(made.get('warehouses') or [])} "
+                "with your own sign-in.")
+    return ""
+
+
 def _make_pbix(d: Path, report: str) -> dict:
     """The download: Power BI Desktop on the D2D Relay PC makes <report>.pbix from the checked report, then
     <report>.zip gets the .pbix and the dashboard's CSVs (up to ZIP_DATA_LIMIT; the data is inside the .pbix anyway)."""
+    warehouses = _warehouses(d, report)
     src_dir, inbox = d / "powerbi", d / ".pbix-in"
     shutil.rmtree(inbox, ignore_errors=True)
     inbox.mkdir()
@@ -982,7 +1005,7 @@ def _make_pbix(d: Path, report: str) -> dict:
         _tell_pasdacs("The Power BI file maker is not running on the D2D Relay PC",
                       "Start pbix\\start-pbix.cmd on the D2D Relay PC: published dashboards wait for it.")
     try:
-        made = pbix.make(d, checked, report)
+        made = pbix.make(d, checked, report, refresh=not warehouses)
     except pbix.PbixError as e:
         if not pbix.available():
             _tell_pasdacs("The Power BI file maker is not running on the D2D Relay PC",
@@ -1005,7 +1028,8 @@ def _make_pbix(d: Path, report: str) -> dict:
     shutil.rmtree(made["pbix"].parent, ignore_errors=True)                   # the zip holds it
     return {"pbix": f"{report}.pbix", "zip": zpath.name, "pbix_mb": round(size / 1048576, 1), "data_in_zip": with_data,
             "data_mb": round(sum(f.stat().st_size for f in csvs) / 1048576, 1),
-            "data_folder": made.get("data_folder"), "made_seconds": made.get("seconds")}
+            "data_folder": made.get("data_folder"), "made_seconds": made.get("seconds"),
+            "refreshed": made.get("refreshed", not warehouses), "warehouses": warehouses}
 
 
 async def _pbi(pid: str, v: int) -> None:
@@ -1030,7 +1054,7 @@ async def _pbi(pid: str, v: int) -> None:
     warned = [g["name"] for g in out["gates"] if g["status"] == "warn"]
     app_note(pid, "pbi", f"Power BI file ready: {out['pbix']} ({out['pages']} pages, {out['visuals']} visuals, "
              f"{out['measures']} measures, {out['pbix_mb']} MB). It passed all {len(passed)} review gates"
-             + (f", with warnings in {', '.join(warned)}" if warned else "") + ".", "ok")
+             + (f", with warnings in {', '.join(warned)}" if warned else "") + "." + _ready_text(out), "ok")
 
 
 async def _pbix_job(pid: str, args: dict) -> None:
@@ -1050,7 +1074,7 @@ async def _pbix_job(pid: str, args: dict) -> None:
             p.pop("pbip", None)
             p.update(pbix=made["pbix"], zip=made["zip"])
     store.save(st)
-    app_note(pid, "pbi", f"Power BI file ready: {made['pbix']} ({made['pbix_mb']} MB).", "ok")
+    app_note(pid, "pbi", f"Power BI file ready: {made['pbix']} ({made['pbix_mb']} MB)." + _ready_text(made), "ok")
 
 
 register_job("pbix", _pbix_job, status="building_pbi", done="Power BI file ready")

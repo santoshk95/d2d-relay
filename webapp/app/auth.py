@@ -247,7 +247,7 @@ def check(u: dict | None, method: str, path: str) -> JSONResponse | None:
         # workspace through /api/org.
         return _deny(404, "Administration is on the D2D Relay admin portal.")
     if path == "/api/projects" and method == "POST":
-        return None if is_dev(u) else _deny(403, "Only BI Devs / Analysts can create dashboards.")
+        return None if is_dev(u) else _deny(403, "Your account cannot create dashboards in this organisation.")
     m = PROJECT.match(path)
     if m:
         if db.project(m.group(1)) is None and not (store.ROOT / m.group(1) / "project.json").exists():
