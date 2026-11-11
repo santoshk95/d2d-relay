@@ -344,6 +344,8 @@ def conn():
     whose search_path follows the tenant (_pg_path)."""
     global _conn
     if BACKEND == "postgres":
+        if _conn is not None and (_conn.closed or getattr(_conn, "broken", False)):
+            _conn = None                        # the database restarted: a new connection (D2D Relay)
         if _conn is None:
             import psycopg
             from psycopg.rows import dict_row
@@ -451,9 +453,18 @@ def _args(args: tuple) -> tuple:
 
 def _exec(sql: str, args: tuple = ()):
     if BACKEND == "postgres":
-        c = conn()
-        _pg_path()
-        return c.execute(pg(sql), _args(args))
+        try:
+            c = conn()
+            _pg_path()
+            return c.execute(pg(sql), _args(args))
+        except Exception:
+            # D2D Relay: the database container restarted (its own crash, or a recreate) and the connection is gone:
+            # outside a transaction, connect again and run the statement once more instead of failing every request
+            if _pg["tx"] or _conn is None or not (_conn.closed or getattr(_conn, "broken", False)):
+                raise
+            c = conn()
+            _pg_path()
+            return c.execute(pg(sql), _args(args))
     return conn().execute(sql, args)
 
 
