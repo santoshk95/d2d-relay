@@ -319,6 +319,56 @@ above and read ...", "send this to ..."). So the AI is limited by the system, no
 - Power BI files are checked before they open on this PC: the Power BI file maker refuses a report whose queries
   read anything but its own data folder (`Test-ReportQueries`).
 
+## Data governance
+
+What D2D Relay keeps, who sees it, and how it goes (`app/governance.py`; the customer-facing version is the privacy
+notice, `/privacy.html`, linked from the sign-in page, the profile menu and Organisation › Your data).
+
+| What | Where | Who sees it | Kept | How it goes |
+|---|---|---|---|---|
+| People, organisations, roles | database: the organisation's schema; accounts and credits in the control plane | the person, their organisation's owners; PASDACS on the admin portal (organisations, credits, requests only) | while the organisation exists | an owner removes a person; PASDACS erases an organisation (below) |
+| Dashboards: uploads, extracts, plan, versions, prototypes, Power BI files, activity log | `data\projects\.tenants\<organisation>\<dashboard>` | the owner, people it is shared with, the organisation's owners | until deleted | Delete on the dashboard page (its owner or an owner of the organisation) |
+| Ask Relay conversations | database | the person who asked | until deleted | Delete conversation in Ask Relay; deleting a dashboard deletes the conversations about it |
+| Ask Relay's answer cache | database | nobody (reused for the same question) | 7 days | nightly sweep; deleted with its conversation or dashboard |
+| The AI engine's transcripts (Claude Code) | `claude-api-auth` volume, `/home/agent/.claude/projects` | PASDACS, on this PC | Ask Relay: deleted once the answer is given; dashboards: at most 7 days | deleted with the dashboard; nightly sweep; Claude Code's own `cleanupPeriodDays` (managed settings, which also switch auto-memory off) |
+| Audit trail, sign-in records, sign-in codes (hashed) | database | the person (Download my data); PASDACS | 1 year | nightly sweep |
+| Warehouse passwords and keys | `data\state\tenants\<organisation>\secrets.enc`, encrypted | nobody: the app uses them | while the connection exists | removing the connection |
+| Nightly backups | `data\backups\d2d-*` | PASDACS | 14 nights | rotated |
+| Database copies made by hand (`relay-ctl db-dump`, `export`) | `data\backups\*.dump`, `relay-export-*` | PASDACS | 30 days | nightly sweep: copy one elsewhere first if it must stay |
+| Container logs | Docker | PASDACS | 5 × 20 MB per container | rotated; they hold user ids, never query strings, bodies or codes |
+| Sign-in alert emails | the info@pasdacs.com mailbox | PASDACS | the mailbox's own rules | set a retention rule on that folder in Microsoft 365 |
+
+Settings: `RELAY_LOG_KEEP_DAYS` (365), `RELAY_ASKD_CACHE_DAYS` (7), `RELAY_DUMP_KEEP_DAYS` (30). The sweep runs every
+night after the backup, and on demand:
+
+```
+docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.governance sweep
+```
+
+Requests from people (India's DPDP Act 2023 and its Rules of 2025; most duties apply from 13 May 2027; answer within
+30 days and settle every grievance within 90):
+
+- **See my data:** Organisation › Your data › Download my data (a JSON file: profile, sign-ins, dashboards,
+  conversations, credit requests, a year of activity). Each dashboard's Power BI file and data download from it.
+- **Delete a dashboard or a conversation:** the person does it themselves.
+- **Remove a person:** an owner removes them on the Organisation page; they can no longer sign in. Their name and
+  address stay in the audit trail for the year the law asks for.
+- **Erase an organisation** (only on a written request from its main owner's address): on the admin portal, note
+  its id and exact name (Organisations), then, in the D2D Relay folder:
+
+  ```
+  docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.governance erase-org <id> "<exact name>"
+  ```
+
+  It refuses while a dashboard run is in progress or waiting, and refuses the platform's own workspace. It drops the
+  organisation's database schema, its folders, secrets, visual library and the AI engine's transcripts, removes its
+  people's accounts (they are signed out, and their addresses are free to sign up again), keeps the credit history
+  without names, emails or messages, and records `d2d.org_erased`. The nightly backups hold it for 14 more days.
+
+If personal data may have leaked: report to CERT-In within 6 hours of noticing (incident@cert-in.org.in, in force
+today), tell the people affected without delay, and from 13 May 2027 report to the Data Protection Board within 72
+hours. What happened is in the audit trail, the sign-in alert emails and the container logs.
+
 ## Updating
 
 Build from a clean commit and restart while nothing is running (a restart of `d2d-relay-web` cuts off a build):

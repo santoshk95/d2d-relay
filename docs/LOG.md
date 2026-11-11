@@ -405,6 +405,49 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
         Claude's built-in browser pane refuses every frame with a `sandbox` attribute (ERR_BLOCKED_BY_CLIENT): a
         quirk of that pane, not of the site.
 
+22. **Data governance** (the user's request of 2026-11-11: "Check all from data governance as well"). What was
+    found, and what changed (`app/governance.py`; `docs/d2d-relay.md`, "Data governance"; `/privacy.html`):
+    - **Nothing could be deleted.** No one could delete a dashboard (its uploads, extracts, versions, Power BI files
+      and activity log stayed for ever), an Ask Relay conversation, or an organisation. Now: Delete on the dashboard
+      page (its owner or an owner of the organisation; refused while a run is going) removes the folder, index rows,
+      shares, queued jobs, the conversations about it, cached answers that used it, notifications pointing at it and
+      the AI engine's transcripts of its runs, and is audited (`project.deleted`); the credit history stays. Delete
+      conversation in Ask Relay (the person who asked). PASDACS erases a whole organisation on its owner's written
+      request with `python -m app.governance erase-org <id> "<name>"`: schema, folders, secrets, visual library,
+      transcripts, accounts; the credit history stays without names (`d2d.org_erased`). The admin portal's container
+      holds neither the folders nor the AI engine, so this runs in the web container.
+    - **The AI engine kept everything it read.** Claude Code saves every run's transcript, tool output included
+      (samples and query results of customers' data), in the `claude-api-auth` volume: 30 folders and 65 MB on live,
+      among them the transcripts of every dashboard deleted at the fresh start (item 18). Now: Ask Relay's are deleted
+      as soon as the answer is given; a dashboard's with the dashboard; every night those of folders that no longer
+      exist and any older than 7 days (the agent service's new `POST /forget`); and the managed settings set
+      `cleanupPeriodDays` 7 and switch Claude Code's auto-memory off (no notes carried between runs).
+    - **Nothing expired.** Sign-in codes (address and network) and the audit trail were kept for ever, Ask Relay's
+      answer cache never expired, and database copies made by hand stayed in `data\backups` for good. Now a nightly
+      sweep (after the backup): audit trail, sign-in records and codes after a year (India's DPDP Rules 2025, rule
+      8(3): at least a year, then erase), the answer cache after 7 days, hand-made dumps and exports after 30 days.
+    - **No notice, no way to see one's data.** Now: a privacy notice (`/privacy.html`: what is held, why, who else
+      handles it (Anthropic in the USA, Microsoft 365, Cloudflare), how long, rights, grievances within 90 days, the
+      Data Protection Board), linked from the sign-in page, the profile menu and Organisation › Your data; and
+      Download my data (`GET /api/me/data`: profile, sign-ins, dashboards, conversations, credit requests, a year of
+      activity, nobody else's), audited as `privacy.export`.
+    - **Two routes left from RELAY could send data out:** pushing a dashboard to GitHub and writing back into a
+      warehouse. Both answer 404 now (`edition.EGRESS`); D2D Relay only reads warehouses.
+    - **A closed organisation's schema came back** (empty) the moment anything wrote to it, such as the audit row of
+      its own erasure: `db._check_ready` set up any tenant it knew. It now refuses closed ones.
+    - **Checked and fine:** organisations are kept apart (schemas, folders, secrets, the people directory and sharing
+      are per organisation); the admin portal shows organisations, credits and requests, never anyone's dashboards;
+      sign-in codes are salted hashes and sessions expire (12 h); the container logs carry user ids, never query
+      strings, bodies or codes, and rotate (5 x 20 MB); warehouse secrets are encrypted and backups never hold the key;
+      no tracking cookies.
+    - **Checked** (a test image from this code; a fresh test stack, removed afterwards): 60 data-governance checks
+      (deleting a dashboard as owner, editor and stranger, with what goes and what stays; deleting a conversation;
+      Download my data; the egress routes; the sweep on old and new records, dumps and transcripts; erasing an
+      organisation, a wrong name, the platform; the AI engine refusing paths outside its folder; the managed
+      settings), 10 in Chromium (the Delete dialog, Delete conversation, Your data and its download, the notice from
+      the sign-in page), and the earlier suites: 121 API checks (the 2 rehearsal checks need a copy of the live
+      database), 14 Ask Relay credit checks, 13 review checks.
+
 Test data in the live install: none since the fresh start (item 18).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -451,7 +494,8 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 - **Going back, if ever needed.** The code: every version is a commit on GitHub; build it in the deploy folder
   (`git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`), then `docker compose up -d --no-deps web
   admin`. The data before the fresh start: `data\backups\relay-db-20261111-064453.dump` (no dashboards are left
-  from then but the sample below).
+  from then but the sample below). Since item 22 the nightly sweep deletes hand-made dumps after 30 days: this one
+  and the three others of 10-11 November go around 10-11 December; move any that must stay out of `data\backups`.
 - **Images:** since 2026-11-11 (item 21) all three containers run the current image; older images were removed.
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
@@ -473,6 +517,22 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   page and its request say so.
 - **NOT DONE (from item 2):** an Exchange ApplicationAccessPolicy that limits the mail app to info@pasdacs.com. Codes
   now go to any business address; the sender stays info@pasdacs.com.
+- **Data governance: the user's decisions (item 22).**
+  - **The AI runs on a personal Claude plan.** The AI engine signs in with a Claude subscription ("Ultra", no team
+    seat), which Anthropic treats as a consumer plan: customers' data in it may be used to train models if the
+    account's "Help improve Claude" setting is on (then kept up to 5 years; otherwise 30 days). At once: switch that
+    setting off (claude.ai › Settings › Privacy). For customers' data: an Anthropic API key (commercial terms: not
+    used for training, a data processing addendum; D2D Relay supports it, provider `anthropic_api`) or a Team or
+    Enterprise plan. The privacy notice says Anthropic handles the data, and nothing about training until then.
+  - **The disk is not encrypted.** Windows reports BitLocker on C: as "waiting for activation": the database,
+    uploads and backups sit on it unprotected if the PC or disk is taken. Turn BitLocker (or Device encryption) on
+    and keep the recovery key somewhere safe.
+  - **Backups are on the same disk** as the data: keep an encrypted copy somewhere else.
+  - **The privacy notice is written from what the app does**, not by a lawyer: have it reviewed; check "PASDACS's own
+    server in India"; name a grievance officer if wanted. A customer agreement (terms, data processing) is not part of
+    the app.
+  - **The sign-in alert emails** keep names, addresses and networks in the info@pasdacs.com mailbox: give that folder
+    a retention rule (a year matches the app).
 - **The enterprise sample:** Global Ports Enterprise (demo), with two row-level security roles added by hand, is
   kept in `data\samples\global-ports-enterprise-demo-10c1` (its README says how to use it); its .pbix with both
   roles is also in `C:\Users\santosh.k\PbixBot\Output\Global Ports Enterprise Stress`.
