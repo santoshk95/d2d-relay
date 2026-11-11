@@ -663,9 +663,10 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   whether a GST invoice is needed (not built), and the refund rule (refunds are made by hand on Razorpay).
 - **GST invoices (item 25) are built, not deployed.** Needed from the user first: PASDACS's legal name, registered
   address, state, PIN and GSTIN; the SAC code (the accountant's; the setting suggests 998314); the LUT's ARN if one is
-  filed for 2026-27 (else dollar sales carry IGST, included in the price); and whether ₹100 a credit includes GST or
-  has 18% added. They go on the admin portal (Payments → Tax invoices), or the user sends them and they are set at the
-  deploy. Live keys cannot sell until they are complete.
+  filed for 2026-27 (else dollar sales carry IGST, included in the price). They go on the admin portal (Payments → Tax
+  invoices), or the user sends them and they are set at the deploy. Live keys cannot sell until they are complete.
+  **GST decided (the user, 2026-11-11: "₹100 + 18% GST"):** rupee prices have 18% GST added on top; at the deploy the
+  live settings get GST 18, not included (25 credits ₹2,500 + ₹450 GST = ₹2,950; dollar prices abroad unchanged).
 - **Dollar prices (item 24) are live** (since 2026-11-11 ~20:13 IST): $1 a credit outside India, ₹100 in India.
   **The Razorpay account takes Indian cards only** (seen in test mode): until the user switches on international
   payments (Razorpay Dashboard → Account & Settings → International payments; Razorpay reviews it), a buyer abroad
