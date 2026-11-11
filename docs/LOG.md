@@ -219,6 +219,19 @@ Cloudflare tunnel always carries `cf-connecting-ip` and still needs the emailed 
 
 ## Still open
 
+- **Items 11-14 are not deployed yet.** The live site still runs `eff2f2d` in the one container `d2d-relay`. The
+  move to the split containers was rehearsed on a copy of the live database but not run on the live site: it needs
+  the user's go-ahead. Ready on this PC: the image `d2d-relay:3d72bd2`, `RELAY_DB_PASSWORD` in the live `.env`
+  (backup `.env.bak-20261111-split`). In `Downloads\D2D Relay`, while nobody is building:
+
+  ```
+  git fetch C:\Users\santosh.k\Downloads\d2d.relay orgs-credits
+  git merge --ff-only FETCH_HEAD
+  docker tag d2d-relay:3d72bd2 d2d-relay:latest
+  powershell -ExecutionPolicy Bypass -File docker\move-to-split.ps1 -Tunnel -NoBuild
+  ```
+
+  Until then, do not run `docker compose up` there with the new `docker-compose.yml`.
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
