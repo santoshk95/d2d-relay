@@ -72,7 +72,7 @@ function versionDetail(st, v) {
         h('dt', {}, 'Contents'), h('dd', {}, `${v.pages.length} pages (${v.pages.join(', ')}) · ${v.visuals} visuals · ${v.measures} measures · ${v.tables} tables`),
         (v.custom_visuals || []).length ? [h('dt', {}, 'Custom visuals'), h('dd', {}, v.custom_visuals.map(c => `${c.title} (${c.origin === 'project' ? 'new' : 'library'})`).join(', '))] : null,
         usage ? [h('dt', {}, 'Relay'), h('dd', {}, `${spendModel(usage)} · ${dur(usage.duration_ms)}`)] : null,
-        pubs.length ? [h('dt', {}, 'Published'), h('dd', {}, pubs.map(p => h('div', {}, `${when(p.when)} · ${p.pbip || ''}` + (p.dax ? ' · DAX checked' : ''))))] : null),
+        pubs.length ? [h('dt', {}, 'Published'), h('dd', {}, pubs.map(p => h('div', {}, `${when(p.when)}${p.pbix ? ' · ' + p.pbix : ''}` + (p.dax ? ' · DAX checked' : ''))))] : null),
       !(v.gates || []).length && v.problems && v.problems.length ? h('details', {class: 'more'}, h('summary', {}, 'Show flagged items'), h('ul', {class: 'small'}, v.problems.map(p => h('li', {}, p)))) : null),
     v.summary ? h('div', {class: 'card'}, h('h3', {}, "Relay's notes"), notes(v.summary)) : null);
 }
@@ -263,7 +263,7 @@ function visualsSetting(st) {
 }
 function detailsTab(st) {
   const style = st.style || {};
-  const host = st.host_dir, o = st.output || {};
+  const o = st.output || {};        // D2D Relay: the server's own folders are never shown
   return [h('div', {class: 'dgrid'},
     h('div', {},
       requestCard(st),
@@ -272,10 +272,9 @@ function detailsTab(st) {
         h('dt', {}, 'Visuals'), h('dd', {}, visualsSetting(st)),
         h('dt', {}, 'Custom visuals'), h('dd', {}, {ask: 'Ask me in the plan', auto: 'Build when they fit better', never: 'Only available visuals'}[st.custom_visuals] || st.custom_visuals),
         h('dt', {}, 'Visual style'), h('dd', {}, [style.look ? `look ${style.look}` : null, style.brand_name ? `brand palette ${style.brand_name}` : style.accent ? `brand ${style.accent} (${style.palette})` : null, style.dark ? 'dark' : null].filter(Boolean).join(', ') || 'Relay decides'))),
-      h('div', {class: 'card'}, h('h3', {}, 'On this PC'), h('dl', {class: 'kv'},
-        host ? [h('dt', {}, 'Project folder'), h('dd', {}, h('div', {class: 'path', style: 'margin:0'}, h('code', {}, host), copyBtn(host)))] : null,
-        o.pbip_path ? [h('dt', {}, 'Power BI project'), h('dd', {}, h('div', {class: 'path', style: 'margin:0'}, h('code', {}, o.pbip_path), copyBtn(o.pbip_path)))] : null,
-        o.data_folder ? [h('dt', {}, 'Data folder'), h('dd', {}, h('div', {class: 'path', style: 'margin:0'}, h('code', {}, o.data_folder), copyBtn(o.data_folder)))] : null))),
+      o.pbix ? h('div', {class: 'card'}, h('h3', {}, 'Power BI file'), h('dl', {class: 'kv'},
+        h('dt', {}, 'File'), h('dd', {}, `${o.pbix}${o.pbix_mb ? ` · ${o.pbix_mb} MB` : ''}`),
+        o.data_folder ? [h('dt', {}, 'Refreshes from'), h('dd', {}, h('div', {class: 'path', style: 'margin:0'}, h('code', {}, o.data_folder), copyBtn(o.data_folder)))] : null)) : null),
     h('div', {},
       st.warehouse || (st.files || []).some(f => f.warehouse) ? warehouseCard(st) : null,
       h('div', {class: 'card'}, h('h3', {}, 'Files'), h('div', {class: 'muted small', style: 'margin:-6px 0 6px'}, 'What Relay and you wrote along the way — the request log, the plan and the report definition.'),

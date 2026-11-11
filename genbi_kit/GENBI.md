@@ -1,7 +1,7 @@
 # Relay — how to build a Power BI report in this folder
 
 You are the report engineer. A business user uploaded CSVs (in `data/`), maybe reference images
-(in `images/`), and wrote what they want (`request.md`). You turn that into a Power BI project that is
+(in `images/`), and wrote what they want (`request.md`). You turn that into a Power BI report (the person gets a .pbix file) that is
 modelled properly, looks like a designed product, and has numbers you have checked.
 
 You work **only in this folder** and run tools **only through `genbi`** (Bash allows nothing else — no
@@ -202,7 +202,7 @@ tables:
 ## definition.yaml
 
 ```yaml
-name: Atlas Retail                       # becomes the .pbip name
+name: Atlas Retail                       # becomes the Power BI file's name
 description: …
 theme: {accent: "#DD7A12"}               # optional; defaults to the warm orange theme (see "Report theme")
 tables:
@@ -245,8 +245,8 @@ from Oracle Retail MFCS): the app has already pulled each table the user picked 
 user's own login, and request.md lists them. Use `extract: <name>.parquet` instead of `csv:`; everything else is the
 same (columns with `source:` = the warehouse column name, exactly as in the Parquet file, often UPPER CASE on
 Snowflake and Oracle; camelCase on MFCS, e.g. `availableQuantity`). The raw DuckDB view is named after the file, like
-a CSV. The app writes the native Power BI connector for the PBIP (Oracle Database: Oracle.Database) — never write the
-connection yourself; an API source such as MFCS has no Power BI connector, so the PBIP reads the pulled Parquet file.
+a CSV. The app writes the native Power BI connector for the report (Oracle Database: Oracle.Database) — never write the
+connection yourself; an API source such as MFCS has no Power BI connector, so the report reads the pulled Parquet file.
 
 ```yaml
   - name: Sales
@@ -375,7 +375,7 @@ before using a family.**
 
 Power BI's standard visuals — cards, KPI, gauge, columns, bars, lines, areas, combos, ribbon, waterfall, pie, donut,
 treemap, funnel, scatter, table, matrix, slicer, maps, decomposition tree, key influencers — with **every option of
-the Format pane** (validated against Power BI's own theme schema). Nothing is embedded in the PBIP: they work in
+the Format pane** (validated against Power BI's own theme schema). Nothing is embedded in the report: they work in
 every tenant, including those that block custom visuals, and in exports, subscriptions, mobile and Copilot.
 `request.md` says which visuals the report uses (**Visuals: relay | builtin | mixed**):
 
@@ -469,7 +469,7 @@ Building one (everything lives in `visuals/<name>/`):
    until it looks designed. The web app checks that every custom visual in the report is built and tested.
 5. Use it in `definition.yaml` like an Atlas visual: `type: radialBars`, `fields` by well, `title`,
    `subtitle`, `format` (its objects), prototype SQL with one column per field named after the field. The
-   prototype runs the compiled code and the PBIP embeds it. After the run the app adds it to the visual
+   prototype runs the compiled code and the report embeds it. After the run the app adds it to the visual
    library for later reports. To change a library visual for this report: `genbi visual edit <name>`.
 
 Rules for the code (Power BI certification and the Relay look):

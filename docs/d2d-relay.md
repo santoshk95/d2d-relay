@@ -2,10 +2,12 @@
 
 D2D Relay is the dashboard part of RELAY by PASDACS, run as a separate product for a client. A person brings CSV files
 and describes the dashboard. D2D Relay plans it, agrees the KPIs, builds a prototype and reviews it. The result is a
-checked Power BI project (PBIP). Warehouses and databases are connected by PASDACS for an organisation on request.
+checked Power BI file (.pbix) with its data. Warehouses and databases are connected by PASDACS for an organisation on
+request.
 
 It is separate from RELAY. It lives in its own folder (`Downloads\D2D Relay`) with its own git repository. It has its
-own image (`d2d-relay:latest`), containers, volumes, projects folder (`data\projects`), DAX checker queue and sign-in.
+own image (`d2d-relay:latest`), containers, volumes, projects folder (`data\projects`), DAX checker and Power BI file
+maker queues and sign-in.
 Only the Claude sign-in volume (`claude-api-auth`) is shared, so both apps use the same Claude subscription.
 
 | | |
@@ -42,7 +44,7 @@ as separate Linux users that cannot read each other's keys.
 
 `webapp/app/edition.py` is the one place that decides this.
 
-- **Kept:** Dashboards (D2D: plan → KPIs → prototype → review → PBIP), the review gates and the Power BI engine
+- **Kept:** Dashboards (D2D: plan → KPIs → prototype → review → Power BI file), the review gates and the Power BI engine
   check, the visual library, sample data, Connections (connectors on request), Ask Relay, Branding, organisations
   and credits.
   There is no administration on the public site: every `/api/admin` path answers 404 there. PASDACS works on the
@@ -75,7 +77,33 @@ building. It dumps the database into `data\backups`, stops the old container (ke
 `docker compose down` then `docker start d2d-relay`.
 
 Start the DAX checker for D2D Relay too (it watches `data\projects\.daxcheck`, not RELAY's queue). Run
-`daxcheck\start-daxcheck.cmd`. It runs side by side with RELAY's checker.
+`daxcheck\start-daxcheck.cmd`. It runs side by side with RELAY's checker. Then start the Power BI file maker (below).
+
+### Power BI file maker
+
+What people download is `<Report>.zip`: `<Report>\<Report>.pbix` and `<Report>\data\*.csv`, nothing else (the CSV
+files are left out above 100 MB; the data is inside the `.pbix` anyway). Only Power BI Desktop can save a `.pbix`, so
+the app writes and checks the report, then asks the maker on this PC for the file:
+
+- **Start it:** double-click `pbix\start-pbix.cmd` in the deploy folder (a minimised window, "D2D Relay Power BI file
+  maker"). It watches `data\projects\.pbix` and makes one file at a time: about 40 seconds for a small dashboard,
+  about 3 minutes for 10 million rows. Starting it twice is harmless: the second window says so and closes.
+- **It needs a signed-in, unlocked Windows session:** it drives Power BI Desktop's window (open, refresh, Save as),
+  so Power BI Desktop windows open and close by themselves while it works. Leave the PC signed in; a locked screen
+  or a sign-out stops it. Power BI Desktop must be the Microsoft Download Center version (English), not the Store one.
+- **`C:\D2D Relay Data` is its folder:** every `.pbix` is made with its DataFolder parameter at
+  `C:\D2D Relay Data\<Report>\data\`, so unzipping a download into `C:\D2D Relay Data` lets Power BI Desktop
+  refresh it as it is. The maker made the folder (marked by `.d2d-relay-converter`) and empties each report's
+  folder after use; do not keep anything else there. Power BI Desktop works in `C:\D2D Relay Data\.work`, a short
+  path on purpose: Save as fails ("Something went wrong") once a report's files lie deeper than Windows' 260
+  characters, and the projects folder is too deep for that.
+- **When it is not running:** publishing waits two minutes, then stops with "The Power BI file maker is not running
+  on the D2D Relay PC", and every PASDACS person gets a notification (at most once an hour). Start it, then press
+  Retry on the dashboard. A dashboard published earlier shows "Make the Power BI file" instead of the download.
+- **When a file fails:** the dashboard shows the reason; the maker keeps that run's log and a picture of Power BI
+  Desktop's window in `data\projects\.pbix\work\<id>` for a day.
+- It shares a lock (`Local\PbixBot-Convert`) with the UiPath PbixFromZip bot, so the two never drive Power BI
+  Desktop at the same time.
 
 ## One-time setup
 

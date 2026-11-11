@@ -1,6 +1,6 @@
 """D2D Relay: the dashboard product, cut down from RELAY by PASDACS.
 
-What stays: Ask Relay (Ask D: questions about your data, answered with charts), Dashboards (describe -> plan -> KPIs -> prototype -> review -> Power BI project), the visual library,
+What stays: Ask Relay (Ask D: questions about your data, answered with charts), Dashboards (describe -> plan -> KPIs -> prototype -> review -> Power BI file, .pbix), the visual library,
 CSV / flat-file uploads, and Connections. Platform administration is the admin portal's (portal.py), not the public site's.
 
 Data: the public side takes CSV files (and demo data Relay generates). The warehouses and databases in CONNECTORS are

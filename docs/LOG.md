@@ -184,6 +184,46 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       was removed. Its database files stay in the volume `d2d-relay-data` (`/data/postgres`, 67 MB) until someone
       deletes them; the dump above is the backup.
 
+16. **The download is a Power BI file** (the user's request of 2026-11-11: only the .pbix and its data in the zip,
+    and no mention of PBIP or a Power BI project anywhere).
+    - What people download is `<Report>.zip` holding `<Report>/<Report>.pbix` and `<Report>/data/*.csv`, nothing
+      else (the CSVs only up to 100 MB; the data is inside the .pbix anyway). No report folder, README, prototype or
+      check reports.
+    - Only Power BI Desktop can save a .pbix, so the app writes and checks the report as before (it stays in the
+      project's `powerbi/` folder, never offered), then asks the new **Power BI file maker** on the D2D Relay PC for
+      the file: `pbix/pbix.ps1` (started with `pbix\start-pbix.cmd`), the same queue-folder pattern as the DAX
+      checker (`webapp/app/pbix.py` is the app's side). It opens the report in Power BI Desktop, refreshes it from the
+      CSVs, checks that every table loaded and saves the .pbix (`pbix/Convert-D2DZip.ps1`, from the UiPath
+      PbixFromZip bot). Every .pbix refreshes from `C:\D2D Relay Data\<Report>\data\`, so unzipping the download into
+      `C:\D2D Relay Data` lets Power BI Desktop refresh it as it is.
+    - Power BI Desktop works in `C:\D2D Relay Data\.work`: under the projects folder a report's files passed
+      Windows' 260 characters and Save as failed ("Something went wrong"); the converter now stops at once when
+      Power BI shows that box instead of waiting 15 minutes.
+    - Publishing: DAX check, review gates, then the .pbix; the dashboard says "Power BI file ready". When the maker
+      is not running, publishing stops with a plain message, PASDACS is notified (once an hour) and Retry finishes it.
+      A dashboard published before shows "Make the Power BI file" (the `pbix` job: no new checks, no credits), and
+      every published one has "Make the Power BI file again".
+    - No "PBIP" or "Power BI project" on any screen, note or download: the screens, the server's messages, the gate
+      name ("Report consistency"), the module texts and the agent's instructions (`prompts.py` forbids the words;
+      `GENBI.md` says "report"). Older notes and gate names are shown with today's words (`store.plain`,
+      `main._today_names`), and Relay's guide (the agent's CLAUDE.md) is no longer offered on the Details tab.
+      "Version to GitHub" and "Make a page" are gone from Publish & share (both led nowhere in D2D Relay), and the
+      API no longer returns the server's own project folder (`host_dir`).
+    - Checked on an isolated test stack (port 8105, built from this code, its projects folder on this PC served by
+      test copies of the DAX checker and the maker) with copies of the four live dashboards:
+      - "D2D smoke test", 24 API checks: the old download refused until the file is made, "Make the Power BI file",
+        the zip's contents, the .pbix's data and DataFolder, approving v1 again through the DAX check and the 13
+        gates, and nothing the page gets says PBIP or Power BI project. 35 s for the file, 46 s for a full publish.
+      - "Brand palette test" and "Retail Performance 360", 15 checks each (about 40 s); "Global Ports Enterprise
+        (demo)", 15 checks in 196 s: a 170 MB .pbix with its 30 pages and both RLS roles, the 961 MB of CSVs left
+        out of the zip.
+      - Each .pbix opened in Power BI Desktop: every table has its rows and DataFolder is
+        `C:\D2D Relay Data\<Report>\data\`.
+      - The maker stopped: the run stops after two minutes with a plain message, PASDACS is notified, and Retry
+        finishes it. A second maker for the same data folder refuses to start.
+      - The screens in a browser: the banners while making and when ready, "not made yet", the download card, the
+        Versions, Activity and Details tabs, the sign-in page.
+
 Test data in the live install: the dashboards "D2D smoke test" and "Brand palette test". A user uploaded their own logo
 (JPEG) on Branding but has not picked a palette yet; leave it.
 
@@ -236,8 +276,8 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   organisations use a service-account key, a password or a key pair instead.
 - **NOT DONE (from item 2):** an Exchange ApplicationAccessPolicy that limits the mail app to info@pasdacs.com. Codes
   now go to any business address; the sender stays info@pasdacs.com.
-- **Row-level security (backlog, 2026-11-10).** D2D can't set up RLS yet. The plan has no roles and the Power BI project
-  it writes has none, so everyone who opens a report sees every row. Large organisations will ask for it. What to build,
+- **Row-level security (backlog, 2026-11-10).** D2D can't set up RLS yet. The plan has no roles and the Power BI file
+  it makes has none, so everyone who opens a report sees every row. Large organisations will ask for it. What to build,
   and when it counts as done, is in `docs/rls-backlog.md`. The enterprise demo in the PASDACS workspace, Global Ports
   Enterprise (demo), has two roles added by hand. A change request on that dashboard would drop them.
 

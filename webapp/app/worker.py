@@ -25,7 +25,7 @@ from genbi_kit import datagen, daxcheck, definition, gates, prototype, report_bu
 from genbi_kit import validate as checks
 from genbi_kit.profile import profile
 
-from . import connectors, db, doctor, errors, instances, notify, orgs, prompts, providers, store, usage
+from . import connectors, db, doctor, errors, instances, notify, orgs, pbix, prompts, providers, store, usage
 
 AGENT_URL = os.environ.get("AGENT_URL", "http://agent:8090")
 CATALOG = Path(os.environ.get("MODELS_FILE", "/opt/genbi/config/models.json"))
@@ -166,7 +166,7 @@ LLM_KINDS = {"plan", "build", "revise", "data"}
 # phase 8: the other CLIs run in their own agent images (docker compose --profile runners)
 RUNNER_URLS = {"codex": "http://agent-codex:8090", "gemini": "http://agent-gemini:8090", "antigravity": "http://agent-antigravity:8090",
                **json.loads(os.environ.get("D2D_RUNNER_URLS") or "{}")}
-DONE_TEXT = {"plan": "Plan ready", "build": "Prototype built", "revise": "Changes applied", "pbi": "Power BI report published",
+DONE_TEXT = {"plan": "Plan ready", "build": "Prototype built", "revise": "Changes applied", "pbi": "Power BI file ready",
              "data": "Demo data ready", "extract": "Warehouse data pulled"}
 
 
@@ -604,7 +604,7 @@ async def _extract(pid: str) -> None:
     store.note(pid, "Warehouse tables", f"Pulled from {label} ({c['name']}) with the user's own "
                "login. In definition.yaml use `extract: <file>` for these tables (CLAUDE.md, Warehouse tables); the app "
                + ("writes the native Power BI connector.\n" if c["kind"] in report_builder.NATIVE_KINDS else
-                  f"refreshes these files ({label} has no Power BI connector, so the Power BI project reads them).\n")
+                  f"refreshes these files ({label} has no Power BI connector, so the Power BI file reads them).\n")
                + "\n".join(f"- data/{i['file']} ← {i['object']} ({i['rows']:,} rows)" for i in done))
     app_note(pid, "extract", f"Data ready: {len(done)} table(s), {sum(i['rows'] for i in done):,} rows.", "ok")
     if not store.load(pid).get("plan_rounds"):
@@ -862,23 +862,11 @@ def check_version(pid: str, v: int) -> list[dict]:
 
 
 # ---------------------------------------------------------------- Power BI
+# D2D Relay: what people download is a Power BI file. The report is written and checked here (the folder powerbi/,
+# never offered for download), then Power BI Desktop on the D2D Relay PC makes the .pbix (pbix.py), and the download
+# is <Report>.zip holding <Report>/<Report>.pbix and <Report>/data/*.csv, nothing else.
 
-README = """{name} — Power BI project (PBIP) built by D2D
-
-Open "{name}.pbip" in Power BI Desktop, then press Refresh.
-
-The model reads the CSVs from the folder in the DataFolder parameter:
-    {folder}
-If you move the project to another computer, put the CSVs in a folder there and change the parameter
-(Home > Transform data > Edit parameters > DataFolder), then Refresh.{zip_note}
-
-The report uses D2D custom visuals; they are embedded in the project (no import needed).{custom_note}
-Prototype.html is the approved browser prototype (v{v}).
-DAX check.txt: every measure and visual query was evaluated in Power BI's own engine before publishing, with
-the value each measure shows.
-Review gates.txt: every check this project passed before it was published — Power Query, data, DAX, Microsoft's
-report schemas, file consistency, best-practice and accessibility rules, the display check, and your approval.
-"""
+OLD_OUTPUT_KEYS = ("pbip", "pbip_path", "folder")       # what a dashboard published before the .pbix kept
 
 
 def _save_gates(pid: str, d: Path, v: int, found: list[dict], dax: dict | None = None) -> None:
@@ -913,8 +901,10 @@ def _build_pbip(d: Path, pid: str, v: int) -> dict:
     out, stage = d / "powerbi", d / ".publish"
     # publish only what Power BI's own engine accepts: every measure and visual query, before anything is written
     if not daxcheck.available():
-        raise RuntimeError("The DAX checker is not running on this PC, so the DAX cannot be checked in Power BI's engine "
-                           "before publishing. Start daxcheck\\start-daxcheck.cmd (in the Gen BI folder), then press Retry.")
+        _tell_pasdacs("The DAX checker is not running on the D2D Relay PC", "Start daxcheck\\start-daxcheck.cmd on the "
+                      "D2D Relay PC: publishing waits for it.")
+        raise RuntimeError("Power BI's engine on the D2D Relay PC is not running just now, so the DAX cannot be checked "
+                           "before publishing. PASDACS has been told; press Retry in a few minutes.")
     try:
         dax = daxcheck.summary(daxcheck.run(d, dd, catalog()))
     except Exception as err:  # noqa: BLE001 - shown to the user
@@ -939,38 +929,9 @@ def _build_pbip(d: Path, pid: str, v: int) -> dict:
         raise RuntimeError(f"Publishing stopped at {len(bad)} review gate(s) ({', '.join(g['name'] for g in bad)}), so "
                            f"nothing was published. Ask Relay to fix them with a change request: "
                            + " | ".join(gates.problems(found)[:6]))
-    shutil.copy2(d / "versions" / f"v{v}" / "prototype.html", stage / "Prototype.html")
-    (stage / "DAX check.txt").write_text(daxcheck.text_report(dax, pbip.stem), encoding="utf-8")
-    (stage / "Review gates.txt").write_text(gates.text_report(found, pbip.stem), encoding="utf-8")
     customs = _custom_used(dd)
-    for cv in customs:        # also as .pbiviz files, to import into other reports
-        src = (d / "visuals" / "dist" if cv["origin"] == "project" else library_dir() / cv["name"]) / f"{cv['name']}.pbiviz"
-        if src.exists():
-            (stage / "custom-visuals").mkdir(exist_ok=True)
-            shutil.copyfile(src, stage / "custom-visuals" / f"{cv['name']}.pbiviz")
-    custom_note = ("\nCustom visuals made for this report: " + ", ".join(c["title"] for c in customs)
-                   + " — their .pbiviz files are in custom-visuals/ to import into other reports." if customs else "")
-    csvs = sorted((d / "data").glob("*.csv"))
-    with_data = sum(f.stat().st_size for f in csvs) <= ZIP_DATA_LIMIT
-    zip_note = ("\nThe download also contains the CSVs in data/ — point DataFolder there if you open it elsewhere."
-                if with_data else "")
-    (stage / "README.txt").write_text(README.format(name=pbip.stem, folder=folder, zip_note=zip_note, v=v,
-                                                    custom_note=custom_note), encoding="utf-8")
-    _move(stage, out)           # every gate passed: the checked files become the published project
-    pbip = out / pbip.name
-    zpath = d / f"{pbip.stem}.zip"
-    tmp = zpath.with_suffix(".zip.tmp")
-    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
-        for f in sorted(out.rglob("*")):
-            if f.is_file():
-                z.write(f, f"{pbip.stem}/{f.relative_to(out).as_posix()}")
-        if with_data:
-            for f in csvs:
-                z.write(f, f"{pbip.stem}/data/{f.name}")
-    os.replace(tmp, zpath)
-    host = f"{HOST_DIR}\\{pid}\\powerbi" if HOST_DIR else None
-    return {"pbip": pbip.name, "zip": zpath.name, "folder": host, "pbip_path": f"{host}\\{pbip.name}" if host else None,
-            "data_folder": folder, "data_in_zip": with_data, "pages": len(dd["pages"]),
+    _move(stage, out)           # every gate passed: the checked files become the published report (kept here only)
+    return {"report": pbip.stem, "pages": len(dd["pages"]),
             "visuals": sum(len(p["visuals"]) for p in dd["pages"]), "measures": len(dd["measures"]),
             "custom_visuals": [c["title"] for c in customs],
             "dax": {"checked": True, "engine": dax["engine"], "measures": dax["measures"], "visuals": dax["visuals"],
@@ -979,24 +940,117 @@ def _build_pbip(d: Path, pid: str, v: int) -> dict:
             "gates": gates.compact(found)}
 
 
+def _tell_pasdacs(title: str, text: str) -> None:
+    """A helper on the D2D Relay PC is not running: every PASDACS person is told (at most once an hour per message)."""
+    try:
+        key = "pc_helper_told:" + title
+        with db.use(db.PLATFORM):
+            last = float(db.meta(key) or 0)
+            if time.time() - last < 3600:
+                return
+            db.set_meta(key, str(time.time()))
+        orgs._tell_platform(title, text, "#/orgs")                          # noqa: SLF001
+    except Exception:  # noqa: BLE001 - never fail the run over the notice
+        traceback.print_exc()
+
+
+def _published_report(d: Path, st: dict) -> str:
+    """The name of the checked report in powerbi/ (its folder holds <name>.pbip and the report and model next to it)."""
+    name = (st.get("output") or {}).get("report") or Path((st.get("output") or {}).get("pbip") or "").stem
+    if not name or not (d / "powerbi" / f"{name}.pbip").exists():
+        found = sorted((d / "powerbi").glob("*.pbip"))
+        if not found:
+            raise RuntimeError("This dashboard has no published report to make the Power BI file from. Approve a version first.")
+        name = found[0].stem
+    return name
+
+
+def _make_pbix(d: Path, report: str) -> dict:
+    """The download: Power BI Desktop on the D2D Relay PC makes <report>.pbix from the checked report, then
+    <report>.zip gets the .pbix and the dashboard's CSVs (up to ZIP_DATA_LIMIT; the data is inside the .pbix anyway)."""
+    src_dir, inbox = d / "powerbi", d / ".pbix-in"
+    shutil.rmtree(inbox, ignore_errors=True)
+    inbox.mkdir()
+    checked = inbox / f"{report}.zip"
+    keep = (f"{report}.pbip", f"{report}.Report/", f"{report}.SemanticModel/")      # the report itself, nothing else
+    with zipfile.ZipFile(checked, "w", zipfile.ZIP_DEFLATED) as z:      # at the zip's top: no folder level, short paths
+        for f in sorted(src_dir.rglob("*")):
+            rel = f.relative_to(src_dir).as_posix()
+            if f.is_file() and (rel == keep[0] or rel.startswith(keep[1:])):
+                z.write(f, rel)
+    if not pbix.available():
+        _tell_pasdacs("The Power BI file maker is not running on the D2D Relay PC",
+                      "Start pbix\\start-pbix.cmd on the D2D Relay PC: published dashboards wait for it.")
+    try:
+        made = pbix.make(d, checked, report)
+    except pbix.PbixError as e:
+        if not pbix.available():
+            _tell_pasdacs("The Power BI file maker is not running on the D2D Relay PC",
+                          "Start pbix\\start-pbix.cmd on the D2D Relay PC: published dashboards wait for it.")
+            raise RuntimeError(f"{e} PASDACS has been told; press Retry in a few minutes.") from e
+        raise RuntimeError(f"{e} Press Retry; if it happens again, PASDACS can see why on the D2D Relay PC.") from e
+    finally:
+        shutil.rmtree(inbox, ignore_errors=True)
+    csvs = sorted((d / "data").glob("*.csv"))
+    with_data = sum(f.stat().st_size for f in csvs) <= ZIP_DATA_LIMIT
+    zpath = d / f"{report}.zip"
+    tmp = zpath.with_suffix(".zip.tmp")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+        z.write(made["pbix"], f"{report}/{report}.pbix", compress_type=zipfile.ZIP_STORED)     # a .pbix is compressed already
+        if with_data:
+            for f in csvs:
+                z.write(f, f"{report}/data/{f.name}")
+    os.replace(tmp, zpath)
+    size = made["pbix"].stat().st_size
+    shutil.rmtree(made["pbix"].parent, ignore_errors=True)                   # the zip holds it
+    return {"pbix": f"{report}.pbix", "zip": zpath.name, "pbix_mb": round(size / 1048576, 1), "data_in_zip": with_data,
+            "data_mb": round(sum(f.stat().st_size for f in csvs) / 1048576, 1),
+            "data_folder": made.get("data_folder"), "made_seconds": made.get("seconds")}
+
+
 async def _pbi(pid: str, v: int) -> None:
     d = store.project_dir(pid)
-    app_note(pid, "pbi", f"Building the Power BI project from prototype v{v}…")
+    app_note(pid, "pbi", f"Checking prototype v{v} in Power BI's engine and running the review gates…")
     out = await asyncio.to_thread(_build_pbip, d, pid, v)
+    app_note(pid, "pbi", "Every check passed. Power BI Desktop is making the .pbix file…")
+    out.update(await asyncio.to_thread(_make_pbix, d, out["report"]))
     st = store.load(pid)
     st.update(status="done", job=None, approved=v, output=out, finished=time.time())
     from . import publishing
     review = publishing.approved_by(st, v)
-    st.setdefault("publishes", []).append({"v": v, "when": time.time(), "pbip": out["pbip"], "zip": out["zip"],
+    st.setdefault("publishes", []).append({"v": v, "when": time.time(), "pbix": out["pbix"], "zip": out["zip"],
                                           "dax": out.get("dax"), "custom_visuals": out.get("custom_visuals"),
                                           "gates": out.get("gates"), "published_by": _owner(pid),
                                           "review": {"reviewer": review["decided_by"], "approved": review.get("decided")} if review else None})
     store.save(st)
     if out["dax"]["differences"]:
-        app_note(pid, "pbi", f"{len(out['dax']['differences'])} value(s) in Power BI differ from the approved prototype — "
-                 "see DAX check.txt, or ask Relay to make them agree:", "warn", out["dax"]["differences"])
+        app_note(pid, "pbi", f"{len(out['dax']['differences'])} value(s) in Power BI differ from the approved prototype; "
+                 "ask Relay to make them agree:", "warn", out["dax"]["differences"])
     passed = [g for g in out["gates"] if g["status"] in ("pass", "warn")]
     warned = [g["name"] for g in out["gates"] if g["status"] == "warn"]
-    app_note(pid, "pbi", f"Power BI project ready: {out['pbip']} ({out['pages']} pages, {out['visuals']} visuals, "
-             f"{out['measures']} measures) — passed all {len(passed)} review gates"
-             + (f", with warnings in {', '.join(warned)}" if warned else "") + ". See Review gates.txt.", "ok")
+    app_note(pid, "pbi", f"Power BI file ready: {out['pbix']} ({out['pages']} pages, {out['visuals']} visuals, "
+             f"{out['measures']} measures, {out['pbix_mb']} MB). It passed all {len(passed)} review gates"
+             + (f", with warnings in {', '.join(warned)}" if warned else "") + ".", "ok")
+
+
+async def _pbix_job(pid: str, args: dict) -> None:
+    """A dashboard published before the .pbix (or whose .pbix should be made again): Power BI Desktop makes it from
+    the report already published, with no new checks and no credits."""
+    d = store.project_dir(pid)
+    st = store.load(pid)
+    report = _published_report(d, st)
+    app_note(pid, "pbi", "Power BI Desktop is making the .pbix file…")
+    made = await asyncio.to_thread(_make_pbix, d, report)
+    st = store.load(pid)
+    out = {k: v for k, v in (st.get("output") or {}).items() if k not in OLD_OUTPUT_KEYS}
+    out.update(made, report=report)
+    st.update(status="done", job=None, output=out, error=None)
+    for p in st.get("publishes") or []:
+        if p.get("v") == st.get("approved"):
+            p.pop("pbip", None)
+            p.update(pbix=made["pbix"], zip=made["zip"])
+    store.save(st)
+    app_note(pid, "pbi", f"Power BI file ready: {made['pbix']} ({made['pbix_mb']} MB).", "ok")
+
+
+register_job("pbix", _pbix_job, status="building_pbi", done="Power BI file ready")

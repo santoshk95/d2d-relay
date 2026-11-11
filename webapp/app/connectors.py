@@ -71,7 +71,7 @@ KINDS = {
     "athena": {"label": "Amazon Athena", "dialect": "athena", "auth": ["aws_keys"],
                "fields": [("region", "Region", True), ("s3_staging_dir", "Query results location (s3://…)", True),
                           ("workgroup", "Workgroup (optional)", False), ("database", "Database", True),
-                          ("dsn", "Power BI ODBC DSN name (for the PBIP)", False)],
+                          ("dsn", "Power BI ODBC DSN name (for the Power BI file)", False)],
                "secrets": {"aws_keys": ["aws_access_key_id", "aws_secret_access_key"]}},
     "oracle_db": {"label": "Oracle Database", "dialect": "oracle", "auth": ["password", "wallet"],
                   "fields": [("host", "Host (add tcps:// for TLS, e.g. tcps://adb.uk-london-1.oraclecloud.com)", True),

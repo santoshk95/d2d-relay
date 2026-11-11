@@ -2,7 +2,7 @@
 
 Every gate is {"id", "name", "standard", "status", "summary", "items": [{"level", "text"}]}. Its status is the worst
 item level: fail (blocks — Claude fixes it in the fix rounds; Approve and publishing wait for it), warn (advice) or
-pass; skip says why a gate could not run. The file gates read the Power BI project exactly as it is written:
+pass; skip says why a gate could not run. The file gates read the report's files exactly as they are written:
 
   power_query   each table's Power Query steps replayed on its CSV header: every column a step uses exists and no
                 rename or copy lands on a name that is taken ("The field 'x' already exists in the record")
@@ -35,7 +35,7 @@ GATES = {   # id: (name, what it checks) — in the order a report passes them
     "dax": ("DAX in Power BI's engine", "Power BI Desktop's engine evaluates every measure and visual query"),
     "values": ("Values match the prototype", "Power BI's numbers and titles against the prototype SQL"),
     "pbir_schema": ("Report files", "Microsoft's PBIR JSON schemas"),
-    "coherence": ("Project consistency", "pages, visuals, fields, custom visuals and themes all resolve"),
+    "coherence": ("Report consistency", "pages, visuals, fields, custom visuals and themes all resolve"),
     "model_rules": ("Model best practices", "Microsoft's Best Practice Analyzer rules"),
     "report_rules": ("Report & accessibility", "titles, alt text, layout and contrast (WCAG 2.1)"),
     "display": ("Display check", "every page drawn in a headless browser, labels read back"),
@@ -588,12 +588,12 @@ def coherence(out: Path, data_dir: Path | None = None) -> dict:
     items: list = []
     pbips = sorted(out.glob("*.pbip"))
     if len(pbips) != 1:
-        return gate("coherence", [fail(f"the folder should hold one .pbip file, it holds {len(pbips)}")])
+        return gate("coherence", [fail(f"the folder should hold one report, it holds {len(pbips)}")])
     pbip = _load(pbips[0], items, out) or {}
     arts = [((a or {}).get("report") or {}).get("path") for a in pbip.get("artifacts") or []]
     rdir = out / arts[0] if arts and arts[0] else None
     if rdir is None or not (rdir / "definition.pbir").is_file():
-        return gate("coherence", items + [fail(f"{pbips[0].name} points to a report folder without definition.pbir")])
+        return gate("coherence", items + [fail(f"the report {pbips[0].stem} points to a report folder without definition.pbir")])
     pbir = _load(rdir / "definition.pbir", items, out) or {}
     path = ((pbir.get("datasetReference") or {}).get("byPath") or {}).get("path")
     sdir = (rdir / path).resolve() if path else None
@@ -1006,7 +1006,7 @@ def dax_gates(s: dict | None) -> list[dict]:
 
 def file_gates(d: Path, dd: dict, catalog: dict, visuals_dir: Path | None, con=None, out: Path | None = None,
                dax: dict | None = None) -> list[dict]:
-    """The gates that read the Power BI project: built into a temporary folder, or `out` when publishing. `dax` is
+    """The gates that read the report's files: built into a temporary folder, or `out` when publishing. `dax` is
     the DAX check summary, when there is one (it tells which measures return text)."""
     from . import report_builder
     texts = {v["name"] for v in (dax or {}).get("values") or [] if isinstance(v.get("value"), str)}
@@ -1032,7 +1032,7 @@ def file_gates(d: Path, dd: dict, catalog: dict, visuals_dir: Path | None, con=N
                 found.append(gate(gid, [fail(f"the check crashed: {e.__class__.__name__}: {e}")]))
         return found
     except Exception as e:  # noqa: BLE001 - the project could not even be written
-        return [gate("coherence", [fail(f"the Power BI project could not be written: {str(e).splitlines()[0][:300]}")])]
+        return [gate("coherence", [fail(f"the Power BI report could not be written: {str(e).splitlines()[0][:300]}")])]
     finally:
         if tmp is not None:
             shutil.rmtree(tmp, ignore_errors=True)

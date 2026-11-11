@@ -45,12 +45,14 @@ function banner(st) {
   const box = (tone, ic, title, text, ...acts) => h('div', {class: 'banner ' + tone}, h('div', {class: 'ic'}, ic),
     h('div', {class: 'txt'}, h('div', {class: 't'}, title), h('div', {class: 'd', id: tone === 'run' ? 'btext' : null}, text)), acts);
   if (RUN.has(st.status)) {
-    const kind = st.status === 'queued' ? (st.job || {}).kind : {generating_data: 'data', planning: 'plan', building: 'build', revising: 'revise', building_pbi: 'pbi'}[st.status];
-    const title = st.status === 'queued' ? 'Waiting for the agent' : {data: 'Relay is designing and generating demo data for your business',
+    const kind = st.status === 'queued' || st.status === 'building_pbi' ? (st.job || {}).kind
+      : {generating_data: 'data', planning: 'plan', building: 'build', revising: 'revise'}[st.status];
+    const title = st.status === 'queued' ? (kind === 'pbix' ? 'Waiting to make the Power BI file' : 'Waiting for the agent') : {data: 'Relay is designing and generating demo data for your business',
       plan: 'Relay is reading your data and planning the report',
       build: 'Relay is building the model, KPIs and prototype', revise: `Relay is applying your changes (v${(lv || 0) + 1})`,
-      pbi: "Publishing: checking the DAX in Power BI's engine and writing the Power BI project"}[kind];
-    return box('run', h('div', {class: 'spin'}), title, '', kind !== 'pbi' ? h('button', {class: 'btn', onclick: stopRun}, 'Stop') : null);
+      pbi: "Publishing: checking the DAX in Power BI's engine, then making the Power BI file (.pbix)",
+      pbix: 'Making the Power BI file (.pbix) in Power BI Desktop'}[kind] || 'Publishing';
+    return box('run', h('div', {class: 'spin'}), title, '', kind !== 'pbi' && kind !== 'pbix' ? h('button', {class: 'btn', onclick: stopRun}, 'Stop') : null);
   }
   if (st.status === 'awaiting_kpis') return box('you', icon('user'), 'Action required: confirm the plan',
     'Check the KPIs and their formulas below, choose about any custom visuals, then confirm — Relay builds the prototype next.');
@@ -60,15 +62,17 @@ function banner(st) {
       `${bad.length} review gate${bad.length === 1 ? '' : 's'} failed (${bad.map(g => g.name).join(', ')}). Ask Relay to fix them, or describe other changes below.`,
       h('button', {class: 'btn primary', title: "Fixing what failed in Relay's own review gates uses no credits", onclick: e => fixGates(st, v, e.currentTarget)}, 'Ask Relay to fix them'));
     return box('you', icon('user'), `Ready for review: prototype v${lv}`,
-      (v.gates || []).length ? `It passed every review gate. Approve it to publish the Power BI project, or describe what should change.`
-        : 'Approve it to publish the Power BI project, or describe what should change.',
+      (v.gates || []).length ? `It passed every review gate. Approve it to get the Power BI file (.pbix), or describe what should change.`
+        : 'Approve it to get the Power BI file (.pbix), or describe what should change.',
       h('button', {class: 'btn', onclick: () => { const a = $('.sticky .btn.primary'); if (a) { a.scrollIntoView({behavior: 'smooth', block: 'center'}); a.focus({preventScroll: true}); } }},
         'Review and approve ↓'));
   }
   if (st.status === 'done') {
     const o = st.output || {};
-    return box('ok', icon('check'), `Published to Power BI · v${st.approved}`,
-      `${o.pbip || ''} · ${o.pages} pages · ${o.visuals} visuals · ${o.measures} measures` + (o.dax ? " · DAX checked in Power BI's engine" : ''),
+    if (!o.pbix) return box('you', icon('alert'), `Published · v${st.approved}: the Power BI file is not made yet`,
+      'Power BI Desktop makes the .pbix file from the published version: no new checks and no credits.', makePbixBtn(st));
+    return box('ok', icon('check'), `Power BI file ready · v${st.approved}`,
+      `${o.pbix} · ${o.pages} pages · ${o.visuals} visuals · ${o.measures} measures` + (o.dax ? " · DAX checked in Power BI's engine" : ''),
       h('a', {class: 'btn primary', href: `/api/projects/${st.id}/download`}, icon('download'), 'Download'));
   }
   if (st.status === 'error') {
@@ -429,20 +433,35 @@ function reviewView(st) {
     h('div', {class: 'sticky'}, actions),
   ];
 }
+/* make the Power BI file (.pbix) of the published version (a dashboard published before it existed, or again) */
+function makePbixBtn(st, label = 'Make the Power BI file') {
+  if (!(st.access && st.access.can_publish)) return null;
+  const b = h('button', {class: 'btn primary', type: 'button', onclick: async () => { b.disabled = true;
+    try { S.project = await api(`/api/projects/${st.id}/pbix`, {method: 'POST'}); S.key = null; render(); poll(); }
+    catch (e) { b.disabled = false; notify(e.message, 'err'); } }}, icon('download'), label);
+  return b;
+}
 function doneCard(st) {
   const o = st.output || {};
+  if (!o.pbix) return h('div', {class: 'card'}, h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Your Power BI file'), h('span', {class: 'spacer'}), makePbixBtn(st)),
+    h('div', {class: 'muted small', style: 'margin-top:4px'}, `Not made yet. Power BI Desktop makes the .pbix from the published version v${st.approved}; it takes a minute or two.`));
+  const folder = o.data_folder || '';
   return h('div', {class: 'card'},
-    h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Your Power BI project'), h('span', {class: 'spacer'}),
+    h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Your Power BI file'), h('span', {class: 'spacer'}),
       h('a', {class: 'btn primary', href: `/api/projects/${st.id}/download`}, icon('download'), 'Download ', o.zip || 'zip')),
-    h('div', {class: 'muted small', style: 'margin-top:4px'}, `${o.pbip} · ${o.pages} pages · ${o.visuals} visuals · ${o.measures} measures · from prototype v${st.approved}`),
+    h('div', {class: 'muted small', style: 'margin-top:4px'}, `${o.pbix}${o.pbix_mb ? ` (${o.pbix_mb} MB)` : ''} · ${o.pages} pages · ${o.visuals} visuals · ${o.measures} measures · from prototype v${st.approved}`),
     (o.gates || []).length ? gatesPanel(st, {v: st.approved, gates: o.gates, dax: {...(o.dax || {}), checked: true}}, {title: 'Review gates passed before publishing', rerun: false})
       : o.dax ? daxLine(st, st.approved, {...o.dax, problems: 0}) : null,
-    (o.custom_visuals || []).length ? h('div', {class: 'small', style: 'margin-top:6px'}, '✦ Custom visuals: ' + o.custom_visuals.join(', ') + ' — embedded in the report; their .pbiviz files are in custom-visuals/ in the download.') : null,
+    (o.custom_visuals || []).length ? h('div', {class: 'small', style: 'margin-top:6px'}, '✦ Custom visuals: ' + o.custom_visuals.join(', ') + ' (inside the .pbix).') : null,
     h('div', {class: 'done-grid'},
-      h('div', {}, h('b', {}, 'Open it on this PC'), h('div', {class: 'small muted'}, 'Open the .pbip in Power BI Desktop and press Refresh. Close an open copy without saving first.'),
-        o.pbip_path ? h('div', {class: 'path'}, h('code', {}, o.pbip_path), copyBtn(o.pbip_path)) : h('div', {class: 'small'}, 'Unzip the download and open the .pbip file.')),
-      h('div', {}, h('b', {}, 'Data'), h('div', {class: 'small muted'}, 'The model loads the CSVs from the DataFolder parameter:'),
-        h('div', {class: 'path'}, h('code', {}, o.data_folder || ''), copyBtn(o.data_folder || '')),
-        h('div', {class: 'small muted', style: 'margin-top:4px'}, o.data_in_zip ? 'The zip also contains the CSVs.' : 'The CSVs are not in the zip (large) — they stay in the folder above.'))));
+      h('div', {}, h('b', {}, 'Open it'), h('div', {class: 'small muted'}, `Unzip the download and open ${o.pbix} in Power BI Desktop. The data is already inside it.`)),
+      h('div', {}, h('b', {}, 'Refresh it with new data'),
+        h('div', {class: 'small muted'}, folder ? 'Put the CSVs in this folder (unzipping the download into C:\\D2D Relay Data does it), then press Refresh in Power BI Desktop:'
+          : 'Point the DataFolder parameter at the folder with the CSVs (Transform data › Edit parameters), then press Refresh.'),
+        folder ? h('div', {class: 'path'}, h('code', {}, folder), copyBtn(folder)) : null,
+        h('div', {class: 'small muted', style: 'margin-top:4px'}, (o.data_in_zip ? 'The zip holds the .pbix and the CSVs in data\\.'
+          : `The zip holds the .pbix only: the CSVs (${o.data_mb || '?'} MB) are too large to add.`)
+          + ' Elsewhere, change the DataFolder parameter (Transform data › Edit parameters).')),
+      st.access && st.access.can_publish ? h('div', {class: 'small muted'}, makePbixBtn(st, 'Make the Power BI file again')) : null));
 }
 

@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from genbi_kit import datagen, daxcheck, definition, library_dir, vfactory, visuals_dir
 from genbi_kit import validate as checks
 from genbi_kit.data import _lit
+from genbi_kit.gates import GATES as GATE_INFO
 
 from . import (askd_routes, auth, connectors, publishing, publishing_routes, data_routes, db, identity, instances, ops, platform, prompts, providers, secrets_store, semantic,
                semantic_routes, store, worker)
@@ -34,7 +35,7 @@ from . import portal                                 # D2D Relay: the public sit
 errors.install()                                # every traceback.print_exc() and thread crash reports Relay's own bugs (Relay Doctor)
 STATIC = Path(__file__).resolve().parent.parent / "static"
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
-VIEWABLE = {"request.md", "plan.yaml", "definition.yaml", "profile.md", "CLAUDE.md", "datagen.yaml"}
+VIEWABLE = {"request.md", "plan.yaml", "definition.yaml", "profile.md", "datagen.yaml"}    # D2D Relay: not CLAUDE.md, the agent's own manual
 CHUNK = 1024 * 1024
 
 
@@ -516,6 +517,15 @@ def me():
             "portal": portal.NAME}
 
 
+def _today_names(gs):
+    """Gate results keep the name they were saved with: show today's (an older "Project consistency" is now "Report
+    consistency")."""
+    for g in gs if isinstance(gs, list) else []:
+        if isinstance(g, dict) and g.get("id") in GATE_INFO:
+            g["name"] = GATE_INFO[g["id"]][0]
+    return gs
+
+
 @app.get("/api/projects/{pid}")
 def get_project(pid: str):
     st = _get(pid)
@@ -545,12 +555,21 @@ def get_project(pid: str):
     st.setdefault("custom_visuals", "ask")
     st.setdefault("visuals_mode", "relay")
     if not st.get("publishes") and st.get("output") and st.get("approved"):     # published before the history was kept
-        st["publishes"] = [{"v": st["approved"], "when": st.get("finished"), "pbip": st["output"].get("pbip"),
+        st["publishes"] = [{"v": st["approved"], "when": st.get("finished"), "pbix": st["output"].get("pbix"),
                             "zip": st["output"].get("zip"), "dax": st["output"].get("dax")}]
+    # D2D Relay: what people download is a Power BI file (.pbix); the report it is made from is never shown
+    if st.get("output"):
+        st["output"] = {k: v for k, v in st["output"].items() if k not in worker.OLD_OUTPUT_KEYS}
+    st["publishes"] = [{k: v for k, v in p.items() if k not in worker.OLD_OUTPUT_KEYS} for p in st.get("publishes") or []]
+    for x, k in [(st, "plan_summary"), (st, "data_summary")] + [(ver, "summary") for ver in st.get("versions") or []]:
+        if x.get(k):
+            x[k] = store.plain(x[k])                # older notes said PBIP / Power BI project
+    for gs in [ver.get("gates") for ver in st.get("versions") or []] + [p.get("gates") for p in st["publishes"]] \
+            + [(st.get("output") or {}).get("gates")]:
+        _today_names(gs)
     st["visuals"] = {"proposals": worker.chosen_visuals(d) if st.get("plan_rounds") else [],
                      "built": vfactory.status(d) if (d / "visuals").is_dir() else []}
-    st["host_dir"] = f"{worker.HOST_DIR}\\{pid}" if worker.HOST_DIR else None
-    return st
+    return st                                   # D2D Relay: no host_dir, the server's folders are not the client's
 
 
 COST_KEYS = ("cost_usd", "usage", "models", "usage_source")
@@ -922,7 +941,12 @@ def version_gates(pid: str, v: int):
     path = store.project_dir(pid) / "versions" / f"v{v}" / "gates.json"
     if not path.exists():
         raise HTTPException(404, "No review gates recorded for this version yet")
-    return json.loads(path.read_text(encoding="utf-8"))
+    found = json.loads(path.read_text(encoding="utf-8"))
+    for g in found if isinstance(found, list) else []:
+        for i in g.get("items") or []:
+            if isinstance(i, dict) and i.get("text"):
+                i["text"] = store.plain(i["text"])
+    return _today_names(found)
 
 
 GATING: set[str] = set()
@@ -1106,12 +1130,27 @@ def stop(pid: str):
 
 @app.get("/api/projects/{pid}/download")
 def download(pid: str):
+    """The Power BI file: <Report>.zip with <Report>.pbix and its data. A dashboard published before the .pbix existed
+    has no download until its Power BI file is made (POST …/pbix)."""
     st = _get(pid)
     out = st.get("output") or {}
     path = store.project_dir(pid) / out.get("zip", "-")
-    if st["status"] != "done" or not path.exists():
-        raise HTTPException(404, "The Power BI project is not ready yet.")
+    if st["status"] != "done" or not out.get("pbix") or not path.exists():
+        raise HTTPException(404, "The Power BI file is not ready yet.")
     return FileResponse(path, filename=out["zip"], media_type="application/zip")
+
+
+@app.post("/api/projects/{pid}/pbix")
+def make_pbix(pid: str):
+    """Make the Power BI file (.pbix) of the published version again (or for the first time, for a dashboard
+    published before the .pbix existed). No new checks, no credits."""
+    st = _get(pid)
+    if st["status"] != "done" or not st.get("approved"):
+        raise HTTPException(409, "Only a published dashboard has a Power BI file to make.")
+    db.audit("project.pbix", pid, {"version": st["approved"]}, auth.who())
+    store.log(pid, {"kind": "user", "stage": "pbi", "text": "Make the Power BI file"})
+    worker.enqueue(pid, "pbix")
+    return get_project(pid)
 
 
 # ---------------------------------------------------------------- administration (admins only: see auth.check)

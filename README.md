@@ -2,7 +2,8 @@
 
 D2D Relay turns a company's CSV files into a checked Power BI dashboard. A person signs in with their work email,
 uploads CSV files and describes the dashboard they need. D2D Relay plans it, agrees the KPIs with them, builds a
-clickable prototype, checks every version (Power BI's own engine included) and hands over a Power BI project (PBIP).
+clickable prototype, checks every version (Power BI's own engine included) and hands over a Power BI file (.pbix)
+with its data.
 Each company is an organisation with its own workspace, people and credits; PASDACS runs the platform from its own
 admin portal.
 
@@ -33,8 +34,11 @@ docker compose build web
 docker compose --profile tunnel up -d
 ```
 
-The **DAX checker** runs on Windows next to them, because Power BI's engine only runs there:
-`daxcheck\start-daxcheck.cmd`. Approving and publishing a dashboard need it.
+Two helpers run on Windows next to them, because Power BI only runs there. Publishing a dashboard needs both:
+
+- the **DAX checker** (`daxcheck\start-daxcheck.cmd`): Power BI's engine checks every measure and visual query;
+- the **Power BI file maker** (`pbix\start-pbix.cmd`): Power BI Desktop makes the `.pbix` people download. It drives
+  Power BI Desktop's window, so it needs a signed-in Windows session (docs/d2d-relay.md, Power BI file maker).
 
 ## What is where
 
@@ -42,10 +46,11 @@ The **DAX checker** runs on Windows next to them, because Power BI's engine only
 |---|---|
 | `webapp/` | the FastAPI app: `app/` (the API; D2D Relay's own parts are `edition.py`, `orgs.py`, `otp.py` and `portal.py`) and `static/` (the screens) |
 | `agent/` | the AI engine's service: Claude Code in a project folder, with the `genbi` toolkit |
-| `genbi_kit/` | the toolkit: definition schema (`GENBI.md`), data profiling, demo data, prototype, PBIP builder, review gates, DAX checker client, visual factory |
+| `genbi_kit/` | the toolkit: definition schema (`GENBI.md`), data profiling, demo data, prototype, report builder, review gates, DAX checker and Power BI file maker clients, visual factory |
 | `visuals/`, `visual-atlas/`, `visual-library/`, `custom_visuals/`, `visual_factory/` | Relay's custom Power BI visuals: sources, the Visual Atlas families, visuals built for earlier reports, packaged copies, and the kit the factory builds new ones with |
 | `Dockerfile`, `docker/`, `docker-compose.yml` | the image, its start-up (`relay_init.py`: one role per container), supervisor and tools (`relay_ctl.py`, `move-to-split.ps1`) |
 | `daxcheck/` | the Windows-side DAX checker |
+| `pbix/` | the Windows-side Power BI file maker (`pbix.ps1`, and `Convert-D2DZip.ps1`, which drives Power BI Desktop) |
 | `config/` | the model lists (the Relay Model) |
 | `branding/` | the PASDACS brand pack |
 | `samples/` | sample CSV files |
@@ -60,7 +65,8 @@ The **DAX checker** runs on Windows next to them, because Power BI's engine only
 3. **Prototype:** a clickable prototype computed from your data; ask for changes until it is right.
 4. **Review gates:** every version is checked (definition, prototype, Power Query, data, DAX in Power BI's engine,
    values, report schema, best practice, accessibility, display) before approval and again before publishing.
-5. **Publish:** the Power BI project, ready to open in Power BI Desktop.
+5. **Publish:** a zip with the Power BI file (`<Report>.pbix`, the data inside) and its CSV files, ready to open in
+   Power BI Desktop.
 
 A new dashboard uses 30 credits and a change 15. Credits come from PASDACS, which approves every request.
 

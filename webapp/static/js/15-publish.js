@@ -41,13 +41,12 @@ function publishCard(st) {
   const exp = fmt => async e => { e.target.disabled = true; notify(`Drawing the ${fmt.toUpperCase()}…`);
     try { const r = await fetch(`/api/export/project/${st.id}?fmt=${fmt}`, {method: 'POST'}); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'Export failed');
       h('a', {href: URL.createObjectURL(await r.blob()), download: `${st.name}.${fmt}`}).click(); } catch (err) { notify(err.message, 'err'); } e.target.disabled = false; };
+  // D2D Relay: the prototype as PDF / PNG, and a post to a channel (GitHub and insight pages are not part of D2D Relay)
   card.append(h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Publish & share'), h('span', {class: 'spacer'}),
       h('button', {class: 'btn', onclick: exp('pdf')}, icon('download'), 'PDF'), h('button', {class: 'btn', onclick: exp('png')}, icon('download'), 'PNG'),
-      st.access && st.access.can_edit && st.status === 'done' ? h('button', {class: 'btn', onclick: () => githubDialog(st)}, icon('publish'), 'Version to GitHub') : null,
-      h('button', {class: 'btn', onclick: () => channelDialog('project', st.id, st.name)}, icon('share'), 'Post to a channel'),
-      h('button', {class: 'btn', onclick: async () => { try { const p = await api('/api/pages', {json: {source: {kind: 'prototype', project: st.id}}}); location.hash = `#/pages/${p.id}`; } catch (e) { notify(e.message, 'err'); } }}, icon('file'), 'Make a page')),
+      h('button', {class: 'btn', onclick: () => channelDialog('project', st.id, st.name)}, icon('share'), 'Post to a channel')),
     last.v ? h('div', {class: 'small muted', style: 'margin-top:8px'}, `Published v${last.v} ${ago(last.when)}` + (last.review ? ' · reviewed and approved' : '')
-      + ((last.github || []).length ? ` · on GitHub: ` : '')) : h('div', {class: 'small muted', style: 'margin-top:8px'}, 'Exports draw the prototype in a headless browser. Publishing produces the Power BI project to download; Relay does not publish to the Power BI Service.'),
+      + ((last.github || []).length ? ` · on GitHub: ` : '')) : h('div', {class: 'small muted', style: 'margin-top:8px'}, 'PDF and PNG draw the prototype in a headless browser. Approving a version gives you the Power BI file (.pbix) to download; Relay does not publish to the Power BI Service.'),
     ...((last.github || []).map(g => h('div', {class: 'small'}, icon('check'), ' ', h('a', {href: g.url, target: '_blank', rel: 'noopener'}, `${g.repo}@${g.branch} ${g.commit.slice(0, 7)}`), ` · ${g.files} files · ${ago(g.when)}`))));
   return card;
 }
@@ -64,7 +63,7 @@ async function githubDialog(st) {
     const repo = h('select', {class: 'sel'}, repos.filter(r => r.can_push).map(r => h('option', {value: r.full_name, selected: r.full_name === gh.default_repo}, r.full_name + (r.private ? ' (private)' : ''))));
     const branch = h('input', {type: 'text', value: 'main'}), folder = h('input', {type: 'text', value: (st.name || '').replace(/[^\w -]+/g, '').trim()});
     const msg = h('input', {type: 'text', value: `${st.name} v${st.approved} (Relay)`});
-    body.replaceChildren(h('div', {class: 'small'}, `Signed in to GitHub as ${gh.login}. The commit contains definition.yaml, the Power BI project folder and the check reports.`),
+    body.replaceChildren(h('div', {class: 'small'}, `Signed in to GitHub as ${gh.login}. The commit contains definition.yaml, the report's files and the check reports.`),
       h('label', {class: 'f'}, 'Repository'), repo, h('div', {class: 'opts'}, h('div', {}, h('label', {class: 'f'}, 'Branch'), branch, h('div', {class: 'hint'}, 'Created from the default branch if new.')),
         h('div', {}, h('label', {class: 'f'}, 'Folder in the repository'), folder)), h('label', {class: 'f'}, 'Commit message'), msg,
       h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, h('button', {class: 'btn', onclick: () => m.remove()}, 'Cancel'),
@@ -108,7 +107,7 @@ async function adminPublishing() {
   const sec = h('input', {type: 'password', placeholder: d.github.has_secret ? 'Stored — leave empty to keep' : 'client secret'});
   const cb = `${location.origin}/auth/github/callback`;
   return h('div', {}, h('div', {class: 'card flat'}, h('h3', {}, 'Publishing'), h('label', {class: 'chk'}, req, 'A version must be reviewed and approved by someone other than the publisher before it is published'),
-      h('div', {class: 'hint'}, 'Off: anyone who can edit a dashboard publishes it (reviews stay optional). Relay never publishes to the Power BI Service: publishing produces the PBIP download.')),
+      h('div', {class: 'hint'}, 'Off: anyone who can edit a dashboard publishes it (reviews stay optional). Relay never publishes to the Power BI Service: publishing produces the Power BI file (.pbix) to download.')),
     h('div', {class: 'card flat'}, h('h3', {}, 'GitHub'), h('div', {class: 'hint', style: 'margin:-6px 0 8px'}, 'Register a GitHub OAuth app (GitHub › Settings › Developer settings) with this callback URL; each person then connects their own account.'),
       h('div', {class: 'path'}, h('code', {}, cb), copyBtn(cb)), h('div', {class: 'opts', style: 'margin-top:8px'}, cid, sec)),
     h('div', {class: 'row', style: 'justify-content:flex-end'}, h('button', {class: 'btn primary', onclick: async () => {

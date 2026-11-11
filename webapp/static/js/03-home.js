@@ -11,7 +11,7 @@ function renderDashboards() {
      ['2 · Confirm the plan', 'Relay proposes the data model, KPIs with formulas and pages; you edit and confirm.'],
      ['3 · Review', 'Relay builds a clickable prototype from your data. Ask for changes until it is right.'],
      ['4 · Review gates', "Every version passes Power Query, data, DAX in Power BI's own engine, Microsoft's report schemas, best-practice, accessibility and display checks — before you approve and again before publishing."],
-     ['5 · Published', 'Download the Power BI project, ready to open in Power BI Desktop.']].map(([t, d]) => h('div', {}, h('b', {}, t), d))));
+     ['5 · Published', 'Download the Power BI file (.pbix) with its data, ready to open in Power BI Desktop.']].map(([t, d]) => h('div', {}, h('b', {}, t), d))));
   const filter = S.hfilter || 'all';
   const keep = p => (filter === 'all' || (filter === 'you' && STATUS[p.status] && STATUS[p.status][1] === 'you') || (filter === 'run' && RUN.has(p.status))
     || (filter === 'pub' && p.published)) && (!S.hq || `${p.name} ${p.prompt || ''}`.toLowerCase().includes(S.hq.toLowerCase()));
@@ -33,7 +33,7 @@ function renderDashboards() {
       h('span', {}, ago(p.updated || p.created))));
   $('#main').replaceChildren(h('div', {class: 'page'},
     h('div', {class: 'row'}, h('div', {}, h('div', {class: 'eyebrow'}, 'D2D · BI & dashboards'), h('h1', {}, 'Dashboards'), h('div', {class: 'muted', style: 'margin-top:4px'},
-      'Describe what you need — Relay builds the data model, KPIs and report, and a Power BI project you can open in Desktop.')),
+      'Describe what you need — Relay builds the data model, KPIs and report, and a Power BI file (.pbix) you can open in Desktop.')),
       h('span', {class: 'spacer'}), S.me && !S.me.builder ? null : h('a', {class: 'btn primary', href: '#/new'}, icon('plus'), 'New dashboard')),
     S.projects.some(p => p.via && p.via !== 'owner') ? h('div', {class: 'segbtn', style: 'margin-top:14px'}, SCOPES.map(([k, l]) =>
       h('button', {class: k === scope ? 'on' : '', onclick: () => { S.scope = k; renderDashboards(); }}, l + ` (${S.projects.filter(p => inScope(p, k)).length})`))) : null,

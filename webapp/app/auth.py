@@ -35,7 +35,7 @@ TENANT_HEADER = "x-d2d-tenant"
 
 PROJECT = re.compile(r"^/api/projects/([a-z0-9][a-z0-9-]{2,63})(/.*)?$")
 LIBRARY = re.compile(r"^/api/library/([^/]+)$")
-PUBLISH = {"/approve"}
+PUBLISH = {"/approve", "/pbix"}             # D2D Relay: making the Power BI file is publishing
 SHARE = {"/shares"}
 OPEN_PATHS = ("/login.html", "/auth/", "/css/login.css", "/css/fonts.css", "/fonts/", "/relay-mark.svg", "/favicon.ico", "/powered-by.svg", "/icons/", "/manifest.webmanifest",
               "/favicon", "/metrics", "/healthz", "/portal.js")   # reachable without signing in (/metrics checks its own token)

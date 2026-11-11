@@ -428,7 +428,7 @@ async function tablesDialog(c) {
   showCount();
   const m = modal(`${c.sql ? 'Tables' : 'Objects'} Relay may use · ${c.name}`, h('div', {class: 'mbody'},
     h('div', {class: 'muted small'}, c.sql ? 'Only these tables can be pulled into dashboards and asked about. Your login in the warehouse decides what you can see.'
-      : `Only these objects can be pulled into dashboards — every record, read-only, with this connection's sign-in. ${c.native === false ? `${c.label} has no Power BI connector: the Power BI project reads the pulled files.` : ''}`),
+      : `Only these objects can be pulled into dashboards — every record, read-only, with this connection's sign-in. ${c.native === false ? `${c.label} has no Power BI connector: the Power BI file reads the pulled files.` : ''}`),
     h('div', {style: 'margin-top:10px'}, q), list,
     h('div', {class: 'row', style: 'margin-top:12px'}, count, h('span', {class: 'spacer'}), h('button', {class: 'btn', onclick: () => m.remove()}, 'Cancel'),
       h('button', {class: 'btn primary', onclick: async () => { try { await api(`/api/connections/${c.id}/tables`, {method: 'PUT', json: {objects: [...picked]}});
@@ -467,7 +467,7 @@ function warehouseCard(st) {
       try { await api(`/api/projects/${st.id}/extracts/refresh`, {method: 'POST'}); notify('Warehouse data refreshed', 'ok'); S.key = null; poll(); } catch (e) { notify(e.message, 'err'); btn.disabled = false; } }}, icon('download'), 'Refresh now');
     card.replaceChildren(...[h('h3', {}, 'Warehouse data'),
       h('div', {class: 'muted small', style: 'margin:-6px 0 8px'}, `From ${(st.warehouse || {}).name || 'a warehouse'} — pulled into the project as Parquet for the prototype and the checks; `
-        + (d.extracts.every(e => e.native !== false) ? 'the Power BI project refreshes from the warehouse itself.' : 'this source has no Power BI connector, so the Power BI project reads these files: refresh them here or on a schedule.')),
+        + (d.extracts.every(e => e.native !== false) ? 'the Power BI file refreshes from the warehouse itself.' : 'this source has no Power BI connector, so the Power BI file reads these files: refresh them here or on a schedule.')),
       h('table', {class: 'utable'}, h('tr', {}, ['Table', 'File', 'Rows', 'Pulled'].map((t, i) => h('th', {class: i < 2 ? 'l' : ''}, t))),
         d.extracts.map(e => h('tr', {}, h('td', {class: 'mono'}, e.object), h('td', {class: 'mono'}, e.file), h('td', {class: 'n'}, (e.rows || 0).toLocaleString()), h('td', {class: 'n'}, ago(e.extracted))))),
       h('div', {class: 'row', style: 'margin-top:10px'}, btn, sched),

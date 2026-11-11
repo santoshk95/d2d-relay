@@ -110,8 +110,8 @@ function renderNew() {
   let whConns = [];
   const whHint = h('div', {class: 'hint', style: 'margin-top:8px'});
   const drawTables = () => { const c = whConns.find(x => x.id === whSel.value);
-    whHint.textContent = c && c.native === false ? `The app pulls these objects with your own sign-in before Relay plans. ${c.label} has no Power BI connector, so the Power BI project reads the pulled files — refresh them on the dashboard's Details tab or on a daily schedule.`
-      : 'The app pulls these tables with your own login before Relay plans. The Power BI project then refreshes from the warehouse directly.';
+    whHint.textContent = c && c.native === false ? `The app pulls these objects with your own sign-in before Relay plans. ${c.label} has no Power BI connector, so the Power BI file reads the pulled files — refresh them on the dashboard's Details tab or on a daily schedule.`
+      : 'The app pulls these tables with your own login before Relay plans. The Power BI file then refreshes from the warehouse directly.';
     whTables.replaceChildren(...(c && c.tables.length ? c.tables.map(t => h('label', {class: 'chk'}, h('input', {type: 'checkbox', value: t.object, checked: true}),
       h('span', {}, h('b', {}, t.object), h('small', {class: 'muted', style: 'display:block'}, t.rows != null ? `${t.rows.toLocaleString()} rows` : 'not pulled yet'))))
       : [h('div', {class: 'muted small'}, 'No tables configured on this connection yet — ', h('a', {href: '#/connections'}, 'choose them'), '.')])); };

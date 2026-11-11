@@ -203,6 +203,23 @@ def log(pid: str, event: dict) -> None:
         f.write(json.dumps({"seq": _seq[key], "ts": time.time(), **event}) + "\n")
 
 
+_OLD_WORDS = ((re.compile(r"\bPower BI project \(PBIP\)", re.I), "Power BI file (.pbix)"),
+              (re.compile(r"\bPower BI project\b", re.I), "Power BI file"),
+              (re.compile(r"\.pbip\b", re.I), ".pbix"),
+              (re.compile(r"\bPBIP\b", re.I), "Power BI file"),
+              (re.compile(r" See Review gates\.txt\."), ""))          # a file the old download had
+
+
+def plain(text):
+    """D2D Relay: people get a Power BI file (.pbix). Notes written before it (and any stray sentence of the agent's)
+    said PBIP or Power BI project: shown with today's words."""
+    if not isinstance(text, str) or ("pbip" not in text.lower() and "power bi project" not in text.lower()):
+        return text
+    for rx, new in _OLD_WORDS:
+        text = rx.sub(new, text)
+    return text
+
+
 def activity(pid: str, after: int = 0, limit: int = 400) -> list[dict]:
     path = project_dir(pid) / "activity.jsonl"
     if not path.exists():
@@ -211,7 +228,12 @@ def activity(pid: str, after: int = 0, limit: int = 400) -> list[dict]:
     with path.open(encoding="utf-8") as f:
         for i, line in enumerate(f, 1):
             if i > after:
-                out.append(json.loads(line))
+                e = json.loads(line)
+                if "text" in e:
+                    e["text"] = plain(e["text"])
+                if isinstance(e.get("detail"), list):
+                    e["detail"] = [plain(x) for x in e["detail"]]
+                out.append(e)
                 if len(out) >= limit:
                     break
     return out

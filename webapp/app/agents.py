@@ -18,7 +18,7 @@ AGENTS: dict[str, tuple[str, str, str]] = {
     "build": ("Builder", "Builds the dashboard's definition and prototype and runs the review gates.", "building the prototype"),
     "revise": ("Builder", "Applies a change request to a dashboard and runs the review gates again.", "applying a change request"),
     "fix": ("Fixer", "Fixes what a review gate or Power BI's own engine rejected.", "fixing review-gate problems"),
-    "pbi": ("Publisher", "Builds the Power BI project once every review gate has passed.", "building the Power BI project"),
+    "pbi": ("Publisher", "Makes the Power BI file (.pbix) once every review gate has passed.", "making the Power BI file"),
     # P10 Start
     "start_read": ("Reader", "Reads a start's brief and attachments into the three views a person confirms.", "reading a start"),
     # P11 Consulting studio
