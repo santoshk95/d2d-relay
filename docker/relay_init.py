@@ -48,7 +48,9 @@ NOT_MAPPED = {"RELAY_VERSION", "RELAY_COMMIT", "RELAY_EXPORT_KEY", "RELAY_DATABA
 ROLES = ("all", "database", "web", "admin")
 # What the AI engine may receive from the container's environment (everything else stays with the web app)
 AGENT_PASS = {"AGENT_MODEL", "MODELS_FILE", "TZ", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "NODE_EXTRA_CA_CERTS",
-              "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy"}
+              "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy",
+              # item 31: each build in a container of its own (RELAY_JOB_CONTAINERS=auto|on|off), the API guard's switch
+              "D2D_JOB_CONTAINERS", "D2D_AGENT_PEER_CHECK"}
 AGENT_PREFIXES = ("CLAUDE_CODE_", "ANTHROPIC_", "AGY_")
 # Security audit S6: the AI engine reaches the internet only through docker/egress_proxy.py (Anthropic's hosts), and
 # every other connection its user makes is stopped (iptables, when the container has NET_ADMIN). RELAY_AGENT_EGRESS=off

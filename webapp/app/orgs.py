@@ -580,7 +580,7 @@ def get_org():
     for p in everyone:
         p["owner"], p["primary"] = p["org_role"] == "admin", p["id"] == o["owner_id"]
     people = [p for p in everyone if p["active"]]
-    removed = [p for p in everyone if not p["active"]] if _may_manage(u, o) else []
+    removed = [p for p in everyone if not p["active"] and not str(p["email"]).endswith("@deleted.invalid")] if _may_manage(u, o) else []
     dashboards = db.one("SELECT count(*) AS n FROM projects")["n"]
     rows = ledger(o["tenant_id"])
     can_open = auth.access_map(u, list({r["project_id"] for r in rows if r["project_id"]}))   # a private dashboard is named, not linked
@@ -718,19 +718,57 @@ def change_role(uid: str, body: PersonPatch):
 
 @router.delete("/api/org/people/{uid}")
 def remove_person(uid: str):
-    """An owner removes someone: they cannot sign in any more (their address stays this organisation's, so signing in
-    again does not bring them back; an owner can add them back). Their dashboards stay, and the owners can open them."""
-    from . import identity
+    """An owner removes someone (or leaves): the account is deleted at once (the user's decision, 2026-11-12;
+    governance.delete_person). Their dashboards stay with the organisation, held by the main owner and marked as made
+    by a former member. The main owner hands the main ownership over first."""
+    from . import governance
     u, o = _must_owner()
     p = _person(uid)
     if p["id"] == o["owner_id"]:
         raise HTTPException(409, f"{p['name']} is the main owner and cannot be removed. Hand the main ownership to someone else first.")
-    db.run("UPDATE users SET active = 0, deactivated = ?, deactivated_by = ? WHERE id = ?", (time.time(), u["id"], uid))
-    identity.end_user_sessions(uid)
-    db.audit("org.person_removed", uid, {"email": p["email"]}, u["id"])
+    governance.delete_person(uid, u["id"])
     if uid == u["id"]:
         return {"signed_out": True}
     return get_org()
+
+
+class Confirm(BaseModel):
+    confirm: str = ""
+
+
+@router.post("/api/me/delete")
+def delete_my_account(body: Confirm):
+    """Delete my account: at once, after typing DELETE (the user's decision, 2026-11-12). The main owner hands the main
+    ownership over first, or deletes the whole organisation."""
+    from . import governance
+    u, o = _must()
+    if u.get("home_tenant"):
+        raise HTTPException(400, "This is a guest visit; your account is in your own organisation.")
+    if (body.confirm or "").strip().upper() != "DELETE":
+        raise HTTPException(400, "Type DELETE to confirm.")
+    if u["id"] == o["owner_id"]:
+        raise HTTPException(409, "You are the main owner: hand the main ownership to someone else first (Transfer ownership), "
+                                 "or delete the whole organisation.")
+    governance.delete_person(u["id"], u["id"])
+    _tell_owners(o["tenant_id"], "Someone deleted their account", "A person in your organisation deleted their account. Their "
+                 "dashboards stay, held by the main owner and marked as made by a former member.", "#/org")
+    return {"signed_out": True}
+
+
+@router.post("/api/org/delete")
+def delete_organisation(body: Confirm):
+    """The main owner deletes the whole organisation at once, after typing its name (the user's decision, 2026-11-12;
+    governance.erase_org: payments and their invoices stay without names, as the law requires)."""
+    from . import governance
+    u, o = _must()
+    if u["id"] != o["owner_id"] or u.get("home_tenant"):
+        raise HTTPException(403, "Only the main owner can delete the organisation.")
+    if " ".join((body.confirm or "").split()).lower() != " ".join(o["name"].split()).lower():
+        raise HTTPException(400, f"Type the organisation's name, {o['name']}, to confirm.")
+    out = governance.erase_org(o["tenant_id"], u["id"])
+    _tell_platform(f"{o['name']} deleted itself", f"The main owner deleted {o['name']} (@{o['domain']}): {out['people']} people, "
+                   f"{out['dashboards']} dashboards. Its payments and invoices stay, without names.", "#/orgs")
+    return {"erased": True, "signed_out": True}
 
 
 class Transfer(BaseModel):

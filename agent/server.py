@@ -32,6 +32,7 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
@@ -262,6 +263,96 @@ def _events(obj: dict):
                "session_id": obj.get("session_id"), "usage": _usage(obj), "models": _by_model(obj)}
 
 
+# Each AI build in a container of its own (security audit S4; the user, 2026-11-12: "AI run in its own container").
+# docker/job_runner.py starts it, with only that dashboard's folder; this side asks over the runner's Unix socket.
+# Ask Relay's runs (no tools at all) stay in this process. D2D_JOB_CONTAINERS: auto (when the runner is there), on, off.
+JOB_SOCK = os.environ.get("D2D_JOB_RUNNER_SOCK", "/run/relay-runner/runner.sock")
+JOB_MODE = (os.environ.get("D2D_JOB_CONTAINERS") or "auto").strip().lower()
+
+
+def _in_container(run: "Run") -> bool:
+    if JOB_MODE == "off" or run.tools == []:
+        return False
+    return JOB_MODE == "on" or os.path.exists(JOB_SOCK)
+
+
+class _Stdin:
+    def __init__(self, start):
+        self.buf, self.start = bytearray(), start
+
+    def write(self, data: bytes) -> None:
+        self.buf += data
+
+    async def drain(self) -> None:
+        return None
+
+    def close(self) -> None:
+        self.start(bytes(self.buf))
+
+
+class _Stderr:
+    def __init__(self):
+        self.text = ""
+
+    async def read(self) -> bytes:
+        return self.text.encode()
+
+
+class JobProc:
+    """A run in its own container, shaped like the asyncio subprocess it replaces (stdin, stdout, stderr, wait, kill)."""
+
+    def __init__(self, argv: list[str], cwd: Path, env: dict[str, str]):
+        self.argv, self.cwd, self.env = argv, str(cwd), env
+        self.stdout = asyncio.StreamReader(limit=16 * 1024 * 1024)
+        self.stderr, self.returncode = _Stderr(), None
+        self.stdin = _Stdin(self._start)
+        self._done, self._task = asyncio.Event(), None
+
+    def _start(self, prompt: bytes) -> None:
+        self._task = asyncio.create_task(self._pump(prompt.decode("utf-8", "replace")))
+
+    async def _pump(self, prompt: str) -> None:
+        body = {"cwd": self.cwd, "argv": self.argv, "env": self.env, "prompt": prompt, "library": self.env.get("GENBI_LIBRARY")}
+        try:
+            async with httpx.AsyncClient(transport=httpx.AsyncHTTPTransport(uds=JOB_SOCK), base_url="http://runner",
+                                         timeout=None) as c:
+                async with c.stream("POST", "/jobs", json=body) as r:
+                    if r.status_code != 200:
+                        self.stderr.text = f"The job runner refused the run ({r.status_code}): {(await r.aread()).decode(errors='replace')[:500]}"
+                        self.returncode = 125
+                        return
+                    async for line in r.aiter_lines():
+                        if not line:
+                            continue
+                        obj = json.loads(line)
+                        if "o" in obj:
+                            self.stdout.feed_data((obj["o"] + "\n").encode())
+                        elif "x" in obj:
+                            self.returncode, self.stderr.text = int(obj["x"]), obj.get("e") or ""
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # noqa: BLE001 - the run fails with the reason; nothing is left running
+            self.stderr.text = f"The job runner could not be reached: {e}"
+            if self.returncode is None:
+                self.returncode = 125
+        finally:
+            if self.returncode is None:
+                self.returncode = -9
+            self.stdout.feed_eof()
+            self._done.set()
+
+    async def wait(self) -> int:
+        if self._task is None:
+            self.returncode = 125 if self.returncode is None else self.returncode
+            return self.returncode
+        await self._done.wait()
+        return self.returncode
+
+    def kill(self) -> None:
+        if self._task and not self._task.done():
+            self._task.cancel()                    # the runner sees the connection close, stops and removes the container
+
+
 class Runner(ABC):
     """One agentic CLI. `run` yields normalised events (dicts with `kind`) and must stop its process when the
     consumer goes away (the generator is closed) or the timeout passes."""
@@ -287,9 +378,12 @@ class ClaudeCodeRunner(Runner):
             args += ["--append-system-prompt", system]
         if run.resume:
             args += ["--resume", run.resume]
-        proc = await asyncio.create_subprocess_exec(
-            *args, cwd=workdir, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE, limit=16 * 1024 * 1024, env=_env(run))
+        if _in_container(run):                    # S4: a build runs in a container of its own (JobProc)
+            proc = JobProc(args, workdir, _env(run))
+        else:
+            proc = await asyncio.create_subprocess_exec(
+                *args, cwd=workdir, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE, limit=16 * 1024 * 1024, env=_env(run))
         proc.stdin.write(run.prompt.encode())
         await proc.stdin.drain()
         proc.stdin.close()

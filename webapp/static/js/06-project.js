@@ -18,7 +18,7 @@ function header(st) {
     h('div', {class: 'crumbs'}, h('a', {href: '#/'}, 'Dashboards'), '>', st.name),
     h('div', {class: 'phead'},
       h('div', {style: 'flex:1 1 320px;min-width:0'}, h('div', {class: 'row', style: 'gap:12px'}, h('h1', {}, st.name), h('span', {id: 'hpill'}, pill(st.status))),
-        h('div', {class: 'meta'}, `Created ${when(st.created)} - ${st.files.length} data file${st.files.length === 1 ? '' : 's'}`,
+        h('div', {class: 'meta'}, `Created ${when(st.created)}${st.maker ? ` by ${st.maker === 'Former member' ? 'a former member' : st.maker}` : ''} - ${st.files.length} data file${st.files.length === 1 ? '' : 's'}`,
           st.versions.length ? ` - ${st.versions.length} version${st.versions.length === 1 ? '' : 's'}` : '',
           runs.length ? ` - AI: ${dur(mins)}` : '')),
       h('span', {class: 'seg'}, h('em', {}, busy ? 'Model (next run)' : 'AI model'), sel),

@@ -133,6 +133,9 @@ COPY docker/watchdog.py /opt/relay/bin/watchdog
 COPY docker/gateway.sh /opt/relay/bin/gateway
 COPY docker/relay_ctl.py /opt/relay/bin/relay-ctl
 COPY docker/egress_proxy.py /opt/relay/bin/egress-proxy
+# security audit S4: the job runner (its own container) and the launcher inside each job container
+COPY docker/job_runner.py /opt/relay/bin/job-runner
+COPY docker/job_run.py /opt/relay/bin/job-run
 # genbi runs with python -P: it never imports from the folder the AI works in (a genbi_kit/ or json.py written there
 # would otherwise run as the toolkit, with the AI engine's rights; security audit 2026-11-11)
 RUN sed -i 's/\r$//' /opt/relay/bin/* /etc/relay/* \

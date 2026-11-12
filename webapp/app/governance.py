@@ -268,11 +268,84 @@ def erase_org(tid: str, who: str) -> dict:
             db.run("UPDATE relay.tn_payments SET user_id = NULL, user_name = NULL, email = NULL WHERE tenant_id = ?", (tid,))
     tenancy._invalidate()                                           # noqa: SLF001
     ai = forget_ai(missing=True)
-    # the control plane's audit only (tenancy.ctl_audit also writes to the organisation's own log, which is gone)
-    db.run("INSERT INTO relay.tn_audit (ts, who, who_tenant, tenant_id, action, object, detail) VALUES (?, ?, ?, ?, ?, ?, ?)",
-           (time.time(), who, db.PLATFORM, tid, "d2d.org_erased", tid, json.dumps({"name": org["name"], "domain": org["domain"],
-            "people": len(people), "dashboards": projects, "ai_records": ai})))
+    # the control plane's audit only (tenancy.ctl_audit also writes to the organisation's own log, which is gone); in the
+    # platform's context: the main owner's own request (Delete the organisation) runs in the workspace just dropped
+    with db.use(db.PLATFORM):
+        db.run("INSERT INTO relay.tn_audit (ts, who, who_tenant, tenant_id, action, object, detail) VALUES (?, ?, ?, ?, ?, ?, ?)",
+               (time.time(), who, db.PLATFORM, tid, "d2d.org_erased", tid, json.dumps({"name": org["name"], "domain": org["domain"],
+                "people": len(people), "dashboards": projects, "ai_records": ai})))
     return {"erased": tid, "name": org["name"], "people": len(people), "dashboards": projects}
+
+
+FORMER = "Former member"
+
+
+def delete_person(uid: str, by: str) -> dict:
+    """A person's account deleted at once (the user's decision, 2026-11-12): by themselves (Delete my account) or by an
+    owner (Remove). The organisation keeps their work: dashboards, saved visuals and pages pass to the main owner, and a
+    dashboard says it was made by a former member. Their name, email, sign-ins, sessions, Ask Relay conversations,
+    notifications, connections (signed in as them), schedules, tokens and settings go; logs and accounting records keep
+    no name or address. The row itself stays, emptied, so nothing that refers to it breaks; the address is free again
+    (relay.tn_accounts), so it can sign up again, or be added back, as a new person.
+    Runs in the organisation's own workspace (db.use / the request's tenant)."""
+    from . import identity, orgs, secrets_store
+    o = orgs.row(db.tenant())
+    p = db.one("SELECT * FROM users WHERE id = ? AND home_tenant IS NULL", (uid,))
+    if not o or not p or str(p["email"]).endswith("@deleted.invalid"):
+        raise HTTPException(404, "There is no such person in this organisation.")
+    if uid == o["owner_id"]:
+        raise HTTPException(409, f"{p['name']} is the main owner. Hand the main ownership to someone else first, or delete the "
+                                 "whole organisation.")
+    if db.one("SELECT 1 AS x FROM jobs j LEFT JOIN projects pr ON pr.id = j.pid WHERE (pr.owner_id = ? OR j.owner_id = ?) "
+              "AND j.state IN ('running', 'queued')", (uid, uid)):
+        raise HTTPException(409, "One of their dashboards is being built right now. Try again when it is done.")
+    email, main = p["email"], o["owner_id"]
+    moved = [r["id"] for r in db.q("SELECT id FROM projects WHERE owner_id = ?", (uid,))]
+    threads = [r["id"] for r in db.q("SELECT id FROM askd_threads WHERE user_id = ?", (uid,))]
+    conns = [r["id"] for r in db.q("SELECT id FROM connections WHERE owner_id = ?", (uid,))]
+    with db.transaction():
+        for table in ("projects", "library", "pages"):          # the organisation's work stays, with the main owner
+            db.run(f"UPDATE {table} SET owner_id = ? WHERE owner_id = ?", (main, uid))     # noqa: S608 - fixed names
+        for cid in conns:                                       # signed in as them: without their sign-in they would only break
+            db.run("DELETE FROM connection_tables WHERE connection_id = ?", (cid,))
+            db.run("DELETE FROM connections WHERE id = ?", (cid,))
+        for t in threads:
+            for k in _cache_keys(t):
+                db.run("DELETE FROM askd_cache WHERE key = ?", (k,))
+            _thread_rows(t)
+        for sql in ("DELETE FROM notifications WHERE user_id = ?", "DELETE FROM sessions WHERE user_id = ?",
+                    "DELETE FROM memberships WHERE user_id = ?", "DELETE FROM schedules WHERE owner_id = ?",
+                    "DELETE FROM email_accounts WHERE owner_id = ?"):
+            db.run(sql, (uid,))
+        db.run("DELETE FROM meta WHERE key = ? OR key = ?", (f"pins:{uid}", f"tour:{uid}"))
+        db.run("UPDATE audit SET detail = replace(detail, ?, '(deleted)') WHERE detail LIKE ?", (email, f"%{email}%"))
+        db.run("UPDATE users SET name = ?, email = ?, active = 0, deactivated = ?, deactivated_by = ? WHERE id = ?",
+               (FORMER, f"deleted-{uid}@deleted.invalid", time.time(), by, uid))
+    identity.end_user_sessions(uid)
+    for s in secrets_store.names():
+        if s["scope"] == f"user:{uid}":
+            secrets_store.delete(s["scope"], s["name"], by)
+    for pid in moved:                                   # the dashboard says who made it: a former member
+        try:
+            st = store.load(pid)
+            st["made_by"] = FORMER.lower()
+            store.save(st)
+        except (KeyError, OSError, ValueError):
+            pass
+    with db.use(db.PLATFORM):                           # the control plane's records of them: amounts stay, the person goes
+        tid = o["tenant_id"]
+        db.run("DELETE FROM relay.tn_accounts WHERE user_id = ?", (uid,))       # the address is free again
+        db.run("DELETE FROM relay.tn_access WHERE user_id = ?", (uid,))         # any guest access they had elsewhere
+        db.run("DELETE FROM otp_codes WHERE lower(email) = lower(?)", (email,))     # sign-in codes and sign-up steps live here
+        db.run("DELETE FROM otp_signup WHERE lower(email) = lower(?)", (email,))
+        db.run("UPDATE relay.tn_credits SET user_name = NULL WHERE tenant_id = ? AND user_id = ?", (tid, uid))
+        db.run("UPDATE relay.tn_credit_requests SET user_name = NULL, email = NULL, message = NULL WHERE tenant_id = ? AND user_id = ?",
+               (tid, uid))
+        db.run("UPDATE relay.tn_payments SET user_name = NULL, email = NULL WHERE tenant_id = ? AND user_id = ?", (tid, uid))
+        db.run("UPDATE relay.tn_audit SET detail = replace(detail, ?, '(deleted)') WHERE tenant_id = ? AND detail LIKE ?",
+               (email, tid, f"%{email}%"))
+    db.audit("org.person_deleted", uid, {"dashboards_kept": len(moved), "conversations": len(threads), "self": by == uid}, by)
+    return {"deleted": uid, "dashboards_kept": len(moved), "conversations_deleted": len(threads)}
 
 
 # ---------------------------------------------------------------- retention (nightly)

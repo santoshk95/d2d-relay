@@ -41,11 +41,11 @@ not committed**.
 | S1 | Critical | A custom visual's `caps.js` (written by the AI) ran in Node with the AI engine's rights | Fixed, live |
 | S2 | Critical | A Python file the AI writes in its folder ran as the `genbi` toolkit | Fixed, live |
 | S3 | Critical | A visual's style (Less `@plugin`) and imports (webpack loader syntax, files outside the visual) ran code or read files during the build | Fixed, live |
-| S4 | High | The AI engine's Linux user can read and write every organisation's folders and holds the Claude login; its API takes any folder, without a key | API: fixed (item 30, only the web app may call it); one container per run: open |
+| S4 | High | The AI engine's Linux user can read and write every organisation's folders and holds the Claude login; its API takes any folder, without a key | Fixed (items 30-31): the API answers only the web app; each build runs in a container of its own that holds only its dashboard's folder. Still shared: the Claude sign-in volume |
 | S5 | High | The DAX checker on the PC loaded any model dropped in its queue (data sources included) | Fixed, live (the helper was restarted on 2026-11-12) |
-| S6 | High | Nothing limits where the containers connect on the internet | AI engine: fixed (item 30, Anthropic only); the web app's own traffic: open |
+| S6 | High | Nothing limits where the containers connect on the internet | AI engine and its job containers: fixed (item 30, Anthropic only); the web app's own traffic: not limited, the user's decision (2026-11-12, to review later) |
 | S7 | Medium | Free starting credits can be collected many times over with subdomains | Addressed, live: starting credits wait for PASDACS's review (work log item 27) |
-| S8 | Medium | The first person from a domain owns the organisation and can open every colleague's dashboard | Now in the privacy notice; product decision open |
+| S8 | Medium | The first person from a domain owns the organisation and can open every colleague's dashboard | Decided (the user, 2026-11-12): owners see every dashboard, with who made it (item 31); in the privacy notice |
 | S9 | Medium | PASDACS owners get the platform console's cross-organisation views on the public site | Fixed, live |
 | S10 | Medium | The admin portal checks Cloudflare Access only for requests that come through Cloudflare | Fixed (item 30) |
 | S11 | Medium | Starlette 0.41.3 has two known denial-of-service bugs | Fixed (item 30: FastAPI 0.120.4, Starlette 0.49.3) |
@@ -59,7 +59,7 @@ not committed**.
 | P2 | High | No terms of service, refund and cancellation policy, contact page or data processing agreement | Terms, refund and cancellation, contact published (item 30); DPA on request; legal review open |
 | P3 | High | Disk not encrypted; backups on the same disk; live secrets in a user's Downloads folder | BitLocker skipped for now (the user, 2026-11-12); old backups deleted; open |
 | P4 | Medium | The privacy notice is written for India; dollar prices invite customers from the EU and UK | Two corrections made; legal review open |
-| P5 | Medium | No end to keeping dashboards, removed people and idle organisations; no self-service account erasure | Open |
+| P5 | Medium | No end to keeping dashboards, removed people and idle organisations; no self-service account erasure | Decided and built (item 31): removing someone deletes them at once; Delete my account; the main owner deletes the organisation |
 | P6 | Low | Small data-sharing details (Razorpay notes, sign-in alert mailbox) | Razorpay notes fixed (item 30); the mailbox's retention: the user's |
 
 ### S1 Critical - the AI could run its own code through a custom visual's `caps.js` (fixed)

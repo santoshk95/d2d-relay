@@ -27,7 +27,7 @@ function renderDashboards() {
       p.gates ? h('span', {class: 'tag ' + (p.gates.fail ? 'err' : 'ok'), title: 'Review gates of the latest version'},
         p.gates.fail ? `${p.gates.fail} gate${p.gates.fail === 1 ? '' : 's'} failed` : `${p.gates.pass + p.gates.warn} gates passed`) : null,
       h('span', {class: 'spacer'}),
-      p.via && p.via !== 'owner' && p.owner ? h('span', {title: 'Owner'}, icon('user'), ' ' + p.owner) : null,
+      h('span', {title: 'Made by'}, icon('user'), ' ' + (p.made_by ? 'Former member' : p.via === 'owner' ? 'You' : (p.owner || '-'))),   // who made each one
       p.visibility ? h('span', {title: {private: 'Private', team: 'Shared with its team', org: 'Everyone in the organisation can view'}[p.visibility]},
         icon(p.visibility === 'private' ? 'lock' : p.visibility === 'org' ? 'globe' : 'users')) : null,
       h('span', {}, ago(p.updated || p.created))));

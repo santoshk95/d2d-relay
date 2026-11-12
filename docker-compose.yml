@@ -76,6 +76,8 @@ services:
       # the AI engine's Claude sign-in (relay-ctl login inside this container, or an existing volume: RELAY_CLAUDE_*)
       - claude-login:/home/agent/.claude
       - agy-login:/opt/agy-login:ro
+      # the job runner's Unix socket (each AI build in a container of its own; security audit S4)
+      - runner-sock:/run/relay-runner
     ports:
       - "127.0.0.1:${RELAY_PORT:-8100}:8000"
     # security audit S6: relay-init (root, at start) stops the AI engine's user from connecting anywhere but its
@@ -107,6 +109,34 @@ services:
         condition: service_healthy
     stop_grace_period: 1m
 
+  # Each AI build in a container of its own (security audit S4; docker/job_runner.py). The only part with Docker's
+  # socket: no network at all, it answers only on a Unix socket shared with the web container's AI engine, and each job
+  # container it starts holds only its dashboard's folder (plus the visual library, read-only, and the Claude sign-in).
+  runner:
+    image: ${RELAY_IMAGE:-d2d-relay:latest}
+    container_name: d2d-relay-runner
+    healthcheck:                   # the runner answers on its Unix socket (not the image's relay-ctl check)
+      test: ["CMD", "test", "-S", "/run/relay-runner/runner.sock"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    entrypoint: ["/usr/bin/tini", "--", "/usr/local/bin/python3", "-P", "/opt/relay/bin/job-runner"]
+    user: root
+    network_mode: none
+    environment:
+      D2D_JOB_WEB_CONTAINER: d2d-relay-web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner-sock:/run/relay-runner
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
   # https://d2d.pasdacs.com -> d2d-relay-web and https://admin-d2d.pasdacs.com -> d2d-relay-admin, through
   # Cloudflare (no port is opened on this PC). The tunnel and its public hostnames are made in the Cloudflare
   # dashboard; its token goes in tunnel.env (one line: TUNNEL_TOKEN=...), a file of its own so no app container sees it.
@@ -133,6 +163,8 @@ volumes:
     external: ${RELAY_DB_EXTERNAL:-false}
   admin-data:
     name: d2d-relay-admin-data     # the admin portal's own keys
+  runner-sock:
+    name: d2d-relay-runner-sock    # the job runner's Unix socket, shared with the web container only
   claude-login:
     name: ${RELAY_CLAUDE_VOLUME:-d2d-relay-claude-login}
     external: ${RELAY_CLAUDE_EXTERNAL:-false}

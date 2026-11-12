@@ -537,6 +537,10 @@ def _today_names(gs):
 def get_project(pid: str):
     st = _get(pid)
     d = store.project_dir(pid)
+    # who made it (owners see every dashboard in the organisation, with its maker: the user's decision, 2026-11-12)
+    row = db.project(pid) or {}
+    who = db.one("SELECT name FROM users WHERE id = ?", (row.get("owner_id"),)) if row.get("owner_id") else None
+    st["maker"] = "Former member" if st.get("made_by") else ("you" if row.get("owner_id") == auth.who() else (who or {}).get("name"))
     plan = d / "plan.yaml"
     if plan.exists() and st.get("plan_rounds"):
         try:

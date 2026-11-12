@@ -235,8 +235,42 @@ function yourDataCard(d) {
       h('span', {class: 'small muted'}, 'Your profile, sign-ins, dashboards, Ask Relay conversations, credit requests and payments, as a file.')),
     h('ul', {class: 'small muted', style: 'margin:12px 0 0;padding-left:18px'},
       h('li', {}, 'Delete a dashboard on its own page (Delete), and an Ask Relay conversation in Ask Relay.'),
-      h('li', {}, d.may_manage ? 'As an owner you can remove people (People, above).' : 'An owner of your organisation can remove you.'),
-      h('li', {}, 'To have your account or the whole organisation erased, write to ', h('a', {href: 'mailto:' + contact}, contact), '.')));
+      h('li', {}, d.may_manage ? 'As an owner you can remove people (People, above): their account is deleted at once.'
+        : 'An owner of your organisation can remove you, which deletes your account.'),
+      h('li', {}, 'Questions about your data: ', h('a', {href: 'mailto:' + contact}, contact), '.')),
+    h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center'},
+      d.is_primary ? h('button', {class: 'btn danger', type: 'button', onclick: () => deleteOrgDialog(d)}, icon('x'), `Delete ${d.name}`)
+        : h('button', {class: 'btn danger', type: 'button', onclick: () => deleteAccountDialog(d)}, icon('x'), 'Delete my account'),
+      d.is_primary ? h('span', {class: 'small muted'}, 'As the main owner, hand the main ownership to someone else first (Transfer ownership) to delete only your own account.') : null));
+}
+/* the user's decision of 2026-11-12: deleting happens at once, after a warning (app/governance.py: delete_person, erase_org) */
+function typedDelete(title, intro, items, after, word, okLabel, url, json) {
+  const input = h('input', {type: 'text', autocomplete: 'off', spellcheck: 'false', 'aria-label': `Type ${word} to confirm`});
+  const err = h('div', {class: 'err-msg', role: 'alert'});
+  const ok = h('button', {class: 'btn danger', type: 'button', disabled: true}, okLabel);
+  input.oninput = () => { ok.disabled = input.value.trim().toLowerCase() !== word.toLowerCase(); };
+  ok.onclick = async () => {
+    ok.disabled = true; err.textContent = '';
+    try { await api(url, {json: json(input.value)}); location.href = '/login.html'; }
+    catch (e) { ok.disabled = false; err.textContent = e.message; }
+  };
+  modal(title, h('div', {class: 'mbody'}, h('p', {style: 'margin-top:0'}, intro),
+    h('ul', {class: 'small'}, items.map(t => h('li', {}, t))), h('p', {class: 'small muted'}, after),
+    h('label', {class: 'f'}, 'Type ', h('b', {}, word), ' to confirm'), input, err,
+    h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, ok)));
+}
+function deleteAccountDialog(d) {
+  typedDelete('Delete your account?', `Your account in ${d.name} is deleted at once, and this cannot be undone:`,
+    ['your name, email address, sign-ins and settings', 'your Ask Relay conversations', 'your notifications'],
+    `The dashboards you made stay with ${d.name}: its main owner holds them, marked as made by a former member. You can sign up again later as a new person.`,
+    'DELETE', 'Delete my account', '/api/me/delete', v => ({confirm: v}));
+}
+function deleteOrgDialog(d) {
+  typedDelete(`Delete ${d.name}?`, `${d.name} is deleted at once, with everything in it, and this cannot be undone:`,
+    ['every dashboard, its data and its Power BI files', `everyone in it (${d.people.length} ${d.people.length === 1 ? 'person' : 'people'}), their sign-ins and settings`,
+     'Ask Relay conversations, connections and the brand', `the credits left (${Number(d.credits || 0).toLocaleString()})`],
+    'Payments and their GST invoices stay, without names, as tax law requires. Your email domain can sign up again later as a new organisation.',
+    d.name, `Delete ${d.name}`, '/api/org/delete', v => ({confirm: v}));
 }
 /* ---------------- people: owners add people, make owners or members, remove and add back (app/orgs.py) ---------------- */
 function peopleCard(d, th) {
@@ -252,8 +286,11 @@ function peopleCard(d, th) {
   };
   const remove = p => manage && !p.primary ? h('button', {class: 'btn sm ghost danger', type: 'button', onclick: async () => {
     const self = p.id === me;
-    if (await confirmBox(self ? `Leave ${d.name}?` : `Remove ${p.name}?`, (self ? 'You will be signed out and cannot sign in to it again unless an owner adds you back. '
-      : `${p.name} is signed out and cannot sign in to ${d.name} again unless an owner adds them back. `) + 'Their dashboards stay; owners can still open them.', self ? 'Leave' : 'Remove'))
+    if (await confirmBox(self ? `Leave ${d.name} and delete your account?` : `Remove ${p.name}?`,
+      (self ? 'Your account is deleted at once: your name, email address, sign-ins and Ask Relay conversations. '
+        : `${p.name}'s account is deleted at once: their name, email address, sign-ins and Ask Relay conversations. `)
+      + `The dashboards ${self ? 'you' : 'they'} made stay with ${d.name}, held by the main owner and marked as made by a former member. This cannot be undone.`,
+      self ? 'Leave and delete' : 'Remove and delete'))
       act(() => api(`/api/org/people/${encodeURIComponent(p.id)}`, {method: 'DELETE'}), self ? null : `${p.name} removed`);
   }}, p.id === me ? 'Leave' : 'Remove') : null;
   return h('div', {class: 'card'},

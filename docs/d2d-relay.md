@@ -237,10 +237,20 @@ Mailinator ...) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTR
   told.
 - **People** (Organisation page). An organisation can have several owners. Owners add people from the
   organisation's own domain as members or owners (each gets an invitation email and signs in with a code), change
-  anyone's role, and remove people: a removed person is signed out and cannot sign in again until an owner adds them
-  back; their dashboards stay, and owners can open them. The main owner (PASDACS's contact and the one who does the
-  first-time setup) cannot be removed or made a member; they hand the main ownership to someone else first (Transfer
-  ownership), staying an owner or not.
+  anyone's role, and remove people. **Removing someone deletes their account at once**, after a warning (the user's
+  decision of 2026-11-12; `governance.delete_person`): their name, email address, sign-ins, sessions, Ask Relay
+  conversations, notifications, tokens, connections (signed in as them) and schedules go, and the logs and accounting
+  records keep no name or address of theirs. Their work stays with the organisation: dashboards, saved visuals and
+  pages pass to the main owner, and a dashboard says it was made by a former member. Their address is free again: it
+  can sign up again, or an owner can add it back, as a new person (everyone at the domain can still join it). The
+  main owner (PASDACS's contact and the one who does the first-time setup) cannot be removed or made a member; they
+  hand the main ownership to someone else first (Transfer ownership), staying an owner or not.
+- **Delete my account** (Organisation > Your data): anyone but the main owner deletes their own account the same way,
+  after typing DELETE; the owners are told. **Delete the organisation**: the main owner deletes it with everything in
+  it (every dashboard, person, conversation, connection and the brand; the credits left are lost), after typing its
+  name (`governance.erase_org`, the same as `python -m app.governance erase-org`). Payments and their GST invoices stay,
+  without names, as tax law requires. PASDACS is told; the domain can sign up again as a new organisation.
+- **Owners see every dashboard**, with who made it (Dashboards and each dashboard's page: "Created ... by ...").
 - **Each organisation is its own workspace.** Dashboards, connections, branding, Ask Relay conversations and people
   are never visible to another organisation. Inside one, each person's dashboards are private until shared; the owner
   can open them all.
@@ -550,8 +560,20 @@ above and read ...", "send this to ..."). So the AI is limited by the system, no
 - **Its API only for the web app** (S4). The AI engine's API (`127.0.0.1:8090`: runs, forget, render) answers only
   connections made by the web app's user or root; anything the AI engine's own user runs gets 403. The check reads
   the kernel's socket table for who owns the caller's end of the connection (`agent/server.py`, `only_the_web_app`;
-  `D2D_AGENT_PEER_CHECK=0` turns it off for an AI engine in a container of its own). Still open: one container per
-  run, with only its dashboard's folder and no Claude sign-in file (the audit, S4).
+  `D2D_AGENT_PEER_CHECK=0` turns it off for an AI engine in a container of its own).
+- **Each build in a container of its own** (S4; the user, 2026-11-12: "AI run in its own container"). Every run with
+  tools (a plan, a build, a change) runs in a short-lived container, `d2d-relay-job-<time>-<id>`, started by the job
+  runner (`d2d-relay-runner`, `docker/job_runner.py`) from the web container's own image. It holds only that
+  dashboard's folder (at the same path), the organisation's visual library (read-only), `config` (read-only) and the
+  Claude sign-in volume; no other organisation's folder, no `/data`, no secrets, no Docker. It runs as the AI engine's
+  user with every capability dropped and no new privileges, on the web container's network, so the network limits
+  above and the API guard apply to it too. The runner is the only part with Docker's socket: it has no network at
+  all and answers only on a Unix socket that the web container's AI engine alone can open (`runner-sock` volume, mode
+  600, owner agent); it accepts only a `claude` command in a dashboard folder, streams the run back, and stops and
+  removes the container when the run ends or is stopped (and, at its start, any left from a crash). Its log names
+  every job and what it holds. Ask Relay's runs (no tools at all) stay in the AI engine. `RELAY_JOB_CONTAINERS=off`
+  (then restart web) runs builds in the AI engine as before. Still shared between runs: the Claude sign-in volume,
+  which also keeps the run transcripts (a long-lived token from `claude setup-token` would let jobs run without it).
 
 ## Legal pages
 

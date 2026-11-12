@@ -22,13 +22,14 @@ still in this repository, switched off in one place (`webapp/app/edition.py`).
 
 ## Run
 
-Four containers (`docker-compose.yml`); the first three run the same image, one role each:
+Five containers (`docker-compose.yml`); the first four run the same image, one role each:
 
 | Container | What runs |
 |---|---|
 | `d2d-relay-db` | PostgreSQL 17, on the private Docker network only |
 | `d2d-relay-web` | the public site: the web app and the AI engine (Claude Code) |
 | `d2d-relay-admin` | the admin portal: organisations, credits, connectors and requests, behind Cloudflare Access |
+| `d2d-relay-runner` | the job runner: each AI build in a short-lived container of its own (`d2d-relay-job-...`) that holds only that dashboard's folder |
 | `d2d-relay-tunnel` | the Cloudflare tunnel for both addresses |
 
 ```

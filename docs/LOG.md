@@ -720,6 +720,37 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       `d2d-relay:d6be664` (= latest; `a84d7c9` kept for going back). The web container was recreated with `NET_ADMIN`
       (`docker-compose.yml`). Checked on live: the legal pages public through Cloudflare (Cloudflare's email obfuscation rewrites the address on them, as on every page), RELAY's leftover pages off, the admin portal answering this PC and refusing another container, both containers on d6be664, the AI engine's network limited (no direct connection, Anthropic through the proxy, one real Claude prompt answered through it, its transcript removed), its API refusing its own user, FastAPI 0.120.4 on Starlette 0.49.3, no errors in either log.
 
+31. **Each AI build in its own container; accounts deleted at once; who made each dashboard; the D2D logo** (the user,
+    2026-11-12: "AI run in ite own container, for now do not limit outbound traffic will review later, owner can see all
+    dashboard in the organization with user created it, delete immeidately with a warning/confirmation"; asked: a
+    deleted person's dashboards stay with the organisation; removing someone deletes them at once; the main owner can
+    delete the organisation after typing its name).
+    - **Job containers** (security audit S4): every run with tools (plan, build, change) runs in a short-lived container
+      `d2d-relay-job-...` from the web container's image, holding only that dashboard's folder (plus the organisation's
+      visual library and `config` read-only, and the Claude sign-in volume), as the AI engine's user with every
+      capability dropped, on the web container's network (so the Anthropic-only limits and the API guard apply). The
+      job runner (`d2d-relay-runner`, `docker/job_runner.py`, new) is the only part with Docker's socket: no network, a
+      Unix socket only the AI engine can open, `claude` commands in a dashboard folder only; it streams the run back
+      and removes the container when the run ends or is stopped. `agent/server.py` (JobProc), `docker/job_run.py` (new),
+      `docker-compose.yml` (service `runner`, volume `runner-sock`), `RELAY_JOB_CONTAINERS` (auto, on, off). Ask Relay's
+      runs (no tools) stay in the AI engine. Still shared: the Claude sign-in volume (and its run transcripts).
+    - **Accounts** (`governance.delete_person`, `orgs.py`): Remove deletes the person at once after a warning; Delete my
+      account (Organisation > Your data, type DELETE); the main owner deletes the organisation (type its name;
+      `governance.erase_org`). A deleted person's name, address, sign-ins (codes, account mapping), sessions, Ask Relay
+      conversations, notifications, connections, schedules and tokens go; their dashboards, saved visuals and pages
+      pass to the main owner, marked as made by a former member; logs and accounting records keep no name or address.
+      The address is free again: it can sign up again or be added back as a new person. The privacy notice says so.
+    - **Who made each dashboard**: on Dashboards (every card) and on each dashboard's page ("Created ... by ...").
+    - **Not limited, for now:** the web app's own outbound traffic (the user: "will review later").
+    - **Reviewed before commit** by the "Final review and deployment" session, which found and had fixed: the job
+      containers' umask (the web app could not rewrite what the AI wrote: KPI confirm failed), the account mapping and
+      sign-in codes on deletion (in the platform's tables), a deleted person's connections; and deleting the
+      organisation from the owner's own request (its last log line ran in the dropped workspace).
+    - **The D2D logo** (`e07a6c1`, from the "D2D logo" session): the Striped D in the brand pack and the app (favicon,
+      app icons, sign-in page, rail); reviewed (static files and one public path, `/d2d-mark.svg`) and shipped with this
+      item.
+    - **Tests:** every suite on fresh test stacks from the release candidate, with the starting-credit review on and off, 673 and 656 checks, all passing, among them the new jobs_check.py (17: a run goes through a job container holding only its dashboard's folder, is removed after, the runner refuses anything else and has no network) and accounts_check.py (33: makers, Remove, Delete my account, Delete the organisation, the address free again); and real Claude, with the live sign-in volume mounted as external on the test stack: a plan (1.2 min) and a build (2.4 min) in job containers, every review gate that runs there passing, each job container inspected from outside while running (only its own dashboard's folder, no /data/state, no Docker or runner socket, agent, all capabilities dropped), its transcripts removed after. Older expectations changed for the user's decision: a removed person is deleted, not switched off (d2d_checks.py people, sec_check.py).
+
 Test data in the live install: none since the fresh start (item 18).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -821,14 +852,13 @@ Refunds: none (item 25); any made by hand on Razorpay are recorded.
 
 Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (S4) and its network (S6). Left:
 
-- **S4, the rest:** each run in a container of its own, with only its dashboard's folder and no Claude sign-in file
-  (an API key per run). It needs a job runner outside the web container; today all runs share the AI engine's user.
-- **S6, the rest:** the web app's own connections are not limited (it needs Microsoft 365, Razorpay and the
-  warehouses PASDACS switches on).
-- **S8 Medium, a product decision:** the first person from a domain owns the organisation and can open every
-  colleague's dashboard (the privacy notice says so).
-- **P5 Medium, decisions first:** how long dashboards, removed people and idle organisations are kept; a self-service
-  "delete my account".
+- **S4, the rest:** each build now runs in a container of its own (item 31); the Claude sign-in volume, with its run
+  transcripts, is still shared by the jobs. A long-lived token (`claude setup-token`, the user's, once) would let each
+  job run without the shared sign-in.
+- **S6, the rest:** the web app's own connections are not limited: the user's decision of 2026-11-12, to review later.
+- **A deleted person can come back:** everyone at the organisation's email domain joins it, so someone removed whose
+  mailbox still works can sign in again as a new member (the old switch-off kept them out). If that matters, a list of
+  blocked addresses per organisation is the next step (the user's call).
 - **Abuse:** Turnstile on "Send code" (S7, S13): the user chose not now (2026-11-12). New organisations wait for
   PASDACS's review of their starting credits (item 27), and PASDACS gets an email for every sign-in (item 21).
 - **Never run on the test stacks:** a full dashboard build with real Claude (one prompt through the new network
@@ -837,7 +867,9 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
 ### Decided (nothing to do)
 
 - **The user's answers of 2026-11-12:** no refunds and no cancellations; disputes at the courts of Bengaluru,
-  Karnataka; BitLocker skipped for now; overnight restarts handled by the user; no bot check on sign-in for now.
+  Karnataka; BitLocker skipped for now; overnight restarts handled by the user; no bot check on sign-in for now;
+  owners see every dashboard with who made it (S8); deleting is immediate, after a warning (P5); the web app's
+  outbound traffic is not limited for now (S6).
 
 - **Migration D2D is a contact form** (item 29): PASDACS does the migration with the organisation; it is not
   self-service. Requests arrive at info@pasdacs.com and on the admin portal's Requests page.

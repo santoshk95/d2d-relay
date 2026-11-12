@@ -162,7 +162,7 @@ def all_projects() -> list[dict]:
             continue
         versions = st.get("versions") or []
         latest = versions[-1] if versions else {}
-        out.append({**{k: st.get(k) for k in ("id", "name", "status", "created", "updated", "approved", "model")},
+        out.append({**{k: st.get(k) for k in ("id", "name", "status", "created", "updated", "approved", "model", "made_by")},
                     "kind": st.get("kind") or "dashboard",           # P10+: starts and other phase subjects share the folder
                     "prompt": (st.get("prompt") or "")[:240], "versions": len(versions),
                     "pages": len(latest.get("pages") or []), "visuals": latest.get("visuals"),
