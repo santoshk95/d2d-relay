@@ -814,8 +814,8 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
 34. **Built-in visuals first; the AI model named Relay Model powered by Claude; each job runner sweeps only its own
     stack** (the user, 2026-11-12: "What all you can close do it and do a full end to end testing and default power bi
     built in visual first and the built in plus custom id needed and last full custom, and name the AI model as Relay
-    Model powered by Claude"). Code `aa4531e`; release candidate `d2d-relay:aa4531e`, built from the clean commit and
-    tested; **not deployed** (waiting for the user's word).
+    Model powered by Claude"). Code `aa4531e`; release image `d2d-relay:aa4531e`, built from the clean commit and
+    tested; **live since 2026-11-12, 17:05 IST** (the user's "Yes, deploy").
     - **Visuals:** a new dashboard uses Power BI's built-in visuals unless its owner picks another. The New dashboard
       form offers Power BI's built-in visuals (chosen), then Built-in first, custom where needed, then Relay custom
       visuals; Custom visuals is off with built-in and back to its own choice with the others; the dashboard page's
@@ -851,6 +851,16 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       `claude-api-auth`. Claude Code's own 7-day clean-up (`cleanupPeriodDays`) also removed six transcript folders from
       2 November there when the test jobs started (none a D2D Relay dashboard's); live's next AI run would have done the
       same. Live was not touched: healthy throughout, its helpers idle.
+    - **Deployed at 17:05 IST** after the user's "Yes, deploy": live was idle (no job container, the AI engine not busy,
+      no queued job, no dashboard); the deploy folder fast-forwarded to `eb78e91` (no compose, `pbix\` or `daxcheck\`
+      change; it brings `config/house-models.json`), `d2d-relay:aa4531e` tagged latest, `docker compose up -d
+      --no-deps web admin runner`; the database container still runs `d2d-relay:8689305`'s image. Checked on live: web,
+      admin and the job runner healthy on `aa4531e` within seconds; https://d2d.pasdacs.com/healthz and the sign-in page
+      200, the admin portal 200 on this PC; the model list says "Relay Model powered by Claude", the New dashboard form
+      offers built-in visuals first, the API's default is builtin; the runner started for `d2d-relay-web` with nothing
+      to sweep; one `claude --version` job in a throwaway folder ran in a job container labelled
+      `d2d-relay.web=d2d-relay-web` and was removed, the folder too; no errors in any log. `d2d-relay:54f6ed7` is kept
+      for going back.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -891,18 +901,16 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 34 (not deployed). **Live:** web, admin and the job runner run `d2d-relay:54f6ed7`
-(= latest); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and info@pasdacs.com.
-**GitHub** and the deploy folder are on `2cd493e` (the release tests and item 33's log, pushed on the user's "What all
-you can close do it"). This folder is ahead, not pushed: item 34 (`aa4531e`) and its log. **Waiting for the user's
-word to deploy:** `d2d-relay:aa4531e`, built from the clean commit and tested (item 34). To deploy: check live is idle
-(no job container, the AI engine not busy), `git fetch` this folder's `main` into the deploy folder and fast-forward it
-(it brings `config/house-models.json`, which live mounts), `docker tag d2d-relay:aa4531e d2d-relay:latest`, then
-`docker compose up -d --no-deps web admin runner`; keep `d2d-relay:54f6ed7` for going back.
-**Going back:** since item 33 no older release image is kept on this PC. Any version is a commit on GitHub (in the
-deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`), then `docker compose up -d
---no-deps web admin runner` (only `web admin` for a version before item 31); going back before item 31 also takes the
-deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and `docker rm -f d2d-relay-runner` after.
+Updated 2026-11-12, after item 34's deploy. **Live:** web, admin and the job runner run `d2d-relay:aa4531e`
+(= latest, since 17:05 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
+info@pasdacs.com. **GitHub**, this folder and the deploy folder are all on this log entry (item 34 and its logs pushed
+after the deploy; every commit scanned for the live `.env` and `tunnel.env` values and key patterns: none).
+**Going back** to item 33 (`d2d-relay:54f6ed7`, kept): in the deploy folder `git reset --keep 2cd493e` (it takes
+`config/house-models.json` back too), `docker tag d2d-relay:54f6ed7 d2d-relay:latest`, then `docker compose up -d
+--no-deps web admin runner`. No older release image is kept on this PC (item 33): any other version is a commit on
+GitHub (in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`), then `docker
+compose up -d --no-deps web admin runner` (only `web admin` for a version before item 31); going back before item 31
+also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and `docker rm -f d2d-relay-runner` after.
 
 ### Before the public launch (the user)
 
@@ -971,9 +979,9 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   run covers real Claude, Power BI's engine (the DAX check) and the Power BI file maker, on the test stack's own copies
   of this PC's helpers (`tests/stack/helpers.ps1`).
 - **The job runner's start-up sweep** (found while moving the release tests into `tests/`, 2026-11-12) is fixed in
-  item 34 (`aa4531e`), **not live yet**: until then live's runner, if restarted, removes every job container on the
-  PC, and a test stack from an image before item 34 removes live's. `tests/stack/stack.sh` refuses to start while any
-  job container exists and warns if its runner removed one.
+  item 34, live since 17:05 IST: each runner removes only its own stack's jobs. A test stack from an image before
+  item 34 (`upgrade_check.py` starts one) would still remove live's, so `tests/stack/stack.sh` refuses to start while
+  any job container exists and warns if its runner removed one.
 - **The release test suite is in `tests/`** since 2026-11-12 (committed here; not pushed, and nothing in the image
   changes): the suites, the test stack's compose file and `stack.sh`, the stand-in Razorpay and the audit's route list.
   `tests/README.md` says how to start the stack, run the suites in both review modes and tear down, and the real-Claude
