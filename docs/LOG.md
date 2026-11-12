@@ -789,7 +789,29 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       throwaway folder run in a job container and removed (the folder too); the AI engine's API still refusing its own
       user (403) and its direct connections out refused; https://d2d.pasdacs.com/healthz 200; no errors in any log.
 
-Test data in the live install: none since the fresh start (item 18).
+33. **Cleaned up for the public launch** (the user, 2026-11-12: "Clean and delete all as well and fresh as I will be
+    planning to go live to all public"; asked what that covers, all three: the test leftovers, the old images and
+    live's data).
+    - **Test leftovers:** the release suite's backup folder `Downloads\d2d-relay-test-suite` (the suite is in `tests/`
+      since `dbe57e5`) and the test runs' logs, screenshots, projects folder and settings under `tests/` (git-ignored)
+      went to the Recycle Bin.
+    - **Images:** the five release candidates (`rc-*`) and the eleven older releases kept for going back (`bdf370e`,
+      `8b18e3f`, `d6be664`, `15d894e`, `a84d7c9`, `72b71a1`, `e2be1d2`, `7d28ea7`, `442a396`, `c8e615f`, `8f39265`)
+      were removed: 20 images (12 GB) down to 4 (8.9 GB). Kept: `d2d-relay:54f6ed7` (= latest, live), `8689305` (the
+      database container runs it) and `d2d-relay-agy:pinned` (a build input).
+    - **Live's data:** live had no client organisation and no dashboard, only PASDACS's own test traces from that
+      morning. Backed up first (`data\backups\relay-db-20261112-091920.dump`, made with `relay-ctl db-dump`), then
+      removed in one transaction after the user's "Yes, and sign me out": the declined request for 100 credits, the
+      unpaid ₹5,000 test checkout (no money moved), 56 audit entries, 3 notifications, 2 sign-in codes and both
+      sessions (info@pasdacs.com signs in again). Kept: PASDACS with its billing details and its 50 starting credits
+      (and their one history line), info@pasdacs.com, the prices, packs and settings, the five library visuals and
+      the enterprise sample in `data\samples`. Nothing was restarted. The Claude sign-in volume `claude-api-auth` was
+      left alone: its seven transcript folders date from 2 to 10 November and none is a D2D Relay dashboard's (none
+      under `/data/projects`).
+    - **Checked afterwards:** one organisation and one person; no requests, payments, notifications, audit entries
+      or sessions; every container healthy; https://d2d.pasdacs.com/healthz 200; no errors in the logs.
+
+Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)
 
@@ -828,16 +850,17 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 32's follow-up. **Live:** web, admin and the job runner run `d2d-relay:54f6ed7`
-(= latest); the database container runs `d2d-relay:8689305`'s image. **GitHub**, this folder and the deploy folder are
-all on this log entry: the D2D logo (`e07a6c1`), item 31 (`8b18e3f`), item 32 (`bdf370e`), its follow-up (`54f6ed7`)
-and their logs were pushed on 2026-11-12 after the user's "ensure everything is clean and confirmed and deployed and
-published correctly" (scanned first for the live `.env` and `tunnel.env` values and key patterns: no secrets).
-**Going back:** `d2d-relay:bdf370e`, `8b18e3f`, `d6be664`, `a84d7c9`, `72b71a1`, `e2be1d2`, `442a396`, `c8e615f` and
-`8f39265` stay tagged (`docker tag <image> d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`;
-only `web admin` for a version before item 31); going back before item 31 also takes the deploy folder to `7ecd8b4`
-first (`git reset --keep 7ecd8b4`) and `docker rm -f d2d-relay-runner` after; any other version is a commit on GitHub
-(in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`).
+Updated 2026-11-12, after the clean-up for the public launch (item 33). **Live:** web, admin and the job runner run
+`d2d-relay:54f6ed7` (= latest); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
+info@pasdacs.com. **GitHub** and the deploy folder are on `64dcede`: the D2D logo (`e07a6c1`), item 31 (`8b18e3f`),
+item 32 (`bdf370e`), its follow-up (`54f6ed7`) and their logs were pushed on 2026-11-12 after the user's "ensure
+everything is clean and confirmed and deployed and published correctly" (scanned first for the live `.env` and
+`tunnel.env` values and key patterns: no secrets). This folder is ahead, not pushed: the release tests in `tests/`
+(`dbe57e5`) and item 33's log; neither changes the image.
+**Going back:** since item 33 no older release image is kept on this PC. Any version is a commit on GitHub (in the
+deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`), then `docker compose up -d
+--no-deps web admin runner` (only `web admin` for a version before item 31); going back before item 31 also takes the
+deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and `docker rm -f d2d-relay-runner` after.
 
 ### Before the public launch (the user)
 
@@ -918,12 +941,12 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   `access_check.py` (10) and `guard_cases.py` (64 cases, 0 wrong). The route list was taken again from 54f6ed7:
   `/api/me/delete`, `/api/org/delete` (item 31) and `/api/org/unblock` (item 32) were missing, so `sec_check.py` now
   tries 114 routes without a session (111 before). Left open: `real_build_check.py` (real Claude) and the real
-  Razorpay test-mode checks have not been run from the repository yet. `C:\Users\santosh.k\Downloads\d2d-relay-test-suite`
-  is no longer needed by the suite; it still holds what was not carried over: one-off scripts that edited the app,
-  the guide, the work log and the suites for items 22-25 (their changes are in git), read-only scripts for live's
-  data, Power BI Desktop and older .pbix helpers, the item 21 lockdown probes, the audit's proof kit (overlay image,
-  sandbox-escape proofs, the DAX checker's test models), the older split-test compose files, and past runs' logs and
-  screenshots. Keeping or deleting it is the user's call.
+  Razorpay test-mode checks have not been run from the repository yet. Not carried over, and sent to the Recycle Bin
+  with the backup folder `Downloads\d2d-relay-test-suite` on the user's word (item 33): one-off scripts that edited
+  the app, the guide, the work log and the suites for items 22-25 (their changes are in git), read-only scripts for
+  live's data, Power BI Desktop and older .pbix helpers, the item 21 lockdown probes, the audit's proof kit (overlay
+  image, sandbox-escape proofs, the DAX checker's test models), the older split-test compose files, and past runs'
+  logs and screenshots.
 
 ### Decided (nothing to do)
 
