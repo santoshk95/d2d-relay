@@ -624,7 +624,17 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     credits and emails the owner; Decline tells the owner why. Also from the command line (`python -m app.orgs
     requests | approve | decline`, `docs/d2d-relay.md`, "Starting credits are reviewed"), so PASDACS can answer by
     telling Claude. `RELAY_CREDITS_START_REVIEW=0` brings back the credits at sign-up. `app/orgs.py`, `otp.py`,
-    `signin_alerts.py`, `login.html`, `js/36-org.js`, `.env.example`, `README.md`. Not committed, not deployed.
+    `signin_alerts.py`, `login.html`, `js/36-org.js`, `.env.example`, `README.md`. Live since 2026-11-12 (09:21 IST).
+28. **The public site moves to d2d.pasdacs.com** (the user, 2026-11-12: "can we host this in app.d2d.pasdacs.com ?",
+    then "d2d.pasdacs.com": a name two levels under pasdacs.com needs Cloudflare's paid Advanced Certificate Manager,
+    one level is covered by the free certificate). The old address d2d-relay.pasdacs.com keeps answering through the
+    same tunnel. The guide (`docs/d2d-relay.md`, "Public address", with "Changing the address"), `README.md`,
+    `.env.example`, `docker-compose.yml`'s notes and the public site's address the admin portal uses in emails and for
+    the webhook (`payments._site`) name the new address. The switch: (1) the user adds the public hostname `d2d` on the
+    D2D tunnel in Cloudflare (Zero Trust → Networks → Tunnels → the tunnel → Public hostname → Add: subdomain `d2d`,
+    domain `pasdacs.com`, HTTP, `d2d-relay:8000`); (2) Claude checks https://d2d.pasdacs.com answers, sets
+    `RELAY_PUBLIC_URL=https://d2d.pasdacs.com` in the live `.env` and restarts web and admin on this item's image;
+    (3) the user changes Razorpay's webhook to https://d2d.pasdacs.com/api/payments/webhook.
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -694,7 +704,7 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
 - **Payments with Razorpay (item 23) are live in test mode** (since 2026-11-11 ~19:45 IST; test keys, so only PASDACS
   can buy and no money moves). Left: (1) the user adds the webhook in the Razorpay Dashboard, test mode, Settings →
-  Webhooks: URL https://d2d-relay.pasdacs.com/api/payments/webhook, the secret that is in the live `.env`
+  Webhooks: URL https://d2d.pasdacs.com/api/payments/webhook (item 28), the secret that is in the live `.env`
   (`RELAY_RAZORPAY_WEBHOOK_SECRET`), events payment.captured, order.paid, payment.failed and refund.processed (OTP
   754081 if asked); (2) a test purchase on live by the user as info@pasdacs.com (Organisation → Buy credits,
   Razorpay's test card), which also exercises the webhook; (3) going live: live keys from Razorpay (after it

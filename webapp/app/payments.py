@@ -703,7 +703,7 @@ def save_billing(body: BillingIn, request: Request):
 def _site() -> str:
     """The public site's address (the webhook URL to give Razorpay); the admin portal's own address is not it."""
     from . import identity
-    return (os.environ.get("D2D_PAYMENTS_SITE") or ("" if portal.ADMIN else identity.PUBLIC_URL) or "https://d2d-relay.pasdacs.com").rstrip("/")
+    return (os.environ.get("D2D_PAYMENTS_SITE") or ("" if portal.ADMIN else identity.PUBLIC_URL) or "https://d2d.pasdacs.com").rstrip("/")
 
 
 @router.get("/api/admin/payments")

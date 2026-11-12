@@ -3,7 +3,7 @@
 #
 # Four containers, split where the trust and the work differ (one image, d2d-relay, runs the first three):
 #   d2d-relay-db      PostgreSQL 17, on the private Docker network only (no port on this PC)
-#   d2d-relay-web     the public site https://d2d-relay.pasdacs.com: the web app and the AI engine     127.0.0.1:8100
+#   d2d-relay-web     the public site https://d2d.pasdacs.com: the web app and the AI engine           127.0.0.1:8100
 #   d2d-relay-admin   the admin portal https://admin-d2d.pasdacs.com: PASDACS only, behind Cloudflare
 #                     Access and its own email code; no AI engine, no jobs                             127.0.0.1:8102
 #   d2d-relay-tunnel  the Cloudflare tunnel that serves both addresses (profile "tunnel")
@@ -58,7 +58,7 @@ services:
     networks:
       default:
         aliases:
-          - d2d-relay            # the tunnel's route for d2d-relay.pasdacs.com is http://d2d-relay:8000
+          - d2d-relay            # the tunnel's route for d2d.pasdacs.com is http://d2d-relay:8000
     env_file:
       - path: .env
         required: false
@@ -103,7 +103,7 @@ services:
         condition: service_healthy
     stop_grace_period: 1m
 
-  # https://d2d-relay.pasdacs.com -> d2d-relay-web and https://admin-d2d.pasdacs.com -> d2d-relay-admin, through
+  # https://d2d.pasdacs.com -> d2d-relay-web and https://admin-d2d.pasdacs.com -> d2d-relay-admin, through
   # Cloudflare (no port is opened on this PC). The tunnel and its public hostnames are made in the Cloudflare
   # dashboard; its token goes in tunnel.env (one line: TUNNEL_TOKEN=...), a file of its own so no app container sees it.
   tunnel:

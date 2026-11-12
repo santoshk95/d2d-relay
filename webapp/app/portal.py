@@ -1,6 +1,6 @@
 """D2D Relay: which site this process serves, set per container by D2D_PORTAL (RELAY_PORTAL in .env).
 
-  public  https://d2d-relay.pasdacs.com (container d2d-relay-web): organisations sign in with a business email and
+  public  https://d2d.pasdacs.com (container d2d-relay-web): organisations sign in with a business email and
           build dashboards. Nobody has platform powers here: every /api/admin path answers 404.
   admin   https://admin-d2d.pasdacs.com (container d2d-relay-admin): PASDACS only. Two locks, both required:
           1. Cloudflare Access in front of the hostname. Every request that comes through Cloudflare (it carries

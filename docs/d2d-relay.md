@@ -13,7 +13,7 @@ Only the Claude sign-in volume (`claude-api-auth`) is shared, so both apps use t
 
 | | |
 |---|---|
-| Public address | https://d2d-relay.pasdacs.com (Cloudflare tunnel) |
+| Public address | https://d2d.pasdacs.com (Cloudflare tunnel; https://d2d-relay.pasdacs.com, the address until 2026-11-12, still answers) |
 | Admin portal | https://admin-d2d.pasdacs.com: PASDACS only, behind Cloudflare Access and its own email code (see "Admin portal") |
 | On this PC | public site http://127.0.0.1:8100, admin portal http://127.0.0.1:8102 |
 | Sign-in | a 6-digit code emailed to any **business** address (no passwords, no SSO); free and disposable mail refused |
@@ -29,7 +29,7 @@ each in its own role (`RELAY_ROLE`, `docker/relay_init.py`), so they always run 
 | Container | Role | What runs | Reachable |
 |---|---|---|---|
 | `d2d-relay-db` | database | PostgreSQL 17 (volume `d2d-relay-db-data`) | the private Docker network only, with `RELAY_DB_PASSWORD` |
-| `d2d-relay-web` | web | the public site: web app and AI engine (volume `d2d-relay-data`, `data\projects`) | 127.0.0.1:8100, d2d-relay.pasdacs.com |
+| `d2d-relay-web` | web | the public site: web app and AI engine (volume `d2d-relay-data`, `data\projects`) | 127.0.0.1:8100, d2d.pasdacs.com |
 | `d2d-relay-admin` | admin | the admin portal: web app only, no AI engine or jobs (volume `d2d-relay-admin-data`) | 127.0.0.1:8102, admin-d2d.pasdacs.com |
 | `d2d-relay-tunnel` | | Cloudflare tunnel (profile `tunnel`) | outbound only |
 
@@ -276,14 +276,23 @@ pasdacs.com's DNS is on Cloudflare, so no port is opened on this PC.
 
 1. In Cloudflare, go to **Zero Trust → Networks → Tunnels → Create a tunnel** (type Cloudflared) and name it
    `d2d-relay`. Copy the token from the "Install connector" step.
-2. In the tunnel, go to **Public hostname → Add**. Set subdomain `d2d-relay`, domain `pasdacs.com`, service
-   **HTTP**, and URL `d2d-relay:8000` (the public site's container answers to that name too).
+2. In the tunnel, go to **Public hostname → Add**. Set subdomain `d2d`, domain `pasdacs.com`, service **HTTP**, and
+   URL `d2d-relay:8000` (the public site's container answers to that name too). Keep the name one level under
+   pasdacs.com: Cloudflare's free certificate covers `d2d.pasdacs.com`, not `app.d2d.pasdacs.com` (that needs its paid
+   Advanced Certificate Manager).
 3. Create `tunnel.env` next to `docker-compose.yml` with one line, `TUNNEL_TOKEN=<token>`. Git ignores this file, and
    the app container never sees it.
-4. Run `docker compose --profile tunnel up -d`. Then open https://d2d-relay.pasdacs.com.
+4. Set `RELAY_PUBLIC_URL=https://d2d.pasdacs.com` in `.env` (the address in emails, invitations and the webhook shown
+   on the admin portal), run `docker compose --profile tunnel up -d`, then open https://d2d.pasdacs.com.
 
 Cloudflare provides the certificate. pasdacs.com sends HSTS includeSubDomains, so the address must be https, and it
 is. Optional extra lock: a Cloudflare Access policy (email one-time PIN for the same address) in front of the hostname.
+
+**Changing the address** (as on 2026-11-12, from `d2d-relay.pasdacs.com` to `d2d.pasdacs.com`): add the new public
+hostname to the same tunnel and keep the old one, set `RELAY_PUBLIC_URL` and restart web and admin
+(`docker compose up -d --no-deps web admin`), change Razorpay's webhook to the new address, and later, if wanted, a
+Cloudflare redirect rule from the old address to the new one. People sign in again on the new address (a sign-in
+belongs to one address), and links in emails already sent keep working while the old hostname stays.
 
 ### 3. Connectors (on request)
 
@@ -316,7 +325,7 @@ added once Razorpay has captured the payment, by whichever of these comes first,
 
 - the checkout's answer: Razorpay's signature is checked with the key secret, and the payment is fetched from
   Razorpay (its order, amount and currency must match; one that is only authorised is captured);
-- the webhook (`https://d2d-relay.pasdacs.com/api/payments/webhook`, no sign-in, signed with the webhook secret);
+- the webhook (`https://d2d.pasdacs.com/api/payments/webhook`, no sign-in, signed with the webhook secret);
 - a look at Razorpay when the organisation's Organisation page opens, or **Check** on the admin portal (checkouts of
   the last two days still waiting: a tab closed before the answer came back).
 
