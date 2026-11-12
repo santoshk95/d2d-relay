@@ -771,6 +771,16 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     nothing. Owners see the list in `/api/org` (`blocked`). `orgs.py` (is_blocked, block, unblock, blocked_list),
     `otp.py`, `js/36-org.js`, the privacy notice (the address is kept on the list until unblocked), the guide.
     - **Tests:** every suite on fresh test stacks from the release candidate, with the starting-credit review on and off, 680 and 663 checks, all passing; accounts_check.py now 40 (a removed address refused with the reason, listed under Blocked for owners, nobody else at the domain affected, unblocking needs an owner and works once, an unblocked or added-back address joins as a new person, Delete my account blocks nothing); sec_check.py expects 403 again for a removed person.
+    - **Live since 2026-11-12, ~12:59 IST** (the user's "Deploy bdf370e now"), deployed by the "Final review and
+      deployment" session: web, admin and the job runner run `d2d-relay:bdf370e` (= latest; `8b18e3f` kept for going
+      back), built from the clean commit; no compose change. Checked on live: all three healthy on bdf370e; the privacy
+      notice with the blocked list served through Cloudflare; Unblock asking for sign-in; the runner answering, its
+      socket `agent 600`, one `claude --version` job in a throwaway folder run in a job container and removed (the folder
+      too); the AI engine's API still refusing its own user and its network still limited; no errors in any log.
+    - **Shipped before the follow-up** for three small gaps found in review (the other session is fixing them): the
+      admin portal's sign-in joins a blocked PASDACS address to PASDACS (only this PC reaches the portal); an address
+      PASDACS adds (`platform.py`) stays on the Blocked list; single sign-on's auto-provision does not check the list
+      (live signs in with codes only).
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -811,11 +821,11 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 31. **Live:** web, admin and the job runner run `d2d-relay:8b18e3f` (= latest); the
+Updated 2026-11-12, after item 32. **Live:** web, admin and the job runner run `d2d-relay:bdf370e` (= latest); the
 database container runs `d2d-relay:8689305`'s image. **GitHub** is at `7ecd8b4` (item 30 and its log, pushed on
-2026-11-12 after the user's "Yes, push"); the D2D logo (`e07a6c1`), item 31 (`8b18e3f`) and this log are committed here
-and in the deploy folder, not pushed yet. **Going back:** `d2d-relay:d6be664`, `a84d7c9`, `72b71a1`, `e2be1d2`,
-`442a396`, `c8e615f` and `8f39265` stay tagged (`docker tag <image> d2d-relay:latest`, then `docker compose up -d
+2026-11-12 after the user's "Yes, push"); the D2D logo (`e07a6c1`), item 31 (`8b18e3f`), item 32 (`bdf370e`) and these
+logs are committed here and in the deploy folder, not pushed yet. **Going back:** `d2d-relay:8b18e3f`, `d6be664`,
+`a84d7c9`, `72b71a1`, `e2be1d2`, `442a396`, `c8e615f` and `8f39265` stay tagged (`docker tag <image> d2d-relay:latest`, then `docker compose up -d
 --no-deps web admin`); going back before item 31 also takes the deploy folder to `7ecd8b4` first (`git reset --keep
 7ecd8b4`) and `docker rm -f d2d-relay-runner` after; any other version is a commit on GitHub (in the deploy folder:
 `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`).
