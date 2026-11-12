@@ -707,15 +707,16 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
-- **Payments with Razorpay (item 23) are live in test mode** (since 2026-11-11 ~19:45 IST; test keys, so only PASDACS
-  can buy and no money moves). Left: (1) the user adds the webhook in the Razorpay Dashboard, test mode, Settings →
-  Webhooks: URL https://d2d.pasdacs.com/api/payments/webhook (item 28), the secret that is in the live `.env`
-  (`RELAY_RAZORPAY_WEBHOOK_SECRET`), events payment.captured, order.paid, payment.failed and refund.processed (OTP
-  754081 if asked); (2) a test purchase on live by the user as info@pasdacs.com (Organisation → Buy credits,
-  Razorpay's test card), which also exercises the webhook; (3) going live: live keys from Razorpay (after it
-  activates the account) into the live `.env` by hand, a live-mode webhook with its own secret, a restart of web and
-  admin, then Sell credits online switched on (admin portal, Payments). Open choices: GST added or not (now: not),
-  whether a GST invoice is needed (not built), and the refund rule (refunds are made by hand on Razorpay).
+- **Buying credits online is off on live** (since 2026-11-12, the user: "from the live site remove buy credits for now
+  as its in test, allow only request credits, once razorpay is activated we can allow production to buy credits"):
+  the Razorpay test keys are parked as comments in the live `.env` (with a note there), so payments are "off" and
+  everyone, PASDACS included, sees Request credits only; the webhook secret stays, so the webhook still answers.
+  Going live, once Razorpay activates the account: (1) the live keys (rzp_live_...) into the live `.env` in place of
+  the parked test keys; (2) a live-mode webhook in the Razorpay Dashboard, URL
+  https://d2d.pasdacs.com/api/payments/webhook, events payment.captured, order.paid, payment.failed and
+  refund.processed, its secret as `RELAY_RAZORPAY_WEBHOOK_SECRET`; (3) restart web and admin; (4) on the admin portal,
+  Payments: PASDACS's invoice details and GST 18% (added), then Sell credits online on (live keys cannot sell before
+  the invoice details are complete). Refunds: none (item 25); any made by hand on Razorpay are recorded.
 - **GST invoices (item 25) are live** (2026-11-12, with items 26 and 27). Still needed from the user: PASDACS's legal name, registered
   address, state, PIN and GSTIN; the SAC code (the accountant's; the setting suggests 998314); the LUT's ARN if one is
   filed for 2026-27 (else dollar sales carry IGST, included in the price). They go on the admin portal (Payments → Tax

@@ -319,6 +319,11 @@ scanned by default.
 
 ## Payments (Razorpay)
 
+**On the live site, buying is off until Razorpay activates the account** (the user's decision of 2026-11-12): the
+test keys are parked as comments in `.env`, so everyone sees Request credits only. Going live is the steps under
+"Buying credits online is off on live" in the work log (`docs/LOG.md`, "Still open"): the live keys in `.env`, a live webhook, a restart, then
+the invoice details, GST and Sell credits online on the admin portal. Without keys the screens never show Buy credits.
+
 Organisations buy credit packs online (`app/payments.py`, `js/37-payments.js`). The amount is always the server's;
 Razorpay's own window takes the card, UPI, netbanking or wallet details (they never reach D2D Relay); the credits are
 added once Razorpay has captured the payment, by whichever of these comes first, and only once:
