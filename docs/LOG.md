@@ -712,6 +712,13 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       its API and stopped from connecting out or looking names up, Anthropic reached through the proxy); real Claude
       answering through the new network limits in a throwaway container with the live sign-in volume (its test
       transcript removed).
+    - **Shipped with the Ask Relay rename** (`4c595c9`, from another Claude session, which asked the next deploying agent
+      to review, merge and deploy it): reviewed (39 files, text only, no identifiers changed), item 30 rebased onto it,
+      and the merged code tested again: every suite with the review on and off, and `rename_check.py` (the Ask Relay
+      page in Chromium; an answer sent to a dashboard gives "Change request (from Ask Relay)" and "From Ask Relay: ...").
+    - **Live since 2026-11-12, ~11:31 IST** (the user's "Yes, when all tests pass"): web and admin run
+      `d2d-relay:d6be664` (= latest; `a84d7c9` kept for going back). The web container was recreated with `NET_ADMIN`
+      (`docker-compose.yml`). Checked on live: the legal pages public through Cloudflare (Cloudflare's email obfuscation rewrites the address on them, as on every page), RELAY's leftover pages off, the admin portal answering this PC and refusing another container, both containers on d6be664, the AI engine's network limited (no direct connection, Anthropic through the proxy, one real Claude prompt answered through it, its transcript removed), its API refusing its own user, FastAPI 0.120.4 on Starlette 0.49.3, no errors in either log.
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -752,29 +759,12 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 29. **Live:** web and admin run `d2d-relay:a84d7c9` (= latest); the database container
-runs `d2d-relay:8689305`'s image. **GitHub** has every commit (the 12 since b314076 were pushed on 2026-11-12, after a
-scan for the live keys and tokens: none). **Going back:** `d2d-relay:72b71a1`, `e2be1d2`, `442a396`, `c8e615f` and
+Updated 2026-11-12, after item 30. **Live:** web and admin run `d2d-relay:d6be664` (= latest); the database container
+runs `d2d-relay:8689305`'s image. **GitHub** is at f1755c2 (the Ask Relay rename and its note, pushed by the other session);
+item 30 (d6be664) and its log are committed here and in the deploy folder, not pushed yet. **Going back:** `d2d-relay:a84d7c9`, `72b71a1`, `e2be1d2`, `442a396`, `c8e615f` and
 `8f39265` stay tagged (`docker tag <image> d2d-relay:latest`, then `docker compose up -d --no-deps web admin`); any
 other version is a commit on GitHub (in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose
 build web`).
-
-### Waiting for the next deploy (review first)
-
-- **Ask D is Ask Relay everywhere: commit `4c595c9` (2026-11-12), not reviewed here and not live.** It was made from
-  another Claude session (the corporate site's "Relay Platform page" session) on the user's word: "Ask D is change, its
-  now Ask Relay so chnage all", then "update all repos to match this", then "Merge and push". It is on `main` and on
-  GitHub. The user's instruction for this repository: "just note it so when deploying by other agent it will be review
-  and merge and deployed".
-  - What it changes (39 files, text only): the module's catalogue line ("Ask Relay - ask your data"), the change request
-    and log note a dashboard gets from a question ("Change request (from Ask Relay)", "From Ask Relay: ..."), messages
-    and labels in the switched-off RELAY modules, code comments and docstrings, the agent's docstrings, the brand note
-    and `docs/pending-work.md`. Internal identifiers are unchanged (`askd`, `/api/askd`, `#/askd`, `14-askd.js`), and so
-    are this log and the dated audits. The same rename is commit `103466c` in RELAY (decision D13 there).
-  - Checked when it was made: every changed Python and JS file parses, and the app imports in the `d2d-relay` image.
-    Not checked: the screens on a test stack.
-  - Before the next deploy: review it (`git show 4c595c9`), look at the Ask Relay page and a dashboard's change request
-    from a question on a test stack, then ship it with the next release. To back it out: `git revert 4c595c9`.
 
 ### Before the public launch (the user)
 
