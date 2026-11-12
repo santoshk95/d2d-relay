@@ -9,6 +9,7 @@ is mounted, never copied.
 |---|---|
 | `stack/docker-compose.yml` | The test stack: `d2d-relay-test-db`, `-web`, `-admin` and `-runner`, as live is laid out |
 | `stack/stack.sh` | Starts a fresh test stack from an image (and removes the earlier one) |
+| `stack/helpers.ps1` | The test stack's own DAX checker and Power BI file maker on this PC, for the end-to-end run |
 | `checks/` | The suites, the stand-in Razorpay API (`fake_razorpay.py`) and its checkout window (`rzp_stub.js`) |
 | `audit/` | `routes.py` and `routes-public.txt`: the public site's API routes, which `sec_check.py` tries without a session |
 | `run_release.sh` | A fresh stack, then every suite, in one review mode |
@@ -42,10 +43,11 @@ starts the stand-in Razorpay inside the web container. Then:
   starts with `rzp_live_` so the live path runs: selling needs a platform admin to switch it on, as on live.
 - The stack has no Claude sign-in: every AI run fails at once (and gives its credits back), which the suites expect.
 
-stack.sh refuses to start while any container labelled `d2d-relay.job=1` exists on this PC. The job runner removes
-every such container when it starts (`docker/job_runner.py`, `sweep()`), and live's dashboard builds run in containers
-with that label too, so starting a test runner during a live build would stop the build. If it says so, wait until the
-live build ends. A test stack's own leftovers can be removed with `docker rm -f <name>`.
+stack.sh refuses to start while any container labelled `d2d-relay.job=1` exists on this PC. Until item 34 the job
+runner removed every such container when it started (`docker/job_runner.py`, `sweep()`), live's dashboard builds
+included; since item 34 each job carries its web container's name (`d2d-relay.web`) and a runner removes only its own
+stack's. The refusal stays for images from before item 34 (and `upgrade_check.py` starts one). If it says so, wait
+until the live build ends. A test stack's own leftovers can be removed with `docker rm -f <name>`.
 
 ## Running the suites
 
@@ -68,8 +70,9 @@ already running, `bash tests/run_all.sh <output name>` runs the suites alone.
 | `sec_check.py` | 132 / 115 |
 | `item29_check.py` + `tour_ui_check.py` | 34 + 28 |
 | `item30_check.py`, `rename_check.py` | 54, 8 |
-| `jobs_check.py`, `accounts_check.py` | 17, 45 |
-| **All, for 54f6ed7** | **685 / 668** |
+| `jobs_check.py`, `accounts_check.py` | 18, 45 |
+| `item34_check.py`: built-in visuals first, the model's name, each runner sweeping only its own stack | 32 |
+| **All, for aa4531e** (685 / 668 for 54f6ed7, before item 34) | **718 / 701** |
 
 One suite by hand, with the stack running:
 
@@ -93,8 +96,8 @@ suite prints a line per check and `N of M checks passed`; its exit code is the n
   `db.init()` first.
 - `pay_ui_check.py` waits up to 15 seconds for each dialog; on a busy PC it can time out. Rerun it before calling it a
   failure.
-- `jobs_check.py` counts every job container on this PC: a live build running at the same time fails its "removed when
-  the run ended" check. Rerun when live is idle.
+- `jobs_check.py` counts only this stack's job containers (labelled with its web container; before item 34, in its
+  web container's network), so a live build running at the same time does not count.
 - Docker Desktop's port forwarding can stall a connection to 127.0.0.1 for about 20 seconds; the suite then stops with
   `WinError 10060` and no summary line (seen once in `sec_check.py`, with nothing in the app's log). Run the release
   check again on a fresh stack.
@@ -113,24 +116,39 @@ stack.sh.
 
 ## Real Claude (on demand)
 
-The test stack can mount live's Claude sign-in, the volume `claude-api-auth`, for one real build. **Always set both
+The test stack can mount live's Claude sign-in, the volume `claude-api-auth`, for real builds. **Always set both
 `TEST_CLAUDE_VOLUME=claude-api-auth` and `TEST_CLAUDE_EXTERNAL=true`, never external false**: as external, compose
 never deletes the volume, not even with `down -v`. stack.sh refuses any other volume that is not external, and writes
 both settings to `stack/.env`, so the teardown in `tests/stack` keeps them. Set both on every command that names the
-stack anywhere else.
+stack anywhere else. Never copy the sign-in (`.credentials.json`): a refresh in a copy could rotate the token live uses.
+
+End to end, as a customer would, needs this PC's DAX checker and Power BI file maker too: `stack/helpers.ps1` starts
+the repository's copies on the test stack's own queues (and a data folder of their own, `C:\D2D Relay Test`), never
+live's; live's keep running beside them.
 
 ```bash
 TEST_CLAUDE_VOLUME=claude-api-auth TEST_CLAUDE_EXTERNAL=true TEST_IMAGE=d2d-relay:<tag> bash tests/stack/stack.sh 1
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/stack/helpers.ps1 start
 cd tests/checks
+python -I -X utf8 visuals_e2e_check.py http://127.0.0.1:8103 http://127.0.0.1:8104
 python -I -X utf8 real_build_check.py http://127.0.0.1:8103 http://127.0.0.1:8104
+cd ../..
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/stack/helpers.ps1 stop
 ```
 
-Never copy the sign-in (`.credentials.json`): a refresh in a copy could rotate the token live uses. A plan takes about a
-minute, a build about two and a half. Run it only while live is idle: the check looks inside every job container on this
-PC. Afterwards delete the test runs' transcripts from the volume (their folder names start with a dash, hence `--`):
+- `visuals_e2e_check.py`: one dashboard in each Visuals mode, in the order the form offers them (Power BI's built-in
+  visuals, built-in first with custom where needed, Relay custom visuals), each planned and built by real Claude,
+  approved, published through Power BI's engine (the DAX check) and made into a .pbix; then what each report is made
+  of, in its definition and inside the .pbix (built-in: no custom visual embedded; Relay: its custom visuals embedded).
+- `real_build_check.py`: one real build, with each job container looked at from outside while it runs (only this
+  stack's job containers, never live's): its mounts, network, rights, and no other organisation's folder.
+
+A plan takes one to two minutes, a build a few more, publishing with the .pbix about one. Afterwards take the stack
+down (as above) and delete the test runs' transcripts from the volume (each check prints its organisation; the folder
+names start with a dash, hence `--`):
 
 ```bash
-MSYS_NO_PATHCONV=1 docker run --rm -v claude-api-auth:/c --entrypoint /bin/sh d2d-relay:<tag> -c 'cd /c/projects && rm -rf -- ./-data-projects--tenants-<test tenant>-*'
+MSYS_NO_PATHCONV=1 docker run --rm -v claude-api-auth:/c --entrypoint /bin/sh d2d-relay:<tag> -c 'cd /c/projects && rm -rf -- ./-data-projects--tenants-<test organisation>-*'
 ```
 
 ## Other checks (on demand)

@@ -60,7 +60,8 @@ def dashboard(p, **form) -> tuple[str, dict]:
 p = c.Person(f"vi.visuals@vis{c.STAMP}.com")
 s, r = p.sign_in("Visuals Test", "Vi Visuals")
 check("setup: an organisation signs up", s == 200, (s, r))
-p.post("/api/me/tour", {"step": "done"})                 # the first-time tour stays out of the browser checks below
+p.post("/api/me/tour", {"step": "done"})                 # the first-time tour and the organisation's setup (its last
+p.post("/api/org/setup")                                 # step) stay out of the browser checks below
 s, cat = p.get("/api/models")
 models = (cat or {}).get("models") or []
 check(f"model: the only model offered is called {NAME}", s == 200 and [(m.get("id"), m.get("label")) for m in models] == [("relay", NAME)],
@@ -114,7 +115,7 @@ with sync_playwright() as pw:
     out["chosen"] = vis.input_value()
     out["custom_builtin"] = [cv.input_value(), cv.is_disabled()]
     out["hint_builtin"] = vis.evaluate("s => s.nextElementSibling ? s.nextElementSibling.textContent : ''")
-    page.screenshot(path="/tmp/item34-new.png", full_page=True)
+    page.locator(".sect:has(select[aria-label='Visuals'])").screenshot(path="/tmp/item34-new.png")
     vis.select_option("mixed")
     out["custom_mixed"] = [cv.input_value(), cv.is_disabled()]
     cv.select_option("auto")
@@ -142,7 +143,8 @@ try:
     o = json.loads(res.stdout.strip().splitlines()[-1])
 except (ValueError, IndexError):
     o = {}
-check("ui: the browser checks ran", bool(o), res.stderr[-600:])
+if not check("ui: the browser checks ran", bool(o), res.stderr[-600:]):
+    print(res.stderr[-3000:], flush=True)
 if o:
     check("ui: New dashboard offers built-in, then mixed, then custom", [v for v, _ in o["options"]] == ["builtin", "mixed", "relay"], o["options"])
     check("ui: Power BI's built-in visuals are chosen by default", o["chosen"] == "builtin", o["chosen"])

@@ -811,6 +811,47 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     - **Checked afterwards:** one organisation and one person; no requests, payments, notifications, audit entries
       or sessions; every container healthy; https://d2d.pasdacs.com/healthz 200; no errors in the logs.
 
+34. **Built-in visuals first; the AI model named Relay Model powered by Claude; each job runner sweeps only its own
+    stack** (the user, 2026-11-12: "What all you can close do it and do a full end to end testing and default power bi
+    built in visual first and the built in plus custom id needed and last full custom, and name the AI model as Relay
+    Model powered by Claude"). Code `aa4531e`; release candidate `d2d-relay:aa4531e`, built from the clean commit and
+    tested; **not deployed** (waiting for the user's word).
+    - **Visuals:** a new dashboard uses Power BI's built-in visuals unless its owner picks another. The New dashboard
+      form offers Power BI's built-in visuals (chosen), then Built-in first, custom where needed, then Relay custom
+      visuals; Custom visuals is off with built-in and back to its own choice with the others; the dashboard page's
+      switch is in the same order; a dashboard made through the API without a choice is builtin; the agent's manual
+      lists builtin first. Dashboards from before the choice existed stay relay (`main.py`, `04-new.js`, `07-tabs.js`,
+      `genbi_kit/GENBI.md`).
+    - **The AI model's name:** "Relay Model powered by Claude" in the model list (`config/house-models.json`, which
+      live reads from the deploy folder), on a dashboard's header and Details tab, and on Branding.
+    - **The job runner** labels each job container with its web container (`d2d-relay.web`) and, when it starts,
+      removes only its own stack's jobs (from runners before the label: those in its web container's network, or whose
+      network container is gone). Before, a test stack starting during a live build would have stopped the build.
+    - **Pushed first** (the same request): `dbe57e5` and `2cd493e` went to GitHub and the deploy folder (nothing in the
+      image changed; both were scanned for the live `.env` and `tunnel.env` values and key patterns before committing).
+    - **Tests**, on fresh test stacks from `d2d-relay:aa4531e`: every suite, 718 checks with the starting-credit review
+      on and 701 with it off, all passing, among them the new `item34_check.py` (32: the defaults and order through the
+      API and in Chromium, the model's name, the sweep with five stand-in jobs: this stack's and older ones removed,
+      another stack's left alone) and `jobs_check.py`, now 18 (a job carries the label). In the review-off run
+      `pay_ui_check.py` timed out once waiting for the Buy dialog and passed 37 of 37 when run again on the same stack.
+      Upgrade from live's `54f6ed7` on the same data: 23 of 23.
+    - **End to end with real Claude** (`visuals_e2e_check.py`, new, with the test stack's own DAX checker and Power BI
+      file maker from this repository, `tests/stack/helpers.ps1`, never live's): one dashboard per Visuals mode from the
+      same made-up sales data, each planned and built by real Claude in job containers, every review gate passing,
+      approved, its DAX checked by Power BI's engine and made into a .pbix: 29 of 29 checks. Built-in: 18 visuals, all
+      Power BI's own, no custom visual in the .pbix. Mixed: 27 visuals, 25 built-in plus a comparison and a narrative
+      custom visual (both embedded). Relay: 27 visuals, 26 custom of 13 kinds (all embedded). Plans took about a
+      minute, builds about 8 minutes each, publishing with the .pbix under a minute. `real_build_check.py`: 20 of 20
+      (every job container saw only its own dashboard's folder; the check now compares each job with its own folder,
+      as the other organisation's plan runs in one too). Seen in the prototypes, not caught by any gate: in the Relay
+      report the dumbbell chart's end labels (-131% to -141%) match neither its axis nor its title, and the waterfall
+      labels most steps "$0M"; in the mixed report the longest bar's label is cut at the edge. The built-in report
+      showed none of this.
+    - **Afterwards:** the test stack, its helpers and their data folder removed; the test runs' transcripts deleted from
+      `claude-api-auth`. Claude Code's own 7-day clean-up (`cleanupPeriodDays`) also removed six transcript folders from
+      2 November there when the test jobs started (none a D2D Relay dashboard's); live's next AI run would have done the
+      same. Live was not touched: healthy throughout, its helpers idle.
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -850,13 +891,14 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after the clean-up for the public launch (item 33). **Live:** web, admin and the job runner run
-`d2d-relay:54f6ed7` (= latest); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
-info@pasdacs.com. **GitHub** and the deploy folder are on `64dcede`: the D2D logo (`e07a6c1`), item 31 (`8b18e3f`),
-item 32 (`bdf370e`), its follow-up (`54f6ed7`) and their logs were pushed on 2026-11-12 after the user's "ensure
-everything is clean and confirmed and deployed and published correctly" (scanned first for the live `.env` and
-`tunnel.env` values and key patterns: no secrets). This folder is ahead, not pushed: the release tests in `tests/`
-(`dbe57e5`) and item 33's log; neither changes the image.
+Updated 2026-11-12, after item 34 (not deployed). **Live:** web, admin and the job runner run `d2d-relay:54f6ed7`
+(= latest); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and info@pasdacs.com.
+**GitHub** and the deploy folder are on `2cd493e` (the release tests and item 33's log, pushed on the user's "What all
+you can close do it"). This folder is ahead, not pushed: item 34 (`aa4531e`) and its log. **Waiting for the user's
+word to deploy:** `d2d-relay:aa4531e`, built from the clean commit and tested (item 34). To deploy: check live is idle
+(no job container, the AI engine not busy), `git fetch` this folder's `main` into the deploy folder and fast-forward it
+(it brings `config/house-models.json`, which live mounts), `docker tag d2d-relay:aa4531e d2d-relay:latest`, then
+`docker compose up -d --no-deps web admin runner`; keep `d2d-relay:54f6ed7` for going back.
 **Going back:** since item 33 no older release image is kept on this PC. Any version is a commit on GitHub (in the
 deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`), then `docker compose up -d
 --no-deps web admin runner` (only `web admin` for a version before item 31); going back before item 31 also takes the
@@ -925,14 +967,13 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
 - **A removed person cannot come back on their own** (item 32): their address is blocked until an owner unblocks it.
 - **Abuse:** Turnstile on "Send code" (S7, S13): the user chose not now (2026-11-12). New organisations wait for
   PASDACS's review of their starting credits (item 27), and PASDACS gets an email for every sign-in (item 21).
-- **Never run on the test stacks:** a real Razorpay checkout, real email delivery, and the Power BI file maker end to
-  end (unchanged). A full dashboard build with real Claude was run for item 31 (a plan and a build in job containers).
-- **The job runner's start-up sweep is not limited to its own stack** (found while moving the release tests into
-  `tests/`, 2026-11-12). When it starts, `docker/job_runner.py` (`sweep()`) removes every container labelled
-  `d2d-relay.job=1` on the PC, and live's jobs and a test stack's carry the same label, so starting a test stack (or
-  its `upgrade_check.py`) during a live dashboard build would stop that build. `tests/stack/stack.sh` refuses to start
-  while any job container exists and warns if its runner removed one. The fix: label each job with the web container
-  that asked for it and sweep only those.
+- **Never run on the test stacks:** a real Razorpay checkout and real email delivery. Since item 34 the end-to-end
+  run covers real Claude, Power BI's engine (the DAX check) and the Power BI file maker, on the test stack's own copies
+  of this PC's helpers (`tests/stack/helpers.ps1`).
+- **The job runner's start-up sweep** (found while moving the release tests into `tests/`, 2026-11-12) is fixed in
+  item 34 (`aa4531e`), **not live yet**: until then live's runner, if restarted, removes every job container on the
+  PC, and a test stack from an image before item 34 removes live's. `tests/stack/stack.sh` refuses to start while any
+  job container exists and warns if its runner removed one.
 - **The release test suite is in `tests/`** since 2026-11-12 (committed here; not pushed, and nothing in the image
   changes): the suites, the test stack's compose file and `stack.sh`, the stand-in Razorpay and the audit's route list.
   `tests/README.md` says how to start the stack, run the suites in both review modes and tear down, and the real-Claude
@@ -940,8 +981,9 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   on and 668 with it off, all passing; also `upgrade_check.py` from `bdf370e` (23), `proto_sandbox_check.py` (23),
   `access_check.py` (10) and `guard_cases.py` (64 cases, 0 wrong). The route list was taken again from 54f6ed7:
   `/api/me/delete`, `/api/org/delete` (item 31) and `/api/org/unblock` (item 32) were missing, so `sec_check.py` now
-  tries 114 routes without a session (111 before). Left open: `real_build_check.py` (real Claude) and the real
-  Razorpay test-mode checks have not been run from the repository yet. Not carried over, and sent to the Recycle Bin
+  tries 114 routes without a session (111 before). `real_build_check.py` has since run from the repository (item 34,
+  20 of 20); the real Razorpay test-mode checks still need Razorpay TEST keys in `tests/stack/.env.real` (the user's,
+  never live keys). Not carried over, and sent to the Recycle Bin
   with the backup folder `Downloads\d2d-relay-test-suite` on the user's word (item 33): one-off scripts that edited
   the app, the guide, the work log and the suites for items 22-25 (their changes are in git), read-only scripts for
   live's data, Power BI Desktop and older .pbix helpers, the item 21 lockdown probes, the audit's proof kit (overlay

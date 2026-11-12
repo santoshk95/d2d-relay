@@ -43,7 +43,8 @@ def look(name: str) -> None:
     h = i.get("HostConfig") or {}
     ex = lambda cmd: subprocess.run(["docker", "exec", "-u", "agent", name, "sh", "-c", cmd], capture_output=True, text=True,
                                     encoding="utf-8", errors="replace").stdout.strip()
-    seen[name] = {"user": i.get("Config", {}).get("User"), "network": h.get("NetworkMode", ""), "caps": h.get("CapDrop"),
+    seen[name] = {"cwd": (i.get("Config", {}).get("Labels") or {}).get("d2d-relay.cwd", ""),
+                  "user": i.get("Config", {}).get("User"), "network": h.get("NetworkMode", ""), "caps": h.get("CapDrop"),
                   "mounts": [m.get("Destination") for m in i.get("Mounts") or []],
                   "projects_seen": ex("find /data/projects -maxdepth 3 -mindepth 1 | head -20"),
                   "data_seen": ex("ls -A /data"), "other_org": ex(f"ls /data/projects/.tenants 2>&1"),
@@ -99,12 +100,21 @@ for name, info in seen.items():
     ok_mounts = all(m.startswith(("/data/projects/", "/home/agent/.claude", "/opt/genbi/library", "/opt/genbi/config")) for m in info["mounts"])
     check(f"isolation: {name} holds only its dashboard's folder (+ sign-in, library, config)", ok_mounts and
           sum(1 for m in info["mounts"] if m.startswith("/data/projects/")) == 1, info["mounts"])
-    check(f"isolation: {name} sees no other organisation's folder", (od or {}).get("id", "zz-none") not in info["projects_seen"]
-          and "other" not in info["other_org"].lower(), (info["projects_seen"][:300], info["other_org"][:200]))
+    # each job is checked against its own dashboard (the other organisation's own plan runs in a job container too)
+    own = info["cwd"]
+    own_org = own.split("/.tenants/", 1)[1].split("/", 1)[0] if "/.tenants/" in own else ""
+    foreign = [x for x in info["other_org"].split() if x != own_org]
+    outside = [x for x in info["projects_seen"].split() if not (own.startswith(x) or x.startswith(own))]
+    check(f"isolation: {name} sees no other organisation's folder, only its own dashboard's ({own})", bool(own) and not foreign
+          and not outside, (own, info["other_org"][:200], outside[:5]))
     check(f"isolation: {name} has no /data/state, no Docker socket, no runner socket",
           "No such file" in info["state_seen"] and "No such file" in info["sock_seen"], (info["state_seen"], info["sock_seen"]))
     check(f"isolation: {name} runs as agent, every capability dropped, on the web container's network",
           info["user"] == "agent" and info["caps"] == ["ALL"] and info["network"].startswith("container:"), info)
 check("real: no job container is left", not jobs(), jobs())
+tids = subprocess.run(["docker", "exec", "-u", "postgres", c.DB_C, "psql", "-qtA", "-h", "/run/postgresql", "-d", "relay", "-c",
+                       f"SELECT string_agg(tenant_id, ' ') FROM relay.tn_orgs WHERE domain IN ('real{c.STAMP}.com', 'other{c.STAMP}.com')"],
+                      capture_output=True, text=True).stdout.strip()
+print(f"\nTranscripts to delete afterwards, for each of the organisations {tids}: ./-data-projects--tenants-<organisation>-*")
 ok = sum(1 for _, x in c.RESULTS if x)
 print(f"{ok}/{len(c.RESULTS)} checks passed")
