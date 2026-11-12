@@ -725,6 +725,23 @@ scan for the live keys and tokens: none). **Going back:** `d2d-relay:72b71a1`, `
 other version is a commit on GitHub (in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose
 build web`).
 
+### Waiting for the next deploy (review first)
+
+- **Ask D is Ask Relay everywhere: commit `4c595c9` (2026-11-12), not reviewed here and not live.** It was made from
+  another Claude session (the corporate site's "Relay Platform page" session) on the user's word: "Ask D is change, its
+  now Ask Relay so chnage all", then "update all repos to match this", then "Merge and push". It is on `main` and on
+  GitHub. The user's instruction for this repository: "just note it so when deploying by other agent it will be review
+  and merge and deployed".
+  - What it changes (39 files, text only): the module's catalogue line ("Ask Relay - ask your data"), the change request
+    and log note a dashboard gets from a question ("Change request (from Ask Relay)", "From Ask Relay: ..."), messages
+    and labels in the switched-off RELAY modules, code comments and docstrings, the agent's docstrings, the brand note
+    and `docs/pending-work.md`. Internal identifiers are unchanged (`askd`, `/api/askd`, `#/askd`, `14-askd.js`), and so
+    are this log and the dated audits. The same rename is commit `103466c` in RELAY (decision D13 there).
+  - Checked when it was made: every changed Python and JS file parses, and the app imports in the `d2d-relay` image.
+    Not checked: the screens on a test stack.
+  - Before the next deploy: review it (`git show 4c595c9`), look at the Ask Relay page and a dashboard's change request
+    from a question on a test stack, then ship it with the next release. To back it out: `git revert 4c595c9`.
+
 ### Before the public launch (the user)
 
 - **The AI runs on a personal Claude plan** (audit P1). The AI engine signs in with a Claude subscription ("Ultra", no
