@@ -867,7 +867,8 @@ first (`git reset --keep 7ecd8b4`) and `docker rm -f d2d-relay-runner` after; an
   it to info@pasdacs.com with Exchange Online's RBAC for Applications, which replaces Application Access Policies
   (`docs/d2d-relay.md`, "Limit the mail app to info@pasdacs.com"). The sign-in alerts and the review emails keep
   names, addresses and networks in that mailbox: give their folder a one-year retention tag (P6).
-- **The old address** d2d-relay.pasdacs.com: the user removes its public hostname in Cloudflare (2026-11-12).
+- **The old address** d2d-relay.pasdacs.com: done. The user removed its public hostname in Cloudflare; the name no
+  longer resolves (checked 2026-11-12, ~13:30 IST). https://d2d.pasdacs.com is the only address.
 
 ### Selling credits online (the user, when Razorpay activates the account)
 
@@ -903,6 +904,11 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   PASDACS's review of their starting credits (item 27), and PASDACS gets an email for every sign-in (item 21).
 - **Never run on the test stacks:** a real Razorpay checkout, real email delivery, and the Power BI file maker end to
   end (unchanged). A full dashboard build with real Claude was run for item 31 (a plan and a build in job containers).
+- **The release test suite is not in this repo.** The checks every release ran (about 700: d2d_checks, gov, pay, sec,
+  item29-31, jobs, accounts and the rest) and the test stack's compose file lived only in a Claude session's temporary
+  scratchpad. Since 2026-11-12 an exact copy is in `C:\Users\santosh.k\Downloads\d2d-relay-test-suite` (its
+  README.txt says what is where). Still open: move it into `tests/` here (its paths, its stand-in test keys, one full
+  run from the repo).
 
 ### Decided (nothing to do)
 
