@@ -269,6 +269,8 @@ def _admin_signed_in(email: str, request: Request, next_hash: str) -> JSONRespon
             return _err("This address belongs to another organisation's workspace, not PASDACS's.", 403)
         uid = u["id"]
     else:
+        if orgs.is_blocked(db.PLATFORM, email):       # item 32: an owner of PASDACS removed this address
+            return _err("An owner of PASDACS removed this address. Ask one of its owners to add you back.", 403)
         uid = orgs.join(db.PLATFORM, email)
     return _signed_in(db.PLATFORM, uid, request, next_hash or "#/orgs")
 

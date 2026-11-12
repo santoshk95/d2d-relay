@@ -323,6 +323,10 @@ def callback(pid: str, code: str, state: str, base_url: str) -> tuple[dict, str]
         if not p["auto_provision"]:
             db.audit("auth.denied", email, {"provider": pid, "reason": "not added"}, None)
             raise SignInError("You have not been added to D2D yet. Ask your administrator to add you.")
+        from . import orgs                              # late import (orgs -> identity)
+        if orgs.is_blocked(db.tenant(), email):         # item 32: an owner removed this address
+            db.audit("auth.denied", email, {"provider": pid, "reason": "blocked"}, None)
+            raise SignInError("An owner of your organisation removed this address. Ask one of its owners to add you back.")
         home = db.one("SELECT home_tenant FROM relay.tn_accounts WHERE email = ?", (email,))
         if home and home["home_tenant"] != db.tenant():
             db.audit("auth.denied", email, {"provider": pid, "reason": "other workspace"}, None)

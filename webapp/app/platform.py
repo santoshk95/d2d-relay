@@ -278,6 +278,8 @@ def admin_add_user(body: Person):
     db.run("INSERT OR IGNORE INTO relay.tn_accounts (user_id, email, home_tenant, created) VALUES (?, ?, ?, ?)",
            (uid, email, db.tenant(), time.time()))
     _set_teams(uid, body.teams or [])
+    from . import orgs                                  # late import (orgs -> platform)
+    orgs.unblock(email)                                 # item 32: adding someone lifts a block on their address
     db.audit("user.add", uid, {"email": email, "org_role": body.org_role or "member",
                                "teams": [m.model_dump() for m in body.teams or []]}, auth.who())
     return admin_users()

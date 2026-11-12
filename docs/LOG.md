@@ -777,10 +777,10 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       notice with the blocked list served through Cloudflare; Unblock asking for sign-in; the runner answering, its
       socket `agent 600`, one `claude --version` job in a throwaway folder run in a job container and removed (the folder
       too); the AI engine's API still refusing its own user and its network still limited; no errors in any log.
-    - **Shipped before the follow-up** for three small gaps found in review (the other session is fixing them): the
-      admin portal's sign-in joins a blocked PASDACS address to PASDACS (only this PC reaches the portal); an address
-      PASDACS adds (`platform.py`) stays on the Blocked list; single sign-on's auto-provision does not check the list
-      (live signs in with codes only).
+    - **The follow-up** for three small gaps the "Final review and deployment" session found (item 32 went live before
+      it): the admin portal's sign-in now refuses a blocked PASDACS address instead of joining it to PASDACS
+      (`otp._admin_signed_in`); an address added through `platform.py` comes off the Blocked list; single sign-on's
+      auto-provision refuses a blocked address (`identity.py`; live signs in with codes only). Tests: every suite on fresh test stacks, with the starting-credit review on and off, 685 and 668 checks, all passing; accounts_check.py 45 (a PASDACS address its main owner removed is refused on the admin portal too).
 
 Test data in the live install: none since the fresh start (item 18).
 
