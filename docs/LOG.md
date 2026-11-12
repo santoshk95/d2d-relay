@@ -635,6 +635,11 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     domain `pasdacs.com`, HTTP, `d2d-relay:8000`); (2) Claude checks https://d2d.pasdacs.com answers, sets
     `RELAY_PUBLIC_URL=https://d2d.pasdacs.com` in the live `.env` and restarts web and admin on this item's image;
     (3) the user changes Razorpay's webhook to https://d2d.pasdacs.com/api/payments/webhook.
+    **Live since 2026-11-12, ~09:58 IST:** the user added the hostname in Cloudflare; `RELAY_PUBLIC_URL` is
+    https://d2d.pasdacs.com in the live `.env`; web and admin run `d2d-relay:72b71a1` (= latest; `e2be1d2` kept for
+    going back). Checked through Cloudflare on both addresses: the site, the sign-in API (same-site requests pass,
+    cross-site ones are refused), the security headers; the admin portal names the new address. Left for the user:
+    Razorpay's webhook; later, if wanted, a Cloudflare redirect from d2d-relay.pasdacs.com to d2d.pasdacs.com.
 
 Test data in the live install: none since the fresh start (item 18).
 
