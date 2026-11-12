@@ -927,6 +927,32 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       in the Relay report the labels of Clothing's two outer slices (2.5% and 2.4%) overlap each other, as do the
       inner labels of Clothing (4.9%) and Accessories (3.7%), and they run over their slices' edges.
 
+37. **A sunburst's labels stay inside their own slices** (the user, 2026-11-12: "Yes, fix it", for what item 36's
+    end-to-end run showed next). Code `334b493`; release image `d2d-relay:334b493`, built from the clean commit and
+    tested; **waiting for the user's word to deploy** (Claude Code's auto mode refused the restart on "Yes, fix it").
+    - **Relay Hierarchy's sunburst** wrote the labels of its thin slices over each other: in the Relay report "Online
+      2.5%" lay on "Retail 2.4%", and the inner "Clothing 4.9%" on "Accessories 3.7%". A thin slice's label runs along
+      the radius, so its two lines sit side by side across the slice, and only one line's room was checked. Now a label
+      is measured as a block of lines and drawn only when all of it stays inside its own slice, clear of the gaps: name
+      and value, else the name alone, else nothing. A label that does not fit one way (along the radius or across the
+      slice) tries the other, so the report's 15% Components slice, unlabelled before, now gets one. Relay Hierarchy
+      1.0.7.0, rebuilt offline with the toolchain pinned in the image, GUID unchanged; a mock-host case with the
+      report's slices, and checks on every sunburst case that fail on the old code, which had the same fault in the
+      mock host's own sunbursts (`visual-atlas/docs/HISTORY.md` section 20).
+    - **Tests** on `d2d-relay:334b493`: every suite, 747 checks with the starting-credit review on and 730 off, all
+      passing, with the new `item37_check.py` (10: such a sunburst in the app's prototype, wide and small, in
+      Chromium; against `53fb6ad` it fails on the overlaps, the slices, the Components label and the version).
+      Upgrade from `53fb6ad`: 23 of 23. End to end with real Claude, one report per Visuals mode to the .pbix: 44 of
+      44, now also checking every page of each report for a sunburst label on another or outside its slice. The
+      Relay report's sunburst showed Bikes 77%, its channels 39% and 37%, Components' channels 7.6% and 7.2%, and
+      Components, with nothing on the thin slices; no new fault seen on its three pages.
+    - **Afterwards:** the test stack, its helpers and their data folder removed; the test runs' transcripts deleted
+      from `claude-api-auth`. Live was not touched.
+    - **To deploy** (on the user's word; live idle first): in the deploy folder `git fetch <this folder> main` and
+      `git merge --ff-only FETCH_HEAD` (no compose, `pbix\`, `daxcheck\` or `config\` change), `docker tag
+      d2d-relay:334b493 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`. `d2d-relay:53fb6ad`
+      stays for going back.
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -966,11 +992,12 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 36's deploy. **Live:** web, admin and the job runner run `d2d-relay:53fb6ad`
+Updated 2026-11-12, after item 37's tests. **Live:** web, admin and the job runner run `d2d-relay:53fb6ad`
 (= latest, since 19:20 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
-info@pasdacs.com. **GitHub**, this folder and the deploy folder are all on this log entry (items 34 to 36 and their
+info@pasdacs.com. **GitHub** and the deploy folder are on item 36's log entry, `cec5ed2` (items 34 to 36 and their
 logs pushed after their deploys; every commit scanned for the live `.env` and `tunnel.env` values and key patterns:
-none). **Going back** to item 35 (`d2d-relay:e05f035`, kept): in the deploy folder `git reset --keep 8bbfd7e`,
+none). **Waiting for the user's word to deploy:** item 37 (`334b493`, release image `d2d-relay:334b493`, tested; the
+steps are in its entry), committed in this folder with this log entry, not pushed. **Going back** to item 35 (`d2d-relay:e05f035`, kept): in the deploy folder `git reset --keep 8bbfd7e`,
 `docker tag d2d-relay:e05f035 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; to item 34
 (`d2d-relay:aa4531e`, kept) the same with `520e88e`; to item 33 (`d2d-relay:54f6ed7`, kept) the same with `2cd493e`
 (it takes `config/house-models.json` back too). No older release
