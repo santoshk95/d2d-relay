@@ -750,6 +750,17 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       app icons, sign-in page, rail); reviewed (static files and one public path, `/d2d-mark.svg`) and shipped with this
       item.
     - **Tests:** every suite on fresh test stacks from the release candidate, with the starting-credit review on and off, 673 and 656 checks, all passing, among them the new jobs_check.py (17: a run goes through a job container holding only its dashboard's folder, is removed after, the runner refuses anything else and has no network) and accounts_check.py (33: makers, Remove, Delete my account, Delete the organisation, the address free again); and real Claude, with the live sign-in volume mounted as external on the test stack: a plan (1.2 min) and a build (2.4 min) in job containers, every review gate that runs there passing, each job container inspected from outside while running (only its own dashboard's folder, no /data/state, no Docker or runner socket, agent, all capabilities dropped), its transcripts removed after. Older expectations changed for the user's decision: a removed person is deleted, not switched off (d2d_checks.py people, sec_check.py).
+    - **Live since 2026-11-12, ~12:46 IST** (the user's "ok, deploy once tests pass"), deployed by the "Final review and
+      deployment" session: web, admin and the new job runner run `d2d-relay:8b18e3f` (= latest; `d6be664` kept for
+      going back), built from the clean commit; `docker compose up -d --no-deps web admin runner` (the web container was
+      recreated for the runner's socket). Checked on live: all three healthy; the runner serving for d2d-relay-web, its
+      socket `agent 600` (the web app's user cannot open it) and the runner reaching Docker; one job (`claude --version`,
+      no AI call) in a throwaway dashboard folder ran in a job container holding only that folder, the Claude sign-in
+      and `config` (read-only), with the space in the live folder's path, and was removed (the folder too); the AI
+      engine's API still refusing its own user and its network still limited; the D2D icons, manifest and privacy
+      notice served through Cloudflare; Delete my account and Delete the organisation asking for sign-in; no errors in
+      any log. Live had no dashboards and no queued jobs at the restart. Way back without going back a version:
+      `RELAY_JOB_CONTAINERS=off` in `.env`, then `docker compose up -d --no-deps web`.
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -790,12 +801,14 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 30. **Live:** web and admin run `d2d-relay:d6be664` (= latest); the database container
-runs `d2d-relay:8689305`'s image. **GitHub** has every commit: item 30 and its log were pushed on 2026-11-12 (the user's "Yes,
-push"), after a scan for the live keys and tokens (none), on top of the other session's Ask Relay rename. **Going back:** `d2d-relay:a84d7c9`, `72b71a1`, `e2be1d2`, `442a396`, `c8e615f` and
-`8f39265` stay tagged (`docker tag <image> d2d-relay:latest`, then `docker compose up -d --no-deps web admin`); any
-other version is a commit on GitHub (in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose
-build web`).
+Updated 2026-11-12, after item 31. **Live:** web, admin and the job runner run `d2d-relay:8b18e3f` (= latest); the
+database container runs `d2d-relay:8689305`'s image. **GitHub** is at `7ecd8b4` (item 30 and its log, pushed on
+2026-11-12 after the user's "Yes, push"); the D2D logo (`e07a6c1`), item 31 (`8b18e3f`) and this log are committed here
+and in the deploy folder, not pushed yet. **Going back:** `d2d-relay:d6be664`, `a84d7c9`, `72b71a1`, `e2be1d2`,
+`442a396`, `c8e615f` and `8f39265` stay tagged (`docker tag <image> d2d-relay:latest`, then `docker compose up -d
+--no-deps web admin`); going back before item 31 also takes the deploy folder to `7ecd8b4` first (`git reset --keep
+7ecd8b4`) and `docker rm -f d2d-relay-runner` after; any other version is a commit on GitHub (in the deploy folder:
+`git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`).
 
 ### Before the public launch (the user)
 
@@ -861,8 +874,8 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   blocked addresses per organisation is the next step (the user's call).
 - **Abuse:** Turnstile on "Send code" (S7, S13): the user chose not now (2026-11-12). New organisations wait for
   PASDACS's review of their starting credits (item 27), and PASDACS gets an email for every sign-in (item 21).
-- **Never run on the test stacks:** a full dashboard build with real Claude (one prompt through the new network
-  limits was), a real Razorpay checkout, real email delivery, and the Power BI file maker end to end (unchanged).
+- **Never run on the test stacks:** a real Razorpay checkout, real email delivery, and the Power BI file maker end to
+  end (unchanged). A full dashboard build with real Claude was run for item 31 (a plan and a build in job containers).
 
 ### Decided (nothing to do)
 
