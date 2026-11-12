@@ -4,7 +4,7 @@
     "displayName": "Relay Parts",
     "guid": "atlasPartsA0676FD0579D44EFB545170E4799ADC9",
     "visualClassName": "Visual",
-    "version": "1.0.6.0",
+    "version": "1.0.7.0",
     "description": "Pie and donut charts with drill-down, details ring, top N with Other, half donut, center total, outside labels with leader lines, flat, soft and 3D looks and a palette that follows your report theme, a brand color or your own colors.",
     "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
     "gitHubUrl": ""

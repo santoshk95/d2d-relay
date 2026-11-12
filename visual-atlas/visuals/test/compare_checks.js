@@ -25,7 +25,13 @@
   const lol = cardsOf(0), rad = cardsOf(11), tor = cardsOf(9);
   out.format = { lol, rad, tor };
   const card = (list, name) => list.some(x => x.startsWith(name + ':'));
+  // a dumbbell's end label: % change between two positive values, points between percentages, else the difference
+  const lbl = k => [...cases[k].querySelectorAll('text.lbl')].map(t => t.textContent);
+  out.dumbbellLabels = { relative: lbl(3).slice(0, 4), points: lbl(19), difference: lbl(20) };
   out.checks = {
+    dumbbellRelative: lbl(3).length > 0 && lbl(3).every(s => /^[+-]?\d+(\.\d)?%$/.test(s)),
+    dumbbellPoints: lbl(19).length === 4 && lbl(19).every(s => /^-\d+ pts$/.test(s)),
+    dumbbellDifference: ['-$150K', '+33%', '+$35K'].every(s => lbl(20).includes(s)),
     tooltip: has('tooltip', 'Product:'), select: has('select', 'Product='), multiSelect: out.log.some(x => x[0] === 'select' && x[2] === true),
     contextMenu: has('context'), legendSelects: has('select', 'series=Retail'), keyboard: has('select', 'Month='),
     seriesTooltip: has('tooltip', 'Brand:'), tooltipMeasure: has('tooltip', 'Orders:'),

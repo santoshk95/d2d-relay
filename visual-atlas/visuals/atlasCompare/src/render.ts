@@ -38,6 +38,18 @@ function spread(ys: number[], gap: number, lo: number, hi: number): number[] {
     if (over > 0) for (let k = idx.length - 1; k >= 0; k--) { out[idx[k]] = Math.min(out[idx[k]], (k === idx.length - 1 ? hi : out[idx[k + 1]] - gap)); out[idx[k]] = Math.max(out[idx[k]], lo); }
     return out;
 }
+/** a dumbbell's end label: the change from its first dot to its second. A relative change only means something
+ *  between two positive values ($4.1M -> $4.8M: "+16%"); between percentages it is the difference in points (25% ->
+ *  -10%: "-35 pts", not "-140%"), and otherwise the difference itself ("-$120K") */
+function change(a: number, b: number, format: string | undefined, fmt: (v: number) => string): string {
+    const sign = (x: number) => (x > 0 ? "+" : "");
+    if (format && /%/.test(format.replace(/\\./g, "").replace(/"[^"]*"/g, ""))) {
+        const pts = (b - a) * 100;
+        return sign(pts) + pts.toFixed(Math.abs(pts) < 10 ? 1 : 0) + " pts";
+    }
+    if (a > 0 && b > 0) { const ch = (b / a - 1) * 100; return sign(ch) + ch.toFixed(Math.abs(ch) < 10 ? 1 : 0) + "%"; }
+    return sign(b - a) + fmt(b - a);
+}
 
 export function render(c: C) {
     const { W, H, s, m, root, look, t } = c, type = s.type, pad = 6;
@@ -167,7 +179,7 @@ export function render(c: C) {
             if (LB.show.value) {
                 const hiP = P(u, hi), si = present[present.length - 1].si;
                 let txt = fmtL[si](present[present.length - 1].x.v);
-                if (type === "dumbbell" && present.length === 2 && present[0].x.v) { const ch = (present[1].x.v / present[0].x.v - 1) * 100; txt = (ch >= 0 ? "+" : "") + ch.toFixed(Math.abs(ch) < 10 ? 1 : 0) + "%"; }
+                if (type === "dumbbell" && present.length === 2) txt = change(present[0].x.v, present[1].x.v, m.formats[si] || m.format, fmtL[si]);
                 el("text", horiz ? { x: r1(hiP[0] + r + 5), y: r1(hiP[1] + lbfs * 0.35), "font-size": lbfs, fill: lbC, class: "lbl" } : { x: r1(hiP[0]), y: r1(hiP[1] - r - 4), "text-anchor": "middle", "font-size": lbfs, fill: lbC, class: "lbl" }, lab, txt);
             }
         });

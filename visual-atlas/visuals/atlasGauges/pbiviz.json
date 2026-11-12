@@ -4,7 +4,7 @@
     "displayName": "Relay Gauges",
     "guid": "atlasGauges797C4E4189814B78AD7FCCDFF53CBC47",
     "visualClassName": "Visual",
-    "version": "1.0.5.0",
+    "version": "1.0.6.0",
     "description": "Cards, multi-row cards, KPIs with targets and trends, gauges, dials, radial bars, liquid fill, bullet charts and a ticker in one visual, with flat, soft and 3D looks and a palette that follows your report theme, a brand color or your own colors.",
     "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
     "gitHubUrl": ""

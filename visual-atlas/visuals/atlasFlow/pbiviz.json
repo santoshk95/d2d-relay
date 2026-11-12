@@ -4,7 +4,7 @@
     "displayName": "Relay Flow",
     "guid": "atlasFlowBA37FC4A61814B33BF815C11D35148B1",
     "visualClassName": "Visual",
-    "version": "1.0.7.0",
+    "version": "1.0.8.0",
     "description": "Sankey, chord and network diagrams in one visual, with flat, soft and 3D looks and a palette that follows your report theme, a brand color or your own colors.",
     "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
     "gitHubUrl": ""

@@ -4,7 +4,7 @@
     "displayName": "Relay Compare",
     "guid": "atlasCompare1934AF42622F4D63BF12168C02806AC8",
     "visualClassName": "Visual",
-    "version": "1.0.6.0",
+    "version": "1.0.7.0",
     "description": "Lollipop, dot plot, dumbbell, slope, bump, tornado and radar charts in one visual, with flat, soft and 3D looks and a palette that follows your report theme, a brand color or your own colors.",
     "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
     "gitHubUrl": ""

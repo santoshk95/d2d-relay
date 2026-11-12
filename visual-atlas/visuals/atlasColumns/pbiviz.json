@@ -4,7 +4,7 @@
     "displayName": "Relay Columns",
     "guid": "atlasColumns9A01238C3D0249F7B4F9DFBEA84D3599",
     "visualClassName": "Visual",
-    "version": "1.0.8.0",
+    "version": "1.0.9.0",
     "description": "Clustered, stacked and 100% stacked columns and bars with drill-down, flat, soft and 3D looks, and a palette that follows your report theme, a brand color or your own colors.",
     "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
     "gitHubUrl": ""

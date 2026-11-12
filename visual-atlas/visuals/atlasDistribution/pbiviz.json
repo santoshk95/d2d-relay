@@ -4,7 +4,7 @@
     "displayName": "Relay Distribution",
     "guid": "atlasDistribution1C4252B29C654CC1BF16155962622408",
     "visualClassName": "Visual",
-    "version": "1.0.7.0",
+    "version": "1.0.8.0",
     "description": "Histogram, box and whisker, violin and raincloud, and parallel coordinates in one visual, with flat, soft and 3D looks and a palette that follows your report theme, a brand color or your own colors.",
     "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
     "gitHubUrl": ""

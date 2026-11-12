@@ -363,6 +363,23 @@ Shared change: report-theme colors are now adapted for dark backgrounds too (`co
 - `release/screenshots/` now holds the latest test screenshot of every visual.
 - `VisualAtlas-project.zip` at the project root holds the whole project under `visual-atlas/`, without `node_modules/`, build output, `visuals/test/out/` or the duplicate report copies. Unpacked into an empty folder, `make build test` rebuilds everything.
 
+## 18. Labels that mean what they say (12 Nov 2026, D2D Relay item 35)
+
+D2D Relay's end-to-end run (real Claude, one report per Visuals mode) showed two label faults in reports the AI built
+with these visuals; the user asked to fix and deploy what could be fixed.
+
+- **Dumbbell end label** (Atlas Compare, `render.ts`, `change()`): it was always the relative change `b / a - 1`, so
+  two growth rates of opposite sign (Online +25%, Retail -10%) read "-140%" against a -15% to +30% axis. Now: the %
+  change only between two positive values; the difference in points between percentages ("-35 pts"); otherwise the
+  difference itself ("-$150K", "+$35K").
+- **No label shows a value that is not zero as zero** (`common/util.ts`, `labelFormatter()`): with a fixed display
+  unit or fixed decimals (the AI wrote `displayUnits: 1000000, decimals: 0`), a waterfall's +$33K step read "$0M".
+  Such a label is now shown in its own unit, as Auto would show it; every other label is unchanged.
+- Tests: `compare_cases.js` 19-20 and `finance_cases.js` 16 with their checks (dumbbellPoints, dumbbellDifference,
+  dumbbellRelative, noFalseZero). All 13 visuals rebuilt (common code changed) with the third version part bumped;
+  GUIDs unchanged. Built offline with the toolchain pinned in D2D Relay's image (pbiviz 7.2.1 and the same
+  libraries), all mock-host checks passing; the packages are in `release/` and D2D Relay's `custom_visuals/atlas/`.
+
 ## Decisions to keep
 
 - One `.pbiviz` per family, with a chart-type switch.

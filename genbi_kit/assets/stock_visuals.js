@@ -497,10 +497,16 @@
             const s_ = pct ? Math.round((b - a) * 100) + '%' : num(raw, s.field.format, lUnits, lPrec, Math.max(Math.abs(vmin), Math.abs(vmax)), ctx);
             const inside = !clustered || kind.ribbon, wide = measure(s_, lSize);
             if (horiz) {
-              if (!inside || wide < p2 - p1 - 4) text(g, inside ? (p1 + p2) / 2 : (raw >= 0 ? p2 + 4 : p1 - 4), bpos(ci) + off + slot / 2, s_,
-                {size: lSize, color: inside ? '#FFFFFF' : lCol, anchor: inside ? 'middle' : raw >= 0 ? 'start' : 'end'});
+              // Power BI's Auto position: past the bar's end when the plot has room there, else inside its end
+              const room = raw >= 0 ? px + pw - p2 - 4 : p1 - px - 4, end = !inside && wide > room && wide < p2 - p1 - 8;
+              if (!inside || wide < p2 - p1 - 4) text(g, inside ? (p1 + p2) / 2 : end ? (raw >= 0 ? p2 - 4 : p1 + 4) : (raw >= 0 ? p2 + 4 : p1 - 4),
+                bpos(ci) + off + slot / 2, s_, {size: lSize, color: inside || end ? '#FFFFFF' : lCol,
+                  anchor: inside ? 'middle' : (raw >= 0) !== end ? 'start' : 'end'});
             } else if (wide <= slot - (inside ? 4 : 2)) {           // Power BI hides a label that does not fit its column
-              text(g, bpos(ci) + off + slot / 2, inside ? (p1 + p2) / 2 : (raw >= 0 ? p1 - lSize * 0.7 : p2 + lSize * 0.7), s_, {size: lSize, color: inside ? '#FFFFFF' : lCol, anchor: 'middle'});
+              // Auto position: above the column (below a negative one) when the plot has room, else inside its end
+              const end = !inside && (raw >= 0 ? p1 - lSize * 1.2 < top : p2 + lSize * 1.2 > py + ph) && p2 - p1 > lSize * 1.6;
+              text(g, bpos(ci) + off + slot / 2, inside ? (p1 + p2) / 2 : raw >= 0 ? (end ? p1 + lSize * 0.7 : p1 - lSize * 0.7) : (end ? p2 - lSize * 0.7 : p2 + lSize * 0.7),
+                s_, {size: lSize, color: inside || end ? '#FFFFFF' : lCol, anchor: 'middle'});
             }
           }
         });
@@ -759,7 +765,10 @@
       const r = sf ? 4 + Math.sqrt(Math.abs(p.s || 0) / smax) * (18 + bubble / 4) : 5 + bubble / 10;
       const c = el('circle', {cx: sx(p.x), cy: sy(p.y), r, fill: colorOf(p), 'fill-opacity': get('fillPoint', 'style', 'Fill only') === 'Border only' ? 0 : 0.75, stroke: colorOf(p)}, svg);
       hover(c, () => [[cat ? cat.name : ser ? ser.name : 'Point', catLabel(p.k, cat || ser)], [xf.name, num(p.x, xf.format, 1, null, null, ctx)], [yf.name, num(p.y, yf.format, 1, null, null, ctx)]].concat(sf ? [[sf.name, num(p.s, sf.format, 1, null, null, ctx)]] : []));
-      if (labels && cat) text(svg, sx(p.x) + r + 3, sy(p.y), fit(catLabel(p.k, cat), 90, 10), {size: 10, color: ctx.text});
+      if (labels && cat) {           // on the point's right, or its left when the visual has no room there
+        const s = fit(catLabel(p.k, cat), 90, 10), onRight = sx(p.x) + r + 3 + measure(s, 10) <= W - 2;
+        text(svg, onRight ? sx(p.x) + r + 3 : sx(p.x) - r - 3, sy(p.y), s, {size: 10, color: ctx.text, anchor: onRight ? 'start' : 'end'});
+      }
     }
     if (fieldsOf(item, 'Play')[0]) text(svg, W - 6, H - 6, '▶ play axis animates in Power BI', {size: 9, color: ctx.muted, anchor: 'end', base: 'auto'});
     return null;

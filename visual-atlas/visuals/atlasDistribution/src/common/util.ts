@@ -36,8 +36,21 @@ export function formatter(format: string | undefined, units: number, decimals: n
 /** display unit Power BI's Auto setting would pick for a value */
 export function autoUnit(v: number): number { const a = Math.abs(v); return a >= 1e12 ? 1e12 : a >= 1e9 ? 1e9 : a >= 1e6 ? 1e6 : a >= 1e3 ? 1e3 : 1; }
 const fewest = (x: number, cap: number) => { let p = cap; const r = Number(x.toFixed(cap)); while (p > 0 && Math.abs(r - Number(r.toFixed(p - 1))) < 1e-9) p--; return p; };
-/** data labels: with Auto decimals, about three significant digits and no trailing zeros ($4.77M, $209K, 48K) */
+/** data labels: with Auto decimals, about three significant digits and no trailing zeros ($4.77M, $209K, 48K).
+ *  A label never shows a value that is not zero as zero: with a fixed display unit or decimals, $33K beside $6.2M
+ *  would read "$0M", so such a label is shown in its own unit instead, as Auto display units would show it. */
 export function labelFormatter(format: string | undefined, units: number, decimals: number | null | undefined, sample: number, culture?: string): (v: number) => string {
+    const f = unitLabels(format, units, decimals, sample, culture), own = new Map<string, (v: number) => string>();
+    const ownFmt = (u: number, p: number | null) => { const k = u + ":" + p; let g = own.get(k); if (!g) { g = formatter(format, u, p, sample, culture); own.set(k, g); } return g; };
+    return (v: number) => {
+        const s = f(v);
+        if (!v || isNaN(v) || /[1-9]/.test(s)) return s;
+        const u = autoUnit(v), sv = Math.abs(v) / u;
+        const t = ownFmt(u, decimals != null && decimals >= 0 ? decimals : u === 1 ? null : fewest(sv, sv >= 100 ? 0 : sv >= 10 ? 1 : 2))(v);
+        return /[1-9]/.test(t) ? t : ownFmt(u, 2)(v);
+    };
+}
+function unitLabels(format: string | undefined, units: number, decimals: number | null | undefined, sample: number, culture?: string): (v: number) => string {
     if (decimals != null && decimals >= 0) return formatter(format, units, decimals, sample, culture);
     const auto = units === 0, unit = auto ? autoUnit(sample) : Math.max(1, units);
     if (unit === 1) return formatter(format, 1, null, sample, culture);

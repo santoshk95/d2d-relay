@@ -30,7 +30,10 @@
   const cdl = cardsOf(0), wf = cardsOf(3), fn = cardsOf(9);
   out.format = { cdl, wf, fn };
   const card = (list, name) => list.some(x => x.startsWith(name + ':'));
+  // labels fixed to millions on a bridge of small steps: no step reads $0M, each keeps its own unit
+  out.fixedUnits = [...cases[16].querySelectorAll('text.lbl')].map(t => t.textContent);
   out.checks = {
+    noFalseZero: out.fixedUnits.length >= 7 && out.fixedUnits.every(s => /[1-9]/.test(s)) && ['+$240K', '-$59K', '-$4K'].every(s => out.fixedUnits.includes(s)),
     candleTooltip: has('tooltip', 'Open:'), candleSelect: has('select', 'Date='), waterfallTooltip: has('tooltip', 'Running total:'), select: has('select', 'Driver='),
     multiSelect: out.log.some(x => x[0] === 'select' && x[2] === true), contextMenu: has('context'), legendSelects: has('select', 'series=E-bike'), keyboard: has('select', 'Stage='),
     funnelTooltip: has('tooltip', '% of previous:'), backgroundClears: has('clear') && out.dimAfterClear === 0, highlights: out.highlightDims > 0,

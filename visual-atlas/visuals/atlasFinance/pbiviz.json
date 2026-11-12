@@ -4,7 +4,7 @@
     "displayName": "Relay Finance",
     "guid": "atlasFinance8C601CA9CAF44ADCB6574FA21FDDE583",
     "visualClassName": "Visual",
-    "version": "1.0.6.0",
+    "version": "1.0.7.0",
     "description": "Candlestick, waterfall, ribbon and funnel charts in one visual, with flat, soft and 3D looks and a palette that follows your report theme, a brand color or your own colors.",
     "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
     "gitHubUrl": ""

@@ -342,7 +342,7 @@ before using a family.**
     weight: "[Net Sales]"
   format:                                # any option from `genbi catalog atlasFlow`
     links: {colorBy: gradient}
-    labels: {show: true, displayUnits: 1000000, decimals: 1}
+    labels: {show: true}                 # units and decimals Auto: each label in its own unit ($6.2M, +$33K)
   sort: ["[Net Sales]", desc]            # only for families whose catalog says "sort: supported"
   prototype:
     sql: |                               # ONE COLUMN PER FIELD, aliased exactly as the field's name
@@ -350,6 +350,13 @@ before using a family.**
       FROM "Sales" s JOIN "Store" st ON ... JOIN "Country" c ON ... GROUP BY 1, 2
 ```
 
+- **Data labels**: leave `displayUnits` and `decimals` out unless the user asks for them. Auto shows each label in
+  its own unit, so a waterfall's +$33K step reads +$33K beside a $6.2M total; a fixed unit would round it away (the
+  visuals show such a label in its own unit anyway, never as $0M).
+- **A dumbbell's end label** is the change from its first value to its second: the % change between two positive
+  values ($4.1M -> $4.8M: +16%), the difference in points between percentages (25% -> -10%: -35 pts), otherwise the
+  difference itself (-$150K). Put the first value (last year, plan, Online) first in `values`, and say in the title
+  what the change means.
 - **Prototype SQL for Atlas visuals**: return a column per field, named after the field - the measure name
   (`"Net Sales"`) or the column name (`"Region"`); several measures in a well -> one column each. A legend /
   series well is a column too: return long rows (one per category × series value). Date fields return

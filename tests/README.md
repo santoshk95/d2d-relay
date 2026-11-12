@@ -72,7 +72,8 @@ already running, `bash tests/run_all.sh <output name>` runs the suites alone.
 | `item30_check.py`, `rename_check.py` | 54, 8 |
 | `jobs_check.py`, `accounts_check.py` | 18, 45 |
 | `item34_check.py`: built-in visuals first, the model's name, each runner sweeping only its own stack | 32 |
-| **All, for aa4531e** (685 / 668 for 54f6ed7, before item 34) | **718 / 701** |
+| `item35_check.py`: labels in the prototype of the built-in visuals gallery and in the rebuilt Atlas visuals | 9 |
+| **All, for item 35** (718 / 701 for aa4531e, 685 / 668 for 54f6ed7) | **727 / 710** |
 
 One suite by hand, with the stack running:
 
