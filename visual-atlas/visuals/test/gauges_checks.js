@@ -14,7 +14,7 @@
   q(11, '.mk')[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   fire(cases[5].querySelector('svg.atl-svg'), 'click');
   out.dimAfterClear = q(5, '.mk.dim').length;
-  out.highlightDims = q(18, '.mk.dim').length;
+  out.highlightDims = q(20, '.mk.dim').length;
   out.card = [...q(0, 'text')].map(t => t.textContent).join(' | ');
   out.kpi = [...q(2, 'text')].map(t => t.textContent).join(' | ');
   out.liquid = [...q(9, 'text')].map(t => t.textContent).join(' | ');
@@ -31,7 +31,16 @@
   /* partial highlight: the card shows the highlighted value ($3.72M), not the total */
   out.partialCard = [...q(cases.length - 1, 'text')].map(t => t.textContent).join('|');
   out.cardCursor = [q(1, '.mk')[0] && q(1, '.mk')[0].style.cursor, q(cases.length - 2, '.mk')[0] && q(cases.length - 2, '.mk')[0].style.cursor];
+  /* cases 18-19: a KPI's name and value in a low tile never overlap, and the value keeps a readable size */
+  const kpiOf = (k, re) => {
+    const t = [...q(k, 'text.ttl')].map(e => ({ s: e.textContent, r: e.getBoundingClientRect(), fs: +e.getAttribute('font-size') }));
+    const n = t.find(b => re.test(b.s)), v = t.find(b => b !== n && /^[$+-]/.test(b.s));
+    return n && v ? { name: n.s, value: v.s, valueSize: v.fs, apart: n.r.right <= v.r.left + 1 || v.r.right <= n.r.left + 1 || n.r.bottom <= v.r.top + 1 || v.r.bottom <= n.r.top + 1 } : 'missing';
+  };
+  out.kpiLongName = kpiOf(18, /^Average/); out.kpiSideBySide = kpiOf(19, /^Revenue Growth/);
   out.checks = {
+    kpiNameClearOfValue: out.kpiLongName !== 'missing' && out.kpiLongName.apart === true && out.kpiLongName.valueSize >= 14,
+    kpiSideBySide: out.kpiSideBySide !== 'missing' && out.kpiSideBySide.apart === true && out.kpiSideBySide.name === 'Revenue Growth %' && out.kpiSideBySide.valueSize >= 18,
     cursorOnlyWhenSelectable: out.cardCursor[0] === 'default' && out.cardCursor[1] === 'pointer',
     partialHighlight: /3.72M|3,720,000|3.7M/.test(out.partialCard) && !/9.3M/.test(out.partialCard),
     tooltip: has('tooltip', 'vs target:'), select: has('select', 'Region='), multiSelect: out.log.some(x => x[0] === 'select' && x[2] === true), contextMenu: has('context'),

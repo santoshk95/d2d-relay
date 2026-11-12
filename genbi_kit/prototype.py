@@ -37,6 +37,18 @@ def _first(rows, name):
     return next((r[name] for r in rows if r.get(name) is not None), None)
 
 
+def _readable(measure: str) -> str:
+    """A title measure's name as a stand-in title: "Title Revenue Trend" -> "Revenue Trend"."""
+    return re.sub(r"(?i)^\s*title\b[\s_:-]*", "", measure).strip() or measure
+
+
+def _no_title(page: dict, v: dict, measure: str) -> str:
+    """A visual whose title is a measure needs its sentence in the prototype SQL's "title" column (GENBI.md); without
+    it the prototype could only show the measure's name ("Title Revenue Trend"), so it goes back to the agent."""
+    return (f"{page['name']} / {v['id']} ({v['type']}): the title is the measure [{measure}], but the prototype SQL returns "
+            f"no \"title\" column with its sentence, so the prototype shows \"{_readable(measure)}\" - add that column")
+
+
 def _has(rows, name):
     return bool(rows) and name in rows[0]
 
@@ -190,7 +202,8 @@ def build_pages(d: dict, con) -> tuple[list[dict], list[str]]:
                     if _has(rows, "title") and _first(rows, "title"):
                         header["title"] = _first(rows, "title")
                     elif dynamic:
-                        header["title"] = dynamic.group(1)
+                        header["title"] = _readable(dynamic.group(1))
+                        errors.append(_no_title(page, v, dynamic.group(1)))
                     item.update(atlas=_atlas_item(v, acat[v["type"]], rows, describe, d.get("theme") or {}), header=header)
                 except Exception as e:  # noqa: BLE001 - reported to the agent
                     item.update(error=str(e).splitlines()[0][:300], header=header)
@@ -206,7 +219,8 @@ def build_pages(d: dict, con) -> tuple[list[dict], list[str]]:
                     if _has(rows, "title") and _first(rows, "title"):
                         header["title"] = _first(rows, "title")
                     elif dynamic:
-                        header["title"] = dynamic.group(1)
+                        header["title"] = _readable(dynamic.group(1))
+                        errors.append(_no_title(page, v, dynamic.group(1)))
                     item.update(stock=_stock_item(v, stock.catalog()[v["type"]], rows, describe, d.get("theme") or {}), header=header)
                 except Exception as e:  # noqa: BLE001 - reported to the agent
                     item.update(error=str(e).splitlines()[0][:300], header=header)

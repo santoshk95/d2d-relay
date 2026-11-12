@@ -62,7 +62,7 @@ Not included (each is rebuilt by the tools): `node_modules/`, build output (`dis
 | Atlas Proportion | Mekko, waffle, pictogram, aster, rose, Venn | `atlasProportion74F95B1AE3CB4D9195CC248A3EC140A4` | 1.0.7.0 |
 | Atlas Time | Calendar heatmap, heat grid / punch card, stream graph, timeline slicer | `atlasTime657C41A78B0A405A998ADA36387448E9` | 1.0.6.0 |
 | Atlas Finance | Candlestick, waterfall, ribbon, funnel | `atlasFinance8C601CA9CAF44ADCB6574FA21FDDE583` | 1.0.7.0 |
-| Atlas Gauges | Card, multi-row card, KPI, gauge, dial, radial bars, liquid fill, bullet, ticker | `atlasGauges797C4E4189814B78AD7FCCDFF53CBC47` | 1.0.6.0 |
+| Atlas Gauges | Card, multi-row card, KPI, gauge, dial, radial bars, liquid fill, bullet, ticker | `atlasGauges797C4E4189814B78AD7FCCDFF53CBC47` | 1.0.7.0 |
 | Atlas Text | Word cloud, ranked words | `atlasTextC961F02E238E426A825D8355E3503AA9` | 1.0.6.0 |
 | Atlas Scatter | Scatter and bubble (play axis), dot plot, Gantt | `atlasScatter0B23674C661C4797A349BBC2B0AD313A` | 1.0.6.0 |
 

@@ -42,6 +42,10 @@ C('Ticker · eight KPIs vs target', dv({ cats: kpis, catName: 'KPI', measures: [
 C('Card · high contrast', dv({ measures: [{ name: 'Sales', values: [9.3e6], fmt: '\\$#,0' }, { name: 'Target', role: 'target', values: [10e6] }], type: 'card' }), { hc: true });
 C('Gauge strip · dark', dv({ cats: regions, measures: [{ name: 'Sales', values: sales, fmt: '\\$#,0' }, { name: 'Target', role: 'target', values: tgt }], type: 'gauge' }), { dark: true });
 C('Landing page (no fields)', null);
+// 18: a long name in a low KPI tile does not run into the value (2026-11-12); the last two cases stay last (checks count from the end)
+C('KPI · long name in a low tile', dv({ trend: months, measures: [{ name: 'Average selling price per order', values: trendV.map(v => v / 30000), fmt: '\\$#,0.00' }, { name: 'Goal', role: 'target', values: months.map(() => 290) }], type: 'kpi' }), { w: 270, h: 96 });
+// 19: the usual case, a medium name: the value moves right, clear of it, at its full size (2026-11-12)
+C('KPI · name and value side by side in a low tile', dv({ trend: months, measures: [{ name: 'Revenue Growth %', values: months.map((_, i) => 0.08 + i * 0.003), fmt: '+0.0%;-0.0%;0.0%' }, { name: 'Goal', role: 'target', values: months.map(() => 0.1) }], type: 'kpi' }), { w: 270, h: 96 });
 C('Multi-row card · cross-highlighted (East)', dv({ cats: regions, measures: [{ name: 'Sales', values: sales, fmt: '\\$#,0', hl: sales.map((v, i) => (i === 2 ? v : null)) }, { name: 'Target', role: 'target', values: tgt }], type: 'multirow' }));
 // a selection in another visual (40% of the sales): the card shows the highlighted value, as a filter would
 C('Card · partly highlighted (40%)', dv({ measures: [{ name: 'Sales', values: [9.3e6], fmt: '\$#,0', hl: [3.72e6] }, { name: 'Target', role: 'target', values: [10e6], hl: [4e6] }], type: 'card' }));

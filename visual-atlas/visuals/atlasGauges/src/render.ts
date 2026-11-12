@@ -111,7 +111,24 @@ export function render(c: C) {
                 el("circle", { cx: r1(X(tr.length - 1)), cy: r1(Y(vs[vs.length - 1])), r: 3, fill: col }, g);
             }
         }
-        const area = showTrend ? h * 0.56 : h, fsBig = fit(big, w * 0.62, Math.min(area * 0.42, 56)), cx = x + w / 2, cy = y + area * 0.5 + fsBig * 0.12;
+        const area = showTrend ? h * 0.56 : h;
+        let fsBig = fit(big, w * 0.62, Math.min(area * 0.42, 56)), cx = x + w / 2, cy = y + area * 0.5 + fsBig * 0.12, nameMax = w - 20;
+        if (CA.show.value) {
+            /* the item's name sits top left. In a low tile a long name ran into the value ("Revenue Growth %+11.3%"):
+               the value moves right, clear of the name, when the tile has room; else just under the name if it stays
+               14px or more; else the name stops short of the value. The value keeps its size where it can. */
+            const nameR = x + 10 + Math.min(textW(it.name, cfs), w - 20), nameB = y + cfs * 1.3 + 7;
+            const vw = () => textW(big, fsBig), arrow = () => (st ? 8 + Math.max(6, fsBig * 0.32) : 0);
+            if (cy - fsBig * 0.95 < nameB && cx - vw() / 2 < nameR + 10) {
+                const right = nameR + 12 + vw() / 2;
+                if (right + vw() / 2 + arrow() <= x + w - 8) cx = right;
+                else {
+                    const goalH = st && ST.showTarget.value ? cfs + 8 : 0, under = fit(big, w * 0.62, Math.min(fsBig, (y + area - nameB - goalH) * 0.8));
+                    if (under >= Math.min(14, fsBig)) { fsBig = under; cy = nameB + fsBig * 0.95; }
+                    else nameMax = Math.max(24, cx - vw() / 2 - 10 - (x + 10));
+                }
+            }
+        }
         el("text", { x: r1(cx), y: r1(cy), "text-anchor": "middle", "font-size": r1(fsBig), fill: ST.colorValue.value && st ? st.color : t.ink, class: "ttl" }, labels, big);
         if (st) {
             /* status arrow next to the number */
@@ -119,7 +136,7 @@ export function render(c: C) {
             el("path", { d: up ? `M${r1(ax)},${r1(cy - fsBig * 0.32 + sz)}l${r1(sz / 2)},${r1(-sz)}l${r1(sz / 2)},${r1(sz)}Z` : `M${r1(ax)},${r1(cy - fsBig * 0.32)}l${r1(sz / 2)},${r1(sz)}l${r1(sz / 2)},${r1(-sz)}Z`, fill: st.color }, g);
             if (ST.showTarget.value) el("text", { x: r1(cx), y: r1(cy + cfs + 6), "text-anchor": "middle", "font-size": cfs, fill: st.color, class: "lbl" }, labels, trunc(`Goal: ${fmtOf(it, it.target)} (${delta(it)})`, w - 10, cfs));
         }
-        if (CA.show.value) c.io.bindLabel(el("text", { x: r1(x + 10), y: r1(y + cfs + 6), "font-size": cfs, fill: nameC, class: "ttl" }, labels, trunc(it.name, w - 20, cfs)), target(it));
+        if (CA.show.value) c.io.bindLabel(el("text", { x: r1(x + 10), y: r1(y + cfs + 6), "font-size": cfs, fill: nameC, class: "ttl" }, labels, trunc(it.name, nameMax, cfs)), target(it));
     }
 
     /* ================================================================ gauge and dial */

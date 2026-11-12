@@ -380,6 +380,16 @@ with these visuals; the user asked to fix and deploy what could be fixed.
   GUIDs unchanged. Built offline with the toolchain pinned in D2D Relay's image (pbiviz 7.2.1 and the same
   libraries), all mock-host checks passing; the packages are in `release/` and D2D Relay's `custom_visuals/atlas/`.
 
+## 19. A KPI's name never runs into its value (12 Nov 2026, D2D Relay item 36)
+
+The next end-to-end run showed KPI tiles under a title and subtitle (low tiles) printing "Revenue Growth %+11.3%" and
+"Avg Selling Price$310.79": the name sits top left and the value centred, on the same line. Now (Atlas Gauges
+`render.ts`, `kpi()`), when they would meet: the value moves right, clear of the name, if the tile has room (the usual
+case); else under the name if it stays 14px or more; else the name is shortened with an ellipsis. The value keeps its
+size where it can. Tests: `gauges_cases.js` 18-19 (a long and a medium name in a 270 × 96 tile) with the checks
+kpiNameClearOfValue and kpiSideBySide (apart, value 14 / 18px or more); against the old code both fail. Atlas Gauges
+1.0.7.0, built offline as in section 18; the two cases the checks count from the end stay last.
+
 ## Decisions to keep
 
 - One `.pbiviz` per family, with a chart-type switch.

@@ -531,7 +531,9 @@ warm theme is used. Use the look and colors the user asks for (`request.md`); ot
   dumbbells, calendars) - the catalog has 60.
 - Every chart title is a sentence stating the finding, written as a text measure
   (e.g. "Sales are 1.9% ahead of target and 7.7% up on last year"): `title: "[Title ...]"` with a `subtitle`
-  saying what is plotted (Relay visuals: the `title` well plus `format.header`).
+  saying what is plotted (Relay visuals: the `title` well plus `format.header`). Its prototype SQL returns a
+  `title` column with the same sentence (Power BI's own visuals and Visual Atlas visuals alike): the prototype shows
+  that sentence, and `genbi prototype` reports a visual whose title is a measure without that column.
 - Colors come from the report theme (`theme.accent`, `palette`, `look`): the Relay visuals follow it too, so
   don't set per-visual colors unless the user asks for a specific one.
 - Quadrants: name the corners (e.g. Stars / Fix first), use targets or averages as reference lines.

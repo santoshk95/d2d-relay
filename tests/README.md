@@ -73,7 +73,8 @@ already running, `bash tests/run_all.sh <output name>` runs the suites alone.
 | `jobs_check.py`, `accounts_check.py` | 18, 45 |
 | `item34_check.py`: built-in visuals first, the model's name, each runner sweeping only its own stack | 32 |
 | `item35_check.py`: labels in the prototype of the built-in visuals gallery and in the rebuilt Atlas visuals | 9 |
-| **All, for item 35** (718 / 701 for aa4531e, 685 / 668 for 54f6ed7) | **727 / 710** |
+| `item36_check.py`: KPI names clear of their values in low tiles; measure titles in the prototype | 10 |
+| **All, for item 36** (727 / 710 for e05f035, 718 / 701 for aa4531e, 685 / 668 for 54f6ed7) | **737 / 720** |
 
 One suite by hand, with the stack running:
 
