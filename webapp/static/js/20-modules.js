@@ -136,8 +136,8 @@ async function adminBranding() {
     catch (e) { notify(e.message, 'err'); }
   }}, 'Save branding');
   const preview = h('div', {class: 'card', style: 'margin:0'}, h('h3', {}, 'How it shows'), h('div', {class: 'small muted', style: 'margin-bottom:10px'}, 'The rail, the sign-in page, outgoing mail and PDF covers use this.'),
-    h('div', {class: 'row', style: 'gap:14px;align-items:center'}, b.partner ? [b.logo_light ? h('img', {src: b.logo_light, alt: '', style: 'height:36px'}) : partnerMark(b), h('div', {}, h('b', {}, b.full), h('div', {class: 'small muted'}, b.tagline))] : svgEl(RELAY_LOGO, 'relaylogo')),
-    h('div', {class: 'powered', style: 'margin-top:14px;padding:10px 0 0;border-top:1px solid var(--line)'}, b.partner ? [markEl(), h('span', {}, 'Powered by ', h('b', {}, 'PASDACS Relay'))] : h('span', {class: 'faint'}, 'RELAY by PASDACS')),
+    h('div', {class: 'row', style: 'gap:14px;align-items:center'}, b.partner ? [b.logo_light ? h('img', {src: b.logo_light, alt: '', style: 'height:36px'}) : partnerMark(b), h('div', {}, h('b', {}, b.full), h('div', {class: 'small muted'}, b.tagline))] : svgEl(D2D_LOGO, 'relaylogo')),
+    h('div', {class: 'powered', style: 'margin-top:14px;padding:10px 0 0;border-top:1px solid var(--line)'}, b.partner ? [markEl(), h('span', {}, 'Powered by ', h('b', {}, 'PASDACS Relay'))] : [markEl(), h('span', {class: 'faint'}, 'A Relay Platform product by PASDACS')]),
     h('p', {class: 'small muted', style: 'margin:12px 0 0'}, 'Partners carry their own name, mark, colours and logos everywhere; the "Powered by PASDACS Relay" line stays. The platform\'s own look cannot be renamed.'));
   return h('div', {class: 'grid2'},
     h('div', {class: 'card formcard', style: 'margin:0'},

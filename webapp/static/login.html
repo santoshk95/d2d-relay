@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <title>Sign in - D2D Relay</title>
 <link rel="icon" href="favicon.ico" sizes="32x32">
-<link rel="icon" type="image/svg+xml" href="relay-mark.svg">
+<link rel="icon" type="image/svg+xml" href="d2d-mark.svg">
 <link rel="stylesheet" href="css/fonts.css">
 <script src="portal.js"></script>
 <style>
@@ -23,7 +23,7 @@ h1,h2{font-family:"Manrope","Inter","Segoe UI",system-ui,sans-serif;letter-spaci
 .hero{background:linear-gradient(135deg,#111111,#1C1C1C 55%,#262626);color:#fff;padding:44px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
 .hero::after{content:"";position:absolute;right:-120px;top:-140px;width:460px;height:460px;border-radius:50%;background:radial-gradient(circle,rgba(0,196,140,.18),transparent 65%);pointer-events:none}
 .brand{display:flex;align-items:center;gap:12px;min-height:48px;color:#fff}
-.hero svg .rl-tile{fill:#FFFFFF}.hero svg .rl-chev{stroke:#111111}.hero svg .rl-word{fill:#FFFFFF}.hero svg .rl-sub{fill:#A3A3A3}
+.hero svg .rl-tile{fill:#FFFFFF}.hero svg .rl-chev{stroke:#111111}.hero svg .rl-row{fill:#111111}.hero svg .rl-word{fill:#FFFFFF}.hero svg .rl-sub{fill:#A3A3A3}
 .brand svg{height:48px;width:auto;display:block}.brand img{height:40px;width:auto;max-width:220px;display:block}
 .brand .pmark{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:11px;color:#fff;font-weight:800;font-size:14px}
 .brand .bname{font-weight:700;font-size:18px;line-height:1.15}.brand .bname small{display:block;font-weight:400;font-size:12.5px;color:#A3A3A3}
@@ -54,7 +54,7 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
     <div class="brand" id="brand"></div>
     <div><h1>Your data to a Power BI dashboard.</h1>
       <p>Bring your CSV files, describe the dashboard you need, and get a Power BI file (.pbix) with every number checked.</p></div>
-    <div class="powered"><span>D2D: Data to Decision, a Relay Platform product by PASDACS</span></div>
+    <div class="powered"><svg viewBox="0 0 48 48" aria-hidden="true"><rect class="rl-tile" x="2" y="2" width="44" height="44" rx="11" fill="#111111"/><path class="rl-chev" d="M10 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><path class="rl-chev" d="M19 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="29" y="29" width="9" height="5" rx="2" fill="#00C48C"/></svg><span>A Relay Platform product by PASDACS</span></div>
   </div>
   <main class="form">
     <h2 id="signin">Sign in to D2D Relay</h2>
@@ -82,8 +82,9 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
   </main>
 </div>
 <script>
-const RELAY_LOGO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 48" role="img" aria-label="RELAY by PASDACS"><rect class="rl-tile" x="2" y="2" width="44" height="44" rx="11" fill="#111111"/><path class="rl-chev" d="M10 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/><path class="rl-chev" d="M19 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="29" y="29.5" width="9" height="4.4" rx="2" fill="#00C48C"/><text class="rl-word" x="60" y="27" font-family="Manrope, Inter, Segoe UI, Arial, sans-serif" font-size="23" font-weight="800" letter-spacing="3" fill="#111111">RELAY</text><text class="rl-sub" x="61" y="42" font-family="Manrope, Inter, Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" letter-spacing="2" fill="#525252">BY PASDACS</text></svg>';
-document.getElementById('brand').innerHTML = RELAY_LOGO;
+/* the D2D lockup (branding/pasdacs/assets/D2D), as in the app's rail; on this dark band the tile is white and the rows ink */
+const D2D_LOGO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 48" role="img" aria-label="D2D, Data to Decision"><rect class="rl-tile" x="2" y="2" width="44" height="44" rx="11" fill="#111111"/><path class="rl-row" d="M13.5 14.6a1.6 1.6 0 0 1 1.6 -1.6H24.5A11 11 0 0 1 32.34 16.28H13.5Z" fill="#FFFFFF"/><path class="rl-row" d="M13.5 17.68H33.5A11 11 0 0 1 35.07 20.96H13.5Z" fill="#FFFFFF"/><path d="M13.5 22.36H35.38A11 11 0 0 1 35.38 25.64H13.5Z" fill="#00C48C"/><path class="rl-row" d="M13.5 27.04H35.07A11 11 0 0 1 33.5 30.32H13.5Z" fill="#FFFFFF"/><path class="rl-row" d="M13.5 31.72H32.34A11 11 0 0 1 24.5 35H15.1a1.6 1.6 0 0 1 -1.6 -1.6Z" fill="#FFFFFF"/><text class="rl-word" x="60" y="27" font-family="Manrope, Inter, Segoe UI, Arial, sans-serif" font-size="23" font-weight="800" letter-spacing="3" fill="#111111">D2D</text><text class="rl-sub" x="61" y="42" font-family="Manrope, Inter, Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" letter-spacing="2" fill="#525252">DATA TO DECISION</text></svg>';
+document.getElementById('brand').innerHTML = D2D_LOGO;
 const qs = new URLSearchParams(location.search), next = (qs.get('next') || '').startsWith('#/') ? qs.get('next') : '';
 const $ = id => document.getElementById(id);
 const show = (id, text) => { const e = $(id); e.textContent = text || ''; e.hidden = !text; };

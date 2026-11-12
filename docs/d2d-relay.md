@@ -400,6 +400,21 @@ middle dot, ">" between the parts of a path. Check marks, crosses, up and down a
   in plain characters (`report_builder`). Measure, column and table names are left as they are, because the report
   refers to them; the Report & accessibility gate warns about them, and the AI is told (`GENBI.md`).
 
+## The logo
+
+D2D has its own mark, the Striped D (the user's go-ahead of 2026-11-12): a D cut into five rows of data, the middle
+row in the logo mint `#00C48C` (the decision), in the PASDACS tile. The lockup reads D2D with DATA TO DECISION under
+it. The source files and rules are in `branding/pasdacs/assets/D2D` (README there).
+
+- The rail shows the lockup (`D2D_LOGO` in `02-shell.js`); collapsed, and in the phone bar, the three-row mark
+  (`D2D_MARK`) that the brand uses below 48 px. The foot of the rail names the platform: the PASDACS mark and "A Relay
+  Platform product by PASDACS".
+- The sign-in page shows the lockup on its dark band (`login.html`, same SVG), with the same platform line.
+- Browser tabs and installed apps: `d2d-mark.svg`, `favicon.ico` (16, 32 and 48 px), `icons/d2d-180|192|512.png`,
+  and `manifest.webmanifest` (D2D Relay, short name D2D). The SVG favicon is open without signing in (`auth.OPEN_PATHS`).
+- Partner (white-label) workspaces are unchanged: their own logo, and "Powered by PASDACS Relay" with the PASDACS mark.
+- The old RELAY files (`relay-mark.svg`, `relay-logo*.svg`, `icons/relay-*.png`) stay for apps installed before.
+
 ## Payments (Razorpay)
 
 **On the live site, buying is off until Razorpay activates the account** (the user's decision of 2026-11-12): the

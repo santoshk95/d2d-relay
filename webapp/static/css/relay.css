@@ -243,8 +243,8 @@ h1{font-weight:800;letter-spacing:-.025em}h2{font-weight:800;letter-spacing:-.02
 .card,.stat,.dcard,.steps,.gates,.pop,.modal>div{border-radius:var(--radius)}
 .dcard:hover,.pcard:hover{border-color:var(--line-2);box-shadow:none;background-image:radial-gradient(240px circle at 85% 0,rgba(0,196,140,.08),transparent 70%)}
 .toast{border-radius:var(--radius-sm)}
-/* the logo in the rail and the phone bar */
-.app svg .rl-tile{fill:var(--tile)}.app svg .rl-chev{stroke:var(--tile-ink)}.relaylogo svg .rl-word{fill:currentColor}.relaylogo svg .rl-sub{fill:var(--logo-sub)}
+/* the logo in the rail and the phone bar: D2D's rows and PASDACS's chevrons take the tile's ink; the mint never changes */
+.app svg .rl-tile{fill:var(--tile)}.app svg .rl-chev{stroke:var(--tile-ink)}.app svg .rl-row{fill:var(--tile-ink)}.relaylogo svg .rl-word{fill:currentColor}.relaylogo svg .rl-sub{fill:var(--logo-sub)}
 .mlogo b{font-family:var(--font-head);letter-spacing:.12em}
 @media (prefers-reduced-motion:reduce){.btn,.btn.primary:hover{transition:none;transform:none}}
 /* Start new work: what people come for (Home), then where (the chooser) */

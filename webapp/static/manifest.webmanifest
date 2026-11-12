@@ -1,13 +1,13 @@
 {
-  "name": "RELAY by PASDACS",
-  "short_name": "Relay",
+  "name": "D2D Relay",
+  "short_name": "D2D",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F6F8FA",
   "theme_color": "#111111",
   "icons": [
-    {"src": "icons/relay-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icons/relay-512.png", "sizes": "512x512", "type": "image/png"},
-    {"src": "relay-mark.svg", "sizes": "any", "type": "image/svg+xml"}
+    {"src": "icons/d2d-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/d2d-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "d2d-mark.svg", "sizes": "any", "type": "image/svg+xml"}
   ]
 }

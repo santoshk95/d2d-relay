@@ -3,17 +3,22 @@
    collapse to an icon rail, routing ---------------- */
 const pref = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem('d2d.' + k)); localStorage.setItem('d2d.' + k, JSON.stringify(v)); } catch (e) { return null; } };
 const RECENT_SHOWN = 5;
-// The RELAY by PASDACS lockup (branding/pasdacs, Relay group): the PASDACS fast-forward mark, RELAY in Manrope 800,
-// BY PASDACS under it. Tile and chevrons follow --tile / --tile-ink (ink tile on light, white tile on dark); the cursor
-// is always the logo mint #00C48C.
-const RELAY_LOGO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 48" role="img" aria-label="RELAY by PASDACS"><rect class="rl-tile" x="2" y="2" width="44" height="44" rx="11" fill="#111111"/><path class="rl-chev" d="M10 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/><path class="rl-chev" d="M19 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="29" y="29.5" width="9" height="4.4" rx="2" fill="#00C48C"/><text class="rl-word" x="60" y="27" font-family="Manrope, Inter, Segoe UI, Arial, sans-serif" font-size="23" font-weight="800" letter-spacing="3" fill="#111111">RELAY</text><text class="rl-sub" x="61" y="42" font-family="Manrope, Inter, Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" letter-spacing="2" fill="#525252">BY PASDACS</text></svg>';
+// The D2D lockup (branding/pasdacs/assets/D2D): the Striped D, a D cut into rows of data whose middle row (the
+// decision) is the logo mint #00C48C, with D2D in Manrope 800 and DATA TO DECISION under it. Tile and rows follow
+// --tile / --tile-ink (ink tile on light, white tile on dark); the mint row never changes. D2D_MARK is the three-row
+// mark the brand uses below 48 px (the rail, the phone bar).
+const D2D_LOGO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 48" role="img" aria-label="D2D, Data to Decision"><rect class="rl-tile" x="2" y="2" width="44" height="44" rx="11" fill="#111111"/><path class="rl-row" d="M13.5 14.6a1.6 1.6 0 0 1 1.6 -1.6H24.5A11 11 0 0 1 32.34 16.28H13.5Z" fill="#FFFFFF"/><path class="rl-row" d="M13.5 17.68H33.5A11 11 0 0 1 35.07 20.96H13.5Z" fill="#FFFFFF"/><path d="M13.5 22.36H35.38A11 11 0 0 1 35.38 25.64H13.5Z" fill="#00C48C"/><path class="rl-row" d="M13.5 27.04H35.07A11 11 0 0 1 33.5 30.32H13.5Z" fill="#FFFFFF"/><path class="rl-row" d="M13.5 31.72H32.34A11 11 0 0 1 24.5 35H15.1a1.6 1.6 0 0 1 -1.6 -1.6Z" fill="#FFFFFF"/><text class="rl-word" x="60" y="27" font-family="Manrope, Inter, Segoe UI, Arial, sans-serif" font-size="23" font-weight="800" letter-spacing="3" fill="#111111">D2D</text><text class="rl-sub" x="61" y="42" font-family="Manrope, Inter, Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" letter-spacing="2" fill="#525252">DATA TO DECISION</text></svg>';
+const D2D_MARK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" aria-hidden="true"><rect class="rl-tile" x="2" y="2" width="44" height="44" rx="11" fill="#111111"/><path class="rl-row" d="M13.5 14.6a1.6 1.6 0 0 1 1.6 -1.6H24.5A11 11 0 0 1 34.33 19.07H13.5Z" fill="#FFFFFF"/><path d="M13.5 20.97H35.07A11 11 0 0 1 35.07 27.03H13.5Z" fill="#00C48C"/><path class="rl-row" d="M13.5 28.93H34.33A11 11 0 0 1 24.5 35H15.1a1.6 1.6 0 0 1 -1.6 -1.6Z" fill="#FFFFFF"/></svg>';
+// The PASDACS fast-forward mark (branding/pasdacs, Logos group), small: the Relay Platform line at the foot of the rail
+// and a partner's "Powered by PASDACS Relay". Chevrons follow --tile-ink; the cursor is always the logo mint.
 const RELAY_MARK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" aria-hidden="true"><rect class="rl-tile" x="2" y="2" width="44" height="44" rx="11" fill="#111111"/><path class="rl-chev" d="M10 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><path class="rl-chev" d="M19 15l8 9-8 9" fill="none" stroke="#FFFFFF" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="29" y="29" width="9" height="5" rx="2" fill="#00C48C"/></svg>';
 const NAV_PICK = {hash: null, group: null};
 S.registry = null; S.brand = null;
 
 /* ---------------- brand and theme ---------------- */
 const svgEl = (markup, cls) => { const s = h('span', {class: cls}); s.innerHTML = markup; return s; };
-const markEl = cls => svgEl(RELAY_MARK, cls || 'pm');
+const markEl = cls => svgEl(RELAY_MARK, cls || 'pm');          // PASDACS
+const d2dMarkEl = cls => svgEl(D2D_MARK, cls || 'pm');         // D2D
 function partnerMark(b) { return h('span', {class: 'pmark', style: `background:${b.color || '#111111'}`}, b.mark || 'R'); }
 function applyBrand() {
   const b = S.brand || {accent: 'signal', full: 'D2D Relay', name: 'D2D Relay', partner: false};
@@ -25,13 +30,14 @@ function applyBrand() {
   if (b.partner) {
     const src = (dark && b.logo_dark) || b.logo_light;
     logo.replaceChildren(src ? h('img', {src, alt: ''}) : partnerMark(b), h('span', {class: 'lbl bname'}, h('b', {}, b.full), h('small', {}, b.tagline || '')));
-  } else logo.replaceChildren(svgEl(RELAY_LOGO, 'relaylogo'), svgEl(RELAY_MARK, 'railmark'));
+  } else logo.replaceChildren(svgEl(D2D_LOGO, 'relaylogo'), svgEl(D2D_MARK, 'railmark'));
   logo.setAttribute('aria-label', `${b.full} - Home`);
-  $('#mlogo').replaceChildren(...(b.partner ? [partnerMark(b), h('b', {}, b.name)] : [markEl(), h('b', {}, 'RELAY')]));   // spread: an array is printed as "[object ...]"
+  $('#mlogo').replaceChildren(...(b.partner ? [partnerMark(b), h('b', {}, b.name)] : [d2dMarkEl(), h('b', {}, 'D2D')]));   // spread: an array is printed as "[object ...]"
+  // the D2D lockup says Data to Decision; the foot of the rail names the platform behind it, with the PASDACS mark
   $('#powered').replaceChildren(...(b.partner ? [markEl(), h('span', {}, 'Powered by ', h('b', {}, 'PASDACS Relay'))]
-    : [isAdminPortal() ? h('span', {class: 'faint'}, 'D2D Relay admin - PASDACS only')
-      : h('span', {class: 'faint', style: 'line-height:1.35', title: 'D2D Relay: D2D means Data to Decision, a product of the Relay Platform by PASDACS'},
-        h('b', {}, 'D2D'), ' - Data to Decision', h('br'), 'a Relay Platform product - PASDACS')]));
+    : isAdminPortal() ? [h('span', {class: 'faint'}, 'D2D Relay admin - PASDACS only')]
+    : [markEl(), h('span', {class: 'faint', style: 'line-height:1.35', title: 'D2D Relay: D2D means Data to Decision, a product of the Relay Platform by PASDACS'},
+        'A Relay Platform product', h('br'), 'by PASDACS')]));
 }
 /* the look: 'light', 'dark' or 'system' (the device's setting, followed when it changes); keep: show it, don't save it */
 const darkDevice = () => { try { return matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { return false; } };

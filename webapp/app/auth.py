@@ -37,7 +37,7 @@ PROJECT = re.compile(r"^/api/projects/([a-z0-9][a-z0-9-]{2,63})(/.*)?$")
 LIBRARY = re.compile(r"^/api/library/([^/]+)$")
 PUBLISH = {"/approve", "/pbix"}             # D2D Relay: making the Power BI file is publishing
 SHARE = {"/shares"}
-OPEN_PATHS = ("/login.html", "/privacy.html", "/terms.html", "/refunds.html", "/contact.html", "/auth/", "/css/login.css", "/css/fonts.css", "/fonts/", "/relay-mark.svg", "/favicon.ico", "/powered-by.svg", "/icons/", "/manifest.webmanifest",
+OPEN_PATHS = ("/login.html", "/privacy.html", "/terms.html", "/refunds.html", "/contact.html", "/auth/", "/css/login.css", "/css/fonts.css", "/fonts/", "/relay-mark.svg", "/d2d-mark.svg", "/favicon.ico", "/powered-by.svg", "/icons/", "/manifest.webmanifest",
               "/favicon", "/metrics", "/healthz", "/portal.js")   # reachable without signing in (/metrics checks its own token)
 ADMIN_AUTH = ("/auth/otp/", "/auth/providers", "/auth/logout", "/auth/brand")   # D2D Relay: the admin portal's sign-in paths
 SAFE = {"GET", "HEAD", "OPTIONS"}
