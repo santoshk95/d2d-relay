@@ -435,6 +435,33 @@ rebuilt stand-in Razorpay missing its rupee conversion, not the app (the 15:41 e
 the AI, whatever it is told), a real Razorpay checkout, real email delivery, and the Power BI file maker end to end
 (unchanged). The suites, the stack and the replay are in this session's scratchpad (`recovered/`).
 
+### Item 29 tests (2026-11-12): plain characters, the first-time tour, Migration D2D
+
+Two new routes, both behind the session like every other: `POST /api/me/tour` (the person's own flag; the step it
+names is cut to 20 letters) and `POST /api/org/migration-request` (an organisation member; the tools must be from the
+list; at most 5 an hour per person; the message is cut to 1,500 characters, 500 kept in the log; not an API of the
+admin portal). The route list was taken again from the release candidate: 124 reachable API routes on the public site
+(129 before: the S9 console views are now switched off; the two new ones and the billing details added), all checked
+anonymously by `sec_check.py`. The rest of the change is text (string literals and comments; no regular expression,
+guard, setting or query was changed), so the AI engine's confinement suites were not run again.
+
+| Suite, on fresh test stacks from the release candidate | Review off | Review on |
+|---|---|---|
+| `d2d_checks.py`, `gov_check.py` + `gov_ui_check.py`, `ask_credits_check.py`, `review_fixes_check.py` | 120, 60 + 10, 14, 13 | 120, 60 + 10, 14, 13 |
+| `pay_check.py` + `pay_ui_check.py` | 113 + 37 | 113 + 37 (see below) |
+| `sec_check.py` (the 124 routes and every combination above) | 115 of 115 | 132 of 132 |
+| `item29_check.py` (new): the tour flag per person, people from before 12 November, signed out, the admin portal; Migration D2D requests (the Requests card, refusals, the hourly limit, the log, notifications, 401/404); the agent's words plain and people's words as typed; no long dashes, curly quotes or arrows in the pages and scripts served | 34 of 34 | 34 of 34 |
+| `tour_ui_check.py` (new, Chromium): an owner through every step (brand, Dark, Match my device following the device, Light, the basics), not shown again; the menu and sidebar entries; the Migration page, its dialog and a request; a member's tour without the brand step and Skip; a deep link left alone; a phone in dark mode with nothing past the screen's edge; no script errors | 28 of 28 | 28 of 28 |
+| The report builder (`builder_plain_check.py`, in the container): page name, title, text box, alt text, descriptions and display folder plain; the measure name and every reference to it kept; the definition untouched; the gate warns, does not fail | 11 of 11 | |
+| Upgrade: today's live image (`72b71a1`) with an organisation, a dashboard and a waiting request, then the release (`a84d7c9`) on the same database (`upgrade_check.py`) | 23 of 23 | |
+
+Two expectations were changed because the app's text changed: a shortened Razorpay key id now ends in "..." (`pay_check.py`),
+and the upgrade suite now starts from an image that already reviews new organisations. In the first review-on run
+`pay_ui_check.py` stopped once at a 15-second wait for the Buy dialog while the PC was busy; on the same stack it then
+passed 37 of 37, and 37 of 37 again in the review-off run. Fixed on the way: the tour's organisation card ran past the
+screen's edge on a phone (long email addresses), and truncated notes are cut to their length limit including the three
+dots.
+
 ## To put it live
 
 1. Make sure no dashboard is running, then build and tag the image from the work folder as for earlier items
