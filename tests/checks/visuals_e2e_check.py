@@ -73,6 +73,51 @@ def builtin_type(t: str) -> bool:
     return str(t).startswith("pbi.") or t in NATIVE
 
 
+LABELS = r"""
+import json, re, sys
+from playwright.sync_api import sync_playwright
+cookie, pid = sys.argv[1], sys.argv[2]
+out = {"pages": 0, "overflow": [], "zeros": []}
+ZERO = re.compile(r"^[+-]?[^0-9\s]{0,3}0*(\.0+)?\s?(K|M|bn|B|T)$")          # "$0M", "+$M": a value shown as nothing
+with sync_playwright() as pw:
+    b = pw.chromium.launch(args=["--no-sandbox"])
+    ctx = b.new_context(viewport={"width": 1440, "height": 1000})
+    ctx.add_cookies([{"name": "d2d_session", "value": cookie, "url": "http://127.0.0.1:8000"}])
+    page = ctx.new_page()
+    page.goto(f"http://127.0.0.1:8000/api/projects/{pid}/prototype/live")
+    page.wait_for_timeout(3000)
+    n = page.evaluate("R.pages.length")
+    for i in range(n):
+        page.evaluate(f"current = {i}; draw();")
+        page.wait_for_timeout(1500)
+        found = page.evaluate('''() => {
+          const vs = R.pages[current].visuals, boxes = [...document.querySelectorAll('#page > .v')], over = [], zeros = [];
+          boxes.forEach((box, k) => { const v = vs[k]; if (!v || !(v.stock || v.atlas)) return;
+            const r = box.getBoundingClientRect();
+            box.querySelectorAll('svg text').forEach(t => { const q = t.getBoundingClientRect(); if (!q.width) return;
+              const o = Math.max(q.right - r.right, r.left - q.left, q.bottom - r.bottom, r.top - q.top);
+              if (o > 1) over.push([R.pages[current].name, v.id, t.textContent, Math.round(o)]); });
+            if (v.atlas) box.querySelectorAll('text.lbl').forEach(t => zeros.push([R.pages[current].name, v.id, t.textContent])); });
+          return {over, zeros}; }''')
+        out["overflow"] += found["over"]
+        out["zeros"] += [z for z in found["zeros"] if ZERO.match(z[2].strip())]
+        out["pages"] += 1
+    b.close()
+print(json.dumps(out))
+"""
+
+
+def labels_of(p, pid: str) -> dict:
+    """Every page of the dashboard's prototype in Chromium: labels past their visual's edge, Atlas labels shown as nothing."""
+    cookie = next(k.value for k in p.jar if k.name == "d2d_session")
+    r = subprocess.run(["docker", "exec", "-i", c.WEB_C, "python3", "-", cookie, pid], input=LABELS, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", timeout=300)
+    try:
+        return json.loads(r.stdout.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        return {"error": (r.stderr or r.stdout)[-400:]}
+
+
 def download(p, pid: str) -> bytes:
     req = urllib.request.Request(p.base + f"/api/projects/{pid}/download")
     with p.http.open(req, timeout=300) as r:
@@ -207,6 +252,12 @@ for mode, run in runs.items():
         else:
             print(f"  mixed: custom visuals embedded in the .pbix: {embedded or 'none'}", flush=True)
     summary.append((mode, run["steps"], len(types), len(builtin), sorted(set(custom)), embedded))
+    if run["status"] == "done":
+        lab = labels_of(p, pid)
+        check(f"{mode}: no label in the report runs past its visual's edge ({lab.get('pages', 0)} pages)",
+              bool(lab.get("pages")) and not lab.get("overflow"), lab.get("overflow", lab)[:8] if isinstance(lab.get("overflow", lab), list) else lab)
+        check(f"{mode}: no data label of a Relay visual reads $0M or a unit without a number",
+              bool(lab.get("pages")) and not lab.get("zeros"), lab.get("zeros"))
 
 print("\nmode     minutes (plan/build/published)  visuals  built-in  custom types  embedded in the .pbix")
 for mode, steps, n, nb, cu, emb in summary:

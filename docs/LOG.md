@@ -862,6 +862,37 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       `d2d-relay.web=d2d-relay-web` and was removed, the folder too; no errors in any log. `d2d-relay:54f6ed7` is kept
       for going back.
 
+35. **Labels that mean what they say** (the user, 2026-11-12: "can you fix and deploy and publish all you can", after
+    item 34's end-to-end run showed three label faults). Code `e05f035`, **live since 18:24 IST** the same day.
+    - **Relay Compare's dumbbell** labelled the relative change b/a - 1 between its two dots, so two growth rates of
+      opposite sign read "-140%" against a -15% to +30% axis. Now the % change only between two positive values, the
+      difference in points between percentages ("-35 pts"), otherwise the difference itself ("-$150K").
+    - **Every Relay visual** (Visual Atlas `common/util.ts`): a label never shows a value that is not zero as zero. With
+      labels fixed to millions, a waterfall's +$33K step read "$0M" (the old build even printed "$M"); such a label is
+      now shown in its own unit. All 13 visuals rebuilt offline with the toolchain pinned in the image (pbiviz 7.2.1),
+      versions bumped, GUIDs unchanged (`custom_visuals/atlas/`, `visual-atlas/release/`); every mock-host check
+      passing, new cases for both faults (`visual-atlas/docs/HISTORY.md` section 18).
+    - **The prototype's Power BI built-in visuals** (`stock_visuals.js`): a bar's label goes inside the bar's end when
+      the plot has no room after it, a column's inside its top (Power BI's Auto position); a scatter's point name
+      flips to the point's left near the right edge (found by the new check).
+    - **The agent's manual**: label units and decimals stay Auto; what a dumbbell's end label means.
+    - **Tests** on `d2d-relay:e05f035`: every suite, 727 checks with the starting-credit review on and 710 off, all
+      passing, with the new `item35_check.py` (9: the built-in visuals gallery's prototype plus a page of the three
+      cases, no label past its visual's edge on any page, the dumbbell and waterfall labels, the rebuilt visuals
+      shipped; against the image before the change it fails on every fault). Upgrade from `aa4531e`: 23 of 23. End to
+      end with real Claude, one report per Visuals mode to the .pbix: 35 of 35, now also checking every page of each
+      report in Chromium: no label past its visual's edge, no Relay data label reading $0M or a bare unit. The Relay
+      report's waterfall read $5.91M, +$524K, +$165K, -$284K, -$75K, $6.24M; its dumbbells +7.0%, +3.9%.
+    - **Deployed at 18:24 IST**: live idle; deploy folder fast-forwarded to `e05f035` (no compose, `pbix\`,
+      `daxcheck\` or `config\` change); `d2d-relay:e05f035` tagged latest; web, admin and the job runner restarted.
+      Checked on live: healthy on `e05f035`; healthz, sign-in page and admin portal 200; the 13 rebuilt visuals,
+      the label fixes and the manual's rule served; the runner probe job labelled and removed; no errors.
+      `d2d-relay:aa4531e` kept for going back.
+    - **Seen in that run, next (item 36):** the Relay Gauges KPI card writes a long field label into its value
+      ("Revenue Growth %+11.3%"); and when the AI gives a visual a measure as its title but no title column in its
+      prototype SQL, the app's prototype shows the measure's name ("Title Revenue Trend"; the .pbix shows the
+      sentence).
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -901,13 +932,14 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 34's deploy. **Live:** web, admin and the job runner run `d2d-relay:aa4531e`
-(= latest, since 17:05 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
-info@pasdacs.com. **GitHub**, this folder and the deploy folder are all on this log entry (item 34 and its logs pushed
-after the deploy; every commit scanned for the live `.env` and `tunnel.env` values and key patterns: none).
-**Going back** to item 33 (`d2d-relay:54f6ed7`, kept): in the deploy folder `git reset --keep 2cd493e` (it takes
-`config/house-models.json` back too), `docker tag d2d-relay:54f6ed7 d2d-relay:latest`, then `docker compose up -d
---no-deps web admin runner`. No older release image is kept on this PC (item 33): any other version is a commit on
+Updated 2026-11-12, after item 35's deploy. **Live:** web, admin and the job runner run `d2d-relay:e05f035`
+(= latest, since 18:24 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
+info@pasdacs.com. **GitHub**, this folder and the deploy folder are all on this log entry (items 34 and 35 and their
+logs pushed after their deploys; every commit scanned for the live `.env` and `tunnel.env` values and key patterns:
+none). **Going back** to item 34 (`d2d-relay:aa4531e`, kept): in the deploy folder `git reset --keep 520e88e`,
+`docker tag d2d-relay:aa4531e d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; to item 33
+(`d2d-relay:54f6ed7`, kept) the same with `2cd493e` (it takes `config/house-models.json` back too). No older release
+image is kept on this PC (item 33): any other version is a commit on
 GitHub (in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`), then `docker
 compose up -d --no-deps web admin runner` (only `web admin` for a version before item 31); going back before item 31
 also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and `docker rm -f d2d-relay-runner` after.
