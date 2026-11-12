@@ -597,6 +597,35 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       `TEST/26-27/00002`, ₹1,178.82 (`pay_TyvLLaIUUclUBj`), ₹999 + CGST ₹89.91 + SGST ₹89.91, place of supply
       Karnataka (29). Not deployed: committed as 7d28ea7.
 
+26. **Security, data governance and privacy audit** (the user's request of 2026-11-11: "do a full sweep audit and data
+    goverance and privacy as i will be launching this in the public domain", "security check as well"). The findings,
+    what was fixed, the tests and what is open: `docs/security-privacy-audit-2026-11-11.md`. Fixed in the work folder:
+    three ways for the AI to run code of its own outside its confinement (a custom visual's `caps.js` run by Node, a
+    Python module in the project folder run as the toolkit, a visual's Less `@plugin` and webpack loader imports), each
+    proven on a throwaway copy of the live image to reach another organisation's data and the Claude sign-in; the DAX
+    checker on the PC now refuses models with data sources or Power Query; security headers; a guard for Starlette's
+    Range bug; the privacy notice says who in an organisation sees what. `genbi_kit/caps.py` (new), `vfactory.py`,
+    `GENBI.md`, `Dockerfile`, `agent/Dockerfile`, `docker/relay_init.py`, `daxcheck/daxcheck.ps1`,
+    `webapp/app/headers.py` (new), `main.py`, `/privacy.html`. Then (the user: "Full audit and testing as well all
+    combinations to be secure and confident for launch"): the console's cross-organisation views off the public site
+    (`edition.py`), 20 sign-in codes a day per address (`otp.py`), `/api/health` without the AI engine's details. On a
+    release candidate built from the work folder, on fresh test stacks: every end-to-end suite (rebuilt from the
+    session that wrote them) with the starting-credit review off and on, 367 of 367 each; a new security suite
+    (`sec_check.py`: anonymous access to every route, sign-in, CSRF, tampered cookies, owner/member/removed, one
+    organisation against another, platform powers, uploads and paths, payments, the review) 115 and 132 of 132; the
+    sandbox escapes refused and real visual builds; the shell guard's 64 cases; Cloudflare Access 10 of 10; a hostile
+    prototype 23 of 23; an upgrade from the live image on the same database 21 of 21. The results table is in the
+    audit's "Tests". Not committed, not deployed.
+27. **Starting credits reviewed by PASDACS** (the user, 2026-11-11: "Instead of free credits on the go, when user sign
+    ups send me a email and i will review and confirm you whether to add credits or no"). A new organisation starts
+    with no credits; its "starting credits" request (50) waits on the admin portal's Requests, and info@pasdacs.com
+    gets one email per new organisation with what helps to judge it (owner, network, country, organisations from the
+    same network or on the same parent domain), instead of the sign-in alert. Approve adds the credits as starting
+    credits and emails the owner; Decline tells the owner why. Also from the command line (`python -m app.orgs
+    requests | approve | decline`, `docs/d2d-relay.md`, "Starting credits are reviewed"), so PASDACS can answer by
+    telling Claude. `RELAY_CREDITS_START_REVIEW=0` brings back the credits at sign-up. `app/orgs.py`, `otp.py`,
+    `signin_alerts.py`, `login.html`, `js/36-org.js`, `.env.example`, `README.md`. Not committed, not deployed.
+
 Test data in the live install: none since the fresh start (item 18).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -671,10 +700,15 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   **The Razorpay account takes Indian cards only** (seen in test mode): until the user switches on international
   payments (Razorpay Dashboard → Account & Settings → International payments; Razorpay reviews it), a buyer abroad
   sees dollar prices but only an Indian card goes through.
-- **Abuse.** Anyone with a business mailbox can sign up and create an organisation (as asked). Since item 19 it gets
-  50 credits at once (about two dashboards' AI time) without anyone's approval; more need PASDACS's approval. Since
-  item 21 PASDACS gets an email for every sign-in, and pauses an organisation or switches a person off on the admin
-  portal.
+- **Abuse.** Anyone with a business mailbox can sign up and create an organisation (as asked). Live, since item 19, it
+  gets 50 credits at once (about two dashboards' AI time) without anyone's approval; with item 27 (not deployed) the
+  50 wait for PASDACS's approval of each new organisation. Since item 21 PASDACS gets an email for every sign-in, and
+  pauses an organisation or switches a person off on the admin portal.
+- **Items 26 and 27 are in the work folder, not committed, not deployed.** Deploying them: build and restart web and
+  admin as for earlier items (the user's go-ahead), then close the DAX checker's window on the PC and start
+  `daxcheck\start-daxcheck.cmd` again (item 26 changes `daxcheck.ps1`). Every suite passed on a release candidate of
+  them, review off and on, and an upgrade from the live image (item 26); not run: a build with real Claude, a real
+  Razorpay checkout, real email.
 - **Brand palettes cost no credits** (as asked; Ask Relay has cost credits since item 19). Their AI cost is recorded in
   `usage` only.
 - **Turnkey deployments (the user's decision of 2026-11-11):** an organisation that wants its own warehouse or
