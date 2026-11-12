@@ -32,6 +32,7 @@ from . import doctor, errors
 from . import branding, edition, orgs, otp           # D2D Relay: the dashboard-only catalogue, organisations and credits, the email-code sign-in
 from . import portal                                 # D2D Relay: the public site or the admin portal (D2D_PORTAL)
 from . import governance                             # item 22: erasure, "Download my data", retention
+from . import headers                                # security audit: security headers, the Range guard
 from . import payments                               # item 23: buying credits online with Razorpay
 
 errors.install()                                # every traceback.print_exc() and thread crash reports Relay's own bugs (Relay Doctor)
@@ -110,7 +111,8 @@ async def lifespan(_):
 
 app = FastAPI(title="D2D Relay", lifespan=lifespan)
 app.middleware("http")(auth.middleware)        # every request: who is asking, and may they (see auth.py)
-app.middleware("http")(monitor.middleware)     # outermost: request counts, timings, JSON log lines (phase 8)
+app.middleware("http")(monitor.middleware)     # request counts, timings, JSON log lines (phase 8)
+app.middleware("http")(headers.middleware)     # outermost: security headers on every answer, the Range guard (security audit)
 app.include_router(platform.router)            # sign-in, sharing, administration (phase 1)
 app.include_router(data_routes.router)         # warehouse connections and extracts (phase 3)
 app.include_router(semantic_routes.router)     # semantic layer: metrics, terms, context, ontology (phase 4)
@@ -295,6 +297,7 @@ async def health():
             agent = (await client.get(f"{worker.AGENT_URL}/health")).json()
     except Exception as e:  # noqa: BLE001
         agent = {"ok": False, "error": e.__class__.__name__}
+    agent = {"ok": bool(agent.get("ok")), "busy": bool(agent.get("busy"))}     # security audit: never the models behind Relay's
     return {"ok": True, "agent": agent, "queue": worker.waiting(), "running": worker.current.get("pid"),
             "running_model": _shown_model(worker.current.get("model")), "daxcheck": daxcheck.available()}
 

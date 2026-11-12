@@ -460,6 +460,11 @@ Building one (everything lives in `visuals/<name>/`):
    the same objects and properties), `src/visual.ts` (reads the data) and `src/render.ts` (draws). Add more
    files in `src/` when it helps. `src/common/` is the Visual Atlas framework — read `family.ts`,
    `matrix.ts`, `chart.ts`, `cards.ts`, `look.ts`, `util.ts`, `interact.ts` and use them; never edit them.
+   `caps.js` is read as data, never run: keep it `module.exports = ({ E, num, bool, text, color }) => ({ … });`
+   with plain values only (texts, numbers, true/false/null, arrays, objects, the helpers and `E([value,
+   name], …)`) — no variables, other calls, spreads or `${…}`. The build uses only `src/`, `style/`,
+   `assets/` and `stringResources/` with the kit's own settings; imports stay inside the visual's folder (or
+   name an installed module) and `style/*.less` imports only `"atlas.less"` or its own files (no `url()`).
 3. `genbi visual build radialBars`: caps.js → capabilities, TypeScript, ESLint, pbiviz package. Fix every
    error it prints and build again.
 4. `genbi visual test radialBars`: renders the build in headless Chromium with sample data (normal, small,

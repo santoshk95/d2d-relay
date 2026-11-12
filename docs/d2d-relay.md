@@ -217,7 +217,7 @@ Mailinator …) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTR
 
 | What | Credits |
 |---|---|
-| Start | 50 (`RELAY_CREDITS_START`); more are bought online (Payments, below) or come when PASDACS approves a request |
+| Start | 50 (`RELAY_CREDITS_START`), once PASDACS has reviewed and approved the new organisation (below); more are bought online (Payments, below) or come when PASDACS approves a request |
 | New dashboard (plan, KPIs and first prototype) | 25 (`RELAY_CREDITS_DASHBOARD`) |
 | A change: revise the plan, a change request, building a suggested custom visual, an Ask Relay answer sent to a dashboard | 10 (`RELAY_CREDITS_CHANGE`) |
 | Ask Relay: up to 5 answered questions in one conversation (`RELAY_CREDITS_ASK_QUESTIONS`), charged at its 1st, 6th, 11th … question | 10 (`RELAY_CREDITS_ASK`) |
@@ -229,9 +229,35 @@ AI cost is still recorded on the server (the `usage` table); the screens show no
 Relay shows the credits a conversation used and the questions left in them; a question that gets no answer gives
 its credits back.
 
-**Getting more credits.** Anyone with a business mailbox can sign up; a new organisation gets its 50 starting
-credits at once. More are bought online once PASDACS opens selling (**Payments (Razorpay)**, below), or come when
-PASDACS approves a request (for invoices and bank transfers):
+**Starting credits are reviewed** (the user's decision of 2026-11-11: no free credits at sign-up). Anyone with a
+business mailbox can sign up, but a new organisation starts with none:
+
+1. When the first person from a domain creates the organisation, a **starting credits** request for 50
+   (`RELAY_CREDITS_START`) is made for it, and info@pasdacs.com (`RELAY_CREDITS_CONTACT`) gets one email to review it
+   (Reply-To the owner): the organisation, its domain and workspace id, the owner, when, the network address and
+   country Cloudflare saw, sign-in codes from that network in the last hour, organisations created from the same
+   network in the last 30 days, other organisations on the same parent domain (`x1.example.com` and `x2.example.com`
+   are both on `example.com`), and the browser. Every PASDACS person also gets a notification. (This email replaces
+   the sign-in alert for a new organisation.)
+2. The owner sees "starting credits, waiting for PASDACS's review" (top bar, Dashboards, Organisation, first-time
+   setup) and can set up the brand and invite colleagues meanwhile. A dashboard or Ask Relay question asked before the
+   answer is refused with that explanation.
+3. PASDACS answers it on the admin portal under **Requests** (it is marked "New organisation"): **Approve** adds the
+   credits at once as "Starting credits" (the amount can be changed) and emails the owner; **Decline** needs a reason,
+   which the owner is told in the app and by email. A declined organisation keeps working with no credits: it can
+   still ask for credits or buy them. The same from the command line, in the web container (it sends the emails):
+
+   ```
+   docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.orgs requests
+   docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.orgs approve <request id> [credits] ["note"]
+   docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.orgs decline <request id> "<reason>"
+   ```
+
+`RELAY_CREDITS_START_REVIEW=0` adds the starting credits at sign-up instead, as before; `RELAY_CREDITS_START=0`
+gives none at all (no review request either).
+
+**Getting more credits.** More are bought online once PASDACS opens selling (**Payments (Razorpay)**, below), or come
+when PASDACS approves a request (for invoices and bank transfers):
 
 1. Someone in the organisation clicks **Request credits** (top-bar chip, Organisation, Dashboards, or the message
    when credits run short), picks an amount and adds a message. One request can wait at a time; the person who asked,
@@ -372,7 +398,7 @@ and country Cloudflare saw, the browser, whether it is their first sign-in, how 
 for in the last hour, and the organisation's credits. The email goes out in the background, so a sign-in never waits
 for it or fails because of it, and each one is in the audit log (`signin.alert`). Codes are rate limited per address
 and per network, so the alerts are too. To act on one: pause the organisation or switch the person off on the admin
-portal.
+portal. A new organisation gets its review email instead (see "Starting credits are reviewed"), not a second alert.
 
 - `RELAY_SIGNIN_ALERTS=0` turns them off; `RELAY_SIGNIN_ALERTS_TO` sends them to another address.
 - Without mail set up (a test install) the alert is written to the container's log instead: `[signin-alert] ...`.

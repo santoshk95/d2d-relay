@@ -12,6 +12,12 @@ A visual's source lives in the project (visuals/<name>/); builds run in the kit 
 node_modules. Every visual sits on the Visual Atlas framework (src/common: palette, looks, selection, tooltips,
 landing page, Format-pane cards), so it behaves like the Atlas families in the prototype and in Power BI.
 The web app adds the visuals a report uses (built and tested) to the visual library after each run.
+
+The AI writes a visual's source, so nothing in it may run while the visual is built (security audit, 2026-11-11):
+caps.js is read as data (caps.py), never run; a build gets only src/, style/, assets/ and stringResources/ with the
+kit's own build settings (no config file of the visual's own); and check_source refuses what would make webpack or Less
+run code or read files outside the visual (loader syntax in an import, a relative import leaving the visual's folder,
+require.context, import.meta, @plugin, url() and data-uri() in a style, links).
 """
 import hashlib
 import json
@@ -25,7 +31,7 @@ import uuid
 import zlib
 from pathlib import Path
 
-from . import KIT, atlas, catalog, library_dir
+from . import KIT, atlas, caps, catalog, library_dir
 
 VKIT = Path(os.environ.get("GENBI_VKIT", "/opt/genbi/vkit"))
 NAME = re.compile(r"^[a-z][A-Za-z0-9]{2,39}$")
@@ -33,7 +39,22 @@ API_VERSION = "5.11.1"
 # written by `new`, `build` and `test` — never edited by hand, and not part of the source a build depends on
 MANAGED = ("src/common", "style/atlas.less", "capabilities.json", "test.png", "test.json")
 MODULE = re.compile(r"^(powerbi-visuals-api|powerbi-visuals-utils-[a-z]+|powerbi-models|d3(-[a-z]+)?)$")
-IMPORT = re.compile(r"""(?:\bfrom\s+|^\s*import\s+|\brequire\s*\()\s*["']([^"']+)["']""")
+IMPORT = re.compile(r"""(?:\bfrom\s+|^\s*import\s+|\brequire\s*\()\s*["'`]([^"'`]+)["'`]""", re.M)
+REFERENCE = re.compile(r"""^\s*///\s*<reference\s+path\s*=\s*["']([^"']+)["']""", re.M)
+# What a build gets of a visual's folder: the code, the style, the icon and the translations. Anything else there
+# (a webpack, Babel, PostCSS or ESLint config, a package.json) never reaches the build.
+BUILD_PARTS = ("src", "style", "assets", "stringResources")
+CODE = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"}
+STYLE = {".less", ".css"}
+LESS_IMPORT = re.compile(r"@import\b([^;]*)", re.I)
+LESS_PLAIN_IMPORT = re.compile(r"""^\s*(?:\([a-z, ]*\)\s*)?["']([A-Za-z0-9_][A-Za-z0-9_.-]*\.(?:less|css))["']\s*$""", re.I)
+LESS_BANNED = [
+    (re.compile(r"@plugin\b", re.I), "a Less plugin — it would run code while the visual is built"),
+    (re.compile(r"`"), "JavaScript in a style (backticks)"),
+    (re.compile(r"\b(data-uri|image-size|image-width|image-height)\s*\(", re.I),
+     "a function that reads a file into the style — draw it in code, or keep the icon in assets/"),
+    (re.compile(r"""\burl\s*\(\s*(?!["']?data:)""", re.I), "url() — a visual's style loads nothing (data: URLs only)"),
+]
 BANNED = [
     (re.compile(r"\.(innerHTML|outerHTML)\b|insertAdjacentHTML|document\.write"),
      "builds markup from a string — create nodes with el() or document.createElement"),
@@ -45,6 +66,8 @@ BANNED = [
     (re.compile(r"\bimport\s*\("), "dynamic import — import modules at the top of the file"),
     (re.compile(r"Math\.random\s*\("), "random numbers — a visual must draw the same on every render (certification flags it)"),
     (re.compile(r"""["'`]https?://(?!www\.w3\.org/)"""), "an external URL — a visual loads nothing from the web"),
+    (re.compile(r"\brequire\s*\.\s*(context|resolve)\b|\bwebpackContext\b|\bimport\s*\.\s*meta\b|__non_webpack_require__"),
+     "a build-time module lookup — import each module by name at the top of the file"),
 ]
 
 
@@ -175,23 +198,70 @@ def edit(project: Path, name: str) -> Path:
 
 # ---------------------------------------------------------------- build
 
-def check_source(src: Path) -> list[str]:
-    """APIs a Power BI visual must not use, and modules that are not installed (before spending a build on it)."""
-    problems = []
-    for f in sorted((src / "src").rglob("*.ts")):
-        rel = f.relative_to(src).as_posix()
-        if rel.startswith("src/common/"):
+def _inside(folder: Path, base: Path, spec: str) -> bool:
+    """Whether a relative path written in a file of `folder` stays inside `base` (read as written, .. included)."""
+    target = os.path.normpath(os.path.join(str(folder), spec))
+    root = os.path.normpath(str(base))
+    return target == root or target.startswith(root + os.sep)
+
+
+def _line_of(text: str, pos: int) -> int:
+    return text.count("\n", 0, pos) + 1
+
+
+def _check_code(f: Path, rel: str, code_root: Path) -> list[str]:
+    text = f.read_text(encoding="utf-8", errors="replace")
+    out = []
+    for i, line in enumerate(text.splitlines(), 1):
+        if line.strip().startswith(("//", "*", "/*")):
             continue
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
-            code = line.strip()
-            if code.startswith(("//", "*", "/*")):
+        out += [f"{rel}:{i}: {why}" for rx, why in BANNED if rx.search(line)]
+    for m in IMPORT.finditer(text):                    # the whole file: an import may span lines
+        mod, i = m.group(1), _line_of(text, m.start(1))
+        if any(c in mod for c in "!?\\") or "${" in mod:
+            out.append(f"{rel}:{i}: '{mod[:80]}' — no webpack loaders, queries or expressions in an import: name the "
+                       "module or the file itself")
+        elif mod.startswith("."):
+            if not _inside(f.parent, code_root, mod):
+                out.append(f"{rel}:{i}: '{mod[:80]}' leaves the visual's folder — import only the visual's own files")
+        elif not MODULE.match(mod):
+            out.append(f"{rel}:{i}: module '{mod[:80]}' is not installed (available: powerbi-visuals-api, "
+                       "powerbi-visuals-utils-*, powerbi-models, d3 and d3-*)")
+    for m in REFERENCE.finditer(text):
+        if not _inside(f.parent, code_root, m.group(1)):
+            out.append(f"{rel}:{_line_of(text, m.start(1))}: a /// <reference> to a file outside the visual's folder")
+    return out
+
+
+def _check_style(f: Path, rel: str) -> list[str]:
+    text = f.read_text(encoding="utf-8", errors="replace")
+    out = []
+    for i, line in enumerate(text.splitlines(), 1):
+        out += [f"{rel}:{i}: {why}" for rx, why in LESS_BANNED if rx.search(line)]
+    for m in LESS_IMPORT.finditer(text):
+        plain = LESS_PLAIN_IMPORT.match(m.group(1))
+        if not plain or not (plain.group(1) == "atlas.less" or (f.parent / plain.group(1)).is_file()):
+            out.append(f"{rel}:{_line_of(text, m.start())}: @import{m.group(1)[:60]} — import only a .less or .css file of "
+                       "the same folder, by its name (\"atlas.less\")")
+    return out
+
+
+def check_source(src: Path) -> list[str]:
+    """What a visual must not do (APIs Power BI refuses, modules that are not installed), and what would make its
+    build run code or read files outside the visual: links, webpack loader syntax, imports leaving the visual's
+    folder, Less plugins and file functions (before spending a build on it). The framework (src/common,
+    style/atlas.less) is the kit's own."""
+    problems = [f"{p.relative_to(src).as_posix()}: a link — keep the visual's own files in its folder"
+                for p in sorted(src.rglob("*")) if p.is_symlink()]
+    for part in BUILD_PARTS:
+        for f in sorted((src / part).rglob("*")) if (src / part).is_dir() else []:
+            rel = f.relative_to(src).as_posix()
+            if f.is_symlink() or not f.is_file() or rel.startswith("src/common/") or rel == "style/atlas.less":
                 continue
-            problems += [f"{rel}:{i}: {why}" for rx, why in BANNED if rx.search(line)]
-            for m in IMPORT.finditer(line):
-                mod = m.group(1)
-                if not mod.startswith(".") and not MODULE.match(mod):
-                    problems.append(f"{rel}:{i}: module '{mod}' is not installed (available: powerbi-visuals-api, "
-                                    "powerbi-visuals-utils-*, powerbi-models, d3 and d3-*)")
+            if f.suffix.lower() in CODE:
+                problems += _check_code(f, rel, src)       # imports stay inside the visual's folder (src/, style/ ...)
+            elif f.suffix.lower() in STYLE:
+                problems += _check_style(f, rel)
     return problems
 
 
@@ -231,17 +301,27 @@ def build(project: Path, name: str) -> dict:
     vis = pv.get("visual") or {}
     if vis.get("name") != name or not str(vis.get("guid", "")).startswith(name):
         raise VisualError("pbiviz.json: keep visual.name and visual.guid as `genbi visual new` wrote them")
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9]{2,80}", str(vis.get("guid"))) \
+            or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,60}", str(vis.get("visualClassName") or "Visual")):
+        raise VisualError("pbiviz.json: visual.guid is letters and digits, visual.visualClassName a class name (Visual)")
     for need in ("caps.js", "src/visual.ts"):
         if not (src / need).exists():
             raise VisualError(f"visuals/{name}/{need} is missing")
     problems = check_source(src)
     if problems:
         raise VisualError("fix these first:\n" + "\n".join(f"  {p}" for p in problems))
+    try:
+        spec = caps.read_file(src / "caps.js")           # read as data, never run (caps.py)
+    except caps.CapsError as e:
+        raise VisualError(f"caps.js: {e}") from None
     _sync_framework(src)                      # the framework copy Claude reads is always the current one
     work = VKIT / "builds" / name
     shutil.rmtree(work, ignore_errors=True)
-    shutil.copytree(src, work, ignore=shutil.ignore_patterns("capabilities.json", "test.png", "test.json", "dist",
-                                                             ".tmp", "node_modules"))
+    work.mkdir(parents=True)
+    for part in BUILD_PARTS:                  # the visual's code, style, icon and translations; never a config of its own
+        if (src / part).is_dir():
+            shutil.copytree(src / part, work / part, symlinks=True,
+                            ignore=shutil.ignore_patterns("dist", ".tmp", "node_modules"))
     for f in ("tsconfig.json", "eslint.config.mjs"):
         shutil.copy2(VKIT / f, work / f)
     (work / "package.json").write_text(json.dumps({"name": name.lower(), "private": True, "version": "1.0.0"}), encoding="utf-8")
@@ -249,12 +329,11 @@ def build(project: Path, name: str) -> dict:
     if not (work / "assets" / "icon.png").exists():
         _icon(work / "assets" / "icon.png", name)
     pv["visual"]["version"] = _bump(vis.get("version", "1.0.0.0"))
-    pv.update(apiVersion=API_VERSION, externalJS=None, capabilities="capabilities.json", style="style/visual.less")
+    pv.update(apiVersion=API_VERSION, externalJS=None, capabilities="capabilities.json", style="style/visual.less",
+              assets={"icon": "assets/icon.png"}, dependencies=None, stringResources=[])
     (work / "pbiviz.json").write_text(json.dumps(pv, indent=2), encoding="utf-8")
+    (work / "capabilities.json").write_text(caps.text(spec), encoding="utf-8")
     started = time.time()
-    caps = _run(["node", str(VKIT / "mk_caps.js"), str(work)], work, 60)
-    if caps.returncode:
-        raise VisualError("caps.js failed:\n" + _report(caps.stdout + caps.stderr, work, name))
     res = _run(["pbiviz", "package", "--skip-api", "--no-stats"], work, 900)
     built = sorted((work / "dist").glob("*.pbiviz"))
     if res.returncode or not built:

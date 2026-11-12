@@ -35,7 +35,7 @@ function orgMenu(anchor) {
     h('div', {style: 'padding:2px 12px 10px'}, h('div', {class: 'credbig'}, Number(o.credits || 0).toLocaleString()),
       h('div', {class: 'small muted'}, `credits left · ${costLine()}`),
       o.pending_request ? h('div', {class: 'small', style: 'margin-top:6px'}, h('span', {class: 'tag warn'}, 'Waiting for PASDACS'),
-        ` ${Number(o.pending_request.credits).toLocaleString()} credits asked for`) : null),
+        ` ${Number(o.pending_request.credits).toLocaleString()} ${isStart(o.pending_request) ? 'starting credits, under review' : 'credits asked for'}`) : null),
     (o.pay || {}).on ? h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); buyDialog(); }}, icon('coin'), h('span', {class: 'grow'}, 'Buy credits')) : null,
     h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); requestDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Request credits')),
     h('a', {class: 'pmitem', href: '#/org', onclick: closePopover}, icon('building'), h('span', {class: 'grow'}, 'Organisation, people and credit history')),
@@ -62,7 +62,9 @@ function creditsLine() {
   if (!o.id) return null;
   return h('div', {class: 'credline'}, icon('coin'), h('span', {}, h('b', {}, credits(o.credits)), ` left in ${o.name}`),
     h('span', {}, `· ${costLine()}`),
-    o.pending_request ? h('span', {class: 'tag warn'}, `${Number(o.pending_request.credits).toLocaleString()} credits asked for, waiting for PASDACS`) : null,
+    o.pending_request ? h('span', {class: 'tag warn'}, isStart(o.pending_request)
+      ? `${Number(o.pending_request.credits).toLocaleString()} starting credits, waiting for PASDACS's review`
+      : `${Number(o.pending_request.credits).toLocaleString()} credits asked for, waiting for PASDACS`) : null,
     (o.pay || {}).on ? h('button', {class: 'btn sm ghost', type: 'button', onclick: () => buyDialog()}, icon('coin'), 'Buy credits')
       : h('button', {class: 'btn sm ghost', type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'));
 }
@@ -70,11 +72,26 @@ function creditsLine() {
 /* More credits: Buy credits when PASDACS sells them online to this organisation (37-payments.js), else Request credits */
 function creditsDialog(reason) { return (ORG().pay || {}).on ? buyDialog(reason) : requestDialog(reason); }
 
+/* a new organisation's starting credits, waiting for PASDACS's review (orgs.py: purpose 'start') */
+const isStart = r => (r || {}).purpose === 'start';
+
 /* ---------------- Request credits: PASDACS approves every request (the admin portal); one waiting at a time ---------------- */
 function requestDialog(reason) {
   const o = ORG(), me = S.me || {};
   if (!o.id) return;
   const contact = o.contact || 'info@pasdacs.com';
+  if (isStart(o.pending_request)) {            // a new organisation: PASDACS reviews it and adds its starting credits
+    const p = o.pending_request;
+    const m = modal('Starting credits', h('div', {class: 'mbody'},
+      reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
+      h('p', {style: 'margin-top:0'}, h('b', {}, `PASDACS is reviewing ${o.name}. `),
+        `Its ${Number(p.credits).toLocaleString()} starting credits are added as soon as PASDACS approves, and you get an email. `
+        + 'Until then you can set up your brand and invite your colleagues.'),
+      h('p', {class: 'small muted'}, `For anything urgent, write to ${contact}.`),
+      h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'},
+        h('button', {class: 'btn primary', type: 'button', onclick: () => m.remove()}, 'OK'))));
+    return;
+  }
   if (o.pending_request) {                     // one request at a time: show it, and let it be withdrawn
     const p = o.pending_request, out = h('div', {role: 'status'});
     const wd = h('button', {class: 'btn', type: 'button'}, 'Withdraw it');
@@ -196,9 +213,9 @@ async function renderOrg() {
     billBox,
     h('div', {class: 'card'}, h('h3', {}, 'Credit requests'),
       (d.requests || []).length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['Asked', 'Who', 'Credits', 'Answer', ''], 2),
-        h('tbody', {}, d.requests.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, r.user_name || '—'),
+        h('tbody', {}, d.requests.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, isStart(r) ? 'Starting credits' : r.user_name || '—'),
           h('td', {class: 'n'}, Number(r.credits).toLocaleString()), h('td', {}, requestState(r)),
-          h('td', {class: 'n'}, r.status === 'pending' && (d.may_manage || r.user_id === (S.me || {}).id)
+          h('td', {class: 'n'}, r.status === 'pending' && !isStart(r) && (d.may_manage || r.user_id === (S.me || {}).id)
             ? h('button', {class: 'btn sm ghost', type: 'button', onclick: async () => {
                 try { await api(`/api/org/credit-request/${encodeURIComponent(r.id)}/withdraw`, {method: 'POST'}); await refreshOrg(true); renderOrg(); }
                 catch (e) { notify(e.message, 'err'); } }}, 'Withdraw') : null))))))
@@ -325,8 +342,9 @@ function renderSetup() {
     h('div', {class: 'card'}, h('h3', {}, `${o.name} is ready`),
       h('dl', {class: 'kv small'}, h('dt', {}, 'Owner'), h('dd', {}, `you (${(S.me || {}).email || ''})`),
         h('dt', {}, 'Who joins'), h('dd', {}, `everyone who signs in with an @${o.domain} address`),
-        h('dt', {}, 'Credits'), h('dd', {}, (o.credits ? `${credits(o.credits)} to start` : 'none yet: PASDACS approves every credit request (Request credits)')
-          + ` · ${costLine()}`))),
+        h('dt', {}, 'Credits'), h('dd', {}, (o.credits ? `${credits(o.credits)} to start`
+          : isStart(o.pending_request) ? `none yet: PASDACS is reviewing ${o.name} and adds ${credits(o.pending_request.credits)} to start when it approves (you get an email)`
+          : 'none yet: PASDACS approves every credit request (Request credits)') + ` · ${costLine()}`))),
     h('h2', {style: 'margin:22px 0 4px'}, 'Your brand'),
     h('div', {class: 'muted', style: 'margin-bottom:10px'}, 'Add your logo and a few words about your brand. Relay makes report palettes from them; pick one and every new dashboard uses it.'),
     brandBox,
@@ -383,7 +401,8 @@ async function renderOrgs() {
   const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('div', {class: 'eyebrow'}, 'Platform'), h('h1', {}, 'Organisations'),
-      h('div', {class: 'meta'}, `Every organisation on D2D Relay, each in its own workspace. ${d.start ? `Each starts with ${credits(d.start)}` : 'They start with no credits and get them when you approve a request'}; `
+      h('div', {class: 'meta'}, `Every organisation on D2D Relay, each in its own workspace. ${d.review ? `Each gets ${credits(d.start)} to start once you approve its sign-up (Requests)`
+        : d.start ? `Each starts with ${credits(d.start)}` : 'They start with no credits and get them when you approve a request'}; `
         + `${costLine(d.costs)}. Organisations use CSV files until you switch a connector on.`))),
     h('div', {class: 'card'}, h('div', {class: 'orgwrap'}, h('table', {class: 'utable'},
       th(['Organisation', 'Owner', 'Connectors', 'People', 'Dashboards', 'Credits used', 'Credits left', 'Last sign-in', ''], 3),
@@ -421,7 +440,8 @@ async function renderRequests() {
     const note = h('input', {type: 'text', placeholder: approve ? 'Optional, shown in their credit history: e.g. Invoice 2026-031 paid' : 'For example: please write to us about a plan first'});
     const err = h('div', {class: 'err-msg', role: 'alert'});
     const ok = h('button', {class: 'btn primary' + (approve ? '' : ' danger'), type: 'button'}, approve ? 'Approve and add the credits' : 'Decline');
-    const m = modal(`${approve ? 'Approve' : 'Decline'}: ${r.org_name} asks for ${Number(r.credits).toLocaleString()} credits`, h('div', {class: 'mbody'},
+    const m = modal(isStart(r) ? `${approve ? 'Approve' : 'Decline'}: ${r.org_name}, a new organisation (${Number(r.credits).toLocaleString()} starting credits)`
+      : `${approve ? 'Approve' : 'Decline'}: ${r.org_name} asks for ${Number(r.credits).toLocaleString()} credits`, h('div', {class: 'mbody'},
       h('p', {class: 'muted small', style: 'margin-top:0'}, `${r.user_name || ''} · ${r.email || ''} · ${when(r.created)}. ${r.org_name} has ${credits(r.org_credits)} now.`),
       r.message ? h('div', {class: 'note small', style: 'margin-top:0'}, r.message) : null,
       approve ? [h('label', {class: 'f'}, 'Credits to add'), n] : null,
@@ -441,7 +461,8 @@ async function renderRequests() {
       'Organisations get credits only when you approve a request. Approving adds them at once; the organisation is told either way.'),
       d.credits.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['Asked', 'Organisation', 'Who', 'Message', 'Credits', 'Answer', ''], 4),
         h('tbody', {}, d.credits.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, h('b', {}, r.org_name)),
-          h('td', {}, r.user_name || '', h('div', {class: 'small muted'}, r.email || '')), h('td', {class: 'small'}, r.message || '—'),
+          h('td', {}, r.user_name || '', h('div', {class: 'small muted'}, r.email || '')),
+          h('td', {class: 'small'}, isStart(r) ? [h('span', {class: 'tag'}, 'New organisation'), ' starting credits'] : r.message || '—'),
           h('td', {class: 'n'}, Number(r.credits || 0).toLocaleString()),
           h('td', {}, requestState(r), r.status === 'pending' && !r.emailed ? h('div', {class: 'small muted'}, 'not emailed') : null,
             r.decided_name && (r.status === 'approved' || r.status === 'declined') ? h('div', {class: 'small faint'}, 'by ' + r.decided_name) : null),

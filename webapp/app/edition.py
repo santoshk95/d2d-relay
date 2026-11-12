@@ -36,7 +36,12 @@ EXTRA_BLOCKED = ("/api/schedules", "/api/schedules-draft", "/api/schedules-measu
                  "/api/servicedesk", "/api/lineage", "/api/graph", "/api/intan", "/api/observe", "/api/migrate-bi", "/api/heal",
                  "/api/sdlc", "/api/start", "/api/team", "/api/m/", "/api/tenancy/tenants", "/api/email",
                  "/api/home", "/api/me/usage",          # AI costs and tokens are kept on the server only (orgs.py)
-                 "/api/me/github", "/api/me/channels", "/api/share/channel")   # no GitHub or Slack/Teams posting here
+                 "/api/me/github", "/api/me/channels", "/api/share/channel",   # no GitHub or Slack/Teams posting here
+                 # security audit (S9): the platform console's views across organisations (audit, usage, price book, people,
+                 # packs, access grants) are not the public site's; PASDACS works on the admin portal. A guest's switch and
+                 # return stay (/api/tenancy/me, /switch, /return).
+                 "/api/tenancy/audit", "/api/tenancy/usage", "/api/tenancy/usage.csv", "/api/tenancy/prices",
+                 "/api/tenancy/people", "/api/tenancy/packs", "/api/tenancy/access")
 # The Connections module page; Ask Relay (Ask D); a reviewer's answer on a dashboard (/api/reviews/<id>/<review>; only
 # the list of everyone's reviews, /api/reviews, stays off)
 ALLOWED_UNDER_BLOCKED = ("/api/m/connect", "/api/askd", "/api/reviews/")

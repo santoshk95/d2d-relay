@@ -11,8 +11,8 @@ Who may sign in (orgs.py):
   D2D_OTP_MS_CLIENT_ID       a public-client Entra app with delegated Mail.Send; the mailbox signs in once
                              (otp_mail.py says how). A client secret (D2D_OTP_MS_CLIENT_SECRET) also works, app-only.
 
-The code: 6 digits, valid 10 minutes, 5 tries, then it dies. One code a minute and 6 an hour per address, 20 an hour
-per network. Only a salted hash is stored (in the platform's schema, whatever workspace the person belongs to). A
+The code: 6 digits, valid 10 minutes, 5 tries, then it dies. One code a minute, 6 an hour and 20 a day per address, 20
+an hour per network. Only a salted hash is stored (in the platform's schema, whatever workspace the person belongs to). A
 session is made in the person's own workspace (their organisation's tenant), so the cookie carries it.
 
 The admin portal (portal.py, D2D_PORTAL=admin) uses the same codes for addresses at the admin domains (pasdacs.com)
@@ -48,6 +48,7 @@ TTL = 600
 TRIES = 5
 GAP = 60
 PER_HOUR = 6
+PER_DAY = 20                            # security audit (S13): at most 100 guesses a day at one address's codes
 PER_IP_HOUR = 20
 SIGNUP_TTL = 1800                       # after the code: time to name the new organisation
 SIGNUP_COOKIE = "d2d_signup"
@@ -148,6 +149,8 @@ def start(body: StartBody, request: Request):
             return _err(f"A code was sent less than a minute ago. Wait {int(GAP - (now - recent[0]['created'])) + 1} seconds.", 429)
         if len(recent) >= PER_HOUR:
             return _err("Too many codes this hour. Try again later.", 429)
+        if db.one("SELECT count(*) AS n FROM otp_codes WHERE email = ? AND created > ?", (email, now - 86400))["n"] >= PER_DAY:
+            return _err("Too many codes today for this address. Try again tomorrow, or write to info@pasdacs.com.", 429)
         if ip and db.one("SELECT count(*) AS n FROM otp_codes WHERE ip = ? AND created > ?", (ip, now - 3600))["n"] >= PER_IP_HOUR:
             return _err("Too many codes were asked for from this network this hour. Try again later.", 429)
         code = f"{secrets.randbelow(1_000_000):06d}"
@@ -244,7 +247,7 @@ def verify(body: VerifyBody, request: Request):
                (hashlib.sha256(token.encode()).hexdigest(), email, now, now + SIGNUP_TTL))
     domain = orgs.domain_of(email)
     r = JSONResponse({"ok": True, "organisation": {"email": email, "domain": domain, "suggested": orgs.suggested_name(domain),
-                                                   "person": orgs.name_from(email), "credits": orgs.START}})
+                                                   "person": orgs.name_from(email), **_start_credits()}})
     r.set_cookie(SIGNUP_COOKIE, token, max_age=SIGNUP_TTL, httponly=True, samesite="lax", secure=identity.SECURE_COOKIE,
                  path="/auth/otp/")
     return r
@@ -285,7 +288,13 @@ def signup_pending(request: Request):
         return {}                                    # nothing waiting (the usual case)
     domain = orgs.domain_of(s["email"])
     return {"email": s["email"], "domain": domain, "suggested": orgs.suggested_name(domain), "person": orgs.name_from(s["email"]),
-            "credits": orgs.START}
+            **_start_credits()}
+
+
+def _start_credits() -> dict:
+    """What the sign-up page says of a new organisation's credits: added at once (credits), or once PASDACS has
+    reviewed it (credits_review)."""
+    return {"credits": 0, "credits_review": orgs.START} if orgs.reviews_new() else {"credits": orgs.START, "credits_review": 0}
 
 
 @router.post("/auth/otp/organisation")
@@ -297,8 +306,9 @@ def create_organisation(body: OrgBody, request: Request):
     s = _signup(request)
     if not s:
         return _err("This step has expired. Sign in again to get a new code.", 401)
+    kind = "created"
     try:
-        tid, uid = orgs.create(body.name, s["email"], body.person)
+        tid, uid = orgs.create(body.name, s["email"], body.person, seen=signin_alerts.seen(request))
     except orgs.OrgError as e:
         if str(e) != "exists":
             return _err(str(e))
@@ -306,7 +316,7 @@ def create_organisation(body: OrgBody, request: Request):
             o = orgs.by_domain(orgs.domain_of(s["email"]))
         if not o:
             return _err("Your organisation could not be created. Try again in a minute.", 409)
-        tid, uid = o["tenant_id"], orgs.join(o["tenant_id"], s["email"])
+        tid, uid, kind = o["tenant_id"], orgs.join(o["tenant_id"], s["email"]), "joined"
     with db.use(db.PLATFORM):
         db.run("UPDATE otp_signup SET used = ? WHERE token_hash = ?", (time.time(), s["token_hash"]))
-    return _signed_in(tid, uid, request, "#/setup", "created")
+    return _signed_in(tid, uid, request, "#/setup" if kind == "created" else "#/d2d", kind)

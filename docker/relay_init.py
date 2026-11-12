@@ -371,7 +371,9 @@ def environments(env: dict) -> None:
         "CLAUDE_CONFIG_DIR": "/home/agent/.claude", "CODEX_HOME": "/home/agent/.codex",
         "GEMINI_CLI_SYSTEM_SETTINGS_PATH": "/etc/gemini-cli/settings.json", "AGY_SHARED_LOGIN": "/opt/agy-login",
         "DISABLE_AUTOUPDATER": "1", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1", "NO_UPDATE_NOTIFIER": "1",
-        "BASH_DEFAULT_TIMEOUT_MS": "300000", "BASH_MAX_TIMEOUT_MS": "600000"}
+        "BASH_DEFAULT_TIMEOUT_MS": "300000", "BASH_MAX_TIMEOUT_MS": "600000",
+        # no Python the AI engine starts imports from the folder it works in (genbi also runs with -P)
+        "PYTHONSAFEPATH": "1"}
     write_env("agent", agent, "agent")
     gateway = {k: v for k, v in env.items() if k.startswith("LITELLM_") or k in AGENT_PASS - {"AGENT_MODEL", "MODELS_FILE"}} | base | {
         "HOME": "/home/relay", "USER": "relay", "LOGNAME": "relay", "PATH": "/opt/relay/gateway/bin:/usr/local/bin:/usr/bin:/bin",

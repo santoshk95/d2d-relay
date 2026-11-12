@@ -129,10 +129,12 @@ COPY docker/launch.py /opt/relay/bin/launch
 COPY docker/watchdog.py /opt/relay/bin/watchdog
 COPY docker/gateway.sh /opt/relay/bin/gateway
 COPY docker/relay_ctl.py /opt/relay/bin/relay-ctl
+# genbi runs with python -P: it never imports from the folder the AI works in (a genbi_kit/ or json.py written there
+# would otherwise run as the toolkit, with the AI engine's rights; security audit 2026-11-11)
 RUN sed -i 's/\r$//' /opt/relay/bin/* /etc/relay/* \
  && chmod 755 /opt/relay/bin/* && chmod 644 /etc/relay/* \
  && ln -s /opt/relay/bin/relay-ctl /usr/local/bin/relay-ctl \
- && printf '#!/bin/sh\nexec /usr/local/bin/python -m genbi_kit.cli "$@"\n' > /usr/local/bin/genbi && chmod 755 /usr/local/bin/genbi \
+ && printf '#!/bin/sh\nexec /usr/local/bin/python -P -m genbi_kit.cli "$@"\n' > /usr/local/bin/genbi && chmod 755 /usr/local/bin/genbi \
  && mkdir -p /data /opt/genbi/library /home/agent/.claude /home/agent/.codex /opt/agy-login \
  && chown agent:agent /home/agent/.claude /home/agent/.codex && chown -R agent:agent /home/agent/.gemini \
  && chown relay:relay /opt/relay/gateway-app \

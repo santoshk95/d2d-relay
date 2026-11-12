@@ -32,7 +32,8 @@ COPY genbi_kit /opt/genbi/genbi_kit
 COPY custom_visuals /opt/genbi/visuals
 COPY agent/server.py agent/runners.py agent/probe_models.py agent/bash_guard.py /opt/genbi/
 COPY agent/managed-settings.json /etc/claude-code/managed-settings.json
-RUN printf '#!/bin/sh\nexec /opt/venv/bin/python -m genbi_kit.cli "$@"\n' > /usr/local/bin/genbi && chmod +x /usr/local/bin/genbi \
+# -P: never import from the folder the AI works in (a genbi_kit/ or json.py it wrote there would run as the toolkit)
+RUN printf '#!/bin/sh\nexec /opt/venv/bin/python -P -m genbi_kit.cli "$@"\n' > /usr/local/bin/genbi && chmod +x /usr/local/bin/genbi \
     && mkdir -p /home/node/.claude /data/projects /opt/genbi/library && chown -R node:node /home/node /data
 # node (uid 1000) also owns the Claude login in the shared claude-api-auth volume.
 USER node

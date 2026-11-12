@@ -3,7 +3,8 @@
 One email per sign-in, to D2D_SIGNIN_ALERTS_TO (default: the credits contact, info@pasdacs.com): who signed in, their
 organisation (and whether it was created just now, or they joined it just now), the site (public or admin portal),
 the network address and country Cloudflare saw, the browser, whether it is the person's first sign-in, the credits
-left, and how many sign-in codes that network asked for in the last hour. The email goes out in the background:
+left, and how many sign-in codes that network asked for in the last hour (a new organisation whose starting credits
+PASDACS reviews gets its review email instead, orgs.py, with the same and more). The email goes out in the background:
 a sign-in never waits for it and never fails because of it. Sign-ins need a code, and codes are rate limited per
 address and per network (otp.py), so the alerts are rate limited too. D2D_SIGNIN_ALERTS=0 turns them off.
 Without mail (a test install) the alert is printed to the log instead ("[signin-alert] ...").
@@ -28,16 +29,21 @@ KINDS = {"signed_in": "signed in", "joined": "joined the organisation (their fir
          "created": "created a new organisation", "admin": "signed in to the admin portal"}
 
 
+def seen(request: Request) -> dict:
+    """Where a request came from: the network address and country Cloudflare saw, the browser, the site, the time."""
+    return {"ip": (request.headers.get("cf-connecting-ip") or (request.client.host if request.client else ""))[:64],
+            "country": (request.headers.get("cf-ipcountry") or "")[:8],
+            "agent": (request.headers.get("user-agent") or "")[:240],
+            "site": "admin portal" if portal.ADMIN else "public site", "at": time.time()}
+
+
 def sign_in(tid: str, uid: str, kind: str, request: Request) -> None:
-    """Called once a session exists. Never raises; the email is sent from a background thread."""
-    if not ENABLED or not TO:
+    """Called once a session exists. Never raises; the email is sent from a background thread. A new organisation
+    whose starting credits PASDACS reviews gets no alert: its review email (orgs.py) says the same, and more."""
+    if not ENABLED or not TO or (kind == "created" and orgs.reviews_new()):
         return
     try:
-        seen = {"ip": (request.headers.get("cf-connecting-ip") or (request.client.host if request.client else ""))[:64],
-                "country": (request.headers.get("cf-ipcountry") or "")[:8],
-                "agent": (request.headers.get("user-agent") or "")[:240],
-                "site": "admin portal" if portal.ADMIN else "public site", "at": time.time()}
-        threading.Thread(target=_send, args=(tid, uid, kind, seen), daemon=True, name="signin-alert").start()
+        threading.Thread(target=_send, args=(tid, uid, kind, seen(request)), daemon=True, name="signin-alert").start()
     except Exception:  # noqa: BLE001 - an alert never stops a sign-in
         traceback.print_exc()
 

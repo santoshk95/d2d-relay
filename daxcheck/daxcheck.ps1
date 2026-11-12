@@ -180,6 +180,29 @@ function Invoke-Query($conn, $q) {
     return $r
 }
 
+# The app's check model is DAX only: every table a DATATABLE of the dashboard's data or a calculated table, no data
+# sources, no Power Query. Anything else is refused before the engine sees it, so a request that something else put in
+# the queue (it is a folder the containers share) cannot make this PC's engine open a file, a database or the web. The
+# engine gets the model as Power BI's own library read and checked it, written out again: what was checked is what
+# runs (security audit, 2026-11-11).
+function Get-CheckModel([string]$json) {
+    $opts = New-Object Microsoft.AnalysisServices.Tabular.DeserializeOptions
+    try { $db = [Microsoft.AnalysisServices.Tabular.JsonSerializer]::DeserializeDatabase($json, $opts, [Microsoft.AnalysisServices.CompatibilityMode]::PowerBI) }
+    catch { throw "the request's model cannot be read: $($_.Exception.Message)" }
+    if ($db.Name -ne $Database) { throw "the request's model is not a $Database database" }
+    $m = $db.Model
+    if ($m.DataSources.Count -gt 0) { throw "the request's model has data sources: refused" }
+    if ($m.Expressions.Count -gt 0) { throw "the request's model has Power Query expressions: refused" }
+    foreach ($t in $m.Tables) {
+        foreach ($p in $t.Partitions) {
+            if ($p.SourceType -ne [Microsoft.AnalysisServices.Tabular.PartitionSourceType]::Calculated) {
+                throw "table $($t.Name) reads data from somewhere ($($p.SourceType)): refused"
+            }
+        }
+    }
+    return [Microsoft.AnalysisServices.Tabular.JsonSerializer]::SerializeDatabase($db, (New-Object Microsoft.AnalysisServices.Tabular.SerializeOptions))
+}
+
 function Invoke-Check($file) {
     $id = $file.BaseName
     $modelPath = Join-Path $Requests "$id.model.json"
@@ -193,6 +216,7 @@ function Invoke-Check($file) {
         $req = [IO.File]::ReadAllText($file.FullName) | ConvertFrom-Json
         $model = [IO.File]::ReadAllText($modelPath).Trim()
         if (-not ($model.StartsWith("{") -and $model.Contains("`"$Database`""))) { throw "the request's model is not a $Database database" }
+        $model = Get-CheckModel $model
         Write-Host ("{0:HH:mm:ss} {1}: {2} queries" -f (Get-Date), $req.project, @($req.queries).Count)
         $engine = Start-Engine
         $srv = New-Object Microsoft.AnalysisServices.Tabular.Server
