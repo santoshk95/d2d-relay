@@ -388,7 +388,7 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
                          look: str = Form(""), brand: str = Form(""), palette: str = Form(""), dark: str = Form(""),
                          custom_visuals: str = Form("ask"), data_mode: str = Form("upload"), data_brief: str = Form(""),
                          data_size: str = Form("medium"), data_months: int = Form(12),
-                         connection_id: str = Form(""), tables: str = Form(""), visuals_mode: str = Form("relay"),
+                         connection_id: str = Form(""), tables: str = Form(""), visuals_mode: str = Form("builtin"),
                          use_brand: str = Form("1"),
                          files: list[UploadFile] = File(default=[]), images: list[UploadFile] = File(default=[])):
     prompt = prompt.strip()
@@ -396,8 +396,10 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
     custom_visuals = custom_visuals.strip().lower() or "ask"
     if custom_visuals not in POLICIES:
         raise HTTPException(400, "Custom visuals must be ask, auto or never.")
-    # called directly by other modules (Start), a parameter they leave out is FastAPI's Form() default, not a string
-    visuals_mode = (visuals_mode.strip().lower() if isinstance(visuals_mode, str) else "") or "relay"
+    # called directly by other modules (Start), a parameter they leave out is FastAPI's Form() default, not a string.
+    # A new dashboard uses Power BI's built-in visuals unless it asks for mixed or relay (the user, 2026-11-12); a
+    # dashboard from before the choice existed has no visuals_mode and stays relay (get_project, set_visuals_mode).
+    visuals_mode = (visuals_mode.strip().lower() if isinstance(visuals_mode, str) else "") or "builtin"
     if visuals_mode not in VISUALS_MODES:
         raise HTTPException(400, "Visuals must be relay, builtin or mixed.")
     if visuals_mode == "builtin":

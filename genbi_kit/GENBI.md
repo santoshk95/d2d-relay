@@ -382,13 +382,15 @@ Power BI's standard visuals - cards, KPI, gauge, columns, bars, lines, areas, co
 treemap, funnel, scatter, table, matrix, slicer, maps, decomposition tree, key influencers - with **every option of
 the Format pane** (validated against Power BI's own theme schema). Nothing is embedded in the report: they work in
 every tenant, including those that block custom visuals, and in exports, subscriptions, mobile and Copilot.
-`request.md` says which visuals the report uses (**Visuals: relay | builtin | mixed**):
+`request.md` says which visuals the report uses (**Visuals: builtin | mixed | relay**; a new dashboard is builtin
+unless its owner chose otherwise):
 
 - **builtin** - only Power BI's own visuals (`pbi.*`, plus the slicers, navigator, text boxes and `table` the app
   adds). `genbi validate` refuses any custom visual and names the built-in one to use. No `custom_visuals`.
 - **mixed** - built-in visuals first; a Relay / Atlas / custom visual only where no built-in visual does the job
   (sankey, calendar heatmap, dumbbell...). Say why in the plan.
-- **relay** (default) - the Atlas and Relay visuals as described above; built-in visuals where they fit best.
+- **relay** - the Atlas and Relay visuals as described above; built-in visuals where they fit best. Also what a
+  request.md without a Visuals line means (dashboards from before the choice existed).
 
 ```yaml
 - id: ov_trend

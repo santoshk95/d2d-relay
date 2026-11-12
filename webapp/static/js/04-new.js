@@ -73,15 +73,18 @@ function renderNew() {
   }).catch(() => houseBox.replaceChildren(''));
   const custom = h('select', {class: 'sel'}, [['ask', 'Ask me - Relay proposes them in the plan, I choose'],
     ['auto', 'Build them when they fit better than the available visuals'], ['never', 'Only use the available visuals']].map(([v, t]) => h('option', {value: v}, t)));
-  // Which visuals the report uses: Relay / Visual Atlas custom visuals, Power BI's own (built-in) visuals only, or both
-  const visualsSel = h('select', {class: 'sel', 'aria-label': 'Visuals'}, [['relay', 'Relay custom visuals'],
-    ['builtin', "Power BI's built-in visuals only"], ['mixed', 'Built-in first, custom where needed']]
+  // Which visuals the report uses, in the order offered (the user, 2026-11-12): Power BI's own (built-in) visuals only
+  // by default, then built-in first with a custom visual only where none fits, and last Relay / Visual Atlas custom visuals
+  const visualsSel = h('select', {class: 'sel', 'aria-label': 'Visuals'}, [['builtin', "Power BI's built-in visuals only"],
+    ['mixed', 'Built-in first, custom where needed'], ['relay', 'Relay custom visuals']]
     .map(([v, t]) => h('option', {value: v}, t)));
   const visualsHint = h('div', {class: 'hint'});
+  let customChoice = custom.value;          // Custom visuals as chosen, given back when built-in only is left
+  custom.onchange = () => { customChoice = custom.value; };
   const syncVisuals = () => {
     const builtin = visualsSel.value === 'builtin';
     custom.disabled = builtin;
-    if (builtin) custom.value = 'never';
+    custom.value = builtin ? 'never' : customChoice;
     visualsHint.textContent = {relay: 'Designed visuals in your colors (embedded in the report).',
       builtin: 'Every Format-pane option. Nothing embedded: works where custom visuals are blocked, in exports, subscriptions and mobile.',
       mixed: 'Standard Power BI visuals, plus a custom one where no built-in visual can show it.'}[visualsSel.value];

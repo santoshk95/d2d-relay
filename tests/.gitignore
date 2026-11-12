@@ -5,3 +5,4 @@ stack/.env.*
 stack/test-projects/
 stack/empty-app/
 stack/empty-static/
+stack/helpers.pids

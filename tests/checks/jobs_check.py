@@ -40,8 +40,28 @@ def logs(container: str, since: str = "10m") -> str:
 
 
 def jobs_left() -> list[str]:
-    r = subprocess.run(["docker", "ps", "-a", "--filter", "label=d2d-relay.job=1", "--format", "{{.Names}}"], capture_output=True, text=True)
-    return [x for x in r.stdout.split() if x]
+    """This stack's job containers: labelled with its web container (or, from a runner before that label, in its web
+    container's network). A live build running on the same PC at the same time is not counted."""
+    ids = subprocess.run(["docker", "ps", "-aq", "--filter", "label=d2d-relay.job=1"], capture_output=True, text=True).stdout.split()
+    if not ids:
+        return []
+    web_id = subprocess.run(["docker", "inspect", "-f", "{{.Id}}", c.WEB_C], capture_output=True, text=True).stdout.strip()
+    out = subprocess.run(["docker", "inspect", "-f", '{{.Name}}|{{index .Config.Labels "d2d-relay.web"}}|{{.HostConfig.NetworkMode}}', *ids],
+                         capture_output=True, text=True).stdout
+    mine = []
+    for line in out.splitlines():
+        name, web, net = (line.split("|") + ["", ""])[:3]
+        if web == c.WEB_C or (web in ("", "<no value>") and net == f"container:{web_id}"):
+            mine.append(name.lstrip("/"))
+    return mine
+
+
+def jobs_created(since: float) -> list[dict]:
+    """The labels of every job container created since then (Docker's events keep them after the container is gone)."""
+    r = subprocess.run(["docker", "events", "--since", str(int(since) - 5), "--until", str(int(time.time()) + 1), "--filter", "type=container",
+                        "--filter", "event=create", "--filter", "label=d2d-relay.job=1", "--format", "{{json .Actor.Attributes}}"],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+    return [json.loads(x) for x in r.stdout.splitlines() if x.strip().startswith("{")]
 
 
 # ---------------------------------------------------------------- a build goes through a job container
@@ -49,6 +69,7 @@ p = c.Person(f"jo.jobs@jobs{c.STAMP}.com")
 s, r = p.sign_in("Jobs Test", "Jo Jobs")
 check("setup: an organisation signs up", s == 200, (s, r))
 before = (p.get("/api/me")[1].get("org") or {}).get("credits")
+t_made = time.time()
 s, d = c.new_dashboard(p)
 pid = (d or {}).get("id")
 check("setup: a dashboard is made (its plan run starts)", s == 200 and pid, (s, str(d)[:150]))
@@ -67,6 +88,9 @@ check("jobs: the job container holds only that dashboard's folder and the Claude
       len([m for m in mounted if m.startswith("/data")]) == 1 and mounted[0].endswith("/" + pid) and "/home/agent/.claude" in mounted
       and all(m.startswith(("/data/projects/", "/home/agent/.claude", "/opt/genbi/library", "/opt/genbi/config")) for m in mounted), mounted)
 check("jobs: it was removed when the run ended", any("[runner] removed" in ln for ln in rl.splitlines()) and not jobs_left(), (jobs_left(), rl[-300:]))
+made = [a for a in jobs_created(t_made) if str(a.get("d2d-relay.cwd", "")).endswith("/" + str(pid))]
+check("jobs: the job container is labelled with this stack's web container (only this stack's runner sweeps it)",
+      bool(made) and all(a.get("d2d-relay.web") == c.WEB_C for a in made), made[-2:])
 acts = p.get(f"/api/projects/{pid}/activity")[1]
 texts = " ".join(str(e.get("text", "")) for e in acts) if isinstance(acts, list) else ""
 check("jobs: the run failed cleanly (no Claude sign-in on the test stack), saying why", st.get("status") == "error" and texts, texts[-300:])

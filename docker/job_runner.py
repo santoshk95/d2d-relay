@@ -137,7 +137,9 @@ async def run_job(request: Request):
     name = "d2d-relay-job-" + time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3)
     spec = {"Image": w["image"], "User": "agent", "WorkingDir": cwd, "Env": [f"{k}={v}" for k, v in env.items()],
             "Entrypoint": ["/usr/bin/tini", "--", "/usr/local/bin/python3", "-P", "/opt/relay/bin/job-run"],
-            "Cmd": ["/tmp/relay-prompt", *argv], "Labels": {"d2d-relay.job": "1", "d2d-relay.cwd": cwd},
+            "Cmd": ["/tmp/relay-prompt", *argv],
+            # d2d-relay.web: which stack's job it is (a test stack on the same PC has its own web container), for sweep()
+            "Labels": {"d2d-relay.job": "1", "d2d-relay.cwd": cwd, "d2d-relay.web": WEB},
             "HostConfig": {"Mounts": mounts, "NetworkMode": f"container:{w['id']}", "CapDrop": ["ALL"],
                            "SecurityOpt": ["no-new-privileges"], "AutoRemove": False, **LIMITS}}
     async with docker() as d:
@@ -193,12 +195,34 @@ async def run_job(request: Request):
 
 
 async def sweep() -> None:
-    """Job containers a crash or a restart left behind are removed at start."""
+    """Job containers a crash or a restart left behind are removed at start: this stack's only. Every job is labelled
+    with the web container it ran for (d2d-relay.web), and a test stack on the same PC has a web container of its own,
+    so starting one never stops the other's builds. A job from a runner before that label is this stack's when it runs
+    in this web container's network, or an orphan when that container is gone; anything else is left alone."""
     async with docker() as d:
         r = await d.get("/containers/json", params={"all": "true", "filters": json.dumps({"label": ["d2d-relay.job=1"]})})
-        for c in r.json() if r.status_code == 200 else []:
+        jobs = r.json() if r.status_code == 200 else []
+        if not jobs:
+            return
+        w = await d.get(f"/containers/{WEB}/json")
+        web_id = w.json().get("Id") if w.status_code == 200 else None
+        for c in jobs:
+            name = c["Names"][0].lstrip("/") if c.get("Names") else c["Id"][:12]
+            labels = c.get("Labels") or {}
+            if "d2d-relay.web" in labels:
+                mine = labels["d2d-relay.web"] == WEB
+            else:                                   # from before the label: whose network does it run in?
+                net = (c.get("HostConfig") or {}).get("NetworkMode") or ""
+                owner = net.split(":", 1)[1] if net.startswith("container:") else ""
+                mine = False
+                if owner:
+                    o = await d.get(f"/containers/{owner}/json")
+                    mine = o.status_code == 404 or (o.status_code == 200 and o.json().get("Id") == web_id)
+            if not mine:
+                print(f"[runner] left another stack's job alone: {name}", flush=True)
+                continue
             await d.delete(f"/containers/{c['Id']}", params={"force": "true"})
-            print(f"[runner] removed a job left from before: {c['Names'][0] if c.get('Names') else c['Id'][:12]}", flush=True)
+            print(f"[runner] removed a job left from before: {name}", flush=True)
 
 
 def main() -> None:

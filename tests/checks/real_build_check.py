@@ -19,8 +19,20 @@ seen: dict = {}
 
 
 def jobs() -> list[str]:
-    r = subprocess.run(["docker", "ps", "--filter", "label=d2d-relay.job=1", "--format", "{{.Names}}"], capture_output=True, text=True)
-    return [x for x in r.stdout.split() if x]
+    """This stack's running job containers only (labelled with its web container, or before that label in its web
+    container's network): a live build on the same PC is never looked into."""
+    ids = subprocess.run(["docker", "ps", "-q", "--filter", "label=d2d-relay.job=1"], capture_output=True, text=True).stdout.split()
+    if not ids:
+        return []
+    web_id = subprocess.run(["docker", "inspect", "-f", "{{.Id}}", c.WEB_C], capture_output=True, text=True).stdout.strip()
+    out = subprocess.run(["docker", "inspect", "-f", '{{.Name}}|{{index .Config.Labels "d2d-relay.web"}}|{{.HostConfig.NetworkMode}}', *ids],
+                         capture_output=True, text=True).stdout
+    mine = []
+    for line in out.splitlines():
+        name, web, net = (line.split("|") + ["", ""])[:3]
+        if web == c.WEB_C or (web in ("", "<no value>") and net == f"container:{web_id}"):
+            mine.append(name.lstrip("/"))
+    return mine
 
 
 def look(name: str) -> None:

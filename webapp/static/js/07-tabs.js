@@ -248,7 +248,7 @@ function creditsCard(st) {
         h('td', {class: 'n delta' + (r.delta > 0 ? ' plus' : '')}, (r.delta > 0 ? '+' : '') + r.delta)))))
       : h('div', {class: 'muted small'}, 'No credits used yet.'));
 }
-const VISUALS_LABEL = {relay: 'Relay custom visuals', builtin: "Power BI's built-in visuals only", mixed: 'Built-in first, custom where needed'};
+const VISUALS_LABEL = {builtin: "Power BI's built-in visuals only", mixed: 'Built-in first, custom where needed', relay: 'Relay custom visuals'};
 // Which visuals the next versions use; editors can change it (the next plan, build or change follows it).
 function visualsSetting(st) {
   const mode = st.visuals_mode || 'relay';
@@ -269,7 +269,7 @@ function detailsTab(st) {
     h('div', {},
       requestCard(st),
       h('div', {class: 'card'}, h('h3', {}, 'Settings'), h('dl', {class: 'kv'},
-        h('dt', {}, 'AI model'), h('dd', {}, 'Relay Model'),
+        h('dt', {}, 'AI model'), h('dd', {}, 'Relay Model powered by Claude'),
         h('dt', {}, 'Visuals'), h('dd', {}, visualsSetting(st)),
         h('dt', {}, 'Custom visuals'), h('dd', {}, {ask: 'Ask me in the plan', auto: 'Build when they fit better', never: 'Only available visuals'}[st.custom_visuals] || st.custom_visuals),
         h('dt', {}, 'Visual style'), h('dd', {}, [style.look ? `look ${style.look}` : null, style.brand_name ? `brand palette ${style.brand_name}` : style.accent ? `brand ${style.accent} (${style.palette})` : null, style.dark ? 'dark' : null].filter(Boolean).join(', ') || 'Relay decides'))),

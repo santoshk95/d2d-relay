@@ -70,7 +70,7 @@ async function renderBranding(opts = {}) {      // opts.into: draw inside that b
   };
   genBtn.onclick = async () => {
     genBtn.disabled = true;
-    status.replaceChildren(h('span', {class: 'spin', style: 'display:inline-block;vertical-align:middle;margin-right:8px'}), 'The Relay Model is designing 3 palettes from your logo and description...');
+    status.replaceChildren(h('span', {class: 'spin', style: 'display:inline-block;vertical-align:middle;margin-right:8px'}), 'Relay Model powered by Claude is designing 3 palettes from your logo and description...');
     try { b = await api('/api/branding/generate', {json: {description: desc.value}}); status.textContent = ''; drawVariants(); }
     catch (e) { status.replaceChildren(h('span', {class: 'err-msg'}, e.message)); }
     genBtn.disabled = false;
@@ -79,7 +79,7 @@ async function renderBranding(opts = {}) {      // opts.into: draw inside that b
   drawLogo(); drawVariants();
   page.append(...[
     opts.into ? null : h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('h1', {}, 'Branding'),
-      h('div', {class: 'meta'}, 'Your logo and a few words about your brand. The Relay Model turns them into report palettes; pick one and every new dashboard uses it.'))),
+      h('div', {class: 'meta'}, 'Your logo and a few words about your brand. Relay Model powered by Claude turns them into report palettes; pick one and every new dashboard uses it.'))),
     h('div', {class: 'card'}, h('h3', {}, '1 - Your logo'), file, logoBox),
     h('div', {class: 'card'}, h('h3', {}, '2 - Describe your brand'), h('div', {class: 'muted small', style: 'margin-bottom:6px'}, 'Who you are, the feeling you want, colours to use or avoid, light or dark reports. Optional if you added a logo.'),
       desc, h('div', {class: 'row', style: 'margin-top:10px;gap:10px'}, genBtn, status)),

@@ -3,11 +3,11 @@
  "models": [
   {
    "id": "relay",
-   "label": "Relay Model",
+   "label": "Relay Model powered by Claude",
    "group": "Relay",
    "family": "relay",
    "target": "claude-opus-5-5",
-   "note": "Relay's own model, tuned for building and changing reports."
+   "note": "Relay's own model, powered by Claude and tuned for building and changing reports."
   }
  ]
 }
