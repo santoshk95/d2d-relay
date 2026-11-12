@@ -904,11 +904,26 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   PASDACS's review of their starting credits (item 27), and PASDACS gets an email for every sign-in (item 21).
 - **Never run on the test stacks:** a real Razorpay checkout, real email delivery, and the Power BI file maker end to
   end (unchanged). A full dashboard build with real Claude was run for item 31 (a plan and a build in job containers).
-- **The release test suite is not in this repo.** The checks every release ran (about 700: d2d_checks, gov, pay, sec,
-  item29-31, jobs, accounts and the rest) and the test stack's compose file lived only in a Claude session's temporary
-  scratchpad. Since 2026-11-12 an exact copy is in `C:\Users\santosh.k\Downloads\d2d-relay-test-suite` (its
-  README.txt says what is where). Still open: move it into `tests/` here (its paths, its stand-in test keys, one full
-  run from the repo).
+- **The job runner's start-up sweep is not limited to its own stack** (found while moving the release tests into
+  `tests/`, 2026-11-12). When it starts, `docker/job_runner.py` (`sweep()`) removes every container labelled
+  `d2d-relay.job=1` on the PC, and live's jobs and a test stack's carry the same label, so starting a test stack (or
+  its `upgrade_check.py`) during a live dashboard build would stop that build. `tests/stack/stack.sh` refuses to start
+  while any job container exists and warns if its runner removed one. The fix: label each job with the web container
+  that asked for it and sweep only those.
+- **The release test suite is in `tests/`** since 2026-11-12 (committed here; not pushed, and nothing in the image
+  changes): the suites, the test stack's compose file and `stack.sh`, the stand-in Razorpay and the audit's route list.
+  `tests/README.md` says how to start the stack, run the suites in both review modes and tear down, and the real-Claude
+  rule. Run from the repository against live's image `d2d-relay:54f6ed7`: 685 checks with the starting-credit review
+  on and 668 with it off, all passing; also `upgrade_check.py` from `bdf370e` (23), `proto_sandbox_check.py` (23),
+  `access_check.py` (10) and `guard_cases.py` (64 cases, 0 wrong). The route list was taken again from 54f6ed7:
+  `/api/me/delete`, `/api/org/delete` (item 31) and `/api/org/unblock` (item 32) were missing, so `sec_check.py` now
+  tries 114 routes without a session (111 before). Left open: `real_build_check.py` (real Claude) and the real
+  Razorpay test-mode checks have not been run from the repository yet. `C:\Users\santosh.k\Downloads\d2d-relay-test-suite`
+  is no longer needed by the suite; it still holds what was not carried over: one-off scripts that edited the app,
+  the guide, the work log and the suites for items 22-25 (their changes are in git), read-only scripts for live's
+  data, Power BI Desktop and older .pbix helpers, the item 21 lockdown probes, the audit's proof kit (overlay image,
+  sandbox-escape proofs, the DAX checker's test models), the older split-test compose files, and past runs' logs and
+  screenshots. Keeping or deleting it is the user's call.
 
 ### Decided (nothing to do)
 

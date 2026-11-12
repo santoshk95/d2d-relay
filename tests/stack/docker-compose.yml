@@ -1,0 +1,124 @@
+# D2D Relay's test stack, never the live one: the layout of the repository's docker-compose.yml with its own names,
+# volumes and ports (127.0.0.1:8103 public site, 8104 admin portal, 8105 stand-in Razorpay), no mail (sign-in codes
+# are printed to the web and admin logs), no Claude sign-in unless TEST_CLAUDE_VOLUME names one, and a stand-in
+# Razorpay API (../checks/fake_razorpay.py, started inside the web container on port 9911 by stack.sh).
+# Start it with stack.sh (../README.md). stack.sh writes the settings to .env in this folder (git-ignored), so later
+# `docker compose -p d2d-relay-test ...` commands run IN THIS FOLDER see the same ones, `down -v` included. Never run
+# them from the repository root: the docker-compose.yml there is live's, and its volumes are live's.
+# Keys that look live (rzp_live_...) so the live path runs (selling switched on by an admin); the API is the stand-in.
+# Optional: CODE_APP=<repo>/webapp/app CODE_APP_AT=/srv/app (and CODE_STATIC/CODE_STATIC_AT for webapp/static) mount
+# the working tree's code over the image's, read-only; stack.sh blanks them so the image itself is tested.
+name: d2d-relay-test
+
+x-app: &app
+  image: ${TEST_IMAGE:?set TEST_IMAGE to the image to test, e.g. d2d-relay:54f6ed7}
+  security_opt:
+    - no-new-privileges:true
+
+x-signin: &signin
+  RELAY_AUTH: otp
+  RELAY_OTP_EMAIL: info@pasdacs.com
+  RELAY_ADMIN_EMAIL: info@pasdacs.com
+  RELAY_OTP_DEV_LOG: "1"
+  RELAY_TEST_LOGIN: "1"
+  RELAY_RAZORPAY_KEY_ID: ${TEST_RZP_KEY_ID:-rzp_live_D2DTESTSTACK01}
+  RELAY_RAZORPAY_KEY_SECRET: ${TEST_RZP_SECRET:?}
+  RELAY_RAZORPAY_WEBHOOK_SECRET: ${TEST_RZP_WEBHOOK:?}
+  RELAY_RAZORPAY_API: ${TEST_RZP_API:-http://d2d-relay-test-web:9911/v1}
+  RELAY_PAYMENTS_TEST_FOR: ${TEST_PAYMENTS_FOR:-platform}
+  RELAY_CREDITS_START_REVIEW: ${TEST_START_REVIEW:-1}
+
+services:
+  db:
+    <<: *app
+    container_name: d2d-relay-test-db
+    environment:
+      RELAY_ROLE: database
+      RELAY_DB_PASSWORD: ${TEST_DB_PASSWORD:?}
+    volumes:
+      - db-data:/data
+    healthcheck:
+      test: ["CMD", "/opt/relay/bin/relay-ctl", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 180s
+      start_interval: 3s
+
+  web:
+    <<: *app
+    container_name: d2d-relay-test-web
+    environment:
+      <<: *signin
+      RELAY_ROLE: web
+      RELAY_DATABASE_URL: postgresql://relay_app:${TEST_DB_PASSWORD}@d2d-relay-test-db:5432/relay
+      RELAY_PUBLIC_URL: http://127.0.0.1:8103
+    volumes:
+      - web-data:/data
+      - ./test-projects:/data/projects           # as live: the projects in a folder of their own (item 31's job runner)
+      - test-claude:/home/agent/.claude          # an empty sign-in, or the live one for a real-Claude test
+      - test-runner-sock:/run/relay-runner
+      - ${CODE_APP:-./empty-app}:${CODE_APP_AT:-/opt/unused-app}:ro
+      - ${CODE_STATIC:-./empty-static}:${CODE_STATIC_AT:-/opt/unused-static}:ro
+    ports:
+      - "127.0.0.1:8103:8000"
+      - "127.0.0.1:8105:9911"
+    cap_add:                 # as the live web container (security audit S6)
+      - NET_ADMIN
+    depends_on:
+      db:
+        condition: service_healthy
+
+  admin:
+    <<: *app
+    container_name: d2d-relay-test-admin
+    environment:
+      <<: *signin
+      RELAY_ROLE: admin
+      RELAY_DATABASE_URL: postgresql://relay_app:${TEST_DB_PASSWORD}@d2d-relay-test-db:5432/relay
+      RELAY_PUBLIC_URL: http://127.0.0.1:8104
+    volumes:
+      - admin-data:/data
+      - ${CODE_APP:-./empty-app}:${CODE_APP_AT:-/opt/unused-app}:ro
+      - ${CODE_STATIC:-./empty-static}:${CODE_STATIC_AT:-/opt/unused-static}:ro
+    ports:
+      - "127.0.0.1:8104:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Careful: when it starts, the job runner removes EVERY container labelled d2d-relay.job=1 on this PC, live's
+  # included (docker/job_runner.py, sweep()). stack.sh refuses to start the stack while such a container exists.
+  runner:
+    image: ${TEST_IMAGE:?set TEST_IMAGE to the image to test, e.g. d2d-relay:54f6ed7}
+    container_name: d2d-relay-test-runner
+    healthcheck:                   # the runner answers on its Unix socket (not the image's relay-ctl check)
+      test: ["CMD", "test", "-S", "/run/relay-runner/runner.sock"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    entrypoint: ["/usr/bin/tini", "--", "/usr/local/bin/python3", "-P", "/opt/relay/bin/job-runner"]
+    user: root
+    network_mode: none
+    environment:
+      D2D_JOB_WEB_CONTAINER: d2d-relay-test-web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - test-runner-sock:/run/relay-runner
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  # A real-Claude test mounts live's sign-in: TEST_CLAUDE_VOLUME=claude-api-auth ALWAYS with TEST_CLAUDE_EXTERNAL=true
+  # (external, so `down -v` never deletes it). Never name claude-api-auth with external false.
+  test-claude:
+    name: ${TEST_CLAUDE_VOLUME:-d2d-relay-test-claude}
+    external: ${TEST_CLAUDE_EXTERNAL:-false}
+  test-runner-sock:
+    name: d2d-relay-test-runner-sock
+  db-data:
+    name: d2d-relay-test-db-data
+  web-data:
+    name: d2d-relay-test-web-data
+  admin-data:
+    name: d2d-relay-test-admin-data

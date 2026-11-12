@@ -1,0 +1,7 @@
+# Written by the test runs, never committed
+out/
+stack/.env
+stack/.env.*
+stack/test-projects/
+stack/empty-app/
+stack/empty-static/
