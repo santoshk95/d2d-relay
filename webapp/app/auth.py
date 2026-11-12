@@ -38,7 +38,8 @@ LIBRARY = re.compile(r"^/api/library/([^/]+)$")
 PUBLISH = {"/approve", "/pbix"}             # D2D Relay: making the Power BI file is publishing
 SHARE = {"/shares"}
 OPEN_PATHS = ("/login.html", "/privacy.html", "/terms.html", "/refunds.html", "/contact.html", "/auth/", "/css/login.css", "/css/fonts.css", "/fonts/", "/relay-mark.svg", "/d2d-mark.svg", "/favicon.ico", "/powered-by.svg", "/icons/", "/manifest.webmanifest",
-              "/favicon", "/metrics", "/healthz", "/portal.js")   # reachable without signing in (/metrics checks its own token)
+              "/favicon", "/metrics", "/healthz", "/portal.js",
+              "/robots.txt", "/og/")   # reachable without signing in (/metrics checks its own token); /og/ holds the share image
 ADMIN_AUTH = ("/auth/otp/", "/auth/providers", "/auth/logout", "/auth/brand")   # D2D Relay: the admin portal's sign-in paths
 SAFE = {"GET", "HEAD", "OPTIONS"}
 
@@ -288,6 +289,10 @@ def _refused_page(text: str) -> HTMLResponse:
 
 async def middleware(request: Request, call_next):
     path = request.url.path
+    if any(seg in (".", "..") for seg in path.split("/")):
+        # a ./ or ../ segment (sent raw or as %2e): browsers never send one, and through an open folder such as /fonts/
+        # it reached the signed-in app's files without a sign-in (/fonts/../js/36-org.js); the static files resolve it
+        return _deny(404, "Not found.")
     if edition.page_off(path):                          # security audit S15: RELAY's pages and callbacks
         return _deny(404, "That is not part of D2D Relay.")
     if portal.ADMIN and path not in ("/healthz",):

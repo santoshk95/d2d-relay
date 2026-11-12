@@ -10,6 +10,10 @@ The mark is a D cut into five rows of data. The middle row is the decision, in t
 - `d2d-favicon-mark.svg`: three heavier rows for 16 to 47 px (browser tabs, app icons), as `favicon-mark.svg` is for PASDACS.
 - `d2d-mark.png`: 512×512 mark on a transparent ground, for app icons, structured data and slides.
 - `d2d-lockup.png`: 720×192 transparent lockup, for email signatures and documents.
+- `d2d-share.html`: the source of D2D Relay's 1200x630 share image (`webapp/static/og/d2d-relay.png`, what LinkedIn,
+  WhatsApp, Facebook and X show for a d2d.pasdacs.com link): the sign-in page's dark band, the dark lockup, its
+  headline and line, and the mint bar. To redraw it, open the file in Chromium at 1200 x 630 and take a screenshot
+  (or with Playwright, as item 38 did), then replace the PNG.
 
 ## Construction
 

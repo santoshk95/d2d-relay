@@ -1,0 +1,5 @@
+# D2D Relay (https://d2d.pasdacs.com). The sign-in page and the legal pages are public; everything else needs a
+# sign-in and redirects to the sign-in page. Link previews and search may read the public pages.
+User-agent: *
+Disallow: /api/
+Disallow: /auth/

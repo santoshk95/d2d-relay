@@ -424,6 +424,12 @@ it. The source files and rules are in `branding/pasdacs/assets/D2D` (README ther
 - The sign-in page shows the lockup on its dark band (`login.html`, same SVG), with the same platform line.
 - Browser tabs and installed apps: `d2d-mark.svg`, `favicon.ico` (16, 32 and 48 px), `icons/d2d-180|192|512.png`,
   and `manifest.webmanifest` (D2D Relay, short name D2D). The SVG favicon is open without signing in (`auth.OPEN_PATHS`).
+- Shared links (item 38): the sign-in page has a description and Open Graph and X tags, so LinkedIn, WhatsApp,
+  Facebook, X and Slack show "D2D Relay: your data to a Power BI dashboard" with the share image `og/d2d-relay.png`
+  (1200 x 630; source `branding/pasdacs/assets/D2D/d2d-share.html`). The tags name https://d2d.pasdacs.com, and
+  `og:url` is `/login.html` itself, because `/` redirects there. `robots.txt` keeps crawlers off `/api/` and `/auth/`.
+  Both are open without signing in. Any path with a `./` or `../` segment gets 404 before the sign-in check: through
+  an open folder (`/fonts/../js/...`) it used to reach the signed-in app's files.
 - Partner (white-label) workspaces are unchanged: their own logo, and "Powered by PASDACS Relay" with the PASDACS mark.
 - The old RELAY files (`relay-mark.svg`, `relay-logo*.svg`, `icons/relay-*.png`) stay for apps installed before.
 
