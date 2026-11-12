@@ -141,7 +141,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tests/stack/helpers.ps1 stop
 - `visuals_e2e_check.py`: one dashboard in each Visuals mode, in the order the form offers them (Power BI's built-in
   visuals, built-in first with custom where needed, Relay custom visuals), each planned and built by real Claude,
   approved, published through Power BI's engine (the DAX check) and made into a .pbix; then what each report is made
-  of, in its definition and inside the .pbix (built-in: no custom visual embedded; Relay: its custom visuals embedded).
+  of, in its definition and inside the .pbix (built-in: no custom visual embedded; Relay: its custom visuals embedded);
+  then every page of each report's prototype in Chromium: no label past its visual's edge, no Relay data label reading
+  $0M (item 35), no name on top of a value in a Relay Gauges visual, and every visual titled by a measure showing its
+  sentence (item 36).
 - `real_build_check.py`: one real build, with each job container looked at from outside while it runs (only this
   stack's job containers, never live's): its mounts, network, rights, and no other organisation's folder.
 

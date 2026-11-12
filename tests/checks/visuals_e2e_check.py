@@ -12,6 +12,7 @@ Afterwards delete the test runs' transcripts from the sign-in volume (the comman
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -69,6 +70,30 @@ def visual_types(pid: str, v: int) -> list[str]:
         return ["<unreadable: " + (r.stderr or r.stdout)[-200:] + ">"]
 
 
+def measure_titles(pid: str, v: int) -> dict:
+    """The visuals the AI titled with a measure, {"<page> / <visual id>": <measure name>} (item 36)."""
+    folder = in_web(f"find /data/projects -maxdepth 3 -type d -name {pid} | head -1")
+    code = ("import json, re, sys\nsys.path[:0] = ['/srv', '/opt/genbi']\nfrom genbi_kit import definition\n"
+            f"raw = definition.load('{folder}/versions/v{v}/definition.yaml')\nout = {{}}\n"
+            "for pg in raw.get('pages') or []:\n"
+            "    for x in [x for row in pg.get('rows') or [] for x in row.get('visuals') or []] + list(pg.get('visuals') or []):\n"
+            "        m = re.match(r'^\\[([^\\]]+)\\]$', str(x.get('title') or '').strip())\n"
+            "        if m:\n"
+            "            out[str(pg.get('name')) + ' / ' + str(x.get('id'))] = m.group(1)\n"
+            "print(json.dumps(out))\n")
+    r = subprocess.run(["docker", "exec", "-i", "-u", "relay", c.WEB_C, "/usr/local/bin/python3", "-P", "-"], input=code,
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
+    try:
+        return json.loads(r.stdout.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        return {"<unreadable>": (r.stderr or r.stdout)[-200:]}
+
+
+def stand_in(measure: str) -> str:
+    """What the prototype shows for a title measure without a "title" column (genbi_kit/prototype.py, _readable)."""
+    return re.sub(r"(?i)^\s*title\b[\s_:-]*", "", measure).strip() or measure
+
+
 def builtin_type(t: str) -> bool:
     return str(t).startswith("pbi.") or t in NATIVE
 
@@ -77,7 +102,7 @@ LABELS = r"""
 import json, re, sys
 from playwright.sync_api import sync_playwright
 cookie, pid = sys.argv[1], sys.argv[2]
-out = {"pages": 0, "overflow": [], "zeros": []}
+out = {"pages": 0, "overflow": [], "zeros": [], "touching": [], "gauges": 0, "titles": []}
 ZERO = re.compile(r"^[+-]?[^0-9\s]{0,3}0*(\.0+)?\s?(K|M|bn|B|T)$")          # "$0M", "+$M": a value shown as nothing
 with sync_playwright() as pw:
     b = pw.chromium.launch(args=["--no-sandbox"])
@@ -91,16 +116,27 @@ with sync_playwright() as pw:
         page.evaluate(f"current = {i}; draw();")
         page.wait_for_timeout(1500)
         found = page.evaluate('''() => {
-          const vs = R.pages[current].visuals, boxes = [...document.querySelectorAll('#page > .v')], over = [], zeros = [];
+          const name = R.pages[current].name, vs = R.pages[current].visuals, boxes = [...document.querySelectorAll('#page > .v')];
+          const over = [], zeros = [], touching = [], titles = []; let gauges = 0;
           boxes.forEach((box, k) => { const v = vs[k]; if (!v || !(v.stock || v.atlas)) return;
             const r = box.getBoundingClientRect();
             box.querySelectorAll('svg text').forEach(t => { const q = t.getBoundingClientRect(); if (!q.width) return;
               const o = Math.max(q.right - r.right, r.left - q.left, q.bottom - r.bottom, r.top - q.top);
-              if (o > 1) over.push([R.pages[current].name, v.id, t.textContent, Math.round(o)]); });
-            if (v.atlas) box.querySelectorAll('text.lbl').forEach(t => zeros.push([R.pages[current].name, v.id, t.textContent])); });
-          return {over, zeros}; }''')
+              if (o > 1) over.push([name, v.id, t.textContent, Math.round(o)]); });
+            if (v.atlas) box.querySelectorAll('text.lbl').forEach(t => zeros.push([name, v.id, t.textContent]));
+            titles.push([name + ' / ' + v.id, v.header ? v.header.title : null]);
+            if (v.type === 'atlasGauges') {          // a KPI's, card's or gauge's names and values: never one on another
+              gauges += 1;
+              const ts = [...box.querySelectorAll('text.ttl')].map(t => [t.textContent, t.getBoundingClientRect()]).filter(([s, q]) => s.trim() && q.width);
+              ts.forEach(([s, p], a) => ts.slice(a + 1).forEach(([s2, q]) => {
+                const dx = Math.min(p.right, q.right) - Math.max(p.left, q.left), dy = Math.min(p.bottom, q.bottom) - Math.max(p.top, q.top);
+                if (dx > 2 && dy > 2) touching.push([name, v.id, s, s2]); })); } });
+          return {over, zeros, touching, titles, gauges}; }''')
         out["overflow"] += found["over"]
         out["zeros"] += [z for z in found["zeros"] if ZERO.match(z[2].strip())]
+        out["touching"] += found["touching"]
+        out["titles"] += found["titles"]
+        out["gauges"] += found["gauges"]
         out["pages"] += 1
     b.close()
 print(json.dumps(out))
@@ -108,7 +144,8 @@ print(json.dumps(out))
 
 
 def labels_of(p, pid: str) -> dict:
-    """Every page of the dashboard's prototype in Chromium: labels past their visual's edge, Atlas labels shown as nothing."""
+    """Every page of the dashboard's prototype in Chromium: labels past their visual's edge, Atlas labels shown as nothing,
+    Relay Gauges names and values on top of each other, and the title each visual shows."""
     cookie = next(k.value for k in p.jar if k.name == "d2d_session")
     r = subprocess.run(["docker", "exec", "-i", c.WEB_C, "python3", "-", cookie, pid], input=LABELS, capture_output=True, text=True,
                        encoding="utf-8", errors="replace", timeout=300)
@@ -258,6 +295,13 @@ for mode, run in runs.items():
               bool(lab.get("pages")) and not lab.get("overflow"), lab.get("overflow", lab)[:8] if isinstance(lab.get("overflow", lab), list) else lab)
         check(f"{mode}: no data label of a Relay visual reads $0M or a unit without a number",
               bool(lab.get("pages")) and not lab.get("zeros"), lab.get("zeros"))
+        check(f"{mode}: no name runs into a value in a Relay Gauges visual ({lab.get('gauges', 0)} in the report)",
+              bool(lab.get("pages")) and not lab.get("touching"), lab.get("touching"))
+        shown, measured = dict(lab.get("titles") or []), measure_titles(pid, run["v"])
+        titled = {k: m for k, m in measured.items() if k in shown}
+        wrong = {k: shown[k] for k, m in titled.items() if shown[k] in (None, "", m, f"[{m}]", stand_in(m))}
+        check(f"{mode}: every visual titled by a measure shows its sentence, not the measure's name ({len(titled)} such visuals)",
+              bool(lab.get("pages")) and "<unreadable>" not in measured and not wrong, {"wrong": wrong, "titled": titled, "read": measured})
 
 print("\nmode     minutes (plan/build/published)  visuals  built-in  custom types  embedded in the .pbix")
 for mode, steps, n, nb, cu, emb in summary:

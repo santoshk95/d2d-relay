@@ -893,6 +893,40 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       prototype SQL, the app's prototype shows the measure's name ("Title Revenue Trend"; the .pbix shows the
       sentence).
 
+36. **KPI names clear of their values; measure titles in the prototype** (the user, 2026-11-12: "can you fix and deploy
+    and publish all you can"; what item 35's end-to-end run showed next). Code `53fb6ad`, **live since 19:20 IST** the
+    same day.
+    - **Relay Gauges' KPI tile** under a title and subtitle (a low tile, as the AI lays them out) printed the measure's
+      name top left and the value centred on the same line: "Revenue Growth %+11.3%". Now, where the two would meet,
+      the value moves right of the name when the tile has room (the usual case), else under it while it stays 14 px or
+      more, else the name is shortened. Relay Gauges 1.0.7.0, rebuilt offline with the toolchain pinned in the image,
+      GUID unchanged; mock-host cases 18 and 19, whose checks fail on the old code (`visual-atlas/docs/HISTORY.md`
+      section 19).
+    - **A visual titled by a measure** needs its sentence in its prototype SQL's "title" column (the agent's manual).
+      Without it the app's prototype showed the measure's name ("Title Revenue Trend"; the .pbix shows the sentence).
+      Now `genbi prototype` and `genbi validate` report it to the agent like its other SQL problems, so a fix round adds
+      the column, and until then the prototype shows a readable stand-in ("Revenue Trend"). The manual states the rule
+      for Power BI's own visuals and Relay's alike.
+    - **Tests** on `d2d-relay:53fb6ad`: every suite, 737 checks with the starting-credit review on and 720 off, all
+      passing, with the new `item36_check.py` (10: four KPI tiles laid out like the AI's, about 280 px each, two charts
+      titled by a measure, the version shipped; against `e05f035` it fails on the overlaps, the titles and the
+      version). Upgrade from `e05f035`: 23 of 23. End to end with real Claude, one report per Visuals mode to the .pbix:
+      41 of 41, now also checking every page of each report in Chromium for a Relay Gauges name on top of its value and
+      for a visual titled by a measure that does not show its sentence (both caught on `e05f035`'s prototype, neither
+      on `53fb6ad`'s). The Relay report's 12 KPI tiles kept name and value apart ("Revenue Growth", then "+11.3%");
+      the 52 visuals titled by a measure in the three reports all had their sentence from the first build, so the new
+      report to the agent was not needed.
+    - **Afterwards:** the test stack, its helpers and their data folder removed; the test runs' transcripts deleted
+      from `claude-api-auth`. Live was not touched.
+    - **Deployed at 19:20 IST**: live idle (no job container, the AI engine not busy, no dashboard); deploy folder
+      fast-forwarded to `53fb6ad` (no compose, `pbix\`, `daxcheck\` or `config\` change); `d2d-relay:53fb6ad` tagged
+      latest; web, admin and the job runner restarted. Checked on live: healthy on `53fb6ad`; healthz, sign-in page
+      and admin portal 200; Relay Gauges 1.0.7.0, the title rule and the manual's line served; the runner probe job
+      labelled and removed; no errors. `d2d-relay:e05f035` kept for going back.
+    - **Seen in that run, next (item 37):** the Relay Hierarchy sunburst writes labels on slices too thin for them:
+      in the Relay report the labels of Clothing's two outer slices (2.5% and 2.4%) overlap each other, as do the
+      inner labels of Clothing (4.9%) and Accessories (3.7%), and they run over their slices' edges.
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -932,13 +966,14 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 35's deploy. **Live:** web, admin and the job runner run `d2d-relay:e05f035`
-(= latest, since 18:24 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
-info@pasdacs.com. **GitHub**, this folder and the deploy folder are all on this log entry (items 34 and 35 and their
+Updated 2026-11-12, after item 36's deploy. **Live:** web, admin and the job runner run `d2d-relay:53fb6ad`
+(= latest, since 19:20 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
+info@pasdacs.com. **GitHub**, this folder and the deploy folder are all on this log entry (items 34 to 36 and their
 logs pushed after their deploys; every commit scanned for the live `.env` and `tunnel.env` values and key patterns:
-none). **Going back** to item 34 (`d2d-relay:aa4531e`, kept): in the deploy folder `git reset --keep 520e88e`,
-`docker tag d2d-relay:aa4531e d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; to item 33
-(`d2d-relay:54f6ed7`, kept) the same with `2cd493e` (it takes `config/house-models.json` back too). No older release
+none). **Going back** to item 35 (`d2d-relay:e05f035`, kept): in the deploy folder `git reset --keep 8bbfd7e`,
+`docker tag d2d-relay:e05f035 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; to item 34
+(`d2d-relay:aa4531e`, kept) the same with `520e88e`; to item 33 (`d2d-relay:54f6ed7`, kept) the same with `2cd493e`
+(it takes `config/house-models.json` back too). No older release
 image is kept on this PC (item 33): any other version is a commit on
 GitHub (in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`), then `docker
 compose up -d --no-deps web admin runner` (only `web admin` for a version before item 31); going back before item 31
