@@ -760,8 +760,8 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 ## Still open
 
 Updated 2026-11-12, after item 30. **Live:** web and admin run `d2d-relay:d6be664` (= latest); the database container
-runs `d2d-relay:8689305`'s image. **GitHub** is at f1755c2 (the Ask Relay rename and its note, pushed by the other session);
-item 30 (d6be664) and its log are committed here and in the deploy folder, not pushed yet. **Going back:** `d2d-relay:a84d7c9`, `72b71a1`, `e2be1d2`, `442a396`, `c8e615f` and
+runs `d2d-relay:8689305`'s image. **GitHub** has every commit: item 30 and its log were pushed on 2026-11-12 (the user's "Yes,
+push"), after a scan for the live keys and tokens (none), on top of the other session's Ask Relay rename. **Going back:** `d2d-relay:a84d7c9`, `72b71a1`, `e2be1d2`, `442a396`, `c8e615f` and
 `8f39265` stay tagged (`docker tag <image> d2d-relay:latest`, then `docker compose up -d --no-deps web admin`); any
 other version is a commit on GitHub (in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose
 build web`).
