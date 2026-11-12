@@ -672,8 +672,12 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     - Tests (`docs/security-privacy-audit-2026-11-11.md`, "Item 29 tests"): every suite on fresh test stacks from the
       release candidate, with the starting-credit review off and on, all passing (544 and 561 checks), two new suites
       for the tour and Migration D2D (34 and 28, one of them in Chromium), the report builder 11 of 11, and an upgrade
-      from today's live image on the same database, 23 of 23. Committed as a84d7c9; image `d2d-relay:a84d7c9` built.
-      Not deployed yet (see "Still open").
+      from today's live image on the same database, 23 of 23. Committed as a84d7c9.
+    **Live since 2026-11-12, ~10:46 IST** (the user's "Yes, deploy"): web and admin run `d2d-relay:a84d7c9` (= latest;
+    `72b71a1` kept for going back). Checked on live: both addresses answer through Cloudflare (not cached there), the
+    container's 43 pages and scripts have no long dashes, curly quotes or arrows, the tour and Migration D2D scripts
+    are loaded, the new routes refuse anonymous requests and the admin portal does not answer them, no errors in either
+    log, both PC helpers alive.
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -714,14 +718,11 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-- **Item 29 is ready to go live** (plain characters, the first-time tour, Migration D2D): image `d2d-relay:a84d7c9`,
-  tested (item 29). It needs no `.env` change, no database step and no PC helper restart (the Power BI file maker and
-  the DAX checker are unchanged). With the user's go-ahead, when no dashboard is running
-  (`docker exec d2d-relay-web curl -s http://127.0.0.1:8090/health`): in the deploy folder `git fetch
-  <work folder> main` and `git merge --ff-only FETCH_HEAD`, then `docker tag d2d-relay:a84d7c9 d2d-relay:latest` and
-  `docker compose up -d --no-deps web admin`. Going back: `docker tag d2d-relay:72b71a1 d2d-relay:latest` and the
-  same `up`. People who started before 2026-11-12 do not get the tour on their own; Take the tour (organisation
-  menu) shows it.
+- **Item 29 is live** (2026-11-12, ~10:46 IST: plain characters, the first-time tour, Migration D2D): web and admin
+  run `d2d-relay:a84d7c9` (= latest). Going back: `docker tag d2d-relay:72b71a1 d2d-relay:latest`, then
+  `docker compose up -d --no-deps web admin`. People who started before 2026-11-12 do not get the tour on their own;
+  Take the tour (the organisation's name in the top bar) shows it. Migration D2D requests arrive at info@pasdacs.com
+  and on the admin portal's Requests page; PASDACS replies by email.
 - **The two PC helpers do not start by themselves yet (one-time, for the user).** Put shortcuts to
   `daxcheck\start-daxcheck.cmd` and `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC
   restarts"); Claude Code may not add them. Until then, after a restart of the PC someone signs in and starts both
