@@ -241,8 +241,10 @@ Mailinator ...) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTR
   decision of 2026-11-12; `governance.delete_person`): their name, email address, sign-ins, sessions, Ask Relay
   conversations, notifications, tokens, connections (signed in as them) and schedules go, and the logs and accounting
   records keep no name or address of theirs. Their work stays with the organisation: dashboards, saved visuals and
-  pages pass to the main owner, and a dashboard says it was made by a former member. Their address is free again: it
-  can sign up again, or an owner can add it back, as a new person (everyone at the domain can still join it). The
+  pages pass to the main owner, and a dashboard says it was made by a former member. **The address goes on the
+  organisation's blocked list** (item 32: everyone at the domain would otherwise join again): signing in with it is
+  refused ("An owner of ... removed this address"), until an owner unblocks it (People > Blocked) or adds the person
+  back, as a new person. Deleting your own account, or leaving, blocks nothing. The
   main owner (PASDACS's contact and the one who does the first-time setup) cannot be removed or made a member; they
   hand the main ownership to someone else first (Transfer ownership), staying an owner or not.
 - **Delete my account** (Organisation > Your data): anyone but the main owner deletes their own account the same way,

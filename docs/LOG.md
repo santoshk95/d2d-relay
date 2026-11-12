@@ -762,6 +762,16 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       any log. Live had no dashboards and no queued jobs at the restart. Way back without going back a version:
       `RELAY_JOB_CONTAINERS=off` in `.env`, then `docker compose up -d --no-deps web`.
 
+32. **A blocked list, so people an owner removes cannot rejoin** (the user, 2026-11-12: "Yes, add it", to the question
+    after item 31: everyone at an organisation's domain joins it, so someone removed could sign in again as a new member).
+    Removing someone (item 31) now also puts their address on the organisation's blocked list (its own `meta` table,
+    `blocked:<address>`): both ways of joining refuse it ("An owner of ... removed this address. Ask one of its owners
+    to add you back.", 403) until an owner unblocks it (Organisation > People > Blocked, `POST /api/org/unblock`) or adds
+    the person back (which lifts the block; they come back as a new person). Leaving, or Delete my account, blocks
+    nothing. Owners see the list in `/api/org` (`blocked`). `orgs.py` (is_blocked, block, unblock, blocked_list),
+    `otp.py`, `js/36-org.js`, the privacy notice (the address is kept on the list until unblocked), the guide.
+    - **Tests:** every suite on fresh test stacks from the release candidate, with the starting-credit review on and off, 680 and 663 checks, all passing; accounts_check.py now 40 (a removed address refused with the reason, listed under Blocked for owners, nobody else at the domain affected, unblocking needs an owner and works once, an unblocked or added-back address joins as a new person, Delete my account blocks nothing); sec_check.py expects 403 again for a removed person.
+
 Test data in the live install: none since the fresh start (item 18).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -869,9 +879,7 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   transcripts, is still shared by the jobs. A long-lived token (`claude setup-token`, the user's, once) would let each
   job run without the shared sign-in.
 - **S6, the rest:** the web app's own connections are not limited: the user's decision of 2026-11-12, to review later.
-- **A deleted person can come back:** everyone at the organisation's email domain joins it, so someone removed whose
-  mailbox still works can sign in again as a new member (the old switch-off kept them out). If that matters, a list of
-  blocked addresses per organisation is the next step (the user's call).
+- **A removed person cannot come back on their own** (item 32): their address is blocked until an owner unblocks it.
 - **Abuse:** Turnstile on "Send code" (S7, S13): the user chose not now (2026-11-12). New organisations wait for
   PASDACS's review of their starting credits (item 27), and PASDACS gets an email for every sign-in (item 21).
 - **Never run on the test stacks:** a real Razorpay checkout, real email delivery, and the Power BI file maker end to

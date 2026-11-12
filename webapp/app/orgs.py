@@ -302,6 +302,34 @@ def _review_mail(rid: str, tid: str, name: str, domain: str, person: str, email:
         traceback.print_exc()
 
 
+# Item 32 (the user, 2026-11-12): everyone at an organisation's domain joins it, so an address an owner removed is kept
+# on the organisation's blocked list (its meta table: blocked:<address>) until an owner unblocks it or adds it back.
+# Deleting your own account does not block you.
+def is_blocked(tid: str, email: str) -> bool:
+    with db.use(tid):
+        return db.meta(f"blocked:{(email or '').strip().lower()}") is not None
+
+
+def block(email: str, by: str) -> None:
+    """In the organisation's own workspace (the request's)."""
+    db.set_meta(f"blocked:{(email or '').strip().lower()}", json.dumps({"when": time.time(), "by": by}))
+
+
+def unblock(email: str) -> bool:
+    return bool(db.run("DELETE FROM meta WHERE key = ?", (f"blocked:{(email or '').strip().lower()}",)))
+
+
+def blocked_list() -> list[dict]:
+    out = []
+    for r in db.q("SELECT key, value FROM meta WHERE key LIKE 'blocked:%' ORDER BY key"):
+        try:
+            v = json.loads(r["value"] or "{}")
+        except ValueError:
+            v = {}
+        out.append({"email": r["key"][len("blocked:"):], "when": v.get("when")})
+    return out
+
+
 def join(tid: str, email: str) -> str:
     """A new person from an organisation's domain: a BI Dev in its Default team; the owner is told. Returns their id."""
     email = (email or "").strip().lower()
@@ -581,12 +609,13 @@ def get_org():
         p["owner"], p["primary"] = p["org_role"] == "admin", p["id"] == o["owner_id"]
     people = [p for p in everyone if p["active"]]
     removed = [p for p in everyone if not p["active"] and not str(p["email"]).endswith("@deleted.invalid")] if _may_manage(u, o) else []
+    blocked = blocked_list() if _may_manage(u, o) else []
     dashboards = db.one("SELECT count(*) AS n FROM projects")["n"]
     rows = ledger(o["tenant_id"])
     can_open = auth.access_map(u, list({r["project_id"] for r in rows if r["project_id"]}))   # a private dashboard is named, not linked
     for r in rows:
         r["project_open"] = bool(r["project_id"]) and r["project_id"] in can_open
-    return {**me_info(u), "created": o["created"], "people": people, "removed": removed, "dashboards": dashboards, "ledger": rows,
+    return {**me_info(u), "created": o["created"], "people": people, "removed": removed, "blocked": blocked, "dashboards": dashboards, "ledger": rows,
             "may_manage": _may_manage(u, o), "requests": _requests_of(o["tenant_id"])}
 
 
@@ -675,6 +704,8 @@ def add_person(body: PersonAdd):
     old = db.one("SELECT * FROM users WHERE lower(email) = ? AND home_tenant IS NULL", (email,))
     if old and old["active"]:
         raise HTTPException(409, f"{old['name']} is already in {o['name']}.")
+    if unblock(email):                                          # item 32: an owner adding them back lifts the block
+        db.audit("org.person_unblocked", None, {"by_adding": True}, u["id"])
     now = time.time()
     if old:                                                     # someone an owner removed earlier: back in
         uid, name = old["id"], old["name"]
@@ -727,8 +758,24 @@ def remove_person(uid: str):
     if p["id"] == o["owner_id"]:
         raise HTTPException(409, f"{p['name']} is the main owner and cannot be removed. Hand the main ownership to someone else first.")
     governance.delete_person(uid, u["id"])
-    if uid == u["id"]:
+    if uid == u["id"]:                                          # leaving: no block
         return {"signed_out": True}
+    block(p["email"], u["id"])                                  # item 32: they cannot rejoin until an owner unblocks them
+    db.audit("org.person_blocked", None, {}, u["id"])
+    return get_org()
+
+
+class Unblock(BaseModel):
+    email: str = ""
+
+
+@router.post("/api/org/unblock")
+def unblock_address(body: Unblock):
+    """An owner lifts the block on an address (item 32): it can join the organisation again, as a new person."""
+    u, o = _must_owner()
+    if not unblock(body.email):
+        raise HTTPException(404, "That address is not blocked.")
+    db.audit("org.person_unblocked", None, {}, u["id"])
     return get_org()
 
 

@@ -289,7 +289,8 @@ function peopleCard(d, th) {
     if (await confirmBox(self ? `Leave ${d.name} and delete your account?` : `Remove ${p.name}?`,
       (self ? 'Your account is deleted at once: your name, email address, sign-ins and Ask Relay conversations. '
         : `${p.name}'s account is deleted at once: their name, email address, sign-ins and Ask Relay conversations. `)
-      + `The dashboards ${self ? 'you' : 'they'} made stay with ${d.name}, held by the main owner and marked as made by a former member. This cannot be undone.`,
+      + `The dashboards ${self ? 'you' : 'they'} made stay with ${d.name}, held by the main owner and marked as made by a former member. `
+      + (self ? 'This cannot be undone.' : `This cannot be undone, and ${p.email} cannot join ${d.name} again unless an owner unblocks it or adds them back.`),
       self ? 'Leave and delete' : 'Remove and delete'))
       act(() => api(`/api/org/people/${encodeURIComponent(p.id)}`, {method: 'DELETE'}), self ? null : `${p.name} removed`);
   }}, p.id === me ? 'Leave' : 'Remove') : null;
@@ -300,6 +301,12 @@ function peopleCard(d, th) {
       h('tbody', {}, d.people.map(p => h('tr', {}, h('td', {}, p.name + (p.id === me ? ' (you)' : '')), h('td', {}, p.email), h('td', {}, roleSel(p)),
         h('td', {class: 'n'}, when(p.created)), h('td', {class: 'n'}, p.last_login ? ago(p.last_login) : h('span', {class: 'muted'}, 'not yet')),
         h('td', {class: 'n'}, remove(p))))))),
+    (d.blocked || []).length ? h('details', {class: 'more', style: 'margin-top:10px'}, h('summary', {}, `Blocked (${d.blocked.length})`),
+      h('div', {class: 'small muted', style: 'margin:6px 0'}, `Addresses an owner removed: they cannot join ${d.name} again until you unblock them or add them back.`),
+      h('div', {class: 'stack', style: 'gap:6px'}, d.blocked.map(b => h('div', {class: 'row', style: 'gap:8px;flex-wrap:wrap'},
+        h('span', {}, h('b', {}, b.email), h('span', {class: 'small faint'}, b.when ? ` - removed ${when(b.when)}` : '')), h('span', {class: 'spacer'}),
+        h('button', {class: 'btn sm', type: 'button', onclick: () => act(() => api('/api/org/unblock', {json: {email: b.email}}), `${b.email} can join again`)}, 'Unblock')))))
+      : null,
     (d.removed || []).length ? h('details', {class: 'more', style: 'margin-top:10px'}, h('summary', {}, `Removed (${d.removed.length})`),
       h('div', {class: 'stack', style: 'gap:6px;margin-top:8px'}, d.removed.map(p => h('div', {class: 'row', style: 'gap:8px;flex-wrap:wrap'},
         h('span', {}, h('b', {}, p.name), ` - ${p.email}`, h('span', {class: 'small faint'}, ` - removed ${when(p.deactivated)}`)), h('span', {class: 'spacer'}),

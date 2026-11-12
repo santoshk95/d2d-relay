@@ -238,6 +238,8 @@ def verify(body: VerifyBody, request: Request):
     if o:                                            # a colleague created the organisation: join it
         if not auth.tenant_row(o["tenant_id"]):
             return _err("Your organisation's account has been closed. Write to info@pasdacs.com.", 403)
+        if orgs.is_blocked(o["tenant_id"], email):   # item 32: an owner removed this address
+            return _err(f"An owner of {o['name']} removed this address. Ask one of its owners to add you back.", 403)
         uid = orgs.join(o["tenant_id"], email)
         return _signed_in(o["tenant_id"], uid, request, body.next or "#/d2d", "joined")
     # the first person from this domain: they name the organisation next (POST /auth/otp/organisation)
@@ -316,6 +318,8 @@ def create_organisation(body: OrgBody, request: Request):
             o = orgs.by_domain(orgs.domain_of(s["email"]))
         if not o:
             return _err("Your organisation could not be created. Try again in a minute.", 409)
+        if orgs.is_blocked(o["tenant_id"], s["email"]):
+            return _err(f"An owner of {o['name']} removed this address. Ask one of its owners to add you back.", 403)
         tid, uid, kind = o["tenant_id"], orgs.join(o["tenant_id"], s["email"]), "joined"
     with db.use(db.PLATFORM):
         db.run("UPDATE otp_signup SET used = ? WHERE token_hash = ?", (time.time(), s["token_hash"]))
