@@ -72,7 +72,13 @@ Two helpers run on Windows next to them, because Power BI only runs there. Publi
 
 A new organisation gets 50 starting credits once PASDACS has reviewed and approved it (PASDACS is emailed about every
 new organisation). A new dashboard uses 25, a change 10, and Ask Relay 10 for up to 5 questions in a conversation.
-More credits come from PASDACS, which approves every request, or are bought online.
+More credits come from PASDACS, which approves every request, or are bought online once PASDACS switches selling on
+(off on the live site until Razorpay activates the account).
+
+Someone new gets a short first-time tour: the brand, light or dark, the basics. **Migration D2D** moves dashboards
+from one BI tool to another (Cognos, Qlik, Looker, Tableau, Power BI and more); organisations ask PASDACS for it in
+the app. Everything D2D Relay shows people is written in plain keyboard characters (`docs/d2d-relay.md`, "Text people
+read").
 
 Internal names (`genbi`, `genbi_kit`, and the `D2D_*` settings the code reads) are kept from RELAY; `.env` uses
 `RELAY_*` names, which are copied to them.

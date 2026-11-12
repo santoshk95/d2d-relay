@@ -5,11 +5,15 @@ This covers the live site (image `d2d-relay:442a396`, the one running) and the w
 GST invoices, not yet live). Fixes for the most serious problems are in the work folder, tested, **not deployed and
 not committed**.
 
+**Status on 2026-11-12:** every fix marked fixed below is live (with work log items 25-27 at 09:21 IST; the site runs
+`d2d-relay:a84d7c9` since 10:46 IST), committed and pushed to GitHub. What is still open is listed in the work log
+(`docs/LOG.md`, "Still open") and in the table below.
+
 ## The short answer
 
-- **Three ways for the dashboard AI to run code of its own were found, and fixed in the work folder.** Each one
+- **Three ways for the dashboard AI to run code of its own were found, and fixed (live since 2026-11-12).** Each one
   let a person who signs up (free, with any business email) reach every other organisation's uploaded data and the
-  Claude sign-in. They were proven on a throwaway copy of the live image. They must go live before the public launch.
+  Claude sign-in. They were proven on a throwaway copy of the live image.
 - **Four things for the user to decide or do before launch:** move the AI off the personal Claude plan (P1); publish
   terms, a refund and cancellation policy and a data processing agreement (P2); encrypt the PC's disk and keep backups
   somewhere else (P3); have the privacy notice reviewed for the countries you will sell in (P4).
@@ -34,21 +38,21 @@ not committed**.
 
 | # | Severity | Finding | Status |
 |---|---|---|---|
-| S1 | Critical | A custom visual's `caps.js` (written by the AI) ran in Node with the AI engine's rights | Fixed in the work folder |
-| S2 | Critical | A Python file the AI writes in its folder ran as the `genbi` toolkit | Fixed in the work folder |
-| S3 | Critical | A visual's style (Less `@plugin`) and imports (webpack loader syntax, files outside the visual) ran code or read files during the build | Fixed in the work folder |
+| S1 | Critical | A custom visual's `caps.js` (written by the AI) ran in Node with the AI engine's rights | Fixed, live |
+| S2 | Critical | A Python file the AI writes in its folder ran as the `genbi` toolkit | Fixed, live |
+| S3 | Critical | A visual's style (Less `@plugin`) and imports (webpack loader syntax, files outside the visual) ran code or read files during the build | Fixed, live |
 | S4 | High | The AI engine's Linux user can read and write every organisation's folders and holds the Claude login; its API takes any folder, without a key | Open: architecture |
-| S5 | High | The DAX checker on the PC loaded any model dropped in its queue (data sources included) | Fixed in the work folder; the helper needs a restart |
+| S5 | High | The DAX checker on the PC loaded any model dropped in its queue (data sources included) | Fixed, live (the helper was restarted on 2026-11-12) |
 | S6 | High | Nothing limits where the containers connect on the internet | Open |
-| S7 | Medium | Free starting credits can be collected many times over with subdomains | Addressed in the work folder: starting credits wait for PASDACS's review (work log item 27) |
+| S7 | Medium | Free starting credits can be collected many times over with subdomains | Addressed, live: starting credits wait for PASDACS's review (work log item 27) |
 | S8 | Medium | The first person from a domain owns the organisation and can open every colleague's dashboard | Now in the privacy notice; product decision open |
-| S9 | Medium | PASDACS owners get the platform console's cross-organisation views on the public site | Fixed in the work folder |
+| S9 | Medium | PASDACS owners get the platform console's cross-organisation views on the public site | Fixed, live |
 | S10 | Medium | The admin portal checks Cloudflare Access only for requests that come through Cloudflare | Open |
-| S11 | Medium | Starlette 0.41.3 has two known denial-of-service bugs | One mitigated in the work folder; upgrade open |
-| S12 | Low | No security headers (framing, sniffing, HSTS) | Fixed in the work folder |
-| S13 | Low | Sign-in codes: 30 guesses an hour per address, no daily cap | Fixed in the work folder (20 codes a day) |
-| S14 | Low | `/api/health` names the real AI models to everyone signed in | Fixed in the work folder |
-| S15 | Low | 129 leftover and current routes are reachable; several belong to RELAY, not D2D Relay | Open |
+| S11 | Medium | Starlette 0.41.3 has two known denial-of-service bugs | One mitigated (live); upgrade open |
+| S12 | Low | No security headers (framing, sniffing, HSTS) | Fixed, live |
+| S13 | Low | Sign-in codes: 30 guesses an hour per address, no daily cap | Fixed, live (20 codes a day) |
+| S14 | Low | `/api/health` names the real AI models to everyone signed in | Fixed, live |
+| S15 | Low | 124 leftover and current routes are reachable (129 before S9); several belong to RELAY, not D2D Relay | Open |
 | S16 | Low | Build supply chain: floating dev dependencies, a CLI checked against its own manifest | Open |
 | S17 | Low | A warehouse sign-in started by one person can be finished in another person's browser | Open |
 | P1 | High | Customers' data goes through a personal Claude plan | Open: the user's decision (in `LOG.md`) |
@@ -233,7 +237,7 @@ If they are to stay private, keep only `ok` and `busy` for people who are not PA
 ### S15 Low - reachable routes from RELAY (open)
 
 The reachable routes check their own permissions, but several are RELAY's, not D2D Relay's: `/api/me/ai` (bring your own AI key), `/api/workbench/*`, `/api/validate/*`, `/api/workspace*`,
-`/api/tenancy/prices`, `/api/registry/{id}/interest`, `/auth/github/callback`, `/auth/microsoft/callback`,
+`/api/registry/{id}/interest`, `/auth/github/callback`, `/auth/microsoft/callback`,
 `/auth/observe/hook/{id}`, `/gallery`. Recommended: the public site answers an allowlist, as the admin portal does
 (`portal.API`), instead of a blocklist.
 
@@ -349,7 +353,7 @@ missing:
 
 ## What changed in the work folder
 
-Not deployed, not committed.
+Committed as be64b37 and live since 2026-11-12 (with work log items 25-27).
 
 | File | Change |
 |---|---|
@@ -464,6 +468,8 @@ dots.
 
 ## To put it live
 
+Done on 2026-11-12 (09:21 IST, image `e2be1d2`; the DAX checker restarted at ~09:24 IST). The steps, as they were:
+
 1. Make sure no dashboard is running, then build and tag the image from the work folder as for earlier items
    (`RELAY_COMMIT=<sha> docker compose build web`, with the live `RELAY_AGY_IMAGE`), keeping `442a396` tagged for
    going back.
@@ -475,7 +481,8 @@ dots.
 
 ## Suggested order before the public launch
 
-1. Deploy these fixes (S1-S3, S5, S9, S11 mitigation, S12-S14, the notice, the starting-credit review).
+1. ~~Deploy these fixes (S1-S3, S5, S9, S11 mitigation, S12-S14, the notice, the starting-credit review).~~ Done:
+   live since 2026-11-12.
 2. The AI on an Anthropic API key (P1).
 3. Terms, refund and cancellation, contact, DPA; the lawyer's review of the notice (P2, P4).
 4. BitLocker, an encrypted backup off the PC, a dedicated account or machine (P3).

@@ -718,87 +718,98 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-- **Item 29 is live** (2026-11-12, ~10:46 IST: plain characters, the first-time tour, Migration D2D): web and admin
-  run `d2d-relay:a84d7c9` (= latest). Going back: `docker tag d2d-relay:72b71a1 d2d-relay:latest`, then
-  `docker compose up -d --no-deps web admin`. People who started before 2026-11-12 do not get the tour on their own;
-  Take the tour (the organisation's name in the top bar) shows it. Migration D2D requests arrive at info@pasdacs.com
-  and on the admin portal's Requests page; PASDACS replies by email.
-- **The two PC helpers do not start by themselves yet (one-time, for the user).** Put shortcuts to
-  `daxcheck\start-daxcheck.cmd` and `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC
-  restarts"); Claude Code may not add them. Until then, after a restart of the PC someone signs in and starts both
-  by hand; the watchdog warns PASDACS after 10 minutes without either.
-- **Going back, if ever needed.** The code: every version is a commit on GitHub; build it in the deploy folder
-  (`git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`), then `docker compose up -d --no-deps web
-  admin`. The data before the fresh start: `data\backups\relay-db-20261111-064453.dump` (no dashboards are left
-  from then but the sample below). Since item 22 the nightly sweep deletes hand-made dumps after 30 days: this one
-  and the three others of 10-11 November go around 10-11 December; move any that must stay out of `data\backups`.
-- **Items 25, 26 and 27 are live** (2026-11-12, 09:21 IST, after the user's "Yes, deploy"): web and admin run
-  `d2d-relay:e2be1d2` (= latest; commits be64b37 and e2be1d2 on top of item 25's, not pushed: GitHub is still at
-  b314076). `d2d-relay:442a396` (items 23 and 24), `c8e615f` and `8f39265` stay tagged for going back
-  (`docker tag <image> d2d-relay:latest`, then `docker compose up -d --no-deps web admin`); the database container
-  still runs `d2d-relay:8689305`'s image. Checked on live: the security headers through Cloudflare, the privacy
-  notice's new section, `genbi` with `-P` and the AI engine's `PYTHONSAFEPATH`, the new database columns (credit
-  requests' purpose, payments' and organisations' billing and invoice columns), no errors in the log. Both PC helpers
-  were started again at ~09:24 IST (the DAX checker now runs the new `daxcheck.ps1`).
-- **The PC restarted at 02:38 IST on 2026-11-12** (Windows, overnight) and **the live site was down until ~09:17
-  IST**: Docker Desktop starts only when someone signs in to Windows, and the PC helpers do not start by themselves.
-  For a public launch: stop overnight restarts (Windows Update active hours, or restart only by hand), and let Docker
-  start without a sign-in or move D2D Relay to a server (see the audit, P3).
-- **GST 18% is not set yet** (item 25's deploy step): the auto mode refused Claude's direct write to the live payment
-  settings. The user sets it on the admin portal (http://127.0.0.1:8102 -> Payments: GST 18, added on top), or allows
-  Claude to. Until then rupee prices have no GST added (test mode only).
-- **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
-  hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
-  Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
-- **Buying credits online is off on live** (since 2026-11-12, the user: "from the live site remove buy credits for now
-  as its in test, allow only request credits, once razorpay is activated we can allow production to buy credits"):
-  the Razorpay test keys are parked as comments in the live `.env` (with a note there), so payments are "off" and
-  everyone, PASDACS included, sees Request credits only; the webhook secret stays, so the webhook still answers.
-  Going live, once Razorpay activates the account: (1) the live keys (rzp_live_...) into the live `.env` in place of
-  the parked test keys; (2) a live-mode webhook in the Razorpay Dashboard, URL
-  https://d2d.pasdacs.com/api/payments/webhook, events payment.captured, order.paid, payment.failed and
-  refund.processed, its secret as `RELAY_RAZORPAY_WEBHOOK_SECRET`; (3) restart web and admin; (4) on the admin portal,
-  Payments: PASDACS's invoice details and GST 18% (added), then Sell credits online on (live keys cannot sell before
-  the invoice details are complete). Refunds: none (item 25); any made by hand on Razorpay are recorded.
-- **GST invoices (item 25) are live** (2026-11-12, with items 26 and 27). Still needed from the user: PASDACS's legal name, registered
-  address, state, PIN and GSTIN; the SAC code (the accountant's; the setting suggests 998314); the LUT's ARN if one is
-  filed for 2026-27 (else dollar sales carry IGST, included in the price). They go on the admin portal (Payments -> Tax
-  invoices), or the user sends them and they are set at the deploy. Live keys cannot sell until they are complete.
-  **GST decided (the user, 2026-11-11: "₹100 + 18% GST"):** rupee prices have 18% GST added on top; at the deploy the
-  live settings get GST 18, not included (25 credits ₹2,500 + ₹450 GST = ₹2,950; dollar prices abroad unchanged).
-- **Dollar prices (item 24) are live** (since 2026-11-11 ~20:13 IST): $1 a credit outside India, ₹100 in India.
-  **The Razorpay account takes Indian cards only** (seen in test mode): until the user switches on international
-  payments (Razorpay Dashboard -> Account & Settings -> International payments; Razorpay reviews it), a buyer abroad
-  sees dollar prices but only an Indian card goes through.
-- **Abuse.** Anyone with a business mailbox can sign up and create an organisation (as asked). Since item 27 (live
-  2026-11-12) its 50 starting credits wait for PASDACS's approval: info@pasdacs.com gets a review email for each new
-  organisation, answered on the admin portal (Requests) or by telling Claude (`python -m app.orgs approve|decline`).
-  Since item 21 PASDACS gets an email for every sign-in, and pauses an organisation or switches a person off on the
-  admin portal. Not run for items 26 and 27: a build with real Claude, a real Razorpay checkout, real email.
+Updated 2026-11-12, after item 29. **Live:** web and admin run `d2d-relay:a84d7c9` (= latest); the database container
+runs `d2d-relay:8689305`'s image. **GitHub** has every commit (the 12 since b314076 were pushed on 2026-11-12, after a
+scan for the live keys and tokens: none). **Going back:** `d2d-relay:72b71a1`, `e2be1d2`, `442a396`, `c8e615f` and
+`8f39265` stay tagged (`docker tag <image> d2d-relay:latest`, then `docker compose up -d --no-deps web admin`); any
+other version is a commit on GitHub (in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose
+build web`).
+
+### Before the public launch (the user)
+
+- **The AI runs on a personal Claude plan** (audit P1). The AI engine signs in with a Claude subscription ("Ultra", no
+  team seat), which Anthropic treats as a consumer plan: customers' data in it may be used to train models if the
+  account's "Help improve Claude" setting is on (then kept up to 5 years; otherwise 30 days). At once: switch that
+  setting off (claude.ai > Settings > Privacy). For customers' data: an Anthropic API key (commercial terms: not used
+  for training, a data processing addendum; D2D Relay supports it, provider `anthropic_api`) or a Team or Enterprise
+  plan. The privacy notice says Anthropic handles the data, and nothing about training until then.
+- **Terms and policies** (P2, P4): terms of service, a refund and cancellation policy, a contact page and a data
+  processing agreement (Razorpay's website review generally looks for such pages before it activates an account). The
+  privacy notice is written from what the app does, not by a lawyer: have it reviewed for the countries you sell in,
+  check "PASDACS's own server in India", and name a grievance officer if wanted.
+- **The PC** (P3): the disk is not encrypted (BitLocker on C: is "waiting for activation"): turn BitLocker (or Device
+  encryption) on and keep the recovery key somewhere safe. The backups are on the same disk as the data: keep an
+  encrypted copy somewhere else.
+- **Overnight restarts.** The PC restarted at 02:38 IST on 2026-11-12 (Windows) and the live site was down until
+  ~09:17 IST: Docker Desktop starts only when someone signs in to Windows. Stop overnight restarts (Windows Update
+  active hours, or restart only by hand), and let Docker start without a sign-in, or move D2D Relay to a server.
+- **The two PC helpers do not start by themselves (one-time).** Put shortcuts to `daxcheck\start-daxcheck.cmd` and
+  `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC restarts"); Claude Code may not add
+  them. Until then, after a restart someone signs in and starts both by hand; the watchdog warns PASDACS after 10
+  minutes without either.
+- **The admin portal through the internet** needs two steps in Cloudflare (an Access application, then the public
+  hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal") and the team name and AUD tag in `.env`. Until
+  then it works on the D2D Relay PC only: http://127.0.0.1:8102.
+- **The mailbox.** Not done from item 2: an Exchange ApplicationAccessPolicy that limits the mail app to
+  info@pasdacs.com (codes go to any business address; the sender stays info@pasdacs.com). The sign-in alerts and the
+  review emails keep names, addresses and networks in that mailbox: give the folder a retention rule (a year matches
+  the app; P6).
+- **Old backups.** The nightly sweep deletes hand-made dumps after 30 days: `data\backups\relay-db-20261111-064453.dump`
+  (the data before the fresh start) and the three others of 10-11 November go around 10-11 December. Move any that
+  must stay out of `data\backups`.
+- Optional: a Cloudflare redirect from d2d-relay.pasdacs.com to d2d.pasdacs.com (both answer today).
+
+### Selling credits online (the user, when Razorpay activates the account)
+
+Buying credits online is off on live since 2026-11-12 (the user: "from the live site remove buy credits for now as its
+in test, allow only request credits, once razorpay is activated we can allow production to buy credits"): the Razorpay
+test keys are parked as comments in the live `.env` (with a note there), so payments are "off" and everyone, PASDACS
+included, sees Request credits only; the webhook secret stays, so the webhook still answers. Going live:
+
+1. The live keys (rzp_live_...) into the live `.env` in place of the parked test keys.
+2. A live-mode webhook in the Razorpay Dashboard: URL https://d2d.pasdacs.com/api/payments/webhook, events
+   payment.captured, order.paid, payment.failed and refund.processed, its secret as `RELAY_RAZORPAY_WEBHOOK_SECRET`.
+3. Restart web and admin.
+4. On the admin portal, Payments: PASDACS's invoice details (legal name, registered address, state, PIN and GSTIN; the
+   SAC code from the accountant, the setting suggests 998314; the LUT's ARN if one is filed for 2026-27, else dollar
+   sales carry IGST, included in the price), and GST 18% added on top (the user's decision of 2026-11-11, "₹100 + 18%
+   GST": 25 credits ₹2,500 + ₹450 GST = ₹2,950; dollar prices abroad unchanged). Live keys cannot sell before the
+   invoice details are complete. Then switch Sell credits online on.
+5. For buyers abroad: International payments in the Razorpay Dashboard (Account & Settings; Razorpay reviews it).
+   Until then only Indian cards go through, though people abroad see dollar prices ($1 a credit; ₹100 in India).
+
+Refunds: none (item 25); any made by hand on Razorpay are recorded.
+
+### Engineering still open (Claude can take these on when asked; details in the audit)
+
+- **S4 High:** the AI engine's Linux user can read and write every organisation's folders and holds the Claude login;
+  its API takes any folder without a key. Fix: the API on a socket, each job in its own container.
+- **S6 High:** nothing limits where the containers connect on the internet: an egress allowlist.
+- **S10 Medium:** the admin portal checks Cloudflare Access only for requests that come through Cloudflare.
+- **S11 Medium:** Starlette 0.41.3 has two known denial-of-service bugs; one is mitigated, the upgrade is open.
+- **S8 Medium, a product decision:** the first person from a domain owns the organisation and can open every
+  colleague's dashboard (the privacy notice says so).
+- **P5 Medium:** no end to keeping dashboards, removed people and idle organisations; no self-service account erasure.
+- **Abuse:** anyone with a business mailbox can sign up; new organisations wait for PASDACS's review of their starting
+  credits (item 27), and PASDACS gets an email for every sign-in (item 21). Still worth adding: Turnstile on "Send
+  code" (S7, S13).
+- **Low:** S15 (124 reachable routes, several left from RELAY: an allowlist instead of a blocklist), S16 (the build
+  supply chain), S17 (a warehouse sign-in can be finished in another person's browser), P6 (small data-sharing details).
+- **Never run on the test stacks:** a dashboard build with real Claude, a real Razorpay checkout, real email delivery,
+  and the Power BI file maker end to end (unchanged since item 17).
+
+### Decided (nothing to do)
+
+- **Migration D2D is a contact form** (item 29): PASDACS does the migration with the organisation; it is not
+  self-service. Requests arrive at info@pasdacs.com and on the admin portal's Requests page.
+- **The first-time tour** shows on its own only to people who start on or after 2026-11-12; Take the tour (the
+  organisation's name in the top bar) shows it to anyone.
 - **Brand palettes cost no credits** (as asked; Ask Relay has cost credits since item 19). Their AI cost is recorded in
   `usage` only.
 - **Turnkey deployments (the user's decision of 2026-11-11):** an organisation that wants its own warehouse or
   database connected, or row-level security, gets a turnkey deployment after it contacts PASDACS. Neither is built
   into the shared D2D Relay (the backlog items for client connector sign-in and RLS are dropped); the Connections
   page and its request say so.
-- **NOT DONE (from item 2):** an Exchange ApplicationAccessPolicy that limits the mail app to info@pasdacs.com. Codes
-  now go to any business address; the sender stays info@pasdacs.com.
-- **Data governance: the user's decisions (item 22).**
-  - **The AI runs on a personal Claude plan.** The AI engine signs in with a Claude subscription ("Ultra", no team
-    seat), which Anthropic treats as a consumer plan: customers' data in it may be used to train models if the
-    account's "Help improve Claude" setting is on (then kept up to 5 years; otherwise 30 days). At once: switch that
-    setting off (claude.ai > Settings > Privacy). For customers' data: an Anthropic API key (commercial terms: not
-    used for training, a data processing addendum; D2D Relay supports it, provider `anthropic_api`) or a Team or
-    Enterprise plan. The privacy notice says Anthropic handles the data, and nothing about training until then.
-  - **The disk is not encrypted.** Windows reports BitLocker on C: as "waiting for activation": the database,
-    uploads and backups sit on it unprotected if the PC or disk is taken. Turn BitLocker (or Device encryption) on
-    and keep the recovery key somewhere safe.
-  - **Backups are on the same disk** as the data: keep an encrypted copy somewhere else.
-  - **The privacy notice is written from what the app does**, not by a lawyer: have it reviewed; check "PASDACS's own
-    server in India"; name a grievance officer if wanted. A customer agreement (terms, data processing) is not part of
-    the app.
-  - **The sign-in alert emails** keep names, addresses and networks in the info@pasdacs.com mailbox: give that folder
-    a retention rule (a year matches the app).
 - **The enterprise sample:** Global Ports Enterprise (demo), with two row-level security roles added by hand, is
   kept in `data\samples\global-ports-enterprise-demo-10c1` (its README says how to use it); its .pbix with both
   roles is also in `C:\Users\santosh.k\PbixBot\Output\Global Ports Enterprise Stress`.
