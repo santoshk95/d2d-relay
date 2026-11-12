@@ -194,7 +194,7 @@ async function refreshSys() {
       : 'Start daxcheck\\start-daxcheck.cmd on this PC - publishing to Power BI needs it';
     a.title = a.dataset.tip = $('span', a).textContent; d.dataset.tip = $('span', d).textContent;
   } catch (e) { a.className = 'health down'; $('span', a).textContent = 'App offline'; }
-  if (S.me && S.me.builder !== false) {
+  if (S.me && S.me.builder !== false && moduleById('validate')) {     // D2D Relay has no validation queue
     try { const n = (await api('/api/validate/count')).count; if (n !== S.vcount) { S.vcount = n; renderShell(); } } catch (e) {}
   }
 }

@@ -12,10 +12,15 @@
              public site is never accepted here, nor one from here there.
           The admin portal answers only the APIs in API (organisations, requests, payments, notifications, who am I); it runs
           no AI engine, no job queue and no schedules.
+          A request without Cloudflare's header must come from this PC (the port published on 127.0.0.1), never from
+          another container on the Docker network (security audit S10). D2D_ADMIN_EMAILS, when set, narrows the admin
+          domains to the addresses it names.
 """
 from __future__ import annotations
 
 import os
+import socket
+import struct
 
 NAME = (os.environ.get("D2D_PORTAL") or "public").strip().lower()
 ADMIN = NAME == "admin"
@@ -31,8 +36,41 @@ API = ("/api/me", "/api/registry", "/api/brand", "/api/notifications", "/api/adm
 _jwks = None
 
 
+# security audit S10: when set, only these addresses are platform admins (narrower than the whole domain)
+ADMIN_EMAILS = {e.strip().lower() for e in (os.environ.get("D2D_ADMIN_EMAILS") or "").split(",") if "@" in e}
+
+
 def admin_email(email: str | None) -> bool:
-    return (email or "").strip().lower().rsplit("@", 1)[-1] in ADMIN_DOMAINS and "@" in (email or "")
+    e = (email or "").strip().lower()
+    if "@" not in e:
+        return False
+    return e in ADMIN_EMAILS if ADMIN_EMAILS else e.rsplit("@", 1)[-1] in ADMIN_DOMAINS
+
+
+def _gateway() -> str | None:
+    """The Docker host as this container sees it (the default route's gateway): requests to the published port arrive
+    from it (or from 127.0.0.1 inside the container)."""
+    try:
+        with open("/proc/net/route", encoding="ascii") as f:
+            for line in f.read().splitlines()[1:]:
+                x = line.split()
+                if len(x) > 3 and x[1] == "00000000" and int(x[3], 16) & 2:
+                    return socket.inet_ntoa(struct.pack("<L", int(x[2], 16)))
+    except (OSError, ValueError):
+        return None
+    return None
+
+
+LOCAL = {"127.0.0.1", "::1", _gateway()} - {None}
+
+
+def local_refusal(client: str | None) -> str | None:
+    """S10: a request without Cloudflare's header is accepted only from this PC (the published port), not from another
+    container on the Docker network, which also arrives without it."""
+    if client in LOCAL:
+        return None
+    print(f"[portal] refused a request from {client} without Cloudflare's header (allowed: {sorted(LOCAL)})", flush=True)
+    return "The admin portal answers on the D2D Relay PC, or through Cloudflare Access."
 
 
 def is_admin(u: dict | None) -> bool:

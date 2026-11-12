@@ -55,7 +55,7 @@ GSTIN = re.compile(r"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$")
 _B36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 SELLER = {"name": "", "address": "", "state": "", "pin": "", "gstin": "", "sac": "", "prefix": "D2D", "lut": "",
           "description": "D2D Relay credits"}
-NO_REFUNDS = "Credits are not refundable."
+NO_REFUNDS = "Credits are not refundable, and a purchase cannot be cancelled once paid."
 
 
 class Invalid(ValueError):

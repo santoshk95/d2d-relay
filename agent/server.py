@@ -23,15 +23,17 @@ never waits behind a build. One run at a time in each lane.
 import asyncio
 import json
 import os
+import pwd
 import re
 import shutil
+import socket
 import time
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
 from runners import RUNNER_ENV, installed
@@ -90,6 +92,50 @@ DENY = ["WebFetch", "WebSearch", "Task", "Agent", "NotebookEdit"]   # no web, no
 LOCKDOWN = ["--strict-mcp-config", "--disable-slash-commands"]
 
 app = FastAPI(title="Relay agent")
+
+
+# Security audit S4: this API starts runs in any project folder, so only the web app (and root: the watchdog,
+# relay-ctl) may call it, never anything the AI engine's own user runs. Over the loopback the kernel's socket table
+# (/proc/net/tcp) names the user that owns the caller's end of the connection. /health stays open.
+# D2D_AGENT_PEER_CHECK=0 turns it off (an AI engine in a container of its own, reached over a network).
+def _uid_of(name: str) -> int | None:
+    try:
+        return pwd.getpwnam(name).pw_uid
+    except KeyError:
+        return None
+
+
+CALLERS = {0} | {u for u in (_uid_of(n.strip()) for n in (os.environ.get("D2D_AGENT_CALLERS") or "relay").split(",")) if u is not None}
+PEER_CHECK = os.environ.get("D2D_AGENT_PEER_CHECK", "1") != "0"
+
+
+def _peer_uid(client: tuple[str, int], server_port: int) -> int | None:
+    """The user owning the client's end of a 127.0.0.1 TCP connection to this server, or None."""
+    host, port = client
+    if host != "127.0.0.1":
+        return None
+    local = socket.inet_aton(host)[::-1].hex().upper() + f":{port:04X}"
+    try:
+        with open("/proc/net/tcp", encoding="ascii") as f:
+            for line in f.read().splitlines()[1:]:
+                x = line.split()
+                if len(x) > 7 and x[1] == local and x[2].endswith(f":{server_port:04X}"):
+                    return int(x[7])
+    except (OSError, ValueError):
+        return None
+    return None
+
+
+@app.middleware("http")
+async def only_the_web_app(request, call_next):
+    if PEER_CHECK and request.url.path != "/health":
+        server = request.scope.get("server") or ("", 8090)
+        uid = _peer_uid(tuple(request.scope.get("client") or ("", 0)), int(server[1] or 8090))
+        if uid not in CALLERS:
+            return JSONResponse({"detail": "Only the D2D Relay web app may call the AI engine."}, status_code=403)
+    return await call_next(request)
+
+
 LANES = ("build", "chat")
 locks = {lane: asyncio.Lock() for lane in LANES}
 since: dict[str, float] = {}                       # lane -> when its current run started (observability, phase 8)

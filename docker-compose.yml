@@ -78,6 +78,10 @@ services:
       - agy-login:/opt/agy-login:ro
     ports:
       - "127.0.0.1:${RELAY_PORT:-8100}:8000"
+    # security audit S6: relay-init (root, at start) stops the AI engine's user from connecting anywhere but its
+    # proxy to Anthropic (iptables in this container's own network only)
+    cap_add:
+      - NET_ADMIN
     depends_on:
       db:
         condition: service_healthy

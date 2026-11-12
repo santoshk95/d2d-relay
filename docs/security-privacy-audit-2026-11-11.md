@@ -41,26 +41,26 @@ not committed**.
 | S1 | Critical | A custom visual's `caps.js` (written by the AI) ran in Node with the AI engine's rights | Fixed, live |
 | S2 | Critical | A Python file the AI writes in its folder ran as the `genbi` toolkit | Fixed, live |
 | S3 | Critical | A visual's style (Less `@plugin`) and imports (webpack loader syntax, files outside the visual) ran code or read files during the build | Fixed, live |
-| S4 | High | The AI engine's Linux user can read and write every organisation's folders and holds the Claude login; its API takes any folder, without a key | Open: architecture |
+| S4 | High | The AI engine's Linux user can read and write every organisation's folders and holds the Claude login; its API takes any folder, without a key | API: fixed (item 30, only the web app may call it); one container per run: open |
 | S5 | High | The DAX checker on the PC loaded any model dropped in its queue (data sources included) | Fixed, live (the helper was restarted on 2026-11-12) |
-| S6 | High | Nothing limits where the containers connect on the internet | Open |
+| S6 | High | Nothing limits where the containers connect on the internet | AI engine: fixed (item 30, Anthropic only); the web app's own traffic: open |
 | S7 | Medium | Free starting credits can be collected many times over with subdomains | Addressed, live: starting credits wait for PASDACS's review (work log item 27) |
 | S8 | Medium | The first person from a domain owns the organisation and can open every colleague's dashboard | Now in the privacy notice; product decision open |
 | S9 | Medium | PASDACS owners get the platform console's cross-organisation views on the public site | Fixed, live |
-| S10 | Medium | The admin portal checks Cloudflare Access only for requests that come through Cloudflare | Open |
-| S11 | Medium | Starlette 0.41.3 has two known denial-of-service bugs | One mitigated (live); upgrade open |
+| S10 | Medium | The admin portal checks Cloudflare Access only for requests that come through Cloudflare | Fixed (item 30) |
+| S11 | Medium | Starlette 0.41.3 has two known denial-of-service bugs | Fixed (item 30: FastAPI 0.120.4, Starlette 0.49.3) |
 | S12 | Low | No security headers (framing, sniffing, HSTS) | Fixed, live |
 | S13 | Low | Sign-in codes: 30 guesses an hour per address, no daily cap | Fixed, live (20 codes a day) |
 | S14 | Low | `/api/health` names the real AI models to everyone signed in | Fixed, live |
-| S15 | Low | 124 leftover and current routes are reachable (129 before S9); several belong to RELAY, not D2D Relay | Open |
-| S16 | Low | Build supply chain: floating dev dependencies, a CLI checked against its own manifest | Open |
-| S17 | Low | A warehouse sign-in started by one person can be finished in another person's browser | Open |
-| P1 | High | Customers' data goes through a personal Claude plan | Open: the user's decision (in `LOG.md`) |
-| P2 | High | No terms of service, refund and cancellation policy, contact page or data processing agreement | Open |
-| P3 | High | Disk not encrypted; backups on the same disk; live secrets in a user's Downloads folder | Open (partly in `LOG.md`) |
+| S15 | Low | 124 leftover and current routes are reachable (129 before S9); several belong to RELAY, not D2D Relay | Fixed (item 30): RELAY's leftovers off, 111 reachable |
+| S16 | Low | Build supply chain: floating dev dependencies, a CLI checked against its own manifest | Fixed (item 30: the kit's lockfile, `npm ci`) |
+| S17 | Low | A warehouse sign-in started by one person can be finished in another person's browser | Fixed (item 30) |
+| P1 | High | Customers' data goes through a personal Claude plan | Training switched off (the user, 2026-11-12); an API key or Team plan still recommended |
+| P2 | High | No terms of service, refund and cancellation policy, contact page or data processing agreement | Terms, refund and cancellation, contact published (item 30); DPA on request; legal review open |
+| P3 | High | Disk not encrypted; backups on the same disk; live secrets in a user's Downloads folder | BitLocker skipped for now (the user, 2026-11-12); old backups deleted; open |
 | P4 | Medium | The privacy notice is written for India; dollar prices invite customers from the EU and UK | Two corrections made; legal review open |
 | P5 | Medium | No end to keeping dashboards, removed people and idle organisations; no self-service account erasure | Open |
-| P6 | Low | Small data-sharing details (Razorpay notes, sign-in alert mailbox) | Open |
+| P6 | Low | Small data-sharing details (Razorpay notes, sign-in alert mailbox) | Razorpay notes fixed (item 30); the mailbox's retention: the user's |
 
 ### S1 Critical - the AI could run its own code through a custom visual's `caps.js` (fixed)
 

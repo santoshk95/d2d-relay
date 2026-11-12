@@ -18,7 +18,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
-from . import auth, connectors, db, orgs, store
+from . import auth, connectors, db, identity, orgs, store
 
 router = APIRouter()
 
@@ -222,7 +222,8 @@ def connection_signin(cid: str, request: Request):
     except HTTPException as e:                  # a browser navigation: back to Connections with the reason
         return RedirectResponse("/#/connections?error=" + quote(str(e.detail)), 303)
     try:
-        return RedirectResponse(connectors.oauth_start(cid, _me(), str(request.base_url)), 303)
+        return RedirectResponse(connectors.oauth_start(cid, _me(), str(request.base_url),
+                                                       request.cookies.get(identity.COOKIE)), 303)
     except connectors.ConnectorError as e:
         return RedirectResponse("/#/connections?error=" + quote(str(e)), 303)
 
@@ -231,13 +232,12 @@ def connection_signin(cid: str, request: Request):
 def connection_signin_done(request: Request, code: str = "", state: str = "", error: str = "", error_description: str = ""):
     if error:
         return RedirectResponse("/#/connections?error=" + quote(error_description or error), 303)
+    me = auth.current.get()
     try:
-        cid, uid = connectors.oauth_callback(state, code, str(request.base_url))
+        cid, uid = connectors.oauth_callback(state, code, str(request.base_url), request.cookies.get(identity.COOKIE),
+                                             me["id"] if me else None)
     except (connectors.ConnectorError, httpx.HTTPError) as e:
         return RedirectResponse("/#/connections?error=" + quote(str(e)), 303)
-    me = auth.current.get()
-    if me and me["id"] != uid:           # signed in to D2D as someone else meanwhile: nothing leaks either way
-        return RedirectResponse("/#/connections?error=" + quote("Signed in as another person."), 303)
     return RedirectResponse(f"/#/connections?connected={cid}", 303)
 
 

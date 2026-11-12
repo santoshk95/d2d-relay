@@ -42,6 +42,7 @@ function orgMenu(anchor) {
     h('a', {class: 'pmitem', href: '#/migration', onclick: closePopover}, icon('swap'), h('span', {class: 'grow'}, 'Migration D2D')),
     h('a', {class: 'pmitem', href: '#/welcome', onclick: () => { closePopover(); TOUR.step = 0; }}, icon('spark'), h('span', {class: 'grow'}, 'Take the tour')),
     h('a', {class: 'pmitem', href: '/privacy.html', target: '_blank', rel: 'noopener', onclick: closePopover}, icon('shield'), h('span', {class: 'grow'}, 'Privacy notice')),
+    h('a', {class: 'pmitem', href: '/terms.html', target: '_blank', rel: 'noopener', onclick: closePopover}, icon('book'), h('span', {class: 'grow'}, 'Terms, refunds and contact')),
   ], 'profile');
 }
 /* the credits left, fetched again after something used or added credits (and now and then) */

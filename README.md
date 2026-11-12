@@ -16,6 +16,7 @@ still in this repository, switched off in one place (`webapp/app/edition.py`).
 |---|---|
 | Public site | https://d2d.pasdacs.com (on the D2D Relay PC: http://127.0.0.1:8100) |
 | Admin portal | https://admin-d2d.pasdacs.com, PASDACS only (on the D2D Relay PC: http://127.0.0.1:8102) |
+| Legal pages | `/terms.html`, `/refunds.html` (no refunds, no cancellations), `/contact.html`, `/privacy.html` |
 | Setup and operations | [`docs/d2d-relay.md`](docs/d2d-relay.md) |
 | Where things stand, what was decided, what is open | [`docs/LOG.md`](docs/LOG.md) |
 

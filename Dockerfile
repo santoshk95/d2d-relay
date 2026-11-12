@@ -93,8 +93,9 @@ RUN python -m venv /opt/relay/gateway \
 
 # Visual factory: one shared node_modules for every custom visual the AI engine builds (Visual Atlas deps + d3), the
 # Visual Atlas framework (common/), its 13 families as examples and the starter visual.
-COPY visual_factory/package.json /opt/genbi/vkit/package.json
-RUN cd /opt/genbi/vkit && npm install --no-audit --no-fund && npm cache clean --force
+# security audit S16: the exact packages in package-lock.json (taken from the image live on 2026-11-12), never newer ones
+COPY visual_factory/package.json visual_factory/package-lock.json /opt/genbi/vkit/
+RUN cd /opt/genbi/vkit && npm ci --no-audit --no-fund && npm cache clean --force
 COPY visual-atlas/visuals /tmp/atlas
 COPY visual-atlas/tools/mk_caps.js visual_factory/tsconfig.json visual_factory/eslint.config.mjs /opt/genbi/vkit/
 COPY visual_factory/starter /opt/genbi/vkit/starter
@@ -122,6 +123,8 @@ COPY webapp/app /srv/app
 COPY webapp/static /srv/static
 COPY visual-library /opt/relay/seed/library
 COPY --chown=relay:relay litellm/d2d_auth.py /opt/relay/gateway-app/
+# security audit S6: iptables, so relay-init can stop the AI engine's user from connecting anywhere but its proxy
+RUN apt-get update && apt-get install -y --no-install-recommends iptables && rm -rf /var/lib/apt/lists/*
 COPY docker/supervisord.conf docker/postgres.conf docker/pg_hba.conf docker/pg_ident.conf /etc/relay/
 COPY docker/entrypoint.sh /opt/relay/bin/entrypoint
 COPY docker/relay_init.py /opt/relay/bin/relay-init
@@ -129,6 +132,7 @@ COPY docker/launch.py /opt/relay/bin/launch
 COPY docker/watchdog.py /opt/relay/bin/watchdog
 COPY docker/gateway.sh /opt/relay/bin/gateway
 COPY docker/relay_ctl.py /opt/relay/bin/relay-ctl
+COPY docker/egress_proxy.py /opt/relay/bin/egress-proxy
 # genbi runs with python -P: it never imports from the folder the AI works in (a genbi_kit/ or json.py written there
 # would otherwise run as the toolkit, with the AI engine's rights; security audit 2026-11-11)
 RUN sed -i 's/\r$//' /opt/relay/bin/* /etc/relay/* \

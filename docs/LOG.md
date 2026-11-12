@@ -678,6 +678,40 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     container's 43 pages and scripts have no long dashes, curly quotes or arrows, the tour and Migration D2D scripts
     are loaded, the new routes refuse anonymous requests and the admin portal does not answer them, no errors in either
     log, both PC helpers alive.
+30. **Legal pages, the user's answers on the open list, and the engineering items** (the user, 2026-11-12: "claude
+    plan is turned off for trainng, legal pages, confirmed nad no refund or cancellation, skip bitlocker for now, skip
+    overnigh restrat as well i will handle it, how to do admin portal and mailbox restru=iction, delete all the backups,
+    i shall remove this "d2d-relay.pasdacs.com"", then "and complete all the engineering which you can do"; asked:
+    delete all 9 backups including last night's, deploy when every test passes, courts at Bengaluru, no bot check for
+    now).
+    - **Legal pages** (`webapp/static/terms.html`, `refunds.html`, `contact.html`, new; open without signing in,
+      `auth.OPEN_PATHS`): Terms of service (Indian law, courts at Bengaluru, Karnataka; data processing terms; liability
+      at most what was paid in the last 12 months), Refund and cancellation policy (no refunds, no cancellations;
+      delivery; credits back when a run does not finish; payment errors put right), Contact. Linked from the sign-in
+      page ("By signing in you accept the terms of service"), the privacy notice, the organisation menu and Buy
+      credits; invoices and receipts say "Credits are not refundable, and a purchase cannot be cancelled once paid."
+      (`docs/d2d-relay.md`, "Legal pages").
+    - **Backups:** all 9 in `data\backups` were deleted on the user's word (the dumps and backups of 10-11 November and
+      the nightly backup of 12 November 02:30 IST); the nightly job makes a new one at 02:30.
+    - **The old address** d2d-relay.pasdacs.com is removed by the user in Cloudflare; nothing in the code or `.env`
+      used it (`docs/d2d-relay.md`, "Changing the address").
+    - **Engineering (security audit):** S4, the AI engine's API answers only the web app's user and root (the kernel's
+      socket table names the caller; `agent/server.py`); S6, the AI engine reaches only Anthropic: a proxy in the web
+      container (`docker/egress_proxy.py`) and iptables rules for its user set by relay-init (the web container gets
+      `NET_ADMIN`; `RELAY_AGENT_EGRESS=off` lifts it; tested with real Claude through it); S10, the admin portal takes a
+      request without Cloudflare's header only from this PC, and `RELAY_ADMIN_EMAILS` can narrow the admins to named
+      addresses; S11, FastAPI 0.120.4 on Starlette 0.49.3; S15, RELAY's leftover routes and pages are off (111 API
+      routes reachable, 124 before); S16, the visual kit is installed from a committed lockfile with `npm ci` (the
+      exact packages of the image live on 2026-11-12); S17, a warehouse sign-in is finished only in the browser
+      session and by the person that started it, checked before the code is used; P6, no email address in Razorpay's
+      order notes.
+    - **Tests**, on fresh test stacks from the release candidate: every suite with the starting-credit review off and
+      on, 599 and 616 checks, all passing (three expectations changed for the new refund wording and the sign-in
+      page's second link); the new `item30_check.py`, 54 of 54 (the legal pages, and S4, S6, S10, S11, S15, S16, S17
+      checked inside the containers: another container refused by the admin portal, the AI engine's user refused by
+      its API and stopped from connecting out or looking names up, Anthropic reached through the proxy); real Claude
+      answering through the new network limits in a throwaway container with the live sign-in volume (its test
+      transcript removed).
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -746,35 +780,31 @@ build web`).
 
 - **The AI runs on a personal Claude plan** (audit P1). The AI engine signs in with a Claude subscription ("Ultra", no
   team seat), which Anthropic treats as a consumer plan: customers' data in it may be used to train models if the
-  account's "Help improve Claude" setting is on (then kept up to 5 years; otherwise 30 days). At once: switch that
-  setting off (claude.ai > Settings > Privacy). For customers' data: an Anthropic API key (commercial terms: not used
+  account's "Help improve Claude" setting is on (then kept up to 5 years; otherwise 30 days). **That setting is off
+  since 2026-11-12 (the user).** For customers' data, still recommended: an Anthropic API key (commercial terms: not used
   for training, a data processing addendum; D2D Relay supports it, provider `anthropic_api`) or a Team or Enterprise
   plan. The privacy notice says Anthropic handles the data, and nothing about training until then.
-- **Terms and policies** (P2, P4): terms of service, a refund and cancellation policy, a contact page and a data
-  processing agreement (Razorpay's website review generally looks for such pages before it activates an account). The
-  privacy notice is written from what the app does, not by a lawyer: have it reviewed for the countries you sell in,
-  check "PASDACS's own server in India", and name a grievance officer if wanted.
-- **The PC** (P3): the disk is not encrypted (BitLocker on C: is "waiting for activation"): turn BitLocker (or Device
-  encryption) on and keep the recovery key somewhere safe. The backups are on the same disk as the data: keep an
-  encrypted copy somewhere else.
-- **Overnight restarts.** The PC restarted at 02:38 IST on 2026-11-12 (Windows) and the live site was down until
-  ~09:17 IST: Docker Desktop starts only when someone signs in to Windows. Stop overnight restarts (Windows Update
-  active hours, or restart only by hand), and let Docker start without a sign-in, or move D2D Relay to a server.
+- **Terms and policies** (P2, P4): published on 2026-11-12 (item 30): terms of service, refund and cancellation
+  (none), contact. Still: a lawyer's review of them and of the privacy notice (check "PASDACS's own server in India",
+  name a grievance officer if wanted); PASDACS's registered address and phone on the contact page (Razorpay's website
+  review usually asks for them); a signed data processing agreement when a customer asks.
+- **The PC** (P3): BitLocker is skipped for now (the user, 2026-11-12). The nightly backup (02:30 IST) is on the
+  same disk as the data: keep an encrypted copy somewhere else. (Every older backup was deleted on 2026-11-12, on the
+  user's word.)
+- **Overnight restarts:** the user handles them (2026-11-12). (The PC restarted at 02:38 IST that day and the live
+  site was down until ~09:17 IST: Docker Desktop starts only when someone signs in to Windows.)
 - **The two PC helpers do not start by themselves (one-time).** Put shortcuts to `daxcheck\start-daxcheck.cmd` and
   `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC restarts"); Claude Code may not add
   them. Until then, after a restart someone signs in and starts both by hand; the watchdog warns PASDACS after 10
   minutes without either.
 - **The admin portal through the internet** needs two steps in Cloudflare (an Access application, then the public
-  hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal") and the team name and AUD tag in `.env`. Until
-  then it works on the D2D Relay PC only: http://127.0.0.1:8102.
-- **The mailbox.** Not done from item 2: an Exchange ApplicationAccessPolicy that limits the mail app to
-  info@pasdacs.com (codes go to any business address; the sender stays info@pasdacs.com). The sign-in alerts and the
-  review emails keep names, addresses and networks in that mailbox: give the folder a retention rule (a year matches
-  the app; P6).
-- **Old backups.** The nightly sweep deletes hand-made dumps after 30 days: `data\backups\relay-db-20261111-064453.dump`
-  (the data before the fresh start) and the three others of 10-11 November go around 10-11 December. Move any that
-  must stay out of `data\backups`.
-- Optional: a Cloudflare redirect from d2d-relay.pasdacs.com to d2d.pasdacs.com (both answer today).
+  hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal") and the team name and AUD tag in `.env`
+  (optionally `RELAY_ADMIN_EMAILS`). Until then it works on the D2D Relay PC only: http://127.0.0.1:8102.
+- **The mailbox.** The mail app sends app-only (a client secret), which Microsoft lets it do as any mailbox: limit
+  it to info@pasdacs.com with Exchange Online's RBAC for Applications, which replaces Application Access Policies
+  (`docs/d2d-relay.md`, "Limit the mail app to info@pasdacs.com"). The sign-in alerts and the review emails keep
+  names, addresses and networks in that mailbox: give their folder a one-year retention tag (P6).
+- **The old address** d2d-relay.pasdacs.com: the user removes its public hostname in Cloudflare (2026-11-12).
 
 ### Selling credits online (the user, when Razorpay activates the account)
 
@@ -797,25 +827,27 @@ included, sees Request credits only; the webhook secret stays, so the webhook st
 
 Refunds: none (item 25); any made by hand on Razorpay are recorded.
 
-### Engineering still open (Claude can take these on when asked; details in the audit)
+### Engineering still open (details in the audit)
 
-- **S4 High:** the AI engine's Linux user can read and write every organisation's folders and holds the Claude login;
-  its API takes any folder without a key. Fix: the API on a socket, each job in its own container.
-- **S6 High:** nothing limits where the containers connect on the internet: an egress allowlist.
-- **S10 Medium:** the admin portal checks Cloudflare Access only for requests that come through Cloudflare.
-- **S11 Medium:** Starlette 0.41.3 has two known denial-of-service bugs; one is mitigated, the upgrade is open.
+Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (S4) and its network (S6). Left:
+
+- **S4, the rest:** each run in a container of its own, with only its dashboard's folder and no Claude sign-in file
+  (an API key per run). It needs a job runner outside the web container; today all runs share the AI engine's user.
+- **S6, the rest:** the web app's own connections are not limited (it needs Microsoft 365, Razorpay and the
+  warehouses PASDACS switches on).
 - **S8 Medium, a product decision:** the first person from a domain owns the organisation and can open every
   colleague's dashboard (the privacy notice says so).
-- **P5 Medium:** no end to keeping dashboards, removed people and idle organisations; no self-service account erasure.
-- **Abuse:** anyone with a business mailbox can sign up; new organisations wait for PASDACS's review of their starting
-  credits (item 27), and PASDACS gets an email for every sign-in (item 21). Still worth adding: Turnstile on "Send
-  code" (S7, S13).
-- **Low:** S15 (124 reachable routes, several left from RELAY: an allowlist instead of a blocklist), S16 (the build
-  supply chain), S17 (a warehouse sign-in can be finished in another person's browser), P6 (small data-sharing details).
-- **Never run on the test stacks:** a dashboard build with real Claude, a real Razorpay checkout, real email delivery,
-  and the Power BI file maker end to end (unchanged since item 17).
+- **P5 Medium, decisions first:** how long dashboards, removed people and idle organisations are kept; a self-service
+  "delete my account".
+- **Abuse:** Turnstile on "Send code" (S7, S13): the user chose not now (2026-11-12). New organisations wait for
+  PASDACS's review of their starting credits (item 27), and PASDACS gets an email for every sign-in (item 21).
+- **Never run on the test stacks:** a full dashboard build with real Claude (one prompt through the new network
+  limits was), a real Razorpay checkout, real email delivery, and the Power BI file maker end to end (unchanged).
 
 ### Decided (nothing to do)
+
+- **The user's answers of 2026-11-12:** no refunds and no cancellations; disputes at the courts of Bengaluru,
+  Karnataka; BitLocker skipped for now; overnight restarts handled by the user; no bot check on sign-in for now.
 
 - **Migration D2D is a contact form** (item 29): PASDACS does the migration with the organisation; it is not
   self-service. Requests arrive at info@pasdacs.com and on the admin portal's Requests page.

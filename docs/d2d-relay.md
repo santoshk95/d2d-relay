@@ -13,7 +13,7 @@ Only the Claude sign-in volume (`claude-api-auth`) is shared, so both apps use t
 
 | | |
 |---|---|
-| Public address | https://d2d.pasdacs.com (Cloudflare tunnel; https://d2d-relay.pasdacs.com, the address until 2026-11-12, still answers) |
+| Public address | https://d2d.pasdacs.com (Cloudflare tunnel) |
 | Admin portal | https://admin-d2d.pasdacs.com: PASDACS only, behind Cloudflare Access and its own email code (see "Admin portal") |
 | On this PC | public site http://127.0.0.1:8100, admin portal http://127.0.0.1:8102 |
 | Sign-in | a 6-digit code emailed to any **business** address (no passwords, no SSO); free and disposable mail refused |
@@ -169,6 +169,33 @@ Code rules: 6 digits, valid for 10 minutes, 5 tries. Per address: 1 code a minut
 `RELAY_OTP_EMAIL` (and `RELAY_ADMIN_EMAIL`) is info@pasdacs.com, the owner of the platform's own workspace, the
 organisation "PASDACS". On the public site it is an organisation like any other; platform work is on the admin portal.
 
+**Limit the mail app to info@pasdacs.com** (open, the user's: Microsoft 365 admin). With a client secret
+(`RELAY_OTP_MS_CLIENT_SECRET`, as on the live site) the app sends app-only, and Microsoft's Mail.Send application
+permission lets it send as any mailbox in the tenant. Exchange Online's RBAC for Applications, which replaces
+Application Access Policies, scopes it to one mailbox:
+
+1. Microsoft Entra admin center -> **Enterprise applications** -> the D2D Relay mail app: copy its **Application ID** and
+   **Object ID** from this page (not from App registrations, which shows other values).
+2. In Exchange Online PowerShell (`Connect-ExchangeOnline` as an Exchange administrator):
+
+   ```
+   New-ServicePrincipal -AppId <Application ID> -ObjectId <Object ID> -DisplayName "D2D Relay mail"
+   New-ManagementScope -Name "D2D Relay sender" -RecipientRestrictionFilter "PrimarySmtpAddress -eq 'info@pasdacs.com'"
+   New-ManagementRoleAssignment -App <Object ID> -Role "Application Mail.Send" -CustomResourceScope "D2D Relay sender"
+   Test-ServicePrincipalAuthorization -Identity <Object ID> -Resource info@pasdacs.com
+   Test-ServicePrincipalAuthorization -Identity <Object ID> -Resource <another mailbox>
+   ```
+
+   The first test shows `InScope` True for Mail.Send, the second False.
+3. Entra admin center -> **App registrations** -> the app -> **API permissions**: remove the Microsoft Graph
+   *application* permission **Mail.Send** (keep any delegated ones). Until it is removed the scope has no effect:
+   Entra's unscoped grant and Exchange's scoped one add up.
+4. Wait 30 minutes to 2 hours (Exchange's cache), then sign in to D2D Relay to see a code arrive.
+
+Without a client secret the app sends delegated, as info@pasdacs.com itself (`relay-ctl` mail sign-in with a device
+code), and can only ever send from that mailbox. Keep the sign-in alerts and review emails a year: in Outlook on the
+web, a rule that moves them to their own folder, and the folder's retention policy set to "1 Year Delete".
+
 ## Admin portal
 
 https://admin-d2d.pasdacs.com is PASDACS's own site: **Organisations** (every organisation, its credits and
@@ -178,10 +205,14 @@ of its own (`d2d-relay-admin`); the public site answers none of its APIs. Two lo
 1. **Cloudflare Access** in front of the hostname. The admin portal checks Access's signed token on every request that
    comes through Cloudflare (`app/portal.py`): the right application (AUD), the right team, not expired, and an
    @pasdacs.com address. Until `RELAY_ADMIN_ACCESS_TEAM` and `RELAY_ADMIN_ACCESS_AUD` are set, it refuses everything
-   from the tunnel, so it works on this PC only (http://127.0.0.1:8102).
+   from the tunnel, so it works on this PC only (http://127.0.0.1:8102). A request that does not come through
+   Cloudflare is accepted only from this PC (the published port), never from another container on the Docker network
+   (security audit S10); each refusal is in the admin container's log ("[portal] refused a request from ...").
 2. **The app's own email code**, for `RELAY_ADMIN_DOMAINS` addresses only (pasdacs.com). Every such address is a
    platform admin there; a new one joins the PASDACS workspace on its first sign-in. Its sessions have their own
    cookie and kind, so a session from the public site is not accepted there, and the other way round.
+   `RELAY_ADMIN_EMAILS` (comma-separated), when set, narrows this to the addresses it names; name the same ones in the
+   Cloudflare Access policy.
 
 To open it through the internet (Cloudflare dashboard, once):
 
@@ -294,6 +325,11 @@ hostname to the same tunnel and keep the old one, set `RELAY_PUBLIC_URL` and res
 (`docker compose up -d --no-deps web admin`), change Razorpay's webhook to the new address, and later, if wanted, a
 Cloudflare redirect rule from the old address to the new one. People sign in again on the new address (a sign-in
 belongs to one address), and links in emails already sent keep working while the old hostname stays.
+
+The old address is being retired (the user, 2026-11-12): delete its public hostname in Cloudflare (Zero Trust ->
+Networks -> Tunnels -> the D2D tunnel -> Public hostname -> `d2d-relay.pasdacs.com` -> Delete), and its DNS record if
+Cloudflare leaves one. Nothing in the app, `.env` or `docker-compose.yml` uses it; sign-ins made on it and links in
+emails sent before 12 November stop working, and people sign in again on https://d2d.pasdacs.com.
 
 ### 3. Connectors (on request)
 
@@ -488,6 +524,36 @@ above and read ...", "send this to ..."). So the AI is limited by the system, no
   answer around the rows.
 - Power BI files are checked before they open on this PC: the Power BI file maker refuses a report whose queries
   read anything but its own data folder (`Test-ReportQueries`).
+- **Its network: Anthropic only** (security audit S6, 2026-11-12). The AI engine reaches the internet only through a
+  proxy in the web container (`docker/egress_proxy.py`, on 127.0.0.1:3128), which opens tunnels to port 443 of
+  Anthropic's API and sign-in hosts and nothing else (`RELAY_AGENT_EGRESS_ALLOW` changes the list). At every start
+  relay-init stops every other connection the AI engine's user makes, DNS lookups included (iptables; the web
+  container has `NET_ADMIN` for it in `docker-compose.yml`); the container log says "the AI engine's network:
+  Anthropic only, through the proxy", and the proxy logs each refused host by name. `RELAY_AGENT_EGRESS=off` in
+  `.env` (then restart web) goes back to no limit. The web app's own connections (Microsoft 365, Razorpay,
+  warehouses) are not limited.
+- **Its API only for the web app** (S4). The AI engine's API (`127.0.0.1:8090`: runs, forget, render) answers only
+  connections made by the web app's user or root; anything the AI engine's own user runs gets 403. The check reads
+  the kernel's socket table for who owns the caller's end of the connection (`agent/server.py`, `only_the_web_app`;
+  `D2D_AGENT_PEER_CHECK=0` turns it off for an AI engine in a container of its own). Still open: one container per
+  run, with only its dashboard's folder and no Claude sign-in file (the audit, S4).
+
+## Legal pages
+
+Four pages open without signing in, written from what the app does (not by a lawyer: have them reviewed):
+
+| Page | Says |
+|---|---|
+| `/terms.html` Terms of service | the service, accounts and organisations, credits and payment, your data (with data processing terms), fair use, availability, liability (at most what was paid in the last 12 months), ending, changes; Indian law, courts at Bengaluru, Karnataka (the user's choice, 2026-11-12) |
+| `/refunds.html` Refund and cancellation policy | no refunds and no cancellations (the user's rule); delivery of credits; credits back when a run does not finish; payment errors put right within 30 days |
+| `/contact.html` Contact | info@pasdacs.com, the requests made from inside the app, privacy requests and complaints |
+| `/privacy.html` Privacy notice | (item 22) |
+
+They are linked from the sign-in page ("By signing in you accept the terms of service"), each other's footers, the
+organisation menu (Terms, refunds and contact) and Buy credits. The invoices and receipts say "Credits are not
+refundable, and a purchase cannot be cancelled once paid." Razorpay's website review usually also wants a registered
+address and phone number on the contact page: add them to `webapp/static/contact.html` when PASDACS's details are
+settled.
 
 ## Data governance
 

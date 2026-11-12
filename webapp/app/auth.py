@@ -37,7 +37,7 @@ PROJECT = re.compile(r"^/api/projects/([a-z0-9][a-z0-9-]{2,63})(/.*)?$")
 LIBRARY = re.compile(r"^/api/library/([^/]+)$")
 PUBLISH = {"/approve", "/pbix"}             # D2D Relay: making the Power BI file is publishing
 SHARE = {"/shares"}
-OPEN_PATHS = ("/login.html", "/privacy.html", "/auth/", "/css/login.css", "/css/fonts.css", "/fonts/", "/relay-mark.svg", "/favicon.ico", "/powered-by.svg", "/icons/", "/manifest.webmanifest",
+OPEN_PATHS = ("/login.html", "/privacy.html", "/terms.html", "/refunds.html", "/contact.html", "/auth/", "/css/login.css", "/css/fonts.css", "/fonts/", "/relay-mark.svg", "/favicon.ico", "/powered-by.svg", "/icons/", "/manifest.webmanifest",
               "/favicon", "/metrics", "/healthz", "/portal.js")   # reachable without signing in (/metrics checks its own token)
 ADMIN_AUTH = ("/auth/otp/", "/auth/providers", "/auth/logout", "/auth/brand")   # D2D Relay: the admin portal's sign-in paths
 SAFE = {"GET", "HEAD", "OPTIONS"}
@@ -288,10 +288,12 @@ def _refused_page(text: str) -> HTMLResponse:
 
 async def middleware(request: Request, call_next):
     path = request.url.path
+    if edition.page_off(path):                          # security audit S15: RELAY's pages and callbacks
+        return _deny(404, "That is not part of D2D Relay.")
     if portal.ADMIN and path not in ("/healthz",):
         # D2D Relay's admin portal: through Cloudflare, only with a valid Cloudflare Access token (portal.py)
         why = await asyncio.to_thread(portal.access_refusal, request.headers, request.cookies) \
-            if request.headers.get("cf-connecting-ip") else None
+            if request.headers.get("cf-connecting-ip") else portal.local_refusal(request.client.host if request.client else None)
         if why:
             return _deny(403, why) if path.startswith("/api/") else _refused_page(why)
         if path.startswith("/auth/") and not path.startswith(ADMIN_AUTH):

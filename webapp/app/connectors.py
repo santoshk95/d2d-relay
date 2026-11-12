@@ -465,7 +465,13 @@ def redirect_uri(base_url: str) -> str:
     return f"{PUBLIC_URL or base_url.rstrip('/')}/auth/connector/callback"
 
 
-def oauth_start(cid: str, uid: str, base_url: str) -> str:
+def _session_tag(session: str | None) -> str:
+    """Security audit S17: what ties a warehouse sign-in to the browser session that started it (a hash, never the
+    cookie itself)."""
+    return "sess:" + hashlib.sha256((session or "").encode()).hexdigest()[:40]
+
+
+def oauth_start(cid: str, uid: str, base_url: str, session: str | None = None) -> str:
     c = owned(cid, uid)
     if c["auth_mode"] != "oauth":
         raise ConnectorError("This connection does not use sign-in.")
@@ -473,7 +479,7 @@ def oauth_start(cid: str, uid: str, base_url: str) -> str:
     state, verifier = secrets.token_urlsafe(24), secrets.token_urlsafe(48)
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
     db.run("INSERT INTO auth_flows (state, provider, verifier, nonce, return_to, created) VALUES (?, ?, ?, ?, ?, ?)",
-           (state, f"conn:{cid}", verifier, uid, "#/connections", time.time()))
+           (state, f"conn:{cid}", verifier, uid, _session_tag(session), time.time()))
     scope = ep["scope"] + (f" session:role:{app['role']}" if c["kind"] == "snowflake" and app.get("role") else "")
     q = {"response_type": "code", "client_id": app["client_id"], "redirect_uri": redirect_uri(base_url), "scope": scope,
          "state": state, "code_challenge": challenge, "code_challenge_method": "S256", **ep["extra"]}
@@ -496,12 +502,15 @@ def _token_request(c: dict, form: dict) -> dict:
             "expires_at": time.time() + float(t.get("expires_in") or 3600), "scope": t.get("scope")}
 
 
-def oauth_callback(state: str, code: str, base_url: str) -> tuple[str, str]:
+def oauth_callback(state: str, code: str, base_url: str, session: str | None = None, me: str | None = None) -> tuple[str, str]:
     flow = db.one("SELECT * FROM auth_flows WHERE state = ? AND provider LIKE 'conn:%'", (state,))
     db.run("DELETE FROM auth_flows WHERE state = ?", (state,))
     if not flow or time.time() - flow["created"] > 900:
         raise ConnectorError("The sign-in took too long or was already used. Try again.")
     cid, uid = flow["provider"][5:], flow["nonce"]
+    # S17: only the person who started it, in the same browser session, finishes it; checked before the code is used
+    if me != uid or (str(flow["return_to"] or "").startswith("sess:") and flow["return_to"] != _session_tag(session)):
+        raise ConnectorError("Finish the warehouse sign-in in the browser where you started it.")
     c = connection(cid, uid)
     tok = _token_request(c, {"grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri(base_url),
                              "code_verifier": flow["verifier"]})

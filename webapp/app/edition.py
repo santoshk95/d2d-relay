@@ -41,7 +41,10 @@ EXTRA_BLOCKED = ("/api/schedules", "/api/schedules-draft", "/api/schedules-measu
                  # packs, access grants) are not the public site's; PASDACS works on the admin portal. A guest's switch and
                  # return stay (/api/tenancy/me, /switch, /return).
                  "/api/tenancy/audit", "/api/tenancy/usage", "/api/tenancy/usage.csv", "/api/tenancy/prices",
-                 "/api/tenancy/people", "/api/tenancy/packs", "/api/tenancy/access")
+                 "/api/tenancy/people", "/api/tenancy/packs", "/api/tenancy/access",
+                 # security audit S15: RELAY's own screens, which D2D Relay never shows (bring-your-own AI key, the
+                 # workspace settings, the module workbench, the validation queue)
+                 "/api/me/ai", "/api/workspace", "/api/workbench", "/api/validate")
 # The Connections module page; Ask Relay (/api/askd); a reviewer's answer on a dashboard (/api/reviews/<id>/<review>; only
 # the list of everyone's reviews, /api/reviews, stays off)
 ALLOWED_UNDER_BLOCKED = ("/api/m/connect", "/api/askd", "/api/reviews/")
@@ -49,6 +52,16 @@ ALLOWED_UNDER_BLOCKED = ("/api/m/connect", "/api/askd", "/api/reviews/")
 # Item 22: routes left from RELAY that would send data out in ways D2D Relay does not offer: pushing a dashboard to
 # GitHub, writing back into a warehouse (D2D Relay only reads warehouses)
 EGRESS = re.compile(r"^/api/(projects/[^/]+/github|connections/[^/]+/write)/?$")
+# S15: RELAY's module catalogue "I'm interested" button
+LEFTOVER = re.compile(r"^/api/registry/[^/]+/interest/?$")
+# S15: pages and callbacks outside /api from RELAY: GitHub and Microsoft mail sign-ins, observability webhooks, the
+# visual gallery page (D2D Relay's own sign-in, the warehouse sign-in and the sign-in pages stay)
+PAGES_OFF = ("/auth/github/", "/auth/microsoft/", "/auth/observe/", "/gallery")
+
+
+def page_off(path: str) -> bool:
+    """Security audit S15: a page or callback outside /api that is not part of D2D Relay."""
+    return any(path == p.rstrip("/") or path.startswith(p if p.endswith("/") else p + "/") for p in PAGES_OFF)
 
 BLOCKED_API: tuple[str, ...] = EXTRA_BLOCKED
 _applied = False
@@ -77,7 +90,7 @@ def apply() -> None:
 
 
 def blocked(path: str) -> bool:
-    if EGRESS.match(path):
+    if EGRESS.match(path) or LEFTOVER.match(path):
         return True
     if path.startswith(ALLOWED_UNDER_BLOCKED):
         return False

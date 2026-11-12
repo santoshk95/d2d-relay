@@ -503,8 +503,8 @@ def start(body: Buy, request: Request):
     if started >= ORDERS_PER_HOUR:
         raise HTTPException(429, f"You started several payments this hour. Try again later, or write to {orgs.CONTACT}.")
     pid = "pay-" + secrets.token_hex(8)                                      # also the Razorpay receipt (40 characters at most)
-    notes = {"d2d_payment": pid, "organisation": o["name"][:250], "workspace": o["tenant_id"], "credits": str(pack["credits"]),
-             "email": (u.get("email") or "")[:250]}
+    # audit P6: no email address in the notes (Razorpay gets it from the checkout form); the payment id finds the rest
+    notes = {"d2d_payment": pid, "organisation": o["name"][:250], "workspace": o["tenant_id"], "credits": str(pack["credits"])}
     cur = pack["currency"]
     try:
         r = _api("POST", "/orders", {"amount": pack["amount"], "currency": cur, "receipt": pid, "notes": notes})

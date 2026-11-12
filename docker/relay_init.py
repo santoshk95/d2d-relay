@@ -50,6 +50,38 @@ ROLES = ("all", "database", "web", "admin")
 AGENT_PASS = {"AGENT_MODEL", "MODELS_FILE", "TZ", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "NODE_EXTRA_CA_CERTS",
               "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy"}
 AGENT_PREFIXES = ("CLAUDE_CODE_", "ANTHROPIC_", "AGY_")
+# Security audit S6: the AI engine reaches the internet only through docker/egress_proxy.py (Anthropic's hosts), and
+# every other connection its user makes is stopped (iptables, when the container has NET_ADMIN). RELAY_AGENT_EGRESS=off
+# lifts both (as before 2026-11-12).
+EGRESS_PROXY = "http://127.0.0.1:3128"
+
+
+def egress_on(env: dict) -> bool:
+    return (env.get("RELAY_AGENT_EGRESS") or "on").strip().lower() != "off"
+
+
+def limit_agent_network() -> str:
+    """Only loopback to 127.0.0.1 (and ::1) for the AI engine's user: the proxy, the AI engine's own API. Docker's DNS
+    (127.0.0.11) is left out on purpose, so nothing the AI engine runs can send data out in DNS lookups either."""
+    if not shutil.which("iptables"):
+        return "not limited (no iptables in the image)"
+    uid = str(ids("agent")[0])
+    done = []
+    for tool, local in (("iptables", "127.0.0.1"), ("ip6tables", "::1")):
+        if not shutil.which(tool):
+            continue
+        run = lambda *a: subprocess.run([tool, "-w", *a], capture_output=True, text=True)  # noqa: E731
+        run("-N", "RELAY-AGENT-OUT")
+        steps = [run("-F", "RELAY-AGENT-OUT"),
+                 run("-A", "RELAY-AGENT-OUT", "-o", "lo", "-d", local, "-j", "RETURN"),
+                 run("-A", "RELAY-AGENT-OUT", "-j", "REJECT")]
+        if run("-C", "OUTPUT", "-m", "owner", "--uid-owner", uid, "-j", "RELAY-AGENT-OUT").returncode != 0:
+            steps.append(run("-I", "OUTPUT", "1", "-m", "owner", "--uid-owner", uid, "-j", "RELAY-AGENT-OUT"))
+        bad = [s for s in steps if s.returncode != 0]
+        if bad:
+            return f"not limited ({tool}: {(bad[0].stderr or bad[0].stdout).strip().splitlines()[-1][:160]})"
+        done.append(tool)
+    return "Anthropic only, through the proxy" if done else "not limited"
 
 
 def say(msg: str) -> None:
@@ -357,7 +389,7 @@ def write_env(role: str, env: dict, user: str) -> None:
     tmp.replace(path)
 
 
-def environments(env: dict) -> None:
+def environments(env: dict, egress: bool = False) -> None:
     base = {"PATH": "/usr/local/bin:/usr/bin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "PYTHONUNBUFFERED": "1",
             "TZ": env.get("TZ", "UTC"), "PYTHONPATH": "/opt/genbi", "WORKSPACES": "/data/projects",
             "GENBI_VISUALS": "/opt/genbi/visuals", "GENBI_VKIT": "/opt/genbi/vkit", "GENBI_LIBRARY": str(LIBRARY),
@@ -374,7 +406,15 @@ def environments(env: dict) -> None:
         "BASH_DEFAULT_TIMEOUT_MS": "300000", "BASH_MAX_TIMEOUT_MS": "600000",
         # no Python the AI engine starts imports from the folder it works in (genbi also runs with -P)
         "PYTHONSAFEPATH": "1"}
+    if egress:                                   # S6: out only through the proxy
+        agent |= {"HTTPS_PROXY": EGRESS_PROXY, "https_proxy": EGRESS_PROXY, "HTTP_PROXY": EGRESS_PROXY,
+                  "http_proxy": EGRESS_PROXY, "NO_PROXY": "127.0.0.1,localhost,::1", "no_proxy": "127.0.0.1,localhost,::1"}
     write_env("agent", agent, "agent")
+    egress_env = base | {"HOME": "/home/relay", "USER": "relay", "LOGNAME": "relay"}
+    allow = env.get("RELAY_AGENT_EGRESS_ALLOW") or env.get("D2D_AGENT_EGRESS_ALLOW")
+    if allow:                                    # the hosts the proxy lets the AI engine reach (default: Anthropic's)
+        egress_env["D2D_AGENT_EGRESS_ALLOW"] = allow
+    write_env("egress", egress_env, "relay")
     gateway = {k: v for k, v in env.items() if k.startswith("LITELLM_") or k in AGENT_PASS - {"AGENT_MODEL", "MODELS_FILE"}} | base | {
         "HOME": "/home/relay", "USER": "relay", "LOGNAME": "relay", "PATH": "/opt/relay/gateway/bin:/usr/local/bin:/usr/bin:/bin",
         # LiteLLM: the model price list it ships with (no download at every start), and no feedback box in the log
@@ -382,7 +422,8 @@ def environments(env: dict) -> None:
     write_env("gateway", gateway, "relay")
 
 
-def supervisor_conf(db_on: bool, gateway_on: bool, web_on: bool = True, agent_on: bool = True, db_network: bool = False) -> None:
+def supervisor_conf(db_on: bool, gateway_on: bool, web_on: bool = True, agent_on: bool = True, db_network: bool = False,
+                    egress: bool = False) -> None:
     """The supervisor's running config: the parts to start, and a new password for its control socket (the socket
     is also limited to root and the web app's group, so the AI engine can neither read the password nor connect)."""
     text = Path("/etc/relay/supervisord.conf").read_text(encoding="utf-8")
@@ -392,6 +433,7 @@ def supervisor_conf(db_on: bool, gateway_on: bool, web_on: bool = True, agent_on
                 .replace("{{GATEWAY_AUTOSTART}}", on(gateway_on))
                 .replace("{{WEB_AUTOSTART}}", on(web_on))
                 .replace("{{AGENT_AUTOSTART}}", on(agent_on))
+                .replace("{{EGRESS_AUTOSTART}}", on(egress))
                 # the database container listens on the private Docker network, with its own sign-in rules
                 .replace("{{DATABASE_ARGS}}", " -c listen_addresses=* -c hba_file=/run/relay/pg_hba.conf" if db_network else ""))
     path = RUN / "supervisord.conf"
@@ -411,12 +453,16 @@ def main() -> int:
     if env["RELAY_DB"] == "embedded":
         database(env["RELAY_DB_PASSWORD"] if role == "database" else None)
     gw = gateway_needed(env) if role in ("all", "web") else False
-    environments(env)
     db_on, web_on, agent_on = env["RELAY_DB"] == "embedded", role in ("all", "web", "admin"), role in ("all", "web")
+    egress = agent_on and egress_on(env)
+    environments(env, egress)
+    net = limit_agent_network() if egress else ("off (RELAY_AGENT_EGRESS=off)" if agent_on else "")
     on = lambda b: "true" if b else "false"  # noqa: E731
     (RUN / "supervisor.env").write_text(f"RELAY_ROLE={role}\nRELAY_DB_AUTOSTART={on(db_on)}\nRELAY_GATEWAY_AUTOSTART={on(gw)}\n"
                                         f"RELAY_WEB_AUTOSTART={on(web_on)}\nRELAY_AGENT_AUTOSTART={on(agent_on)}\n", encoding="utf-8")
-    supervisor_conf(db_on, gw, web_on, agent_on, db_network=role == "database")
+    supervisor_conf(db_on, gw, web_on, agent_on, db_network=role == "database", egress=egress)
+    if net:
+        say(f"the AI engine's network: {net}")
     db = {"embedded": "PostgreSQL 17 in this container", "sqlite": "SQLite file in /data/state",
           "external": "an external PostgreSQL (RELAY_DATABASE_URL)"}[env["RELAY_DB"]]
     commit = env.get("RELAY_COMMIT", "")[:8]
