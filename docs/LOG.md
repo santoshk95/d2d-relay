@@ -781,6 +781,13 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       it): the admin portal's sign-in now refuses a blocked PASDACS address instead of joining it to PASDACS
       (`otp._admin_signed_in`); an address added through `platform.py` comes off the Blocked list; single sign-on's
       auto-provision refuses a blocked address (`identity.py`; live signs in with codes only). Tests: every suite on fresh test stacks, with the starting-credit review on and off, 685 and 668 checks, all passing; accounts_check.py 45 (a PASDACS address its main owner removed is refused on the admin portal too).
+    - **The follow-up is live since 2026-11-12, ~13:11 IST** (the user's "Yes, deploy"), deployed by the "Deployment
+      and publishing verification" session: web, admin and the job runner run `d2d-relay:54f6ed7` (= latest; `bdf370e`
+      kept for going back), built from the clean commit; the image differs from bdf370e only in identity.py, otp.py and
+      platform.py; no compose change. Live had no dashboards, no queued jobs and an idle AI engine at the restart.
+      Checked on live: all three healthy on 54f6ed7 with the three fixes in place; one `claude --version` job in a
+      throwaway folder run in a job container and removed (the folder too); the AI engine's API still refusing its own
+      user (403) and its direct connections out refused; https://d2d.pasdacs.com/healthz 200; no errors in any log.
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -821,14 +828,16 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 32. **Live:** web, admin and the job runner run `d2d-relay:bdf370e` (= latest); the
-database container runs `d2d-relay:8689305`'s image. **GitHub** is at `7ecd8b4` (item 30 and its log, pushed on
-2026-11-12 after the user's "Yes, push"); the D2D logo (`e07a6c1`), item 31 (`8b18e3f`), item 32 (`bdf370e`) and these
-logs are committed here and in the deploy folder, not pushed yet. **Going back:** `d2d-relay:8b18e3f`, `d6be664`,
-`a84d7c9`, `72b71a1`, `e2be1d2`, `442a396`, `c8e615f` and `8f39265` stay tagged (`docker tag <image> d2d-relay:latest`, then `docker compose up -d
---no-deps web admin`); going back before item 31 also takes the deploy folder to `7ecd8b4` first (`git reset --keep
-7ecd8b4`) and `docker rm -f d2d-relay-runner` after; any other version is a commit on GitHub (in the deploy folder:
-`git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`).
+Updated 2026-11-12, after item 32's follow-up. **Live:** web, admin and the job runner run `d2d-relay:54f6ed7`
+(= latest); the database container runs `d2d-relay:8689305`'s image. **GitHub**, this folder and the deploy folder are
+all on this log entry: the D2D logo (`e07a6c1`), item 31 (`8b18e3f`), item 32 (`bdf370e`), its follow-up (`54f6ed7`)
+and their logs were pushed on 2026-11-12 after the user's "ensure everything is clean and confirmed and deployed and
+published correctly" (scanned first for the live `.env` and `tunnel.env` values and key patterns: no secrets).
+**Going back:** `d2d-relay:bdf370e`, `8b18e3f`, `d6be664`, `a84d7c9`, `72b71a1`, `e2be1d2`, `442a396`, `c8e615f` and
+`8f39265` stay tagged (`docker tag <image> d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`;
+only `web admin` for a version before item 31); going back before item 31 also takes the deploy folder to `7ecd8b4`
+first (`git reset --keep 7ecd8b4`) and `docker rm -f d2d-relay-runner` after; any other version is a commit on GitHub
+(in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`).
 
 ### Before the public launch (the user)
 
