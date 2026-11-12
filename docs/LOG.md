@@ -929,7 +929,8 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
 
 37. **A sunburst's labels stay inside their own slices** (the user, 2026-11-12: "Yes, fix it", for what item 36's
     end-to-end run showed next). Code `334b493`; release image `d2d-relay:334b493`, built from the clean commit and
-    tested; **waiting for the user's word to deploy** (Claude Code's auto mode refused the restart on "Yes, fix it").
+    tested; **live since 20:45 IST** the same day, on the user's "Yes, deploy" (Claude Code's auto mode had refused
+    the restart on "Yes, fix it").
     - **Relay Hierarchy's sunburst** wrote the labels of its thin slices over each other: in the Relay report "Online
       2.5%" lay on "Retail 2.4%", and the inner "Clothing 4.9%" on "Accessories 3.7%". A thin slice's label runs along
       the radius, so its two lines sit side by side across the slice, and only one line's room was checked. Now a label
@@ -948,10 +949,11 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       Components, with nothing on the thin slices; no new fault seen on its three pages.
     - **Afterwards:** the test stack, its helpers and their data folder removed; the test runs' transcripts deleted
       from `claude-api-auth`. Live was not touched.
-    - **To deploy** (on the user's word; live idle first): in the deploy folder `git fetch <this folder> main` and
-      `git merge --ff-only FETCH_HEAD` (no compose, `pbix\`, `daxcheck\` or `config\` change), `docker tag
-      d2d-relay:334b493 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`. `d2d-relay:53fb6ad`
-      stays for going back.
+    - **Deployed at 20:45 IST** after the user's "Yes, deploy": live idle (no job container, the AI engine not busy,
+      no dashboard); deploy folder fast-forwarded to `e41bea0` (no compose, `pbix\`, `daxcheck\` or `config\`
+      change); `d2d-relay:334b493` tagged latest; web, admin and the job runner restarted. Checked on live: healthy on
+      `334b493`; healthz, sign-in page and admin portal 200; Relay Hierarchy 1.0.7.0 served; the runner probe job
+      labelled and removed; no errors. `d2d-relay:53fb6ad` kept for going back.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -992,15 +994,14 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 37's tests. **Live:** web, admin and the job runner run `d2d-relay:53fb6ad`
-(= latest, since 19:20 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
-info@pasdacs.com. **GitHub** and the deploy folder are on item 36's log entry, `cec5ed2` (items 34 to 36 and their
+Updated 2026-11-12, after item 37's deploy. **Live:** web, admin and the job runner run `d2d-relay:334b493`
+(= latest, since 20:45 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
+info@pasdacs.com. **GitHub**, this folder and the deploy folder are all on this log entry (items 34 to 37 and their
 logs pushed after their deploys; every commit scanned for the live `.env` and `tunnel.env` values and key patterns:
-none). **Waiting for the user's word to deploy:** item 37 (`334b493`, release image `d2d-relay:334b493`, tested; the
-steps are in its entry), committed in this folder with this log entry, not pushed. **Going back** to item 35 (`d2d-relay:e05f035`, kept): in the deploy folder `git reset --keep 8bbfd7e`,
-`docker tag d2d-relay:e05f035 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; to item 34
-(`d2d-relay:aa4531e`, kept) the same with `520e88e`; to item 33 (`d2d-relay:54f6ed7`, kept) the same with `2cd493e`
-(it takes `config/house-models.json` back too). No older release
+none). **Going back** to item 36 (`d2d-relay:53fb6ad`, kept): in the deploy folder `git reset --keep cec5ed2`,
+`docker tag d2d-relay:53fb6ad d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; to item 35
+(`d2d-relay:e05f035`, kept) the same with `8bbfd7e`; to item 34 (`d2d-relay:aa4531e`, kept) with `520e88e`; to item
+33 (`d2d-relay:54f6ed7`, kept) with `2cd493e` (it takes `config/house-models.json` back too). No older release
 image is kept on this PC (item 33): any other version is a commit on
 GitHub (in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`), then `docker
 compose up -d --no-deps web admin runner` (only `web admin` for a version before item 31); going back before item 31
