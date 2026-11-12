@@ -86,7 +86,7 @@ def register_job(kind: str, handler, *, status: str, done: str, llm: bool = Fals
         TIMEOUT_S[kind] = timeout_s
 ZIP_DATA_LIMIT = 100 * 1024 * 1024     # CSVs go into the download only up to this size
 
-LANE = "build"                          # this worker's lane; Ask D (phase 5) gets its own 'chat' lane
+LANE = "build"                          # this worker's lane; Ask Relay (phase 5) gets its own 'chat' lane
 class _Current(dict):
     """The job running now (pid, kind, task, started, job, owner, tenant) as the rest of the app sees it: only a
     request or pass in the job's own tenant sees which job it is - everyone else sees an idle mapping (P17: the

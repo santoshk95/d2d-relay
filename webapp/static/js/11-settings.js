@@ -4,7 +4,7 @@ const KIND_HELP = {
   anthropic_api: 'Your Anthropic API key; runs are billed to your API organisation.',
   litellm: 'Through the Relay LiteLLM gateway to Amazon Bedrock, Azure AI Foundry or Google Vertex AI, with the credentials your admin set up for your team.',
   enterprise: "Your organisation's own endpoint that speaks the Anthropic API (base URL + token).",
-  codex: 'OpenAI Codex CLI in its own agent image, with your OpenAI API key. Same toolkit, guide and review gates; Claude stays the default and Ask D keeps using it.',
+  codex: 'OpenAI Codex CLI in its own agent image, with your OpenAI API key. Same toolkit, guide and review gates; Claude stays the default and Ask Relay keeps using it.',
   gemini: 'Gemini CLI in its own agent image, with your Gemini API key (Google AI Studio). Same toolkit, guide and review gates.',
   antigravity: 'Antigravity CLI in its own agent image. Leave the key empty to use this installation\'s Google login (the antigravity-api container\'s sign-in); paste your own Gemini API key to use your key instead. Same toolkit, guide and review gates.'};
 const CLI_KEY_OPTIONAL = {antigravity: true};

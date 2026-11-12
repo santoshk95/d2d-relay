@@ -250,7 +250,7 @@ def run_config(uid: str | None, model: str, ttl_s: int, kind: str | None = None)
     """{env, model, provider, kind} for a run owned by `uid`. kind overrides the person's choice (the backup)."""
     s = settings(uid) if uid else {"kind": "claude_account", "route": None, "base_url": ""}
     kind = kind or s["kind"]
-    if is_cli_model_id(model) and kind not in CLI_KINDS:     # a CLI pick running on Claude (backup, Ask D): Claude's default
+    if is_cli_model_id(model) and kind not in CLI_KINDS:     # a CLI pick running on Claude (backup, Ask Relay): Claude's default
         from .worker import DEFAULT_MODEL                   # late import: worker imports providers
         model = DEFAULT_MODEL
     sec = (lambda n: secrets_store.get(f"user:{uid}", n)) if uid else (lambda n: None)

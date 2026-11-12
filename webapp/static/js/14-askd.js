@@ -1,7 +1,7 @@
-/* ---------------- Ask D (phase 5): questions about your data, checked at every step ---------------- */
+/* ---------------- Ask Relay (phase 5): questions about your data, checked at every step ---------------- */
 const SCOPE_LABEL = {dashboard: 'One dashboard', team: 'All my data', org: 'All my data'};
 
-/* An Ask D answer as an interactive widget. Everything comes from the answer's own data: filters for its category
+/* An Ask Relay answer as an interactive widget. Everything comes from the answer's own data: filters for its category
    columns and its date range, a chip for each of its measures, "By" to regroup, Top N, Bar / Line / Table, totals that
    follow the filters, hover / keyboard values, click to ask about a point, "Ask about this view", and a PNG. */
 const ASK_COLORS = ['#2C7A66', '#4E6E9E', '#B78A2A', '#A8475A'];      // enterprise sequence: forest teal, slate, muted gold, rose

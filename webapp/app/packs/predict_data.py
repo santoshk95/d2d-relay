@@ -1,7 +1,7 @@
 """Where the AI wave's packs read their numbers (Predictive analytics first; Anomaly & risk detection and
 Suggestions & recommendations reuse it): the work item's uploads (DuckDB), its warehouse connections (the guarded,
 read-only live query, written once in DuckDB's dialect and transpiled by sqlglot) and **a dashboard's data** - DuckDB
-over the dashboard's data folder with Ask D's guard (one read-only SELECT over that dashboard's own views, a row limit),
+over the dashboard's data folder with Ask Relay's guard (one read-only SELECT over that dashboard's own views, a row limit),
 opened only when the work item's owner may open the dashboard.
 
 A dataset is {"key", "name", "label", "where", "ref"}; ref is {"source": "file", "item", "file"} |
@@ -49,13 +49,13 @@ def fmt(v, d: int = 2) -> str:
 # ------------------------------------------------------------------ a dashboard's data as a platform and a reader
 
 class DashboardReader(oc.Reader):
-    """One table (view) of a dashboard's data, through Ask D's engine and guard: DuckDB views over its data folder."""
+    """One table (view) of a dashboard's data, through Ask Relay's engine and guard: DuckDB views over its data folder."""
     label = "dashboard"
     sql = True
 
     def __init__(self, pid: str, table: str):
         try:
-            self.con, self.tables = askd._extract_engine([pid], False)          # noqa: SLF001 - the dashboard's own views, as Ask D sees them
+            self.con, self.tables = askd._extract_engine([pid], False)          # noqa: SLF001 - the dashboard's own views, as Ask Relay sees them
         except (KeyError, FileNotFoundError) as e:
             raise oc.ReadError("The dashboard has no data folder.") from e
         if table not in self.tables:
@@ -94,8 +94,8 @@ def dashboards_for(u: dict) -> list[tuple[str, str]]:
 
 class DashboardPlatform(wb.Platform):
     id, label = "dashboards", "A dashboard's data"
-    simulator = "a dashboard folder the tests write (data/*.csv), read by Ask D's DuckDB engine"
-    reads = "the data of a dashboard you can open - DuckDB over its data folder, one guarded read-only SELECT at a time, as Ask D reads it"
+    simulator = "a dashboard folder the tests write (data/*.csv), read by Ask Relay's DuckDB engine"
+    reads = "the data of a dashboard you can open - DuckDB over its data folder, one guarded read-only SELECT at a time, as Ask Relay reads it"
 
     def test(self, ctx: wb.Ctx) -> list[dict]:
         pid = (ctx.scope.get("dashboard") or "").strip()
@@ -107,7 +107,7 @@ class DashboardPlatform(wb.Platform):
             if not (p and auth.can_project(owner, "view", p)):
                 return [{"source": pid, "kind": "Dashboard", "ok": False, "sees": "the owner of this work item cannot open that dashboard", "scope": ""}]
             _, tables = askd._extract_engine([pid], False)                     # noqa: SLF001
-            return [{"source": store.load(pid).get("name") or pid, "kind": "Dashboard", "ok": True, "sees": f"{len(tables)} table(s)", "scope": "Read-only (Ask D's guard)"}]
+            return [{"source": store.load(pid).get("name") or pid, "kind": "Dashboard", "ok": True, "sees": f"{len(tables)} table(s)", "scope": "Read-only (Ask Relay's guard)"}]
         except (KeyError, FileNotFoundError):
             return [{"source": pid, "kind": "Dashboard", "ok": False, "sees": "no such dashboard", "scope": ""}]
 

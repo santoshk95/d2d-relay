@@ -213,7 +213,7 @@ def rules(s: dict) -> dict[str, dict]:
     if not a.get("ok"):
         STATE["agent_fail"] += 1
         if STATE["agent_fail"] >= 2:
-            found["agent_down"] = {"severity": "critical", "text": "The AI agent service does not answer; builds and Ask D are stopped."}
+            found["agent_down"] = {"severity": "critical", "text": "The AI agent service does not answer; builds and Ask Relay are stopped."}
     else:
         STATE["agent_fail"] = 0
     run = s["running"]
@@ -227,7 +227,7 @@ def rules(s: dict) -> dict[str, dict]:
         found["build_orphan"] = {"severity": "warning", "text": f"The agent's build lane has been busy {round((now - since['build']) / 60)} min with no job "
                                  "in the app (a run left behind by a restart?)."}
     if since.get("chat") and now - since["chat"] > t["chat_stuck_min"] * 60:
-        found["chat_stuck"] = {"severity": "warning", "text": f"Ask D's lane has been busy {round((now - since['chat']) / 60)} min; new questions wait."}
+        found["chat_stuck"] = {"severity": "warning", "text": f"Ask Relay's lane has been busy {round((now - since['chat']) / 60)} min; new questions wait."}
     if s["waiting"] and not run.get("kind"):
         STATE.setdefault("idle_since", now)
         if now - STATE["idle_since"] > t["queue_stalled_min"] * 60:

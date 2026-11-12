@@ -51,7 +51,7 @@ async function renderSchedules() {
   $('#main').replaceChildren(page);
   const target = s => s.target.type === 'dashboard' ? `Dashboard - ${(d.dashboards.find(x => x.id === s.target.project) || {}).name || s.target.project}`
     : s.target.type === 'page' ? `Page - ${(d.pages.find(x => x.id === s.target.id) || {}).title || s.target.id}`
-    : s.target.type === 'askd' ? `Ask D - "${s.target.question}"`
+    : s.target.type === 'askd' ? `Ask Relay - "${s.target.question}"`
     : `${s.target.type === 'metric' ? '[' + s.target.measure + ']' : 'SQL'} ${s.target.op} ${s.target.threshold.toLocaleString()} - ${(d.dashboards.find(x => x.id === s.target.project) || {}).name || s.target.project}`;
   const act = (s, a, label, cls) => h('button', {class: 'btn sm' + (cls ? ' ' + cls : ''), onclick: async e => {
     e.target.disabled = true; if (a === 'run') notify('Running...');
@@ -102,7 +102,7 @@ function scheduleDialog(kind, d, s, prefill) {
   const draw = () => {
     const t = v.target, c = v.cadence;
     const what = kind === 'report' ? [
-      f('Send', sel([['dashboard', 'A dashboard (its prototype)'], ['page', 'An insight page'], ['askd', 'An Ask D question, answered fresh each time']], t.type, x => { v.target = {type: x, format: t.format || 'pdf'}; if (x === 'dashboard') v.target.project = (d.dashboards[0] || {}).id; if (x === 'page') v.target.id = (d.pages[0] || {}).id; if (x === 'askd') { v.target.scope = {kind: 'team'}; v.recipients = [S.me.id]; } draw(); })),
+      f('Send', sel([['dashboard', 'A dashboard (its prototype)'], ['page', 'An insight page'], ['askd', 'An Ask Relay question, answered fresh each time']], t.type, x => { v.target = {type: x, format: t.format || 'pdf'}; if (x === 'dashboard') v.target.project = (d.dashboards[0] || {}).id; if (x === 'page') v.target.id = (d.pages[0] || {}).id; if (x === 'askd') { v.target.scope = {kind: 'team'}; v.recipients = [S.me.id]; } draw(); })),
       t.type === 'dashboard' ? f('Dashboard', sel(d.dashboards.map(x => [x.id, x.name]), t.project, x => { t.project = x; })) : null,
       t.type === 'page' ? f('Page', d.pages.length ? sel(d.pages.map(x => [x.id, x.title]), t.id, x => { t.id = x; }) : h('div', {class: 'muted small'}, 'You have no pages yet.')) : null,
       t.type === 'askd' ? [f('Question', inp(t.question, x => { t.question = x; }, {placeholder: 'How did sales do last week, by region?'})),
@@ -270,7 +270,7 @@ async function adminCosts() {
   const tile = (t, v, s) => h('div', {class: 'stat'}, h('b', {}, v), h('span', {}, t), s ? h('div', {class: 'faint small'}, s) : null);
   const bars = (rows, label) => { const top = Math.max(...rows.map(x => x.cost_usd), 0.0001);
     return h('table', {class: 'utable'}, h('tr', {}, h('th', {class: 'l'}, label), h('th', {class: 'l', style: 'width:40%'}, ''), h('th', {}, 'Runs'), h('th', {}, 'Tokens'), h('th', {}, 'Cost')),
-      rows.length ? rows.map(x => h('tr', {}, h('td', {}, label === 'Model' ? modelName(x.name) : label === 'Step' ? (STAGES[x.name] || {askd: 'Ask D', describe: 'Descriptions', schedule_draft: 'Report & alert drafts', start_read: 'Reading a start'}[x.name] || String(x.name).replace(/_/g, ' ').replace(/^./, c => c.toUpperCase())) : x.name),
+      rows.length ? rows.map(x => h('tr', {}, h('td', {}, label === 'Model' ? modelName(x.name) : label === 'Step' ? (STAGES[x.name] || {askd: 'Ask Relay', describe: 'Descriptions', schedule_draft: 'Report & alert drafts', start_read: 'Reading a start'}[x.name] || String(x.name).replace(/_/g, ' ').replace(/^./, c => c.toUpperCase())) : x.name),
         h('td', {}, h('div', {class: 'cbar'}, h('i', {style: `width:${100 * x.cost_usd / top}%`}))), h('td', {class: 'n'}, x.runs), h('td', {class: 'n'}, tok(x.tokens)), h('td', {class: 'n'}, usd(x.cost_usd))))
         : h('tr', {}, h('td', {colspan: 5, class: 'muted'}, 'Nothing this month.'))); };
   const top = Math.max(...r.by_day.map(x => x.cost_usd), 0.0001);
@@ -311,7 +311,7 @@ async function adminCosts() {
         r.extracts.map(x => h('tr', {}, h('td', {}, h('a', {href: '#/p/' + x.project}, x.name || x.project)), h('td', {class: 'n'}, x.tables), h('td', {class: 'n'}, x.rows.toLocaleString()), h('td', {class: 'n'}, size(x.bytes)))))
         : h('div', {class: 'muted small'}, 'No warehouse extracts.')),
     h('div', {class: 'card flat'}, h('h3', {}, 'Quotas'),
-      h('div', {class: 'hint', style: 'margin-bottom:10px'}, 'A monthly AI budget per person or team. At the warning level people are told once; at the limit new builds and Ask D questions wait until next month (running work finishes).'),
+      h('div', {class: 'hint', style: 'margin-bottom:10px'}, 'A monthly AI budget per person or team. At the warning level people are told once; at the limit new builds and Ask Relay questions wait until next month (running work finishes).'),
       r.quotas.length ? r.quotas.map(x => h('div', {class: 'row'}, h('div', {class: 'grow'}, quotaBar({...x, level: x.spent_usd >= x.monthly_usd ? 'stop' : x.spent_usd >= x.monthly_usd * x.soft_pct / 100 ? 'warn' : 'ok'}, x.scope === 'workspace' ? 'The whole workspace' : `${x.scope === 'team' ? 'Team' : 'Person'} - ${x.name}`)),
         h('button', {class: 'btn sm', onclick: async () => { await api('/api/admin/quotas', {method: 'PUT', json: {scope: x.scope, target_id: x.target_id, monthly_usd: null}}); reAdmin(); }}, 'Remove')))
         : h('div', {class: 'muted small'}, 'No quotas.'),

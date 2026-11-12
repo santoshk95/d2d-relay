@@ -265,7 +265,7 @@ CREATE TABLE IF NOT EXISTS suggestions (
   decided_by TEXT, decided REAL);
 CREATE TABLE IF NOT EXISTS org_defaults (
   term TEXT PRIMARY KEY, metric_id TEXT NOT NULL REFERENCES metrics(id), decided_by TEXT, decided REAL NOT NULL);
--- phase 5: Ask D
+-- phase 5: Ask Relay
 CREATE TABLE IF NOT EXISTS askd_threads (
   id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), scope TEXT NOT NULL, title TEXT NOT NULL,
   created REAL NOT NULL, updated REAL NOT NULL);

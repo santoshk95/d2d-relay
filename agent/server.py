@@ -17,7 +17,7 @@ access and no sub-agents.
 Runners and lanes (platform plan, phase 0): every run goes through a `Runner` (start a run, stream normalised
 events: start, say, tool, result, done with usage - or error). `ClaudeCodeRunner` is the only one today; Codex CLI
 and Gemini CLI adapters plug in behind the same interface later. Runs are strictly sequential *per lane*: the
-`build` lane (dashboards; the only lane the app uses today) and the `chat` lane (Ask D, phase 5), so a question
+`build` lane (dashboards; the only lane the app uses today) and the `chat` lane (Ask Relay, phase 5), so a question
 never waits behind a build. One run at a time in each lane.
 """
 import asyncio
@@ -116,7 +116,7 @@ class Run(BaseModel):
     # the run owner's AI provider (phase 2): only the variables in PROVIDER_ENV are passed to the CLI process;
     # they are never logged or echoed back
     env: dict[str, str] = {}
-    # a subset of TOOLS for this run; [] = no tools at all (Ask D: the web app runs every query itself)
+    # a subset of TOOLS for this run; [] = no tools at all (Ask Relay: the web app runs every query itself)
     tools: list[str] | None = None
 
 
@@ -422,7 +422,7 @@ def render(req: Render):
 
 @app.post("/snapshot")
 def snapshot(req: Snapshot):
-    """A PNG of a self-contained HTML card (an Ask D answer), drawn in headless Chromium. No network, no scripts
+    """A PNG of a self-contained HTML card (an Ask Relay answer), drawn in headless Chromium. No network, no scripts
     from outside: the page is set as content and external requests are blocked. Does not take a lane lock."""
     import base64
 
@@ -450,7 +450,7 @@ PER_SESSION = ("tasks", "session-env", "file-history", "debug", "todos")     # C
 
 class Forget(BaseModel):
     workdir: str | None = None          # a folder the runs used, as POST /runs takes it
-    sessions: list[str] | None = None   # only these sessions of it (an Ask D answer); none: every run it had
+    sessions: list[str] | None = None   # only these sessions of it (an Ask Relay answer); none: every run it had
     missing: bool = False               # instead: every folder under the projects root that no longer exists
     older_than_days: float | None = None   # with missing: also every transcript not touched for this long
 
@@ -512,7 +512,7 @@ def _live_folders() -> set[str]:
 @app.post("/forget")
 def forget(req: Forget):
     """Delete Claude Code's own record of runs (the transcripts with the tool output saved beside them, task lists,
-    shell state) once what they read is deleted: a dashboard, an Ask D answer, an organisation (missing: every folder
+    shell state) once what they read is deleted: a dashboard, an Ask Relay answer, an organisation (missing: every folder
     that is gone). The transcripts hold what the AI read, so they must not outlive it. Claude Code also drops any
     transcript older than cleanupPeriodDays by itself (managed settings)."""
     projects = CLAUDE_HOME / "projects"

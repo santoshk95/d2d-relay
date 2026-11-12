@@ -1,6 +1,6 @@
 """Scheduled reports and metric alerts (phase 7).
 
-A report renders an insight page, a dashboard prototype or a fresh Ask D answer in the agent's headless browser
+A report renders an insight page, a dashboard prototype or a fresh Ask Relay answer in the agent's headless browser
 (PDF or PNG) and emails it from the owner's own email account; without an account it is kept for the owner to
 download from the notification. An alert checks one number (a dashboard measure, or one SELECT of the owner's) on
 a schedule and tells the owner - in the app, and by email when an account is chosen - when it crosses the
@@ -137,7 +137,7 @@ def _can_view_target(u: dict, target: dict) -> bool:
 def clean_target(kind: str, t: dict, u: dict) -> dict:
     typ = t.get("type")
     if kind == "report" and typ not in ("page", "dashboard", "askd"):
-        raise ScheduleError("A report sends an insight page, a dashboard or an Ask D question.")
+        raise ScheduleError("A report sends an insight page, a dashboard or an Ask Relay question.")
     if kind == "alert" and typ not in ("metric", "sql"):
         raise ScheduleError("An alert checks a dashboard measure or a SQL query.")
     out: dict = {"type": typ}
@@ -150,10 +150,10 @@ def clean_target(kind: str, t: dict, u: dict) -> dict:
     elif typ == "askd":
         q = str(t.get("question") or "").strip()
         if not q:
-            raise ScheduleError("Write the question Ask D should answer.")
+            raise ScheduleError("Write the question Ask Relay should answer.")
         scope = t.get("scope") or {"kind": "team"}
         if scope.get("kind") not in ("dashboard", "team", "org"):
-            raise ScheduleError("Ask D scope: a dashboard, your team or the organisation.")
+            raise ScheduleError("Ask Relay scope: a dashboard, your team or the organisation.")
         out.update(question=q[:1000], scope={k: scope[k] for k in ("kind", "project") if k in scope})
     else:
         out["project"] = str(t.get("project") or "")
@@ -177,7 +177,7 @@ def clean_target(kind: str, t: dict, u: dict) -> dict:
 
 
 def clean_recipients(kind: str, target: dict, ids: list[str], u: dict) -> list[str]:
-    """Only people in the organisation who can open what is sent; an Ask D answer uses the owner's own access, so it
+    """Only people in the organisation who can open what is sent; an Ask Relay answer uses the owner's own access, so it
     goes to the owner only."""
     ids = list(dict.fromkeys([str(i) for i in ids or []] or [u["id"]]))
     out = []
@@ -186,7 +186,7 @@ def clean_recipients(kind: str, target: dict, ids: list[str], u: dict) -> list[s
         if not r:
             raise ScheduleError("Unknown recipient.")
         if rid != u["id"] and (kind == "alert" or target["type"] == "askd"):
-            raise ScheduleError("Alerts and Ask D reports go to you only (they use your own access to the data).")
+            raise ScheduleError("Alerts and Ask Relay reports go to you only (they use your own access to the data).")
         if not _can_view_target(r, target):
             raise ScheduleError(f"{r['name']} cannot open what this report sends; share it with them first.")
         out.append(rid)
@@ -266,7 +266,7 @@ def pause(s: dict, reason: str) -> None:
 
 
 def _check_connections(u: dict, target: dict) -> None:
-    """Ask D over live warehouses uses the owner's stored sign-ins; one that expired pauses the schedule."""
+    """Ask Relay over live warehouses uses the owner's stored sign-ins; one that expired pauses the schedule."""
     if target["type"] != "askd" or target["scope"].get("kind") == "dashboard":
         return
     for c in db.q("SELECT c.name, c.status, c.error FROM connections c WHERE c.owner_id = ? AND EXISTS "
@@ -712,7 +712,7 @@ def _label(t: dict) -> str:
     names = {p["id"]: p.get("name") for p in store.all_projects()}
     d = names.get(t.get("project"), t.get("project"))
     return {"dashboard": lambda: f"Dashboard - {d}", "page": lambda: f"Page - {t.get('id')}",
-            "askd": lambda: f"Ask D - \"{t.get('question')}\"",
+            "askd": lambda: f"Ask Relay - \"{t.get('question')}\"",
             "metric": lambda: f"[{t.get('measure')}] {t.get('op')} {num(t.get('threshold'))} - {d}",
             "sql": lambda: f"SQL {t.get('op')} {num(t.get('threshold'))} - {d}"}[t["type"]]()
 

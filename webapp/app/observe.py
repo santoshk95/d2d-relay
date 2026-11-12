@@ -9,7 +9,7 @@ asset's own history (rolling window, by weekday), thresholds are tunable per che
 person marks "expected" widens the band.
 
 An incident = the check, the asset, measured vs expected, severity, first / last seen and its impact path from the
-graph: every report, schedule, Ask D answer, agent run and person downstream. One upstream break is one incident
+graph: every report, schedule, Ask Relay answer, agent run and person downstream. One upstream break is one incident
 (downstream findings of the same cause fold into it). Every action - warn report users (a banner on the affected
 dashboards + a notification to their owners), raise a ticket (through the Service desk's own write-back gate),
 Self-healing and AI SDLC fix drafts - opens a checkpoint (kind `observe.action`, view `table`); nothing is written
@@ -43,7 +43,7 @@ ROUTE = "#/observability"
 TEST_HOOKS = os.environ.get("D2D_TEST_HOOKS") == "1"
 LAYERS = [("sources", "Sources", "ERP, PLM, finance, CRM, files"), ("integrations", "Integrations", "OIC, SSIS, ADF, n8n, bots"),
           ("warehouse", "Warehouse", "Snowflake, Fabric, Databricks"), ("semantic", "Semantic models", "metrics, ontology, models"),
-          ("bi", "BI & reports", "Power BI, Tableau, migrated"), ("consumers", "Consumers", "Ask D, schedules, alerts, agents")]
+          ("bi", "BI & reports", "Power BI, Tableau, migrated"), ("consumers", "Consumers", "Ask Relay, schedules, alerts, agents")]
 LAYER_LABEL = {k: l for k, l, _ in LAYERS}
 WATCH_KINDS = ("table", "column", "report", "page", "measure", "flow", "job", "bot")
 ROUTES = {"warn": "Warn report users", "ticket": "Raise a ticket", "heal": "Fix with Self-healing", "sdlc": "Fix with AI SDLC"}
@@ -878,7 +878,7 @@ def _update_status(asset_ids: set[str], now: float) -> None:
 
 def impact_of(a: dict, now: float | None = None) -> dict:
     """Downstream of the asset on the graph (reports, pages, measures, tables, jobs), then the consumers the platform
-    knows: the dashboards' owners and the people they are shared with, schedules and their recipients, Ask D
+    knows: the dashboards' owners and the people they are shared with, schedules and their recipients, Ask Relay
     answers that used the data (30 days), agent runs on those dashboards (30 days). With the path for the map."""
     now = now or time.time()
     nid = a.get("node_id")
@@ -953,7 +953,7 @@ def impact_of(a: dict, now: float | None = None) -> dict:
         for rid in rep_ids:
             path_edges.append({"from": rid, "to": sid, "kind": "feeds"})
     if answers:
-        path_nodes.append({"id": "v-askd", "kind": "entity", "label": f"Ask D: {answers} answer{'s' if answers != 1 else ''}", "name": "Ask D", "role": "down", "hop": 99, "virtual": True})
+        path_nodes.append({"id": "v-askd", "kind": "entity", "label": f"Ask Relay: {answers} answer{'s' if answers != 1 else ''}", "name": "Ask Relay", "role": "down", "hop": 99, "virtual": True})
         for rid in rep_ids:
             path_edges.append({"from": rid, "to": "v-askd", "kind": "feeds"})
     for uid in sorted(people, key=lambda x: names.get(x, x))[:12]:
@@ -967,7 +967,7 @@ def impact_of(a: dict, now: float | None = None) -> dict:
     if schedules:
         parts.append(f"{len(schedules)} schedule{'s' if len(schedules) != 1 else ''}")
     if answers:
-        parts.append(f"{answers} Ask D answer{'s' if answers != 1 else ''}")
+        parts.append(f"{answers} Ask Relay answer{'s' if answers != 1 else ''}")
     if runs:
         parts.append(f"{runs} agent run{'s' if runs != 1 else ''}")
     if people:

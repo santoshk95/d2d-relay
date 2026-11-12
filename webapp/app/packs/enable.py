@@ -13,7 +13,7 @@ Adopt       the guides (one per role) and the playbook for validating agent work
             registry's facts and the workspace's own records (the checkpoint kinds in use, how long decisions take,
             how often work is accepted first time), every figure sourced.
 Measure     the adoption scorecard: active people per module from the audit log, the views of delivered reports from
-            an uploaded Power BI activity log, Ask D questions, decisions and time to validate from the Validation
+            an uploaded Power BI activity log, Ask Relay questions, decisions and time to validate from the Validation
             queue - against the person's targets (the wizard); the scorecard document through the docs engine. The
             `schedule` field (every week by default) measures again; a round waits for a person only below target.
 """
@@ -39,7 +39,7 @@ PREFIX = [("askd.", "askd"), ("studio.", "proposals"), ("rfp.", "rfp"), ("schedu
           ("connection.", "connect"), ("metric", "metrics"), ("semantic", "semantics"), ("term.", "semantics"), ("checkpoint.accepted", "validate"), ("checkpoint.sent_back", "validate")]
 NAMES = {"validate": "Validation queue", "start": "Start"}
 NEEDS = {"lead": "Team & agents, the Validation queue and the Programme view", "builder": "the modules they build in, and proving work before it ships",
-         "validator": "the Validation queue: reading the evidence, accepting, sending back with a note", "business": "reading the dashboards and asking Ask D"}
+         "validator": "the Validation queue: reading the evidence, accepting, sending back with a note", "business": "reading the dashboards and asking Ask Relay"}
 ROLE_MODULES = {"lead": ["delivery", "validate"], "builder": [], "validator": ["validate"], "business": ["bi", "askd"]}
 
 
@@ -316,7 +316,7 @@ def measure(ctx: wb.Ctx) -> dict:
     gates.append({"name": "practised", "label": "People who practised on sample data", "status": "pass" if rec["practised"] == rec["people"] else "warn",
                   "measured": f"{rec['practised']} of {rec['people']}", "expected": "everyone in scope", "detail": ""})
     S = "record:adoption"
-    p1, f1 = cx.say("{a} of {n} people were active on Relay in the last thirty days ({p}); {q} questions went to Ask D.", a=(rec["active"], f"{S}#active"), n=(rec["people"], f"{S}#people"),
+    p1, f1 = cx.say("{a} of {n} people were active on Relay in the last thirty days ({p}); {q} questions went to Ask Relay.", a=(rec["active"], f"{S}#active"), n=(rec["people"], f"{S}#people"),
                     p=(rec["active_pct"], f"{S}#active_pct", "%"), q=(rec["questions"], f"{S}#questions"))
     p2, f2 = cx.say("People decided {d} checks, {acc} of them accepted first time; the median decision took {m} minutes.", d=(v["decided"], f"{S}#validation.decided"),
                     acc=(v["accepted"], f"{S}#validation.accepted"), m=(v["median_minutes"], f"{S}#validation.median_minutes"))
@@ -383,7 +383,7 @@ wb.register(wb.Pack(
                                confirm_if=lambda ctx, out: out["ok"] and out["counts"].get("below target", 0) > 0,
                                actions={"wording": nv.action(("adoption",), "Summarise adoption for the sponsor: who uses Relay, how fast people decide, what is next.",
                                                              agent="Adoption scorer", rebuild=lambda ctx: measure(ctx))},
-                               text="Active people per module, report views, Ask D, decisions and time to validate - against your targets, with the scorecard document")},
+                               text="Active people per module, report views, Ask Relay, decisions and time to validate - against your targets, with the scorecard document")},
         fields=[wb.Field("target_active_pct", "Target: people active in thirty days (per cent)", "number", help="Leave empty to measure without judging."),
                 wb.Field("target_minutes", "Target: median minutes to decide a check", "number"),
                 wb.Field("template", "Template", "select", options=cx.template_options, default="relay"),

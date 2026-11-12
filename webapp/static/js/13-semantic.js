@@ -32,7 +32,7 @@ function teamMetricsCard(st, kpis) {   // not kpiCard: 06-project.js has the pla
       kpis.map(k => h('tr', {}, can ? h('td', {}, h('input', {type: 'checkbox', title: 'Send to team metrics', onchange: e => { e.target.checked ? pick.add(k.name) : pick.delete(k.name); send.disabled = !pick.size; }})) : null,
         h('td', {}, h('b', {}, k.label || k.name), h('div', {class: 'faint small mono'}, k.name)),
         h('td', {class: 'small'}, k.description || ''), h('td', {class: 'dax'}, k.dax || ''), h('td', {class: 'mono'}, k.format || ''), h('td', {}, certBadge(st, k.name))))),
-    can ? h('div', {class: 'hint'}, 'Tick KPIs and send them to the team\'s metrics: another BI Dev / Analyst reviews them, and once published every dashboard of the team (and Ask D) uses the same definition.') : null);
+    can ? h('div', {class: 'hint'}, 'Tick KPIs and send them to the team\'s metrics: another BI Dev / Analyst reviews them, and once published every dashboard of the team (and Ask Relay) uses the same definition.') : null);
 }
 
 /* the page */
@@ -41,7 +41,7 @@ async function renderSemantic() {
   const body = h('div', {}, skel('rows'));
   $('#main').replaceChildren(h('div', {class: 'page wide'},
     h('div', {class: 'phead'}, h('div', {}, h('h1', {}, 'Metrics & ontology'),
-      h('div', {class: 'meta'}, 'The semantic layer: what your data means - shared by every dashboard and every Ask D answer.'))),
+      h('div', {class: 'meta'}, 'The semantic layer: what your data means - shared by every dashboard and every Ask Relay answer.'))),
     h('div', {class: 'opts', style: 'grid-template-columns:repeat(3,1fr);margin-bottom:16px'},
       [['context', '1 - Context', 'Automatic, from the data: tables, columns, keys, joins, examples.'],
        ['metrics', '2 - Team metrics', 'Reviewed definitions in DAX and SQL - certified once published.'],
@@ -58,7 +58,7 @@ const reSem = () => renderSemantic();
 
 function sqlTabs(by) {
   const keys = Object.keys(by || {}).filter(k => by[k]);
-  if (!keys.length) return h('div', {class: 'muted small'}, 'No SQL yet - add it so Ask D can answer with this metric on live data.');
+  if (!keys.length) return h('div', {class: 'muted small'}, 'No SQL yet - add it so Ask Relay can answer with this metric on live data.');
   const pre = h('pre', {class: 'mono small', style: 'background:var(--surface-2);padding:8px;border-radius:8px;white-space:pre-wrap'}, by[keys[0]]);
   const bar = h('div', {class: 'segbtn'}, keys.map((k, i) => h('button', {class: i ? '' : 'on', onclick: e => { pre.textContent = by[k];
     bar.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === e.target)); }}, k)));
@@ -114,7 +114,7 @@ function metricDialog(m, teams) {
   const mm = modal(m ? `${m.name}: ${m.open ? 'edit draft v' + m.open.version : 'new version'}` : 'New team metric', h('div', {class: 'mbody'},
     h('div', {class: 'opts'}, h('div', {}, h('label', {class: 'f', style: 'margin-top:0'}, 'Team'), team), h('div', {}, h('label', {class: 'f', style: 'margin-top:0'}, 'Name'), name)),
     h('div', {class: 'opts'}, h('div', {}, h('label', {class: 'f'}, 'Label on dashboards'), label), h('div', {}, h('label', {class: 'f'}, 'Format'), fmt)),
-    h('label', {class: 'f'}, 'Meaning'), desc, h('label', {class: 'f'}, 'DAX (Power BI)'), dax, h('label', {class: 'f'}, 'SQL (Ask D, every warehouse)'), sql,
+    h('label', {class: 'f'}, 'Meaning'), desc, h('label', {class: 'f'}, 'DAX (Power BI)'), dax, h('label', {class: 'f'}, 'SQL (Ask Relay, every warehouse)'), sql,
     h('label', {class: 'f'}, 'Also called'), syn,
     h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:14px'}, h('button', {class: 'btn', onclick: () => mm.remove()}, 'Cancel'),
       h('button', {class: 'btn primary', onclick: async () => {
@@ -210,7 +210,7 @@ async function semContext() {
   return h('div', {class: 'stack'},
     h('div', {class: 'note small'}, icon('info'), ' Tables and columns come from each dashboard\'s data. Descriptions come from the warehouse\'s own comments when it has them; ',
       'what is still missing can be drafted by AI from the names, types and real values, and stays "AI suggested" until someone accepts or edits it. ',
-      `Ask D uses all of them. ${undescribed} column(s) are not described yet.`),
+      `Ask Relay uses all of them. ${undescribed} column(s) are not described yet.`),
     d.tables.map(tableCard));
 }
 
@@ -279,7 +279,7 @@ async function semOntology() {
     graph.append(g);
     const words = o.suggestions.filter(x => x.kind === 'same_word');
     const sugg = words.length || o.defaults.length ? h('div', {class: 'card'}, h('h3', {style: 'margin-top:0'}, 'Same metric name, different definitions ', h('span', {class: 'tag ' + (words.length ? 'warn' : '')}, words.length)),
-      h('div', {class: 'small muted', style: 'margin-bottom:6px'}, 'Two teams define a metric with the same name differently. Both stay; an Admin picks the organisation default that Ask D uses for organisation-wide questions.'),
+      h('div', {class: 'small muted', style: 'margin-bottom:6px'}, 'Two teams define a metric with the same name differently. Both stay; an Admin picks the organisation default that Ask Relay uses for organisation-wide questions.'),
       words.map(s => h('div', {style: 'padding:8px 0;border-bottom:1px solid var(--line)'}, h('b', {}, `"${s.payload.term}" - ${s.payload.options.length} definitions`),
         s.payload.options.map(op => h('div', {class: 'row', style: 'margin-top:6px'}, h('span', {class: 'tag'}, op.team), h('code', {class: 'small', style: 'flex:1'}, op.dax),
           S.me && S.me.admin ? h('button', {class: 'btn sm', onclick: () => decideSugg(s.id, true, op.metric_id)}, 'Make default') : null)))),
@@ -354,7 +354,7 @@ function matchGroupsCard(onChange) {
         h('div', {class: 'grow'}, h('h3', {style: 'margin:0'}, 'Possible entities found in your data ', h('span', {class: 'tag ' + (gs.length ? 'warn' : '')}, gs.length)),
           h('div', {class: 'small muted', style: 'margin-top:4px;max-width:820px'},
             'Relay compared the identifier columns of every dashboard\'s data. Where the same values appear in several tables, they probably identify the same business thing - a store, a product, a customer. ',
-            'Confirm it to create an entity: Ask D then knows how to join those tables, and the ontology shows where each thing lives. Open a row to see every column.'))),
+            'Confirm it to create an entity: Ask Relay then knows how to join those tables, and the ontology shows where each thing lives. Open a row to see every column.'))),
       gs.length ? h('div', {class: 'row', style: 'margin:12px 0 4px'},
         h('div', {class: 'mtabs'}, seg('high', 'Likely', hi.length), seg('low', 'Less likely', lo.length)), h('span', {class: 'spacer'}),
         data.can_decide && tab === 'low' && lo.length ? h('button', {class: 'btn sm', onclick: async e => {
@@ -376,7 +376,7 @@ function entityDialog(e, o) {
   const syn = h('input', {type: 'text', value: e ? e.synonyms.join(', ') : '', placeholder: 'shop, branch'});
   const defin = h('textarea', {rows: 4, placeholder: 'What it is in the business, how it is identified, what decisions use it...'}, e ? e.definition || '' : '');
   const exs = h('textarea', {rows: 3, placeholder: 'One example per line, e.g. "Store S-104, a kirana in Koramangala (South zone)"'}, e ? (e.examples || []).join('\n') : '');
-  const status = h('select', {class: 'sel'}, ['draft', 'published'].map(s => h('option', {value: s, selected: e && e.status === s}, s === 'published' ? 'Published (Ask D uses it)' : 'Draft')));
+  const status = h('select', {class: 'sel'}, ['draft', 'published'].map(s => h('option', {value: s, selected: e && e.status === s}, s === 'published' ? 'Published (Ask Relay uses it)' : 'Draft')));
   const relTo = h('select', {class: 'sel'}, o.entities.filter(x => !e || x.id !== e.id).map(x => h('option', {value: x.id}, x.name)));
   const verb = h('input', {type: 'text', placeholder: 'sold at, belongs to, staffed by...'});
   const m = modal(e ? `Entity - ${e.name}` : 'New entity', h('div', {class: 'mbody'},
@@ -386,7 +386,7 @@ function entityDialog(e, o) {
     e ? [h('label', {class: 'f'}, 'Relationship to another entity'), h('div', {class: 'row', style: 'flex-wrap:nowrap'}, verb, relTo,
       h('button', {class: 'btn', onclick: async () => { try { await api('/api/semantic/relations', {json: {from_id: e.id, verb: verb.value, to_id: relTo.value}}); notify('Relationship added', 'ok'); m.remove(); reSem(); } catch (err) { notify(err.message, 'err'); } }}, 'Add'))] : null,
     h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:14px'},
-      e ? h('button', {class: 'btn danger', onclick: async () => { if (!await confirmBox(`Remove ${e.name}?`, `The entity, its keys and its relations leave the ontology. Ask D stops using them.`)) return; try { await api(`/api/semantic/entities/${e.id}`, {method: 'DELETE'}); m.remove(); reSem(); } catch (err) { notify(err.message, 'err'); } }}, 'Remove') : null,
+      e ? h('button', {class: 'btn danger', onclick: async () => { if (!await confirmBox(`Remove ${e.name}?`, `The entity, its keys and its relations leave the ontology. Ask Relay stops using them.`)) return; try { await api(`/api/semantic/entities/${e.id}`, {method: 'DELETE'}); m.remove(); reSem(); } catch (err) { notify(err.message, 'err'); } }}, 'Remove') : null,
       h('span', {class: 'spacer'}), h('button', {class: 'btn', onclick: () => m.remove()}, 'Cancel'),
       h('button', {class: 'btn primary', onclick: async () => { try { await api(e ? `/api/semantic/entities/${e.id}` : '/api/semantic/entities', {method: e ? 'PUT' : 'POST',
         json: {name: name.value, description: desc.value, synonyms: syn.value, status: status.value, definition: defin.value, examples: exs.value.split('\n')}}); notify('Saved', 'ok'); m.remove(); reSem(); } catch (err) { notify(err.message, 'err'); } }}, 'Save'))));

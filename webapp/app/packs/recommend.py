@@ -2,13 +2,13 @@
 actions from the tenant's own numbers, each with its evidence and expected impact, sent to the person who should act
 and tracked until they accept or decline it.
 
-What existed: Ask D suggests next actions with each answer (askd.py, `actions` in every answer). This module reads
+What existed: Ask Relay suggests next actions with each answer (askd.py, `actions` in every answer). This module reads
 those suggestions as signals too, and adds the rest from the data:
   metric_change  a metric's latest period against the same period a year before (else the period before), and the
                  group that drives the change (predict_data: uploads, warehouses, a dashboard's data)
   forecast       a live forecast (Predictive analytics) that falls or rises over its horizon
   anomaly        an unusual number found by Anomaly & risk detection
-  askd           an action Ask D suggested with one of the owner's answers
+  askd           an action Ask Relay suggested with one of the owner's answers
 A playbook (rules, versioned) turns each signal into a suggestion: what to do, why - the numbers behind it - and the
 expected impact; nothing is suggested without a signal and its numbers.
 Develop  Signals -> Explain -> Suggest -> Assign -> Track: the signals read, explained in plain words, the suggestions
@@ -29,7 +29,7 @@ from . import predict_data as pdat
 
 MODULE = "recommend"
 KIND = "recommend.suggestion"
-SIGNALS = {"metric_change": "A metric moved", "forecast": "A forecast moves", "anomaly": "An unusual number", "askd": "Ask D suggested it"}
+SIGNALS = {"metric_change": "A metric moved", "forecast": "A forecast moves", "anomaly": "An unusual number", "askd": "Ask Relay suggested it"}
 DEFAULT_RULES = [
     {"id": "drop", "signal": "metric_change", "when": "down", "min_change": 10, "priority": "high", "on": True,
      "action": "Review the fall in {metric}: {change} against {base}; most of it is {group}. Agree a recovery plan with its owner.",
@@ -44,7 +44,7 @@ DEFAULT_RULES = [
     {"id": "anomaly", "signal": "anomaly", "when": "any", "min_change": 0, "priority": "high", "on": True,
      "action": "Check the unusual {metric} at {period}: {reason}.", "impact": "the difference from what was expected: {gap}"},
     {"id": "askd", "signal": "askd", "when": "any", "min_change": 0, "priority": "low", "on": True,
-     "action": "{text}", "impact": "as Ask D's answer showed: {headline}"}]
+     "action": "{text}", "impact": "as Ask Relay's answer showed: {headline}"}]
 
 db.register_schema("""
 CREATE TABLE IF NOT EXISTS recommend_playbooks (
@@ -193,16 +193,16 @@ def anomaly_signals(u: dict) -> list[dict]:
 
 
 def askd_signals(uid: str, limit: int = 20) -> list[dict]:
-    """What Ask D already suggested with the owner's answers (the module's starting point: 'In Ask D today')."""
+    """What Ask Relay already suggested with the owner's answers (the module's starting point: 'In Ask Relay today')."""
     out = []
     for m in db.q("SELECT m.id, m.body, m.created, t.title FROM askd_messages m JOIN askd_threads t ON t.id = m.thread_id WHERE t.user_id = ? AND m.role = 'assistant' "
                   "ORDER BY m.created DESC LIMIT ?", (uid, limit)):
         body = pdat.j(m["body"], {})
         for i, a in enumerate(body.get("actions") or []):
-            out.append({"fingerprint": f"askd:{m['id']}:{i}", "signal": "askd", "dataset": "Ask D", "metric": m["title"], "period": time.strftime("%Y-%m-%d", time.gmtime(m["created"])),
+            out.append({"fingerprint": f"askd:{m['id']}:{i}", "signal": "askd", "dataset": "Ask Relay", "metric": m["title"], "period": time.strftime("%Y-%m-%d", time.gmtime(m["created"])),
                         "base": "", "latest": None, "base_value": None, "change_pct": None, "gap": None, "direction": "any", "group": "", "text": str(a)[:300],
                         "headline": (body.get("result") or {}).get("headline") or "", "summary": body.get("summary") or "", "message": m["id"],
-                        "explain": f"Ask D answered \"{m['title']}\" with {((body.get('result') or {}).get('headline') or 'its numbers')} and suggested: {str(a)[:200]}"})
+                        "explain": f"Ask Relay answered \"{m['title']}\" with {((body.get('result') or {}).get('headline') or 'its numbers')} and suggested: {str(a)[:200]}"})
     return out
 
 
@@ -349,7 +349,7 @@ def d_signals(ctx: wb.Ctx) -> dict:
     ctx.put("datasets", pdat.datasets(ctx))
     sig = gather(ctx)
     if not sig:
-        raise wb.StepFailed("No signal to work from: upload or connect data with a date and a number, or let Relay read forecasts, anomaly findings and Ask D's answers.")
+        raise wb.StepFailed("No signal to work from: upload or connect data with a date and a number, or let Relay read forecasts, anomaly findings and Ask Relay's answers.")
     sent = {r["fingerprint"] for r in db.q("SELECT fingerprint FROM recommend_suggestions")}
     sig = [s for s in sig if s["fingerprint"] not in sent]
     ctx.put("signals", sig)
@@ -545,18 +545,18 @@ def _cards(u: dict) -> list[dict]:
 GUIDE = """# Suggestions & recommendations - the work item
 
 This folder is one work item of Relay's suggestions module. Suggestions come from signals in the data (and from
-forecasts, anomaly findings and Ask D's answers) through a playbook of rules; every suggestion carries the numbers
+forecasts, anomaly findings and Ask Relay's answers) through a playbook of rules; every suggestion carries the numbers
 behind it and a person confirms it, and who should act, before it is sent. No AI step invents a suggestion here.
 
 - `evidence/`: each signal with its numbers; `outputs/`: what was sent and the reports."""
 
-DEV_FIELDS = [wb.Field("dashboard", "A dashboard's data", "select", options=pdat.dashboards_for, help="Optional: read with your access, as Ask D does."),
+DEV_FIELDS = [wb.Field("dashboard", "A dashboard's data", "select", options=pdat.dashboards_for, help="Optional: read with your access, as Ask Relay does."),
               wb.Field("objects", "Warehouse tables or views", "longtext", help="One per line (with a warehouse connection)."),
               wb.Field("value", "The number that matters", help="Blank: Relay picks the likeliest (amounts, quantities, counts)."),
               wb.Field("by", "Explain the change by", help="Optional: a column with up to 12 values, e.g. region."),
               wb.Field("playbook", "Playbook", "select", options=lambda u: [("", "Relay's default rules")] + playbook_options(u)),
               wb.Field("forecasts", "Include live forecasts", "bool", default=True), wb.Field("anomalies", "Include anomaly findings", "bool", default=True),
-              wb.Field("askd", "Include Ask D's suggestions", "bool", default=True)]
+              wb.Field("askd", "Include Ask Relay's suggestions", "bool", default=True)]
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE, lineage="", platforms=PLATFORMS, schemas={"suggestion": SUG_COLUMNS, "assignment": ASSIGN_COLUMNS, "rule": RULE_EDIT.columns}, cards=_cards,

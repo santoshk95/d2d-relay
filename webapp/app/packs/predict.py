@@ -2,7 +2,7 @@
 shown before anyone relies on them.
 
 Data      uploads (CSV, Parquet, Excel) read with DuckDB, warehouse connections through the guarded read-only query,
-          and a dashboard's data through Ask D's engine and guard - each opened with the work item owner's access.
+          and a dashboard's data through Ask Relay's engine and guard - each opened with the work item owner's access.
 Methods   simple and explainable only (predict_stats): seasonal naive (the baseline), exponential smoothing
           (Holt-Winters) and a linear trend with seasonality. Each is back-tested on the latest periods it never saw;
           accuracy is MAPE and WAPE against those actuals. A person chooses the model at Prove.
@@ -1005,7 +1005,7 @@ and chosen by a person. No AI step writes a number here.
 
 Never invent a number, a period or a column."""
 
-DEV_FIELDS = [wb.Field("dashboard", "A dashboard's data to use", "select", options=pdat.dashboards_for, help="Optional: the forecast reads that dashboard's tables with your access, as Ask D does."),
+DEV_FIELDS = [wb.Field("dashboard", "A dashboard's data to use", "select", options=pdat.dashboards_for, help="Optional: the forecast reads that dashboard's tables with your access, as Ask Relay does."),
               wb.Field("objects", "Warehouse tables or views", "longtext", help="One per line, e.g. SALES.ORDERS (with a warehouse connection)."),
               wb.Field("date", "Date column", help="Blank: the first date column."), wb.Field("value", "What to forecast", help="Blank: Relay suggests a column (amounts, quantities, counts)."),
               wb.Field("by", "One forecast per value of", help="Optional: a column with up to 12 values, e.g. region."),

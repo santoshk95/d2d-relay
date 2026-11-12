@@ -101,12 +101,12 @@ async function renderPages() {
   $('#main').replaceChildren(page);
   const d = await api('/api/pages').catch(e => ({error: e.message}));
   if (d.error) return page.append(h('div', {class: 'note err'}, d.error));
-  page.append(h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('h1', {}, 'Pages'), h('div', {class: 'meta'}, 'Insight pages made from Ask D answers and dashboards - private until you share them.')),
+  page.append(h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('h1', {}, 'Pages'), h('div', {class: 'meta'}, 'Insight pages made from Ask Relay answers and dashboards - private until you share them.')),
       h('button', {class: 'btn primary', onclick: async () => { const p = await api('/api/pages', {json: {title: 'New page', source: {kind: 'blank'}}}); location.hash = `#/pages/${p.id}`; }}, icon('plus'), 'New page')),
     d.pages.length ? h('div', {class: 'grid'}, d.pages.map(p => h('a', {class: 'dcard', href: `#/pages/${p.id}`}, h('div', {class: 'n'}, p.title),
       h('div', {class: 'f'}, h('span', {}, `${p.blocks} block(s)`), h('span', {}, p.access === 'owner' ? 'Yours' : `by ${p.owner}`),
         h('span', {}, icon(p.visibility === 'private' ? 'lock' : p.visibility === 'org' ? 'globe' : 'users')), h('span', {class: 'spacer'}), h('span', {}, ago(p.updated))))))
-      : h('div', {class: 'card empty'}, h('h3', {}, 'No pages yet'), 'In Ask D, press "Save as page" on an answer or a conversation; on a dashboard, "Make a page".'));
+      : h('div', {class: 'card empty'}, h('h3', {}, 'No pages yet'), 'In Ask Relay, press "Save as page" on an answer or a conversation; on a dashboard, "Make a page".'));
 }
 
 async function renderPage(id) {
@@ -137,7 +137,7 @@ async function renderPage(id) {
     return h('div', {style: 'position:relative'}, tools, answerCard({body: {result: {headline: b.headline, chart: b.chart}, summary: b.summary, actions: b.actions, data: b.data,
       validation: {certified: b.certified, certified_metrics: b.certified_metrics, where: b.where, queries: []}}, id: null}, null), h('div', {class: 'faint small'}, b.question));
   }
-  const draw = () => body.replaceChildren(...(blocks.length ? blocks.map(block) : [h('div', {class: 'card empty'}, 'An empty page: add text, or save Ask D answers here.')]));
+  const draw = () => body.replaceChildren(...(blocks.length ? blocks.map(block) : [h('div', {class: 'card empty'}, 'An empty page: add text, or save Ask Relay answers here.')]));
   draw();
   page.append(h('div', {class: 'crumbs'}, h('a', {href: '#/pages'}, 'Pages'), '>', p.title),
     h('div', {class: 'phead'}, h('div', {style: 'flex:1;min-width:0'}, titleIn, h('div', {class: 'meta'}, `${p.owner} - ${{private: 'Private', team: 'Shared with the team', org: 'Everyone in the organisation'}[p.visibility]} - updated ${ago(p.updated)}`)),

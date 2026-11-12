@@ -116,7 +116,7 @@ app.middleware("http")(headers.middleware)     # outermost: security headers on 
 app.include_router(platform.router)            # sign-in, sharing, administration (phase 1)
 app.include_router(data_routes.router)         # warehouse connections and extracts (phase 3)
 app.include_router(semantic_routes.router)     # semantic layer: metrics, terms, context, ontology (phase 4)
-app.include_router(askd_routes.router)         # Ask D (phase 5)
+app.include_router(askd_routes.router)         # Ask Relay (phase 5)
 app.include_router(publishing_routes.router)   # reviews, GitHub, exports, channels, insight pages (phase 6)
 app.include_router(notify.router)              # in-app notifications (phase 7)
 app.include_router(usage.router)               # cost report and quotas (phase 7)

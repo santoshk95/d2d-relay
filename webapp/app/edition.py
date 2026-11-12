@@ -1,6 +1,6 @@
 """D2D Relay (D2D: Data to Decision): the dashboard product of the Relay Platform by PASDACS, cut down from RELAY.
 
-What stays: Ask Relay (Ask D: questions about your data, answered with charts), Dashboards (describe -> plan -> KPIs -> prototype -> review -> Power BI file, .pbix), the visual library,
+What stays: Ask Relay (the `askd` module: questions about your data, answered with charts), Dashboards (describe -> plan -> KPIs -> prototype -> review -> Power BI file, .pbix), the visual library,
 CSV / flat-file uploads, and Connections. Platform administration is the admin portal's (portal.py), not the public site's.
 
 Data: the public side takes CSV files (and demo data Relay generates). The warehouses and databases in CONNECTORS are
@@ -42,7 +42,7 @@ EXTRA_BLOCKED = ("/api/schedules", "/api/schedules-draft", "/api/schedules-measu
                  # return stay (/api/tenancy/me, /switch, /return).
                  "/api/tenancy/audit", "/api/tenancy/usage", "/api/tenancy/usage.csv", "/api/tenancy/prices",
                  "/api/tenancy/people", "/api/tenancy/packs", "/api/tenancy/access")
-# The Connections module page; Ask Relay (Ask D); a reviewer's answer on a dashboard (/api/reviews/<id>/<review>; only
+# The Connections module page; Ask Relay (/api/askd); a reviewer's answer on a dashboard (/api/reviews/<id>/<review>; only
 # the list of everyone's reviews, /api/reviews, stays off)
 ALLOWED_UNDER_BLOCKED = ("/api/m/connect", "/api/askd", "/api/reviews/")
 

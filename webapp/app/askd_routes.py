@@ -1,4 +1,4 @@
-"""Ask D endpoints (platform plan, phase 5). Conversations are personal; the dashboard scope needs view access to
+"""Ask Relay endpoints (platform plan, phase 5). Conversations are personal; the dashboard scope needs view access to
 that dashboard (checked in askd.scope_sources); sending an answer to a dashboard needs edit access to it."""
 import base64
 
@@ -20,7 +20,7 @@ class Ask(BaseModel):
     question: str
     scope: dict = {"kind": "team"}
     thread_id: str | None = None
-    model: str | None = None              # a model id from the person's catalog; empty = Ask D's default
+    model: str | None = None              # a model id from the person's catalog; empty = Ask Relay's default
 
 
 def _no_cost(body: dict) -> dict:
@@ -216,13 +216,13 @@ def to_dashboard(mid: str, body: ToDashboard):
     orgs.require("change")                       # D2D Relay: a change request costs credits
     v = ans.get("validation") or {}
     main = next((q for q in v.get("queries") or [] if q.get("id") == v.get("main_query")), None)
-    request = (f"Add to the dashboard what answers this Ask D question: \"{meta['question']}\".\n"
-               f"Ask D found: {ans.get('summary', '')}\n"
-               + (f"The query Ask D used ({main['where']}; adapt it to the model views for the prototype):\n{main['sql']}\n" if main else "")
+    request = (f"Add to the dashboard what answers this Ask Relay question: \"{meta['question']}\".\n"
+               f"Ask Relay found: {ans.get('summary', '')}\n"
+               + (f"The query Ask Relay used ({main['where']}; adapt it to the model views for the prototype):\n{main['sql']}\n" if main else "")
                + (f"Note: {body.note}\n" if body.note else "")
                + "Put it where it fits best (a new visual on an existing page, or a new page if it is a new topic).")
-    store.note(body.project, "Change request (from Ask D)", request)
-    store.log(body.project, {"kind": "user", "stage": "revise", "text": f"From Ask D: {meta['question'][:160]}"})
+    store.note(body.project, "Change request (from Ask Relay)", request)
+    store.log(body.project, {"kind": "user", "stage": "revise", "text": f"From Ask Relay: {meta['question'][:160]}"})
     orgs.paid("change", body.project, st.get("name"), lambda cid: worker.enqueue(body.project, "revise", feedback=request, attachments=[],
                                                                                  **orgs.job_args(cid)), note="From Ask Relay")
     db.audit("askd.to_dashboard", mid, {"project": body.project}, _u()["id"])

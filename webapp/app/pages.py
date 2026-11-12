@@ -1,9 +1,9 @@
-"""Insight pages (platform plan, phase 6: "idea -> insights"): a page made from Ask D answers or a dashboard's
+"""Insight pages (platform plan, phase 6: "idea -> insights"): a page made from Ask Relay answers or a dashboard's
 prototype, private to its owner until shared - with people, a team or the organisation, like a dashboard (the same
 rules: auth.access). A page is lighter than a dashboard: no review gates, no Power BI project.
 
 Blocks: {"type": "text", "text"} - {"type": "answer", question, headline, summary, actions, data, chart, where,
-certified} (a copy of an Ask D answer at the time it was added) - {"type": "prototype", "project", "version"}.
+certified} (a copy of an Ask Relay answer at the time it was added) - {"type": "prototype", "project", "version"}.
 """
 import html as H
 import json

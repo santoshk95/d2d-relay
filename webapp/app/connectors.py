@@ -10,7 +10,7 @@ so scheduled extracts keep working while the person is signed out; a refresh tha
 Two data paths, as decided in Round 4:
   extract   SELECT * of a configured table into data/<alias>.parquet in the project folder (streamed in batches),
             for dashboards, prototypes, review gates and the DAX checker; a manifest records where it came from
-  live      a guarded read-only query for Ask D: one SELECT, parsed with sqlglot in the warehouse's dialect, no
+  live      a guarded read-only query for Ask Relay: one SELECT, parsed with sqlglot in the warehouse's dialect, no
             DML/DDL anywhere, a row limit, a timeout, and on BigQuery a dry run that refuses big scans
 """
 import base64
@@ -886,7 +886,7 @@ def alias_for(obj: str) -> str:
 
 
 def set_tables(c: dict, objects: list[str]) -> dict:
-    """The tables this person allows Relay to use from this connection (dashboards and Ask D)."""
+    """The tables this person allows Relay to use from this connection (dashboards and Ask Relay)."""
     known = {r["object"]: r for r in db.q("SELECT * FROM connection_tables WHERE connection_id = ?", (c["id"],))}
     a = _sdk(c)
     offered = {o["object"] for o in a.list_objects(c)} if a is not None and getattr(a, "extract", False) else None
@@ -1084,7 +1084,7 @@ def refresh_project(project_dir: Path, uid: str | None, only_owner: bool = True)
     return out
 
 
-# ---------------------------------------------------------------- live queries (Ask D) with guardrails
+# ---------------------------------------------------------------- live queries (Ask Relay) with guardrails
 
 DEFAULT_GUARDS = {"row_limit": 10000, "timeout_s": 60, "bigquery_max_gb": 1.0}
 

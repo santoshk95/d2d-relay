@@ -3,7 +3,7 @@ reviewing every finding before anything goes out.
 
 Detectors (anomaly_rules): rules and plain statistics on metrics over time (z-score, IQR, seasonal residuals, a
 business threshold) and on table rows (unusual rows per group by IQR, row rules) - no model to trust blindly. Data
-comes from uploads, warehouse connections and a dashboard's data (predict_data: Ask D's guarded engine).
+comes from uploads, warehouse connections and a dashboard's data (predict_data: Ask Relay's guarded engine).
 Assess   Connect -> Inventory -> Health -> Findings -> Estimate: what is watchable, and what is unusual today.
 Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run: detectors suggested from the data and confirmed by a person,
          compiled, proven on the history (the findings each would have raised, and how noisy it is), approved by name
@@ -607,7 +607,7 @@ person decides what happens to it. No AI step decides or invents anything here.
 - `data/`: the person's uploads; `evidence/`: each detector's findings and bounds; `outputs/`: the detector set
   (YAML), the assessment and the run reports."""
 
-FIELDS = [wb.Field("dashboard", "A dashboard's data to watch", "select", options=pdat.dashboards_for, help="Optional: read with your access, as Ask D does; alerts go through Reports & alerts on it."),
+FIELDS = [wb.Field("dashboard", "A dashboard's data to watch", "select", options=pdat.dashboards_for, help="Optional: read with your access, as Ask Relay does; alerts go through Reports & alerts on it."),
           wb.Field("objects", "Warehouse tables or views", "longtext", help="One per line, e.g. FINANCE.INVOICES (with a warehouse connection)."),
           wb.Field("value", "The number to watch", help="Blank: Relay picks the likeliest (amounts, quantities, counts)."), wb.Field("grain", "Metrics by", "select", options=pdat.GRAINS, default="month")]
 

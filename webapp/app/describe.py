@@ -4,7 +4,7 @@ Where a description comes from, best first:
   person     typed or accepted by a BI Dev / Analyst (never overwritten automatically)
   warehouse  the source's own column / table comment, read when a table is extracted (refreshed on every extract)
   ai         drafted by the model from names, types, real sample values, joins and the other descriptions; it stays
-             "suggested" until a person accepts or edits it, and Ask D is told it is unconfirmed
+             "suggested" until a person accepts or edits it, and Ask Relay is told it is unconfirmed
 Table-level descriptions are stored with an empty column name. Entities get a business definition and examples the
 same way (drafted_by = 'ai' until a person saves the entity), plus live examples read from the data.
 """

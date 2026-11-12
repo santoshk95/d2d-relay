@@ -5,7 +5,7 @@ Engagement  the registry's journey: Listen -> Assess -> Target -> Case -> Roadma
             Roadmap and Deck; Listen, Target and Case also wait for a person, because a person writes them).
 Listen      what the platform itself found (dashboards proven and published, work items by pillar, connections,
             decisions in the Validation queue, Team & agents' hours, schedules, Self-healing, integrations, watched
-            data, lineage, Ask D) beside the interviews and workshops a person records (who, their role, the themes,
+            data, lineage, Ask Relay) beside the interviews and workshops a person records (who, their role, the themes,
             where the notes are).
 Assess      the maturity model: five levels (Initial, Repeatable, Defined, Managed, Optimised) on two dimensions per
             pillar (process, automation, systems, data, AI). Relay suggests level 1 where the platform shows nothing
@@ -44,7 +44,7 @@ DIMENSIONS = [
     ("systems", "Governed change", "changes", "AI SDLC change requests released", ["sdlc", "ship"]),
     ("data", "Trusted numbers", "trusted", "dashboards published through the review gates and live quality rule sets", ["bi", "quality", "metrics", "governance"]),
     ("data", "Watched data and lineage", "watched", "assets Data observability watches and lineage nodes", ["observe", "knowledge", "governance"]),
-    ("ai", "AI in daily work", "ai_use", "Ask D questions and agent runs in the last 30 days", ["askd", "predict", "recommend"]),
+    ("ai", "AI in daily work", "ai_use", "Ask Relay questions and agent runs in the last 30 days", ["askd", "predict", "recommend"]),
     ("ai", "Governed AI", "ai_governed", "AI budgets set and decisions on agents' work in the last 30 days", ["aigov", "agents"]),
 ]
 KINDS = (("one-off", "One-off cost"), ("running", "Running cost per year"), ("benefit", "Benefit per year"))
@@ -137,7 +137,7 @@ def listen(ctx: wb.Ctx) -> dict:
     facts = [["Dashboards", f["dashboards"]], ["Published through the review gates", f["published"]], ["Work items of every module", f["work_items"]],
              ["Decisions in the Validation queue, 90 days", f["decided_90d"]], ["Agent hours, 30 days", (f["team"] or {}).get("agent_hours", 0)],
              ["Active schedules", f["schedules_active"]], ["Connections", f["connections"]], ["Integration sources", f["intan_sources"]],
-             ["Watched data assets", f["observed"]], ["Ask D questions, 30 days", f["questions_30d"]]]
+             ["Watched data assets", f["observed"]], ["Ask Relay questions, 30 days", f["questions_30d"]]]
     return {"summary": f"What Relay finds: {f['dashboards']} dashboard(s), {f['work_items']} work item(s), {f['decided_90d']} decision(s) in 90 days. "
                        "Record who you listened to and what they said - the assessment weighs both.",
             "counts": {"dashboards": f["dashboards"], "work items": f["work_items"], "interviews": sum(1 for r in recs if str(r.get("who") or "").strip())}, "records": recs,

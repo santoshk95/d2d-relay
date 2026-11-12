@@ -271,7 +271,7 @@ class Query(BaseModel):
 
 @router.post("/api/connections/{cid}/query")
 async def live_query(cid: str, body: Query):
-    """A guarded live query (Ask D's engine): read-only, row limit, timeout, BigQuery scan limit."""
+    """A guarded live query (Ask Relay's engine): read-only, row limit, timeout, BigQuery scan limit."""
     c = _mine(cid, use=True)
     try:
         return await asyncio.to_thread(connectors.query, c, body.sql, _me())

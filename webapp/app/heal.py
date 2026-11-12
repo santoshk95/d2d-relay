@@ -102,7 +102,7 @@ BUILTIN = {
                       "fix": {"kind": "rerun_extract", "module": "D2D", "text": "Pull the stale warehouse tables again through the dashboard's own extract job.", "change": {}, "risk": "low"},
                       "test": {"what": "The same tables pull into a copy of the project from the same connection.", "how": "Each stale table is extracted into the case's fix/copy folder with the connection owner's stored sign-in (read-only).", "expect": "Every table arrives with rows and a newer extract time than the stale file."}},
     "warehouse_signin": {"kind": "warehouse_signin", "title": "Expired warehouse sign-in: renew the connection, tell the owner", "route": "config",
-                         "cause": "The stored sign-in for the warehouse connection no longer works (expired or revoked); everything that reads through it - extracts, schedules, Ask D - waits on it.",
+                         "cause": "The stored sign-in for the warehouse connection no longer works (expired or revoked); everything that reads through it - extracts, schedules, Ask Relay - waits on it.",
                          "fix": {"kind": "renew_connection", "module": "Connections", "text": "Mark the connection for renewal and tell its owner to sign in again; the schedules paused on it resume once it works.", "change": {}, "risk": "low"},
                          "test": {"what": "Confirms the stored sign-in really is refused (not a one-off outage).", "how": "A read-only connection test runs with the stored credentials.", "expect": "The warehouse refuses the sign-in; if it accepts it, the case closes as recovered."}},
     "daxcheck_offline": {"kind": "daxcheck_offline", "title": "DAX checker off: tell the admins, hold publishing", "route": "config",

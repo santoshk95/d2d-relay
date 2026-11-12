@@ -1,4 +1,4 @@
-"""The semantic layer (platform plan, phase 4 + Round 5): what the data means, shared by dashboards and Ask D.
+"""The semantic layer (platform plan, phase 4 + Round 5): what the data means, shared by dashboards and Ask Relay.
 
 Three layers:
   context    drafted automatically from the data itself (every dashboard's data profile: tables, columns, types,
@@ -6,7 +6,7 @@ Three layers:
              descriptions and mark sensitive columns
   metrics    per team: one definition per business metric - DAX for Power BI and SQL rendered for each warehouse
              dialect - versioned draft -> in review -> published, approved by another BI Dev / Analyst of the team
-             (or an Admin). Published = certified: the badge follows the metric into dashboards and Ask D
+             (or an Admin). Published = certified: the badge follows the metric into dashboards and Ask Relay
   ontology   organisation-wide: entities (Store, Customer, ...), their relationships, and how each source identifies
              them (key mappings); suggestions the machine finds - keys that match across sources by their values,
              and the same metric name defined differently by two teams (an Admin sets the organisation default)

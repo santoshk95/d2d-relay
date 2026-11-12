@@ -1,5 +1,5 @@
 /* ---------------- phase 8: Admin > Monitoring (live state, alerts on stuck work, the DAX checker's queue) ---------------- */
-const OPS_LABELS = {chat_stuck_min: 'Ask D lane busy longer than (min)', queue_stalled_min: 'Jobs waiting, nothing started for (min)',
+const OPS_LABELS = {chat_stuck_min: 'Ask Relay lane busy longer than (min)', queue_stalled_min: 'Jobs waiting, nothing started for (min)',
   queue_deep: 'Builds waiting at once', daxcheck_backlog: 'DAX checks waiting at once', daxcheck_wait_min: 'Oldest DAX check waiting (min)',
   schedule_late_min: 'Schedule overdue by (min)', errors_15min: 'Server errors in 15 min', build_grace_min: 'Minutes past a job\'s time limit',
   daxcheck_offline_min: 'DAX checker offline, queue empty, for (min)', backup_max_h: 'Last backup older than (hours)'};
@@ -36,7 +36,7 @@ async function adminMonitoring(data) {
     h('div', {class: 'stats'},
       tile('Agent', ag.ok ? 'online' : 'offline', ag.ok ? (ag.runners || []).join(', ') : ag.error, !ag.ok),
       tile('build lane', lane('build'), laneFor('build') || (m.running.kind ? `${m.running.kind} - ${mins(m.running.age_s)}` : '')),
-      tile('Ask D lane', lane('chat'), laneFor('chat')), tile('waiting', m.waiting, 'builds in the queue', m.waiting >= t.queue_deep),
+      tile('Ask Relay lane', lane('chat'), laneFor('chat')), tile('waiting', m.waiting, 'builds in the queue', m.waiting >= t.queue_deep),
       tile('DAX checker', d.online ? 'online' : 'offline', `${d.pending} waiting${d.pending ? ' - oldest ' + mins(d.oldest_s) : ''}`, !d.online && d.pending),
       tile('schedules', (m.schedules.active || 0) + ' active', `${m.schedules.paused || 0} paused - ${m.schedules_late} overdue`, m.schedules_late),
       tile('signed in', m.sessions, 'sessions'), tile('server errors', m.errors_15min, 'last 15 min', m.errors_15min >= t.errors_15min),

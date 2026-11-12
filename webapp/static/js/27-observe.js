@@ -128,7 +128,7 @@ async function renderObserve() {
 }
 const obInfoCards = () => h('div', {class: 'g3', style: 'margin-top:16px'},
   h('div', {class: 'card', style: 'margin:0'}, h('h3', {}, 'Checks, everywhere'), h('p', {class: 'small muted', style: 'margin:0'}, 'Freshness, volume, schema, distribution, nulls and duplicates, reconciliation to source, and lineage breaks - learned baselines, thresholds you can tune, on warehouses, integrations, models and reports alike.')),
-  h('div', {class: 'card', style: 'margin:0'}, h('h3', {}, 'Impact first'), h('p', {class: 'small muted', style: 'margin:0'}, 'Each incident shows which reports, schedules, Ask D answers, agents and people rely on the data - so owners can be warned before a wrong number reaches a meeting.')),
+  h('div', {class: 'card', style: 'margin:0'}, h('h3', {}, 'Impact first'), h('p', {class: 'small muted', style: 'margin:0'}, 'Each incident shows which reports, schedules, Ask Relay answers, agents and people rely on the data - so owners can be warned before a wrong number reaches a meeting.')),
   h('div', {class: 'card', style: 'margin:0'}, h('h3', {}, 'Fix - with approval'), h('p', {class: 'small muted', style: 'margin:0'}, 'Route to Self-healing (configuration), AI SDLC (code), the source owner, or a ticket in Jira / Freshservice. A person confirms the warning, the ticket and the fix.')));
 
 /* ---------- the incident drawer: measurements, the impact path on the map, the four actions, mark as expected ---------- */
@@ -169,7 +169,7 @@ async function obDrawer(id, d) {
     h('div', {}, h('b', {}, 'Where it starts and what it touches'),
       h('div', {class: 'obpath'}, chain.map((n, k) => [k ? h('span', {class: 'muted', 'aria-hidden': 'true'}, '->') : null, h('span', {class: 'chipx' + (n.id === i.asset.node_id ? ' bad' : '')}, n.label)]),
         imp.schedules ? [h('span', {class: 'muted', 'aria-hidden': 'true'}, '->'), h('span', {class: 'chipx'}, `${imp.schedules} schedule${imp.schedules === 1 ? '' : 's'}`)] : null,
-        imp.answers ? [h('span', {class: 'muted', 'aria-hidden': 'true'}, '->'), h('span', {class: 'chipx'}, `${imp.answers} Ask D answer${imp.answers === 1 ? '' : 's'}`)] : null,
+        imp.answers ? [h('span', {class: 'muted', 'aria-hidden': 'true'}, '->'), h('span', {class: 'chipx'}, `${imp.answers} Ask Relay answer${imp.answers === 1 ? '' : 's'}`)] : null,
         imp.people ? [h('span', {class: 'muted', 'aria-hidden': 'true'}, '->'), h('span', {class: 'chipx'}, `${imp.people} ${imp.people === 1 ? 'person' : 'people'}`)] : null),
       mapBox, path.nodes.length > 1 ? asTable(['Item', 'Kind', 'Hops'], path.nodes.map(n => [n.label, LIN_KIND_NAME[n.kind] || n.kind, n.virtual ? 'consumer' : String(n.hop)])) : null),
     h('dl', {class: 'kv-list obkv', style: 'grid-template-columns:130px 1fr;margin-top:12px'}, ['Check', i.check_label, 'Asset', `${i.asset.label} (${i.asset.layer_label})`, 'What moved', i.what || '-', 'Affects', imp.text, 'Likely cause', i.cause || '-', 'Suggested route', i.route_label, 'Also affected', i.also.length ? i.also.map(a => a.label).join(', ') : '-'].map((t, k) => h(k % 2 ? 'dd' : 'dt', {}, t))),

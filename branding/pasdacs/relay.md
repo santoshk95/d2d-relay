@@ -8,7 +8,7 @@ Relay is the PASDACS product, so it wears the PASDACS identity in full. The "Nig
 - The lockup is the PASDACS mark with RELAY in Manrope 800 (tracked +3) and "BY PASDACS" in small caps under it, in `ink-muted`. The fast-forward chevrons now carry the hand-off idea: work moving forward between agents and people without being dropped.
 - In sentences and labels write **Relay**. Inside the product, Relay is also the agent's name.
 - Partner (white-label) workspaces show the partner's own logo, with `powered-by.svg` ("Powered by PASDACS Relay") in the footer, sign-in page, emails and PDFs.
-- Module names: **D2D** (Data to Decisions) only for the dashboard builder; **Ask D** for conversational analytics.
+- Module names: **D2D** (Data to Decisions) only for the dashboard builder; **Ask Relay** for conversational analytics (formerly Ask D).
 
 ## Colour mapping from the old Relay palette
 

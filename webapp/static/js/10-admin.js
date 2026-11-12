@@ -217,7 +217,7 @@ async function adminInstances() {
   return h('div', {},
     h('div', {class: 'stats'}, tile('instance', d.instance, `sign-in: ${d.auth}`), tile('agent', ag.ok ? 'online' : 'offline', ag.runners ? 'runner: ' + ag.runners.join(', ') : ''),
       tile('build lane', ag.lanes ? (ag.lanes.build ? 'busy' : 'free') : '-', d.running && d.running.pid ? d.running.pid : ''),
-      tile('chat lane', ag.lanes ? (ag.lanes.chat ? 'busy' : 'free') : '-', 'Ask D (phase 5)'), tile('waiting', d.waiting, 'jobs in the queue'),
+      tile('chat lane', ag.lanes ? (ag.lanes.chat ? 'busy' : 'free') : '-', 'Ask Relay (phase 5)'), tile('waiting', d.waiting, 'jobs in the queue'),
       tile('DAX checker', d.daxcheck ? 'on' : 'off', 'Windows PC'), tile('signed in', d.sessions.people, `${d.sessions.n} sessions`)),
     h('div', {class: 'card flat'}, h('h3', {}, 'Jobs'), h('div', {class: 'chips'}, Object.entries(d.jobs).map(([k, v]) => h('span', {class: 'tag'}, `${k}: ${v}`)))),
     h('div', {class: 'card flat'}, h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Backups'), h('span', {class: 'spacer'}), backupBtn),

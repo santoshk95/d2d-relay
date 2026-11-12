@@ -217,7 +217,7 @@ async function renderHome() {
         d.recent.length ? h('div', {class: 'stack', style: 'gap:10px'}, d.recent.map(r => h('a', {href: `#/p/${r.pid}/versions`, class: 'wait'}, h('span', {class: 'proven'}, icon('check')),
           h('div', {class: 'wt'}, h('b', {}, `${r.name} v${r.v}`), h('small', {}, `${r.checks} of ${r.gates} review gates passed - published ${ago(r.when)}`)))))
           : h('div', {class: 'muted small', style: 'padding:8px 0'}, 'Nothing published yet.')),
-      h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Questions to Ask D'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/askd'}, 'Open')),
+      h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Questions to Ask Relay'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/askd'}, 'Open')),
         h('div', {class: 'g2', style: 'gap:10px'}, h('div', {class: 'mini'}, h('div', {class: 'mv'}, fmtN(k.questions, 0)), h('div', {class: 'small muted'}, `questions in ${pl}`)),
           h('div', {class: 'mini'}, h('div', {class: 'mv'}, fmtN(inf.modules.find(m => m.id === 'schedule').n, 0)), h('div', {class: 'small muted'}, 'reports and alerts scheduled'))),
         h('div', {class: 'small muted', style: 'margin-top:10px'}, 'Answers use each person\'s own access; every query is audited.'))),

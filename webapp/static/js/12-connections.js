@@ -452,7 +452,7 @@ function queryDialog(c, g) {
     run.disabled = false;
   }}, icon('play'), 'Run');
   modal(`Query - ${c.name}`, h('div', {class: 'mbody'},
-    h('div', {class: 'note small'}, icon('shield'), ` Read-only: one SELECT, at most ${g.row_limit.toLocaleString()} rows, ${g.timeout_s}s` + (c.kind === 'bigquery' ? `, ${g.bigquery_max_gb} GB scanned (checked with a dry run first)` : '') + '. Ask D uses the same engine.'),
+    h('div', {class: 'note small'}, icon('shield'), ` Read-only: one SELECT, at most ${g.row_limit.toLocaleString()} rows, ${g.timeout_s}s` + (c.kind === 'bigquery' ? `, ${g.bigquery_max_gb} GB scanned (checked with a dry run first)` : '') + '. Ask Relay uses the same engine.'),
     sql, h('div', {class: 'row', style: 'margin-top:8px'}, run), out), true);
 }
 

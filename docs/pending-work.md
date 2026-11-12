@@ -78,7 +78,7 @@ page instead of a fixed time.
 - UX audit (2026-11-10, `docs/ux-audit-2026-11-10.md`). Still open:
   - Usage & statements takes about 13 s on the live data: each request walks every project folder. Caching the
     folder sizes would fix it. The page now says what it is doing while it loads.
-  - Admin › Monitoring shows rule codes (`daxcheck_offline`, `backup_old`), "build lane" and "Ask D lane", and the
+  - Admin › Monitoring shows rule codes (`daxcheck_offline`, `backup_old`), "build lane" and "Ask Relay lane", and the
     runner id `claude-code`.
   - A few rare server messages are terse ("Unknown version", "Bad request: …", "(status: …)").
   - Non-admins no longer see model names on screen, but the API responses that list runs still carry model ids.
@@ -111,7 +111,7 @@ page instead of a fixed time.
     before the move (they belong to uid 1000). The live folders were repaired at 13:50 on the user's word, and
     relay-init now repairs them at every start (eafc8e5). Still not live until the next deploy: the watchdog's
     sign-in to the supervisor, so a hung part is not restarted yet, and the start-up repair itself.
-  - Small things seen on the way: Ask D says "your 0 connection(s)", and the bell still holds three DAX checker
+  - Small things seen on the way: Ask Relay says "your 0 connection(s)", and the bell still holds three DAX checker
     warnings from the morning (resolved since). A dashboard's Overview shows the Windows path of its Power BI project,
     which still contains the folder name "Gen BI" (decision D7 keeps the folder's name). Admin › Relay Doctor shows
     "live commit a888cae2", its record of the last `doctor.py deploy`. The running image is fe1980f, the one-container

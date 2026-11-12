@@ -1,10 +1,10 @@
 """Cost records, the organisation cost report and quotas (phase 7).
 
-Every LLM run (builds, Ask D), live warehouse query and extract adds one row to `usage`. Rows from before phase 7
-are filled in once from the records the app already kept (each dashboard's runs, the Ask D and query audit entries).
+Every LLM run (builds, Ask Relay), live warehouse query and extract adds one row to `usage`. Rows from before phase 7
+are filled in once from the records the app already kept (each dashboard's runs, the Ask Relay and query audit entries).
 
 Quotas are monthly LLM spend limits (USD, calendar month, UTC) per person or per team: at `soft_pct` of the limit
-the person is told once a month; at the limit new builds and Ask D questions are refused until the month ends or an
+the person is told once a month; at the limit new builds and Ask Relay questions are refused until the month ends or an
 Admin raises the limit. Running work is never cut off half-way."""
 import json
 import time
@@ -175,14 +175,14 @@ def check(uid: str | None, team_id: str | None = None) -> list[dict]:
         who = "Your" if s["scope"] == "user" else "This workspace's" if s["scope"] == "workspace" else f"Team {s['name']}'s"
         if s["level"] == "stop":
             raise QuotaError(f"{who} AI budget for {s['month']} is used up (${s['spent_usd']:.2f} of ${s['monthly_usd']:.2f}). "
-                             "New builds and Ask D questions wait until next month or until an Admin raises the limit.")
+                             "New builds and Ask Relay questions wait until next month or until an Admin raises the limit.")
         if s["level"] == "warn":
             key = f"quota_warned:{s['scope']}:{s['target_id']}:{uid}:{s['month']}"
             if not db.meta(key):
                 db.set_meta(key, str(time.time()))
                 notify.add(uid, "quota", f"{who} AI budget is {s['spent_usd'] / max(s['monthly_usd'], 1e-9):.0%} used",
                            f"${s['spent_usd']:.2f} of ${s['monthly_usd']:.2f} in {s['month']}. At the limit, new builds and "
-                           "Ask D questions are paused until next month.", "#/settings")
+                           "Ask Relay questions are paused until next month.", "#/settings")
     return st
 
 

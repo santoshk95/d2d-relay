@@ -1,4 +1,4 @@
-"""Ask D (platform plan, phase 5 + Round 5): questions about your data, answered with the numbers, a summary, next
+"""Ask Relay (platform plan, phase 5 + Round 5): questions about your data, answered with the numbers, a summary, next
 actions and follow-up questions - every step checked.
 
 Three scopes:
@@ -386,12 +386,12 @@ def _json_reply(text: str) -> dict | None:
 
 
 def models_for(uid: str) -> dict:
-    """The models Ask D may use for this person: their gateway routes, else the Claude catalog. Ask D defaults to Sonnet
+    """The models Ask Relay may use for this person: their gateway routes, else the Claude catalog. Ask Relay defaults to Sonnet
     (fast and cheap for short answers) when the catalog has it."""
     from . import worker
     base = {**worker.model_catalog(), "default": worker.DEFAULT_MODEL}
     cat = providers.catalog_for(uid, base)
-    if cat.get("provider") in providers.CLI_KINDS:     # Ask D always answers on Claude (no tools), not on another CLI
+    if cat.get("provider") in providers.CLI_KINDS:     # Ask Relay always answers on Claude (no tools), not on another CLI
         cat = {**base, "provider": "claude_account"}
     ids = [m["id"] for m in cat["models"]]
     default = cat["default"] if cat.get("provider") == "litellm" else ("sonnet" if "sonnet" in ids else cat["default"])
@@ -411,7 +411,7 @@ def pick_model(uid: str, model: str | None) -> str:
 async def _claude(u: dict, prompt: str, session: str | None, workdir: str, model: str | None = None, system: str | None = None) -> dict:
     model = model or models_for(u["id"])["default"]
     cfg = providers.run_config(u["id"], model, 600)
-    if cfg.get("runner"):                     # Ask D runs on Claude with no tools; another CLI's choice uses Claude
+    if cfg.get("runner"):                     # Ask Relay runs on Claude with no tools; another CLI's choice uses Claude
         cfg = providers.run_config(u["id"], model, 600, kind="claude_account")
     payload = {"workdir": workdir, "prompt": prompt, "system": system or SYSTEM, "model": cfg["model"], "max_turns": 2,
                "timeout_s": 600, "resume": session, "lane": "chat", "runner": "claude-code", "env": cfg["env"], "tools": []}
@@ -420,7 +420,7 @@ async def _claude(u: dict, prompt: str, session: str | None, workdir: str, model
     async with httpx.AsyncClient(timeout=httpx.Timeout(15, read=None)) as client:
         async with client.stream("POST", f"{url}/runs", json=payload) as r:
             if r.status_code == 409:
-                raise AskError("Ask D is answering another question of yours - try again in a moment.")
+                raise AskError("Ask Relay is answering another question of yours - try again in a moment.")
             if r.status_code != 200:
                 raise AskError(f"The AI provider refused the question: {(await r.aread()).decode(errors='replace')[:200]}")
             async for line in r.aiter_lines():
@@ -465,7 +465,7 @@ async def _forget(u: dict, sessions) -> None:
 
 
 def _workdir(uid: str) -> str:
-    """The agent needs an existing folder under the projects root; Ask D keeps one per person (nothing is written)."""
+    """The agent needs an existing folder under the projects root; Ask Relay keeps one per person (nothing is written)."""
     name = f"askd-{re.sub(r'[^a-z0-9]', '', uid.lower())[:40] or 'user'}"
     (store.root() / name).mkdir(parents=True, exist_ok=True)
     return store.rel(name)
@@ -565,7 +565,7 @@ async def ask(u: dict, question: str, scope: dict, thread_id: str | None = None,
     finally:
         await _forget(u, used)
     if not reply or reply["action"] != "answer":
-        raise AskError("Ask D could not finish an answer. Try asking more specifically.")
+        raise AskError("Ask Relay could not finish an answer. Try asking more specifically.")
     body = _finish(reply, queries, ctx, usage)
     db.run("INSERT OR REPLACE INTO askd_cache (key, body, created) VALUES (?, ?, ?)", (key, json.dumps(body, default=str), time.time()))
     return _store_answer(u, thread_id, question, {**body, "cache_key": key})
