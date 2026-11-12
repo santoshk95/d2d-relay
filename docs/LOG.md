@@ -1,6 +1,6 @@
 # D2D Relay: work log and hand-over
 
-Last updated: 2026-11-11 (IST). This file says where the project stands for anyone who clones it.
+Last updated: 2026-11-12 (IST). This file says where the project stands for anyone who clones it.
 
 ## What D2D Relay is
 
@@ -955,6 +955,50 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       `334b493`; healthz, sign-in page and admin portal 200; Relay Hierarchy 1.0.7.0 served; the runner probe job
       labelled and removed; no errors. `d2d-relay:53fb6ad` kept for going back.
 
+38. **Ready to be posted: shared links show a picture and a description; robots.txt; no ./ or ../ past the sign-in
+    check** (the user, 2026-11-12: "final check before posting in social media and ads", then "Fix and deploy" for
+    what the check found). Code `189ccac`; release image `d2d-relay:189ccac`, built from the clean commit and tested;
+    **live since 21:53 IST** the same day.
+    - **The check** (read-only, before any change): live healthy, both PC helpers running, every public page open
+      to anyone and fine on phones (390, 360 and 320 px, emulated in Chromium), plain characters on all five. Found:
+      a shared d2d.pasdacs.com link showed only "Sign in - D2D Relay" (no description, Open Graph or X tags, no
+      image); `/robots.txt` redirected to the sign-in page; pasdacs.com/platform/ said "D2D (Data to Decisions)" and
+      "a Power BI project", and no page on pasdacs.com linked to D2D Relay. Left with the user (not changed): the AI
+      on a personal Claude plan (audit P1), work email only (Gmail, Outlook, Yahoo refused), new organisations
+      waiting for PASDACS's review with the admin portal on this PC only, no tracking on either site (the privacy
+      notice promises none; lead-form ads ask for a privacy policy link, which pasdacs.com has not had since
+      2026-11-06), and overnight restarts while ads run.
+    - **Shared links:** `login.html` has a description and Open Graph and X tags: "D2D Relay: your data to a Power BI
+      dashboard", the sign-in page's line, and the share image `og/d2d-relay.png` (1200 x 630, the sign-in page's dark
+      band; source `branding/pasdacs/assets/D2D/d2d-share.html`). `og:url` is `/login.html` itself, because `/`
+      redirects there (a preview would loop otherwise). `robots.txt` keeps crawlers off `/api/` and `/auth/`. Both
+      are open without signing in (`auth.OPEN_PATHS`).
+    - **Found on the way:** a path with a `./` or `../` segment walked past the sign-in check through any open folder
+      (`/fonts/../js/36-org.js`, also as `%2e%2e`, also through Cloudflare) and got the signed-in app's static files
+      (scripts and pages; the API was never reachable that way). Such a path now gets 404 before the check
+      (`auth.middleware`).
+    - **Tests** on `d2d-relay:189ccac`: every suite, 788 checks with the starting-credit review on and 771 off, all
+      passing, with the new `item38_check.py` (41: the tags, the image, robots.txt, ten dot paths refused, and ten
+      paths still open or closed as before). The first run with the review on had one miss, pay_check's "a checkout
+      never paid goes after the log period": the test stack's own start-up backup and sweep (`ops.nightly`, about a
+      minute after start) ran in the same seconds and deleted the test's backdated checkout first, so the test's
+      sweep found none (in the run with the review off the stack's sweep came 7 seconds after the test's); the rerun
+      passed 788 of 788. Not run, as nothing they cover changed: the upgrade check and the real-Claude end-to-end run.
+    - **pasdacs.com** (the corporate site's repository, `Downloads\pasdacs-corporate-site`, branch
+      `redesign/lean-startup-site`, commits `00b7d37` and `b06a865`; Worker version `2a4151fb`, deployed with
+      `npx wrangler deploy`): the Platform page says "D2D (Data to Decision)", its last step "a Power BI file (.pbix)
+      with its data", and the note under the steps links to https://d2d.pasdacs.com/ ("Try D2D Relay at
+      d2d.pasdacs.com"). Checked live: 12 sitemap URLs 200, the page's files identical to the build, nothing scrolls
+      sideways at 320, 375 and 1440 px; IndexNow accepted 12 URLs. Not pushed.
+    - **Deployed at 21:53 IST** after the user's "Fix and deploy": live idle (no job container, the AI engine not
+      busy, no dashboard); deploy folder fast-forwarded to `189ccac` (no compose, `pbix\`, `daxcheck\` or `config\`
+      change); `d2d-relay:189ccac` tagged latest; web, admin and the job runner restarted. Checked on live: healthy on
+      `189ccac`; the sign-in, legal and health pages 200; `/`, `/index.html` and `/js/...` still 303 to sign in;
+      `/og/d2d-relay.png` (1200 x 630, the committed file) and `/robots.txt` 200; LinkedIn's, Facebook's, X's and
+      WhatsApp's preview bots get the new title and image; the five dot paths 404 through Cloudflare and on this PC;
+      the admin portal answers on this PC; no errors. `d2d-relay:334b493` kept for going back. Not pushed (GitHub
+      stays on `df65429`).
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -994,14 +1038,16 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 37's deploy. **Live:** web, admin and the job runner run `d2d-relay:334b493`
-(= latest, since 20:45 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
-info@pasdacs.com. **GitHub**, this folder and the deploy folder are all on this log entry (items 34 to 37 and their
-logs pushed after their deploys; every commit scanned for the live `.env` and `tunnel.env` values and key patterns:
-none). **Going back** to item 36 (`d2d-relay:53fb6ad`, kept): in the deploy folder `git reset --keep cec5ed2`,
-`docker tag d2d-relay:53fb6ad d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; to item 35
-(`d2d-relay:e05f035`, kept) the same with `8bbfd7e`; to item 34 (`d2d-relay:aa4531e`, kept) with `520e88e`; to item
-33 (`d2d-relay:54f6ed7`, kept) with `2cd493e` (it takes `config/house-models.json` back too). No older release
+Updated 2026-11-12, after item 38's deploy. **Live:** web, admin and the job runner run `d2d-relay:189ccac`
+(= latest, since 21:53 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
+info@pasdacs.com. This folder and the deploy folder are on this log entry; **GitHub** is still on `df65429` (item 37's
+log): item 38 is not pushed (items 34 to 37 and their logs were pushed after their deploys; every pushed commit
+scanned for the live `.env` and `tunnel.env` values and key patterns: none). **Going back** to item 37
+(`d2d-relay:334b493`, kept): in the deploy folder `git reset --keep df65429`, `docker tag d2d-relay:334b493
+d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; to item 36 (`d2d-relay:53fb6ad`, kept)
+the same with `cec5ed2`; to item 35 (`d2d-relay:e05f035`, kept) with `8bbfd7e`; to item 34 (`d2d-relay:aa4531e`,
+kept) with `520e88e`; to item 33 (`d2d-relay:54f6ed7`, kept) with `2cd493e` (it takes `config/house-models.json`
+back too). No older release
 image is kept on this PC (item 33): any other version is a commit on
 GitHub (in the deploy folder: `git checkout <sha>`, `RELAY_COMMIT=<sha> docker compose build web`), then `docker
 compose up -d --no-deps web admin runner` (only `web admin` for a version before item 31); going back before item 31
@@ -1037,6 +1083,12 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   names, addresses and networks in that mailbox: give their folder a one-year retention tag (P6).
 - **The old address** d2d-relay.pasdacs.com: done. The user removed its public hostname in Cloudflare; the name no
   longer resolves (checked 2026-11-12, ~13:30 IST). https://d2d.pasdacs.com is the only address.
+- **Social media and ads** (item 38's check, 2026-11-12). Sign-up takes a work email only (Gmail, Outlook and Yahoo
+  are refused), so ads should say so and aim at businesses. New organisations wait for PASDACS's review, and the
+  admin portal works only on this PC until the Cloudflare Access step above. Neither site counts visitors (D2D
+  Relay's privacy notice promises no tracking cookies): use UTM-tagged links and the ad platforms' own counts, and
+  change the notice before adding any pixel or tag. LinkedIn and Meta lead-form ads ask for a privacy policy link;
+  pasdacs.com has had none since 2026-11-06. Ads running overnight pay for clicks while a restart has the site down.
 
 ### Selling credits online (the user, when Razorpay activates the account)
 
@@ -1073,6 +1125,10 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
 - **Never run on the test stacks:** a real Razorpay checkout and real email delivery. Since item 34 the end-to-end
   run covers real Claude, Power BI's engine (the DAX check) and the Power BI file maker, on the test stack's own copies
   of this PC's helpers (`tests/stack/helpers.ps1`).
+- **pay_check can race the test stack's own start-up sweep** (item 38, test only): `ops.nightly` backs up and sweeps
+  about a minute after the stack starts, which is when pay_check backdates a checkout and sweeps it; when the stack's
+  sweep comes first, the test's finds nothing and the check fails (a rerun passes). The check could accept the
+  checkout gone either way, or the stack could start its suites after that first run.
 - **The job runner's start-up sweep** (found while moving the release tests into `tests/`, 2026-11-12) is fixed in
   item 34, live since 17:05 IST: each runner removes only its own stack's jobs. A test stack from an image before
   item 34 (`upgrade_check.py` starts one) would still remove live's, so `tests/stack/stack.sh` refuses to start while
