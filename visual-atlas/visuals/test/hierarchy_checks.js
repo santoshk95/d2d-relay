@@ -39,6 +39,35 @@
   fire(cases[15].querySelector('svg.atl-svg'), 'click');
   out.dimAfterClear = q(15, '.grp.dim').length;
   out.highlightDims = q(13, '.grp.dim').length;
+  /* sunburst labels (cases 3, 4, 11, 14 and the thin slices of 16): no label on another, each inside its own slice.
+     A label is the rotated lines sharing one transform; its corners come from the lines' boxes in their own
+     coordinates, taken to the page with the text's screen matrix. */
+  const sunLabels = k => {
+    const by = {};
+    q(k, 'text[transform^="rotate"]').forEach(t => { (by[t.getAttribute('transform')] = by[t.getAttribute('transform')] || []).push(t); });
+    return Object.values(by).map(ts => {
+      const bs = ts.map(t => t.getBBox()), x0 = Math.min(...bs.map(b => b.x)), y0 = Math.min(...bs.map(b => b.y));
+      const x1 = Math.max(...bs.map(b => b.x + b.width)), y1 = Math.max(...bs.map(b => b.y + b.height)), m = ts[0].getScreenCTM();
+      const c = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([x, y]) => new DOMPoint(x, y).matrixTransform(m));
+      return { s: ts.map(t => t.textContent).join(' '), c };
+    });
+  };
+  const apart = (A, B) => [A, B].some(P => P.some((a, i) => {          /* separating axes, 1 px allowed */
+    const b = P[(i + 1) % 4], nx = b.y - a.y, ny = a.x - b.x, len = Math.hypot(nx, ny) || 1, pr = Q => Q.map(p => (p.x * nx + p.y * ny) / len);
+    const pa = pr(A), pb = pr(B);
+    return Math.max(...pa) <= Math.min(...pb) + 1 || Math.max(...pb) <= Math.min(...pa) + 1;
+  }));
+  const centre = c => ({ x: (c[0].x + c[2].x) / 2, y: (c[0].y + c[2].y) / 2 });
+  const inFill = (p, path) => path.isPointInFill(new DOMPoint(p.x, p.y).matrixTransform(path.getScreenCTM().inverse()));
+  const shrink = c => { const m = centre(c); return c.map(p => { const dx = p.x - m.x, dy = p.y - m.y, d = Math.hypot(dx, dy) || 1; return { x: p.x - dx / d, y: p.y - dy / d }; }); };
+  out.sunburst = {};
+  [3, 4, 11, 14, 16].forEach(k => {
+    const ls = sunLabels(k), slices = [...q(k, '.grp > path:not([transform])')], over = [], outside = [];
+    ls.forEach((a, i) => ls.slice(i + 1).forEach(b => { if (!apart(a.c, b.c)) over.push(a.s + ' | ' + b.s); }));
+    ls.forEach(l => { const home = slices.find(p => inFill(centre(l.c), p)); if (!home || !shrink(l.c).every(p => inFill(p, home))) outside.push(l.s); });
+    out.sunburst[k] = { labels: ls.map(l => l.s), over, outside };
+  });
+  const thinShown = out.sunburst[16].labels;
   const bad = [];
   cases.forEach((c, k) => c.querySelectorAll('svg *').forEach(n => { for (const a of n.attributes) if (/NaN|Infinity|undefined/.test(a.value)) bad.push(k + ':' + n.tagName + '.' + a.name); }));
   out.bad = bad.slice(0, 10);
@@ -53,7 +82,10 @@
     contextMenu: has('context'), expandCard: out.expanded, legendSelects: out.log.some(x => x[0] === 'select' && /Category=/.test(x[1]) && !/Subcategory/.test(x[1])),
     keyboard: out.log.filter(x => x[0] === 'select').length >= 3, backgroundClears: has('clear') && out.dimAfterClear === 0, highlights: out.highlightDims > 0,
     landing: !!cases[12].querySelector('.atl-landing'), noNaN: bad.length === 0,
-    treemapCards: card(tm, 'Treemap') && !card(tm, 'Sunburst') && !card(tm, 'Org chart / tree'), orgCards: card(orgc, 'Org chart / tree') && !card(orgc, 'Legend')
+    treemapCards: card(tm, 'Treemap') && !card(tm, 'Sunburst') && !card(tm, 'Org chart / tree'), orgCards: card(orgc, 'Org chart / tree') && !card(orgc, 'Legend'),
+    sunburstLabelsApart: Object.values(out.sunburst).every(x => x.labels.length > 0 && x.over.length === 0),
+    sunburstLabelsInside: Object.values(out.sunburst).every(x => x.outside.length === 0),
+    thinSlicesKeepBigLabels: [/^Bikes \d+%$/, /^Comp\S*( 1\d%)?$/].every(re => thinShown.some(s => re.test(s))) && thinShown.filter(s => /^(Online|Retail) 3\d%$/.test(s)).length === 2
   };
   out.ok = Object.values(out.checks).every(Boolean);
   return out;

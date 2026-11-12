@@ -187,17 +187,44 @@ export function render(c: C, view: View, redraw: () => void) {
             el("path", { d: arc(d.x0, d.x1, r0, r1_), fill: t.hc ? t.surface : look.fill(col, "r"), stroke: t.hc ? t.ink : "none" }, g);
             bindNode(g, nd, nd.children.length > 0);
             /* label along the ring when it fits */
-            const mid = (d.x0 + d.x1) / 2, rm = (r0 + r1_) / 2, arcLen = (d.x1 - d.x0) * rm, thick = r1_ - r0;
-            const nm = nd.name, extra = labelText(nd), txt = extra && thick > lbfs * 2.4 ? [nm, extra] : [nm];
-            const radial = arcLen < thick * 1.2, room = radial ? thick - 6 : arcLen - 6;
-            if (Math.min(room, radial ? arcLen : thick) < lbfs + 2 || room < 18) return;
-            /* no label rather than an unreadable stub ("Ro…") */
-            const cut = trunc(nm, room, lbfs); if (cut !== nm && cut.replace("…", "").length < 4) return;
+            const mid = (d.x0 + d.x1) / 2, rm = (r0 + r1_) / 2, arcLen = (d.x1 - d.x0) * rm, thick = r1_ - r0, half = (d.x1 - d.x0) / 2;
+            const nm = nd.name, extra = labelText(nd);
+            /* The label is a block of lines centred on the slice's middle at radius rm: a radial label runs along the
+               radius with its lines side by side across the slice, the others run across it with their lines stacked
+               along the radius. It is drawn only when the whole block stays inside its slice, clear of the gaps, so a
+               thin slice never writes over its neighbours: name and value, else the name alone, else nothing. A slice
+               narrower than its ring is thick tries radial first, the others across first, then the other way. */
+            const inside = (lines: string[], rad: boolean) => {
+                /* each line's glyphs reach about 0.6 of the font size either side of its middle; 1 px clear of the edges */
+                const w = Math.max(...lines.map(l => textW(l, lbfs))), hb = lines.length * (lbfs + 1) + lbfs * 0.2 - 1;
+                const along = rad ? w : hb, across = rad ? hb : w, edge = gap / 2 + 1;
+                if (rm - along / 2 < r0 + 1) return false;
+                return [-1, 1].every(i => [-1, 1].every(j => {
+                    const px = rm + i * along / 2, py = j * across / 2, rho = Math.hypot(px, py), phi = Math.abs(Math.atan2(py, px));
+                    return rho <= r1_ - 1 && (half - phi >= Math.PI / 2 || rho * Math.sin(half - phi) >= edge);
+                }));
+            };
+            let txt: string[] | null = null, radial = arcLen < thick * 1.2;
+            for (const rad of [radial, !radial]) {
+                const room = rad ? thick - 6 : arcLen - 6;
+                if (Math.min(room, rad ? arcLen : thick) < lbfs + 2 || room < 18) continue;
+                for (const two of extra ? [true, false] : [false]) {
+                    for (let max = room; !txt && max >= 18; max *= 0.8) {
+                        /* no label rather than an unreadable stub ("Ro…") */
+                        const cut = trunc(nm, max, lbfs); if (cut !== nm && cut.replace("…", "").length < 4) break;
+                        const lines = two ? [cut, trunc(extra, max, lbfs)] : [cut];
+                        if (inside(lines, rad)) { txt = lines; radial = rad; }
+                    }
+                    if (txt) break;
+                }
+                if (txt) break;
+            }
+            if (!txt) return;
             const x = cx + Math.sin(mid) * rm, y = cy - Math.cos(mid) * rm;
             let rot = radial ? (mid * 180 / Math.PI) - 90 : (mid * 180 / Math.PI);
             if (radial ? mid > Math.PI : (mid > Math.PI / 2 && mid < 3 * Math.PI / 2)) rot += 180;
-            const ink = t.hc ? t.ink : inkOn(col);
-            txt.forEach((line, k) => el("text", { x: r1(x), y: r1(y + lbfs * 0.35 + (k - (txt.length - 1) / 2) * (lbfs + 1)), "text-anchor": "middle", "font-size": lbfs, fill: ink, class: k ? "ax" : "ttl", transform: `rotate(${r1(rot)} ${r1(x)} ${r1(y)})` }, labels, trunc(line, room, lbfs)));
+            const ink = t.hc ? t.ink : inkOn(col), shown = txt;
+            shown.forEach((line, k) => el("text", { x: r1(x), y: r1(y + lbfs * 0.35 + (k - (shown.length - 1) / 2) * (lbfs + 1)), "text-anchor": "middle", "font-size": lbfs, fill: ink, class: k ? "ax" : "ttl", transform: `rotate(${r1(rot)} ${r1(x)} ${r1(y)})` }, labels, line));
         });
         /* center: the zoom root; click to go up */
         if (hole > 14) {

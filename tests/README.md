@@ -74,7 +74,8 @@ already running, `bash tests/run_all.sh <output name>` runs the suites alone.
 | `item34_check.py`: built-in visuals first, the model's name, each runner sweeping only its own stack | 32 |
 | `item35_check.py`: labels in the prototype of the built-in visuals gallery and in the rebuilt Atlas visuals | 9 |
 | `item36_check.py`: KPI names clear of their values in low tiles; measure titles in the prototype | 10 |
-| **All, for item 36** (727 / 710 for e05f035, 718 / 701 for aa4531e, 685 / 668 for 54f6ed7) | **737 / 720** |
+| `item37_check.py`: a sunburst's labels on thin slices: none on another, each inside its own slice | 10 |
+| **All, for item 37** (737 / 720 for 53fb6ad, 727 / 710 for e05f035, 718 / 701 for aa4531e, 685 / 668 for 54f6ed7) | **747 / 730** |
 
 One suite by hand, with the stack running:
 
@@ -143,8 +144,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tests/stack/helpers.ps1 stop
   approved, published through Power BI's engine (the DAX check) and made into a .pbix; then what each report is made
   of, in its definition and inside the .pbix (built-in: no custom visual embedded; Relay: its custom visuals embedded);
   then every page of each report's prototype in Chromium: no label past its visual's edge, no Relay data label reading
-  $0M (item 35), no name on top of a value in a Relay Gauges visual, and every visual titled by a measure showing its
-  sentence (item 36).
+  $0M (item 35), no name on top of a value in a Relay Gauges visual, every visual titled by a measure showing its
+  sentence (item 36), and no sunburst label on another or outside its slice (item 37).
 - `real_build_check.py`: one real build, with each job container looked at from outside while it runs (only this
   stack's job containers, never live's): its mounts, network, rights, and no other organisation's folder.
 

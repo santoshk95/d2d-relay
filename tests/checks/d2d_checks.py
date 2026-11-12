@@ -39,6 +39,34 @@ def out_path(name: str) -> str:
     return os.path.join(OUT, name)
 
 
+# A JavaScript function for Chromium (item 37): given a visual's box on a prototype page, its sunburst labels (the
+# rotated lines that share one transform) that lie on another label or leave their own slice. Each label's corners come
+# from its lines' boxes in their own coordinates, taken to the page by the text's screen matrix; two labels overlap
+# unless an axis separates them (1 px allowed); a label is inside when every corner, 1 px in, is in the fill of the
+# slice its centre is in. Returns {labels, over, outside}.
+SUNBURST_JS = r"""(box) => {
+  const by = {};
+  box.querySelectorAll('svg text[transform^="rotate"]').forEach(t => { const k = t.getAttribute('transform'); (by[k] = by[k] || []).push(t); });
+  const labels = Object.values(by).map(ts => {
+    const bs = ts.map(t => t.getBBox()), x0 = Math.min(...bs.map(b => b.x)), y0 = Math.min(...bs.map(b => b.y));
+    const x1 = Math.max(...bs.map(b => b.x + b.width)), y1 = Math.max(...bs.map(b => b.y + b.height)), m = ts[0].getScreenCTM();
+    return {s: ts.map(t => t.textContent).join(' '), c: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([x, y]) => new DOMPoint(x, y).matrixTransform(m))};
+  });
+  const apart = (A, B) => [A, B].some(P => P.some((a, i) => {
+    const b = P[(i + 1) % 4], nx = b.y - a.y, ny = a.x - b.x, len = Math.hypot(nx, ny) || 1, pr = Q => Q.map(p => (p.x * nx + p.y * ny) / len);
+    const pa = pr(A), pb = pr(B);
+    return Math.max(...pa) <= Math.min(...pb) + 1 || Math.max(...pb) <= Math.min(...pa) + 1;
+  }));
+  const centre = c => ({x: (c[0].x + c[2].x) / 2, y: (c[0].y + c[2].y) / 2});
+  const inFill = (p, path) => path.isPointInFill(new DOMPoint(p.x, p.y).matrixTransform(path.getScreenCTM().inverse()));
+  const shrink = c => { const m = centre(c); return c.map(p => { const dx = p.x - m.x, dy = p.y - m.y, d = Math.hypot(dx, dy) || 1; return {x: p.x - dx / d, y: p.y - dy / d}; }); };
+  const slices = [...box.querySelectorAll('.grp > path:not([transform])')], over = [], outside = [];
+  labels.forEach((a, i) => labels.slice(i + 1).forEach(b => { if (!apart(a.c, b.c)) over.push(a.s + ' | ' + b.s); }));
+  labels.forEach(l => { const home = slices.find(p => inFill(centre(l.c), p)); if (!home || !shrink(l.c).every(p => inFill(p, home))) outside.push(l.s); });
+  return {labels: labels.map(l => l.s), over, outside};
+}"""
+
+
 def code_from_logs(container: str, email: str, since: float) -> str | None:
     """The sign-in code the app printed for this address (RELAY_OTP_DEV_LOG=1), the newest since `since`."""
     for _ in range(20):

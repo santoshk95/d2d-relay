@@ -101,8 +101,8 @@ def builtin_type(t: str) -> bool:
 LABELS = r"""
 import json, re, sys
 from playwright.sync_api import sync_playwright
-cookie, pid = sys.argv[1], sys.argv[2]
-out = {"pages": 0, "overflow": [], "zeros": [], "touching": [], "gauges": 0, "titles": []}
+cookie, pid, SUN = sys.argv[1], sys.argv[2], sys.argv[3]            # SUN: d2d_checks.SUNBURST_JS
+out = {"pages": 0, "overflow": [], "zeros": [], "touching": [], "gauges": 0, "titles": [], "sun": [], "sunbursts": 0}
 ZERO = re.compile(r"^[+-]?[^0-9\s]{0,3}0*(\.0+)?\s?(K|M|bn|B|T)$")          # "$0M", "+$M": a value shown as nothing
 with sync_playwright() as pw:
     b = pw.chromium.launch(args=["--no-sandbox"])
@@ -115,9 +115,9 @@ with sync_playwright() as pw:
     for i in range(n):
         page.evaluate(f"current = {i}; draw();")
         page.wait_for_timeout(1500)
-        found = page.evaluate('''() => {
+        found = page.evaluate("() => { const sun = " + SUN + ";" + '''
           const name = R.pages[current].name, vs = R.pages[current].visuals, boxes = [...document.querySelectorAll('#page > .v')];
-          const over = [], zeros = [], touching = [], titles = []; let gauges = 0;
+          const over = [], zeros = [], touching = [], titles = [], sunbad = []; let gauges = 0, suns = 0;
           boxes.forEach((box, k) => { const v = vs[k]; if (!v || !(v.stock || v.atlas)) return;
             const r = box.getBoundingClientRect();
             box.querySelectorAll('svg text').forEach(t => { const q = t.getBoundingClientRect(); if (!q.width) return;
@@ -130,13 +130,20 @@ with sync_playwright() as pw:
               const ts = [...box.querySelectorAll('text.ttl')].map(t => [t.textContent, t.getBoundingClientRect()]).filter(([s, q]) => s.trim() && q.width);
               ts.forEach(([s, p], a) => ts.slice(a + 1).forEach(([s2, q]) => {
                 const dx = Math.min(p.right, q.right) - Math.max(p.left, q.left), dy = Math.min(p.bottom, q.bottom) - Math.max(p.top, q.top);
-                if (dx > 2 && dy > 2) touching.push([name, v.id, s, s2]); })); } });
-          return {over, zeros, touching, titles, gauges}; }''')
+                if (dx > 2 && dy > 2) touching.push([name, v.id, s, s2]); })); }
+            if (v.type === 'atlasHierarchy') {       // a sunburst's labels: never one on another, each inside its slice
+              const f = sun(box);
+              if (f.labels.length) suns += 1;
+              f.over.forEach(x => sunbad.push([name, v.id, 'on another: ' + x]));
+              f.outside.forEach(x => sunbad.push([name, v.id, 'outside its slice: ' + x])); } });
+          return {over, zeros, touching, titles, gauges, sunbad, suns}; }''')
         out["overflow"] += found["over"]
         out["zeros"] += [z for z in found["zeros"] if ZERO.match(z[2].strip())]
         out["touching"] += found["touching"]
         out["titles"] += found["titles"]
         out["gauges"] += found["gauges"]
+        out["sun"] += found["sunbad"]
+        out["sunbursts"] += found["suns"]
         out["pages"] += 1
     b.close()
 print(json.dumps(out))
@@ -145,10 +152,11 @@ print(json.dumps(out))
 
 def labels_of(p, pid: str) -> dict:
     """Every page of the dashboard's prototype in Chromium: labels past their visual's edge, Atlas labels shown as nothing,
-    Relay Gauges names and values on top of each other, and the title each visual shows."""
+    Relay Gauges names and values on top of each other, sunburst labels on each other or outside their slices, and the
+    title each visual shows."""
     cookie = next(k.value for k in p.jar if k.name == "d2d_session")
-    r = subprocess.run(["docker", "exec", "-i", c.WEB_C, "python3", "-", cookie, pid], input=LABELS, capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", timeout=300)
+    r = subprocess.run(["docker", "exec", "-i", c.WEB_C, "python3", "-", cookie, pid, c.SUNBURST_JS], input=LABELS, capture_output=True,
+                       text=True, encoding="utf-8", errors="replace", timeout=300)
     try:
         return json.loads(r.stdout.strip().splitlines()[-1])
     except (ValueError, IndexError):
@@ -297,6 +305,8 @@ for mode, run in runs.items():
               bool(lab.get("pages")) and not lab.get("zeros"), lab.get("zeros"))
         check(f"{mode}: no name runs into a value in a Relay Gauges visual ({lab.get('gauges', 0)} in the report)",
               bool(lab.get("pages")) and not lab.get("touching"), lab.get("touching"))
+        check(f"{mode}: no sunburst label lies on another or leaves its slice ({lab.get('sunbursts', 0)} labelled sunbursts in the report)",
+              bool(lab.get("pages")) and not lab.get("sun"), lab.get("sun"))
         shown, measured = dict(lab.get("titles") or []), measure_titles(pid, run["v"])
         titled = {k: m for k, m in measured.items() if k in shown}
         wrong = {k: shown[k] for k, m in titled.items() if shown[k] in (None, "", m, f"[{m}]", stand_in(m))}

@@ -390,6 +390,23 @@ size where it can. Tests: `gauges_cases.js` 18-19 (a long and a medium name in a
 kpiNameClearOfValue and kpiSideBySide (apart, value 14 / 18px or more); against the old code both fail. Atlas Gauges
 1.0.7.0, built offline as in section 18; the two cases the checks count from the end stay last.
 
+## 20. A sunburst label stays inside its own slice (12 Nov 2026, D2D Relay item 37)
+
+The next end-to-end run showed a sunburst (category > channel, name and percent) whose thin slices wrote over each
+other: "Online 2.5%" on "Retail 2.4%", and the inner "Clothing 4.9%" on "Accessories 3.7%". A thin slice's label runs
+along the radius, so its two lines sit side by side across the slice, and only one line's room was checked. Now
+(Atlas Hierarchy `render.ts`, `drawSunburst()`) the label is measured as a block of lines (`textW`, about 0.6 of the
+font size either side of each line's middle) and drawn only when all of it stays inside its own slice, 1 px clear of
+the gaps and rings: name and value, else the name alone (shortened while at least 4 letters stay), else nothing. A
+label that does not fit one way (along the radius or across the slice) tries the other, so the report's 15% Components
+slice, unlabelled before at that size ("Com" and an ellipsis was too short to show), now reads "Compo" and an
+ellipsis. The
+same fault was in the mock host's own two-level sunbursts (cases 3 and 11: Lights, Locks and Bottles on each other),
+unnoticed because no check looked. Tests: `hierarchy_cases.js` 16 (the report's thin slices) and, for every sunburst
+case (3, 4, 11, 14, 16), the checks sunburstLabelsApart (separating axes on each label's rotated box) and
+sunburstLabelsInside (every corner in its own slice's fill), plus thinSlicesKeepBigLabels; against the old code the
+first two fail. Atlas Hierarchy 1.0.7.0, built offline as in section 18.
+
 ## Decisions to keep
 
 - One `.pbiviz` per family, with a chart-type switch.

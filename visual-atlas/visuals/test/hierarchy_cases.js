@@ -57,3 +57,14 @@ C('Landing page (no fields)', null);
 C('Treemap · cross-highlighted (bikes)', lv([0, 1], { hl: r => r[0] === 'Bikes', objects: clean(T('treemap')) }));
 C('Sunburst · small tile', lv([0, 1, 2], { objects: clean(T('sunburst')) }), { w: 300, h: 200 });
 C('Treemap · clicking selects', lv([0, 1], { objects: clean(T('treemap', { chart: { click: 'select' } })) }));
+// 16: thin slices as in an AI-made sales report (Clothing 4.9%, Accessories 3.7%; 2.5% and 2.4% outside): every label
+// stays inside its own slice, none on another (D2D Relay item 37)
+const thin = [['Bikes', 'Online', 2430], ['Bikes', 'Retail', 2310], ['Components', 'Online', 474], ['Components', 'Retail', 449],
+  ['Clothing', 'Online', 156], ['Clothing', 'Retail', 150], ['Accessories', 'Online', 118], ['Accessories', 'Retail', 112]];
+function tv(o) {
+  const cats = ['Category', 'Channel'].map((name, k) => ({ source: { displayName: name, queryName: 't.' + name, roles: { levels: true }, type: { text: true } }, values: thin.map(r => r[k]) }));
+  const values = [{ source: { displayName: 'Revenue', queryName: 'm.Revenue', roles: { values: true }, isMeasure: true, format: '\\$#,0' }, values: thin.map(r => r[2] * 1000) }];
+  values.grouped = () => [{ values: values.slice() }];
+  return { metadata: { columns: [], objects: o.objects || {} }, categorical: { categories: cats, values } };
+}
+C('Sunburst · thin slices · name and percent', tv({ objects: clean(T('sunburst', { chart: { content: 'namePercent' } })) }), { w: 600, h: 270 });
