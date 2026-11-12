@@ -1,4 +1,4 @@
-"""Suggestions & recommendations (registry id `recommend`) — what to do next, with reasons: explainable next-best
+"""Suggestions & recommendations (registry id `recommend`) - what to do next, with reasons: explainable next-best
 actions from the tenant's own numbers, each with its evidence and expected impact, sent to the person who should act
 and tracked until they accept or decline it.
 
@@ -9,13 +9,13 @@ those suggestions as signals too, and adds the rest from the data:
   forecast       a live forecast (Predictive analytics) that falls or rises over its horizon
   anomaly        an unusual number found by Anomaly & risk detection
   askd           an action Ask D suggested with one of the owner's answers
-A playbook (rules, versioned) turns each signal into a suggestion: what to do, why — the numbers behind it — and the
+A playbook (rules, versioned) turns each signal into a suggestion: what to do, why - the numbers behind it - and the
 expected impact; nothing is suggested without a signal and its numbers.
-Develop  Signals → Explain → Suggest → Assign → Track: the signals read, explained in plain words, the suggestions
+Develop  Signals -> Explain -> Suggest -> Assign -> Track: the signals read, explained in plain words, the suggestions
          confirmed by a person, the owners confirmed before anything is sent, then each sent suggestion is a
-         checkpoint in its owner's Validation queue — accept, or decline with a reason — and the outcome is tracked.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: the playbook edited, dry-run on today's signals.
-Run      Watch → Alert → Fix → Approve → Report: new signals on a schedule, the outcomes so far (the acceptance rate
+         checkpoint in its owner's Validation queue - accept, or decline with a reason - and the outcome is tracked.
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: the playbook edited, dry-run on today's signals.
+Run      Watch -> Alert -> Fix -> Approve -> Report: new signals on a schedule, the outcomes so far (the acceptance rate
          per rule), new suggestions only after a person confirms them."""
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ def playbooks(u: dict) -> list[dict]:
 
 
 def playbook_options(u: dict) -> list[tuple[str, str]]:
-    return [(p["id"], f"{p['name']} · version {p['version']} · {len(p['rules'])} rules") for p in playbooks(u)]
+    return [(p["id"], f"{p['name']} - version {p['version']} - {len(p['rules'])} rules") for p in playbooks(u)]
 
 
 def publish(ctx: wb.Ctx, rules: list[dict], pid: str | None = None) -> dict:
@@ -92,7 +92,7 @@ def publish(ctx: wb.Ctx, rules: list[dict], pid: str | None = None) -> dict:
 
 
 def outcomes(pid: str | None = None, item: str | None = None) -> dict:
-    """Sent, accepted, declined and still open — overall and per rule (the learning loop)."""
+    """Sent, accepted, declined and still open - overall and per rule (the learning loop)."""
     if pid or item:
         rows = db.q("SELECT rule, status, COUNT(*) AS n FROM recommend_suggestions WHERE " + ("playbook = ?" if pid else "item = ?") + " GROUP BY rule, status", (pid or item,))
     else:
@@ -172,7 +172,7 @@ def forecast_signals(u: dict) -> list[dict]:
                 continue
             out.append({"fingerprint": f"forecast:{f['id']}:v{f['version']}:{series}", "signal": "forecast", "dataset": f["name"], "metric": series, "period": pts[-1][0], "base": pts[0][0],
                         "latest": b, "base_value": a, "change_pct": ch, "gap": b - a, "direction": "down" if b < a else "up", "group": "",
-                        "explain": f"the forecast “{f['name']}” for {series} goes from {pdat.fmt(a)} in {pts[0][0]} to {pdat.fmt(b)} in {pts[-1][0]} ({ch:+.1f} %)"})
+                        "explain": f"the forecast \"{f['name']}\" for {series} goes from {pdat.fmt(a)} in {pts[0][0]} to {pdat.fmt(b)} in {pts[-1][0]} ({ch:+.1f} %)"})
     return out
 
 
@@ -202,7 +202,7 @@ def askd_signals(uid: str, limit: int = 20) -> list[dict]:
             out.append({"fingerprint": f"askd:{m['id']}:{i}", "signal": "askd", "dataset": "Ask D", "metric": m["title"], "period": time.strftime("%Y-%m-%d", time.gmtime(m["created"])),
                         "base": "", "latest": None, "base_value": None, "change_pct": None, "gap": None, "direction": "any", "group": "", "text": str(a)[:300],
                         "headline": (body.get("result") or {}).get("headline") or "", "summary": body.get("summary") or "", "message": m["id"],
-                        "explain": f"Ask D answered “{m['title']}” with {((body.get('result') or {}).get('headline') or 'its numbers')} and suggested: {str(a)[:200]}"})
+                        "explain": f"Ask D answered \"{m['title']}\" with {((body.get('result') or {}).get('headline') or 'its numbers')} and suggested: {str(a)[:200]}"})
     return out
 
 
@@ -223,7 +223,7 @@ def gather(ctx: wb.Ctx) -> list[dict]:
 
 class _Safe(dict):
     def __missing__(self, k):
-        return "—"
+        return "-"
 
 
 def apply(rules: list[dict], signals: list[dict]) -> list[dict]:
@@ -239,8 +239,8 @@ def apply(rules: list[dict], signals: list[dict]) -> list[dict]:
             if s.get("change_pct") is not None and abs(s["change_pct"]) < float(r.get("min_change") or 0):
                 continue
             gap = s.get("gap")
-            vals = _Safe(metric=s.get("metric"), change=f"{s['change_pct']:+.1f} %" if s.get("change_pct") is not None else "—", base=s.get("base") or "—", period=s.get("period") or "—",
-                         group=s.get("group") or "—", gap=pdat.fmt(abs(gap)) if gap is not None else "—", half_gap=pdat.fmt(abs(gap) / 2) if gap is not None else "—",
+            vals = _Safe(metric=s.get("metric"), change=f"{s['change_pct']:+.1f} %" if s.get("change_pct") is not None else "-", base=s.get("base") or "-", period=s.get("period") or "-",
+                         group=s.get("group") or "-", gap=pdat.fmt(abs(gap)) if gap is not None else "-", half_gap=pdat.fmt(abs(gap) / 2) if gap is not None else "-",
                          reason=s.get("reason") or "", text=s.get("text") or "", headline=s.get("headline") or "")
             try:
                 action = str(r.get("action") or "").format_map(vals)
@@ -274,7 +274,7 @@ def _validate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
 
 
 SUG_COLUMNS = [wb.Column("include", "Send", "bool"), wb.Column("title", "Suggestion", readonly=True), wb.Column("action", "What to do", "longtext"),
-               wb.Column("why", "Why — the numbers", readonly=True), wb.Column("impact", "Expected impact", readonly=True),
+               wb.Column("why", "Why - the numbers", readonly=True), wb.Column("impact", "Expected impact", readonly=True),
                wb.Column("priority", "Priority", "select", options=(("high", "High"), ("medium", "Medium"), ("low", "Low")))]
 SUG_EDIT = wb.Edit(columns=SUG_COLUMNS, add=False, remove=True, validate=_validate, label="suggestion")
 ASSIGN_COLUMNS = [wb.Column("include", "Send", "bool"), wb.Column("title", "Suggestion", readonly=True), wb.Column("assignee", "Who should act", "select", options=_people),
@@ -315,7 +315,7 @@ def send(ctx: wb.Ctx, recs: list[dict], pbid: str | None) -> list[list]:
             status = h.get("status") or "ticket"
         else:
             cp = checkpoints.open(KIND, sid, registry.BY_ID[MODULE]["name"], r["title"][:200], "table",
-                                  {"summary": f"{r['action']} — {r['why']}", "items": [f"What to do: {r['action']}", f"Why: {r['why']}", f"Expected impact: {r['impact']}"],
+                                  {"summary": f"{r['action']} - {r['why']}", "items": [f"What to do: {r['action']}", f"Why: {r['why']}", f"Expected impact: {r['impact']}"],
                                    "columns": ["What", "Detail"], "rows": [["What to do", r["action"]], ["Why", r["why"]], ["Expected impact", r["impact"]], ["Priority", r.get("priority")]],
                                    "suggestion": sid, "item": {"id": ctx.id, "title": ctx.title}},
                                   link=f"#/m/{MODULE}/i/{ctx.id}", assignee=who, agent="Advisor", opened_by=ctx.who or ctx.owner)
@@ -328,7 +328,7 @@ def send(ctx: wb.Ctx, recs: list[dict], pbid: str | None) -> list[list]:
 
 
 def _on_decision(c: dict, decision: str, comment: str | None, who: str) -> None:
-    """The owner's answer to a suggestion: accepted, or declined with a reason — tracked, and told to who sent it."""
+    """The owner's answer to a suggestion: accepted, or declined with a reason - tracked, and told to who sent it."""
     s = db.one("SELECT * FROM recommend_suggestions WHERE id = ?", (c["subject"],))
     if not s:
         return
@@ -356,7 +356,7 @@ def d_signals(ctx: wb.Ctx) -> dict:
     by = {}
     for s in sig:
         by[s["signal"]] = by.get(s["signal"], 0) + 1
-    return {"summary": f"{len(sig)} signal(s): " + ", ".join(f"{n} {SIGNALS[k].lower()}" for k, n in by.items()) + " — not yet suggested to anyone.",
+    return {"summary": f"{len(sig)} signal(s): " + ", ".join(f"{n} {SIGNALS[k].lower()}" for k, n in by.items()) + " - not yet suggested to anyone.",
             "counts": {"signals": len(sig), **{SIGNALS[k]: n for k, n in by.items()}},
             "data": {"columns": ["Signal", "From", "What", "Period"], "rows": [[SIGNALS[s["signal"]], s["dataset"], s["metric"], s["period"]] for s in sig[:200]]}}
 
@@ -396,13 +396,13 @@ def d_assign(ctx: wb.Ctx) -> dict:
             continue
         h = have.get(r["id"]) or {}
         recs.append({**r, "assignee": h.get("assignee") or default_owner(ctx, r), "route": h.get("route") or "queue", "include": h.get("include", True)})
-    return {"summary": f"{len(recs)} suggestion(s) to send: confirm who should act on each and how it reaches them — nothing is sent before you confirm.", "records": recs,
-            "data": {"columns": ["Suggestion", "Who", "How"], "rows": [[r["title"], (db.user(r["assignee"]) or {}).get("name") or "—", r["route"]] for r in recs]}}
+    return {"summary": f"{len(recs)} suggestion(s) to send: confirm who should act on each and how it reaches them - nothing is sent before you confirm.", "records": recs,
+            "data": {"columns": ["Suggestion", "Who", "How"], "rows": [[r["title"], (db.user(r["assignee"]) or {}).get("name") or "-", r["route"]] for r in recs]}}
 
 
 def d_track(ctx: wb.Ctx) -> dict:
     rows = send(ctx, ctx.records("assign"), None)
-    ctx.output("suggestions.md", "# Suggestions sent: " + ctx.title + "\n\n" + "".join(f"- {r[0]} → {r[1]} ({r[2]})\n" for r in rows), label="Suggestions sent (Markdown)")
+    ctx.output("suggestions.md", "# Suggestions sent: " + ctx.title + "\n\n" + "".join(f"- {r[0]} {r[1]} ({r[2]})\n" for r in rows), label="Suggestions sent (Markdown)")
     return {"summary": f"{len(rows)} suggestion(s) sent; each owner accepts it or declines it with a reason in their Validation queue, and the outcome is tracked here.",
             "counts": {"sent": len(rows)}, "data": {"columns": ["Suggestion", "Who", "Status"], "rows": rows}}
 
@@ -437,7 +437,7 @@ def c_request(ctx: wb.Ctx) -> dict:
     ctx.put("playbook", pb["id"] if pb else None)
     ctx.put("current", (pb or {}).get("rules") or [dict(r) for r in DEFAULT_RULES])
     ctx.put("datasets", pdat.datasets(ctx))
-    return {"summary": f"Change to the playbook “{pb['name']}” (version {pb['version']})." if pb else "A first playbook of the tenant's own, starting from Relay's default rules.",
+    return {"summary": f"Change to the playbook \"{pb['name']}\" (version {pb['version']})." if pb else "A first playbook of the tenant's own, starting from Relay's default rules.",
             "data": {"text": ctx.brief or "(no request text)"}}
 
 
@@ -453,7 +453,7 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
         dec = (oc.get("accepted", 0) + oc.get("declined", 0))
         rate = round(100.0 * oc.get("accepted", 0) / dec, 1) if dec else None
         checks.append({"name": r["id"], "label": f"Rule {r['id']} ({SIGNALS.get(r.get('signal'), r.get('signal'))})", "status": "warn" if rate is not None and rate < 30 else "pass",
-                       "measured": f"{n} suggestion(s) today" + (f" · {rate:g} % accepted so far" if rate is not None else ""), "expected": "", "detail": r.get("action") or ""})
+                       "measured": f"{n} suggestion(s) today" + (f" - {rate:g} % accepted so far" if rate is not None else ""), "expected": "", "detail": r.get("action") or ""})
     return {"summary": f"Today's signals through today's playbook: {len(sug)} suggestion(s).", "counts": {"suggestions": len(sug)}, "data": {"checks": checks}}
 
 
@@ -467,7 +467,7 @@ def c_prove(ctx: wb.Ctx) -> dict:
     new = apply(ctx.records("fix"), ctx.get("signals") or [])
     old = apply(ctx.get("current") or [], ctx.get("signals") or [])
     ctx.put("diff", {"before": len(old), "after": len(new)})
-    checks = [{"name": s["id"], "label": s["title"], "status": "pass", "measured": s["priority"], "expected": "", "detail": f"{s['action']} — {s['why']}"} for s in new[:100]]
+    checks = [{"name": s["id"], "label": s["title"], "status": "pass", "measured": s["priority"], "expected": "", "detail": f"{s['action']} - {s['why']}"} for s in new[:100]]
     return {"summary": f"Dry run on today's signals: {len(new)} suggestion(s) with the edited playbook, {len(old)} with today's.", "counts": {"before": len(old), "after": len(new)},
             "data": {"checks": checks or [{"name": "none", "label": "No suggestion today", "status": "warn", "detail": "no rule fires on today's signals"}]}}
 
@@ -480,8 +480,8 @@ def c_approve(ctx: wb.Ctx) -> dict:
 
 def c_learn(ctx: wb.Ctx) -> dict:
     pb = publish(ctx, ctx.records("fix"), ctx.get("playbook"))
-    return {"summary": f"Playbook “{pb['name']}” version {pb['version']} is live; Run items using it suggest from it from their next round.", "counts": {"version": pb["version"]},
-            "data": {"href": f"#/m/{MODULE}/run", "label": "Run & support", "text": f"Version {pb['version']} · {len(pb['rules'])} rule(s)"}}
+    return {"summary": f"Playbook \"{pb['name']}\" version {pb['version']} is live; Run items using it suggest from it from their next round.", "counts": {"version": pb["version"]},
+            "data": {"href": f"#/m/{MODULE}/run", "label": "Run & support", "text": f"Version {pb['version']} - {len(pb['rules'])} rule(s)"}}
 
 
 # ------------------------------------------------------------------ Run & support
@@ -514,8 +514,8 @@ def r_fix(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**s, "assignee": (have.get(s["id"]) or {}).get("assignee") or default_owner(ctx, s), "route": (have.get(s["id"]) or {}).get("route") or "queue",
              "include": (have.get(s["id"]) or {}).get("include", True)} for s in ctx.get("new") or []]
-    return {"summary": f"{len(recs)} new suggestion(s): confirm who should act on each — nothing is sent before you confirm.", "records": recs,
-            "data": {"columns": ["Suggestion", "Who", "How"], "rows": [[r["title"], (db.user(r["assignee"]) or {}).get("name") or "—", r["route"]] for r in recs]}}
+    return {"summary": f"{len(recs)} new suggestion(s): confirm who should act on each - nothing is sent before you confirm.", "records": recs,
+            "data": {"columns": ["Suggestion", "Who", "How"], "rows": [[r["title"], (db.user(r["assignee"]) or {}).get("name") or "-", r["route"]] for r in recs]}}
 
 
 def r_approve(ctx: wb.Ctx) -> dict:
@@ -527,7 +527,7 @@ def r_report(ctx: wb.Ctx) -> dict:
     o = ctx.get("outcomes") or {}
     text = f"# Suggestions report: {ctx.title}\n\n{time.strftime('%d %B %Y %H:%M UTC', time.gmtime())}\n\n- Sent: {o.get('sent', 0)}\n- Accepted: {o.get('accepted', 0)}\n- Declined: {o.get('declined', 0)}\n- Open: {o.get('open', 0)}\n"
     ctx.output(f"report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", text, label="Suggestions report (Markdown)")
-    return {"summary": f"{o.get('accepted', 0)} accepted, {o.get('declined', 0)} declined, {o.get('open', 0)} open" + (f" — {o['acceptance']:g} % accepted." if o.get("acceptance") is not None else "."),
+    return {"summary": f"{o.get('accepted', 0)} accepted, {o.get('declined', 0)} declined, {o.get('open', 0)} open" + (f" - {o['acceptance']:g} % accepted." if o.get("acceptance") is not None else "."),
             "counts": {k: o.get(k, 0) for k in ("accepted", "declined", "open")}, "data": {"columns": ["Outcome", "Suggestions"], "rows": [[k, o.get(k, 0)] for k in ("accepted", "declined", "open")]}}
 
 
@@ -536,13 +536,13 @@ def _cards(u: dict) -> list[dict]:
     for s in db.q("SELECT * FROM recommend_suggestions ORDER BY created DESC LIMIT 200"):
         if s.get("item") and not auth.can_project(u, "view", db.project(s["item"])) and s.get("assignee") != u["id"]:
             continue
-        rows.append([s["title"], (db.user(s.get("assignee") or "") or {}).get("name") or "—", {"sent": "open"}.get(s["status"], s["status"]), (s.get("comment") or "")[:120],
+        rows.append([s["title"], (db.user(s.get("assignee") or "") or {}).get("name") or "-", {"sent": "open"}.get(s["status"], s["status"]), (s.get("comment") or "")[:120],
                      time.strftime("%d %b %Y", time.gmtime(s["created"])), f"#/m/{MODULE}/i/{s['item']}" if s.get("item") else ""])
     return [{"title": "Suggestions and what happened to them", "columns": ["Suggestion", "Who", "Outcome", "Their note", "Sent", "Work item"], "rows": rows[:40],
              "empty": "No suggestion has been sent yet: a Develop item's Track step sends them after the owners are confirmed."}]
 
 
-GUIDE = """# Suggestions & recommendations — the work item
+GUIDE = """# Suggestions & recommendations - the work item
 
 This folder is one work item of Relay's suggestions module. Suggestions come from signals in the data (and from
 forecasts, anomaly findings and Ask D's answers) through a playbook of rules; every suggestion carries the numbers
@@ -579,7 +579,7 @@ wb.register(wb.Pack(
         "run": wb.Work(title="New suggestions on a schedule, and what people did with them", needs_source=False, steps={
             "Watch": wb.Step(kind="proof", run=r_watch, view="gates", agent="Signal reader", text="New signals since the last round, and the outcomes so far (accepted, declined, open)"),
             "Alert": wb.Step(kind="deterministic", run=r_alert, agent="Advisor", text="New suggestions from the new signals, through the playbook"),
-            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Advisor", edit=ASSIGN_EDIT, text="Relay proposes who should act on each — you confirm or change it"),
+            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Advisor", edit=ASSIGN_EDIT, text="Relay proposes who should act on each - you confirm or change it"),
             "Approve": wb.Step(kind="platform", run=r_approve, agent="Dispatcher", text="The confirmed suggestions go out: their owners' Validation queues, or a ticket through the service desk's own approval"),
             "Report": wb.Step(kind="deterministic", run=r_report, agent="Reporter", confirm_if=lambda ctx, out: bool(ctx.get("new")), text="Accepted, declined and open; you confirm it when there were new suggestions")},
             fields=DEV_FIELDS + [wb.Field("schedule", "Look for new signals", "cadence", default={"every": "week", "at": "07:00", "weekday": 0, "tz": "UTC"})]),

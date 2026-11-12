@@ -1,6 +1,6 @@
 """The HTML twin: the same content as the deck or document, one self-contained page with CSS from the brand tokens.
 The web app shows it as the preview, lets reviewers comment on it, and renders it to PDF through the agent's
-Chromium (/render, landscape A4 — one slide per page). Every figure, table, chart and quote carries its source and a
+Chromium (/render, landscape A4 - one slide per page). Every figure, table, chart and quote carries its source and a
 link to the evidence; charts and diagrams are inline SVG with titles for screen readers."""
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def _source_line(ref: str, resolver, base: str) -> str:
         return '<div class="src bad">No source</div>'
     r = resolver.resolve(ref)
     name = r.get("name") or r.get("path") or ref
-    return f'<div class="src{"" if r["ok"] else " bad"}">Source: <a href="{escape(base + ref)}" data-source="{escape(ref)}">{escape(name)}</a>' + ("" if r["ok"] else f" — {escape(r['why'])}") + "</div>"
+    return f'<div class="src{"" if r["ok"] else " bad"}">Source: <a href="{escape(base + ref)}" data-source="{escape(ref)}">{escape(name)}</a>' + ("" if r["ok"] else f" - {escape(r['why'])}") + "</div>"
 
 
 def _bullets(items: list[str], figures, resolver, base) -> str:
@@ -79,7 +79,7 @@ def unit_html(u: dict, t: Template, resolver, base: str, kind: str) -> str:
             body.append('<figure class="dg">' + r["svg"] + (f"<figcaption>{escape(u['diagram']['alt'])}</figcaption>" if u["diagram"]["alt"] else "") + (f'<pre class="mermaid">{escape(u["diagram"]["mermaid"])}</pre>' if r["kind"] != "flowchart" else "") + "</figure>")
         elif lay == "quote" and u["quote"]:
             q = u["quote"]
-            body.append(f'<blockquote><p>{escape(q["text"])}</p>' + (f"<footer>— {escape(q['who'])}</footer>" if q["who"] else "") + "</blockquote>" + _source_line(q["source"], resolver, base))
+            body.append(f'<blockquote><p>{escape(q["text"])}</p>' + (f"<footer>- {escape(q['who'])}</footer>" if q["who"] else "") + "</blockquote>" + _source_line(q["source"], resolver, base))
         elif lay == "image" and u["image"]:
             im = u["image"]
             body.append(f'<figure><div class="imgbox" role="img" aria-label="{escape(im["alt"])}">{escape(im["file"])}</div><figcaption>{escape(im["alt"])}</figcaption></figure>')
@@ -144,5 +144,5 @@ def html(model: dict, template: Template, resolver, evidence_base: str = "", rep
     if report:
         badge = f'<div class="check {"ok" if report["ok"] else "bad"}" style="position:fixed;right:12px;top:12px;font:600 12px var(--font);padding:4px 10px;border-radius:999px;background:{"#E6F4EC" if report["ok"] else "#FBEAE8"};color:{"#1B7A45" if report["ok"] else "#B4332B"}">Checks: {"passed" if report["ok"] else str(report["counts"]["fails"]) + " problem(s)"}</div>'
     return (f'<!doctype html><html lang="{escape(model.get("language") or "en-GB")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            f"<title>{escape(model['title'])} — {escape(template.owner)}</title><style>{css(template)}</style></head>"
+            f"<title>{escape(model['title'])} - {escape(template.owner)}</title><style>{css(template)}</style></head>"
             f'<body class="{kind}"><main class="twin {kind}" data-units="{len(units)}" data-kind="{kind}">{badge}' + "".join(parts) + "</main></body></html>")

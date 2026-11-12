@@ -241,7 +241,7 @@ def build_pages(d: dict, con) -> tuple[list[dict], list[str]]:
 
 PAGE = """<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>__NAME__ · prototype</title>
+<title>__NAME__ - prototype</title>
 <style>__CSS__
 html,body{margin:0;background:__BG__;font-family:'Segoe UI',system-ui,sans-serif;color:#1F1A17}
 .page{position:relative;width:1280px;margin:0 auto}
@@ -283,7 +283,7 @@ function fmtNum(v, f) {
   const cur = (core.match(/[$€£¥₹]/) || [''])[0], pct = core.includes('%'), dm = core.match(/[.](0+)/);
   const sm = core.replace(/[$€£¥₹% ]/g, '').match(/[0#](?:[.][0#]+)?(,+)$/), scale = sm ? Math.pow(1000, sm[1].length) : 1;
   const d = dm ? dm[1].length : 0, signed = f.includes(';') && sec.startsWith('+');
-  const s = v < 0 ? '−' : (signed && v > 0 ? '+' : '');
+  const s = v < 0 ? '-' : (signed && v > 0 ? '+' : '');
   return s + cur + (Math.abs(pct ? v * 100 : v) / scale).toLocaleString('en-US', {minimumFractionDigits: d, maximumFractionDigits: d}) + (pct ? '%' : '') + suffix;
 }
 function draw() {

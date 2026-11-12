@@ -53,7 +53,7 @@ class Template:
     fonts: dict = field(default_factory=lambda: dict(FONTS))
     limits: dict = field(default_factory=lambda: dict(LIMITS))
     brand: dict = field(default_factory=dict)    # name, full, partner, mark, colour, logo (data URL), house_style, powered
-    theme: dict = field(default_factory=dict)    # the tenant file's theme colours (dk1, lt1, accent1 …) when read
+    theme: dict = field(default_factory=dict)    # the tenant file's theme colours (dk1, lt1, accent1 ...) when read
     notes: list = field(default_factory=list)    # what the loader could not do
 
     @property
@@ -69,7 +69,7 @@ class Template:
         return POWERED if self.partner else ""
 
     def footer(self) -> str:
-        return f"{self.owner} · {POWERED}" if self.partner else self.owner
+        return f"{self.owner} - {POWERED}" if self.partner else self.owner
 
     def contrast_pairs(self) -> list[tuple[str, str, str, float]]:
         """(what, foreground, background, minimum ratio): 4.5:1 for body-size text, 3:1 for the large title text on the band (WCAG 2 AA)."""

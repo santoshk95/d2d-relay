@@ -1,21 +1,21 @@
-"""Master data (registry id `mdm`) — one customer, supplier and product: golden records with match rules people
+"""Master data (registry id `mdm`) - one customer, supplier and product: golden records with match rules people
 confirm; duplicates and gaps fixed at the source. Reltio through its tenant API and the masters kept in spreadsheets
 (Excel or CSV) are read; the mock lab's Reltio simulator and supplier master workbook stand in.
 
-Assess   Connect → Inventory → Health → Findings → Estimate: every record by source and type, how complete it is, the
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: every record by source and type, how complete it is, the
          duplicates Relay's match rules find (and whether Reltio's own matching agrees), false friends, gaps, codes
          used twice; the steward's work estimated.
-Develop  Describe → Shape → Build → Prove → Ship → Run: the match rules — proposed from the data, changed by a
+Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run: the match rules - proposed from the data, changed by a
          person, proven on the records (the false-friend guard holds, Reltio's potential matches are found, no group
          joins two tax ids), approved, then live for every Change and Run item.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: the steward's queue — each candidate pair with the rule
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: the steward's queue - each candidate pair with the rule
          that found it, what agrees and what does not and the record that survives; a person decides merge or not a
          match; proven; released by the approver; written to Reltio only through its own approval; a 'not a match'
          is never proposed again.
-Migrate  Discover → Decide → Convert → Prove → Hand over → Run: spreadsheet masters moved into Reltio — duplicates
+Migrate  Discover -> Decide -> Convert -> Prove -> Hand over -> Run: spreadsheet masters moved into Reltio - duplicates
          within the file folded into one golden record, records Reltio already holds linked, the rest created with a
          crosswalk per source row; every row accounted for; signed off; written with approval; then watched.
-Run      Watch → Alert → Fix → Approve → Report: what changed in the hub since the last round — new duplicates go to
+Run      Watch -> Alert -> Fix -> Approve -> Report: what changed in the hub since the last round - new duplicates go to
          the steward's queue (a Change item), gaps to the source system's owner, after a person approves.
 """
 from __future__ import annotations
@@ -43,7 +43,7 @@ class Hub(wb.Platform):
     label = "Your MDM hub, read through its API"
     kinds = ("reltio",)
     simulator = "tests/mocklab/sims/mdm.py: reltio"
-    reads = "entities with their crosswalks, potential matches and the activity log — read-only; merges and new records only through its own approval"
+    reads = "entities with their crosswalks, potential matches and the activity log - read-only; merges and new records only through its own approval"
 
 
 class Masters(wb.Platform):
@@ -51,7 +51,7 @@ class Masters(wb.Platform):
     kinds = ()
     uploads = (".xlsx", ".xlsm", ".csv", ".zip")
     simulator = "tests/mocklab/fixtures/excel_models/Masters (the supplier master workbook)"
-    reads = "every visible sheet with a header row (name, code, country, tax id, email …), or CSV files"
+    reads = "every visible sheet with a header row (name, code, country, tax id, email ...), or CSV files"
 
 
 HUB, MASTERS = Hub(), Masters()
@@ -103,7 +103,7 @@ def _hours(m: float) -> str:
 def _cost(h: float) -> str:
     b = registry.brand()
     rate, cur = float(b.get("hourly_rate") or 0), b.get("currency") or ""
-    return f" · {cur}{rate * h:,.0f}" if rate else ""
+    return f" - {cur}{rate * h:,.0f}" if rate else ""
 
 
 def _reltio_matches(c: dict, recs: list[dict], cap: int = 400) -> list[dict]:
@@ -137,12 +137,12 @@ def a_connect(ctx: wb.Ctx) -> dict:
     good = [r for r in rows if r["ok"]]
     if not good:
         raise wb.StepFailed("No source answered: " + "; ".join(f"{r['source']}: {r['sees']}" for r in rows)[:600])
-    return {"summary": f"{len(good)} of {len(rows)} source(s) answered — read-only.", "counts": {"sources": len(rows), "answered": len(good)},
+    return {"summary": f"{len(good)} of {len(rows)} source(s) answered - read-only.", "counts": {"sources": len(rows), "answered": len(good)},
             "data": {"columns": ["Source", "Kind", "Status", "What Relay sees", "Access"], "rows": [[r["source"], r["kind"], "answered" if r["ok"] else "refused", r["sees"], r["scope"]] for r in rows]}}
 
 
 def _pct(n: int, d: int) -> str:
-    return f"{round(100 * n / d)} %" if d else "—"
+    return f"{round(100 * n / d)} %" if d else "-"
 
 
 def a_inventory(ctx: wb.Ctx) -> dict:
@@ -150,13 +150,13 @@ def a_inventory(ctx: wb.Ctx) -> dict:
     ctx.put("records", recs)
     groups: dict[tuple, list[dict]] = {}
     for r in recs:
-        groups.setdefault((r["source"].split(" › ")[0], r["type"]), []).append(r)
+        groups.setdefault((r["source"].split(" > ")[0], r["type"]), []).append(r)
     rows = []
     for (src, typ), rs in sorted(groups.items()):
         rows.append({"id": f"{src}|{typ}", "source": src, "type": typ, "records": len(rs), "tax_id": _pct(sum(1 for r in rs if r.get("tax_id")), len(rs)),
                      "email": _pct(sum(1 for r in rs if r.get("email")), len(rs)), "country": _pct(sum(1 for r in rs if r.get("country")), len(rs)),
                      "single": sum(1 for r in rs if len(r.get("sources") or []) <= 1)})
-    ctx.evidence("The masters as read", {"records": len(recs), "by_source": {f"{k[0]} · {k[1]}": len(v) for k, v in groups.items()}}, kind="inventory", ok=True)
+    ctx.evidence("The masters as read", {"records": len(recs), "by_source": {f"{k[0]} - {k[1]}": len(v) for k, v in groups.items()}}, kind="inventory", ok=True)
     n = {t: sum(1 for r in recs if r["type"] == t) for t in ("customer", "supplier", "product")}
     return {"summary": f"{n['customer']} customer(s), {n['supplier']} supplier(s) and {n['product']} product(s) from {len(groups)} source(s) and type(s).",
             "counts": {**{t + "s": v for t, v in n.items()}, "records": len(recs)}, "records": rows,
@@ -175,7 +175,7 @@ def _findings(ctx: wb.Ctx, recs: list[dict]) -> tuple[list[dict], list[dict], di
     for p in ps:
         a, b = by[p["a"]], by[p["b"]]
         kind = "false_friend" if p["action"] == "not_match" else "duplicate"
-        out.append({"id": f"{kind}:{p['a']}|{p['b']}", "kind": kind, "object": f"{a['name']} ↔ {b['name']}", "issue": p["why"], "route": "steward" if kind == "duplicate" else "expected",
+        out.append({"id": f"{kind}:{p['a']}|{p['b']}", "kind": kind, "object": f"{a['name']} <-> {b['name']}", "issue": p["why"], "route": "steward" if kind == "duplicate" else "expected",
                     "minutes": 3 if kind == "duplicate" else 1, "pair": p})
     for g in mr.gaps(recs):
         out.append({"id": f"gap:{g['id']}", "kind": "gap", "object": g["name"], "issue": f"{g['name']} has no {', '.join(x.replace('_', ' ') for x in g['missing'])}", "route": "ticket", "minutes": 2})
@@ -212,7 +212,7 @@ def a_findings(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records("findings")}
     recs = [{"id": f["id"], "kind": f["kind"], "object": f["object"], "issue": f["issue"], "route": f["route"], "decision": (have.get(f["id"]) or {}).get("decision", "keep")}
             for f in ctx.get("findings") or []]
-    return {"summary": f"{len(recs)} finding(s) — keep what matters, ignore what does not.", "counts": {"findings": len(recs)}, "records": recs,
+    return {"summary": f"{len(recs)} finding(s) - keep what matters, ignore what does not.", "counts": {"findings": len(recs)}, "records": recs,
             "items": [f"{r['object']}: {r['issue']}" for r in recs[:6]],
             "data": {"columns": ["What", "Records", "Why", "Who fixes it"], "rows": [[LABEL[r["kind"]], r["object"], r["issue"], r["route"]] for r in recs]}}
 
@@ -238,7 +238,7 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     ctx.output("master-data-assessment.md", f"# Master data assessment: {ctx.title}\n\n" + "\n".join(f"## {i['title']}\n\n{i['detail']}\n\nEffort: {i['effort']}\n" for i in items) + f"\n{note}\n",
                label="Assessment (Markdown)")
     return {"summary": f"{len(items)} group(s) of work, about {_hours(total)}{_cost(total / 60)}.", "counts": {"groups": len(items), "hours": round(total / 60, 1)},
-            "data": {"items": items, "total": _hours(total), "note": note + ("" if registry.brand().get("hourly_rate") else " Set an hourly rate under Admin › Branding to see the cost.")}}
+            "data": {"items": items, "total": _hours(total), "note": note + ("" if registry.brand().get("hourly_rate") else " Set an hourly rate under Admin > Branding to see the cost.")}}
 
 
 # ================================================================== Fix / change: the steward's queue
@@ -253,7 +253,7 @@ def c_request(ctx: wb.Ctx) -> dict:
         raise wb.StepFailed("No candidate duplicates" + (f" for {', '.join(names)}" if names else "") + ": the masters are clean by the live match rules.")
     ctx.put("pairs", ps)
     return {"summary": f"{len(ps)} candidate pair(s) from {len(recs)} record(s).", "counts": {"pairs": len(ps)},
-            "data": {"text": "\n".join(f"- {by[p['a']]['name']} ↔ {by[p['b']]['name']} — {p['rule']} ({p['score']})" for p in ps[:200])}}
+            "data": {"text": "\n".join(f"- {by[p['a']]['name']} <-> {by[p['b']]['name']} - {p['rule']} ({p['score']})" for p in ps[:200])}}
 
 
 def c_diagnose(ctx: wb.Ctx) -> dict:
@@ -264,8 +264,8 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
         same = [f for f in mr.FIELDS if a.get(f) and b.get(f) and str(a[f]).strip().lower() == str(b[f]).strip().lower()]
         diff = [f for f in mr.FIELDS if a.get(f) and b.get(f) and f not in same]
         st = "fail" if p["action"] == "not_match" else "pass" if p["action"] == "merge" else "warn"
-        checks.append({"name": f"{p['a']}|{p['b']}", "label": f"{a['name']} ↔ {b['name']}", "status": st, "measured": f"score {p['score']}", "expected": p["rule"],
-                       "detail": (f"agree on {', '.join(same)}" if same else "agree on nothing but the name") + (f"; differ on {', '.join(diff)}" if diff else "") + f" — {p['why']}"})
+        checks.append({"name": f"{p['a']}|{p['b']}", "label": f"{a['name']} <-> {b['name']}", "status": st, "measured": f"score {p['score']}", "expected": p["rule"],
+                       "detail": (f"agree on {', '.join(same)}" if same else "agree on nothing but the name") + (f"; differ on {', '.join(diff)}" if diff else "") + f" - {p['why']}"})
     return {"summary": f"{sum(1 for c in checks if c['status'] == 'pass')} pair(s) a rule would merge, {sum(1 for c in checks if c['status'] == 'warn')} to judge, "
                        f"{sum(1 for c in checks if c['status'] == 'fail')} held apart by the false-friend guard.", "data": {"checks": checks}}
 
@@ -278,13 +278,13 @@ def c_fix(ctx: wb.Ctx) -> dict:
         a, b = by[p["a"]], by[p["b"]]
         win, lose = mr.survivor(a, b)
         rid = f"{p['a']}|{p['b']}"
-        r = {"id": rid, "a": p["a"], "b": p["b"], "records": f"{a['name']} ↔ {b['name']}", "decision": "not_match" if p["action"] == "not_match" else "merge",
+        r = {"id": rid, "a": p["a"], "b": p["b"], "records": f"{a['name']} <-> {b['name']}", "decision": "not_match" if p["action"] == "not_match" else "merge",
              "survives": f"{win['name']} ({', '.join(win.get('sources') or [])[:80]})", "winner": win["id"], "loser": lose["id"], "rule": p["rule"], "why": p["why"]}
         if rid in have:
             r["decision"] = have[rid].get("decision", r["decision"])
         recs.append(r)
     n = {k: sum(1 for r in recs if r["decision"] == k) for k in ("merge", "not_match", "later")}
-    return {"summary": f"Merge {n['merge']}, not a match {n['not_match']}, later {n['later']} — change any decision before you confirm.", "counts": n, "records": recs,
+    return {"summary": f"Merge {n['merge']}, not a match {n['not_match']}, later {n['later']} - change any decision before you confirm.", "counts": n, "records": recs,
             "data": {"columns": ["Records", "Decision", "Survives", "Rule"], "rows": [[r["records"], r["decision"], r["survives"], r["rule"]] for r in recs]}}
 
 
@@ -309,9 +309,9 @@ def c_prove(ctx: wb.Ctx) -> dict:
               {"name": "guard", "label": "No merge of two organisations in different countries with nothing shared", "status": "fail" if guard else "pass", "detail": ", ".join(guard)[:400] or "the guard holds"},
               {"name": "taxid", "label": "No merge joins two different tax ids", "status": "fail" if taxes else "pass", "detail": ", ".join(taxes)[:400] or "none"},
               {"name": "once", "label": "Each record merges into one survivor only", "status": "fail" if twice or chain else "pass",
-               "detail": (", ".join(twice + chain)[:400] + " — merge them in one pair at a time") if twice or chain else "no record in two merges"},
+               "detail": (", ".join(twice + chain)[:400] + " - merge them in one pair at a time") if twice or chain else "no record in two merges"},
               {"name": "hub", "label": "Every merge is between records the hub holds", "status": "warn" if hand else "pass",
-               "detail": (", ".join(hand)[:300] + " — a spreadsheet row is merged by moving it into the hub (Migrate)") if hand else "all in Reltio"}]
+               "detail": (", ".join(hand)[:300] + " - a spreadsheet row is merged by moving it into the hub (Migrate)") if hand else "all in Reltio"}]
     ops = []
     for r in decs:
         a, b = by[r["a"]], by[r["b"]]
@@ -343,7 +343,7 @@ def c_learn(ctx: wb.Ctx) -> dict:
                    (f"md-{r['a']}|{r['b']}"[:240], r["a"], r["b"], r["decision"], r["rule"], ctx.id, ctx.who or ctx.owner, time.time()))
             n += 1
     db.audit("mdm.decisions", ctx.id, {"decisions": n}, ctx.who or ctx.owner)
-    return {"summary": (f"The {len(ops)} change(s) wait for their write approval in the Validation queue; " if cp else "Recorded; ") + f"{n} decision(s) kept — a pair called not a match is never proposed again.",
+    return {"summary": (f"The {len(ops)} change(s) wait for their write approval in the Validation queue; " if cp else "Recorded; ") + f"{n} decision(s) kept - a pair called not a match is never proposed again.",
             "counts": {"decisions": n}, "data": {"href": "#/validate" if cp else f"#/m/{MODULE}/run", "label": "Open the Validation queue" if cp else "Run & support", "text": f"Write approval {cp['id']}" if cp else ""}}
 
 
@@ -359,7 +359,7 @@ def d_describe(ctx: wb.Ctx) -> dict:
             continue
         for f in mr.FIELDS:
             vals = [r.get(f) for r in rs if r.get(f)]
-            rows.append([t, f, _pct(len(vals), len(rs)), _pct(len(set(map(str, vals))), len(vals)) if vals else "—"])
+            rows.append([t, f, _pct(len(vals), len(rs)), _pct(len(set(map(str, vals))), len(vals)) if vals else "-"])
     return {"summary": f"{len(recs)} record(s) profiled: how full and how distinct each attribute is.", "counts": {"records": len(recs)},
             "data": {"columns": ["Type", "Attribute", "Filled", "Distinct"], "rows": rows}}
 
@@ -367,7 +367,7 @@ def d_describe(ctx: wb.Ctx) -> dict:
 def d_shape(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [dict(have.get(r["id"]) or r) for r in rules_live()] + [r for k, r in have.items() if k not in {x["id"] for x in rules_live()}]
-    return {"summary": f"{len(recs)} match rule(s), first match wins — change, add or switch off rules before you confirm.", "counts": {"rules": len(recs)}, "records": recs,
+    return {"summary": f"{len(recs)} match rule(s), first match wins - change, add or switch off rules before you confirm.", "counts": {"rules": len(recs)}, "records": recs,
             "data": {"columns": ["Rule", "Attributes", "Compare", "Threshold", "Action", "On"], "rows": [[r["name"], r["attributes"], r["compare"], r["threshold"], r["action"], r.get("enabled", True)] for r in recs]}}
 
 
@@ -402,7 +402,7 @@ def d_build(ctx: wb.Ctx) -> dict:
                                                                                      for f in str(r["attributes"]).split(",")]}]}} for r in rules]
     ctx.output("reltio-match-groups.json", json.dumps({"matchGroups": groups}, indent=1), label="Reltio match groups (JSON)")
     ctx.output("relay-match-rules.json", json.dumps(rules, indent=1), label="Relay's match rules (JSON)")
-    return {"summary": f"{len(rules)} rule(s) as Reltio match groups and as Relay's own rules.", "data": {"text": "\n".join(f"{i + 1}. {r['name']}: {r['attributes']} ({r['compare']}, ≥ {r['threshold']}) → {r['action']}"
+    return {"summary": f"{len(rules)} rule(s) as Reltio match groups and as Relay's own rules.", "data": {"text": "\n".join(f"{i + 1}. {r['name']}: {r['attributes']} ({r['compare']}, ≥ {r['threshold']}) {r['action']}"
                                                                                                          for i, r in enumerate(rules))}}
 
 
@@ -422,7 +422,7 @@ def d_prove(ctx: wb.Ctx) -> dict:
     mixed = sorted({", ".join(sorted(by[x]["name"] for x in g))[:120] for g in {id(g): g for g in groups.values()}.values() if len({by[x]["tax_id"] for x in g if by[x].get("tax_id")}) > 1})
     checks = [{"name": "pairs", "label": "Candidate pairs the rules find", "status": "pass", "measured": len(merges), "detail": f"{sum(1 for p in merges if p['action'] == 'merge')} to merge, "
                f"{sum(1 for p in merges if p['action'] == 'suggest')} to suggest, {sum(1 for p in ps if p['action'] == 'not_match')} held apart"},
-              {"name": "guard", "label": "The false-friend guard holds", "status": "fail" if guard else "pass", "detail": ", ".join(f"{by[p['a']]['name']} ↔ {by[p['b']]['name']}" for p in guard)[:300] or "no merge across countries with nothing shared"},
+              {"name": "guard", "label": "The false-friend guard holds", "status": "fail" if guard else "pass", "detail": ", ".join(f"{by[p['a']]['name']} <-> {by[p['b']]['name']}" for p in guard)[:300] or "no merge across countries with nothing shared"},
               {"name": "taxid", "label": "No group joins two tax ids", "status": "fail" if mixed else "pass", "detail": "; ".join(mixed)[:400] or "one tax id per group"}]
     c = _hub(ctx)
     if c:
@@ -436,7 +436,7 @@ def d_prove(ctx: wb.Ctx) -> dict:
 
 def d_ship(ctx: wb.Ctx) -> dict:
     rules = [r for r in ctx.records("shape") if r.get("enabled", True)]
-    return {"summary": "The named approver confirms the match rules go live.", "data": {"items": [{"title": r["name"], "detail": f"{r['attributes']} → {r['action']}", "effort": ""} for r in rules],
+    return {"summary": "The named approver confirms the match rules go live.", "data": {"items": [{"title": r["name"], "detail": f"{r['attributes']} {r['action']}", "effort": ""} for r in rules],
                                                                                          "total": f"{len(rules)} rule(s)"}}
 
 
@@ -488,14 +488,14 @@ def m_decide(ctx: wb.Ctx) -> dict:
         if not r.get("country"):
             d, t = "skip", ""
         why = ("not in the hub yet" if d == "new" else f"already in the hub as {by[t]['name']}" if d == "link" else
-               f"the same record as row {by[t].get('row')} ({by[t]['name']})" if d == "fold" else "no country — fix the row first")
+               f"the same record as row {by[t].get('row')} ({by[t]['name']})" if d == "fold" else "no country - fix the row first")
         rec = {"id": r["id"], "row": r["row"], "name": r["name"], "decision": d, "target": t, "why": why}
         if r["id"] in have:
             rec["decision"] = have[r["id"]].get("decision", d)
         recs.append(rec)
     n = {k: sum(1 for r in recs if r["decision"] == k) for k in ("new", "link", "fold", "skip")}
     return {"summary": f"Create {n['new']}, link {n['link']} already in the hub, fold {n['fold']} duplicate row(s), skip {n['skip']}.", "counts": n, "records": recs,
-            "items": [f"row {r['row']} {r['name']}: {r['decision']} — {r['why']}" for r in recs if r["decision"] != "new"][:6],
+            "items": [f"row {r['row']} {r['name']}: {r['decision']} - {r['why']}" for r in recs if r["decision"] != "new"][:6],
             "data": {"columns": ["Row", "Name", "Decision", "Why"], "rows": [[r["row"], r["name"], r["decision"], r["why"]] for r in recs]}}
 
 
@@ -613,7 +613,7 @@ def r_fix(ctx: wb.Ctx) -> dict:
             "data": {"columns": ["What", "Proposed route"], "rows": [[r["what"], r["route"]] for r in recs]}}
 
 
-RFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("steward", "The steward's queue (a Change item)"), ("ticket", "Raise a ticket"), ("expected", "Expected — no action"))),
+RFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("steward", "The steward's queue (a Change item)"), ("ticket", "Raise a ticket"), ("expected", "Expected - no action"))),
                              wb.Column("note", "Note", "longtext"), wb.Column("what", "What", readonly=True)], add=False, remove=False, label="group")
 
 
@@ -629,14 +629,14 @@ def r_approve(ctx: wb.Ctx) -> dict:
         elif b["route"] == "ticket":
             h = ctx.ticket(b["what"][:120], b["what"] + (f"\n\nNote: {b['note']}" if b.get("note") else ""), priority="P3", about=b["what"])
         else:
-            h = {"kind": "expected", "status": "expected — recorded"}
+            h = {"kind": "expected", "status": "expected - recorded"}
         rows.append([b["what"][:160], b["route"], h.get("status"), h.get("case") or h.get("checkpoint") or h.get("output") or ""])
     return {"summary": f"{len(rows)} hand-off(s), as you approved.", "data": {"columns": ["What", "Route", "Status", "Reference"], "rows": rows}}
 
 
 def r_report(ctx: wb.Ctx) -> dict:
     n = len(ctx.get("breaks") or [])
-    ctx.output(f"master-data-report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", f"# Master data run report: {ctx.title}\n\n" + "".join(f"- {b['what']} → {b.get('route')}\n" for b in ctx.records("fix")),
+    ctx.output(f"master-data-report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", f"# Master data run report: {ctx.title}\n\n" + "".join(f"- {b['what']} {b.get('route')}\n" for b in ctx.records("fix")),
                label="Run report (Markdown)")
     return {"summary": f"{n} group(s) this round.", "counts": {"groups": n}, "data": {"columns": ["Round", "Groups"], "rows": [[time.strftime("%d %b %H:%M", time.gmtime()), n]]}}
 
@@ -647,7 +647,7 @@ def _cards(u: dict) -> list[dict]:
              "empty": "None yet: a Change item's merges and not-a-match decisions are kept here, and a pair called not a match is never proposed again."}]
 
 
-GUIDE = """# Master data — the work item
+GUIDE = """# Master data - the work item
 
 This folder is one work item of Relay's Master data module. Relay reads the hub's records (Reltio) and the masters
 kept in spreadsheets, finds candidate duplicates with match rules people confirm, and proposes which record survives.
@@ -662,15 +662,15 @@ wb.register(wb.Pack(
     cards=_cards,
     work={
         "assess": wb.Work(title="See every master record, how complete it is, and the duplicates, false friends and gaps", steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="The hub answers through its API with your sign-in — or the spreadsheet masters are opened"),
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="The hub answers through its API with your sign-in - or the spreadsheet masters are opened"),
             "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Profiler", text="Every customer, supplier and product by source, with how complete each is"),
             "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Matcher",
                               text="The live match rules find duplicates (the hub's own matching compared), false friends are held apart, gaps and codes used twice are flagged"),
-            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="What needs attention — you keep or ignore each finding"),
-            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="The steward's queue, gaps for the source owners, false friends — with the time")}),
+            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="What needs attention - you keep or ignore each finding"),
+            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="The steward's queue, gaps for the source owners, false friends - with the time")}),
         "develop": wb.Work(title="Match rules proposed from the data, proven on the records, then live", steps={
             "Describe": wb.Step(kind="platform", run=d_describe, agent="Profiler", text="How full and how distinct each attribute is"),
-            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Rule designer", edit=RULE_EDIT, text="The match rules, first match wins — you change, add or switch them off"),
+            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Rule designer", edit=RULE_EDIT, text="The match rules, first match wins - you change, add or switch them off"),
             "Build": wb.Step(kind="deterministic", run=d_build, view="text", agent="Rule designer", text="The rules as Reltio match groups and as Relay's own rules"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Prover", back_to="shape", text="On the records: the false-friend guard holds, no group joins two tax ids, the hub's potential matches are found"),
             "Ship": wb.Step(kind="person", run=d_ship, view="plan", approver=True, text="The named approver confirms the rules"),
@@ -679,7 +679,7 @@ wb.register(wb.Pack(
             "Request": wb.Step(kind="platform", run=c_request, view="text", agent="Matcher", text="The candidate pairs by the live rules (only the names you give, if any)"),
             "Diagnose": wb.Step(kind="deterministic", run=c_diagnose, view="gates", agent="Matcher", text="Each pair: the rule that found it, what agrees and what does not"),
             "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Steward", edit=FIX_EDIT, confirm_if=lambda ctx, out: True,
-                           text="Merge, not a match or later for each pair, with the record that survives — you decide"),
+                           text="Merge, not a match or later for each pair, with the record that survives - you decide"),
             "Prove": wb.Step(kind="proof", run=c_prove, view="gates", agent="Prover", back_to="fix", text="Every record still there, the guard holds, no merge joins two tax ids, each record in one merge"),
             "Approve": wb.Step(kind="person", run=c_approve, view="plan", approver=True, text="The named approver releases the decisions"),
             "Learn": wb.Step(kind="platform", run=c_learn, view="link", agent="Publisher", text="The hub is written through its own write approval; the decisions are kept")},

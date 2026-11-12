@@ -1,8 +1,8 @@
-"""Data observability (build-plan v2, P14): is the data healthy — everywhere?
+"""Data observability (build-plan v2, P14): is the data healthy - everywhere?
 
 Watched assets are the lineage graph's tables, columns, measures, reports, flows and jobs (P13) plus what the
-watched connections expose. Checks — freshness, volume, schema change, distribution, nulls, duplicates,
-reconciliation to source, lineage breaks — run as the registered job kind `observe_check` (not an LLM run), on
+watched connections expose. Checks - freshness, volume, schema change, distribution, nulls, duplicates,
+reconciliation to source, lineage breaks - run as the registered job kind `observe_check` (not an LLM run), on
 request and from a lazy scheduler the router starts; readers are read-only (DuckDB over the dashboards' extracts,
 the Connector SDK for warehouses and platforms, P13's runs for integrations). Baselines are learned from each
 asset's own history (rolling window, by weekday), thresholds are tunable per check and per asset, and what a
@@ -10,9 +10,9 @@ person marks "expected" widens the band.
 
 An incident = the check, the asset, measured vs expected, severity, first / last seen and its impact path from the
 graph: every report, schedule, Ask D answer, agent run and person downstream. One upstream break is one incident
-(downstream findings of the same cause fold into it). Every action — warn report users (a banner on the affected
+(downstream findings of the same cause fold into it). Every action - warn report users (a banner on the affected
 dashboards + a notification to their owners), raise a ticket (through the Service desk's own write-back gate),
-Self-healing and AI SDLC fix drafts — opens a checkpoint (kind `observe.action`, view `table`); nothing is written
+Self-healing and AI SDLC fix drafts - opens a checkpoint (kind `observe.action`, view `table`); nothing is written
 until a person accepts it. Other tools' results (OpenLineage, dbt, Great Expectations, Soda, a generic webhook that
 Monte Carlo / Bigeye / Acceldata / Metaplane / Elementary / Datadog can post to) land in the same incident table
 with the tool named.
@@ -103,7 +103,7 @@ def _aid(node_id: str) -> str:
 
 
 def _when(t: float | None) -> str:
-    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%d %b %H:%M") if t else "—"
+    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%d %b %H:%M") if t else "-"
 
 
 # ------------------------------------------------------------------ settings (defaults per check, tunable)
@@ -137,7 +137,7 @@ def _subject() -> str:
     if not (d / "project.json").exists():
         d.mkdir(parents=True, exist_ok=True)
         (d / "data").mkdir(exist_ok=True)
-        store.save({"id": SUBJECT, "name": MODULE, "kind": "observe", "prompt": "Data checks across the watched assets — not a dashboard.", "status": "idle",
+        store.save({"id": SUBJECT, "name": MODULE, "kind": "observe", "prompt": "Data checks across the watched assets - not a dashboard.", "status": "idle",
                     "created": time.time(), "versions": [], "runs": [], "job": None, "error": None})
     return SUBJECT
 
@@ -168,7 +168,7 @@ def request_check(assets: list[str] | None = None, source: str | None = None, wh
 
 
 async def _check_job(pid: str, args: dict) -> None:
-    worker.app_note(pid, "observe_check", "Running the data checks…")
+    worker.app_note(pid, "observe_check", "Running the data checks...")
     r = await asyncio.to_thread(run_checks, args.get("assets") or None, args.get("source"), None, args.get("who") or "worker")
     worker.app_note(pid, "observe_check", f"{r['assets']} assets checked: {r['incidents_new']} new incident{'s' if r['incidents_new'] != 1 else ''}, {r['resolved']} resolved" + (f", {r['errors']} could not be read" if r["errors"] else ""),
                     "warn" if r["errors"] else "info")
@@ -613,7 +613,7 @@ def _measure_integration(a: dict, now: float, gcfg: dict) -> list[dict]:
             out.append(oc.finding("lineage", "high", f"{label} stopped: no longer in the tool", "its last discovery scan did not list it", {"active": False}, {"active": True}, [["Listed by the tool", "no", "yes"]], cause="Removed or renamed in the tool; downstream tables stop loading."))
         elif last and last["status"] == "failed":
             out.append(oc.finding("lineage", "high", f"{label} failed its last run", (last["error"] or "no error text")[:160], {"status": "failed", "error": (last["error"] or "")[:300], "when": last["started"]}, {"status": "success"},
-                                  [["Last run", f"failed {_when(last['started'])}", "success"], ["Error", (last["error"] or "—")[:120], "—"]], cause=(last["error"] or "The run failed.")[:200]))
+                                  [["Last run", f"failed {_when(last['started'])}", "success"], ["Error", (last["error"] or "-")[:120], "-"]], cause=(last["error"] or "The run failed.")[:200]))
         elif cadence and last and now - last["started"] > float(cadence) * 3600 * max(1, int(lcfg.get("missed_runs") or 2)):
             out.append(oc.finding("lineage", "high", f"{label} stopped running", f"last run {_when(last['started'])}; expected every {oc._fmt(float(cadence))} h", {"last_run": last["started"], "age_h": round((now - last["started"]) / 3600, 1)}, {"cadence_h": float(cadence), "missed_runs": lcfg.get("missed_runs")},
                                   [["Last run", _when(last["started"]), f"every {oc._fmt(float(cadence))} h"]], cause="The schedule stopped or the tool is down; nothing downstream is loaded."))
@@ -639,7 +639,7 @@ def _measure_report(a: dict, now: float, gcfg: dict) -> list[dict]:
     enabled = {r["check_kind"] for r in db.q("SELECT check_kind FROM observe_checks WHERE asset_id = ? AND enabled = 1", (a["id"],))}
     if "freshness" in enabled and st.get("status") == "error" and str(st.get("error") or "").lower().startswith(("extract", "scheduled refresh")):
         out.append(oc.finding("freshness", "high", f"Refresh failing for {a['label'] or a['name']}", str(st.get("error"))[:160], {"status": "error", "error": str(st.get("error"))[:300]}, {"status": "refreshed"},
-                              [["Last refresh", "failed", "ok"], ["Error", str(st.get("error"))[:120], "—"]], cause=str(st.get("error"))[:200]))
+                              [["Last refresh", "failed", "ok"], ["Error", str(st.get("error"))[:120], "-"]], cause=str(st.get("error"))[:200]))
     return out
 
 
@@ -822,7 +822,7 @@ def _notify_incident(row: dict, a: dict, imp: dict) -> None:
     if row["severity"] != "high":
         return
     for uid in imp.get("owner_ids") or []:
-        notify.add(uid, "alert", f"Data incident: {row['title'][:120]}", f"{oc.CHECK_LABEL.get(row['check_kind'], row['check_kind'])} on {a['label'] or a['name']} — {imp['text']}", f"{ROUTE}?open={row['id']}")
+        notify.add(uid, "alert", f"Data incident: {row['title'][:120]}", f"{oc.CHECK_LABEL.get(row['check_kind'], row['check_kind'])} on {a['label'] or a['name']} - {imp['text']}", f"{ROUTE}?open={row['id']}")
 
 
 def _severity(f: dict, imp: dict, a: dict) -> str:
@@ -1002,7 +1002,7 @@ def _public_incident(r: dict) -> dict:
     out["tool_label"] = "Relay checks" if r["tool"] == "relay" else oc.TOOLS.get(r["tool"], r["tool"])
     out["route_label"] = ROUTES.get(r["route"] or "", "needs a person")
     imp = out["impact"]
-    out["affects"] = " · ".join(x for x in [f"{len(imp.get('reports') or [])} report{'s' if len(imp.get('reports') or []) != 1 else ''}" if imp.get("reports") else "", f"{imp.get('schedules')} schedule{'s' if imp.get('schedules') != 1 else ''}" if imp.get("schedules") else "",
+    out["affects"] = " - ".join(x for x in [f"{len(imp.get('reports') or [])} report{'s' if len(imp.get('reports') or []) != 1 else ''}" if imp.get("reports") else "", f"{imp.get('schedules')} schedule{'s' if imp.get('schedules') != 1 else ''}" if imp.get("schedules") else "",
                                               f"{imp.get('people')} people" if imp.get("people") else ""] if x) or (f"{imp.get('downstream')} downstream" if imp.get("downstream") else "nothing downstream yet")
     out["age_s"] = round(time.time() - (r["first_seen"] or time.time()))
     out["work"] = [{**w, "body": _j(w["body"], {})} for w in db.q("SELECT * FROM observe_work WHERE incident_id = ? ORDER BY created DESC", (r["id"],))]
@@ -1056,13 +1056,13 @@ def _ticket_payload(inc: dict, p: dict) -> dict:
     """The ticket an approved "Raise a ticket" becomes: the summary, the cause, what it affects and the measurements."""
     rows = _j(inc.get("rows"), []) if isinstance(inc.get("rows"), str) else (inc.get("rows") or [])
     lines = [p.get("cause") or inc.get("cause") or "", ("Affects: " + ", ".join(p.get("reports")[:8])) if p.get("reports") else "",
-             "\n".join(" · ".join(str(x) for x in r) for r in rows[:6]), f"Found by Relay's Data observability ({oc.CHECK_LABEL.get(inc.get('check_kind'), inc.get('check_kind') or 'check')})."]
+             "\n".join(" - ".join(str(x) for x in r) for r in rows[:6]), f"Found by Relay's Data observability ({oc.CHECK_LABEL.get(inc.get('check_kind'), inc.get('check_kind') or 'check')})."]
     return {"title": p.get("summary") or inc.get("title") or "Data incident", "description": "\n\n".join(x for x in lines if x), "priority": p.get("priority") or "P3",
             "labels": ["data-observability", str(inc.get("check_kind") or "incident")]}
 
 
 def _ticket_written(wr: dict, event: str) -> None:
-    """P12's hook: the ticket this incident asked for was written (or not) — record it on the work row."""
+    """P12's hook: the ticket this incident asked for was written (or not) - record it on the work row."""
     wid = str(wr.get("origin") or "").split(":", 1)[-1]
     w = db.one("SELECT * FROM observe_work WHERE id = ?", (wid,))
     if not w:
@@ -1079,7 +1079,7 @@ def _ticket_written(wr: dict, event: str) -> None:
 
 
 def _matching_groups(inc: dict) -> list[dict]:
-    """Open service-desk groups (P12) whose tickets talk about this asset — the ticket action joins one of them."""
+    """Open service-desk groups (P12) whose tickets talk about this asset - the ticket action joins one of them."""
     try:
         from . import itsm
     except Exception:  # noqa: BLE001
@@ -1108,7 +1108,7 @@ def proposal(inc: dict, route: str) -> dict:
          "projects": imp.get("projects") or [], "reports": imp.get("reports") or []}
     if route == "warn":
         p["banner"] = f"Numbers under review since {since}: {inc['title']}"
-        p["next"] = (f"A banner goes on {len(p['reports'])} affected dashboard{'s' if len(p['reports']) != 1 else ''} ({', '.join(p['reports'][:4])}) — “{p['banner']}” — and {imp.get('people') or 0} {'person is' if imp.get('people') == 1 else 'people are'} told"
+        p["next"] = (f"A banner goes on {len(p['reports'])} affected dashboard{'s' if len(p['reports']) != 1 else ''} ({', '.join(p['reports'][:4])}) - \"{p['banner']}\" - and {imp.get('people') or 0} {'person is' if imp.get('people') == 1 else 'people are'} told"
                      + (f" ({names})" if names else "") + ". Nothing changes in the data.") if p["reports"] else "No dashboard reads this yet: the owners are told, no banner."
     elif route == "ticket":
         groups = _matching_groups(inc)
@@ -1117,13 +1117,13 @@ def proposal(inc: dict, route: str) -> dict:
         if target:
             p["ticket"] = target
         p["next"] = f"A ticket draft goes to {ROUTE_TARGET['ticket']} with the summary, cause, evidence and priority {pr}." + (
-            f" It joins the open group “{groups[0]['title']}” ({groups[0]['tickets']} ticket{'s' if groups[0]['tickets'] != 1 else ''}); the summary and priority reach Jira / Freshservice only through the Service desk's own approval." if groups
-            else f" No open ticket mentions this yet, so a new one is raised on {target['name']} — exactly what is written waits for a named person's approval first." if target
+            f" It joins the open group \"{groups[0]['title']}\" ({groups[0]['tickets']} ticket{'s' if groups[0]['tickets'] != 1 else ''}); the summary and priority reach Jira / Freshservice only through the Service desk's own approval." if groups
+            else f" No open ticket mentions this yet, so a new one is raised on {target['name']} - exactly what is written waits for a named person's approval first." if target
             else " No open ticket mentions this yet and no service-desk source may raise tickets: the draft waits in the Service desk's ticket drafts until one may.")
     elif route == "heal":
         p["next"] = "Self-healing diagnoses the load with the logs and the lineage, prepares a configuration fix (re-run, restore the schedule, renew the credential), tests it on a copy and waits for your approval before anything changes."
     else:
-        p["next"] = "A change request is opened: agents plan the fix (mapping, pipeline or model code), develop and test it on a branch and run UAT on synthetic data — your tech lead approves the plan and the release."
+        p["next"] = "A change request is opened: agents plan the fix (mapping, pipeline or model code), develop and test it on a branch and run UAT on synthetic data - your tech lead approves the plan and the release."
     return p
 
 
@@ -1138,7 +1138,7 @@ def act(iid: str, u: dict, route: str) -> dict:
     if have:
         return {"checkpoint": checkpoints.get(have["checkpoint_id"]), "incident": _incident(iid), "proposal": p, "already": True}
     imp = inc["impact"]
-    ev = {"summary": p["summary"], "items": [f"{inc['check_label']} · {inc['what'] or ''}", imp["text"], f"Likely cause: {inc.get('cause') or '—'}", f"Then: {p['next']}"],
+    ev = {"summary": p["summary"], "items": [f"{inc['check_label']} - {inc['what'] or ''}", imp["text"], f"Likely cause: {inc.get('cause') or '-'}", f"Then: {p['next']}"],
           "counts": {"priority": p["priority"], "reports": len(imp.get("reports") or []), "schedules": imp.get("schedules") or 0, "people": imp.get("people") or 0},
           "columns": ["What", "Measured", "Expected"], "rows": inc["rows"], "proposal": p,
           "incident": {"id": iid, "check": inc["check_kind"], "label": inc["check_label"], "asset": inc["asset"]["label"], "severity": inc["severity"], "title": inc["title"], "tool": inc["tool"]},
@@ -1240,7 +1240,7 @@ def mark_expected(iid: str, u: dict, comment: str) -> dict:
     """A person says this is normal: the observation joins the baseline and the asset's band widens to it (audited)."""
     inc = _incident(iid)
     if not (comment or "").strip():
-        raise HTTPException(400, "Say why this is expected — it tunes the baseline.")
+        raise HTTPException(400, "Say why this is expected - it tunes the baseline.")
     now = time.time()
     a = _asset(inc["asset_id"])
     ck = {"freshness": "freshness", "volume": "volume", "schema": "schema", "distribution": "profile", "nulls": "profile", "duplicates": "profile", "reconcile": "profile", "lineage": "freshness", "quality": "profile"}[inc["check_kind"]]
@@ -1453,7 +1453,7 @@ def set_asset_checks(aid: str, body: dict, u: dict) -> dict:
 
 def seed_sample(who: str | None = None, pid: str = "data-health-sample") -> dict:
     """A small synthetic estate: a dashboard with one upload table (6 weeks of daily history with a weekday
-    pattern), a schedule and shares on it, then a planted stale load and a volume drop — detected by the checks."""
+    pattern), a schedule and shares on it, then a planted stale load and a volume drop - detected by the checks."""
     import csv
     import random
     now = time.time()
@@ -1472,7 +1472,7 @@ def seed_sample(who: str | None = None, pid: str = "data-health-sample") -> dict
                                                 "extract_schedule": {"daily": True, "hour_utc": 5}}), encoding="utf-8")
     db.add_project(pid, who or db.ADMIN_ID)
     if not db.one("SELECT 1 FROM schedules WHERE target LIKE ?", (f'%"{pid}"%',)):
-        db.run("INSERT INTO schedules (id, owner_id, kind, name, target, cadence, tz, recipients, status, next_run, state, created, updated) VALUES (?, ?, 'report', 'Sales health sample — Monday 08:00', ?, ?, 'UTC', ?, 'active', ?, '{}', ?, ?)",
+        db.run("INSERT INTO schedules (id, owner_id, kind, name, target, cadence, tz, recipients, status, next_run, state, created, updated) VALUES (?, ?, 'report', 'Sales health sample - Monday 08:00', ?, ?, 'UTC', ?, 'active', ?, '{}', ?, ?)",
                ("s-" + _secrets.token_hex(3), who or db.ADMIN_ID, json.dumps({"type": "dashboard", "project": pid}), json.dumps({"kind": "weekly", "weekday": 0, "hour": 8}), json.dumps([who or db.ADMIN_ID]), now + 86400, now, now))
     for u in db.q("SELECT id FROM users WHERE active = 1 AND id != ?", (who or db.ADMIN_ID,))[:3]:
         db.run("INSERT OR IGNORE INTO shares (project_id, principal_type, principal_id, permission, created, created_by) VALUES (?, 'user', ?, 'view', ?, ?)", (pid, u["id"], now, who))
@@ -1492,7 +1492,7 @@ def seed_sample(who: str | None = None, pid: str = "data-health-sample") -> dict
             record(aa["id"], "freshness", t, {"loaded_at": t - 600})
             record(aa["id"], "schema", t, {"columns": [{"name": "id", "kind": "int"}, {"name": "sale_date", "kind": "date"}, {"name": "amount", "kind": "decimal"}, {"name": "channel", "kind": "string"}]})
             record(aa["id"], "profile", t, {"columns": {"amount": {"kind": "decimal", "mean": 205 + rng.uniform(-4, 4), "sd": 110, "min": 10, "max": 400, "sum": 24600, "nulls": 0, "null_pct": 0.0}, "channel": {"kind": "string", "top": [["store", 80], ["web", 40]], "distinct": 2, "nulls": 0, "null_pct": 0.0}}})
-    # planted: the load is three days old (cadence daily), and today's file holds a fraction of the usual rows — few enough
+    # planted: the load is three days old (cadence daily), and today's file holds a fraction of the usual rows - few enough
     # to be a drop against the weekend baseline too (about 40 rows), not only the weekday one (about 120)
     with (d / "data" / "sales.csv").open("w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerows(rows[:7])

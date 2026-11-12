@@ -39,7 +39,7 @@ import time
 from pathlib import Path
 
 COMPLEXITY = ("simple", "medium", "complex", "very complex")
-LAST_USED = ("< 30 days", "30–90 days", "90–365 days", "> 1 year", "Never run")
+LAST_USED = ("< 30 days", "30-90 days", "90-365 days", "> 1 year", "Never run")
 TOOLS = {
     "cognos": {"label": "IBM Cognos Analytics", "versions": ["11.2.x", "12.0.x", "11.1.x"],
                "terms": "Reports, Report views, Dashboards, Stories, Data modules, Packages; usage from the Audit database."},
@@ -118,7 +118,7 @@ _REF = __import__("re").compile(r"^\[[^\]]*\](?:\s*\.\s*\[[^\]]*\])*$")
 
 
 def _plain_ref(expr: str) -> bool:
-    """A bare reference such as [Package].[Query subject].[Item] or [Data item] — a column, not a calculation."""
+    """A bare reference such as [Package].[Query subject].[Item] or [Data item] - a column, not a calculation."""
     return bool(_REF.match(expr.strip()))
 
 
@@ -138,7 +138,7 @@ def last_used_bucket(report: dict) -> str:
     d = (report.get("usage") or {}).get("last_run_days")
     if d is None:
         return "Never run"
-    return "< 30 days" if d < 30 else "30–90 days" if d < 90 else "90–365 days" if d < 365 else "> 1 year"
+    return "< 30 days" if d < 30 else "30-90 days" if d < 90 else "90-365 days" if d < 365 else "> 1 year"
 
 
 def finish(estate: dict) -> dict:

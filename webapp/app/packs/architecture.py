@@ -1,19 +1,19 @@
-"""Architecture & technical design (registry id `architecture`) — the target architecture, chosen with reasons, and
+"""Architecture & technical design (registry id `architecture`) - the target architecture, chosen with reasons, and
 P11's Present step: the architecture deck and the design pack through the docs engine; as a consulting engagement.
 
-Engagement  the registry's journey Needs → Options → Compare → Design → Approve → Present (confirm points: Options,
+Engagement  the registry's journey Needs -> Options -> Compare -> Design -> Approve -> Present (confirm points: Options,
             Design, Present, with the registry's words; Needs, Compare and Approve wait for a person too).
 Needs       the requirements and constraints: from a Strategy & roadmap item (its target and gaps), a Tool & vendor
-            selection (its requirements), a requirements sheet the person uploads — and what runs today on the
+            selection (its requirements), a requirements sheet the person uploads - and what runs today on the
             platform (connections by kind, the systems of the lineage graph).
 Options     per area (warehouse, BI, integration, automation, AI) the candidates Relay's catalogue lists, those already
             in use marked; a person picks the short list.
-Compare     each short-listed option scored 1 to 5 on cost, security, skills and fit — with the reason written down.
+Compare     each short-listed option scored 1 to 5 on cost, security, skills and fit - with the reason written down.
 Design      the target architecture: the best-scored option per area, the systems and flows of the knowledge map, the
             security design from the platform's own settings (read-only connections, writes by approval, secrets by
-            name); a diagram drawn from it (Mermaid → the deck's native shapes).
-Approve     an architecture decision record per area — context, decision, alternatives with their scores, consequences
-            — approved by the named approver.
+            name); a diagram drawn from it (Mermaid -> the deck's native shapes).
+Approve     an architecture decision record per area - context, decision, alternatives with their scores, consequences
+            - approved by the named approver.
 Present     the architecture deck (PowerPoint) and the design pack (Word: HLD, the diagram, the ADRs) through the P11
             docs engine, every figure sourced; a person confirms them before they go out.
 """
@@ -37,7 +37,7 @@ CRITERIA = ("cost", "security", "skills", "fit")
 class DesignPlatform(wb.Platform):
     label = "Relay's records, and your requirements"
     uploads = (".csv", ".xlsx", ".docx", ".pdf", ".txt", ".md")
-    reads = ("a strategy and a selection made on Relay, the connections and the lineage graph (what runs today), and the requirements you upload — "
+    reads = ("a strategy and a selection made on Relay, the connections and the lineage graph (what runs today), and the requirements you upload - "
              "nothing is written")
     simulator = "the platform's own records made in the tests; a requirements sheet the tests write"
 
@@ -106,7 +106,7 @@ def needs(ctx: wb.Ctx) -> dict:
     for f in found:
         f["origin"] = "relay"
     recs = cx.keep_edits(ctx, found, ("kind", "need"))
-    return {"summary": f"{len(recs)} requirement(s) and constraint(s) from the strategy, the selection, your sheet and what runs today — add what is missing.",
+    return {"summary": f"{len(recs)} requirement(s) and constraint(s) from the strategy, the selection, your sheet and what runs today - add what is missing.",
             "counts": {"needs": len(recs), "constraints": sum(1 for r in recs if r["kind"] == "constraint")}, "records": recs,
             "data": {"columns": ["Kind", "Need", "Source"], "rows": [[r["kind"], r["need"], r.get("source") or "added by a person"] for r in recs]}}
 
@@ -149,7 +149,7 @@ def options(ctx: wb.Ctx) -> dict:
     for r in recs:
         if r.get("origin") == "person" and not r.get("area_id"):
             r["area_id"] = next((a for a, l, _ in AREAS if l == r.get("area")), "")
-    return {"summary": f"{len(recs)} option(s) across {len(AREAS)} areas from Relay's catalogue, those in use today marked — pick the short list for each area.",
+    return {"summary": f"{len(recs)} option(s) across {len(AREAS)} areas from Relay's catalogue, those in use today marked - pick the short list for each area.",
             "counts": {"options": len(recs), "short list": sum(1 for r in recs if r.get("shortlist"))}, "records": recs,
             "data": {"columns": ["Short list", "Area", "Option", "Why"], "rows": [["yes" if r.get("shortlist") else "no", r["area"], r["option"], r["why"]] for r in recs]}}
 
@@ -253,7 +253,7 @@ def design(ctx: wb.Ctx) -> dict:
     security = [["Sign-in", "single sign-on per workspace; people act with their own access"], ["Connections", f"read-only by default; {t['write_scoped']} with write scope, each write approved by a named person"],
                 ["Secrets", "kept by name in the secrets store, never in code or documents"], ["Tenancy", "each workspace in its own schema and folders"]]
     cx.put(ctx, "security", {"rows": security, "write_scoped": t["write_scoped"]})
-    return {"summary": f"The target architecture: {', '.join(r['layer'] + ' — ' + r['component'] for r in recs)}. Correct a component, add notes, then confirm the design.",
+    return {"summary": f"The target architecture: {', '.join(r['layer'] + ' - ' + r['component'] for r in recs)}. Correct a component, add notes, then confirm the design.",
             "counts": {"components": len(recs), "systems today": len(t["systems"])}, "records": recs,
             "data": {"columns": ["Layer", "Component", "Why", "Notes"], "rows": [[r["layer"], r["component"], r["why"], r.get("notes") or ""] for r in recs] + [[k, v, "security design", ""] for k, v in security]}}
 
@@ -281,7 +281,7 @@ def approve(ctx: wb.Ctx) -> dict:
                       "context": "; ".join(needs_) or "the requirements of this engagement", "decision": f"{comp.get('component') or ch['chosen']['option']}: {ch['chosen'].get('reason') or ''}"[:400],
                       "alternatives": alts, "consequences": "", "status": "proposed"})
     recs = cx.keep_edits(ctx, fresh, ("consequences", "status", "context"))
-    return {"summary": f"{len(recs)} architecture decision record(s), one per area — write the consequences; the named approver approves them.",
+    return {"summary": f"{len(recs)} architecture decision record(s), one per area - write the consequences; the named approver approves them.",
             "counts": {"decisions": len(recs)}, "records": recs,
             "data": {"columns": ["Decision", "Alternatives", "Consequences"], "rows": [[r["title"], r["alternatives"], r.get("consequences") or ""] for r in recs]}}
 
@@ -307,7 +307,7 @@ def present(ctx: wb.Ctx) -> dict:
     cmp_ = ctx.records("compare")
     _totals(cmp_)
     rec = {"components": len(comps), "options": len(cmp_), "needs": len(ctx.records("needs")), "decisions": len(adrs), "systems": len(t["systems"]), "edges": t.get("edges") or 0,
-           "component_rows": [[r["layer"], r["component"], r["why"], r.get("notes") or "—"] for r in comps],
+           "component_rows": [[r["layer"], r["component"], r["why"], r.get("notes") or "-"] for r in comps],
            "compare_rows": [[r["area"], r["option"], *[str(int(r[c])) for c in CRITERIA], cx.num(r["total"]), (r.get("reason") or "")[:160]] for r in cmp_],
            "need_rows": [[r["kind"], r["need"], r.get("source") or "added by a person"] for r in ctx.records("needs")],
            "adr_rows": [[r["title"], r["decision"], r["alternatives"], r["consequences"], r["status"]] for r in adrs], "security_rows": sec["rows"]}
@@ -320,7 +320,7 @@ def present(ctx: wb.Ctx) -> dict:
     p2, f2 = cx.say("The knowledge map holds {s} systems and {e} flows today; the design starts from them.", s=(rec["systems"], f"{A}#systems"), e=(rec["edges"], f"{A}#edges"))
     diagram = {"mermaid": mer, "alt": "The target architecture: the source systems feed the integration layer, the warehouse and the BI layer; automation and AI work alongside",
                "source": f"{A}#component_rows"}
-    doc = {"kind": "doc", "title": f"Design pack: {ctx.title}"[:70], "subtitle": f"Architecture & technical design · {day}", "audience": "the architecture board and the delivery team", "date": day,
+    doc = {"kind": "doc", "title": f"Design pack: {ctx.title}"[:70], "subtitle": f"Architecture & technical design - {day}", "audience": "the architecture board and the delivery team", "date": day,
            "sections": [{"title": "Summary", "blocks": [{"kind": "paragraph", "text": p1, "figures": f1}, {"kind": "paragraph", "text": p2, "figures": f2}] + nv.blocks(ctx, "In short")},
                         {"title": "Requirements and constraints", "blocks": [{"kind": "table", "table": cx.table(["Kind", "Need", "Source"], ch, f"{A}#need_rows", "What the design answers")}
                                                                              for ch in cx.chunks(rec["need_rows"])]},
@@ -331,21 +331,21 @@ def present(ctx: wb.Ctx) -> dict:
                         {"title": "Security design", "blocks": [{"kind": "table", "table": cx.table(["Area", "Design"], rec["security_rows"], "record:security#rows", "From the platform's own settings")}]},
                         {"title": "Architecture decision records", "blocks": [{"kind": "table", "table": cx.table(["Decision", "Why", "Alternatives", "Consequences", "Status"], [r[:5] for r in ch], f"{A}#adr_rows",
                                                                                                                   "Approved by the named approver")} for ch in cx.chunks(rec["adr_rows"])]}]}
-    slides = [{"layout": "title", "title": ctx.title[:70], "subtitle": f"Architecture · {day}"},
+    slides = [{"layout": "title", "title": ctx.title[:70], "subtitle": f"Architecture - {day}"},
               {"layout": "bullets", "title": "What the design answers", "bullets": [p1, p2], "figures": f1 + f2},
               {"layout": "diagram", "title": "The target architecture", "diagram": diagram},
               {"layout": "table", "title": "The components", "table": cx.table(["Layer", "Component", "Why"], [r[:3] for r in rec["component_rows"]], f"{A}#component_rows", "Chosen with the reasons written down")},
               {"layout": "table", "title": "Options compared", "table": cx.table(["Area", "Option", "Cost", "Security", "Skills", "Fit", "Total"], [r[:7] for r in rec["compare_rows"]][:14], f"{A}#compare_rows", "Scored 1 to 5 by a person")},
               {"layout": "table", "title": "Decisions", "table": cx.table(["Decision", "Alternatives", "Status"], [[r[0], r[2], r[4]] for r in rec["adr_rows"]][:14], f"{A}#adr_rows", "Architecture decision records")},
               {"layout": "closing", "title": "Thank you", "bullets": [cx.brand_line()]}]
-    deck = {"kind": "deck", "title": f"Architecture: {ctx.title}"[:70], "subtitle": f"Architecture & technical design · {day}", "audience": "the architecture board", "date": day,
+    deck = {"kind": "deck", "title": f"Architecture: {ctx.title}"[:70], "subtitle": f"Architecture & technical design - {day}", "audience": "the architecture board", "date": day,
             "sections": [{"title": "Architecture", "slides": slides}]}
     a = cx.deliver(ctx, "design-pack", doc, "Design pack (HLD and ADRs)")
     b = cx.deliver(ctx, "architecture-deck", deck, "Architecture deck")
     gates = [a["gate"], b["gate"], ctx.proof("sourced", label="Every figure of the deck and the design pack resolves to its record", figures=[{"label": x["text"], "value": x["value"], "source": x["source"]} for x in f1 + f2])]
     ok = a["ok"] and b["ok"] and gates[-1]["status"] == "pass"
     ctx.put("summary", {"components": rec["components"], "decisions": rec["decisions"], "when": time.time()})
-    return {"summary": ("The architecture deck and the design pack pass every check — confirm them before they go out." if ok else "The deck did not pass its checks: " + "; ".join((a["problems"] + b["problems"])[:3])),
+    return {"summary": ("The architecture deck and the design pack pass every check - confirm them before they go out." if ok else "The deck did not pass its checks: " + "; ".join((a["problems"] + b["problems"])[:3])),
             "ok": ok, "counts": {"documents": 2}, "data": {"checks": gates}}
 
 
@@ -356,18 +356,18 @@ def _page_cards(u: dict) -> list[dict]:
     for r in rows:
         if r["id"] in vis:
             s = (wb._load(r["id"]).get("data") or {}).get("summary") or {}
-            out.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), s.get("components", "—"), s.get("decisions", "—"), f"#/m/{MODULE}/i/{r['id']}"])
+            out.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), s.get("components", "-"), s.get("decisions", "-"), f"#/m/{MODULE}/i/{r['id']}"])
     return [{"title": "Architectures", "columns": ["Engagement", "Status", "Components", "Decisions", "Open"], "rows": out, "empty": "No architecture engagement yet."}]
 
 
-GUIDE = """# Architecture & technical design — the work item
+GUIDE = """# Architecture & technical design - the work item
 
 This folder is one architecture engagement of Relay's Architecture & technical design module.
 
 - `sources/today.json`: what runs today (connections by kind, the lineage graph's systems and flows).
 - `sources/architecture.json`, `security.json`: the needs, the comparison, the components, the decisions.
 - `design-pack.yaml`, `architecture-deck.yaml`: what the docs engine built (the same as `genbi doc|deck build`).
-- `narrative.yaml`: what you write when asked — a few paragraphs, every number declared with its `record:` source.
+- `narrative.yaml`: what you write when asked - a few paragraphs, every number declared with its `record:` source.
 
 Never write a number or a vendor fact the records do not hold."""
 

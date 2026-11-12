@@ -1,4 +1,4 @@
-"""SAP Integration Suite (Cloud Integration, CPI) and PI/PO — the OData API (…/api/v1): deployed integration
+"""SAP Integration Suite (Cloud Integration, CPI) and PI/PO - the OData API (.../api/v1): deployed integration
 runtime artifacts (iFlows), message processing logs (runs with Sender / Receiver), user credentials by name."""
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from . import base
 
-KIND, LABEL, GROUP = "cpi", "SAP CPI · PI/PO", "Integration platform"
+KIND, LABEL, GROUP = "cpi", "SAP CPI - PI/PO", "Integration platform"
 AUTH = "service account (basic) or OAuth client credentials"
 DOCS = "CPI OData API v1: IntegrationRuntimeArtifacts, MessageProcessingLogs, UserCredentials"
 CONFIG = [{"name": "url", "label": "OData base URL", "hint": "https://<tenant>.it-cpi.cfapps.eu10.hana.ondemand.com/api/v1", "required": True}]

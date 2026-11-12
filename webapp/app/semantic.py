@@ -4,11 +4,11 @@ Three layers:
   context    drafted automatically from the data itself (every dashboard's data profile: tables, columns, types,
              examples, likely keys and joins; warehouse tables keyed by their warehouse object); analysts only add
              descriptions and mark sensitive columns
-  metrics    per team: one definition per business metric — DAX for Power BI and SQL rendered for each warehouse
-             dialect — versioned draft -> in review -> published, approved by another BI Dev / Analyst of the team
+  metrics    per team: one definition per business metric - DAX for Power BI and SQL rendered for each warehouse
+             dialect - versioned draft -> in review -> published, approved by another BI Dev / Analyst of the team
              (or an Admin). Published = certified: the badge follows the metric into dashboards and Ask D
-  ontology   organisation-wide: entities (Store, Customer, …), their relationships, and how each source identifies
-             them (key mappings); suggestions the machine finds — keys that match across sources by their values,
+  ontology   organisation-wide: entities (Store, Customer, ...), their relationships, and how each source identifies
+             them (key mappings); suggestions the machine finds - keys that match across sources by their values,
              and the same metric name defined differently by two teams (an Admin sets the organisation default)
 """
 import hashlib
@@ -371,7 +371,7 @@ def team_metrics_file(pid: str) -> Path | None:
     if not rows:
         path.unlink(missing_ok=True)
         return None
-    data = {"note": "Published (certified) metrics of this team. Reuse them exactly — same name, DAX and format — "
+    data = {"note": "Published (certified) metrics of this team. Reuse them exactly - same name, DAX and format - "
                     "whenever the dashboard needs that metric. Do not redefine them.",
             "metrics": [{"name": r["name"], "version": r["version"], **{k: r["body"][k] for k in ("label", "description", "dax", "format", "synonyms")
                                                                        if r["body"].get(k)}} for r in rows]}

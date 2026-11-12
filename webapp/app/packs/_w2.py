@@ -1,19 +1,19 @@
-"""W2 Automation modules — what the packs share (n8n, rpa, idp, jobs and the Reports & alerts Migrate; docs/workbench.md).
+"""W2 Automation modules - what the packs share (n8n, rpa, idp, jobs and the Reports & alerts Migrate; docs/workbench.md).
 
   calls        one vendor call with the rules every W2 adapter keeps: 429 and 503 back off (Retry-After where the vendor
                sends it, exponential where it does not: Boomi, Google), other 5xx are retried, a 401 signs in again once
                (tokens expire), every other refusal is explained in words
   adapters     Connector SDK adapters (one adapter + one mock-lab simulator each) with a sign-in, the W2 reads (estate,
                runs, a run's detail) and writes that carry the approval's id in X-Relay-Approval; each registers its own
-               connection kind (ids that no other wave uses: n8n_api, uipath_orchestrator, azure_di …)
-  estate       automations in one neutral shape — flows, bots and jobs with their trigger, steps, credentials by name —
+               connection kind (ids that no other wave uses: n8n_api, uipath_orchestrator, azure_di ...)
+  estate       automations in one neutral shape - flows, bots and jobs with their trigger, steps, credentials by name -
                so an inventory, a finding or a conversion reads the same whatever the platform
   run history  runs in one shape: failure rate, the days a flow kept failing, slow runs
-  diagnosis    a failure's own error text → its cause, the change that cures it and who fixes it (rules first; the agent
+  diagnosis    a failure's own error text -> its cause, the change that cures it and who fixes it (rules first; the agent
                only where no rule fits)
   findings     secrets in clear, retire candidates, API candidates, expired sign-ins, flaky runs, no owner (rules)
   pushes       writes after their own approval (deploys, test runs, reruns) fed back to the step that asked (w2_pushes)
-  tickets      a Service desk ticket raised through itsm.request_write — created only after its own itsm.write approval
+  tickets      a Service desk ticket raised through itsm.request_write - created only after its own itsm.write approval
   proofs       side_by_side (old and new on the same payloads), accuracy (a labelled set), cadence (next runs agree)
 """
 from __future__ import annotations
@@ -69,7 +69,7 @@ def slug(s, n: int = 40) -> str:
 
 
 def when(t) -> str:
-    return time.strftime("%d %b %Y %H:%M UTC", time.gmtime(t)) if t else "—"
+    return time.strftime("%d %b %Y %H:%M UTC", time.gmtime(t)) if t else "-"
 
 
 def epoch(v) -> float | None:
@@ -252,7 +252,7 @@ def register(*adapters: Adapter) -> None:
 
 # The same platform registered by two modules: Integration & APIs' Boomi and MuleSoft connections (kinds boomi,
 # mulesoft) and Workflows' (boomi_atomsphere, mulesoft_anypoint) hold the same fields and secrets, so either works in
-# both modules — reads through the module's own adapter, writes handed to the adapter that knows them.
+# both modules - reads through the module's own adapter, writes handed to the adapter that knows them.
 ALIAS = {"boomi": "boomi_atomsphere", "mulesoft": "mulesoft_anypoint"}
 
 
@@ -295,7 +295,7 @@ SECRET_INLINE = re.compile(r"(pass(word|wd)?|pwd|secret)\s*[=:]\s*['\"]?([^\s'\"
 
 
 def secrets_in(defn) -> list[dict]:
-    """Literal credentials kept in a definition (a variable, an asset of type Text, a property, a parameter) — never an
+    """Literal credentials kept in a definition (a variable, an asset of type Text, a property, a parameter) - never an
     expression, a credential reference or a vault lookup. Returns where each is, never the value."""
     out: list[dict] = []
 
@@ -307,14 +307,14 @@ def secrets_in(defn) -> list[dict]:
         if isinstance(o, dict):
             nm = str(o.get("name") or o.get("Name") or o.get("key") or "")
             if nm and SECRET_KEY.search(nm) and literal(o.get("value") if "value" in o else o.get("Value") if "Value" in o else o.get("default")):
-                out.append({"where": path + f" › {nm}", "kind": "a named value"})
+                out.append({"where": path + f" > {nm}", "kind": "a named value"})
             for k, v in o.items():
                 if isinstance(v, (str, int, float)) and SECRET_KEY.search(str(k)) and literal(v) and str(k).lower() not in ("passwordref", "token_url"):
-                    out.append({"where": path + f" › {k}", "kind": "a parameter"})
+                    out.append({"where": path + f" > {k}", "kind": "a parameter"})
                 elif isinstance(v, (dict, list)):
-                    walk(v, path + f" › {k}")
+                    walk(v, path + f" > {k}")
                 elif isinstance(v, str) and ("|" in v or "=" in v) and SECRET_INLINE.search(v):
-                    out.append({"where": path + f" › {k}", "kind": "inline"})
+                    out.append({"where": path + f" > {k}", "kind": "inline"})
         elif isinstance(o, list):
             for i, v in enumerate(o):
                 walk(v, path + f"[{i}]")
@@ -462,7 +462,7 @@ def findings(autos: list[dict], runs: list[dict], now: float | None = None, *, s
 
 def request_push(ctx: wb.Ctx, connection_id: str, obj: str, payload: dict, what: str, *, step: str | None = None, items: list[str] | None = None, meta: dict | None = None) -> dict:
     """ctx.request_write with what the approver reads in plain words and the link back to the step: a connection.write
-    checkpoint — the adapter writes when, and only when, a named person accepts exactly this. An older request of the
+    checkpoint - the adapter writes when, and only when, a named person accepts exactly this. An older request of the
     same step on the same connection that nobody decided yet is withdrawn (it asked for something that changed); `meta`
     is kept with the push (what was asked for, e.g. the hash of the workflow tested)."""
     sid = step or ctx.step_id
@@ -500,7 +500,7 @@ def push_written(approval: str, result: dict, ok: bool = True) -> None:
     result = {**j(r["result"], {}), **(result or {})}
     db.run("UPDATE w2_pushes SET status = ?, result = ?, done = ? WHERE approval = ?", ("written" if ok else "failed", json.dumps(result, default=str)[:400000], time.time(), approval))
     try:
-        store.log(r["item"], {"kind": "agent", "text": f"{r['what']}: " + ("done" if ok else "failed — " + str(result.get("error") or "")[:200])})
+        store.log(r["item"], {"kind": "agent", "text": f"{r['what']}: " + ("done" if ok else "failed - " + str(result.get("error") or "")[:200])})
     except (KeyError, FileNotFoundError):
         return
     apply_refresh(r["item"], r["step"])
@@ -526,9 +526,9 @@ def push_problems(item: str, step: str) -> list[str]:
     if not p:
         return []
     if p["status"] == "awaiting":
-        return [f"Nothing is done yet: accept “{p['what']}” in the Validation queue (its own approval), then confirm here"]
+        return [f"Nothing is done yet: accept \"{p['what']}\" in the Validation queue (its own approval), then confirm here"]
     if p["status"] in ("failed", "refused"):
-        return [f"“{p['what']}” was {'refused' if p['status'] == 'refused' else 'not done'} ({str(p['result'].get('error') or '')[:160]}) — run the step again"]
+        return [f"\"{p['what']}\" was {'refused' if p['status'] == 'refused' else 'not done'} ({str(p['result'].get('error') or '')[:160]}) - run the step again"]
     return []
 
 
@@ -577,7 +577,7 @@ def desk_sources() -> list[dict]:
 
 
 def desk_options(u: dict) -> list[tuple[str, str]]:  # noqa: ARG001
-    return [("", "None — a ticket draft in the outputs")] + [(s["id"], f"{s['name']} ({s['kind']})") for s in desk_sources()]
+    return [("", "None - a ticket draft in the outputs")] + [(s["id"], f"{s['name']} ({s['kind']})") for s in desk_sources()]
 
 
 def desk_ticket(ctx: wb.Ctx, source_id: str, title: str, body: str, *, priority: str = "P3", ref: str = "") -> dict:
@@ -607,7 +607,7 @@ def _desk_hook(wr: dict, event: str) -> None:
     parts = str(wr.get("origin") or "").split(":")
     if len(parts) >= 3:
         try:
-            store.log(parts[1], {"kind": "agent", "text": f"{wr.get('title')}: " + (f"raised ({res.get('key') or 'ticket'})" if ok else f"not raised — {event}")})
+            store.log(parts[1], {"kind": "agent", "text": f"{wr.get('title')}: " + (f"raised ({res.get('key') or 'ticket'})" if ok else f"not raised - {event}")})
         except (KeyError, FileNotFoundError):
             pass
 
@@ -644,17 +644,17 @@ def _p_side(ctx: wb.Ctx, pairs: list[dict], **_):  # noqa: ARG001
 
 @wb.proof("accuracy", "Accuracy against the labelled set")
 def _p_accuracy(ctx: wb.Ctx, rows: list[dict], min_pct: float = 95.0, label: str = "", **_):  # noqa: ARG001
-    """rows: [{"doc", "field", "expected", "got", "ok"}] — field-level accuracy against a person's labels."""
+    """rows: [{"doc", "field", "expected", "got", "ok"}] - field-level accuracy against a person's labels."""
     n = len(rows)
     good = sum(1 for r in rows if r.get("ok"))
     pct = round(100.0 * good / n, 1) if n else 0.0
     return {"status": "pass" if n and pct >= min_pct else "fail", "measured": f"{pct} %", "expected": f"at least {min_pct:g} %", "rows": [r for r in rows if not r.get("ok")][:200] or rows[:50],
-            "detail": f"{good} of {n} labelled field(s) right ({pct} %)" + (f" — {label}" if label else "")}
+            "detail": f"{good} of {n} labelled field(s) right ({pct} %)" + (f" - {label}" if label else "")}
 
 
 @wb.proof("cadence", "The new schedule fires when the old one did")
 def _p_cadence(ctx: wb.Ctx, pairs: list[dict], **_):  # noqa: ARG001
-    """pairs: [{"case", "old": [epoch …], "new": [epoch …], "tolerance_s"}] — the next fire times on both sides."""
+    """pairs: [{"case", "old": [epoch ...], "new": [epoch ...], "tolerance_s"}] - the next fire times on both sides."""
     rows, bad = [], 0
     for p in pairs:
         o, n = [round(x) for x in p.get("old") or []], [round(x) for x in p.get("new") or []]

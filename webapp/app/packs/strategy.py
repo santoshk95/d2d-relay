@@ -1,7 +1,7 @@
-"""Strategy & roadmap (registry id `strategy`) — the full engagement: what the platform finds, a maturity assessment
+"""Strategy & roadmap (registry id `strategy`) - the full engagement: what the platform finds, a maturity assessment
 with its evidence, the target, the business case maths and a roadmap in waves, presented as the steering deck.
 
-Engagement  the registry's journey: Listen → Assess → Target → Case → Roadmap → Deck (confirm points Assess,
+Engagement  the registry's journey: Listen -> Assess -> Target -> Case -> Roadmap -> Deck (confirm points Assess,
             Roadmap and Deck; Listen, Target and Case also wait for a person, because a person writes them).
 Listen      what the platform itself found (dashboards proven and published, work items by pillar, connections,
             decisions in the Validation queue, Team & agents' hours, schedules, Self-healing, integrations, watched
@@ -10,11 +10,11 @@ Listen      what the platform itself found (dashboards proven and published, wor
 Assess      the maturity model: five levels (Initial, Repeatable, Defined, Managed, Optimised) on two dimensions per
             pillar (process, automation, systems, data, AI). Relay suggests level 1 where the platform shows nothing
             and 2 where it shows activity, with the counts as evidence; a person sets the score, and a score above
-            what the platform shows needs its evidence (an interview, a document) — rules first.
+            what the platform shows needs its evidence (an interview, a document) - rules first.
 Target      the target level per dimension and the catalogue modules that build it, with a priority.
-Case        the business case: one-off costs, running costs and benefits per year, each with its source — the
+Case        the business case: one-off costs, running costs and benefits per year, each with its source - the
             platform's own figures where it has them (Team & agents' agent hours × the hourly rate set under
-            Admin › Branding; Relay's AI cost from the usage records; an Assess & estimate item's priced estimate),
+            Admin > Branding; Relay's AI cost from the usage records; an Assess & estimate item's priced estimate),
             else what a person enters with where it comes from. The discount rate and the horizon are the person's
             stated assumptions; NPV, payback and the cash flows are computed here, with the formulas in the record.
 Roadmap     waves from the target's gaps by priority, each with its modules, start and end month and owner.
@@ -56,7 +56,7 @@ class RecordsPlatform(wb.Platform):
     label = "Relay's own records, and your notes"
     uploads = (".docx", ".pdf", ".txt", ".md", ".xlsx", ".csv")
     reads = ("what the platform holds (dashboards, work items, connections, decisions, Team & agents, usage, Self-healing, integrations, observability, lineage) "
-             "and the interview notes or documents you upload — nothing is written")
+             "and the interview notes or documents you upload - nothing is written")
     simulator = "the platform's own records, made in the tests through the modules' APIs"
 
 
@@ -139,7 +139,7 @@ def listen(ctx: wb.Ctx) -> dict:
              ["Active schedules", f["schedules_active"]], ["Connections", f["connections"]], ["Integration sources", f["intan_sources"]],
              ["Watched data assets", f["observed"]], ["Ask D questions, 30 days", f["questions_30d"]]]
     return {"summary": f"What Relay finds: {f['dashboards']} dashboard(s), {f['work_items']} work item(s), {f['decided_90d']} decision(s) in 90 days. "
-                       "Record who you listened to and what they said — the assessment weighs both.",
+                       "Record who you listened to and what they said - the assessment weighs both.",
             "counts": {"dashboards": f["dashboards"], "work items": f["work_items"], "interviews": sum(1 for r in recs if str(r.get("who") or "").strip())}, "records": recs,
             "data": {"columns": ["What Relay found", "Count"], "rows": facts}}
 
@@ -176,10 +176,10 @@ def assess(ctx: wb.Ctx) -> dict:
         f2 = next((x for x in fresh if x["id"] == r["id"]), None)
         if f2:
             r.update(evidence=f2["evidence"], evidence_n=f2["evidence_n"], suggested=f2["suggested"])
-    return {"summary": "Maturity on ten dimensions: Relay suggests 1 where the platform shows nothing and 2 where it shows activity — set each score; "
+    return {"summary": "Maturity on ten dimensions: Relay suggests 1 where the platform shows nothing and 2 where it shows activity - set each score; "
                        "a score above what the platform shows needs its evidence.",
             "counts": {"dimensions": len(recs), "with activity": sum(1 for r in recs if r["evidence_n"])}, "records": recs,
-            "items": [f"{r['pillar']} · {r['dimension']}: {r['evidence']}" for r in recs][:8],
+            "items": [f"{r['pillar']} - {r['dimension']}: {r['evidence']}" for r in recs][:8],
             "data": {"columns": ["Pillar", "Dimension", "Evidence on the platform", "Suggested", "Score"], "rows": [[r["pillar"], r["dimension"], r["evidence"], r["suggested"], r["score"]] for r in recs]}}
 
 
@@ -198,12 +198,12 @@ def _assess_validate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
         if s is None:
             probs.append(f"{r['dimension']}: the score is a whole number from 1 to 5.")
         elif s > int(r.get("suggested") or 1) and not str(r.get("note") or "").strip():
-            probs.append(f"{r['dimension']}: a score of {s} is above what the platform shows — say where the evidence is (an interview, a document).")
+            probs.append(f"{r['dimension']}: a score of {s} is above what the platform shows - say where the evidence is (an interview, a document).")
     return probs + _text(recs, ("note",))
 
 
 ASSESS_EDIT = wb.Edit(columns=[wb.Column("pillar", "Pillar", readonly=True), wb.Column("dimension", "Dimension", readonly=True), wb.Column("evidence", "Evidence on the platform", readonly=True),
-                               wb.Column("suggested", "Suggested", "number", readonly=True), wb.Column("score", "Score (1–5)", "number", required=True),
+                               wb.Column("suggested", "Suggested", "number", readonly=True), wb.Column("score", "Score (1-5)", "number", required=True),
                                wb.Column("note", "Evidence for the score", "longtext", help="Needed when the score is above what the platform shows.")],
                       add=False, remove=False, validate=_assess_validate, label="dimension")
 
@@ -227,7 +227,7 @@ def _put_maturity(ctx: wb.Ctx) -> dict:
     step = next((s for s in ctx.st["steps"] if s["id"] == "assess"), {})
     rec = {"dimensions": dims, "pillars": pillars, "levels": LEVELS, "average": round(sum(d["score"] for d in dims) / len(dims), 1) if dims else 0,
            "confirmed_by": cx.names().get(step.get("decided_by"), step.get("decided_by")), "confirmed": step.get("decided"),
-           "rows": [[d["pillar"], d["dimension"], f"{d['score']} {d['level']}", d["evidence"], d["note"] or "—"] for d in dims],
+           "rows": [[d["pillar"], d["dimension"], f"{d['score']} {d['level']}", d["evidence"], d["note"] or "-"] for d in dims],
            "gap_rows": [[d["pillar"], d["dimension"], d["score"], d.get("target", d["score"]), d.get("priority", ""), d.get("modules", "")] for d in dims if d.get("target", d["score"]) > d["score"]]}
     cx.put(ctx, "maturity", rec)
     return rec
@@ -247,7 +247,7 @@ def target(ctx: wb.Ctx) -> dict:
         f = next((x for x in fresh if x["id"] == r["id"]), None)
         if f:
             r["current"] = f["current"]
-    return {"summary": "The target level per dimension and the modules that build it — Relay starts one level above today; you set where the business needs to be.",
+    return {"summary": "The target level per dimension and the modules that build it - Relay starts one level above today; you set where the business needs to be.",
             "counts": {"dimensions": len(recs), "gaps": sum(1 for r in recs if (_score(r["target"]) or 0) > r["current"])}, "records": recs,
             "data": {"columns": ["Pillar", "Dimension", "Today", "Target", "Priority", "Modules"], "rows": [[r["pillar"], r["dimension"], r["current"], r["target"], r["priority"], r["modules"]] for r in recs]}}
 
@@ -264,7 +264,7 @@ def _target_validate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
 
 
 TARGET_EDIT = wb.Edit(columns=[wb.Column("pillar", "Pillar", readonly=True), wb.Column("dimension", "Dimension", readonly=True), wb.Column("current", "Today", "number", readonly=True),
-                               wb.Column("target", "Target (1–5)", "number", required=True), wb.Column("priority", "Priority", "select", options=PRIORITY),
+                               wb.Column("target", "Target (1-5)", "number", required=True), wb.Column("priority", "Priority", "select", options=PRIORITY),
                                wb.Column("modules", "What builds it")], add=False, remove=False, validate=_target_validate, label="dimension")
 
 
@@ -296,7 +296,7 @@ def case(ctx: wb.Ctx) -> dict:
                       "origin": "relay"})
     else:
         fresh.append({"id": "benefit-agent-hours", "kind": "benefit", "item": "Hours moved from people to agents", "amount": None, "from_year": 1, "source": "",
-                      "how": "No hourly rate is set under Admin › Branding: enter the amount and where it comes from", "origin": "relay"})
+                      "how": "No hourly rate is set under Admin > Branding: enter the amount and where it comes from", "origin": "relay"})
     fresh.append({"id": "cost-relay-ai", "kind": "running", "item": "Relay's AI cost", "amount": platform["ai_cost_year"], "from_year": 1, "source": "record:platform#ai_cost_year",
                   "how": f"usage records: {cx.num(platform['ai_cost_usd_30d'], 2)} USD in the last 30 days × 12 × {cx.num(fx, 2)} {cur} per USD", "origin": "relay"})
     est_id = ctx.scope.get("estimate_item") or ""
@@ -322,7 +322,7 @@ def case(ctx: wb.Ctx) -> dict:
     return {"summary": f"The business case in {cur or 'the workspace currency'}: Relay's own figures where it has them; add every other cost and benefit with where it comes from. "
                        f"Discount rate {cx.num(float(ctx.scope.get('discount_rate_pct') or 0))} %, horizon {cx.num(float(ctx.scope.get('horizon_years') or 0))} years (your assumptions).",
             "counts": {"lines": len(recs), "need an amount": sum(1 for r in recs if r.get("amount") in (None, ""))}, "records": recs,
-            "data": {"columns": ["Kind", "Item", "Amount", "From year", "Source", "How"], "rows": [[dict(KINDS).get(r["kind"], r["kind"]), r["item"], r.get("amount"), r.get("from_year"), r.get("source") or "—", r.get("how") or ""] for r in recs]}}
+            "data": {"columns": ["Kind", "Item", "Amount", "From year", "Source", "How"], "rows": [[dict(KINDS).get(r["kind"], r["kind"]), r["item"], r.get("amount"), r.get("from_year"), r.get("source") or "-", r.get("how") or ""] for r in recs]}}
 
 
 def _case_validate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
@@ -391,8 +391,8 @@ def business_case(ctx: wb.Ctx) -> dict:
            "payback_months": payback,
            "pays_back": payback is not None, "total_costs": tc, "total_benefits": tb, "roi_pct": round(100 * (tb - tc) / tc, 1) if tc else 0,
            "lines": [{k: x.get(k) for k in ("kind", "item", "amount", "from_year", "source", "how")} for x in lines],
-           "formulas": {"net": "benefits − costs in the year", "discounted": "net ÷ (1 + discount rate)^year", "npv": "Σ discounted over years 0 to the horizon",
-                        "payback": "the month the cumulative net turns positive", "roi": "(total benefits − total costs) ÷ total costs"},
+           "formulas": {"net": "benefits - costs in the year", "discounted": "net ÷ (1 + discount rate)^year", "npv": "Σ discounted over years 0 to the horizon",
+                        "payback": "the month the cumulative net turns positive", "roi": "(total benefits - total costs) ÷ total costs"},
            "rows": [[y["year"], cx.money(y["costs"]), cx.money(y["benefits"]), cx.money(y["net"]), cx.money(y["discounted"]), cx.money(y["cumulative"])] for y in years],
            "line_rows": [[dict(KINDS).get(x["kind"], x["kind"]), x["item"], cx.money(x["amount"]), str(int(float(x["from_year"]))), x["source"]] for x in lines]}
     cx.put(ctx, "case", rec)
@@ -417,7 +417,7 @@ def roadmap(ctx: wb.Ctx) -> dict:
     fresh = [{**w, "dimensions": "; ".join(w["dimensions"]), "modules": ", ".join(w["modules"])} for _, w in sorted(waves.items())]
     recs = cx.keep_edits(ctx, fresh, ("start", "end", "owner", "modules"))
     pay = f"pays back in {cx.num(bc['payback_months'])} months" if bc["pays_back"] else f"does not pay back within {bc['horizon_years']} years"
-    return {"summary": f"{len(recs)} wave(s) from the gaps, by priority — give each its months and owner. The business case: NPV {cx.money(bc['npv'], bc['currency'])} at "
+    return {"summary": f"{len(recs)} wave(s) from the gaps, by priority - give each its months and owner. The business case: NPV {cx.money(bc['npv'], bc['currency'])} at "
                        f"{cx.num(bc['discount_rate_pct'])} % over {bc['horizon_years']} years; it {pay}.",
             "counts": {"waves": len(recs), "gaps": len(gaps)}, "records": recs,
             "items": [f"{r['wave']}: {r['dimensions']}" for r in recs] + [f"NPV {cx.money(bc['npv'], bc['currency'])}; {pay}"],
@@ -461,7 +461,7 @@ def specs(ctx: wb.Ctx) -> tuple[dict, dict, list[dict]]:
     cur = bc.get("currency") or ""
     day = cx.iso_day(time.time())
     interviews = [r for r in ctx.records("listen") if str(r.get("who") or "").strip()]
-    cx.put(ctx, "listen", {"interviews": len(interviews), "rows": [[r["who"], r.get("role") or "—", r.get("themes") or "—", r.get("where") or "—"] for r in interviews]})
+    cx.put(ctx, "listen", {"interviews": len(interviews), "rows": [[r["who"], r.get("role") or "-", r.get("themes") or "-", r.get("where") or "-"] for r in interviews]})
     D, C, MT = "record:discovery", "record:case", "record:maturity"
     s1, f1 = cx.say("Relay found {d} dashboards ({p} published through the review gates) and {w} work items, with {q} decisions taken by a person in the last three months.",
                     d=(f.get("dashboards", 0), f"{D}#dashboards"), p=(f.get("published", 0), f"{D}#published"), w=(f.get("work_items", 0), f"{D}#work_items"), q=(f.get("decided_90d", 0), f"{D}#decided_90d"))
@@ -480,39 +480,39 @@ def specs(ctx: wb.Ctx) -> tuple[dict, dict, list[dict]]:
                     if interviews else [])},
                 {"title": "Maturity today", "blocks": [{"kind": "table", "table": cx.table(["Pillar", "Dimension", "Level", "Evidence on the platform", "Evidence for the score"], ch, f"{MT}#rows",
                                                                                          "Five levels: Initial, Repeatable, Defined, Managed, Optimised")} for ch in cx.chunks(mat.get("rows") or [])]},
-                {"title": "Target and gaps", "blocks": [{"kind": "table", "table": cx.table(["Pillar", "Dimension", "Today", "Target", "Priority", "What builds it"], mat.get("gap_rows") or [["—"] * 6],
+                {"title": "Target and gaps", "blocks": [{"kind": "table", "table": cx.table(["Pillar", "Dimension", "Today", "Target", "Priority", "What builds it"], mat.get("gap_rows") or [["-"] * 6],
                                                                                           f"{MT}#gap_rows", "Where the business needs to be, and the modules that get it there")}]},
                 {"title": "Business case", "blocks": [{"kind": "paragraph", "text": s3, "figures": f3}, {"kind": "paragraph", "text": s4, "figures": f4}, {"kind": "paragraph", "text": s5, "figures": f5},
-                                                      {"kind": "table", "table": cx.table(["Kind", "Item", "Amount", "From year", "Source"], bc.get("line_rows") or [["—"] * 5], f"{C}#line_rows", "Every cost and benefit, with its source")},
-                                                      {"kind": "table", "table": cx.table(["Year", "Costs", "Benefits", "Net", "Discounted", "Cumulative"], bc.get("rows") or [["—"] * 6], f"{C}#rows",
+                                                      {"kind": "table", "table": cx.table(["Kind", "Item", "Amount", "From year", "Source"], bc.get("line_rows") or [["-"] * 5], f"{C}#line_rows", "Every cost and benefit, with its source")},
+                                                      {"kind": "table", "table": cx.table(["Year", "Costs", "Benefits", "Net", "Discounted", "Cumulative"], bc.get("rows") or [["-"] * 6], f"{C}#rows",
                                                                                           f"Cash flows in {cur or 'the workspace currency'}: net ÷ (1 + rate)^year, summed for the NPV")}]},
-                {"title": "Roadmap", "blocks": [{"kind": "table", "table": cx.table(["Wave", "Dimensions", "Modules", "Start", "End", "Owner"], rm["rows"] or [["—"] * 6], "record:roadmap#rows", "Waves Relay can then run")}]},
+                {"title": "Roadmap", "blocks": [{"kind": "table", "table": cx.table(["Wave", "Dimensions", "Modules", "Start", "End", "Owner"], rm["rows"] or [["-"] * 6], "record:roadmap#rows", "Waves Relay can then run")}]},
                 {"title": "Assumptions", "blocks": [{"kind": "bullets", "bullets": [cx.say("A discount rate of {r} and a horizon of {h} years, stated by the engagement's owner.",
                                                                                             r=(bc.get("discount_rate_pct", 0), f"{C}#discount_rate_pct", "%"), h=(bc.get("horizon_years", 0), f"{C}#horizon_years"))[0],
                                                                                      "Relay's own figures are a run rate: twelve times the last thirty days.",
                                                                                      "Every other figure carries the source a person gave it."],
                                                      "figures": cx.say("{r}{h}", r=(bc.get("discount_rate_pct", 0), f"{C}#discount_rate_pct", "%"), h=(bc.get("horizon_years", 0), f"{C}#horizon_years"))[1]}]}]
-    doc = {"kind": "doc", "title": f"Business case and roadmap: {ctx.title}"[:70], "subtitle": f"Strategy & roadmap · {day}", "audience": "the steering committee", "date": day, "sections": sections}
+    doc = {"kind": "doc", "title": f"Business case and roadmap: {ctx.title}"[:70], "subtitle": f"Strategy & roadmap - {day}", "audience": "the steering committee", "date": day, "sections": sections}
     pillars = mat.get("pillars") or []
     k1, g1 = cx.say("{d} dashboards, {w} work items, {q} decisions by a person in three months", d=(f.get("dashboards", 0), f"{D}#dashboards"), w=(f.get("work_items", 0), f"{D}#work_items"),
                     q=(f.get("decided_90d", 0), f"{D}#decided_90d"))
     k2, g2 = cx.say("{n} people interviewed; maturity averages {a} of 5", n=(len(interviews), "record:listen#interviews"), a=(mat.get("average", 0), f"{MT}#average"))
-    slides = [{"layout": "title", "title": ctx.title[:70], "subtitle": f"Strategy and business case · {day}"},
+    slides = [{"layout": "title", "title": ctx.title[:70], "subtitle": f"Strategy and business case - {day}"},
               {"layout": "bullets", "title": "What we found", "bullets": [k1, k2], "figures": g1 + g2, "notes": "Read from Relay's own records; the interviews as the engagement recorded them."},
               {"layout": "chart", "title": "Maturity today and the target", "chart": {"type": "column", "categories": [p["pillar"] for p in pillars],
                                                                                      "series": [{"name": "Today", "values": [float(p["current"]) for p in pillars]}, {"name": "Target", "values": [float(p["target"]) for p in pillars]}],
-                                                                                     "unit": "level (1–5)", "source": f"{MT}#pillars", "alt": "Average maturity level per pillar today and the target"}},
-              {"layout": "table", "title": "Where the gaps are", "table": cx.table(["Pillar", "Dimension", "Today", "Target", "Priority", "What builds it"], (mat.get("gap_rows") or [["—"] * 6])[:14],
+                                                                                     "unit": "level (1-5)", "source": f"{MT}#pillars", "alt": "Average maturity level per pillar today and the target"}},
+              {"layout": "table", "title": "Where the gaps are", "table": cx.table(["Pillar", "Dimension", "Today", "Target", "Priority", "What builds it"], (mat.get("gap_rows") or [["-"] * 6])[:14],
                                                                                     f"{MT}#gap_rows", "The gaps between today and the target")},
               {"layout": "bullets", "title": "The business case", "bullets": [s3, s4, s5], "figures": f3 + f4 + f5,
                "notes": "NPV = Σ net ÷ (1 + rate)^year; payback is the month the cumulative net turns positive."},
-              {"layout": "table", "title": "Cash flows", "table": cx.table(["Year", "Costs", "Benefits", "Net", "Discounted", "Cumulative"], (bc.get("rows") or [["—"] * 6])[:14], f"{C}#rows", f"In {cur or 'the workspace currency'}")},
-              {"layout": "table", "title": "Roadmap", "table": cx.table(["Wave", "Dimensions", "Modules", "Start", "End", "Owner"], (rm["rows"] or [["—"] * 6])[:14], "record:roadmap#rows", "Waves Relay can then run")}]
+              {"layout": "table", "title": "Cash flows", "table": cx.table(["Year", "Costs", "Benefits", "Net", "Discounted", "Cumulative"], (bc.get("rows") or [["-"] * 6])[:14], f"{C}#rows", f"In {cur or 'the workspace currency'}")},
+              {"layout": "table", "title": "Roadmap", "table": cx.table(["Wave", "Dimensions", "Modules", "Start", "End", "Owner"], (rm["rows"] or [["-"] * 6])[:14], "record:roadmap#rows", "Waves Relay can then run")}]
     nar = ctx.get("narrative") or []
     if nar:
         slides.append({"layout": "bullets", "title": "In short", "bullets": [p["text"] for p in nar], "figures": [x for p in nar for x in p.get("figures") or []]})
     slides.append({"layout": "closing", "title": "Thank you", "bullets": [cx.brand_line()]})
-    deck = {"kind": "deck", "title": f"Strategy: {ctx.title}"[:70], "subtitle": f"Steering committee · {day}", "audience": "the steering committee", "date": day,
+    deck = {"kind": "deck", "title": f"Strategy: {ctx.title}"[:70], "subtitle": f"Steering committee - {day}", "audience": "the steering committee", "date": day,
             "sections": [{"title": "Strategy", "slides": slides}]}
     figs = [{"label": x["text"], "value": x["value"], "source": x["source"]} for x in f1 + f2 + f3 + f4 + f5 + g1 + g2]
     return doc, deck, figs
@@ -526,7 +526,7 @@ def deck(ctx: wb.Ctx) -> dict:
     ok = a["ok"] and b["ok"] and gates[-1]["status"] == "pass"
     bc = cx.read(ctx, "case") or {}
     ctx.put("summary", {"npv": bc.get("npv"), "currency": bc.get("currency"), "payback_months": bc.get("payback_months"), "when": time.time()})
-    return {"summary": ("The strategy deck and the business case document pass every check — confirm them before they go to the steering committee." if ok
+    return {"summary": ("The strategy deck and the business case document pass every check - confirm them before they go to the steering committee." if ok
                         else "The deck did not pass its checks: " + "; ".join((a["problems"] + b["problems"])[:3])),
             "ok": ok, "counts": {"documents": 2, "problems": len(a["problems"]) + len(b["problems"])}, "data": {"checks": gates}}
 
@@ -539,20 +539,20 @@ def _page_cards(u: dict) -> list[dict]:
         if r["id"] not in vis:
             continue
         s = (wb._load(r["id"]).get("data") or {}).get("summary") or {}
-        out.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), cx.money(s["npv"], s.get("currency")) if s.get("npv") is not None else "—",
-                    f"{cx.num(s['payback_months'])} months" if s.get("payback_months") is not None else "—", f"#/m/{MODULE}/i/{r['id']}"])
+        out.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), cx.money(s["npv"], s.get("currency")) if s.get("npv") is not None else "-",
+                    f"{cx.num(s['payback_months'])} months" if s.get("payback_months") is not None else "-", f"#/m/{MODULE}/i/{r['id']}"])
     return [{"title": "Strategies", "columns": ["Engagement", "Status", "NPV", "Payback", "Open"], "rows": out, "empty": "No strategy engagement yet."}]
 
 
-GUIDE = """# Strategy & roadmap — the work item
+GUIDE = """# Strategy & roadmap - the work item
 
 This folder is one strategy engagement of Relay's Strategy & roadmap module.
 
 - `sources/discovery.json`: what the platform holds (dashboards, work items by pillar, decisions, Team & agents, usage).
 - `sources/maturity.json`: the confirmed maturity scores with their evidence, the targets and the gaps.
-- `sources/case.json`: the business case — every line with its source, the cash flows, NPV and payback, the formulas.
+- `sources/case.json`: the business case - every line with its source, the cash flows, NPV and payback, the formulas.
 - `sources/roadmap.json`: the waves. `strategy-deck.yaml`, `business-case.yaml`: what the docs engine built.
-- `narrative.yaml`: what you write when asked — a few paragraphs, every number declared with its `record:` source.
+- `narrative.yaml`: what you write when asked - a few paragraphs, every number declared with its `record:` source.
 
 Never write a number the records do not hold; never forecast."""
 
@@ -567,19 +567,19 @@ wb.register(wb.Pack(
         needs_source=False,
         steps={
             "Listen": wb.Step(kind="deterministic", run=listen, agent="Discovery reader", edit=LISTEN_EDIT, confirm="who you listened to and what they said, beside what Relay found",
-                              text="What the platform itself finds — dashboards, work items, decisions, agent hours, schedules, integrations — beside the interviews and workshops you record"),
+                              text="What the platform itself finds - dashboards, work items, decisions, agent hours, schedules, integrations - beside the interviews and workshops you record"),
             "Assess": wb.Step(kind="deterministic", run=assess, agent="Maturity assessor", edit=ASSESS_EDIT,
                               text="Ten dimensions across the five pillars, five levels each: Relay suggests 1 or 2 from the platform's evidence; you score each, with the evidence for anything higher"),
             "Target": wb.Step(kind="deterministic", run=target, agent="Strategist", edit=TARGET_EDIT, confirm="the target level per dimension and what builds it",
                               text="Where the business needs to be on each dimension, the modules that get it there and the priority"),
             "Case": wb.Step(kind="deterministic", run=case, agent="Business case writer", edit=CASE_EDIT, confirm="every cost and benefit with its source",
-                            text="Costs and benefits per year — Relay's own figures where it has them, the rest from you with their source; your discount rate and horizon"),
+                            text="Costs and benefits per year - Relay's own figures where it has them, the rest from you with their source; your discount rate and horizon"),
             "Roadmap": wb.Step(kind="deterministic", run=roadmap, agent="Roadmapper", edit=ROADMAP_EDIT,
-                               text="Waves from the gaps by priority, with their modules, months and owners — and the business case: NPV, payback, cash flows"),
+                               text="Waves from the gaps by priority, with their modules, months and owners - and the business case: NPV, payback, cash flows"),
             "Deck": wb.Step(kind="deterministic", run=deck, view="gates", agent="Deck writer", back_to="roadmap", confirm_if=lambda ctx, out: out["ok"],
                             actions={"wording": nv.action(("discovery", "maturity", "case", "roadmap"), "Write the story for the steering committee: where we are, where we need to be, what it is worth and how we get there.",
                                                           agent="Deck writer", rebuild=lambda ctx: deck(ctx))},
-                            text="The strategy deck (PowerPoint) and the business case and roadmap (Word) through the docs engine — every figure sourced and checked")},
+                            text="The strategy deck (PowerPoint) and the business case and roadmap (Word) through the docs engine - every figure sourced and checked")},
         fields=[wb.Field("discount_rate_pct", "Discount rate (per cent)", "number", required=True, help="Your assumption for the NPV."),
                 wb.Field("horizon_years", "Horizon (years)", "number", required=True, default=5, help="1 to 10 years."),
                 wb.Field("estimate_item", "The delivery cost from an estimate", "select", options=_estimates, help="A finished Assess & estimate item; its priced estimate becomes the one-off cost."),

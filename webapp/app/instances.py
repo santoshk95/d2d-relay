@@ -1,7 +1,7 @@
 """Per-person workspace instances (platform plan, phase 2), driven through the orchestrator service.
 
 D2D_INSTANCES=off (default): every run goes to the shared agent container, as before.
-D2D_INSTANCES=on: a person's runs go to their own instance — created on their first sign-in, started on sign-in
+D2D_INSTANCES=on: a person's runs go to their own instance - created on their first sign-in, started on sign-in
 when stopped (the "Starting your workspace" wait), stopped after IDLE_MIN minutes without activity and never
 while one of its lanes is busy, destroyed only on offboarding. The orchestrator enforces the capacity cap.
 """
@@ -129,7 +129,7 @@ async def restart_gateway() -> None:
 
 
 async def reaper(busy_owner) -> None:
-    """Stop instances idle for IDLE_MIN minutes — never one whose lanes are busy or whose owner has a job running."""
+    """Stop instances idle for IDLE_MIN minutes - never one whose lanes are busy or whose owner has a job running."""
     while True:
         await asyncio.sleep(60)
         if not ENABLED:

@@ -1,6 +1,6 @@
 """Tenants, partners and editions (P17, docs/P17-tenancy.md).
 
-The platform (PASDACS) → service partners → their clients, and direct Enterprise clients. Every tenant is a full
+The platform (PASDACS) -> service partners -> their clients, and direct Enterprise clients. Every tenant is a full
 workspace with its own schema and folders (db.py, store.py); this module is the control plane around them:
 
 - the platform console: create tenants (with their first admin and a one-time set-up link), the tree, suspend;
@@ -8,7 +8,7 @@ workspace with its own schema and folders (db.py, store.py); this module is the 
   partner); a module that is off answers 403 (denied(), called by auth.middleware);
 - access across tenants: time-boxed grants with a reason (1 hour to 30 days), optionally approved by the client
   (checkpoint `tenancy.access`); switching into a granted tenant (relay.tn_acting); revoke; expiry (sweep());
-- hand-over: the partner's engagement ends — grants ended, guests' work moved to the client's named owner, partner
+- hand-over: the partner's engagement ends - grants ended, guests' work moved to the client's named owner, partner
   access ended, recorded with its evidence;
 - metering: each tenant's costs rolled up per month, per partner, priced by the price book; statements as CSV;
 - the deployment pack for a client that runs Relay inside its own network (tenantmove.py).
@@ -253,7 +253,7 @@ def set_modules(u: dict, tid: str, changes: dict[str, bool]) -> list[dict]:
 
 
 def _owners() -> list[tuple[str, str]]:
-    """(api prefix, module id) for every module that names its APIs (registry `api=[…]`), longest prefix first."""
+    """(api prefix, module id) for every module that names its APIs (registry `api=[...]`), longest prefix first."""
     pairs = [(p, m["id"]) for m in registry.MODULES for p in m.get("api") or []]
     return sorted(pairs, key=lambda x: -len(x[0]))
 
@@ -1180,7 +1180,7 @@ def api_pack_download(name: str):
 
 @router.get("/api/admin/partner-access")
 def api_partner_access():
-    """Admin › Partner access (the current workspace's own admins): who from outside can act here, the policy."""
+    """Admin > Partner access (the current workspace's own admins): who from outside can act here, the policy."""
     u = _u()
     t = must(db.tenant())
     p = partner_of(t)

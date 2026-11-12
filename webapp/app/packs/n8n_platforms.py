@@ -1,12 +1,12 @@
-"""The iPaaS platforms of Workflows & iPaaS as Connector SDK adapters — one adapter + one mock-lab simulator each
+"""The iPaaS platforms of Workflows & iPaaS as Connector SDK adapters - one adapter + one mock-lab simulator each
 (tests/mocklab/sims/n8n.py: `n8n`; powerautomate.py: `power_automate`; ipaas.py: `zapier`, `make`, `workato`, `boomi`,
-`mulesoft`) — and the readers of their exports (n8n workflow JSON, Power Automate definitions, Make blueprints, Workato
+`mulesoft`) - and the readers of their exports (n8n workflow JSON, Power Automate definitions, Make blueprints, Workato
 recipes, Boomi component XML, Mule 4 XML, the Zap History CSV).
 
 Read-only by default: each adapter signs in the vendor's way (an API key header, Entra ID client credentials, a bearer
 or `Token` header, basic auth with BOOMI_TOKEN, a connected app), follows the vendor's paging (cursors, nextLink,
 pg[offset], queryMore, links.next) and reads flows and run history into the neutral shape (_w2.auto / _w2.run).
-Writes happen only through connectors.request_write — after a named person accepted that very change — and carry the
+Writes happen only through connectors.request_write - after a named person accepted that very change - and carry the
 approval's id in X-Relay-Approval: n8n deploys a workflow, runs a test copy with sample payloads (then removes it),
 updates a workflow and re-runs its failed executions; Power Automate, Make and Boomi run the old flow on the same
 payloads for a side-by-side proof.
@@ -58,7 +58,7 @@ def _poll(fn, done, tries: int = 40):
 class N8nApi(_w2.Adapter):
     kind, label, vendor, platform = "n8n_api", "n8n", "n8n", "n8n"
     simulator = "tests/mocklab/sims/n8n.py: n8n (public API v1 + webhooks)"
-    fields = [("base_url", "n8n API URL (https://your-n8n/api/v1)", True), ("webhook_url", "Webhook URL (https://your-n8n/webhook) — used for test runs", False)]
+    fields = [("base_url", "n8n API URL (https://your-n8n/api/v1)", True), ("webhook_url", "Webhook URL (https://your-n8n/webhook) - used for test runs", False)]
     secrets = {"api_key": ["api_key"]}
     can_write = True
 
@@ -150,7 +150,7 @@ class N8nApi(_w2.Adapter):
 
     def _test_run(self, c, payload, approval) -> dict:
         """A copy of the workflow (its trigger a webhook of its own), activated, sent each sample payload, read back node
-        by node, then deactivated and removed — every call carrying the approval."""
+        by node, then deactivated and removed - every call carrying the approval."""
         path = "relay-test-" + _w2.sha(payload["workflow"])[:10]
         cp = nf.test_copy(payload["workflow"], path)
         w = self.req(c, "POST", "/workflows", json_body=cp, approval=approval).json()

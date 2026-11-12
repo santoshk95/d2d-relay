@@ -1,4 +1,4 @@
-"""Oracle Integration Cloud (OIC) — the Integrations REST API (…/ic/api/integration/v1): integrations with their
+"""Oracle Integration Cloud (OIC) - the Integrations REST API (.../ic/api/integration/v1): integrations with their
 source / target endpoints, monitoring instances (runs), connections (credentials by name and security policy) and
 the monitoring summary of messages used against the monthly message pack."""
 from __future__ import annotations

@@ -43,7 +43,7 @@ CATEGORY_LABEL = {"access": "Access request", "refresh": "Refresh failure", "mis
                   "new": "New report or KPI request", "other": "Report problem"}
 # Where the work goes once a person decides (the target modules' real creation comes with their phases; D2D is live).
 TARGET = {"refresh": ("heal", "Self-healing"), "missing": ("heal", "Self-healing"), "wrong": ("semantics", "Ontology & semantics"),
-          "new": ("d2d", "D2D · Dashboards"), "slow": ("d2d", "D2D · Dashboards"), "access": ("govern", "Govern"), "other": ("d2d", "D2D · Dashboards")}
+          "new": ("d2d", "D2D - Dashboards"), "slow": ("d2d", "D2D - Dashboards"), "access": ("govern", "Govern"), "other": ("d2d", "D2D - Dashboards")}
 # What an agent can do on its own today (access with an existing role, known refresh fixes, known issues with a runbook).
 AGENT_RULES = {"access": ("the role already exists; granting access is a standard, reversible step", r"\b(role|standard|usual|same access|already exists)\b"),
                "refresh": ("a known refresh fix: expired credential or a gateway time-out, re-run after the fix", r"\b(credential|credentials|gateway|timed out|time ?out|503|service unavailable)\b"),
@@ -87,7 +87,7 @@ def category(t: dict) -> str:
 
 
 def entities(t: dict) -> set[str]:
-    """The report, dashboard, feed … a ticket is about: up to three words ending in a 'thing' word, from the title and
+    """The report, dashboard, feed ... a ticket is about: up to three words ending in a 'thing' word, from the title and
     the first lines of the description; plus capitalised runs (product and report names)."""
     out = set()
     text = (t.get("title") or "") + ". " + (t.get("description") or "")[:300]
@@ -250,7 +250,7 @@ def summarise(t: dict, cat: str | None = None, ents: set[str] | None = None) -> 
     about = best_entity(ents) or (t.get("title") or "").strip()
     head = f"{CATEGORY_LABEL[cat]}: {about}"
     facts = _facts(t)
-    return head + (" — " + "; ".join(facts[:3]) if facts else "") + "."
+    return head + (" - " + "; ".join(facts[:3]) if facts else "") + "."
 
 
 def summarise_group(members: list[dict], cat: str, about: str) -> str:
@@ -263,7 +263,7 @@ def summarise_group(members: list[dict], cat: str, about: str) -> str:
                 facts.append(f)
     n = len(members)
     who = f"{n} ticket{'s' if n != 1 else ''} from {len(people)} {'person' if len(people) == 1 else 'people'}" + (f" in {', '.join(teams[:3])}" if teams else "")
-    return f"{CATEGORY_LABEL[cat]} — {about}. {who}." + (" " + "; ".join(facts[:3]).capitalize() + "." if facts else "")
+    return f"{CATEGORY_LABEL[cat]} - {about}. {who}." + (" " + "; ".join(facts[:3]).capitalize() + "." if facts else "")
 
 
 def priority(members: list[dict], cat: str, now: float | None = None) -> tuple[str, str]:
@@ -335,7 +335,7 @@ def triage(tickets: list[dict], now: float | None = None, threshold: float = THR
         dues = [m["due"] for m in members if m.get("due")]
         teams = sorted({m.get("team") for m in members if m.get("team")})
         subj = subject(members, about) if cat in SUBJECT_CATS else ""
-        about_full = f"{about} — {subj}" if subj and subj.lower() not in about.lower() else about
+        about_full = f"{about} - {subj}" if subj and subj.lower() not in about.lower() else about
         groups.append({"members": idx, "oldest": members_sorted[0], "title": members_sorted[0]["title"] if len(members) == 1 else f"{about_full[:1].upper()}{about_full[1:]}: {CATEGORY_LABEL[cat].lower()}",
                        "about": about_full, "category": cat, "summary": summarise_group(members, cat, about_full), "priority": p, "reason": reason, "route": r, "route_reason": rreason,
                        "target": tid, "target_label": tlabel, "team": teams[0] if len(teams) == 1 else (", ".join(teams[:2]) + (" +" + str(len(teams) - 2) if len(teams) > 2 else "")) if teams else "",

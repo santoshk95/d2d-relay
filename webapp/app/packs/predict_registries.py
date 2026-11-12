@@ -1,5 +1,5 @@
 """Model registries and endpoints as deployment targets (the AI wave: Predictive analytics registers its forecast
-models; AI governance inventories them): Azure Machine Learning, Amazon SageMaker and Google Vertex AI — one Connector
+models; AI governance inventories them): Azure Machine Learning, Amazon SageMaker and Google Vertex AI - one Connector
 SDK adapter each (connectors_sdk), registered here at import with its connectors.KINDS entry, so no shared file changes.
 
 Read-only by default like every connection: models, their versions and the online endpoints are listed and read. A
@@ -8,8 +8,8 @@ through connectors.request_write, after a named person accepted exactly that pay
 the call (header X-Relay-Approval). Endpoints are overridable per connection (sovereign clouds, private endpoints),
 which is also how the mock lab's simulators stand in for the clouds (tests/mocklab/sims/ai.py: azure_ml, sagemaker, vertex_ai).
 
-Sign-in: Azure ML — an Entra ID app (client credentials) for Azure Resource Manager; SageMaker — AWS access keys
-(boto3 signs every call with Signature Version 4); Vertex AI — a Google service account (a JWT-bearer grant signed with
+Sign-in: Azure ML - an Entra ID app (client credentials) for Azure Resource Manager; SageMaker - AWS access keys
+(boto3 signs every call with Signature Version 4); Vertex AI - a Google service account (a JWT-bearer grant signed with
 its private key)."""
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def _check(r: httpx.Response, what: str) -> dict:
 
 
 def payload_lines(p: dict) -> list[str]:
-    return [f"Model: {p.get('name')} · version {p.get('version')}", f"Method: {p.get('method')}", f"Back-tested accuracy: {p.get('accuracy')}",
+    return [f"Model: {p.get('name')} - version {p.get('version')}", f"Method: {p.get('method')}", f"Back-tested accuracy: {p.get('accuracy')}",
             f"Description: {p.get('description')}"]
 
 
@@ -342,8 +342,8 @@ LABEL = {a.kind: a.label for a in ADAPTERS}
 class RegistryPlatform(wb.Platform):
     id, label = "registry", "A model registry (deployment target)"
     kinds = KINDS
-    simulator = "tests/mocklab/sims/ai.py — azure_ml (ARM + Entra ID), sagemaker (JSON 1.1 + SigV4), vertex_ai (REST + JWT-bearer)"
-    reads = "models, their versions and online endpoints — read-only; a model is registered only after that write is approved"
+    simulator = "tests/mocklab/sims/ai.py - azure_ml (ARM + Entra ID), sagemaker (JSON 1.1 + SigV4), vertex_ai (REST + JWT-bearer)"
+    reads = "models, their versions and online endpoints - read-only; a model is registered only after that write is approved"
 
 
 PLATFORM = RegistryPlatform()
@@ -364,11 +364,11 @@ def inventory(ctx: wb.Ctx) -> list[dict]:
 
 
 def request_deploy(ctx: wb.Ctx, c: dict, fc: dict) -> dict:
-    """Ask for a registration of the forecast's model in a registry — a write request a named person approves."""
+    """Ask for a registration of the forecast's model in a registry - a write request a named person approves."""
     name = re.sub(r"[^A-Za-z0-9-]+", "-", f"relay-{fc['name']}").strip("-")[:60].lower()
     acc = {sid: m.get("wape") for sid, m in (fc.get("metrics") or {}).items() if isinstance(m, dict)}
     payload = {"from": f"predict:{ctx.id}", "name": name, "version": fc["version"], "method": ", ".join(sorted({m.get("method") for m in (fc.get("metrics") or {}).values() if isinstance(m, dict)})),
-               "accuracy": ", ".join(f"{k}: WAPE {v} %" for k, v in acc.items())[:500], "description": f"Relay forecast “{fc['name']}” version {fc['version']} ({len(fc.get('spec') or [])} series)",
+               "accuracy": ", ".join(f"{k}: WAPE {v} %" for k, v in acc.items())[:500], "description": f"Relay forecast \"{fc['name']}\" version {fc['version']} ({len(fc.get('spec') or [])} series)",
                "uri": f"relay://forecasts/{fc['id']}/v{fc['version']}", "properties": {"forecast_id": fc["id"], "relay_version": fc["version"], "series": len(fc.get("spec") or [])}}
     try:
         cp = ctx.request_write(c["id"], "model", payload, f"Register {name} v{fc['version']} in {c['name']} ({LABEL[c['kind']]})")

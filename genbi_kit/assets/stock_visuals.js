@@ -1,7 +1,7 @@
 /* Prototype renderer for Power BI's own visuals (Relay `pbi.*` types).
-   Each visual is drawn the way Power BI lays it out — container (title, subtitle, background, border, shadow,
+   Each visual is drawn the way Power BI lays it out - container (title, subtitle, background, border, shadow,
    padding), axes, gridlines, legend, data labels with display units, series and category colors, field-value and
-   gradient colors — from the rows of its prototype SQL (one column per field, named after the field) and its
+   gradient colors - from the rows of its prototype SQL (one column per field, named after the field) and its
    Format-pane settings. Settings it does not draw are still written to the report: Power BI applies all of them.
    API: RelayStock.render(box, visual, ctx) where visual = {stock: {vt, renderer, fields, rows, format, sort},
    header: {title, subtitle}} and ctx = {palette, card, border, radius, text, muted, font, frame, fmtNum}. */
@@ -37,8 +37,8 @@
     s = String(s === null || s === undefined ? '' : s);
     if (w <= 8) return '';
     if (measure(s, size, weight) <= w) return s;
-    while (s.length > 1 && measure(s + '…', size, weight) > w) s = s.slice(0, -1);
-    return s.length > 1 ? s + '…' : '';
+    while (s.length > 1 && measure(s + '...', size, weight) > w) s = s.slice(0, -1);
+    return s.length > 1 ? s + '...' : '';
   }
   function rgb(hex) {
     const h = String(hex || '#000000').replace('#', '');
@@ -99,7 +99,7 @@
     return {pct: sec.includes('%'), cur: (sec.match(/[$€£¥₹]/) || [''])[0], dec: dm ? dm[1].length : 0};
   }
   function autoUnit(m) { for (const [u] of UNITS) if (Math.abs(m) >= u) return u; return 1; }
-  // A value as Power BI prints it: the measure's format, or display units (0 auto, 1 none, 1000 …) and a precision.
+  // A value as Power BI prints it: the measure's format, or display units (0 auto, 1 none, 1000 ...) and a precision.
   function num(v, fmt, units, prec, scaleRef, ctx) {
     if (v === null || v === undefined || v === '') return '(Blank)';
     if (typeof v !== 'number') return String(v);
@@ -854,7 +854,7 @@
       const y = i * rh;
       if (y + rh > H + 1) return;
       if (bar) el('rect', {x: 0, y: y + 4, width: get('card', 'barWeight', 3), height: rh - 8, fill: barCol}, svg);
-      const title = cols.map(c => catLabel(r[c.col], c)).join(' · ');
+      const title = cols.map(c => catLabel(r[c.col], c)).join(' - ');
       if (title) text(svg, 12, y + 12, fit(title, W - 20, 12, 600), {size: get('cardTitle', 'fontSize', 9) * PT, color: color(get('cardTitle', 'color'), ctx, ctx.text), bold: true});
       const w = (W - 12) / Math.max(1, meas.length);
       meas.forEach((m, k) => {
@@ -958,8 +958,8 @@
     const rkeys = rf ? uniq(rows, rf.col) : [null], ckeys = cf ? uniq(rows, cf.col) : [null];
     const rowTotal = get('rowTotal', 'show', get('subTotals', 'rowSubtotals', true)), colTotal = get('columnTotal', 'show', get('subTotals', 'columnSubtotals', true));
     const head = [{text: rf ? rf.name : ''}];
-    ckeys.forEach(c => vs.forEach(v => head.push({text: (cf ? catLabel(c, cf) + (vs.length > 1 ? ' · ' : '') : '') + (vs.length > 1 || !cf ? v.name : ''), num: true})));
-    if (cf && colTotal) vs.forEach(v => head.push({text: 'Total' + (vs.length > 1 ? ' · ' + v.name : ''), num: true}));
+    ckeys.forEach(c => vs.forEach(v => head.push({text: (cf ? catLabel(c, cf) + (vs.length > 1 ? ' - ' : '') : '') + (vs.length > 1 || !cf ? v.name : ''), num: true})));
+    if (cf && colTotal) vs.forEach(v => head.push({text: 'Total' + (vs.length > 1 ? ' - ' + v.name : ''), num: true}));
     const cell = (pred, v) => ({text: num(total(rows, v.col, pred), v.format, 1, null, null, ctx), num: true});
     const out = rkeys.map(rk => {
       const line = [{text: rf ? catLabel(rk, rf) : 'Total', bold: !rf}];
@@ -997,7 +997,7 @@
       wrap.appendChild(row);
     } else if (mode === 'Between') {
       const t = document.createElement('div');
-      t.textContent = `${catLabel(values[0], f)}  –  ${catLabel(values[values.length - 1], f)}`;
+      t.textContent = `${catLabel(values[0], f)}  -  ${catLabel(values[values.length - 1], f)}`;
       t.style.cssText = `border:1px solid ${ctx.border};border-radius:4px;padding:5px 8px`;
       wrap.appendChild(t);
     } else {
@@ -1012,7 +1012,7 @@
     el('rect', {x: 0, y: 0, width: W, height: H, fill: '#EEF3F7', rx: 4}, svg);
     for (let i = 1; i < 8; i++) el('line', {x1: 0, x2: W, y1: H * i / 8, y2: H * i / 8, stroke: '#DCE6EE'}, svg);
     for (let i = 1; i < 12; i++) el('line', {x1: W * i / 12, x2: W * i / 12, y1: 0, y2: H, stroke: '#DCE6EE'}, svg);
-    text(svg, 10, 14, filled ? 'Filled map — Power BI shades the regions (map tiles online)' : 'Map — Power BI places the bubbles (map tiles online)', {size: 10, color: ctx.muted});
+    text(svg, 10, 14, filled ? 'Filled map - Power BI shades the regions (map tiles online)' : 'Map - Power BI places the bubbles (map tiles online)', {size: 10, color: ctx.muted});
     if (!loc) return null;
     const pts = uniq(item.rows, loc.col).map(k => ({k, v: size ? total(item.rows, size.col, r => String(r[loc.col]) === String(k)) : null}));
     pts.sort((a, b) => (b.v || 0) - (a.v || 0));
@@ -1046,9 +1046,9 @@
   }
   function keyDrivers(svg, W, H, item, ctx) {
     const t = fieldsOf(item, 'Target')[0], ex = fieldsOf(item, 'ExplainBy');
-    text(svg, 10, 14, 'Key influencers — Power BI runs the analysis on the model', {size: 11, color: ctx.muted});
+    text(svg, 10, 14, 'Key influencers - Power BI runs the analysis on the model', {size: 11, color: ctx.muted});
     if (t) text(svg, 10, 40, `What influences ${t.name}`, {size: 13, color: ctx.text, bold: true});
-    ex.forEach((e, i) => text(svg, 18, 66 + i * 18, '• ' + e.name, {size: 11, color: ctx.text}));
+    ex.forEach((e, i) => text(svg, 18, 66 + i * 18, '- ' + e.name, {size: 11, color: ctx.text}));
     return null;
   }
 
@@ -1076,7 +1076,7 @@
     svg.style.overflow = 'visible';
     body.appendChild(svg);
     const fn = SVG[item.renderer];
-    if (!fn) { note(svg, W, H, item.vt + ' — drawn by Power BI', ctx); return; }
+    if (!fn) { note(svg, W, H, item.vt + ' - drawn by Power BI', ctx); return; }
     if (!item.rows || !item.rows.length) { note(svg, W, H, 'No data', ctx); return; }
     fn(svg, W, H, item, ctx, get);
   }

@@ -1,6 +1,6 @@
 """Apps & products adapters (W3, registry id `apps`).
 
-What runs, in each platform's own terms — the canonical `application` (an app or a service) and `release` (a version
+What runs, in each platform's own terms - the canonical `application` (an app or a service) and `release` (a version
 on its way to users):
   Power Apps         the Power Platform admin API (Entra client credentials for service.powerapps.com): canvas apps
                      with their owner, co-owners and who they are shared with, and the data they connect to; after
@@ -100,7 +100,7 @@ class PowerApps(SysAdapter):
         if field == "owner" and not EMAIL.match(str(value or "")):
             return [f"{value!r} is not an e-mail address"]
         if field == "sharing" and value != "people":
-            return ["Relay only removes the share with the whole organisation (sharing → people); sharing more widely is done in Power Apps"]
+            return ["Relay only removes the share with the whole organisation (sharing -> people); sharing more widely is done in Power Apps"]
         return []
 
     def op_update(self, api, entity, key, changes, approval):
@@ -301,9 +301,9 @@ class AppStoreConnect(SysAdapter):
             status = ("rejected" if st in ("REJECTED", "METADATA_REJECTED") else "rolling out" if phs == "ACTIVE" else "paused" if phs == "PAUSED"
                       else "released" if st == "READY_FOR_SALE" else str(st or "").lower().replace("_", " "))
             return {"key": r["id"], "name": f"{app.get('name')} {at.get('versionString')}", "app": app.get("bundleId"), "version": at.get("versionString"), "track": "App Store",
-                    "rollout": f"phased · day {ph.get('currentDayNumber')} of 7" if phs == "ACTIVE" else "paused" if phs == "PAUSED" else "100%" if st == "READY_FOR_SALE" else "",
+                    "rollout": f"phased - day {ph.get('currentDayNumber')} of 7" if phs == "ACTIVE" else "paused" if phs == "PAUSED" else "100%" if st == "READY_FOR_SALE" else "",
                     "status": status, "when": at.get("createdDate"),
-                    "error": "App Review rejected this version: the reasons are in App Store Connect › App Review (Resolution Center)." if status == "rejected" else None,
+                    "error": "App Review rejected this version: the reasons are in App Store Connect > App Review (Resolution Center)." if status == "rejected" else None,
                     "os": "iOS", "bundle": app.get("bundleId"), "phased_id": (r.get("_phased") or {}).get("id"), "stop_as": "paused", "platform": "App Store"}
         return r
 
@@ -391,7 +391,7 @@ class Sentry(SysAdapter):
             cf = r.get("_cf")
             return {"key": f"{r['_project']['slug']}:{v}", "name": f"{r['_project'].get('name')} {ver}", "app": app, "version": ver, "track": "Sentry release", "rollout": None,
                     "status": "newest" if r.get("_newest") else "earlier", "when": r.get("dateReleased") or r.get("dateCreated"),
-                    "error": f"{top['title']} ({top.get('culprit')}) — {top.get('userCount')} users since this release" if top else None,
+                    "error": f"{top['title']} ({top.get('culprit')}) - {top.get('userCount')} users since this release" if top else None,
                     "os": _os(r["_project"].get("platform")), "bundle": app, "project": r["_project"]["slug"], "crash_free": round(cf * 100, 2) if cf is not None else None,
                     "new_issue": top.get("shortId") if top else None, "new_issue_users": int(top.get("userCount") or 0) if top else 0, "platform": "Sentry"}
         return r

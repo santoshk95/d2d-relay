@@ -1,4 +1,4 @@
-"""Data pipelines & ETL — the rules (rules first; the agent only where none fits):
+"""Data pipelines & ETL - the rules (rules first; the agent only where none fits):
 
   health      what the run history and the definitions show: failing since a date, flaky, slower than usual, a password
               in the definition, not run and not scheduled (retire candidate), the same definition twice (merge
@@ -59,7 +59,7 @@ def health(jobs: list[dict], runs: list[dict], now: float, window_days: int = 30
             add(j, "failing", "high", f"fails since {_day(first.get('start'))}: {streak[-1].get('error') or 'no error text'}",
                 f"{len(streak)} failed run(s) in a row", {"runs": streak[-5:]})
         elif fails and rs and len(fails) >= 2 and len(fails) / len(rs) >= 0.1:
-            add(j, "flaky", "medium", f"{len(fails)} of {len(rs)} runs failed in {window_days} days — it recovers, then fails again: {fails[-1].get('error') or ''}".strip(" :"),
+            add(j, "flaky", "medium", f"{len(fails)} of {len(rs)} runs failed in {window_days} days - it recovers, then fails again: {fails[-1].get('error') or ''}".strip(" :"),
                 f"{100 * len(fails) / len(rs):.0f} % failed", {"failures": fails[-5:]})
         ok = [r for r in rs if r["status"] == "succeeded" and r.get("start") and r.get("end")]
         if len(ok) >= 10:
@@ -69,25 +69,25 @@ def health(jobs: list[dict], runs: list[dict], now: float, window_days: int = 30
                 add(j, "slow", "medium", f"the last {len(recent)} runs took {statistics.median(recent) / statistics.median(before):.1f}× as long as before",
                     f"{statistics.median(recent) / 60:.1f} min now vs {statistics.median(before) / 60:.1f} min", {"recent_s": recent, "before_s": before[-10:]})
         for s in j.get("secrets") or []:
-            add(j, "secret", "high", f"a password is written in the definition ({s}) — move it to the tool's secret store", "", {"where": s})
+            add(j, "secret", "high", f"a password is written in the definition ({s}) - move it to the tool's secret store", "", {"where": s})
         if j.get("broken"):
             add(j, "failing", "high", "the connection is broken: " + "; ".join(t for t in j.get("tasks") or [] if t), "setup state broken", {"tasks": j.get("tasks")})
         if j["tool"] in have_runs and not rs and (not j.get("enabled") or j.get("schedule") in ("", "manual")):
-            add(j, "unused", "low", f"no run in {window_days} days and no active schedule — a retire candidate", "0 runs", {})
+            add(j, "unused", "low", f"no run in {window_days} days and no active schedule - a retire candidate", "0 runs", {})
         elif not j.get("enabled") and j["tool"] not in have_runs and j["kind"] not in ("model",):
-            add(j, "unused", "low", "its schedule is switched off — a retire candidate if nobody runs it by hand", "not scheduled", {})
+            add(j, "unused", "low", "its schedule is switched off - a retire candidate if nobody runs it by hand", "not scheduled", {})
         dupes = [x for x in fps.get((j["tool"], j.get("fingerprint")), []) if x["id"] != j["id"]]
         same_io = [x for x in jobs if x["id"] != j["id"] and x["tool"] == j["tool"] and x.get("target") and x.get("target") == j.get("target") and set(x["sources"]) == set(j["sources"]) and j["sources"]]
         twin = (dupes or same_io)
         if twin and _newer(j, twin[0]):
-            add(j, "duplicate", "low", f"does the same as {twin[0]['name']} (same {'definition' if dupes else 'sources and target'}) — a merge candidate", "", {"twin": twin[0]["name"]})
+            add(j, "duplicate", "low", f"does the same as {twin[0]['name']} (same {'definition' if dupes else 'sources and target'}) - a merge candidate", "", {"twin": twin[0]["name"]})
         if j["tool"] in ("adf", "airflow", "dbt", "talend") and not j.get("owner") and j["kind"] != "model":
             add(j, "owner", "low", "no owner recorded", "", {})
     return out
 
 
 def _newer(j: dict, other: dict) -> bool:
-    """Of two twins, the one with the later-looking name (…_V2, …_COPY) is the merge candidate."""
+    """Of two twins, the one with the later-looking name (..._V2, ..._COPY) is the merge candidate."""
     a, b = j["name"].upper(), other["name"].upper()
     if re.search(r"(_V\d+|_COPY|_OLD|_NEW|\d)$", a) and not re.search(r"(_V\d+|_COPY|_OLD|_NEW|\d)$", b):
         return True
@@ -157,7 +157,7 @@ SIGNATURES = [
 ]
 CAUSE = {"schema": "a column the job reads was renamed or dropped at the source", "late_file": "the file the job reads had not arrived when it ran",
          "transient": "a short outage or timeout at the source or the target", "signin": "the job's sign-in to a system expired or was revoked",
-         "duplicates": "the load met rows that are already there", "unknown": "not one of the known causes — a person looks at the run log"}
+         "duplicates": "the load met rows that are already there", "unknown": "not one of the known causes - a person looks at the run log"}
 ROUTE = {"schema": "change", "late_file": "heal", "transient": "heal", "signin": "ticket", "duplicates": "ticket", "unknown": "ticket"}
 
 
@@ -187,7 +187,7 @@ def diagnose(error: str, dictionary: dict | None = None, reads: list[str] | None
 
 
 def renamed_scored(col: str, cols: list[str]) -> tuple[str | None, float]:
-    """The column that most likely replaced `col` — a prefix or suffix of it scores 1, else the closest name — and how sure."""
+    """The column that most likely replaced `col` - a prefix or suffix of it scores 1, else the closest name - and how sure."""
     import difflib
     c = col.upper()
     cands = [x for x in cols if x != c]
@@ -304,7 +304,7 @@ def _from_infa(lg: dict, dic: dict) -> dict:
     aggs = [t for t in lg["transformations"] if t["type"] == "Aggregator"]
     if any(t["type"] in ("Router", "Normalizer", "Java", "Stored Procedure", "Custom Transformation", "Union") for t in lg["transformations"]):
         bad = sorted({t["type"] for t in lg["transformations"] if t["type"] in ("Router", "Normalizer", "Java", "Stored Procedure", "Custom Transformation", "Union")})
-        return {"sql": "", "inputs": [], "columns": [], "materialized": "table", "unique_key": [], "problems": [f"{', '.join(bad)} transformation(s): a Type 2 history or custom logic — Relay's agent drafts it (a dbt snapshot where it is history)"], "notes": []}
+        return {"sql": "", "inputs": [], "columns": [], "materialized": "table", "unique_key": [], "problems": [f"{', '.join(bad)} transformation(s): a Type 2 history or custom logic - Relay's agent drafts it (a dbt snapshot where it is history)"], "notes": []}
     li = 0
     for t in lg["transformations"]:
         if t["type"] != "Lookup Procedure":
@@ -417,7 +417,7 @@ def _from_infa(lg: dict, dic: dict) -> dict:
 
 
 def _qualify(cond: str, r: _Rel) -> str:
-    """Prefix a source's own columns in its filter with its alias (WHERE STATUS <> 'Cancelled' -> s1.STATUS …)."""
+    """Prefix a source's own columns in its filter with its alias (WHERE STATUS <> 'Cancelled' -> s1.STATUS ...)."""
     out = cond
     for c in sorted(r.cols + ["IS_CURRENT", "STATUS", "ACTIVE"], key=len, reverse=True):
         out = re.sub(rf"(?<![\w.']){c}(?![\w'])", f"{r.alias}.{c}", out, flags=re.I)
@@ -475,7 +475,7 @@ def _from_adf(lg: dict, dic: dict) -> dict:
                 aggm[k.strip().upper()] = v.strip()
             continue
         if re.match(r"^([\w@]+)\s+split\(", body):
-            raise px.Untranslatable("a conditional split (a Type 2 history) — Relay's agent drafts it as a dbt snapshot")
+            raise px.Untranslatable("a conditional split (a Type 2 history) - Relay's agent drafts it as a dbt snapshot")
         m = re.match(r"^([\w@]+)\s+sink\((.*)\)\s*$", body, re.S)
         if m:
             keys = re.findall(r"'(\w+)'", re.search(r"keys:\[(.*?)\]", m.group(2)).group(1)) if "keys:[" in m.group(2) else []

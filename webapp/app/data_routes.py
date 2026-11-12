@@ -1,7 +1,7 @@
 """Warehouse connections, configured tables, live queries and extracts (platform plan, phase 3).
 
 Connections are personal: every endpoint here works on the asking person's own connections only. Project extract
-endpoints sit under /api/projects/{id}/… so auth.middleware applies the dashboard's view / edit rules first.
+endpoints sit under /api/projects/{id}/... so auth.middleware applies the dashboard's view / edit rules first.
 
 D2D Relay: a connection is used (added, tested, browsed, queried, pulled from, signed in again) only while PASDACS has
 its connector switched on for the organisation (orgs.require_connector, use=True below). Listing, sharing, disabling and
@@ -50,7 +50,7 @@ def _owned(cid: str, admin_ok: bool = False, use: bool = False) -> dict:
 
 def _fail(e: Exception) -> HTTPException:
     if isinstance(e, connectors.Reconsent):
-        return HTTPException(409, f"{e} (Connections › Renew sign-in)")
+        return HTTPException(409, f"{e} (Connections > Renew sign-in)")
     if isinstance(e, connectors.sdk.ScopeError):
         return HTTPException(403, str(e))
     return HTTPException(400, str(e))

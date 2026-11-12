@@ -3,7 +3,7 @@
 Never in the repo, the image or project.json. One encrypted file (Fernet: AES-128-CBC + HMAC-SHA256) in the state
 volume; the key comes from, in order: the D2D_SECRET_KEY environment variable, a Docker secret
 (/run/secrets/d2d_key), or a key file created on first use in the state volume (fine for one machine; use a Docker
-secret or a vault when the platform is deployed for an organisation). Values never leave through the API —
+secret or a vault when the platform is deployed for an organisation). Values never leave through the API -
 callers inside the app read them; the admin API lists names only.
 """
 import base64
@@ -23,7 +23,7 @@ _lock = threading.Lock()
 
 
 def _paths() -> tuple[Path, Path]:
-    """(the current tenant's encrypted file, the install's key file). P17: every tenant has its own file — the
+    """(the current tenant's encrypted file, the install's key file). P17: every tenant has its own file - the
     platform's is the one it always was; one key for the install (a dedicated client install is re-keyed on export)."""
     t = db.tenant()
     store = db.STATE / "secrets.enc" if t == db.PLATFORM else db.STATE / "tenants" / t / "secrets.enc"
@@ -106,7 +106,7 @@ def delete(scope: str, name: str, who: str | None = None) -> bool:
 
 
 def names() -> list[dict]:
-    """What is stored — names and dates only, never values."""
+    """What is stored - names and dates only, never values."""
     with _lock:
         data = _load()
     return [{"scope": k.split("/", 1)[0], "name": k.split("/", 1)[1], "updated": v["updated"]} for k, v in sorted(data.items())]

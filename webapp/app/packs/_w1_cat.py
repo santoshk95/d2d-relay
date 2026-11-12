@@ -1,11 +1,11 @@
-"""W1 — the data catalogues Data governance & catalogue reads (and, only after a person approves the change, writes):
+"""W1 - the data catalogues Data governance & catalogue reads (and, only after a person approves the change, writes):
 Microsoft Purview (Data Map), Collibra (REST Core 2.0), Alation (Integration API), Atlan (metadata API); Unity Catalog
 through the Databricks kind of _w1_sql. The mock lab's catalogue simulators stand in for each (tests/mocklab/sims/catalogs.py
 and the Databricks workspace in cloudwh.py).
 
-Every reader returns one neutral catalogue, so two catalogues — or a catalogue and Relay's own lineage — compare:
+Every reader returns one neutral catalogue, so two catalogues - or a catalogue and Relay's own lineage - compare:
   assets  [{key, id, kind (database|schema|table|view|column|process|report), name, platform, parent, owner, description,
-            classification (neutral: personal.email …), certified (Certified|Deprecated|None), rows, qualified, type}]
+            classification (neutral: personal.email ...), certified (Certified|Deprecated|None), rows, qualified, type}]
   edges   [{from, to, via}]            keys of assets (via: the process that moves the data, if any)
   terms   [{id, name, definition, status (Approved|Draft|Obsolete), steward}]
   scans   [{source, status (Succeeded|Failed|Running), start, end, error}]
@@ -128,11 +128,11 @@ PV_TYPE = {("oracle", "table"): "oracle_table", ("oracle", "view"): "oracle_view
 
 
 class Purview(Kind):
-    """Microsoft Purview Data Map: the discovery query, Atlas v2 entities, lineage, the glossary and the scanning API —
+    """Microsoft Purview Data Map: the discovery query, Atlas v2 entities, lineage, the glossary and the scanning API -
     signed in with an Entra ID app registration (client credentials, scope https://purview.azure.net/.default)."""
     kind, label, category = "purview", "Microsoft Purview", "governance"
     signin = ["service_account"]
-    fields = [("base_url", "Purview account endpoint (https://<account>.purview.azure.com)", True), ("token_url", "Entra ID token endpoint (…/oauth2/v2.0/token)", True),
+    fields = [("base_url", "Purview account endpoint (https://<account>.purview.azure.com)", True), ("token_url", "Entra ID token endpoint (.../oauth2/v2.0/token)", True),
               ("client_id", "App registration (client) id", True)]
     secrets = {"service_account": ["client_secret"]}
     can_write = True
@@ -283,7 +283,7 @@ PERSONAL_RX = re.compile(r"(?i)^(E?MAIL|EMAIL_ADDRESS|PHONE|PHONE_NO|MOBILE|FULL
 
 
 class Collibra(Kind):
-    """Collibra Data Intelligence Platform — REST Core API 2.0 (a service user, basic auth)."""
+    """Collibra Data Intelligence Platform - REST Core API 2.0 (a service user, basic auth)."""
     kind, label, category = "collibra", "Collibra", "governance"
     signin = ["password"]
     fields = [("base_url", "REST API (https://<instance>.collibra.com/rest/2.0)", True), ("user", "Service user", True)]
@@ -403,7 +403,7 @@ class Collibra(Kind):
 # ================================================================== Alation
 
 class Alation(Kind):
-    """Alation Data Catalog — Integration API v1 / v2 (a refresh token exchanged for an API access token, TOKEN header)."""
+    """Alation Data Catalog - Integration API v1 / v2 (a refresh token exchanged for an API access token, TOKEN header)."""
     kind, label, category = "alation", "Alation", "governance"
     signin = ["api_key"]
     fields = [("base_url", "Alation address (https://<instance>.alationcloud.com)", True), ("user_id", "User id the refresh token belongs to", True)]
@@ -483,7 +483,7 @@ class Alation(Kind):
             if ch["change"] == "lineage":
                 out.append({"method": "POST", "path": "/integration/v2/lineage/", "body": {"source": [{"otype": "table", "key": ch["source"]}], "target": [{"otype": "table", "key": ch["target"]}],
                                                                                            "dataflow_objects": [{"otype": "dataflow", "key": ch.get("via") or "relay." + _w1.slug(ch["target"])}]},
-                            "what": f"lineage {ch['source']} → {ch['target']}"})
+                            "what": f"lineage {ch['source']} {ch['target']}"})
         return out
 
     def _write(self, c, obj, payload, approval):
@@ -510,7 +510,7 @@ AT_KIND = {"Table": "table", "View": "view", "Column": "column", "Process": "pro
 
 
 class Atlan(Kind):
-    """Atlan — the metadata API (Elasticsearch-DSL index search, entity bulk upsert, lineage list) and workflow runs, with
+    """Atlan - the metadata API (Elasticsearch-DSL index search, entity bulk upsert, lineage list) and workflow runs, with
     a bearer API token."""
     kind, label, category = "atlan", "Atlan", "governance"
     signin = ["api_key"]

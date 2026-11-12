@@ -1,5 +1,5 @@
 """Warehouse connectors (platform plan, phase 3): Snowflake, Google BigQuery, Microsoft Fabric, Amazon Redshift and
-Amazon Athena, next to CSV upload — and Oracle Database (python-oracledb in thin mode: no Oracle client in the image;
+Amazon Athena, next to CSV upload - and Oracle Database (python-oracledb in thin mode: no Oracle client in the image;
 plain TCP, TLS with tcps://, or mutual TLS with an Autonomous Database wallet).
 
 Each person connects with their own login, so the warehouse's own permissions apply; D2D never uses a shared
@@ -63,13 +63,13 @@ KINDS = {
                             ("location", "Location (optional, e.g. EU)", False)],
                  "secrets": {"service_account": ["service_account_json"]}},
     "fabric": {"label": "Microsoft Fabric", "dialect": "tsql", "auth": ["oauth"],
-               "fields": [("server", "SQL endpoint (….datawarehouse.fabric.microsoft.com)", True),
+               "fields": [("server", "SQL endpoint (....datawarehouse.fabric.microsoft.com)", True),
                           ("database", "Warehouse or lakehouse name", True)], "secrets": {}},
     "redshift": {"label": "Amazon Redshift", "dialect": "redshift", "auth": ["password"],
                  "fields": [("host", "Host", True), ("port", "Port (5439)", False), ("database", "Database", True),
                             ("user", "User name", True)], "secrets": {"password": ["password"]}},
     "athena": {"label": "Amazon Athena", "dialect": "athena", "auth": ["aws_keys"],
-               "fields": [("region", "Region", True), ("s3_staging_dir", "Query results location (s3://…)", True),
+               "fields": [("region", "Region", True), ("s3_staging_dir", "Query results location (s3://...)", True),
                           ("workgroup", "Workgroup (optional)", False), ("database", "Database", True),
                           ("dsn", "Power BI ODBC DSN name (for the Power BI file)", False)],
                "secrets": {"aws_keys": ["aws_access_key_id", "aws_secret_access_key"]}},
@@ -91,15 +91,15 @@ OAUTH = {   # authorize / token endpoints; {tenant} and {account} come from the 
 }
 
 
-# ---------------------------------------------------------------- P10: the hub's vocabulary — categories, sign-in kinds, scopes, sharing
+# ---------------------------------------------------------------- P10: the hub's vocabulary - categories, sign-in kinds, scopes, sharing
 
 CATEGORIES = [("erp", "ERP & PLM"), ("finance", "Finance & HR"), ("crm", "CRM & ITSM"), ("warehouse", "Warehouses & databases"),
               ("integration", "Integration & automation"), ("bi", "BI tools"), ("files", "Files & content"), ("code", "Code & cloud")]
 CATEGORY_LABEL = dict(CATEGORIES)
-SIGNIN = {"sso": "Single sign-on (Entra ID / Google)", "oauth": "OAuth — sign in as me", "service_account": "Service account",
+SIGNIN = {"sso": "Single sign-on (Entra ID / Google)", "oauth": "OAuth - sign in as me", "service_account": "Service account",
           "password": "User name and password", "api_key": "API key or token", "exports": "Upload exports instead"}
 SIGNIN_OF = {"oauth": "oauth", "password": "password", "keypair": "api_key", "service_account": "service_account", "aws_keys": "api_key", "wallet": "password"}
-SCOPES = {"read": "Read-only", "comment": "Read & comment", "write": "Read & write — with approval"}
+SCOPES = {"read": "Read-only", "comment": "Read & comment", "write": "Read & write - with approval"}
 SHARING = {"me": "Only me", "team": "My teams", "org": "The whole organisation"}
 WRITE_KIND = "connection.write"
 for _k, _v in KINDS.items():                         # the warehouses, wrapped by the SDK without a change in behaviour
@@ -137,7 +137,7 @@ def kinds_public() -> dict:
 
 
 def may_write(c: dict) -> bool:
-    """Writes happen only on a connection whose scope is 'write' and that is enabled — and even then only after a
+    """Writes happen only on a connection whose scope is 'write' and that is enabled - and even then only after a
     person approved that very change (request_write opens the checkpoint; the adapter's write needs its id)."""
     return (c.get("scope") or "read") == "write" and bool(c.get("enabled", 1))
 
@@ -194,7 +194,7 @@ def owned(cid: str, uid: str, admin_ok: bool = False) -> dict:
 
 def usage_map() -> dict[str, list[dict]]:
     """Which dashboards (data/.extracts.json, or the warehouse they were created from) and which module folders that
-    list their `connections` (starts, the workbench's work items …) use each connection — derived, never stored."""
+    list their `connections` (starts, the workbench's work items ...) use each connection - derived, never stored."""
     from . import agents, store
     out: dict[str, list[dict]] = {}
     for p in store.all_projects():
@@ -269,7 +269,7 @@ def save(uid: str, body: dict, cid: str | None = None) -> dict:
         bad = oracle_config_problems(config)
         if bad:
             raise ConnectorError("; ".join(bad))
-    name = (body.get("name") or f"{spec['label']} · {config.get('database') or config.get('service_name') or config.get('project') or config.get('site') or ''}").strip(" ·")[:80]
+    name = (body.get("name") or f"{spec['label']} - {config.get('database') or config.get('service_name') or config.get('project') or config.get('site') or ''}").strip(" -")[:80]
     scope = body.get("scope") or (c.get("scope") if cid else None) or "read"
     sharing = body.get("sharing") or (c.get("sharing") if cid else None) or "me"
     if scope not in SCOPES:
@@ -369,13 +369,13 @@ def request_write(c: dict, obj: str, payload: dict, who: str, module: str = "Con
     work that asked lives (by default the Connections hub)."""
     _check_enabled(c)
     if not may_write(c):
-        raise sdk.ScopeError(f"{c['name']} is {SCOPES.get(c.get('scope') or 'read')}: writes are not allowed on it. Change its scope to 'Read & write — with approval' first.")
+        raise sdk.ScopeError(f"{c['name']} is {SCOPES.get(c.get('scope') or 'read')}: writes are not allowed on it. Change its scope to 'Read & write - with approval' first.")
     adapter = sdk.get(c["kind"])
     if not adapter or not adapter.can_write:
         raise sdk.ScopeError(f"{KINDS[c['kind']]['label']} connections are read-only in Relay.")
     name = what or f"Write to {c['name']}: {obj} ({secrets.token_hex(3)})"
     cp = checkpoints.open(WRITE_KIND, c["id"], module, name, "table",
-                          {"summary": f"{obj} on {c['name']} ({KINDS[c['kind']]['label']}) — nothing is written until you accept",
+                          {"summary": f"{obj} on {c['name']} ({KINDS[c['kind']]['label']}) - nothing is written until you accept",
                            "items": items or [f"{k}: {v}" for k, v in list(payload.items())[:8]], "counts": {"fields": len(payload)}, "object": obj, "payload": payload},
                           link=link or "#/connections", assignee=who, agent="Relay", opened_by=who)
     db.audit("connection.write_requested", c["id"], {"object": obj, "checkpoint": cp["id"], "fields": sorted(payload)}, who)
@@ -434,7 +434,7 @@ def _sdk(c: dict):
 # ---------------------------------------------------------------- OAuth sign-in to a warehouse (offline access)
 
 def oauth_apps() -> dict:
-    """Admin settings per warehouse: client id, tenant (Entra), … — client secrets are in the secrets store."""
+    """Admin settings per warehouse: client id, tenant (Entra), ... - client secrets are in the secrets store."""
     return json.loads(db.meta("connector_oauth") or "{}")
 
 
@@ -537,14 +537,14 @@ def access_token(c: dict) -> str:
 
 ORACLE_HOST = re.compile(r"^(?:(tcps?)://)?([A-Za-z0-9][\w.\-]*|\[[0-9A-Fa-f:.]+\])$", re.I)
 ORACLE_EZ = re.compile(r"^(?:(tcps?)://)?([^:/\s\[\]]+|\[[0-9A-Fa-f:.]+\])(?::(\d+))?(?:/([^\s/?]+))?/?$", re.I)
-ORACLE_OWN = "SELECT username FROM all_users WHERE oracle_maintained = 'Y'"      # SYS, SYSTEM, XDB, MDSYS … (12c and later)
+ORACLE_OWN = "SELECT username FROM all_users WHERE oracle_maintained = 'Y'"      # SYS, SYSTEM, XDB, MDSYS ... (12c and later)
 ORACLE_SEES = (f"SELECT (SELECT COUNT(*) FROM all_tables WHERE owner NOT IN ({ORACLE_OWN})) AS t, (SELECT COUNT(*) FROM all_views WHERE owner NOT IN ({ORACLE_OWN})) AS v, "
                "(SELECT version FROM product_component_version WHERE ROWNUM = 1) AS ver FROM dual")
 PROBE_SQL = {"oracle_db": "SELECT 1 AS ok FROM dual"}
 
 
 def oracle_normalise(cfg: dict) -> dict:
-    """An Easy Connect string typed into Host (db1:1521/ORCLPDB1, tcps://adb…:1522/svc) is split into its fields."""
+    """An Easy Connect string typed into Host (db1:1521/ORCLPDB1, tcps://adb...:1522/svc) is split into its fields."""
     m = ORACLE_EZ.match(cfg.get("host", "").strip())
     if not m or not (m.group(3) or m.group(4)):
         return cfg
@@ -595,7 +595,7 @@ def _oracle_wallet(c: dict) -> str:
 def _oracle_schema(desc) -> pa.Schema:
     """Arrow types from the cursor's description, so every batch of an extract has the same schema: NUMBER(p, 0) and
     INTEGER are whole numbers, other NUMBERs and BINARY_* doubles, DATE / TIMESTAMP timestamps, RAW / BLOB bytes, the
-    rest (VARCHAR2, CHAR, CLOB, LONG, INTERVAL, JSON, ROWID …) text."""
+    rest (VARCHAR2, CHAR, CLOB, LONG, INTERVAL, JSON, ROWID ...) text."""
     import oracledb as o
     stamps = (o.DB_TYPE_DATE, o.DB_TYPE_TIMESTAMP, o.DB_TYPE_TIMESTAMP_TZ, o.DB_TYPE_TIMESTAMP_LTZ)
     fields = []
@@ -638,7 +638,7 @@ def _sees(c: dict) -> str:
         return ""
     try:
         r = [list(x.values()) for t in _batches(c, ORACLE_SEES, 30, 1) for x in t.to_pylist()][0]
-        return f"{int(r[0]):,} table(s) and {int(r[1]):,} view(s) this sign-in can read · Oracle Database {r[2]}"
+        return f"{int(r[0]):,} table(s) and {int(r[1]):,} view(s) this sign-in can read - Oracle Database {r[2]}"
     except Exception:  # noqa: BLE001
         return ""
 
@@ -981,7 +981,7 @@ def _utc(s: str):
 
 
 def records_table(rows: list[dict]) -> pa.Table:
-    """An API platform's records as one Arrow table: a column per field (first-seen order), typed from every value —
+    """An API platform's records as one Arrow table: a column per field (first-seen order), typed from every value -
     whole numbers, numbers, true / false, ISO dates, ISO date-times (as UTC); the rest text, nested values as JSON."""
     import datetime as _dt
     cols = list(dict.fromkeys(k for r in rows for k in r))

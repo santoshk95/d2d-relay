@@ -2,17 +2,17 @@
 under attachments/ (read with the P10 reader), requirements.yaml + gonogo.yaml (the agent's read), matrix.yaml (the
 compliance matrix), pricing.yaml (computed here, never by the agent), redteam.yaml (the agent's evaluator read),
 builds/vN/ (the submission pack: Word, PDF, Excel matrix, portal fields as JSON, the proposal deck). Journey
-Qualify → Understand → Answer → Price → Review → Submit → Learn, each step a checkpoint a named person decides:
+Qualify -> Understand -> Answer -> Price -> Review -> Submit -> Learn, each step a checkpoint a named person decides:
 
   rfp.requirements  every requirement with id, text, page reference, kind, deadline, format rules, evaluation (table)
   rfp.gonogo        the go / no-go recommendation with reasons; a named person decides (text)
-  rfp.matrix        Comply / Partial / Not / Alternative per requirement with evidence — only library items
-                    (rfp_library, full-text search) and registry facts; anything else fails the check → fix round
+  rfp.matrix        Comply / Partial / Not / Alternative per requirement with evidence - only library items
+                    (rfp_library, full-text search) and registry facts; anything else fails the check -> fix round
   rfp.price         rate cards per tenant × effort per wave and module + licences + run & support, in the buyer's
                     currency, computed in Python (table)
   rfp.review ×3     technical, commercial, legal reviewers, with the agent's red-team findings as evidence
   rfp.submit        the pack in the buyer's required format + the proposal deck; accepted by a named person;
-                    "submitted" records who / when / how (portal by hand, or mail through the mailer) — nothing
+                    "submitted" records who / when / how (portal by hand, or mail through the mailer) - nothing
                     is sent automatically
   Learn             win / loss and buyer feedback; the answers of a won response are promoted into rfp_library (audited).
 
@@ -256,7 +256,7 @@ def check_requirements(d: Path, st: dict) -> list[str]:
         problems.append(f"buyer.type must be one of {', '.join(BUYER_TYPES)}")
     reqs = raw.get("requirements")
     if not isinstance(reqs, list) or not reqs:
-        problems.append("requirements is empty — list every requirement in the pack")
+        problems.append("requirements is empty - list every requirement in the pack")
         reqs = []
     files = {a["name"] for a in st.get("attachments") or []}
     ids: set[str] = set()
@@ -340,7 +340,7 @@ def check_matrix(d: Path) -> list[str]:
     lib = _library_ids(d)
     rows = raw.get("rows")
     if not isinstance(rows, list) or not rows:
-        return ["matrix.rows is empty — one row per requirement"]
+        return ["matrix.rows is empty - one row per requirement"]
     problems, seen = [], set()
     for i, r in enumerate(rows, 1):
         if not isinstance(r, dict):
@@ -366,17 +366,17 @@ def check_matrix(d: Path) -> list[str]:
             scheme, _, rest = ref.partition(":")
             if scheme == "module":
                 if rest not in registry.BY_ID:
-                    problems.append(f"{rid or i}: evidence {ref} — no such module in the registry")
+                    problems.append(f"{rid or i}: evidence {ref} - no such module in the registry")
             elif scheme == "library":
                 if rest not in lib:
-                    problems.append(f"{rid or i}: evidence {ref} — not one of the library items picked for this response (sources/library.json); an answer may cite only library items and registry modules")
+                    problems.append(f"{rid or i}: evidence {ref} - not one of the library items picked for this response (sources/library.json); an answer may cite only library items and registry modules")
             else:
-                problems.append(f"{rid or i}: evidence {ref!r} is not a module:<id> or library:<id> reference — nothing else may be cited")
+                problems.append(f"{rid or i}: evidence {ref!r} is not a module:<id> or library:<id> reference - nothing else may be cited")
         if status in ("Comply", "Partial", "Alternative") and not ev:
             problems.append(f"{rid or i}: a {status} answer needs at least one piece of evidence")
     missing = sorted(want - seen)
     if missing:
-        problems.append(f"{len(missing)} requirement(s) have no row: " + ", ".join(missing[:10]) + (" …" if len(missing) > 10 else ""))
+        problems.append(f"{len(missing)} requirement(s) have no row: " + ", ".join(missing[:10]) + (" ..." if len(missing) > 10 else ""))
     return problems
 
 
@@ -442,7 +442,7 @@ def compute_price(body: dict) -> dict:
     plus licences and run & support; a discount at the end. Every line kept, so the checkpoint shows the maths."""
     cards = {c["role"].lower(): c for c in rate_cards()}
     if not cards:
-        raise RfpError("No rate cards yet: add roles and rates under RFP › Rate cards first.")
+        raise RfpError("No rate cards yet: add roles and rates under RFP > Rate cards first.")
     currency = _s(body.get("currency")).upper() or "INR"
     fx = {str(k).upper(): float(v) for k, v in (body.get("fx") or {}).items() if v}
     waves, total_days = [], 0.0
@@ -590,7 +590,7 @@ def deck_yaml(st: dict, rv: dict, mv: dict, p: dict) -> str:
               "        chart:", "          type: column", "          categories: [Comply, Partial, Alternative, Not]",
               f"          series: [{{name: Requirements, values: [{c['comply']}, {c['partial']}, {c['alternative']}, {c['not']}]}}]",
               "          unit: requirements", "          source: \"record:matrix#summary\"",
-              f"          alt: {_q(str(c['comply']) + ' comply, ' + str(c['partial']) + ' partial, ' + str(c['alternative']) + ' alternative, ' + str(c['not']) + ' not — of ' + str(c['rows']) + ' requirements')}",
+              f"          alt: {_q(str(c['comply']) + ' comply, ' + str(c['partial']) + ' partial, ' + str(c['alternative']) + ' alternative, ' + str(c['not']) + ' not - of ' + str(c['rows']) + ' requirements')}",
               f"        notes: {_q('Every status in the compliance matrix carries its evidence: a Relay module or a past response.')}"]
     if fit:
         lines += ["      - layout: bullets", "        title: Our approach, module by module", "        bullets:"]
@@ -701,7 +701,7 @@ def build_pack(pid: str) -> dict:
     _xlsx(d, out / "matrix.xlsx", rv, mv)
     files["xlsx"] = "matrix.xlsx"
     portal = {"buyer": rv["buyer"], "deadline": rv["deadline"], "format": rv["format"], "fields": [{"id": r["id"], "status": r["status"], "answer": r["answer"], "evidence": [e["ref"] for e in r["evidence"]]} for r in mv["rows"]],
-              "price": p.get("totals"), "currency": p.get("currency"), "generated": time.time(), "note": "portal fields for SAP Ariba / Coupa / Jaggaer / GeM / Loopio / Responsive — upload by hand in P11"}
+              "price": p.get("totals"), "currency": p.get("currency"), "generated": time.time(), "note": "portal fields for SAP Ariba / Coupa / Jaggaer / GeM / Loopio / Responsive - upload by hand in P11"}
     (out / "portal-fields.json").write_text(json.dumps(portal, indent=1, ensure_ascii=False), encoding="utf-8")
     files["portal"] = "portal-fields.json"
     required = rv["format"]["submission"] or "portal"
@@ -754,13 +754,13 @@ def open_gonogo(pid: str, who: str) -> None:
     g = v["gonogo"]
     st.update(status="awaiting_gonogo", requirements_confirmed={"by": who, "when": time.time()})
     store.save(st)
-    ev = {"summary": f"Relay recommends {g['recommendation'].upper() or '—'}: " + "; ".join(g["reasons"][:3]), "items": [f"Reason: {r}" for r in g["reasons"]] + [f"Risk: {r}" for r in g["risks"]] + [f"Fit: {f['name']} — {f['requirements']} requirement(s)" for f in g["fit"]],
+    ev = {"summary": f"Relay recommends {g['recommendation'].upper() or '-'}: " + "; ".join(g["reasons"][:3]), "items": [f"Reason: {r}" for r in g["reasons"]] + [f"Risk: {r}" for r in g["risks"]] + [f"Fit: {f['name']} - {f['requirements']} requirement(s)" for f in g["fit"]],
           "counts": {"requirements": v["counts"]["requirements"], "risks": len(g["risks"]), "modules": len(g["fit"])}, "text": "\n".join(g["reasons"]), "recommendation": g["recommendation"], "effort": g["effort"], "deadline_ok": g["deadline_ok"]}
     decider = _person(st, "decider", pid)
     _open(pid, st, "gonogo", f"Go / no-go: {st['name']}", "text", ev, assignee=decider)
     if decider and decider != who:
-        notify.add(decider, "review", f"Go / no-go: {st['name']}", f"Relay recommends {g['recommendation'] or '—'}", f"{ROUTE}/{pid}")
-    worker.app_note(pid, "rfp", f"Requirements confirmed. Go / no-go: Relay recommends {g['recommendation'] or '—'} — a named person decides.", "ok")
+        notify.add(decider, "review", f"Go / no-go: {st['name']}", f"Relay recommends {g['recommendation'] or '-'}", f"{ROUTE}/{pid}")
+    worker.app_note(pid, "rfp", f"Requirements confirmed. Go / no-go: Relay recommends {g['recommendation'] or '-'} - a named person decides.", "ok")
 
 
 def matrix_drafted(pid: str, summary: str = "") -> dict:
@@ -793,7 +793,7 @@ def reviews_open(pid: str, summary: str = "") -> dict:
     store.save(st)
     for key, label in REVIEWS:
         checkpoints.withdraw(CP["review"], pid, name=f"{label}: {st['name']}", who="system")
-        ev = {"summary": f"{label} — red team: {rt['counts']['high']} high, {rt['counts']['medium']} medium, {rt['counts']['low']} low. {rt['summary'][:200]}",
+        ev = {"summary": f"{label} - red team: {rt['counts']['high']} high, {rt['counts']['medium']} medium, {rt['counts']['low']} low. {rt['summary'][:200]}",
               "counts": rt["counts"], "items": [f"[{f['severity']}] {f['requirement']}: {f['finding']}" for f in rt["findings"][:8]], "rows": rt["findings"], "review": key}
         _open(pid, st, "review", f"{label}: {st['name']}", "table", ev, assignee=_person(st, key, pid), agent="Relay red team")
     worker.app_note(pid, "rfp_redteam", f"Red-team read done: {rt['counts']['high']} high, {rt['counts']['medium']} medium, {rt['counts']['low']} low findings. Three reviews are open: technical, commercial, legal.", "ok")
@@ -808,7 +808,7 @@ def pack_built(pid: str, rec: dict) -> dict:
     store.save(st)
     checkpoints.withdraw(CP["submit"], pid, who="system")
     f = rec["files"]
-    ev = {"summary": f"Submission pack v{rec['v']}: Word response, PDF, Excel matrix, portal fields (JSON) and the proposal deck — checks {'passed' if rec['ok'] else 'FAILED (' + str(rec['fails']) + ' problems)'}; the buyer wants {rec['required']}" + (f" ({rec['portal']})" if rec.get("portal") else ""),
+    ev = {"summary": f"Submission pack v{rec['v']}: Word response, PDF, Excel matrix, portal fields (JSON) and the proposal deck - checks {'passed' if rec['ok'] else 'FAILED (' + str(rec['fails']) + ' problems)'}; the buyer wants {rec['required']}" + (f" ({rec['portal']})" if rec.get("portal") else ""),
           "items": [f"{k}: {v}" for k, v in f.items()], "counts": {"version": rec["v"], "problems": rec["fails"], "warnings": rec["warnings"], "rows": rec["counts"].get("rows")},
           "twin": f"/api/rfp/{pid}/preview/{rec['v']}/doc", "pdf": f"/api/rfp/{pid}/builds/{rec['v']}/{f['doc_pdf']}" if f.get("doc_pdf") else None, "file": f"/api/rfp/{pid}/builds/{rec['v']}/{f.get('doc_docx')}"}
     _open(pid, st, "submit", f"Submit: {st['name']} (pack v{rec['v']})", "link", ev, assignee=_person(st, "decider", pid))
@@ -846,7 +846,7 @@ async def _read(pid: str, args: dict) -> None:
     d = folder(pid)
     st = load(pid)
     correction = args.get("correction")
-    worker.app_note(pid, "rfp_read", "Relay is reading the pack again with your correction." if correction else f"Relay is reading the pack: {len(st.get('attachments') or [])} file(s) — every requirement, deadline, format rule and evaluation criterion.")
+    worker.app_note(pid, "rfp_read", "Relay is reading the pack again with your correction." if correction else f"Relay is reading the pack: {len(st.get('attachments') or [])} file(s) - every requirement, deadline, format rule and evaluation criterion.")
     _write_registry(d)
     res = await worker.agent(pid, "rfp_read", rfp_prompts.read(st, correction), worker.TURNS["rfp_read"], "requirements", system=rfp_prompts.SYSTEM)
     for attempt in range(worker.FIX_ROUNDS + 1):
@@ -855,7 +855,7 @@ async def _read(pid: str, args: dict) -> None:
             break
         if attempt == worker.FIX_ROUNDS:
             raise RuntimeError(f"requirements.yaml still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-        worker.app_note(pid, "rfp_read", f"The check found {len(problems)} problem(s) in the requirements — Relay is fixing them.", "warn", problems)
+        worker.app_note(pid, "rfp_read", f"The check found {len(problems)} problem(s) in the requirements - Relay is fixing them.", "warn", problems)
         res = await worker.agent(pid, "rfp_read", rfp_prompts.fix("requirements.yaml and gonogo.yaml", problems), worker.TURNS["fix"], "requirements", resume=res.get("session_id"), system=rfp_prompts.SYSTEM)
     requirements_read(pid, res.get("text") or "")
 
@@ -864,7 +864,7 @@ async def _answer(pid: str, args: dict) -> None:
     d = folder(pid)
     st = load(pid)
     correction = args.get("correction")
-    worker.app_note(pid, "rfp_answer", "Relay is revising the matrix with your comment." if correction else "Relay is drafting the compliance matrix from your library and Relay's module facts — nothing else may be cited.")
+    worker.app_note(pid, "rfp_answer", "Relay is revising the matrix with your comment." if correction else "Relay is drafting the compliance matrix from your library and Relay's module facts - nothing else may be cited.")
     items = await asyncio.to_thread(_pick_library, d)
     _write_registry(d)
     worker.app_note(pid, "rfp_answer", f"{len(items)} library item(s) matched the requirements and are available as evidence." if items else "The library has no matching items yet: answers can cite Relay's modules only.")
@@ -875,7 +875,7 @@ async def _answer(pid: str, args: dict) -> None:
             break
         if attempt == worker.FIX_ROUNDS:
             raise RuntimeError(f"matrix.yaml still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-        worker.app_note(pid, "rfp_answer", f"The check found {len(problems)} problem(s) in the matrix (an unknown reference is one) — Relay is fixing them.", "warn", problems)
+        worker.app_note(pid, "rfp_answer", f"The check found {len(problems)} problem(s) in the matrix (an unknown reference is one) - Relay is fixing them.", "warn", problems)
         res = await worker.agent(pid, "rfp_answer", rfp_prompts.fix("matrix.yaml", problems), worker.TURNS["fix"], "matrix", resume=res.get("session_id"), system=rfp_prompts.SYSTEM)
     matrix_drafted(pid, res.get("text") or "")
 
@@ -890,21 +890,21 @@ async def _redteam(pid: str, args: dict) -> None:
             break
         if attempt == worker.FIX_ROUNDS:
             raise RuntimeError(f"redteam.yaml still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-        worker.app_note(pid, "rfp_redteam", f"The check found {len(problems)} problem(s) in the findings — Relay is fixing them.", "warn", problems)
+        worker.app_note(pid, "rfp_redteam", f"The check found {len(problems)} problem(s) in the findings - Relay is fixing them.", "warn", problems)
         res = await worker.agent(pid, "rfp_redteam", rfp_prompts.fix("redteam.yaml", problems), worker.TURNS["fix"], "redteam", resume=res.get("session_id"), system=rfp_prompts.SYSTEM)
     reviews_open(pid, res.get("text") or "")
 
 
 async def _pack(pid: str, args: dict) -> None:
-    worker.app_note(pid, "rfp_pack", "Building the submission pack: Word response, PDF, Excel matrix, portal fields and the proposal deck — through the studio engine, every figure sourced.")
+    worker.app_note(pid, "rfp_pack", "Building the submission pack: Word response, PDF, Excel matrix, portal fields and the proposal deck - through the studio engine, every figure sourced.")
     rec = await asyncio.to_thread(build_pack, pid)
     pack_built(pid, rec)
 
 
-worker.register_job("rfp_read", _read, status="qualifying", done="Requirements read — confirm them in RFP & bid response", llm=True, turns=100, timeout_s=3000)
-worker.register_job("rfp_answer", _answer, status="answering", done="Compliance matrix drafted — confirm it", llm=True, turns=120, timeout_s=3600)
-worker.register_job("rfp_redteam", _redteam, status="redteam", done="Red-team read done — reviews are open", llm=True, turns=60, timeout_s=1800)
-worker.register_job("rfp_pack", _pack, status="packing", done="Submission pack built — accept it")
+worker.register_job("rfp_read", _read, status="qualifying", done="Requirements read - confirm them in RFP & bid response", llm=True, turns=100, timeout_s=3000)
+worker.register_job("rfp_answer", _answer, status="answering", done="Compliance matrix drafted - confirm it", llm=True, turns=120, timeout_s=3600)
+worker.register_job("rfp_redteam", _redteam, status="redteam", done="Red-team read done - reviews are open", llm=True, turns=60, timeout_s=1800)
+worker.register_job("rfp_pack", _pack, status="packing", done="Submission pack built - accept it")
 
 
 def _restart_answers(pid: str, comment: str, who: str, stage: str) -> None:
@@ -1003,7 +1003,7 @@ def _on_decision(c: dict, decision: str, comment: str | None, who: str) -> None:
             v = (st.get("packs") or [{}])[-1].get("v")
             st.update(status="ready", submit_accepted={"by": who, "when": time.time(), "checkpoint": c["id"], "version": v})
             store.save(st)
-            store.note(pid, "Pack accepted", f"Pack v{v} accepted by {who} — ready to submit")
+            store.note(pid, "Pack accepted", f"Pack v{v} accepted by {who} - ready to submit")
             db.audit("rfp.submit_accepted", pid, {"version": v, "checkpoint": c["id"]}, who)
         else:
             db.audit("rfp.submit_sent_back", pid, {"comment": comment[:300]}, who)
@@ -1164,7 +1164,7 @@ async def create(name: str = Form(""), buyer: str = Form(""), buyer_type: str = 
                                   "## The pack (attachments/)\n\n" + "\n".join(f"- {a['name']} ({a['kind']}, {a['bytes']:,} bytes)" for a in attachments) + "\n\n## Rules\n\n- Requirements come from the pack, with page references.\n- Answers cite only library items and Relay's modules.\n- Nothing is submitted without a named person's acceptance.\n", encoding="utf-8")
     await asyncio.to_thread(lambda: [reader.read(d / "attachments" / a["name"]) for a in attachments])
     db.audit("rfp.create", pid, {"name": name, "buyer": buyer, "attachments": [a["name"] for a in attachments], "people": ppl}, u["id"])
-    store.log(pid, {"kind": "user", "stage": "rfp", "text": f"Started the response “{name}” with {len(attachments)} file(s) in the pack"})
+    store.log(pid, {"kind": "user", "stage": "rfp", "text": f"Started the response \"{name}\" with {len(attachments)} file(s) in the pack"})
     worker.enqueue(pid, "rfp_read")
     return state(pid, u)
 
@@ -1497,7 +1497,7 @@ class MailIn(BaseModel):
 
 @router.post("/api/rfp/{pid}/mail")
 def submit_by_mail(pid: str, body: MailIn):
-    """Submission by e-mail through the person's own sending account — only after the pack was accepted; recorded as submitted."""
+    """Submission by e-mail through the person's own sending account - only after the pack was accepted; recorded as submitted."""
     u, st = _get(pid, "edit")
     if st["status"] != "ready":
         raise HTTPException(409, "Accept the submission pack first: nothing is sent before a named person accepts it.")
@@ -1513,7 +1513,7 @@ def submit_by_mail(pid: str, body: MailIn):
             att.append((f[key], mime, (folder(pid) / "builds" / f"v{pack['v']}" / f[key]).read_bytes()))
     b = registry.brand()
     subject = body.subject.strip()[:200] or f"Response: {st['name']}"
-    html = f"<p>{(body.text.strip() or 'Please find our response attached.').replace(chr(10), '<br>')}</p><p style=\"color:#56626E;font-size:12px\">Sent from {b['full']}" + (f" · {b['powered']}" if b["partner"] else "") + "</p>"
+    html = f"<p>{(body.text.strip() or 'Please find our response attached.').replace(chr(10), '<br>')}</p><p style=\"color:#56626E;font-size:12px\">Sent from {b['full']}" + (f" - {b['powered']}" if b["partner"] else "") + "</p>"
     try:
         mailer.send(body.account, u["id"], to, subject, html, att)
     except mailer.EmailError as e:
@@ -1555,7 +1555,7 @@ def outcome(pid: str, body: OutcomeIn):
     st.update(status=result, outcome={"result": result, "feedback": body.feedback.strip()[:4000], "by": u["id"], "when": time.time(), "promoted": promoted})
     store.save(st)
     store.note(pid, f"Outcome: {result}", (body.feedback.strip() or "(no feedback recorded)") + (f"\n\n{len(promoted)} answer(s) promoted into the library." if promoted else ""))
-    store.log(pid, {"kind": "user", "stage": "rfp", "text": f"Outcome recorded: {result}" + (f" — {len(promoted)} answers now reusable" if promoted else "")})
+    store.log(pid, {"kind": "user", "stage": "rfp", "text": f"Outcome recorded: {result}" + (f" - {len(promoted)} answers now reusable" if promoted else "")})
     db.audit("rfp.outcome", pid, {"result": result, "promoted": len(promoted), "feedback": body.feedback[:300]}, u["id"])
     return state(pid, u)
 
@@ -1576,7 +1576,7 @@ def retry(pid: str):
 def delete_response(pid: str):
     u, st = _get(pid, "edit")
     if st["status"] in RUNNING and worker.current.get("pid") == pid:
-        raise HTTPException(409, "Relay is working on it — stop it first.")
+        raise HTTPException(409, "Relay is working on it - stop it first.")
     for k in CP.values():
         checkpoints.withdraw(k, pid, who=u["id"])
     db.skip_queued(pid)

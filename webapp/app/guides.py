@@ -1,6 +1,6 @@
 """The guide in every agent folder (consolidation of P10-P16): CLAUDE.md, which Claude Code loads by itself, and the
 same text as AGENTS.md / GEMINI.md for the other CLIs (phase 8). worker.refresh_guide writes it before every run,
-and it is the guide for the folder's kind (project.json `kind`) — a dashboard gets the dashboard builder's guide
+and it is the guide for the folder's kind (project.json `kind`) - a dashboard gets the dashboard builder's guide
 (genbi_kit/GENBI.md) with its worked example and the team's certified metrics, as before; a Start, a studio item, an
 RFP response, a Self-healing case, an AI SDLC change request, a converted Migrate BI report and the Service desk's
 triage folder each get their own: what the folder holds, the steps and the file each one writes, and the rules,
@@ -38,10 +38,10 @@ def _system(module: str) -> str:
 
 def _page(title: str, what: str, files: list[tuple[str, str]], steps: list[tuple[str, str]], rules: list[str], system: str = "",
           tail: str = "") -> str:
-    out = [f"# Relay — {title}", "", what.strip(), "", "## What is in this folder", ""]
-    out += [f"- `{f}` — {d}" for f, d in files]
+    out = [f"# Relay - {title}", "", what.strip(), "", "## What is in this folder", ""]
+    out += [f"- `{f}` - {d}" for f, d in files]
     out += ["", "## The steps (each run's prompt names its stage and gives the exact file format)", ""]
-    out += [f"{i}. **{s}** — {d}" for i, (s, d) in enumerate(steps, 1)]
+    out += [f"{i}. **{s}** - {d}" for i, (s, d) in enumerate(steps, 1)]
     out += ["", "## Rules", ""] + [f"- {r}" for r in rules]
     if system:
         out += ["", "## How Relay runs you", "", system.strip()]
@@ -60,10 +60,10 @@ COMMON = ["Bash runs only `genbi` commands; nothing else, no web, no sub-agents.
 def _start(d: Path, st: dict) -> str:
     return _page("reading a start in this folder",
                  "A person described a piece of work and attached what they have. You read all of it and show what you understood in "
-                 "three views the person confirms or corrects — the process map, the fields & rules, and the plan & modules — before "
+                 "three views the person confirms or corrects - the process map, the fields & rules, and the plan & modules - before "
                  "Relay builds anything.",
                  [("request.md", "the brief at the top; every correction the person made is appended at the bottom, newest last"),
-                  ("attachments/", "what they attached: videos, images, PDF, Word, Excel, PowerPoint, audio, text — `genbi read attachments/` prints what each says (pages, sheets, slides, video frames and transcript)"),
+                  ("attachments/", "what they attached: videos, images, PDF, Word, Excel, PowerPoint, audio, text - `genbi read attachments/` prints what each says (pages, sheets, slides, video frames and transcript)"),
                   ("analysis.yaml", "what you write: summary, process (steps and hand-offs), fields (with source, confidence and where), plan (modules and their checkpoints)"),
                   ("connections.json", "the connections the person picked for the modules to read later (read-only; you do not query them)")],
                  [("Read", "read request.md and every attachment, look at the images and the frames, and write analysis.yaml"),
@@ -97,7 +97,7 @@ def _rfp(d: Path, st: dict) -> str:
                  "draft the compliance matrix from the past-responses library and Relay's modules, and read the response as the buyer's "
                  "evaluator would. A named person confirms each step; pricing comes from the rate cards, not from you.",
                  [("request.md", "who the buyer is and what the bid team knows; corrections appended"),
-                  ("attachments/", "the pack (Word, Excel, PDF, slides) — `genbi read attachments/`"),
+                  ("attachments/", "the pack (Word, Excel, PDF, slides) - `genbi read attachments/`"),
                   ("sources/library.json, sources/registry.json", "the only answers you may cite: past responses and case studies, and Relay's modules"),
                   ("requirements.yaml, gonogo.yaml", "every requirement with page, source, kind and confidence; your go / no-go recommendation (Read)"),
                   ("matrix.yaml", "Comply / Partial / Not / Alternative per requirement, with evidence (Answer)"),
@@ -131,15 +131,15 @@ def _sdlc(d: Path, st: dict) -> str:
                  "it as a second agent. A tech lead approves the plan, a named reviewer the pull request, business users UAT on synthetic "
                  "data and a named approver the release; Relay pushes and opens the pull request only then, and never merges.",
                  [("request.md", "what is asked (and the ticket it came from); every later note appended"),
-                  ("repo/", "the clone; git is `genbi repo …` (status, commit, diff, log, branch, scan) — never `genbi repo push`"),
+                  ("repo/", "the clone; git is `genbi repo ...` (status, commit, diff, log, branch, scan) - never `genbi repo push`"),
                   ("repo-index.yaml", "languages, test and lint commands, CODEOWNERS, contributing notes and conventions"),
                   ("plan.yaml", "files, risks, tests, steps, UAT, estimate and roll-back (Plan)"),
                   ("tests/qa.json", "QA's results: the repository's tests, generated tests, the secret and dependency scans (written by Relay)"),
                   ("review.yaml", "the reviewer agent's verdict and findings (Review)"),
                   ("uat/datagen.yaml", "the synthetic data recipe for UAT, when the change touches data")],
-                 [("Plan", "read the request, the index and the code; write plan.yaml — change no file under repo/"),
+                 [("Plan", "read the request, the index and the code; write plan.yaml - change no file under repo/"),
                   ("Develop", "make the planned change on the branch in small commits with `genbi repo commit`; run `genbi repo scan`"),
-                  ("Review", "read plan.yaml, tests/qa.json and the diff; write review.yaml — change no file")],
+                  ("Review", "read plan.yaml, tests/qa.json and the diff; write review.yaml - change no file")],
                  COMMON + ["Keep to the repository's conventions; no key, token or password in anything you commit.",
                            "You cannot run the tests or install anything: QA runs them in a throwaway container after you."],
                  _system("sdlc_prompts"))
@@ -161,7 +161,7 @@ def _migbi_report(d: Path, st: dict) -> str:
     lead = _page("converting a report to Power BI in this folder",
                  "Migrate BI converted one report of a BI estate (Cognos, Qlik, MicroStrategy, Tableau, SSRS, BusinessObjects) into this "
                  "folder with its rules: definition.yaml is already written in Relay's dashboard definition schema (the guide below). "
-                 "You fill only the gaps the rules left — the calculations, filters and visuals listed in migrate_brief.json — and keep "
+                 "You fill only the gaps the rules left - the calculations, filters and visuals listed in migrate_brief.json - and keep "
                  "everything else. The review gates and the Prove step compare your numbers with the source before a person accepts them.",
                  [("request.md", "the report, its source and every comment from the migration lead"),
                   ("definition.yaml", "the converted report; the measures still to write carry `BLANK ()` and a \"NO RULE YET\" description"),

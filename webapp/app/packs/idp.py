@@ -1,18 +1,18 @@
-"""Document processing (registry id `idp`) — invoices and receipts read by the document-AI engine you run (Azure AI
+"""Document processing (registry id `idp`) - invoices and receipts read by the document-AI engine you run (Azure AI
 Document Intelligence, AWS Textract, Google Document AI, UiPath Document Understanding, ABBYY Vantage; adapters in idp_engines.py), checked by rules, and every
 field Relay is not sure of shown to a person before anything goes on.
 
-Assess   Connect → Inventory → Health → Findings → Estimate: a labelled sample (the documents and truth.json with what
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: a labelled sample (the documents and truth.json with what
          each says) read by every connected engine; field-by-field accuracy per engine, how many documents would go to
          a person, the fields an engine gets wrong; the engine that fits and the review effort per month.
-Develop  Describe → Shape → Build → Prove → Ship → Run: a document type set up — its fields, each one's check (a date,
-         an amount, a GSTIN or a UK VAT number, the totals adding up) and the confidence below which a person looks —
+Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run: a document type set up - its fields, each one's check (a date,
+         an amount, a GSTIN or a UK VAT number, the totals adding up) and the confidence below which a person looks -
          proven on the labelled set (accuracy of what goes straight through, every doubt routed to a person), signed off
          by the named approver; a Run item then reads the documents that arrive.
-Run      Watch → Alert → Fix → Approve → Report: documents uploaded to the item read; the ones with a doubt (a field
+Run      Watch -> Alert -> Fix -> Approve -> Report: documents uploaded to the item read; the ones with a doubt (a field
          under the confidence line, a check that fails, a field missing) listed with the reason; a person corrects the
          values in place; the approved results written out (CSV and JSON) and handed on.
-(Change and Migrate — a field's check changed, UiPath Document Understanding or ABBYY moved to another engine — are a
+(Change and Migrate - a field's check changed, UiPath Document Understanding or ABBYY moved to another engine - are a
 follow-up.)
 """
 from __future__ import annotations
@@ -53,7 +53,7 @@ PLATFORMS = {
     "uipath_du": EnginePlatform("UiPath Document Understanding", ("uipath_du",), ie.UiPathDocumentUnderstanding.simulator, "digitisation and the predefined (or your) extractors through an external application"),
     "abbyy": EnginePlatform("ABBYY Vantage", ("abbyy_vantage",), ie.AbbyyVantage.simulator, "skills (Invoice, Receipt) through a client; a document in doubt keeps Vantage's review link"),
     "mailbox": EnginePlatform("Outlook mailbox (where documents arrive)", ("m365_mail",), "tests/mocklab/files_sim.py: Graph mail (messages and their attachments)",
-                              "the attachments of the messages in a mail folder, read-only — nothing is moved, flagged or deleted", uploads=()),
+                              "the attachments of the messages in a mail folder, read-only - nothing is moved, flagged or deleted", uploads=()),
     "folder": EnginePlatform("SharePoint or OneDrive folder (where documents arrive)", ("sharepoint", "onedrive"), "tests/mocklab/files_sim.py: Graph drives",
                              "the documents in the folder the Run item names, read-only", uploads=()),
 }
@@ -67,7 +67,7 @@ def _docs(ctx: wb.Ctx) -> list[dict]:
 
 
 def _labels(ctx: wb.Ctx) -> dict:
-    """truth.json (or labels.json): {file: {field: value}} — keyed by the file's name (a path keeps only its last part)."""
+    """truth.json (or labels.json): {file: {field: value}} - keyed by the file's name (a path keeps only its last part)."""
     for f in ctx.files((".json",)):
         if f["name"].lower() in ("truth.json", "labels.json"):
             try:
@@ -117,11 +117,11 @@ def doubts(res: dict, kind: str, spec: list[dict]) -> list[str]:
             out.append(f"{name} read with {v['confidence']:.0%} confidence (below {thr:.0%})")
         chk, val = s.get("check") or "", v["value"]
         if chk == "date" and not ISO.match(str(val)):
-            out.append(f"{name} “{val}” is not a date")
+            out.append(f"{name} \"{val}\" is not a date")
         elif chk in ("amount", "total") and ie._num(val) is None:
-            out.append(f"{name} “{val}” is not an amount")
+            out.append(f"{name} \"{val}\" is not an amount")
         elif chk == "tax_id" and not (GSTIN.match(str(val)) or UKVAT.match(str(val))):
-            out.append(f"{name} “{val}” is neither a GSTIN nor a UK VAT number")
+            out.append(f"{name} \"{val}\" is neither a GSTIN nor a UK VAT number")
         if chk == "total":
             sub, tax, tot = (ie._num((f.get(k) or {}).get("value")) for k in ("SubTotal", "TotalTax", name))
             if None not in (sub, tax, tot) and abs(sub + tax - tot) > 0.01:
@@ -151,7 +151,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
     if not eng:
         raise wb.StepFailed("Pick at least one document-AI connection (Azure AI Document Intelligence, AWS Textract or Google Document AI).")
     if not docs:
-        raise wb.StepFailed("Upload a sample of documents (PDF or images) — and truth.json with what each says, to measure accuracy.")
+        raise wb.StepFailed("Upload a sample of documents (PDF or images) - and truth.json with what each says, to measure accuracy.")
     rows = []
     for c, a in eng:
         try:
@@ -213,7 +213,7 @@ def a_health(ctx: wb.Ctx) -> dict:
     eid = ctx.evidence("What each engine read", per, kind="accuracy", ok=True)
     for g in checks:
         g.setdefault("evidence", eid)
-    return {"summary": "; ".join(f"{v['engine']}: {round(100 * v['right'] / v['fields'], 1) if v['fields'] else '—'} % right, {v['review']} of {v['documents']} to a person" for v in per.values()) + ".",
+    return {"summary": "; ".join(f"{v['engine']}: {round(100 * v['right'] / v['fields'], 1) if v['fields'] else '-'} % right, {v['review']} of {v['documents']} to a person" for v in per.values()) + ".",
             "counts": {"engines": len(per), "documents": len(docs)}, "data": _w2.gates(checks)}
 
 
@@ -225,7 +225,7 @@ def a_findings(ctx: wb.Ctx) -> dict:
     for cid, v in per.items():
         pct = round(100 * v["right"] / v["fields"], 1) if v["fields"] else None
         recs.append({"id": f"acc-{cid}", "kind": "accuracy", "engine": v["engine"], "severity": "low" if pct and pct >= 95 else "high",
-                     "what": f"{v['engine']} reads {pct} % of the labelled fields right" + (" — the best fit here" if v is best else ""), "do": "use it" if v is best else "compare with the best fit"})
+                     "what": f"{v['engine']} reads {pct} % of the labelled fields right" + (" - the best fit here" if v is best else ""), "do": "use it" if v is best else "compare with the best fit"})
         for fld, n in sorted(v["wrong"].items(), key=lambda x: -x[1]):
             recs.append({"id": f"wrong-{cid}-{fld}", "kind": "field", "engine": v["engine"], "severity": "medium", "what": f"{v['engine']} gets {fld} wrong in {n} document(s)",
                          "do": "add a check for it, or keep it under review"})
@@ -250,10 +250,10 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     items = [{"title": "Set it up (Develop)", "detail": "fields, their checks and the confidence line, proven on the labelled set", "effort": "4.0 h"}]
     if vol:
         items.append({"title": "A person's review each month", "detail": f"{vol} documents × {share:.0%} under review × {MIN_REVIEW} min", "effort": f"{vol * share * MIN_REVIEW / 60:.1f} h a month"})
-    ctx.output("assessment.md", f"# Assessment: {ctx.title}\n\n" + "".join(f"- {i['title']}: {i['detail']} — {i['effort']}\n" for i in items), label="Assessment (Markdown)")
+    ctx.output("assessment.md", f"# Assessment: {ctx.title}\n\n" + "".join(f"- {i['title']}: {i['detail']} - {i['effort']}\n" for i in items), label="Assessment (Markdown)")
     return {"summary": f"With {best.get('engine') or 'the best engine'}: {share:.0%} of documents go to a person" + (f", about {vol * share * MIN_REVIEW / 60:.1f} h a month for {vol} documents." if vol else
                                                                                                                   " (give the monthly volume to see the review hours)."),
-            "data": {"items": items, "note": f"{MIN_REVIEW} minutes to check one document; no engine price is assumed — your contract's price per page applies."}}
+            "data": {"items": items, "note": f"{MIN_REVIEW} minutes to check one document; no engine price is assumed - your contract's price per page applies."}}
 
 
 # ================================================================== Develop
@@ -262,7 +262,7 @@ def d_describe(ctx: wb.Ctx) -> dict:
     kind = ctx.scope.get("kind") or "invoice"
     labels, docs = _labels(ctx), _docs(ctx)
     if not docs or not labels:
-        raise wb.StepFailed("Upload a labelled sample: the documents and truth.json with what each says — the proof is measured on it.")
+        raise wb.StepFailed("Upload a labelled sample: the documents and truth.json with what each says - the proof is measured on it.")
     ctx.put("kind", kind)
     return {"summary": f"A {kind} type, proven on {sum(1 for d in docs if d['name'] in labels)} labelled document(s)." + (" " + ctx.brief[:200] if ctx.brief else ""), "counts": {"documents": len(docs)},
             "data": {"text": ctx.brief or f"Read {kind}s"}}
@@ -272,7 +272,7 @@ def d_shape(ctx: wb.Ctx) -> dict:
     have = ctx.records(ctx.step_id)
     recs = have or default_spec(ctx.get("kind") or "invoice")
     return {"summary": f"{len(recs)} field(s), {sum(1 for r in recs if r.get('required'))} required: set each one's check and the confidence below which a person looks.", "records": recs,
-            "counts": {"fields": len(recs)}, "data": _w2.table(["Field", "Required", "Check", "Confidence line"], [[r["field"], "yes" if r.get("required") else "no", r.get("check") or "—",
+            "counts": {"fields": len(recs)}, "data": _w2.table(["Field", "Required", "Check", "Confidence line"], [[r["field"], "yes" if r.get("required") else "no", r.get("check") or "-",
                                                                                                                   f"{float(r.get('min_confidence') or THRESHOLD):.0%}"] for r in recs])}
 
 
@@ -310,7 +310,7 @@ def d_build(ctx: wb.Ctx) -> dict:
     ctx.put("config", cfg)
     ctx.output("document-type.json", json.dumps(cfg, indent=2), label="The document type (fields, checks, confidence lines)")
     return {"summary": f"The {cfg['kind']} type runs on {a.label} ({c['name']}): {len(spec)} field(s) with their checks.", "counts": {"fields": len(spec)},
-            "data": _w2.table(["Field", "Required", "Check", "Confidence line"], [[r["field"], "yes" if r.get("required") else "no", r.get("check") or "—", r.get("min_confidence")] for r in spec])}
+            "data": _w2.table(["Field", "Required", "Check", "Confidence line"], [[r["field"], "yes" if r.get("required") else "no", r.get("check") or "-", r.get("min_confidence")] for r in spec])}
 
 
 def d_prove(ctx: wb.Ctx) -> dict:
@@ -347,7 +347,7 @@ def d_prove(ctx: wb.Ctx) -> dict:
 
 def d_ship(ctx: wb.Ctx) -> dict:
     p, cfg = ctx.get("proof") or {}, ctx.get("config") or {}
-    return {"summary": f"Go live: the {cfg.get('kind')} type on {cfg.get('engine')} — {p.get('straight')} of {p.get('documents')} labelled documents straight through; every doubt goes to a person.",
+    return {"summary": f"Go live: the {cfg.get('kind')} type on {cfg.get('engine')} - {p.get('straight')} of {p.get('documents')} labelled documents straight through; every doubt goes to a person.",
             "data": {"items": [{"title": "Fields", "detail": ", ".join(f["field"] + (" (required)" if f.get("required") else "") for f in cfg.get("fields") or [])},
                                {"title": "Then", "detail": "A Run item reads the documents that arrive; a person checks the ones in doubt before the results go on."}]}}
 
@@ -438,15 +438,15 @@ def c_request(ctx: wb.Ctx) -> dict:
     c, a = _engine(ctx)
     labels, docs = _labels(ctx), _docs(ctx)
     if not docs or not labels:
-        raise wb.StepFailed("Upload a labelled sample: the documents and truth.json with what each says — the change is proven on it.")
+        raise wb.StepFailed("Upload a labelled sample: the documents and truth.json with what each says - the change is proven on it.")
     move = c["id"] != oc["id"]
     ctx.put("run_item", rid)
     ctx.put("kind", cfg["kind"])
     ctx.put("today", cfg)
     ctx.put("move", move)
-    return {"summary": f"The {cfg['kind']} type of “{run['title']}”, on {oa.label} today" + (f", to move to {a.label} ({c['name']})" if move else "")
+    return {"summary": f"The {cfg['kind']} type of \"{run['title']}\", on {oa.label} today" + (f", to move to {a.label} ({c['name']})" if move else "")
                        + f"; proven on {sum(1 for d in docs if d['name'] in labels)} labelled document(s).", "counts": {"documents": len(docs), "fields": len(cfg["fields"])},
-            "data": _w2.table(["Field", "Required", "Check", "Confidence line"], [[f["field"], "yes" if f.get("required") else "no", f.get("check") or "—", f.get("min_confidence")] for f in cfg["fields"]])}
+            "data": _w2.table(["Field", "Required", "Check", "Confidence line"], [[f["field"], "yes" if f.get("required") else "no", f.get("check") or "-", f.get("min_confidence")] for f in cfg["fields"]])}
 
 
 def c_diagnose(ctx: wb.Ctx) -> dict:
@@ -461,7 +461,7 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
             _w2.gate("today-through-wrong", "Today: wrong fields that go straight through", "fail" if m["wrong_through"] else "pass", len(m["wrong_through"]), 0,
                      ", ".join(m["wrong_through"][:6]) or "none")]
     return {"summary": f"Today's type on {oa.label}: {m['straight']} of {m['documents']} labelled document(s) straight through, {m['right_pct']} % of fields right"
-                       + (f", {len(m['wrong_through'])} wrong field(s) not caught — the change should catch them" if m["wrong_through"] else "") + ".",
+                       + (f", {len(m['wrong_through'])} wrong field(s) not caught - the change should catch them" if m["wrong_through"] else "") + ".",
             "counts": {"documents": m["documents"], "straight": m["straight"]}, "data": _w2.gates(rows)}
 
 
@@ -471,9 +471,9 @@ def c_fix(ctx: wb.Ctx) -> dict:
     recs = have or [{"id": f["field"], **{k: f.get(k) for k in ("field", "required", "check", "min_confidence")}} for f in cur]
     was = {f["field"]: f for f in cur}
     diff = [r["field"] for r in recs if any(str(r.get(k)) != str((was.get(r["field"]) or {}).get(k)) for k in ("required", "check", "min_confidence"))]
-    return {"summary": f"{len(recs)} field(s) as they are today" + (f"; changed: {', '.join(diff)}" if diff else "") + " — change a check, a required field or a confidence line, then confirm.",
+    return {"summary": f"{len(recs)} field(s) as they are today" + (f"; changed: {', '.join(diff)}" if diff else "") + " - change a check, a required field or a confidence line, then confirm.",
             "records": recs, "counts": {"fields": len(recs), "changed": len(diff)},
-            "data": _w2.table(["Field", "Required", "Check", "Confidence line", "Changed"], [[r["field"], "yes" if r.get("required") else "no", r.get("check") or "—", r.get("min_confidence"),
+            "data": _w2.table(["Field", "Required", "Check", "Confidence line", "Changed"], [[r["field"], "yes" if r.get("required") else "no", r.get("check") or "-", r.get("min_confidence"),
                                                                                          "yes" if r["field"] in diff else ""] for r in recs])}
 
 
@@ -485,7 +485,7 @@ def c_prove(ctx: wb.Ctx) -> dict:
     ctx.put("after", after)
     worse = after["straight"] < before.get("straight", 0) or after["right_pct"] < before.get("right_pct", 0)
     g = _w2.gate("against-today", "Against today: straight through and fields right, before and after the change", "warn" if worse else "pass",
-                 f"{before.get('straight')} → {after['straight']} of {after['documents']} straight; {before.get('right_pct')} % → {after['right_pct']} % right",
+                 f"{before.get('straight')} {after['straight']} of {after['documents']} straight; {before.get('right_pct')} % {after['right_pct']} % right",
                  "no worse than today", ("fewer go straight through or fewer fields are right than today: a person decides whether that is the price of catching more" if worse else
                                          "as good as today or better") + (f"; it moves to {a.label}" if ctx.get("move") else ""))
     out["data"]["checks"].append(g)
@@ -495,14 +495,14 @@ def c_prove(ctx: wb.Ctx) -> dict:
 
 def c_approve(ctx: wb.Ctx) -> dict:
     cur = {f["field"]: f for f in (ctx.get("today") or {}).get("fields") or []}
-    diff = [f"{r['field']}: " + ", ".join(f"{k} {(cur.get(r['field']) or {}).get(k)} → {r.get(k)}" for k in ("required", "check", "min_confidence")
+    diff = [f"{r['field']}: " + ", ".join(f"{k} {(cur.get(r['field']) or {}).get(k)} {r.get(k)}" for k in ("required", "check", "min_confidence")
                                           if str(r.get(k)) != str((cur.get(r['field']) or {}).get(k))) for r in ctx.records("fix")
             if any(str(r.get(k)) != str((cur.get(r["field"]) or {}).get(k)) for k in ("required", "check", "min_confidence"))]
     c, a = _engine(ctx)
     b, af = ctx.get("before") or {}, ctx.get("after") or {}
     return {"summary": f"Change the live {ctx.get('kind')} type: {len(diff)} field(s) changed" + (f", moved to {a.label}" if ctx.get("move") else "")
-                       + f"; {b.get('straight')} → {af.get('straight')} of {af.get('documents')} labelled documents straight through.",
-            "data": {"items": [{"title": "Fields changed", "detail": "; ".join(diff) or "none"}] + ([{"title": "Engine", "detail": f"{(ctx.get('today') or {}).get('engine')} → {a.kind} ({c['name']})"}] if ctx.get("move") else [])
+                       + f"; {b.get('straight')} {af.get('straight')} of {af.get('documents')} labelled documents straight through.",
+            "data": {"items": [{"title": "Fields changed", "detail": "; ".join(diff) or "none"}] + ([{"title": "Engine", "detail": f"{(ctx.get('today') or {}).get('engine')} {a.kind} ({c['name']})"}] if ctx.get("move") else [])
                      + [{"title": "Then", "detail": "The Run item reads the next documents with the changed type; the type as it was is kept on the item."}]}}
 
 
@@ -524,7 +524,7 @@ def c_learn(ctx: wb.Ctx) -> dict:
     store.note(rid, "Document type changed", f"By {ctx.title} ({ctx.id}): " + (f"moved to {a.label}; " if ctx.get("move") else "") + "the fields, checks and confidence lines as approved.")
     db.audit("idp.type.change", rid, {"from": old.get("engine"), "to": a.kind, "change": ctx.id}, ctx.who or ctx.owner)
     ctx.output("document-type.json", json.dumps(new, indent=2), label="The document type as changed (fields, checks, confidence lines)")
-    return {"summary": f"Live: “{_run_item(ctx)['title']}” reads with the changed type" + (f" on {a.label}" if ctx.get("move") else "") + "; the type as it was is kept on the Run item.",
+    return {"summary": f"Live: \"{_run_item(ctx)['title']}\" reads with the changed type" + (f" on {a.label}" if ctx.get("move") else "") + "; the type as it was is kept on the Run item.",
             "counts": {"changed": 1}, "data": {"href": f"#/m/{MODULE}/i/{rid}", "label": "Open the Run item", "text": "The next round reads with the changed type."}}
 
 
@@ -662,11 +662,11 @@ def r_report(ctx: wb.Ctx) -> dict:
             "data": _w2.table(["Round", "Documents", "To a person"], hist)}
 
 
-GUIDE = """# Document processing — the work item
+GUIDE = """# Document processing - the work item
 
 Relay's document processing reads invoices and receipts with the engine you run, checks every field by rules, and
 shows a person every field it is not sure of before the results go on. Accuracy is measured on documents a person
-labelled — never guessed. Nothing is invented: a value comes from the engine or from the person who corrected it."""
+labelled - never guessed. Nothing is invented: a value comes from the engine or from the person who corrected it."""
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE, platforms=PLATFORMS,
@@ -679,21 +679,21 @@ wb.register(wb.Pack(
             "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Checker", text="Every engine reads every document: accuracy against the labels, and how many need a person"),
             "Findings": wb.Step(kind="deterministic", run=a_findings, agent="Checker", edit=FIND_EDIT, text="The engine that fits, the fields each gets wrong, the review share"),
             "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Set-up effort and a person's review hours a month")}),
-        "develop": wb.Work(title="Set up a document type — fields, checks, the confidence line — proven on your labelled documents",
+        "develop": wb.Work(title="Set up a document type - fields, checks, the confidence line - proven on your labelled documents",
                            fields=[wb.Field("kind", "Document type", "select", options=(("invoice", "Supplier invoices"), ("receipt", "Receipts")), default="invoice")], steps={
             "Describe": wb.Step(kind="deterministic", run=d_describe, agent="Reader", text="The document type and the labelled sample it is proven on"),
-            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Designer", edit=SHAPE_EDIT, text="The fields, each one's check and the confidence below which a person looks — you set them"),
+            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Designer", edit=SHAPE_EDIT, text="The fields, each one's check and the confidence below which a person looks - you set them"),
             "Build": wb.Step(kind="deterministic", run=d_build, agent="Builder", text="The document type written for the engine it runs on"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Checker", back_to="shape", text="On the labelled set: what goes straight through is right, and every wrong field is caught for a person"),
             "Ship": wb.Step(kind="person", run=d_ship, view="plan", approver=True, text="The named approver signs off"),
             "Run": wb.Step(kind="platform", run=d_run, view="link", agent="Deployer", text="A Run item reads the documents that arrive")}),
-        "change": wb.Work(title="Change a live document type — its fields, checks and confidence lines, or the engine it runs on — proven on your labelled documents first",
+        "change": wb.Work(title="Change a live document type - its fields, checks and confidence lines, or the engine it runs on - proven on your labelled documents first",
                           platforms=tuple(k for k in PLATFORMS if k not in SOURCE_PLATFORMS),
                           fields=[wb.Field("run_item", "The live document type (its Run item)", "select", options=_live_runs, required=True)], steps={
             "Request": wb.Step(kind="platform", run=c_request, agent="Reader", text="The live type, the engine it moves to (or the same one) and the labelled sample it is proven on"),
             "Diagnose": wb.Step(kind="deterministic", run=c_diagnose, view="gates", agent="Checker", text="Today's type on today's engine, measured on the sample: straight through, right, caught"),
             "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Designer", edit=SHAPE_EDIT, confirm="the fields, checks and confidence lines as they will be",
-                           text="The fields as they are today — you change a check, a required field or a confidence line"),
+                           text="The fields as they are today - you change a check, a required field or a confidence line"),
             "Prove": wb.Step(kind="proof", run=c_prove, view="gates", agent="Checker", back_to="fix",
                              text="On the sample, on the engine it will run on: what goes straight through is right, every wrong field is caught, and against today"),
             "Approve": wb.Step(kind="person", run=c_approve, view="plan", approver=True, text="The named approver signs the change off"),
@@ -702,7 +702,7 @@ wb.register(wb.Pack(
                        fields=[wb.Field("schedule", "Read them", "cadence", default={"every": "hour", "tz": "UTC"}),
                                wb.Field("folder", "The SharePoint or OneDrive folder to read (when one is connected)", help="A path in the library, such as Invoices/Incoming.")], steps={
             "Watch": wb.Step(kind="platform", run=r_watch, view="gates", agent="Reader",
-                             text="The documents that arrived since the last round — uploaded, in the mailbox or in the folder — read by the engine and checked by rules"),
+                             text="The documents that arrived since the last round - uploaded, in the mailbox or in the folder - read by the engine and checked by rules"),
             "Alert": wb.Step(kind="deterministic", run=r_alert, agent="Triage", confirm=False, text="The documents in doubt, each with its reason"),
             "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Reviewer", edit=REVIEW_EDIT, confirm="the values, corrected where the engine was not sure",
                            text="A person checks the fields in doubt and corrects them in place"),

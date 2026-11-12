@@ -1,6 +1,6 @@
 """The one agent helper the consulting packs share: "Ask Relay to draft the wording" on a step whose facts are already
-records in sources/. The agent writes narrative.yaml — a few paragraphs, every number in them declared as a figure
-with a `record:` source — and the check refuses anything the records do not hold (an undeclared number, a source that
+records in sources/. The agent writes narrative.yaml - a few paragraphs, every number in them declared as a figure
+with a `record:` source - and the check refuses anything the records do not hold (an undeclared number, a source that
 does not resolve or disagrees, placeholder text, American spelling). A person reads it before it reaches a
 deliverable; the deliverable's own checks run on it again. Not a pack (the loader skips files starting with "_")."""
 from __future__ import annotations
@@ -11,7 +11,7 @@ from .. import workbench as wb
 from . import _consult as cx
 
 FILE = "narrative.yaml"
-PROMPT = """FILE narrative.yaml — read WORK.md, then facts.json in this folder: the records this step's deliverable quotes
+PROMPT = """FILE narrative.yaml - read WORK.md, then facts.json in this folder: the records this step's deliverable quotes
 (each top-level key is a record you cite as record:<key>#<path>, e.g. record:{first}#{path}).
 
 Write narrative.yaml:
@@ -69,7 +69,7 @@ def action(records: tuple, what: str, agent: str = "Writer", rebuild=None) -> wb
             raise wb.StepFailed("With the drafted wording the deliverable does not pass its checks: " + (built.get("summary") or "")[:400])
         return {**built, "summary": out["summary"] + " " + (built.get("summary") or "")}
     return wb.Action(label="Ask Relay to draft the wording", kind="agent", prompt=prompt, check=check, after=done, agent=agent, turns=20, timeout_s=900,
-                     help="The agent writes a few paragraphs from this step's records — every number with its source. You read them before they go into the deliverable.")
+                     help="The agent writes a few paragraphs from this step's records - every number with its source. You read them before they go into the deliverable.")
 
 
 def clear(ctx: wb.Ctx) -> None:
@@ -111,7 +111,7 @@ def check(ctx: wb.Ctx) -> list[str]:
     except yaml.YAMLError as e:
         return [f"{FILE} does not parse: {str(e).splitlines()[0][:200]}"]
     if not isinstance(y, dict) or not isinstance(y.get("paragraphs"), list) or not y["paragraphs"]:
-        return [f"{FILE} needs `paragraphs:` — a list of {{text, figures}}"]
+        return [f"{FILE} needs `paragraphs:` - a list of {{text, figures}}"]
     if len(y["paragraphs"]) > 3:
         return ["three paragraphs at most"]
     res = cx.resolver(ctx)
@@ -128,7 +128,7 @@ def check(ctx: wb.Ctx) -> list[str]:
             num = docs_spec.norm_number(__import__("re").sub(r"[A-Za-z]+", "", ft))      # "2,800.16 USD" -> "2800.16"
             r = res.resolve(src) if src else {"ok": False, "why": "no source", "value": None}
             if not r["ok"]:
-                probs.append(f"paragraph {i}: figure {ft!r} — {src or '(no source)'}: {r['why']}")
+                probs.append(f"paragraph {i}: figure {ft!r} - {src or '(no source)'}: {r['why']}")
                 continue
             if r.get("value") is not None:
                 try:
@@ -148,7 +148,7 @@ def check(ctx: wb.Ctx) -> list[str]:
             probs.append(f"paragraph {i}: placeholder text {m.group(0)!r}")
         for w in __import__("re").findall(r"[A-Za-z]+", text):
             if w.lower() in BRITISH:
-                probs.append(f"paragraph {i}: “{w}” — the house style spells it “{BRITISH[w.lower()]}”")
+                probs.append(f"paragraph {i}: \"{w}\" - the house style spells it \"{BRITISH[w.lower()]}\"")
                 break
     return probs
 
@@ -157,7 +157,7 @@ def after(ctx: wb.Ctx, res: dict) -> dict:
     paras = load(ctx)
     ctx.put("narrative", paras)
     ctx.evidence("Wording drafted by Relay", {"paragraphs": paras, "note": res.get("text") or ""}, kind="agent", ok=True)
-    return {"summary": f"Relay drafted {len(paras)} paragraph(s) from this step's records — every number with its source. Read them before you confirm; "
+    return {"summary": f"Relay drafted {len(paras)} paragraph(s) from this step's records - every number with its source. Read them before you confirm; "
                        "they go into the deliverable as written, and its checks run on them again."}
 
 

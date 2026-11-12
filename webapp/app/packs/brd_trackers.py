@@ -3,15 +3,15 @@
 Jira goes through the Service desk's sources (P12, consolidation): a story is raised and a comment added with
 itsm.request_write, each after its own itsm.write approval showing exactly what is written (_w4.desk_write; the keys
 come back through itsm.register_write_hook). Azure Boards (Azure DevOps Services REST 7.1) is a Connector SDK adapter
-here — one adapter + one mock (tests/mocklab/sims/process.py: `azure-boards`) — read-only by default: `test` signs in
+here - one adapter + one mock (tests/mocklab/sims/process.py: `azure-boards`) - read-only by default: `test` signs in
 and reads the project and its work item types, `list_objects` lists the types, `read` the work items Relay created
-(tag `relay`). Its writes happen only through connectors.request_write — after a named person accepted exactly that
-backlog (the same shape as AI SDLC's Azure Boards write-back: a checkpoint for exactly the write, then the call) — and
+(tag `relay`). Its writes happen only through connectors.request_write - after a named person accepted exactly that
+backlog (the same shape as AI SDLC's Azure Boards write-back: a checkpoint for exactly the write, then the call) - and
 carry the approval's id in an X-Relay-Approval header; the ids and links go back to the work item (_w4.push_written).
 
   stories   payload {"from", "stories": [{"ref", "summary", "description", "acceptance": [...], "priority", "labels"}]}
-            -> POST …/_apis/wit/workitems/$<type> (JSON Patch: title, description, acceptance criteria, tags, priority)
-  updates   payload {"from", "updates": [{"key", "comment", "summary"?}]} -> PATCH …/workitems/{id} (System.History)
+            -> POST .../_apis/wit/workitems/$<type> (JSON Patch: title, description, acceptance criteria, tags, priority)
+  updates   payload {"from", "updates": [{"key", "comment", "summary"?}]} -> PATCH .../workitems/{id} (System.History)
 """
 from __future__ import annotations
 

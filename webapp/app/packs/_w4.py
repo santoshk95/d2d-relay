@@ -1,17 +1,17 @@
-"""W4 Process modules — what the six packs share (brd, processdocs, raci, mining, controls, testdocs; docs/workbench.md).
+"""W4 Process modules - what the six packs share (brd, processdocs, raci, mining, controls, testdocs; docs/workbench.md).
 
   reading      every upload read into passages a requirement, a step or a control can cite: Word, PDF, slides, sheets
                and text through `genbi read`'s readers (genbi_kit.reader); e-mail (.eml), call transcripts (.vtt /
                .srt) and Confluence or SharePoint page exports (.html) here; images, audio and video are looked at by
                the agent (frames through ffmpeg in the agent image). Written to sources/segments.json, one id per passage.
   sources      a cited passage must exist and its quote must be in it; a number in a statement must be in a cited
-               passage — nothing invented (check_sources, numbers_unsourced)
+               passage - nothing invented (check_sources, numbers_unsourced)
   sign-offs    one checkpoint per named person (each business owner, each UAT user, each RACI owner) next to the step's
                own confirm; the step cannot be confirmed until every one of them has signed (signoff_problems)
   documents    Word documents and their HTML twins through the P11 docs engine, in the tenant's template (build_doc)
   pushes       what a tracker or test-tool adapter wrote after its per-change approval, fed back to the work item
   vocabularies uploads of recordings, e-mail, transcripts, Visio and BPMN; lineage kinds for documents, requirements,
-               stories, tests, processes, controls and roles — extended at import, so no shared file is edited
+               stories, tests, processes, controls and roles - extended at import, so no shared file is edited
 """
 from __future__ import annotations
 
@@ -209,7 +209,7 @@ def _eml_segments(path: Path, name: str) -> list[dict]:
     head = f"e-mail from {msg.get('From', '')} on {msg.get('Date', '')}: {msg.get('Subject', '')}"
     out = [_seg(name, "subject", head[:200], f"Subject: {msg.get('Subject', '')}", sender=str(msg.get("From", "")), subject=str(msg.get("Subject", "")))]
     for i, ptxt in enumerate([p for p in _paras(text) if not p.startswith(">")], 1):
-        out.append(_seg(name, f"p{i}", f"e-mail “{str(msg.get('Subject', ''))[:60]}”, paragraph {i}", ptxt, sender=str(msg.get("From", ""))))
+        out.append(_seg(name, f"p{i}", f"e-mail \"{str(msg.get('Subject', ''))[:60]}\", paragraph {i}", ptxt, sender=str(msg.get("From", ""))))
     return out
 
 
@@ -267,7 +267,7 @@ def read_file(path: Path) -> tuple[dict, list[dict]]:
                 for s in r.get("slides") or []:
                     text = " ".join(x for x in (s.get("title"), s.get("text"), s.get("notes")) if x)
                     if text.strip():
-                        segs.append(_seg(name, f"slide{s['slide']}", f"slide {s['slide']}" + (f" “{s['title'][:50]}”" if s.get("title") else ""), " ".join(text.split())))
+                        segs.append(_seg(name, f"slide{s['slide']}", f"slide {s['slide']}" + (f" \"{s['title'][:50]}\"" if s.get("title") else ""), " ".join(text.split())))
                 info["what"] = f"{len(r.get('slides') or [])} slide(s)"
             else:
                 for i, ptxt in enumerate(_paras(r.get("text") or ""), 1):
@@ -320,7 +320,7 @@ def files_table(read: dict) -> dict:
 
 # ------------------------------------------------------------------ sources: nothing invented
 
-_QUOTES = str.maketrans({"‘": "'", "’": "'", "“": '"', "”": '"', "–": "-", "—": "-", " ": " "})
+_QUOTES = str.maketrans({"'": "'", "'": "'", "\"": '"', "\"": '"', "-": "-", "-": "-", " ": " "})
 
 
 def norm(s) -> str:
@@ -382,7 +382,7 @@ def person_source(v) -> str | None:
 def check_sources(where: str, refs: list[dict], segs: dict, *, need_quote: bool = True, statement: str = "") -> list[str]:
     """Problems with what an item cites: unknown passages, quotes not in them, numbers no cited passage holds."""
     if not refs:
-        return [f"{where}: no source — every item must cite the passage it comes from (nothing invented)"]
+        return [f"{where}: no source - every item must cite the passage it comes from (nothing invented)"]
     out, texts, media_only = [], [], True
     for r in refs:
         s = segs.get(r["ref"])
@@ -396,11 +396,11 @@ def check_sources(where: str, refs: list[dict], segs: dict, *, need_quote: bool 
         if need_quote and not r["quote"]:
             out.append(f"{where}: give the quote from {r['ref']} it rests on")
         elif r["quote"] and not quote_found(s["text"], r["quote"]):
-            out.append(f"{where}: the quote “{r['quote'][:80]}” is not in {r['ref']} (quote the passage word for word)")
+            out.append(f"{where}: the quote \"{r['quote'][:80]}\" is not in {r['ref']} (quote the passage word for word)")
     if statement:
         miss = numbers_unsourced(statement, texts)
         if miss:
-            out.append(f"{where}: {', '.join(miss)} is not in any cited passage" + (" (a recording alone cannot carry a figure)" if media_only else "") + " — cite the passage that says it, or take the figure out")
+            out.append(f"{where}: {', '.join(miss)} is not in any cited passage" + (" (a recording alone cannot carry a figure)" if media_only else "") + " - cite the passage that says it, or take the figure out")
     return out
 
 
@@ -408,7 +408,7 @@ def where_text(refs: list[dict], segs: dict) -> str:
     out = []
     for r in refs:
         s = segs.get(r["ref"])
-        out.append(f"{s['file']} · {s['loc']}" if s else r["ref"])
+        out.append(f"{s['file']} - {s['loc']}" if s else r["ref"])
     return "; ".join(out)
 
 
@@ -461,7 +461,7 @@ def ask_signoff(ctx: wb.Ctx, users: list[dict], *, round_: str, what: str, items
         if db.one("SELECT 1 FROM w4_signoffs WHERE item = ? AND step = ? AND round = ? AND user_id = ?", (ctx.id, sid, round_, u["id"])):
             continue
         _share(ctx.id, u["id"], ctx.who or ctx.owner)
-        cp = checkpoints.open(SIGN_KIND, ctx.id, ctx.module_name, f"Sign-off: {ctx.title} — {u['name']} ({round_})", "text",
+        cp = checkpoints.open(SIGN_KIND, ctx.id, ctx.module_name, f"Sign-off: {ctx.title} - {u['name']} ({round_})", "text",
                               {"summary": what, "items": items[:12], "step": sid, "round": round_, "module": ctx.module,
                                "item": {"id": ctx.id, "title": ctx.title, "work": ctx.work, "module": ctx.module}},
                               link=wb.route_of(ctx.st) + f"?step={sid}", assignee=u["id"], agent=(ctx.spec.agent if ctx.spec else "") or "Relay", opened_by="agent")
@@ -496,7 +496,7 @@ def _on_signoff(c: dict, decision: str, comment: str | None, who: str) -> None:
     db.run("UPDATE w4_signoffs SET status = ?, comment = ?, decided = ? WHERE id = ?", ("accepted" if decision == "accept" else "sent_back", (comment or "")[:1000] or None, time.time(), r["id"]))
     db.audit(f"w4.signoff.{'accepted' if decision == 'accept' else 'sent_back'}", r["item"], {"module": r["module"], "step": r["step"], "round": r["round"], "checkpoint": c["id"]}, who)
     try:
-        store.log(r["item"], {"kind": "user", "text": ("Signed off" if decision == "accept" else "Asked for changes") + f" ({r['round']})" + (f" — {comment}" if comment else "")})
+        store.log(r["item"], {"kind": "user", "text": ("Signed off" if decision == "accept" else "Asked for changes") + f" ({r['round']})" + (f" - {comment}" if comment else "")})
     except (KeyError, FileNotFoundError):
         return
     apply_refresh(r["item"], r["step"])
@@ -565,7 +565,7 @@ def request_push(ctx: wb.Ctx, connection_id: str, obj: str, payload: dict, what:
 
 
 def desk_sources(kind: str = "jira", op: str = "create") -> list[dict]:
-    """The Service desk's sources (P12) that may do this (raise a ticket / add a comment) — the only way a W4 pack
+    """The Service desk's sources (P12) that may do this (raise a ticket / add a comment) - the only way a W4 pack
     writes to Jira, each write after its own itsm.write approval."""
     try:
         from .. import itsm
@@ -579,7 +579,7 @@ def desk_sources(kind: str = "jira", op: str = "create") -> list[dict]:
 
 
 def desk_options(u: dict) -> list[tuple[str, str]]:
-    return [("", "None — Azure Boards, or CSV files to import")] + [(s["id"], f"{s['name']} · project {(s['options'].get('project') or (s['projects'] or ['?'])[0])}") for s in desk_sources()]
+    return [("", "None - Azure Boards, or CSV files to import")] + [(s["id"], f"{s['name']} - project {(s['options'].get('project') or (s['projects'] or ['?'])[0])}") for s in desk_sources()]
 
 
 def desk_write(ctx: wb.Ctx, source_id: str, op: str, payload: dict, *, step: str, ref: str, name: str) -> dict:
@@ -610,7 +610,7 @@ def _desk_hook(wr: dict, event: str) -> None:
           {"updated": [{"ref": ref, "key": (wr.get("payload") or {}).get("key"), "url": res.get("url")}]} if ok else {"error": wr.get("error") or event}
     db.run("UPDATE w4_pushes SET status = ?, result = ?, done = ? WHERE approval = ?", ("written" if ok else "failed", json.dumps({"ref": ref, **out}), time.time(), wr["id"]))
     try:
-        store.log(item, {"kind": "agent", "text": f"{wr.get('title')}: " + (f"written ({res.get('key') or 'comment'})" if ok else f"not written — {event}")})
+        store.log(item, {"kind": "agent", "text": f"{wr.get('title')}: " + (f"written ({res.get('key') or 'comment'})" if ok else f"not written - {event}")})
     except (KeyError, FileNotFoundError):
         return
     apply_refresh(item, step)
@@ -644,7 +644,7 @@ def push_written(approval: str, result: dict, ok: bool = True) -> None:
         return
     db.run("UPDATE w4_pushes SET status = ?, result = ?, done = ? WHERE approval = ?", ("written" if ok else "failed", json.dumps(result, default=str)[:200000], time.time(), approval))
     try:
-        store.log(r["item"], {"kind": "agent", "text": f"{r['what']}: " + ("written" if ok else "failed — " + str(result.get("error") or "")[:200])})
+        store.log(r["item"], {"kind": "agent", "text": f"{r['what']}: " + ("written" if ok else "failed - " + str(result.get("error") or "")[:200])})
     except (KeyError, FileNotFoundError):
         return
     apply_refresh(r["item"], r["step"])
@@ -664,9 +664,9 @@ def push_problems(item: str, step: str) -> list[str]:
     bad = [p for p in ps if p["status"] == "failed"]
     out = []
     if wait:
-        out.append(f"Nothing is written yet for {len(wait)} of {len(ps)}: accept “{wait[0]['what']}”" + (" and the others" if len(wait) > 1 else "") + " in the Validation queue (each its own approval), then confirm here")
+        out.append(f"Nothing is written yet for {len(wait)} of {len(ps)}: accept \"{wait[0]['what']}\"" + (" and the others" if len(wait) > 1 else "") + " in the Validation queue (each its own approval), then confirm here")
     if bad:
-        out.append(f"{len(bad)} approved write(s) did not go through ({str(bad[0]['result'].get('error') or '')[:160]}) — run the step again")
+        out.append(f"{len(bad)} approved write(s) did not go through ({str(bad[0]['result'].get('error') or '')[:160]}) - run the step again")
     return out
 
 
@@ -685,12 +685,12 @@ def para(text: str, source: str) -> dict:
 
 
 def table(columns: list[str], rows: list[list], source: str, caption: str) -> dict:
-    return {"kind": "table", "table": {"columns": columns, "rows": [[("" if v is None else str(v)) for v in r] for r in rows] or [["—"] * len(columns)],
+    return {"kind": "table", "table": {"columns": columns, "rows": [[("" if v is None else str(v)) for v in r] for r in rows] or [["-"] * len(columns)],
                                        "source": source, "caption": caption}}
 
 
 def build_doc(ctx: wb.Ctx, name: str, title: str, subtitle: str, sections: list[dict], records: dict, *, label: str, audience: str = "") -> dict:
-    """A Word document and its HTML twin in the tenant's template (Admin › Branding), every table sourced from a record
+    """A Word document and its HTML twin in the tenant's template (Admin > Branding), every table sourced from a record
     written into sources/; the engine's checks are kept as evidence. Returns the build info."""
     import yaml
 
@@ -963,11 +963,11 @@ def conformance(proc: dict, lg: dict) -> dict:
 # ------------------------------------------------------------------ small things every pack needs
 
 def user_name(uid: str | None) -> str:
-    return (db.user(uid or "") or {}).get("name") or (uid or "—")
+    return (db.user(uid or "") or {}).get("name") or (uid or "-")
 
 
 def when(t: float | None) -> str:
-    return time.strftime("%d %b %Y %H:%M UTC", time.gmtime(t)) if t else "—"
+    return time.strftime("%d %b %Y %H:%M UTC", time.gmtime(t)) if t else "-"
 
 
 def visible_items(u: dict, rows: list[dict], key: str = "item") -> list[dict]:

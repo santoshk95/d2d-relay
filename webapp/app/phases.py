@@ -2,7 +2,7 @@
 its tables (db.register_schema), its job kinds (worker.register_job), its checkpoint kinds
 (checkpoints.register_kind) and its routes (ROUTERS). main.py includes every router in ROUTERS.
 
-One line per phase — keep the list alphabetical by phase so parallel branches merge cleanly."""
+One line per phase - keep the list alphabetical by phase so parallel branches merge cleanly."""
 from . import checkpoints                     # P10: the checkpoint service and the Validation queue
 from . import start, team                     # P10: Start from an idea or a plan; Team & agents
 from . import rfp, studio                     # P11: Consulting studio - Proposals, decks & documents; RFP & bid response

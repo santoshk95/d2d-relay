@@ -2,12 +2,12 @@
 
 On a metric over time (a series: periods and values):
   zscore     a period more than k standard deviations from the mean of the history before it
-  iqr        a period outside [Q1 - k·IQR, Q3 + k·IQR] of the history (robust to the outliers themselves)
+  iqr        a period outside [Q1 - k-IQR, Q3 + k-IQR] of the history (robust to the outliers themselves)
   seasonal   a period far from what its trend and its season say: the residual of a linear trend with seasonal
-             effects, scored robustly (median and MAD) — the right detector for anything with a weekly or yearly shape
+             effects, scored robustly (median and MAD) - the right detector for anything with a weekly or yearly shape
   threshold  a business rule: the value above (or below) a number a person sets
 On a table (rows):
-  row_iqr    a row whose number is far outside the usual range — per group when a group column is named (a supplier's
+  row_iqr    a row whose number is far outside the usual range - per group when a group column is named (a supplier's
              invoices against that supplier's own range)
   row_rule   a row matching a rule: a column compared with a number (amount < 0, discount > 40)
 
@@ -25,7 +25,7 @@ KINDS = {"seasonal": "Seasonal residual", "zscore": "Z-score", "iqr": "Outside t
 SERIES_KINDS = ("seasonal", "zscore", "iqr", "threshold")
 ROW_KINDS = ("row_iqr", "row_rule")
 DEFAULT_K = {"seasonal": 4.5, "zscore": 3.0, "iqr": 3.0, "row_iqr": 3.0}
-PARAM_HELP = "k=3 (how far from usual: standard deviations, IQRs or MADs) · threshold and row_rule: > 50000, < 0, >= 40"
+PARAM_HELP = "k=3 (how far from usual: standard deviations, IQRs or MADs) - threshold and row_rule: > 50000, < 0, >= 40"
 SEVERITIES = (("high", "High"), ("medium", "Medium"), ("low", "Low"))
 CMP = re.compile(r"^\s*(>=|<=|>|<|=|!=)\s*(-?\d+(?:\.\d+)?)\s*$")
 OPS = {">": lambda a, b: a > b, "<": lambda a, b: a < b, ">=": lambda a, b: a >= b, "<=": lambda a, b: a <= b, "=": lambda a, b: a == b, "!=": lambda a, b: a != b}
@@ -78,7 +78,7 @@ def _mad(vals: list[float]) -> tuple[float, float]:
 
 def fmt(v) -> str:
     if v is None:
-        return "—"
+        return "-"
     f = float(v)
     return f"{f:,.0f}" if abs(f) >= 100 else f"{f:,.2f}"
 
@@ -134,7 +134,7 @@ def series_findings(kind: str, params: dict, periods: list[str], y: list[float],
         z = (r - med) / mad
         if abs(z) > k:
             out.append({"at": p, "value": v, "expected": fmt(f), "score": round(z, 2), "low": f + med - k * mad, "high": f + med + k * mad,
-                        "reason": f"{fmt(v)} against {fmt(f)} expected from the trend and the {'season' if m > 1 else 'level'} — {abs(z):.1f} robust deviations {'above' if z > 0 else 'below'}"})
+                        "reason": f"{fmt(v)} against {fmt(f)} expected from the trend and the {'season' if m > 1 else 'level'} - {abs(z):.1f} robust deviations {'above' if z > 0 else 'below'}"})
     return out, {"mad": mad, "season": m}
 
 

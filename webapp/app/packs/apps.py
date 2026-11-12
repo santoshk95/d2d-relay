@@ -1,4 +1,4 @@
-"""Apps & products (registry id `apps`) on the workbench — the apps and services an organisation runs: Power Apps
+"""Apps & products (registry id `apps`) on the workbench - the apps and services an organisation runs: Power Apps
 (the Power Platform admin API), Android apps on Google Play, iOS apps in App Store Connect, and web apps and services
 (React, Angular, Python, Java, Node.js) through Sentry; the HR systems (Workday, SuccessFactors or an export) say who
 still works here. AppSheet, Zoho Creator and others through their exports.
@@ -9,7 +9,7 @@ Assess   the apps and their releases in each platform's own terms; rules: a Powe
          release health for the same build below 99 % crash-free sessions), a version App Review rejected, a web or
          service release that brought a new error many users hit.
 Change   from the assessment or a request: a staged rollout halted on Google Play, a phased release paused on the App
-         Store, a Power App's owner changed to its co-owner or its share with everyone removed — each after approval,
+         Store, a Power App's owner changed to its co-owner or its share with everyone removed - each after approval,
          read back on the platform; a fix in the code is a step for a person (AI SDLC), a rollback goes through Cloud &
          CI/CD.
 Run      releases and apps watched on a schedule; breaks go to a Change item or a ticket after approval.
@@ -57,7 +57,7 @@ def rule_owner_left(ctx, inv, spec=None) -> list[dict]:
                      "why": f"{co} already edits the app; {lv[0]} keeps view access until the app is checked"} if co else
                     {"action": "manual", "entity": "application", "key": str(a["key"]), "label": str(a["name"]), "field": "", "value": "", "before": "",
                      "why": "share the app with its new owner, then change the owner"})
-            out.append(w3.finding("owner_left", system, "application", str(a["name"]), f"{a['name']} is owned by {lv[0]} ({a.get('owner')}), who left on {lv[1] or 'a date HR holds'} ({lv[2]}) —"
+            out.append(w3.finding("owner_left", system, "application", str(a["name"]), f"{a['name']} is owned by {lv[0]} ({a.get('owner')}), who left on {lv[1] or 'a date HR holds'} ({lv[2]}) -"
                                   f" when the account goes, the app and its connections stop working", "high", measured=f"owner {a.get('owner')}", work="change",
                                   fix=f"Make {co} (co-owner) the owner." if co else "Give the app a new owner who works here.", cause="the owner left and nobody took the app over",
                                   keys=[str(a["key"])], proposals=[prop]))
@@ -134,7 +134,7 @@ def rule_rejected(ctx, inv, spec=None) -> list[dict]:
     for system, rows in inv.rows("release"):
         for r in rows:
             if r.get("status") == "rejected":
-                out.append(w3.finding("rejected_release", system, "release", str(r["name"]), f"{r['name']} was rejected in App Review — {r.get('error') or ''}", "medium",
+                out.append(w3.finding("rejected_release", system, "release", str(r["name"]), f"{r['name']} was rejected in App Review - {r.get('error') or ''}", "medium",
                                       measured="rejected", work="change", fix="Read App Review's message, fix the build or the metadata, then submit it again.",
                                       cause="the store refused the version", keys=[str(r["key"])],
                                       proposals=[{"action": "manual", "entity": "release", "key": str(r["key"]), "label": str(r["name"]), "field": "", "value": "", "before": "",
@@ -153,7 +153,7 @@ def rule_regressions(ctx, inv, spec=None) -> list[dict]:
             if r.get("track") != "Sentry release" or r.get("status") != "newest" or r.get("os") in ("iOS", "Android") or n < MANY_USERS:
                 continue
             out.append(w3.finding("regression", system, "release", str(r["name"]), f"{r['name']} brought a new error: {r.get('error')}", "high", measured=f"{n} users",
-                                  work="change", fix="Roll the release back (Cloud & CI/CD › Change) or fix the code (AI SDLC), then mark the issue resolved in the next release.",
+                                  work="change", fix="Roll the release back (Cloud & CI/CD > Change) or fix the code (AI SDLC), then mark the issue resolved in the next release.",
                                   cause="the release introduced an error", keys=[str(r["key"])],
                                   proposals=[{"action": "manual", "entity": "release", "key": str(r["key"]), "label": str(r["name"]), "field": "", "value": "", "before": "",
                                               "why": f"roll {r['name']} back to the release before it, or fix {r.get('new_issue') or 'the error'} in the code"}]))
@@ -164,7 +164,7 @@ rule_regressions.label = "Releases that brought a new error"
 
 
 def watch_releases(ctx, seen) -> list[dict]:
-    """Run › Watch: every release that is rolling out, rejected or newest on Sentry; a crashing rollout, a rejection or a
+    """Run > Watch: every release that is rolling out, rejected or newest on Sentry; a crashing rollout, a rejection or a
     regression is a break."""
     got = []
     for c, a in w3.systems(ctx, aa.RELEASE_KINDS):
@@ -182,7 +182,7 @@ def watch_releases(ctx, seen) -> list[dict]:
                 why = r.get("error")
             elif r.get("status") not in ("rolling out", "newest"):
                 continue
-            row = {"name": f"{c['id']}:release:{r['key']}", "label": f"{r['name']} · {c['name']}", "status": "fail" if why else "pass", "measured": r.get("rollout") or r.get("status"),
+            row = {"name": f"{c['id']}:release:{r['key']}", "label": f"{r['name']} - {c['name']}", "status": "fail" if why else "pass", "measured": r.get("rollout") or r.get("status"),
                    "expected": "healthy", "detail": (why or "")[:220] if why else "no crash or new error above the line"}
             if why:
                 row["break"] = {"conn": c["id"], "system": c["name"], "job": str(r["name"]), "label": str(r["name"]), "status": "failed", "streak": 1, "error": why,
@@ -208,16 +208,16 @@ PLATFORMS = {
     "ios": w3.SysPlatform("iOS (App Store Connect)", ("app_store_connect",), "tests/mocklab/sims/apps.py: app_store_connect (API v1, ES256 key)",
                           "apps, their newest version and its phased release through an API key; a phased release paused after approval"),
     "web": w3.SysPlatform("Web apps and services (Sentry)", ("sentry",), "tests/mocklab/sims/apps.py: sentry (web API, auth token)",
-                          "projects, releases with crash-free sessions and the errors each release brought — read-only"),
+                          "projects, releases with crash-free sessions and the errors each release brought - read-only"),
     "hr": w3.SysPlatform("HR systems (who works here)", ("workday", "successfactors"), "tests/mocklab/sims/hr.py: workday, successfactors",
-                         "workers with their leaving dates — read-only, to find apps whose owner has left"),
+                         "workers with their leaving dates - read-only, to find apps whose owner has left"),
     "exports": w3.SysPlatform("AppSheet, Zoho Creator, other app platforms (exports)", (), "export fixtures the tests write",
                               "apps and releases you upload as a list (CSV, Excel)", uploads=(".csv", ".xlsx", ".json")),
 }
 
-GUIDE = """# Apps & products — the work item
+GUIDE = """# Apps & products - the work item
 
-Relay's apps module reads the apps and releases on each platform — and who still works here — and changes something
+Relay's apps module reads the apps and releases on each platform - and who still works here - and changes something
 (halts a rollout, pauses a phased release, changes an app's owner or removes a share with everyone) only after a named
 person approves that very change. A fix in the code is a step for a person (or AI SDLC); a rollback goes through Cloud &
 CI/CD. Never invent an app, a release or a crash rate."""
@@ -226,7 +226,7 @@ w3.hook(MODULE)
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE, platforms=PLATFORMS,
-    lineage="each app platform and what runs on it (system → entity), a halted rollout, a paused release or an owner change as a write into the platform",
+    lineage="each app platform and what runs on it (system -> entity), a halted rollout, a paused release or an owner change as a write into the platform",
     schemas={"inventory": ["include", "system", "object", "records"], "finding": ["decision", "severity", "system", "what"]},
     work={
         "assess": w3.assess_work(SPEC, "See which apps and releases need a person: crashing rollouts, new errors, owners who left, apps shared with everyone"),

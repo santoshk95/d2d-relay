@@ -3,7 +3,7 @@ QuickBooks Online (Accounting API v3) and Xero (Accounting API 2.0) behind the C
 Financials is the ERP module's adapter (one connection serves both modules); Busy, ClearTax and the GST / TRACES / MCA
 portals come in as exports.
 
-Canonical records: ledger accounts (with their debits, credits and balance — a trial balance), voucher lines, customers
+Canonical records: ledger accounts (with their debits, credits and balance - a trial balance), voucher lines, customers
 and invoices (with place of supply and GSTIN for GSTR-1). Writes carry X-Relay-Approval: Tally masters and vouchers
 (Import Data), Zoho Books accounts, journals and invoice corrections.
 
@@ -163,7 +163,7 @@ class ZohoBooks(SysAdapter):
     def check(self, r, what, ok=(200, 201, 202, 204)):
         b = super().check(r, what, ok)
         if isinstance(b, dict) and b.get("code") not in (None, 0):
-            raise connectors.ConnectorError(f"Zoho Books · {what}: {b.get('code')} {b.get('message')}")
+            raise connectors.ConnectorError(f"Zoho Books - {what}: {b.get('code')} {b.get('message')}")
         return b
 
     def _all(self, api, path, key):
@@ -240,7 +240,7 @@ class ZohoBooks(SysAdapter):
 
     def field_problems(self, entity, field, value):
         if entity == "invoice" and field == "place_of_supply" and str(value) not in GST_STATE:
-            return [f"{value!r} is not a state code GST knows (KA, MH, TN …)"]
+            return [f"{value!r} is not a state code GST knows (KA, MH, TN ...)"]
         return []
 
     def op_update(self, api, entity, key, changes, approval):

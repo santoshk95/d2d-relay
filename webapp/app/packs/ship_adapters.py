@@ -1,13 +1,13 @@
 """Cloud & CI/CD adapters (W3, registry id `ship`).
 
-CI / CD — pipelines (the canonical `pipeline`) and their runs:
+CI / CD - pipelines (the canonical `pipeline`) and their runs:
   Azure DevOps     Build REST 7.1: a personal access token as basic auth; definitions, builds paged with the
                    x-ms-continuationtoken header, a failed build's timeline issues; a build queued after approval.
   GitHub Actions   REST 2022-11-28: a fine-grained token; workflows, runs paged by Link rel="next", a failed run's job
                    log (a 302 to a short-lived URL, followed without the token); a failed run re-run after approval.
   GitLab CI        REST v4: PRIVATE-TOKEN; pipelines paged by X-Next-Page, a failed pipeline's failed jobs and their
                    traces; a pipeline created on the branch after approval.
-Cloud — what is deployed (the canonical `deployment`), each in the cloud's own terms:
+Cloud - what is deployed (the canonical `deployment`), each in the cloud's own terms:
   Azure            Resource Manager deployments (Entra client credentials for management.azure.com, nextLink paging),
                    the latest per app with its error details.
   AWS              CloudFormation stacks (the Query API signed with SigV4), the failed resource from the stack events.
@@ -248,7 +248,7 @@ class GitLabCI(SysAdapter):
         return out
 
     def _job(self, api, p) -> str:
-        return f"{self._name(api)} · {p.get('ref')}" if p.get("source") != "merge_request_event" else f"{self._name(api)} · merge requests"
+        return f"{self._name(api)} - {p.get('ref')}" if p.get("source") != "merge_request_event" else f"{self._name(api)} - merge requests"
 
     def _trace(self, api, pid) -> str:
         jobs = api.get(f"{self._p(api)}/pipelines/{pid}/jobs", {"scope[]": "failed"}) or []
@@ -286,7 +286,7 @@ class GitLabCI(SysAdapter):
         return out
 
     def op_rerun(self, api, job, run_id, approval):
-        ref = job.split(" · ", 1)[-1]
+        ref = job.split(" - ", 1)[-1]
         if ref == "merge requests":
             raise connectors.ConnectorError("GitLab: a merge request's pipeline is run again from the merge request")
         p = self.check(api.request("POST", f"{self._p(api)}/pipeline", params={"ref": ref}, approval=approval), "create a pipeline", ok=(201,))
@@ -391,7 +391,7 @@ class AwsCloudFormation(SysAdapter):
         if r.status_code == 403:
             raise connectors.Reconsent(f"AWS refused the signed request: {self.error_text(r)}")
         if r.status_code not in ok:
-            raise connectors.ConnectorError(f"{self.label} · {what}: {r.status_code} {self.error_text(r)}")
+            raise connectors.ConnectorError(f"{self.label} - {what}: {r.status_code} {self.error_text(r)}")
         return r.text
 
     def _call(self, api, action: str, **params) -> ET.Element:
@@ -524,7 +524,7 @@ class GcpCloudRun(SysAdapter):
             tc = r.get("terminalCondition") or {}
             img = ((r.get("template") or {}).get("containers") or [{}])[0].get("image")
             st = "running" if r.get("reconciling") else "failed" if tc.get("state") == "CONDITION_FAILED" else "succeeded"
-            return {"key": r["name"].rsplit("/", 1)[-1], "name": r["name"].rsplit("/", 1)[-1], "environment": f"{r['name'].split('/')[1]} · {r['name'].split('/')[3]}",
+            return {"key": r["name"].rsplit("/", 1)[-1], "name": r["name"].rsplit("/", 1)[-1], "environment": f"{r['name'].split('/')[1]} - {r['name'].split('/')[3]}",
                     "status": st, "when": r.get("updateTime"), "error": tc.get("message") if st == "failed" else None, "platform": "Google Cloud", "kind": "Cloud Run service",
                     "image": img, "rollback_image": r.get("_rollback"), "serving": r.get("_ready")}
         return r

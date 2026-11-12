@@ -386,7 +386,7 @@ def _mail(to: str, subject: str, intro: str, rows: list[tuple[str, str]], outro:
             body = (f"<p>{e(intro)}</p><table cellpadding=\"4\" style=\"border-collapse:collapse\">"
                     + "".join(f"<tr><td style=\"color:#666\">{e(k)}</td><td>{e(v)}</td></tr>" for k, v in rows) + "</table>"
                     + (f"<p>{e(outro)}</p>" if outro else "")
-                    + f"<p style=\"color:#777;font-size:12px\">D2D Relay · a Relay Platform product by PASDACS · {e(orgs.CONTACT)}</p>")
+                    + f"<p style=\"color:#777;font-size:12px\">D2D Relay - a Relay Platform product by PASDACS - {e(orgs.CONTACT)}</p>")
             if otp.configured():
                 from . import otp_mail
                 otp_mail.send(to, subject, body, reply_to=reply_to)
@@ -651,7 +651,7 @@ def receipt(pid: str):
     e = html.escape
     rows = _rows(r) + ([("Refunded", money(r["refunded"], r["currency"], True))] if r.get("refunded") else [])
     page = ("<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-            f"<title>Receipt {e(r['id'])} · D2D Relay</title><style>"
+            f"<title>Receipt {e(r['id'])} - D2D Relay</title><style>"
             "body{font:15px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;color:#1d1d1f;background:#fff;margin:0;padding:32px 16px}"
             "main{max-width:620px;margin:0 auto}h1{font-size:22px;margin:0 0 2px}.muted{color:#6b6b70}"
             "table{border-collapse:collapse;width:100%;margin:20px 0}td{padding:8px 0;border-bottom:1px solid #e6e6ea;vertical-align:top}"
@@ -659,7 +659,7 @@ def receipt(pid: str):
             ".test{background:#fff4e5;color:#8a4b00;padding:8px 12px;border-radius:6px;margin:16px 0}"
             "@media (prefers-color-scheme:dark){body{background:#151517;color:#ececf0}td{border-color:#2c2c31}tr.total td{color:#ececf0}"
             ".test{background:#3a2a12;color:#ffcf8a}}@media print{body{padding:0}}</style>"
-            "<main><h1>Payment receipt</h1><div class=\"muted\">D2D Relay · a Relay Platform product by PASDACS</div>"
+            "<main><h1>Payment receipt</h1><div class=\"muted\">D2D Relay - a Relay Platform product by PASDACS</div>"
             + ("" if r["live"] else "<div class=\"test\">A test payment, made with Razorpay test keys: no money moved.</div>")
             + "<table>" + "".join(f"<tr{' class=total' if k == 'Total paid' else ''}><td>{e(k)}</td><td>{e(v)}</td></tr>" for k, v in rows)
             + "</table><p class=\"muted\">Paid online through Razorpay. This is a payment receipt, not a tax invoice. "
@@ -717,7 +717,7 @@ def admin_view():
     totals = {c: {"month": sum(net(p) for p in paid if p["currency"] == c and (p["paid"] or 0) >= month),
                   "all": sum(net(p) for p in paid if p["currency"] == c), "count": sum(p["currency"] == c for p in paid)}
               for c in ("INR", "USD")}
-    return {"mode": mode(), "key_id": (KEY_ID[:13] + "…" + KEY_ID[-4:]) if len(KEY_ID) > 20 else KEY_ID, "key_secret": bool(KEY_SECRET),
+    return {"mode": mode(), "key_id": (KEY_ID[:13] + "..." + KEY_ID[-4:]) if len(KEY_ID) > 20 else KEY_ID, "key_secret": bool(KEY_SECRET),
             "webhook_secret": bool(WEBHOOK_SECRET), "webhook_url": _site() + WEBHOOK_PATH, "events": list(EVENTS), "test_for": TEST_FOR,
             "settings": s, "packs": packs(s), "payments": [_admin_row(r) for r in rows], "contact": orgs.CONTACT, "totals": totals,
             "seller": invoices.seller(s), "missing": invoices.missing(s), "states": invoices.STATES, "fy": invoices.fiscal_year(time.time()),

@@ -1,24 +1,24 @@
-"""Workflows & iPaaS (registry id `n8n`) — flows between apps, n8n first, then Power Automate, Zapier, Make, Workato,
+"""Workflows & iPaaS (registry id `n8n`) - flows between apps, n8n first, then Power Automate, Zapier, Make, Workato,
 Boomi and MuleSoft (adapters in n8n_platforms.py; the n8n workflow JSON toolkit in n8n_flow.py; the shared W2 kit _w2.py).
 
-Assess   Connect → Inventory → Health → Findings → Estimate: every connected platform (and exports) read into one
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: every connected platform (and exports) read into one
          inventory; health by rules (failing flows with their cause, flaky ones, secrets kept in clear, switched-off flows
          to retire, screen steps where an API exists, no owner); the person keeps or ignores each finding; effort per wave.
-Develop  Describe → Design → Build → Prove → Deploy → Run: the flow in plain words or from a process map (W4's published
+Develop  Describe -> Design -> Build -> Prove -> Deploy -> Run: the flow in plain words or from a process map (W4's published
          BPMN, or a .bpmn upload); the design drawn by rules from the map (Relay drafts it from plain words on request),
-         corrected in place — credentials by name only; the agent writes the n8n workflow JSON, which Relay's rules check
+         corrected in place - credentials by name only; the agent writes the n8n workflow JSON, which Relay's rules check
          strictly (fix rounds); test executions with sample payloads on a copy in n8n after their own approval; the named
          approver signs the go-live; the deploy through n8n's API after its own approval; a Run item watches it.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: a failed run diagnosed from its run history (the error, the
-         node, the cause — rules first); the change made on a copy; tested; released after approval: the workflow updated
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: a failed run diagnosed from its run history (the error, the
+         node, the cause - rules first); the change made on a copy; tested; released after approval: the workflow updated
          and its failed executions re-run (one approval); the fix kept as a rule.
-Migrate  Discover → Decide → Convert → Prove → Hand over → Run: flows on Power Automate, Zapier, Make, Workato, Boomi or
+Migrate  Discover -> Decide -> Convert -> Prove -> Hand over -> Run: flows on Power Automate, Zapier, Make, Workato, Boomi or
          MuleSoft read into the neutral model; keep, merge, retire or move by rules (a known failure moves with its fix);
-         converted to n8n by rules; proven side by side — the same payloads on the old flow and on a test copy in n8n,
+         converted to n8n by rules; proven side by side - the same payloads on the old flow and on a test copy in n8n,
          each side its own approval; owner sign-off; deployed, then watched.
-Run      Watch → Alert → Fix → Approve → Report: n8n's executions on a schedule; failures grouped by cause; a person
-         routes each — Self-healing, a Service desk ticket (created after its own approval), a re-run (its own approval)
-         or expected — and only then do the hand-offs go out.
+Run      Watch -> Alert -> Fix -> Approve -> Report: n8n's executions on a schedule; failures grouped by cause; a person
+         routes each - Self-healing, a Service desk ticket (created after its own approval), a re-run (its own approval)
+         or expected - and only then do the hand-offs go out.
 """
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ class IpaasPlatform(wb.Platform):
 
 PLATFORMS = {
     "n8n": IpaasPlatform("n8n (self-hosted or cloud)", ("n8n_api",), (".json", ".bpmn"), npf.N8nApi.simulator,
-                         "workflows and executions with their run data — read-only; a deploy, a test run or a re-run only after its own approval"),
+                         "workflows and executions with their run data - read-only; a deploy, a test run or a re-run only after its own approval"),
     "power_automate": IpaasPlatform("Power Automate", ("power_automate_flows",), (".json",), npf.PowerAutomateFlows.simulator, "cloud flows, their definitions, connection references and runs"),
     "zapier": IpaasPlatform("Zapier", ("zapier",), (".json", ".csv"), npf.Zapier.simulator, "zaps and their steps; run history from the Zap History export (the API does not serve it)"),
     "make": IpaasPlatform("Make", ("make",), (".json",), npf.Make.simulator, "scenarios, blueprints and their logs"),
@@ -102,12 +102,12 @@ def _target(ctx: wb.Ctx, *, write: bool = True) -> dict:
         owner = ctx.owner or ""
         mine = [connectors.connection(x["id"], owner) for x in connectors.mine(owner) if x["kind"] == "n8n_api"]
     if not mine:
-        raise wb.StepFailed("No n8n connection to test and deploy on: add one under Connections (scope “Read & write — with approval”), then run this step again.")
+        raise wb.StepFailed("No n8n connection to test and deploy on: add one under Connections (scope \"Read & write - with approval\"), then run this step again.")
     if len(mine) > 1 and not any(c["kind"] == "n8n_api" for c in ctx.connections()):
         raise wb.StepFailed("You have several n8n connections: start the work item with the one it deploys to.")
     c = mine[0]
     if write and not connectors.may_write(c):
-        raise wb.StepFailed(f"{c['name']} is read-only: change its scope to “Read & write — with approval” so a test run and the deploy can be approved.")
+        raise wb.StepFailed(f"{c['name']} is read-only: change its scope to \"Read & write - with approval\" so a test run and the deploy can be approved.")
     return c
 
 
@@ -148,7 +148,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
     _save(ctx, "estate.json", {"autos": autos, "runs": runs})
     for r in rows:
         ctx.evidence(f"Read: {r['source']}", {"source": r["source"], "kind": r["kind"], "ok": r["ok"], "sees": r["sees"]}, kind="read", ok=r["ok"])
-    return {"summary": f"{len(good)} of {len(rows)} source(s) answered: {len(autos)} flow(s), {len(runs)} run(s) — read-only.", "counts": {"sources": len(rows), "flows": len(autos), "runs": len(runs)},
+    return {"summary": f"{len(good)} of {len(rows)} source(s) answered: {len(autos)} flow(s), {len(runs)} run(s) - read-only.", "counts": {"sources": len(rows), "flows": len(autos), "runs": len(runs)},
             "data": _w2.table(["Source", "Kind", "Status", "What Relay sees"], [[r["source"], r["kind"], "answered" if r["ok"] else "refused", r["sees"]] for r in rows])}
 
 
@@ -159,7 +159,7 @@ def a_inventory(ctx: wb.Ctx) -> dict:
     if not recs:
         raise wb.StepFailed("The sources show no flows.")
     plats = sorted({r["platform"] for r in recs})
-    return {"summary": f"{len(recs)} flow(s) on {len(plats)} platform(s), in each tool's own terms — untick what is out of scope.", "records": recs,
+    return {"summary": f"{len(recs)} flow(s) on {len(plats)} platform(s), in each tool's own terms - untick what is out of scope.", "records": recs,
             "counts": {"flows": len(recs), "platforms": len(plats), "on": sum(1 for r in recs if r["active"] == "on")},
             "data": _w2.table(["Flow", "Platform", "Trigger", "Steps", "On", "Runs", "Failed", "Last run"], [[r["flow"], r["platform"], r["trigger"], r["steps"], r["active"], r["runs"], r["failed"], r["last_run"]] for r in recs])}
 
@@ -200,7 +200,7 @@ def a_findings(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**f, **({k: have[f["id"]][k] for k in ("decision", "severity") if k in have[f["id"]]} if f["id"] in have else {})} for f in ctx.get("findings") or []]
     high = sum(1 for r in recs if r["severity"] == "high")
-    return {"summary": f"{len(recs)} finding(s), {high} high — keep what matters, ignore what does not." if recs else "No finding: every included flow is healthy.", "records": recs,
+    return {"summary": f"{len(recs)} finding(s), {high} high - keep what matters, ignore what does not." if recs else "No finding: every included flow is healthy.", "records": recs,
             "counts": {"findings": len(recs), "high": high}, "items": [f"{r['flow']}: {r['what']}"[:240] for r in recs[:6]],
             "data": _w2.table(["Flow", "Platform", "Finding", "Severity", "What to do"], [[r["flow"], r["platform"], r["what"], r["severity"], r["do"]] for r in recs])}
 
@@ -219,21 +219,21 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     ret = [f for f in kept if f["kind"] == "retire"]
     retired = {f["auto"] for f in ret}
     move = [a for a in autos if a["id"] not in retired and a["platform"] != "n8n_api"]
-    waves = [("Wave 1 — fix what fails and take the secrets out", (len(fix) * MINUTES["fix a failing flow"] + len(sec) * MINUTES["move a credential to the store"]) / 60,
+    waves = [("Wave 1 - fix what fails and take the secrets out", (len(fix) * MINUTES["fix a failing flow"] + len(sec) * MINUTES["move a credential to the store"]) / 60,
               f"{len(fix)} failing or flaky flow(s), {len(sec)} credential(s) kept in clear"),
-             ("Wave 2 — move to n8n", sum(len(a["steps"]) for a in move) * MINUTES["move a step to n8n"] / 60, f"{len(move)} flow(s), {sum(len(a['steps']) for a in move)} step(s), converted by rules and proven side by side"),
-             ("Wave 3 — retire", len(ret) * MINUTES["retire a flow"] / 60, f"{len(ret)} switched-off flow(s)")]
+             ("Wave 2 - move to n8n", sum(len(a["steps"]) for a in move) * MINUTES["move a step to n8n"] / 60, f"{len(move)} flow(s), {sum(len(a['steps']) for a in move)} step(s), converted by rules and proven side by side"),
+             ("Wave 3 - retire", len(ret) * MINUTES["retire a flow"] / 60, f"{len(ret)} switched-off flow(s)")]
     items, total = [], 0.0
     for name, h, detail in waves:
         if h <= 0:
             continue
         total += h
-        items.append({"title": name, "detail": detail, "effort": f"{h:.1f} h" + (f" · {cur}{rate * h:,.0f}" if rate else "")})
+        items.append({"title": name, "detail": detail, "effort": f"{h:.1f} h" + (f" - {cur}{rate * h:,.0f}" if rate else "")})
     assumptions = "; ".join(f"{v} min to {k}" for k, v in MINUTES.items())
     ctx.output("assessment.md", f"# Assessment: {ctx.title}\n\n" + "".join(f"## {i['title']}\n\n{i['detail']}\n\nEffort: {i['effort']}\n\n" for i in items) + f"Assumptions: {assumptions}.\n"
-               + ("" if rate else "No hourly rate is set (Admin › Branding), so no cost is shown.\n"), label="Assessment (Markdown)")
+               + ("" if rate else "No hourly rate is set (Admin > Branding), so no cost is shown.\n"), label="Assessment (Markdown)")
     return {"summary": f"{len(items)} wave(s), about {total:.1f} h of work" + (f" ({cur}{rate * total:,.0f})" if rate else "") + ".", "counts": {"waves": len(items), "hours": round(total, 1)},
-            "data": {"items": items, "total": f"{total:.1f} h", "note": f"Assumptions: {assumptions}." + ("" if rate else " Set an hourly rate under Admin › Branding to see the cost.")}}
+            "data": {"items": items, "total": f"{total:.1f} h", "note": f"Assumptions: {assumptions}." + ("" if rate else " Set an hourly rate under Admin > Branding to see the cost.")}}
 
 
 # ================================================================== Develop
@@ -251,7 +251,7 @@ def _process(ctx: wb.Ctx) -> dict | None:
     if pid and "processdocs_processes" in db.tables():
         r = db.one("SELECT * FROM processdocs_processes WHERE id = ?", (pid,))
         if r:
-            return {"source": f"published process “{r['name']}” version {r['version']}", "map": _w2.j(r["map"], {}), "process_id": pid, "version": r["version"]}
+            return {"source": f"published process \"{r['name']}\" version {r['version']}", "map": _w2.j(r["map"], {}), "process_id": pid, "version": r["version"]}
     for f in ctx.files((".bpmn",)):
         from . import processdocs_bpmn as bp
         m = bp.from_bpmn((ctx.dir / "data" / f["name"]).read_text(encoding="utf-8"))
@@ -262,9 +262,9 @@ def _process(ctx: wb.Ctx) -> dict | None:
 def process_options(u: dict) -> list[tuple[str, str]]:
     try:
         from . import processdocs
-        return [("", "No — describe it in plain words")] + processdocs.process_options(u)
+        return [("", "No - describe it in plain words")] + processdocs.process_options(u)
     except Exception:  # noqa: BLE001 - without Business process documents, plain words only
-        return [("", "No — describe it in plain words")]
+        return [("", "No - describe it in plain words")]
 
 
 def d_describe(ctx: wb.Ctx) -> dict:
@@ -280,7 +280,7 @@ def d_describe(ctx: wb.Ctx) -> dict:
                 "counts": {"steps": len(steps)},
                 "data": _w2.table(["Step", "Type", "Who", "System", "Next"], [[s.get("name"), s.get("type"), next((l["name"] for l in p["map"].get("lanes") or [] if l["id"] == s.get("lane")), ""),
                                                                               s.get("system") or "", ", ".join(n["to"] for n in s.get("next") or [])] for s in steps])}
-    return {"summary": "The flow is described in plain words (no process map): Relay drafts the design from it in the next step — on your request.", "counts": {"words": len(ctx.brief.split())},
+    return {"summary": "The flow is described in plain words (no process map): Relay drafts the design from it in the next step - on your request.", "counts": {"words": len(ctx.brief.split())},
             "data": {"text": ctx.brief}}
 
 
@@ -295,7 +295,7 @@ def d_design(ctx: wb.Ctx) -> dict:
         recs = []
     probs = nf.design_problems(recs) if recs else []
     summary = (f"{len(recs)} node(s) drawn by rules from the {ctx.get('map_source')}: check the trigger, each API call and its credential (by name), and the decisions' ways." if recs and ctx.get("map") and not have
-               else f"{len(recs)} node(s) — correct anything in place, then confirm the design." if recs else
+               else f"{len(recs)} node(s) - correct anything in place, then confirm the design." if recs else
                "No process map: ask Relay to draft the design from your description (it proposes nodes, triggers and credentials by name), then correct it.")
     return {"summary": summary + (f" {len(probs)} problem(s) to correct first." if probs else ""), "records": recs, "counts": {"nodes": len(recs), "problems": len(probs)},
             "items": (probs or notes)[:6], "data": _design_table(recs)}
@@ -313,18 +313,18 @@ def _validate_design(recs: list[dict], ctx: wb.Ctx) -> list[str]:
 
 
 DESIGN_EDIT = wb.Edit(columns=[wb.Column("name", "Node", required=True), wb.Column("type", "Type", "select", options=nf.TYPE_OPTIONS), wb.Column("system", "System"),
-                               wb.Column("credential", "Credential (by name)", help="the name of a credential stored in n8n — never the secret"),
-                               wb.Column("next", "Next", help="the node(s) it leads to, separated by ; — a decision's true way first"),
+                               wb.Column("credential", "Credential (by name)", help="the name of a credential stored in n8n - never the secret"),
+                               wb.Column("next", "Next", help="the node(s) it leads to, separated by ; - a decision's true way first"),
                                wb.Column("detail", "What it does", "longtext")], validate=_validate_design, label="node")
 
-DESIGN_PROMPT = """Read WORK.md, then request.md: a person described a flow in plain words. Write design.json — the nodes of
+DESIGN_PROMPT = """Read WORK.md, then request.md: a person described a flow in plain words. Write design.json - the nodes of
 an n8n workflow as a JSON list, in order, each:
 
-  {"name": "…", "type": "<one of the node types in node_types.json>", "system": "…", "credential": "<a credential's NAME>",
+  {"name": "...", "type": "<one of the node types in node_types.json>", "system": "...", "credential": "<a credential's NAME>",
    "next": "<the next node's name; a decision lists its true way first: 'A; B'>", "detail": "what it does"}
 
 Exactly one trigger (an e-mail, a schedule, a webhook or a form) comes first. Use an HTTP request for a system's API, an
-If for a decision, Microsoft Teams or Jira to hand work to a person. Credentials by name only — never a password, key
+If for a decision, Microsoft Teams or Jira to hand work to a person. Credentials by name only - never a password, key
 or token. Name only systems the description names; say in `detail` what you assumed."""
 
 
@@ -348,15 +348,15 @@ def _design_after(ctx: wb.Ctx, res: dict) -> dict:
     d = json.loads((ctx.dir / "design.json").read_text(encoding="utf-8"))
     recs = [{"id": f"n{i + 1}", "origin": "agent", "role": nf.NODES[x["type"]][1], **{k: str(x.get(k) or "") for k in ("name", "type", "system", "credential", "next", "detail")}} for i, x in enumerate(d)]
     ctx.evidence("Design drafted by Relay", {"design": recs, "note": res.get("text") or ""}, kind="agent", ok=True)
-    return {"summary": f"Relay drafted {len(recs)} node(s) from your description — check every one (and each credential's name) before you confirm.", "records": recs, "data": _design_table(recs),
+    return {"summary": f"Relay drafted {len(recs)} node(s) from your description - check every one (and each credential's name) before you confirm.", "records": recs, "data": _design_table(recs),
             "counts": {"nodes": len(recs)}}
 
 
 BUILD_PROMPT = """Read WORK.md, then design.json (the nodes a person confirmed: names, types, credentials by name, what each
 does and where it goes next) and skeleton.json (the workflow Relay's rules wrote from it: every node with its type,
 version, position and the links between them). Write workflow.json: the same workflow with every "TODO" replaced by a
-real parameter — an If's condition, a Code node's JavaScript, an API call's URL path, a Teams team and channel, a Jira
-project — taken from request.md and the design. Keep every node name, type and link exactly as designed; refer to
+real parameter - an If's condition, a Code node's JavaScript, an API call's URL path, a Teams team and channel, a Jira
+project - taken from request.md and the design. Keep every node name, type and link exactly as designed; refer to
 credentials by name only (never a secret); write n8n expressions as ={{ $json.field }}."""
 
 
@@ -416,8 +416,8 @@ def d_prove(ctx: wb.Ctx) -> dict:
     if not p or p["status"] in ("failed", "refused") or p["result"].get("sha") != _w2.sha(wf) or ctx.comment:
         c = _target(ctx)
         cases = _payloads(ctx)
-        _w2.request_push(ctx, c["id"], "test_run", {"workflow": wf, "payloads": cases, "sha": _w2.sha(wf)}, f"Test-run “{wf['name']}” on {c['name']} with {len(cases)} sample payload(s)",
-                         items=[f"Where: {c['name']} (n8n)", f"What: a copy named “[Relay test] {wf['name']}”, triggered by a webhook of its own, removed afterwards",
+        _w2.request_push(ctx, c["id"], "test_run", {"workflow": wf, "payloads": cases, "sha": _w2.sha(wf)}, f"Test-run \"{wf['name']}\" on {c['name']} with {len(cases)} sample payload(s)",
+                         items=[f"Where: {c['name']} (n8n)", f"What: a copy named \"[Relay test] {wf['name']}\", triggered by a webhook of its own, removed afterwards",
                                 f"Payloads: {', '.join(x['_case'] for x in cases)}", "Nothing else on the platform changes"], meta={"sha": _w2.sha(wf)})
     return _prove_view(ctx, rows)
 
@@ -463,7 +463,7 @@ def d_deploy(ctx: wb.Ctx) -> dict:
     tests, _ = _test_rows(ctx, "prove")
     approver = db.user(ctx.st.get("approver") or "") or {}
     act = ctx.scope.get("activate", True) not in (False, "false", "no")
-    return {"summary": f"Go live: “{wf['name']}” ({len(wf['nodes'])} node(s)) to {c['name']}" + (", switched on" if act else ", left switched off") + ".",
+    return {"summary": f"Go live: \"{wf['name']}\" ({len(wf['nodes'])} node(s)) to {c['name']}" + (", switched on" if act else ", left switched off") + ".",
             "data": {"items": [{"title": "What goes live", "detail": f"{len(wf['nodes'])} node(s): " + ", ".join(n["name"] for n in wf["nodes"])[:400]},
                                {"title": "Credentials (by name)", "detail": ", ".join(sorted({v.get('name') for n in wf['nodes'] for v in (n.get('credentials') or {}).values()})) or "none"},
                                {"title": "What the proof showed", "detail": f"{sum(1 for t in tests if t['status'] == 'pass')} of {len(tests)} test execution(s) passed; every rule passes"},
@@ -478,7 +478,7 @@ def d_run(ctx: wb.Ctx) -> dict:
     if not p or p["status"] in ("failed", "refused"):
         act = ctx.scope.get("activate", True) not in (False, "false", "no")
         _w2.request_push(ctx, c["id"], "deploy", {"workflow": wf, "activate": act, "workflow_id": ctx.scope.get("workflow_id") or None},
-                         f"Deploy “{wf['name']}” to {c['name']}" + (" and switch it on" if act else ""),
+                         f"Deploy \"{wf['name']}\" to {c['name']}" + (" and switch it on" if act else ""),
                          items=[f"Where: {c['name']} (n8n)", f"What: the workflow as proven ({len(wf['nodes'])} nodes)", f"Switched on: {'yes' if act else 'no'}"])
     return _run_view(ctx)
 
@@ -499,7 +499,7 @@ def _run_view(ctx: wb.Ctx) -> dict:
             if ctx.get("process_id"):
                 from .. import lineage
                 ctx.lineage_edge(lineage.node_id("process", "Relay process documents", ctx.get("process_id")), node, "relates", {"automates": True})
-            it = wb.create(MODULE, "run", f"Run: {wf['name']}"[:160], who=ctx.owner, brief=f"Watch the executions of “{wf['name']}”, deployed from {ctx.id}.", connections=[c["id"]],
+            it = wb.create(MODULE, "run", f"Run: {wf['name']}"[:160], who=ctx.owner, brief=f"Watch the executions of \"{wf['name']}\", deployed from {ctx.id}.", connections=[c["id"]],
                            scope={"workflows": wid, "schedule": ctx.scope.get("cadence") or {"every": "hour", "tz": "UTC"}}, approver=ctx.st.get("approver"),
                            visibility=(db.project(ctx.id) or {}).get("visibility") or "private", team_id=(db.project(ctx.id) or {}).get("team_id"), parent=ctx.id)
             ctx.put("run_item", it["id"])
@@ -507,7 +507,7 @@ def _run_view(ctx: wb.Ctx) -> dict:
         return {"summary": f"Deployed to n8n as workflow {wid}" + (" and switched on" if p["result"].get("active") else "") + "; a Run item watches its executions.",
                 "counts": {"deployed": 1}, "data": {"href": f"#/m/{MODULE}/i/{run_id}" if run_id else f"#/m/{MODULE}/run", "label": "Open the Run item", "text": f"n8n workflow {wid}"}}
     if p and p["status"] == "awaiting":
-        return {"summary": "The deploy waits for its own approval in the Validation queue — nothing is written to n8n until a named person accepts it.", "counts": {"deployed": 0},
+        return {"summary": "The deploy waits for its own approval in the Validation queue - nothing is written to n8n until a named person accepts it.", "counts": {"deployed": 0},
                 "data": {"href": "#/validate", "label": "Open the Validation queue", "text": p["what"]}}
     return {"summary": f"The deploy was {p['status'] if p else 'not asked for'}: {str((p or {}).get('result', {}).get('error') or '')[:200]} Run this step again.", "counts": {"deployed": 0},
             "data": {"text": "Nothing was deployed."}}
@@ -525,7 +525,7 @@ def _flow_of(ctx: wb.Ctx) -> tuple[dict, dict]:
     wfs = a.workflows(c)
     w = next((x for x in wfs if x["id"].lower() == want or x["name"].lower() == want), None) or next((x for x in wfs if want and want in x["name"].lower()), None)
     if not w:
-        raise wb.StepFailed(f"No workflow named “{ctx.scope.get('workflow')}” on {c['name']}: " + ", ".join(x["name"] for x in wfs[:8]))
+        raise wb.StepFailed(f"No workflow named \"{ctx.scope.get('workflow')}\" on {c['name']}: " + ", ".join(x["name"] for x in wfs[:8]))
     return c, w
 
 
@@ -537,7 +537,7 @@ def c_request(ctx: wb.Ctx) -> dict:
     ctx.put("workflow_id", w["id"])
     h = _w2.history(runs, w["id"])
     ctx.evidence(f"Run history of {w['name']}", {"rows": [{"id": r["id"], "status": r["status"], "start": _w2.iso(r["start"]), "error": r["error"], "node": r["node"]} for r in runs]}, kind="runs", ok=True)
-    return {"summary": f"“{w['name']}” on {c['name']}: {h['runs']} execution(s) in its history, {h['failed']} failed" + (f", failing for {h['failing_days']:g} day(s)" if h["failing_days"] else "") + ".",
+    return {"summary": f"\"{w['name']}\" on {c['name']}: {h['runs']} execution(s) in its history, {h['failed']} failed" + (f", failing for {h['failing_days']:g} day(s)" if h["failing_days"] else "") + ".",
             "counts": {"runs": h["runs"], "failed": h["failed"]},
             "data": _w2.table(["Execution", "Status", "Started", "Node", "Error"], [[r["id"], r["status"], _w2.when(r["start"]), r.get("node") or "", (r.get("error") or "")[:160]] for r in sorted(runs, key=lambda x: -(x["start"] or 0))[:40]])}
 
@@ -558,8 +558,8 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
         rule = _w2.learned_fix(MODULE, sig)
         recs.append({"id": f"{sig}-{_w2.slug(node, 30)}", "signature": sig, "node": node, "cause": d["cause"], "cure": (rule or {}).get("fix", {}).get("text") or d["cure"], "fix": d["fix"],
                      "runs": len(rs), "last_error": rs[-1]["error"], "executions": [r["id"] for r in rs], "learned": bool(rule)})
-        checks.append(_w2.gate(sig, f"{len(rs)} failed execution(s) at “{node or '?'}”", "fail", len(rs), 0, f"{d['cause']} — {(rs[-1]['error'] or '')[:200]}"))
-    return {"summary": f"{len(runs)} failed execution(s), {len(recs)} cause(s): " + "; ".join(f"{r['node'] or '?'} — {r['signature'].replace('_', ' ')}" for r in recs) + ". Confirm the diagnosis before anything changes.",
+        checks.append(_w2.gate(sig, f"{len(rs)} failed execution(s) at \"{node or '?'}\"", "fail", len(rs), 0, f"{d['cause']} - {(rs[-1]['error'] or '')[:200]}"))
+    return {"summary": f"{len(runs)} failed execution(s), {len(recs)} cause(s): " + "; ".join(f"{r['node'] or '?'} - {r['signature'].replace('_', ' ')}" for r in recs) + ". Confirm the diagnosis before anything changes.",
             "records": recs, "counts": {"failed": len(runs), "causes": len(recs)}, "data": _w2.gates(checks), "items": [f"{r['node']}: {r['cause']}" for r in recs][:6]}
 
 
@@ -582,7 +582,7 @@ def c_fix(ctx: wb.Ctx) -> dict:
     if recs and not _change_problems(recs, w):
         ctx.output("workflow-fixed.json", json.dumps(fixed, indent=2), label="The changed workflow (JSON)")
     dif = nf.diff(w, fixed) if w else []
-    return {"summary": (f"{len(recs)} change(s) on a copy, rules first: " + "; ".join(f"{r['node']}: {r['find']} → {r['replace']}" if r["what"] == "parameter" else f"{r['node']}: credential → {r['credential'] or '(name it)'}"
+    return {"summary": (f"{len(recs)} change(s) on a copy, rules first: " + "; ".join(f"{r['node']}: {r['find']} {r['replace']}" if r["what"] == "parameter" else f"{r['node']}: credential {r['credential'] or '(name it)'}"
                                                                                    for r in recs) + ". Nothing changes on n8n until the release is approved.") if recs else
             "No rule knows a change for this: add the change in place (node, what to replace and with what).", "records": recs, "counts": {"changes": len(recs), "applied": applied},
             "data": _w2.table(["Node", "What", "Find", "Replace with", "Credential (by name)", "Why"], [[r["node"], r["what"], r.get("find") or "", r.get("replace") or "", r.get("credential") or "", r.get("why") or ""] for r in recs]),
@@ -610,7 +610,7 @@ def _change_problems(recs: list[dict], w: dict) -> list[str]:
             out.append(f"{r.get('node')}: not a node of the workflow")
             continue
         if r.get("what") == "parameter" and (not r.get("find") or r["find"] not in json.dumps(names[r["node"]].get("parameters") or {})):
-            out.append(f"{r['node']}: “{r.get('find')}” is not in its parameters (nothing would change)")
+            out.append(f"{r['node']}: \"{r.get('find')}\" is not in its parameters (nothing would change)")
         if r.get("what") == "credential" and not r.get("credential"):
             out.append(f"{r['node']}: name the renewed credential (its name in n8n, never the secret)")
         if r.get("what") == "credential" and not (names[r["node"]].get("credentials")):
@@ -648,8 +648,8 @@ def c_prove(ctx: wb.Ctx) -> dict:
     if not p or p["status"] in ("failed", "refused") or p["result"].get("sha") != _w2.sha(fixed) or ctx.comment:
         c = _target(ctx)
         cases = _payloads(ctx)
-        _w2.request_push(ctx, c["id"], "test_run", {"workflow": fixed, "payloads": cases, "sha": _w2.sha(fixed)}, f"Test-run the changed “{w.get('name')}” on {c['name']} ({len(cases)} payload(s))",
-                         items=[f"Where: {c['name']} (n8n)", f"What: a copy of the changed workflow named “[Relay test] {w.get('name')}”, removed afterwards", "The live workflow does not change"], meta={"sha": _w2.sha(fixed)})
+        _w2.request_push(ctx, c["id"], "test_run", {"workflow": fixed, "payloads": cases, "sha": _w2.sha(fixed)}, f"Test-run the changed \"{w.get('name')}\" on {c['name']} ({len(cases)} payload(s))",
+                         items=[f"Where: {c['name']} (n8n)", f"What: a copy of the changed workflow named \"[Relay test] {w.get('name')}\", removed afterwards", "The live workflow does not change"], meta={"sha": _w2.sha(fixed)})
     return _cprove_view(ctx)
 
 
@@ -692,9 +692,9 @@ CPROOF_EDIT = wb.Edit(columns=[wb.Column("tests", "Test executions", "number", r
 def c_approve(ctx: wb.Ctx) -> dict:
     w = (_read(ctx, "flow.json", {}) or {}).get("workflow") or {}
     ex = sorted({e for d in ctx.records("diagnose") for e in d.get("executions") or []})
-    return {"summary": f"Release the change to “{w.get('name')}” and re-run its {len(ex)} failed execution(s).",
-            "data": {"items": [{"title": "The change", "detail": "; ".join(f"{r['node']}: {r.get('find') or 'credential'} → {r.get('replace') or r.get('credential')}" for r in ctx.records("fix"))},
-                               {"title": "Then", "detail": f"The workflow is updated through n8n's API and {len(ex)} failed execution(s) re-run — one approval for exactly that; the fix is kept as a rule."}]}}
+    return {"summary": f"Release the change to \"{w.get('name')}\" and re-run its {len(ex)} failed execution(s).",
+            "data": {"items": [{"title": "The change", "detail": "; ".join(f"{r['node']}: {r.get('find') or 'credential'} {r.get('replace') or r.get('credential')}" for r in ctx.records("fix"))},
+                               {"title": "Then", "detail": f"The workflow is updated through n8n's API and {len(ex)} failed execution(s) re-run - one approval for exactly that; the fix is kept as a rule."}]}}
 
 
 def c_learn(ctx: wb.Ctx) -> dict:
@@ -704,7 +704,7 @@ def c_learn(ctx: wb.Ctx) -> dict:
         w = (_read(ctx, "flow.json", {}) or {}).get("workflow") or {}
         ex = sorted({e for d in ctx.records("diagnose") for e in d.get("executions") or []})[-10:]
         _w2.request_push(ctx, c["id"], "update_retry", {"workflow_id": w.get("id"), "workflow": _fixed(ctx), "executions": ex},
-                         f"Update “{w.get('name')}” on {c['name']} and re-run {len(ex)} failed execution(s)", items=[f"Where: {c['name']} (n8n)", f"Workflow: {w.get('name')}", f"Re-run: {', '.join(ex)}"])
+                         f"Update \"{w.get('name')}\" on {c['name']} and re-run {len(ex)} failed execution(s)", items=[f"Where: {c['name']} (n8n)", f"Workflow: {w.get('name')}", f"Re-run: {', '.join(ex)}"])
     return _learn_view(ctx)
 
 
@@ -738,7 +738,7 @@ def m_discover(ctx: wb.Ctx) -> dict:
     _save(ctx, "estate.json", {"autos": autos, "runs": runs})
     for a in autos:
         _w2.lineage_auto(ctx, a)
-    return {"summary": f"{len(autos)} flow(s) read on {len({a.get('platform_label') for a in autos})} platform(s), with {len(runs)} run(s) of history — read-only.",
+    return {"summary": f"{len(autos)} flow(s) read on {len({a.get('platform_label') for a in autos})} platform(s), with {len(runs)} run(s) of history - read-only.",
             "counts": {"flows": len(autos), "runs": len(runs)}, "data": _w2.table(["Flow", "Platform", "Trigger", "Steps", "On", "Runs", "Failed"],
                                                                                     [[r["flow"], r["platform"], r["trigger"], r["steps"], r["active"], r["runs"], r["failed"]] for r in _inv_rows(autos, runs)])}
 
@@ -756,23 +756,23 @@ def m_decide(ctx: wb.Ctx) -> dict:
         if any(f["kind"] == "retire" for f in mine):
             dec, why = "retire", next(f["what"] for f in mine if f["kind"] == "retire")
         elif shape in seen and len(a["steps"]) > 1:
-            dec, why = "merge", f"does the same steps as “{seen[shape]}”"
+            dec, why = "merge", f"does the same steps as \"{seen[shape]}\""
         else:
             dec, why = "move", f"{len(a['steps'])} step(s) to n8n, converted by rules"
             seen.setdefault(shape, a["name"])
         fix = ""
         bad = next((f for f in mine if f["kind"] == "failing"), None)
         if dec == "move" and bad and bad.get("signature") == "payload_schema":
-            fix, why = "GSTR1_V1=GSTR1_V2", why + f"; moves with its fix — {bad['what'][:120]}"
+            fix, why = "GSTR1_V1=GSTR1_V2", why + f"; moves with its fix - {bad['what'][:120]}"
         elif dec == "move" and bad:
-            why += f"; it fails today ({bad['what'][:100]}) — the cause moves with it unless fixed"
+            why += f"; it fails today ({bad['what'][:100]}) - the cause moves with it unless fixed"
         if any(f["kind"] == "secret" for f in mine):
             why += "; its credential in clear becomes a credential by name in n8n"
         rid = f"{a['platform']}:{a['id']}"
         recs.append({"id": rid, "auto": a["id"], "flow": a["name"], "platform": a.get("platform_label") or a["platform"], "decision": (have.get(rid) or {}).get("decision") or dec,
                      "why": (have.get(rid) or {}).get("why") or why, "fix": (have.get(rid) or {}).get("fix", fix), "runs": _w2.history(runs, a["id"])["runs"]})
     n = {k: sum(1 for r in recs if r["decision"] == k) for k in ("move", "merge", "retire", "keep")}
-    return {"summary": f"Rules suggest: {n['move']} to move, {n['merge']} to merge, {n['retire']} to retire" + (f", {n['keep']} kept where they are" if n["keep"] else "") + " — change any decision, with the reason.",
+    return {"summary": f"Rules suggest: {n['move']} to move, {n['merge']} to merge, {n['retire']} to retire" + (f", {n['keep']} kept where they are" if n["keep"] else "") + " - change any decision, with the reason.",
             "records": recs, "counts": n, "data": _w2.table(["Flow", "Platform", "Decision", "Why", "Fix as it moves"], [[r["flow"], r["platform"], r["decision"], r["why"], r["fix"]] for r in recs])}
 
 
@@ -808,14 +808,14 @@ def m_convert(ctx: wb.Ctx) -> dict:
         out[a["id"]] = {"workflow": wf, "design": design, "source": a, "fixes": fixes}
         ctx.output(f"n8n-{_w2.slug(a['name'])}.json", json.dumps(wf, indent=2), label=f"n8n workflow: {a['name']}")
         rows.append({"id": a["id"], "flow": a["name"], "from": a.get("platform_label") or a["platform"], "nodes": len(wf["nodes"]), "mapped": f"{len(a['steps'])} of {len(a['steps'])}",
-                     "fix": ", ".join(f"{k} → {v}" for k, v in fixes.items()), "rules": "pass" if not probs else f"{len(probs)} to fix", "problems": "; ".join(probs)[:300]})
+                     "fix": ", ".join(f"{k} {v}" for k, v in fixes.items()), "rules": "pass" if not probs else f"{len(probs)} to fix", "problems": "; ".join(probs)[:300]})
     if not rows:
         raise wb.StepFailed("Nothing is decided to move.")
     _save(ctx, "converted.json", out)
     ok = sum(1 for r in rows if r["rules"] == "pass")
     return {"summary": f"{len(rows)} flow(s) converted to n8n by rules; {ok} pass every rule" + (f", {len(rows) - ok} need a person (see the problems)" if ok < len(rows) else "") + ".",
             "counts": {"converted": len(rows), "pass": ok}, "records": rows,
-            "data": _w2.table(["Flow", "From", "Nodes", "Steps mapped", "Fix applied", "Rules"], [[r["flow"], r["from"], r["nodes"], r["mapped"], r["fix"], r["rules"] + (f" — {r['problems']}" if r["problems"] else "")] for r in rows])}
+            "data": _w2.table(["Flow", "From", "Nodes", "Steps mapped", "Fix applied", "Rules"], [[r["flow"], r["from"], r["nodes"], r["mapped"], r["fix"], r["rules"] + (f" - {r['problems']}" if r["problems"] else "")] for r in rows])}
 
 
 def m_prove(ctx: wb.Ctx) -> dict:
@@ -870,8 +870,8 @@ def _mprove_view(ctx: wb.Ctx) -> dict:
             o = (olds or [{}] * len(news))[i] if olds else {}
             why = ""
             if o.get("status") != n.get("status") and v["fixes"]:
-                why = f"decided: the old flow fails ({str(o.get('error') or '')[:100]}); the moved one carries the fix {', '.join(f'{x} → {y}' for x, y in v['fixes'].items())}"
-            pairs.append({"case": f"{a['name']} · {n.get('case')}", "old": {"status": o.get("status"), "detail": (o.get("error") or o.get("from") or "")[:160]},
+                why = f"decided: the old flow fails ({str(o.get('error') or '')[:100]}); the moved one carries the fix {', '.join(f'{x} {y}' for x, y in v['fixes'].items())}"
+            pairs.append({"case": f"{a['name']} - {n.get('case')}", "old": {"status": o.get("status"), "detail": (o.get("error") or o.get("from") or "")[:160]},
                           "new": {"status": n.get("status"), "detail": (n.get("error") or "")[:160]}, "expected": why})
     pend = [p for p in _w2.pushes(ctx.id, ctx.step_id) if p["status"] == "awaiting"]
     if pairs:
@@ -895,9 +895,9 @@ def _validate_mproof(recs: list[dict], ctx: wb.Ctx) -> list[str]:
     out = []
     for p in _w2.pushes(ctx.id, ctx.step_id):
         if p["status"] == "awaiting":
-            out.append(f"waiting: accept “{p['what']}” in the Validation queue first")
+            out.append(f"waiting: accept \"{p['what']}\" in the Validation queue first")
         elif p["status"] in ("failed", "refused"):
-            out.append(f"“{p['what']}” {p['status']}: run the step again")
+            out.append(f"\"{p['what']}\" {p['status']}: run the step again")
     return out
 
 
@@ -994,12 +994,12 @@ def r_alert(ctx: wb.Ctx) -> dict:
 def r_fix(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**b, **({k: have[b["id"]][k] for k in ("route", "note") if k in have[b["id"]]} if b["id"] in have else {})} for b in ctx.get("breaks") or []]
-    return {"summary": f"{len(recs)} cause(s): choose who fixes each — Self-healing, a Service desk ticket, a re-run, or expected. Nothing goes out until you confirm.", "records": recs,
+    return {"summary": f"{len(recs)} cause(s): choose who fixes each - Self-healing, a Service desk ticket, a re-run, or expected. Nothing goes out until you confirm.", "records": recs,
             "counts": {r: sum(1 for x in recs if x["route"] == r) for r in ("heal", "ticket", "rerun", "expected")},
             "data": _w2.table(["Workflow", "Cause", "Failures", "Proposed route"], [[r["workflow"], r["cause"], r["runs"], r["route"]] for r in recs])}
 
 
-RFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("heal", "Self-healing"), ("ticket", "Raise a ticket"), ("rerun", "Re-run the failed executions"), ("expected", "Expected — no action"), ("ignore", "Ignore this time"))),
+RFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("heal", "Self-healing"), ("ticket", "Raise a ticket"), ("rerun", "Re-run the failed executions"), ("expected", "Expected - no action"), ("ignore", "Ignore this time"))),
                              wb.Column("note", "Note for whoever fixes it", "longtext"), wb.Column("workflow", "Workflow", readonly=True), wb.Column("cause", "Cause", readonly=True)],
                     add=False, remove=False, label="cause")
 
@@ -1020,11 +1020,11 @@ def r_approve(ctx: wb.Ctx) -> dict:
                                   items=[f"Where: {c['name']} (n8n)", f"Executions: {', '.join(b['executions'][-10:])}"])
             h = {"kind": "write", "label": title, "status": "awaiting approval", "checkpoint": cp["id"]}
         else:
-            h = {"kind": b["route"], "label": title, "status": "expected — recorded" if b["route"] == "expected" else "ignored this time"}
+            h = {"kind": b["route"], "label": title, "status": "expected - recorded" if b["route"] == "expected" else "ignored this time"}
         out.append(h)
         rows.append([b["workflow"], b["cause"], {"heal": "Self-healing", "ticket": "Ticket", "rerun": "Re-run", "expected": "Expected", "ignore": "Ignored"}[b["route"]], h.get("status"),
                      h.get("case") or h.get("checkpoint") or h.get("output") or ""])
-    return {"summary": f"{sum(1 for h in out if h['kind'] == 'heal')} to Self-healing, {sum(1 for h in out if h['kind'] == 'ticket')} ticket(s), {sum(1 for h in out if h['kind'] == 'write')} re-run(s) awaiting approval — as you approved.",
+    return {"summary": f"{sum(1 for h in out if h['kind'] == 'heal')} to Self-healing, {sum(1 for h in out if h['kind'] == 'ticket')} ticket(s), {sum(1 for h in out if h['kind'] == 'write')} re-run(s) awaiting approval - as you approved.",
             "data": _w2.table(["Workflow", "Cause", "Route", "Status", "Reference"], rows), "counts": {"hand-offs": len(out)}}
 
 
@@ -1035,7 +1035,7 @@ def r_report(ctx: wb.Ctx) -> dict:
              (next((s for s in r["steps"] if s["id"] == "watch"), {}).get("counts") or {}).get("failed")] for r in (ctx.st.get("rounds") or [])[-11:]]
     hist.append([time.strftime("%d %b %H:%M", time.gmtime()), cn.get("executions"), cn.get("failed")])
     ctx.output(f"report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", f"# Run report: {ctx.title}\n\n- Executions: {cn.get('executions')}\n- Failed: {cn.get('failed')}\n"
-               + "".join(f"- {b['workflow']}: {b['cause']} → {b['route']}\n" for b in ctx.records("fix")), label="Run report (Markdown)")
+               + "".join(f"- {b['workflow']}: {b['cause']} {b['route']}\n" for b in ctx.records("fix")), label="Run report (Markdown)")
     return {"summary": f"{cn.get('executions') or 0} execution(s), {cn.get('failed') or 0} failed this round.", "counts": {"executions": cn.get("executions") or 0, "failed": cn.get("failed") or 0},
             "data": _w2.table(["Round", "Executions", "Failed"], hist)}
 
@@ -1051,17 +1051,17 @@ def _cards(u: dict) -> list[dict]:
              "empty": "Nothing deployed yet: a Develop or Migrate item's last step deploys after its own approval."}]
 
 
-GUIDE = """# Workflows & iPaaS — the work item
+GUIDE = """# Workflows & iPaaS - the work item
 
 This folder is one work item of Relay's Workflows & iPaaS module (n8n first; Power Automate, Zapier, Make, Workato,
 Boomi and MuleSoft are read and migrated). Relay's rules do everything they can: the agent is asked only for what needs
-judgement — a design from plain words, the parameters of an n8n workflow from a confirmed design.
+judgement - a design from plain words, the parameters of an n8n workflow from a confirmed design.
 
 - `request.md`: the brief and every decision so far.
 - `node_types.json`: the n8n node types Relay writes and tests.
-- `design.json`: the nodes a person confirmed — name, type, system, credential (a NAME), next, what it does.
+- `design.json`: the nodes a person confirmed - name, type, system, credential (a NAME), next, what it does.
 - `skeleton.json`: the workflow Relay's rules wrote from the design; `TODO` marks what needs judgement.
-- `workflow.json`: what you write when asked — n8n workflow JSON (name, nodes, connections, settings). n8n's own rules
+- `workflow.json`: what you write when asked - n8n workflow JSON (name, nodes, connections, settings). n8n's own rules
   apply: one trigger, every connection between nodes that exist, a decision with a condition. Relay's apply on top:
   credentials by name only (never a secret), nothing invented (only the confirmed nodes and links), no TODO left.
 - `data/`: the person's uploads; `sources/`: what Relay read (flows, run history); `outputs/`: the files kept.
@@ -1074,49 +1074,49 @@ wb.register(wb.Pack(
     cards=_cards,
     work={
         "assess": wb.Work(title="See every flow on your iPaaS platforms, what fails and why, and what to do next", steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Each connection signs in the vendor's way and reads flows and run history — read-only; exports are read the same"),
-            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", edit=INV_EDIT, text="Every flow in the tool's own terms: its trigger, steps, runs and failures — you untick what is out of scope"),
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Each connection signs in the vendor's way and reads flows and run history - read-only; exports are read the same"),
+            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", edit=INV_EDIT, text="Every flow in the tool's own terms: its trigger, steps, runs and failures - you untick what is out of scope"),
             "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Checker", text="Rules, no AI: failing and flaky flows with their cause, secrets kept in clear, switched-off flows to retire, screen steps where an API exists"),
-            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="Every finding with what to do — you keep or ignore each"),
-            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Waves: fix and secure, move to n8n, retire — the hours from stated assumptions, the cost at your hourly rate")}),
-        "develop": wb.Work(title="A new n8n workflow from plain words or a process map — tested, then deployed after approval", needs_source=False, platforms=("n8n",), steps={
+            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="Every finding with what to do - you keep or ignore each"),
+            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Waves: fix and secure, move to n8n, retire - the hours from stated assumptions, the cost at your hourly rate")}),
+        "develop": wb.Work(title="A new n8n workflow from plain words or a process map - tested, then deployed after approval", needs_source=False, platforms=("n8n",), steps={
             "Describe": wb.Step(kind="deterministic", run=d_describe, agent="Reader", text="Your description, a published process map (Business process documents) or a BPMN upload is read"),
             "Design": wb.Step(kind="deterministic", run=d_design, agent="Flow designer", edit=DESIGN_EDIT, confirm="the workflow's nodes, their links and every credential by name",
-                              text="The nodes are drawn by rules from the map — the trigger, an API call per system step, the decisions' ways; from plain words Relay drafts them on request — you correct them in place",
+                              text="The nodes are drawn by rules from the map - the trigger, an API call per system step, the decisions' ways; from plain words Relay drafts them on request - you correct them in place",
                               actions={"draft": wb.Action(label="Ask Relay to draft the design", kind="agent", prompt=_design_prompt, check=_design_check, after=_design_after, agent="Flow designer",
                                                           help="From your description: nodes, the trigger and credentials by name; you check it before confirming.")}),
             "Build": wb.Step(kind="agent", prompt=_build_prompt, check=_build_check, after=_build_after, agent="Flow builder", turns=40,
-                             text="The agent writes the n8n workflow JSON from the confirmed design; Relay's rules check it strictly — the format n8n accepts, credentials by name, nothing invented"),
+                             text="The agent writes the n8n workflow JSON from the confirmed design; Relay's rules check it strictly - the format n8n accepts, credentials by name, nothing invented"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Flow tester", edit=PROOF_EDIT, back_to="build",
-                             text="Every rule, then test executions with your sample payloads on a copy in n8n — after their own approval; the copy is removed afterwards"),
+                             text="Every rule, then test executions with your sample payloads on a copy in n8n - after their own approval; the copy is removed afterwards"),
             "Deploy": wb.Step(kind="person", run=d_deploy, view="plan", approver=True, text="The named approver confirms what goes live, where, and with which credentials"),
             "Run": wb.Step(kind="platform", run=d_run, view="link", agent="Deployer", text="The deploy goes through n8n's API after its own approval; a Run item then watches the executions")},
-            fields=[wb.Field("process", "Start from a process map", "select", options=process_options, help="A published process from Business process documents — or describe it in plain words, or upload a .bpmn"),
-                    wb.Field("payloads", "Sample payloads for the test runs", "longtext", help='JSON — one object or a list, e.g. [{"invoice": "INV-1"}]. Or upload payloads.json.'),
+            fields=[wb.Field("process", "Start from a process map", "select", options=process_options, help="A published process from Business process documents - or describe it in plain words, or upload a .bpmn"),
+                    wb.Field("payloads", "Sample payloads for the test runs", "longtext", help='JSON - one object or a list, e.g. [{"invoice": "INV-1"}]. Or upload payloads.json.'),
                     wb.Field("activate", "Switch it on when deployed", "bool", default=True)]),
         "change": wb.Work(title="Fix a failing n8n workflow from its run history, tested before it is released", needs_source=False, platforms=("n8n",), steps={
-            "Request": wb.Step(kind="platform", run=c_request, agent="Run reader", text="The workflow and its executions are read — the failed ones with their error and the node that failed"),
+            "Request": wb.Step(kind="platform", run=c_request, agent="Run reader", text="The workflow and its executions are read - the failed ones with their error and the node that failed"),
             "Diagnose": wb.Step(kind="deterministic", run=c_diagnose, view="gates", agent="Diagnoser", edit=DIAG_EDIT, text="Each failure's own words name its cause, rules first (a schema the receiving system no longer accepts, an expired credential, a changed screen, a timeout)"),
-            "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Fixer", edit=FIX_EDIT, text="The change on a copy — the parameter replaced in the failing node, or the credential pointed at its renewed name — corrected in place"),
+            "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Fixer", edit=FIX_EDIT, text="The change on a copy - the parameter replaced in the failing node, or the credential pointed at its renewed name - corrected in place"),
             "Prove": wb.Step(kind="proof", run=c_prove, view="gates", agent="Flow tester", edit=CPROOF_EDIT, back_to="fix", text="The changed workflow passes the rules, differs only where the change says, and runs on a test copy after its own approval"),
             "Approve": wb.Step(kind="person", run=c_approve, view="plan", approver=True, text="The named approver releases the change"),
             "Learn": wb.Step(kind="platform", run=c_learn, agent="Deployer", text="The workflow is updated and its failed executions re-run (one approval for exactly that); the fix is kept as a rule")},
             fields=[wb.Field("workflow", "Workflow to fix", "text", required=True, help="Its name or id on the n8n connection"),
                     wb.Field("credential", "Renewed credential's name (for an expired sign-in)", "text"), wb.Field("payloads", "Sample payloads for the test run", "longtext")]),
-        "migrate": wb.Work(title="Move flows from Power Automate, Zapier, Make, Workato, Boomi or MuleSoft to n8n — proven side by side", platforms=("n8n", *SOURCES), steps={
+        "migrate": wb.Work(title="Move flows from Power Automate, Zapier, Make, Workato, Boomi or MuleSoft to n8n - proven side by side", platforms=("n8n", *SOURCES), steps={
             "Discover": wb.Step(kind="platform", run=m_discover, agent="Scanner", text="The source platform's flows and their run history, read-only, into one neutral model"),
-            "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Decider", edit=DECIDE_EDIT, text="Keep, merge, retire or move — by rules, with the reason; a flow that fails today moves with its fix"),
-            "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Converter", text="Each flow becomes n8n workflow JSON by rules — every step a node, credentials by name, the decided fix applied"),
-            "Prove": wb.Step(kind="proof", run=m_prove, view="gates", agent="Flow tester", edit=MPROOF_EDIT, back_to="convert", text="The same payloads on the old flow and on a test copy in n8n — each side its own approval — compared run by run"),
+            "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Decider", edit=DECIDE_EDIT, text="Keep, merge, retire or move - by rules, with the reason; a flow that fails today moves with its fix"),
+            "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Converter", text="Each flow becomes n8n workflow JSON by rules - every step a node, credentials by name, the decided fix applied"),
+            "Prove": wb.Step(kind="proof", run=m_prove, view="gates", agent="Flow tester", edit=MPROOF_EDIT, back_to="convert", text="The same payloads on the old flow and on a test copy in n8n - each side its own approval - compared run by run"),
             "Hand over": wb.Step(kind="person", run=m_handover, view="plan", approver=True, text="The owner signs off on the evidence pack"),
             "Run": wb.Step(kind="platform", run=m_run, view="link", agent="Deployer", text="The converted flows are deployed to n8n after their own approval and a Run item watches them")},
-            fields=[wb.Field("payloads", "Sample payloads for the side-by-side runs", "longtext", help="JSON — the same payloads go to the old and the new flow")]),
+            fields=[wb.Field("payloads", "Sample payloads for the side-by-side runs", "longtext", help="JSON - the same payloads go to the old and the new flow")]),
         "run": wb.Work(title="Watch n8n's executions; failures go to Self-healing or the service desk after a person decides", needs_source=False, platforms=("n8n",), steps={
             "Watch": wb.Step(kind="platform", run=r_watch, view="gates", agent="Watcher", text="The workflows' executions since the last round, read-only"),
-            "Alert": wb.Step(kind="deterministic", run=r_alert, agent="Triage", text="Failures grouped by workflow and cause, each with its likely cause — not one alert per failure"),
-            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=RFIX_EDIT, text="Relay proposes who fixes each — Self-healing, a ticket, a re-run — and you confirm or change it"),
+            "Alert": wb.Step(kind="deterministic", run=r_alert, agent="Triage", text="Failures grouped by workflow and cause, each with its likely cause - not one alert per failure"),
+            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=RFIX_EDIT, text="Relay proposes who fixes each - Self-healing, a ticket, a re-run - and you confirm or change it"),
             "Approve": wb.Step(kind="platform", run=r_approve, agent="Dispatcher", text="The approved hand-offs go out: a Self-healing case, a Service desk ticket (created after its own approval) or a re-run (its own approval)"),
             "Report": wb.Step(kind="deterministic", run=r_report, agent="Reporter", confirm_if=lambda ctx, out: bool(ctx.get("breaks")), text="A run report against the last rounds; you confirm it when something failed")},
-            fields=[wb.Field("workflows", "Workflows to watch", "text", help="Ids or names, separated by commas — blank: all of them"),
+            fields=[wb.Field("workflows", "Workflows to watch", "text", help="Ids or names, separated by commas - blank: all of them"),
                     wb.Field("desk", "Service desk for tickets", "select", options=_w2.desk_options), wb.Field("schedule", "Watch it", "cadence", default={"every": "hour", "tz": "UTC"})]),
     }))

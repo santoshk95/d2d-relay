@@ -1,6 +1,6 @@
-"""UiPath Orchestrator — the OData API: Releases (processes), Jobs (runs with State and Info — a faulted job whose
+"""UiPath Orchestrator - the OData API: Releases (processes), Jobs (runs with State and Info - a faulted job whose
 Info names a selector or a screen is a screen change), Assets of type Credential (credentials by name),
-ProcessSchedules (cron), QueueDefinitions. The release description may carry "<from> → <to>" and "owner:"."""
+ProcessSchedules (cron), QueueDefinitions. The release description may carry "<from> -> <to>" and "owner:"."""
 from __future__ import annotations
 
 import time

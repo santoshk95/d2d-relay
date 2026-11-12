@@ -1,9 +1,9 @@
 """Insight pages (platform plan, phase 6: "idea -> insights"): a page made from Ask D answers or a dashboard's
-prototype, private to its owner until shared — with people, a team or the organisation, like a dashboard (the same
+prototype, private to its owner until shared - with people, a team or the organisation, like a dashboard (the same
 rules: auth.access). A page is lighter than a dashboard: no review gates, no Power BI project.
 
-Blocks: {"type": "text", "text"} · {"type": "answer", question, headline, summary, actions, data, chart, where,
-certified} (a copy of an Ask D answer at the time it was added) · {"type": "prototype", "project", "version"}.
+Blocks: {"type": "text", "text"} - {"type": "answer", question, headline, summary, actions, data, chart, where,
+certified} (a copy of an Ask D answer at the time it was added) - {"type": "prototype", "project", "version"}.
 """
 import html as H
 import json
@@ -102,7 +102,7 @@ def create(u: dict, title: str, source: dict) -> dict:
         if not v:
             raise PageError("That dashboard has no prototype yet.")
         blocks.append({"type": "prototype", "project": pid, "version": v, "name": st.get("name")})
-        title = title or f"{st.get('name')} — v{v}"
+        title = title or f"{st.get('name')} - v{v}"
     if not blocks and kind != "blank":
         raise PageError("Nothing to put on the page.")
     pid_ = "pg-" + secrets.token_hex(6)
@@ -178,12 +178,12 @@ def html(p: dict) -> str:
             if b.get("actions"):
                 parts.append("<ul>" + "".join(f"<li>{H.escape(a)}</li>" for a in b["actions"]) + "</ul>")
         elif b["type"] == "prototype":
-            parts.append(f'<p class="q">Dashboard: {H.escape(b.get("name") or b["project"])} v{b["version"]} — open it in D2D to explore.</p>')
+            parts.append(f'<p class="q">Dashboard: {H.escape(b.get("name") or b["project"])} v{b["version"]} - open it in D2D to explore.</p>')
     return f"""<!doctype html><meta charset="utf-8"><title>{H.escape(p['title'])}</title><style>
 body{{margin:0;padding:32px;font:14px/1.55 'Segoe UI',Arial,sans-serif;color:#111827;background:#fff;max-width:920px}}
 h1{{font-size:28px;margin:0 0 4px}}.meta{{color:#5F655F;font-size:12px;margin-bottom:20px}}
 section{{border-top:1px solid #E2E5E9;padding-top:16px;margin-top:16px}}.q{{color:#5F655F}}.h{{font-size:22px;font-weight:700;margin:4px 0}}
 .b{{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#EAF3F0;color:#0E5A4A;margin-right:6px}}
 table{{border-collapse:collapse;font-size:12px}}td,th{{border-bottom:1px solid #EEE;padding:3px 8px;text-align:left}}.f{{display:none}}</style>
-<h1>{H.escape(p['title'])}</h1><div class="meta">D2D insight page · {H.escape(p.get('owner', ''))} · {time.strftime('%Y-%m-%d %H:%M', time.gmtime(p['updated']))} UTC</div>
+<h1>{H.escape(p['title'])}</h1><div class="meta">D2D insight page - {H.escape(p.get('owner', ''))} - {time.strftime('%Y-%m-%d %H:%M', time.gmtime(p['updated']))} UTC</div>
 {''.join(f'<section>{x}</section>' for x in parts)}"""

@@ -1,4 +1,4 @@
-"""Demo data: turn a dataset recipe (datagen.yaml) into CSVs in data/ — realistic, joined and reproducible.
+"""Demo data: turn a dataset recipe (datagen.yaml) into CSVs in data/ - realistic, joined and reproducible.
 
 The recipe lists the tables in order (lookup tables first) and how every column is made: ids, weighted choices,
 numbers with a distribution, dates with a trend and seasonality, references to other tables (foreign keys),
@@ -15,7 +15,7 @@ same recipe and seed always give the same files. Claude writes the recipe (its s
       - name: customers
         count: 300
         columns:
-          customer_id: {id: "C", width: 4}               # C0001 …
+          customer_id: {id: "C", width: 4}               # C0001 ...
           customer_name: {fake: company}
           region: {choice: {North America: 50, Europe: 35, APAC: 15}}
       - name: orders
@@ -108,7 +108,7 @@ NODES = (ast.Expression, ast.BoolOp, ast.And, ast.Or, ast.UnaryOp, ast.Not, ast.
 
 
 def compile_expr(text, names: set[str], where: str):
-    """A formula or rule: Python syntax over this row's earlier columns and FUNCS — nothing else."""
+    """A formula or rule: Python syntax over this row's earlier columns and FUNCS - nothing else."""
     try:
         tree = ast.parse(str(text), mode="eval")
     except SyntaxError as e:
@@ -123,7 +123,7 @@ def compile_expr(text, names: set[str], where: str):
                               f"(columns so far: {', '.join(sorted(names)) or 'none'})")
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Pow) and not (
                 isinstance(node.right, ast.Constant) and isinstance(node.right.value, (int, float)) and abs(node.right.value) <= 100):
-            raise RecipeError(f"{where}: {text!r} — ** needs a constant exponent up to 100")
+            raise RecipeError(f"{where}: {text!r} - ** needs a constant exponent up to 100")
     return compile(tree, where, "eval")
 
 
@@ -138,7 +138,7 @@ def _helpers(rng: random.Random, start: dt.date, end: dt.date) -> dict:
             "str": str, "len": len, "lower": lambda s: str(s).lower(), "upper": lambda s: str(s).upper(),
             "replace": lambda s, a, b: str(s).replace(str(a), str(b)),
             "season": lambda d, w: float(w[d.month - 1]) if len(w) == 12 else 1.0,          # 12 monthly factors
-            "weekly": lambda d, w: float(w[d.isoweekday() - 1]) if len(w) == 7 else 1.0,    # Monday … Sunday
+            "weekly": lambda d, w: float(w[d.isoweekday() - 1]) if len(w) == 7 else 1.0,    # Monday ... Sunday
             "True": True, "False": False, "None": None}
 
 
@@ -229,7 +229,7 @@ def _column(tname: str, cname: str, spec, names: list[str], tables: dict) -> dic
             _pair(arg.get("days", [0, 0]), where + ".days")
         season = arg.get("seasonality")
         if season is not None and not (isinstance(season, list) and len(season) == 12) and not isinstance(season, dict):
-            raise RecipeError(f"{where}: seasonality is 12 monthly weights [Jan … Dec] or {{month number: weight}}")
+            raise RecipeError(f"{where}: seasonality is 12 monthly weights [Jan ... Dec] or {{month number: weight}}")
     if kind == "bool":
         p = arg.get("p") if isinstance(arg, dict) else arg
         if not isinstance(p, (int, float)) or not 0 <= p <= 1:
@@ -324,7 +324,7 @@ def _plan(recipe: dict, data_dir: Path) -> dict:
             tab["names"] = list(dict.fromkeys(k for r in t["rows"] for k in r))
             for c in tab["names"]:
                 if not NAME.match(str(c)):
-                    raise RecipeError(f"{name}: column {c!r} — names are letters, digits and _")
+                    raise RecipeError(f"{name}: column {c!r} - names are letters, digits and _")
             tab["rows"], tab["_rows"] = len(t["rows"]), t["rows"]
         elif mode == "count":
             if not isinstance(t["count"], int) or not 1 <= t["count"] <= MAX_TABLE_ROWS:
@@ -332,12 +332,12 @@ def _plan(recipe: dict, data_dir: Path) -> dict:
             tab["rows"] = t["count"]
         elif mode == "grid":
             if not isinstance(t["grid"], dict) or not t["grid"]:
-                raise RecipeError(f"{name}: grid is {{column: source}} — sources are months, weeks, days, a list or table.column")
+                raise RecipeError(f"{name}: grid is {{column: source}} - sources are months, weeks, days, a list or table.column")
             n = 1
             tab["grid"] = []
             for c, src in t["grid"].items():
                 if not NAME.match(str(c)):
-                    raise RecipeError(f"{name}.grid: column {c!r} — names are letters, digits and _")
+                    raise RecipeError(f"{name}.grid: column {c!r} - names are letters, digits and _")
                 if isinstance(src, list):
                     k = len(src)
                 elif src in ("months", "weeks", "days"):
@@ -350,7 +350,7 @@ def _plan(recipe: dict, data_dir: Path) -> dict:
                 tab["cols"][c] = {"kind": "grid", "target": src if isinstance(src, tuple) else None}
                 n *= max(k, 1)
             if n > MAX_TABLE_ROWS:
-                raise RecipeError(f"{name}: the grid makes {n:,} rows — at most {MAX_TABLE_ROWS:,}")
+                raise RecipeError(f"{name}: the grid makes {n:,} rows - at most {MAX_TABLE_ROWS:,}")
             tab["rows"] = n
         else:
             per = t["per"]
@@ -385,7 +385,7 @@ def _plan(recipe: dict, data_dir: Path) -> dict:
     if not tables:
         raise RecipeError("the recipe has no tables")
     if total > MAX_TOTAL_ROWS:
-        raise RecipeError(f"the tables add up to about {total:,} rows — keep a demo under {MAX_TOTAL_ROWS:,}")
+        raise RecipeError(f"the tables add up to about {total:,} rows - keep a demo under {MAX_TOTAL_ROWS:,}")
     files = [t["file"] for t in tables.values()]
     if len(set(files)) != len(files):
         raise RecipeError("two tables write the same file")
@@ -482,7 +482,7 @@ def generate(plan: dict, data_dir: Path) -> dict:
         for c in table.store:
             vals = [v for v in table.store[c] if v is not None]
             if spec_col_is_key(plan, name, c) and len(set(vals)) != len(vals):
-                warnings.append(f"{name}.{c}: lookups go through it, but it has duplicate values — they take the first "
+                warnings.append(f"{name}.{c}: lookups go through it, but it has duplicate values - they take the first "
                                 f"match (make it unique if it is a key)")
         done[name] = table
         summary.append({"table": name, "file": spec["file"], "rows": table.n, "columns": spec["names"],

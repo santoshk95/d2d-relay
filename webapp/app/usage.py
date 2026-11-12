@@ -191,7 +191,7 @@ def check(uid: str | None, team_id: str | None = None) -> list[dict]:
 def _group(rows: list[dict], key: str, names: dict | None = None) -> list[dict]:
     out: dict = {}
     for r in rows:
-        k = r.get(key) or "—"
+        k = r.get(key) or "-"
         g = out.setdefault(k, {"key": k, "name": (names or {}).get(k, k), "runs": 0, "tokens": 0, "cost_usd": 0.0})
         g["runs"] += 1
         g["tokens"] += r["tokens"] or 0
@@ -216,7 +216,7 @@ def report(month: str | None = None) -> dict:
         days[d] = days.get(d, 0) + (r["cost_usd"] or 0)
     by_conn: dict = {}
     for r in wh:
-        g = by_conn.setdefault(r["object"] or "—", {"connection": r["object"], "kind": r["step"], "queries": 0, "bytes": 0,
+        g = by_conn.setdefault(r["object"] or "-", {"connection": r["object"], "kind": r["step"], "queries": 0, "bytes": 0,
                                                     "cost_usd": 0.0, "people": set()})
         g["queries"] += 1
         g["bytes"] += r["bytes"] or 0

@@ -1,4 +1,4 @@
-"""D2D Relay: email domains that are not an organisation's own — free mail and disposable (throw-away) mail. People
+"""D2D Relay: email domains that are not an organisation's own - free mail and disposable (throw-away) mail. People
 with such an address cannot sign in or create an organisation (otp.py, orgs.py).
 
   D2D_PUBLIC_DOMAINS_EXTRA   more domains to refuse (comma-separated)
@@ -41,7 +41,7 @@ DISPOSABLE = {
     "crazymailing.com", "inboxkitten.com", "mail.tm", "mail.gw", "getairmail.com", "mailpoof.com", "emailtemporanea.com",
     "spambox.us", "mailforspam.com", "tempinbox.com", "jetable.org", "mail-temp.com", "minuteinbox.com",
 }
-# Brands with a free-mail domain in many countries: yahoo.co.in, hotmail.co.uk, outlook.com.au, live.fr, gmx.it …
+# Brands with a free-mail domain in many countries: yahoo.co.in, hotmail.co.uk, outlook.com.au, live.fr, gmx.it ...
 FAMILY = re.compile(r"^(yahoo|ymail|rocketmail|hotmail|outlook|live|msn|windowslive|gmx|yandex|aol|rediffmail|zohomail"
                     r"|protonmail|gmail|googlemail|icloud)\.(com|net|org|[a-z]{2}|co\.[a-z]{2}|com\.[a-z]{2})$")
 

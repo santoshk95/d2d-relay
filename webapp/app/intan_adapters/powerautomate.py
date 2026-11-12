@@ -1,4 +1,4 @@
-"""Power Automate (cloud flows) — the Flow management API (providers/Microsoft.ProcessSimple, api-version 2016-11-01):
+"""Power Automate (cloud flows) - the Flow management API (providers/Microsoft.ProcessSimple, api-version 2016-11-01):
 flows with their trigger / action connectors (the systems), flow runs, and connections with their status (an
 "Error" status is a sign-in that no longer works)."""
 from __future__ import annotations

@@ -41,7 +41,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
 4. **Relay Model only.** `worker.model_catalog()` returns only the house models (`config/house-models.json`, id
    `relay`), for admins too.
 5. **No "Atlas" wording** on screens or in the agent's text (`prompts.py` forbids the word; the visuals are named
-   "Relay …").
+   "Relay ...").
 6. **Branding** (`webapp/app/branding.py`, `static/js/35-branding.js`).
    - The user uploads a logo (Pillow reads its colours) and describes the brand.
    - The Relay Model makes 3 palettes (`askd.ask_json`) and the user picks one. It is stored in meta key `d2d_brand`.
@@ -63,7 +63,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
      organisation (tenant, name, email domain, owner, credits, setup done) and `relay.tn_credits` every change to its
      credits (start, charge, refund, adjust). Both are control-plane tables, so the nightly backup includes them.
    - **Sign-in** is open to business email domains. Public and disposable domains (Gmail, Outlook/Hotmail/Live, Yahoo,
-     iCloud, AOL, Proton, GMX, Yandex, Zoho Mail, Rediffmail, QQ/163, Mailinator …, plus their country variants)
+     iCloud, AOL, Proton, GMX, Yandex, Zoho Mail, Rediffmail, QQ/163, Mailinator ..., plus their country variants)
      are refused at both steps. `RELAY_PUBLIC_DOMAINS_EXTRA` / `_ALLOW` adjust the list.
    - The first person from a domain gets "Create your organisation" after the code (name prefilled from the domain,
      their own name). They own it as the admin of that workspace only, and go to the first-time setup `#/setup`
@@ -88,7 +88,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
    - **Refunds (decided here).** A run carries the id of the charge it delivers (job args `charge`). When that run
      fails, is stopped, or is cut off by a restart, the credits go back automatically: `worker._finish`, `worker.stop`
      and `worker.recover` call `give_back`, and the activity log says so. Retry then charges again, and the button
-     shows "Retry · 30 credits".
+     shows "Retry - 30 credits".
      - A new dashboard's charge rides on through data/extract, plan and the first build until v1 exists, so a failed
        first build gives back the 30.
      - Runs from before this change carry no charge and retry for free.
@@ -150,7 +150,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       declined, withdrawn); one can wait per organisation, and the person who asked or the owner can withdraw it. It
       is still emailed to info@pasdacs.com and notified to every PASDACS person. The Organisation page lists the
       requests and their answers; the chip shows one that is waiting.
-    - **Admin portal → Requests:** Approve (the amount may differ; the credits are added in the same transaction that
+    - **Admin portal -> Requests:** Approve (the amount may differ; the credits are added in the same transaction that
       marks the request approved, so never twice) or Decline (a reason is required). The person who asked and the
       owner are told in the app and by email. Organisations shows what each organisation asks for; adding credits by
       hand stays, for requests that came by email.
@@ -314,7 +314,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       (`RELAY_CREDITS_ASK_QUESTIONS`): its 1st, 6th, 11th ... question is charged (`askd_routes.ask`), and the credits
       come back when that question gets no answer. Without enough credits a new conversation is refused (402, with
       the reason); a conversation with questions left goes on. Its page shows the conversation's credits and the
-      questions left in them instead of its AI cost; the Ask button shows " · 10 credits" when the next question is
+      questions left in them instead of its AI cost; the Ask button shows " - 10 credits" when the next question is
       charged; the credits chip updates after every answer. The credit history says "Ask Relay questions".
     - Every screen that lists prices (Organisation, the chip's menu, Add credits, Organisations on the admin portal)
       and the docs list all four.
@@ -329,8 +329,8 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
 
 20. **The name** (the user's words of 2026-11-11: "D2D is a sub product of Relay Platform", and D2D means "Data to
     Decision"; a first message said "Data to Dashboard" and was corrected before anything went live). D2D means Data
-    to Decision, and D2D Relay is a product of the Relay Platform by PASDACS. Said under the RELAY logo ("D2D · Data to
-    Decision" / "a Relay Platform product · PASDACS"), on the sign-in page, on the Dashboards page ("D2D · Data to
+    to Decision, and D2D Relay is a product of the Relay Platform by PASDACS. Said under the RELAY logo ("D2D - Data to
+    Decision" / "a Relay Platform product - PASDACS"), on the sign-in page, on the Dashboards page ("D2D - Data to
     Decision"; it said "BI & dashboards"), in the sign-in code email and the other emails' footer, the module's
     description (it said "Data to Decisions dashboards"), the brand's tagline (it said "Data to dashboards"), the Ask
     Relay export footer (it said "Ask D"), the agent's instructions and the docs. The screens checked on a test stack.
@@ -356,7 +356,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
         (`cat`, `ls`, `grep` ...) run without asking: an injected instruction could read another organisation's
         dashboards (all project folders share one group) or the Claude sign-in. Runs also had Claude Code's
         scheduling, remote-trigger, messaging and workflow tools and about 17 skills. Now a managed policy
-        (`agent/managed-settings.json` → `/etc/claude-code/managed-settings.json`, above every other settings file):
+        (`agent/managed-settings.json` -> `/etc/claude-code/managed-settings.json`, above every other settings file):
         reads and writes outside the dashboard's folder refused, only its own hook runs, CLAUDE.md, project.json and
         `.claude/` not editable; and `--tools` gives a run Read, Write, Edit, Glob, Grep, the shell and its task list
         only, with `--strict-mcp-config` and `--disable-slash-commands` (no MCP servers, no skills). A managed hook
@@ -428,7 +428,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       8(3): at least a year, then erase), the answer cache after 7 days, hand-made dumps and exports after 30 days.
     - **No notice, no way to see one's data.** Now: a privacy notice (`/privacy.html`: what is held, why, who else
       handles it (Anthropic in the USA, Microsoft 365, Cloudflare), how long, rights, grievances within 90 days, the
-      Data Protection Board), linked from the sign-in page, the profile menu and Organisation › Your data; and
+      Data Protection Board), linked from the sign-in page, the profile menu and Organisation > Your data; and
       Download my data (`GET /api/me/data`: profile, sign-ins, dashboards, conversations, credit requests, a year of
       activity, nobody else's), audited as `privacy.export`.
     - **Two routes left from RELAY could send data out:** pushing a dashboard to GitHub and writing back into a
@@ -472,7 +472,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       webhook (`POST /api/payments/webhook`, no sign-in: payment.captured, order.paid, payment.failed,
       refund.processed), or a look at Razorpay when the Organisation page opens (and Check on the admin portal) for
       checkouts of the last two days still waiting.
-    - **Receipts:** by email to the buyer, and a printable page from Organisation → Payments (a payment receipt, not a
+    - **Receipts:** by email to the buyer, and a printable page from Organisation -> Payments (a payment receipt, not a
       tax invoice). The owners are told in the app, PASDACS by email and notification. The credit history says "Bought
       online" with the amount and Razorpay's payment id. Owners see all of the organisation's payments, others their own.
     - **The admin portal's Payments page:** which keys are in use, the webhook URL and the events to give Razorpay; the
@@ -570,7 +570,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       test-key payments get `TEST/...`), the date, the buyer's name, address, state or country and GSTIN, the place of
       supply, the SAC code, quantity, taxable value, CGST and SGST (UTGST in a union territory without a legislature)
       or IGST, the total, reverse charge "No", and a signature line. Kept as a snapshot on the payment; emailed to the
-      buyer (and PASDACS); printable from Organisation → Payments; a year's invoices as CSV for GSTR-1 on the admin
+      buyer (and PASDACS); printable from Organisation -> Payments; a year's invoices as CSV for GSTR-1 on the admin
       portal.
     - **Tax:** the buyer's state decides CGST and SGST (PASDACS's own state) or IGST (another state, or a buyer abroad
       paying rupees). Dollar sales to buyers abroad are exports of services: zero-rated with the LUT's ARN on the
@@ -631,7 +631,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     same tunnel. The guide (`docs/d2d-relay.md`, "Public address", with "Changing the address"), `README.md`,
     `.env.example`, `docker-compose.yml`'s notes and the public site's address the admin portal uses in emails and for
     the webhook (`payments._site`) name the new address. The switch: (1) the user adds the public hostname `d2d` on the
-    D2D tunnel in Cloudflare (Zero Trust → Networks → Tunnels → the tunnel → Public hostname → Add: subdomain `d2d`,
+    D2D tunnel in Cloudflare (Zero Trust -> Networks -> Tunnels -> the tunnel -> Public hostname -> Add: subdomain `d2d`,
     domain `pasdacs.com`, HTTP, `d2d-relay:8000`); (2) Claude checks https://d2d.pasdacs.com answers, sets
     `RELAY_PUBLIC_URL=https://d2d.pasdacs.com` in the live `.env` and restarts web and admin on this item's image;
     (3) the user changes Razorpay's webhook to https://d2d.pasdacs.com/api/payments/webhook.
@@ -640,6 +640,36 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     going back). Checked through Cloudflare on both addresses: the site, the sign-in API (same-site requests pass,
     cross-site ones are refused), the security headers; the admin portal names the new address. Left for the user:
     Razorpay's webhook; later, if wanted, a Cloudflare redirect from d2d-relay.pasdacs.com to d2d.pasdacs.com.
+29. **Plain characters, a first-time tour, Migration D2D** (the user, 2026-11-12: "humanize it, eg "—" replace these
+    with small or remove it and ensure all characters look human"; then "a small tutorial for first time login where
+    they can setup branding all and basic things if required or skip it as well. and theme and dark/light mode, also
+    add a static option as Migration D2D, which mean Migrate any Dashboard to Dashboard ... add a button to conect me
+    and explain via email so we can enable it"). The rules are in `docs/d2d-relay.md` ("First-time tour", "Migration
+    D2D", "Text people read").
+    - **Plain characters.** Every text people read in the app, its emails and pages is in keyboard characters: a hyphen
+      for a long dash, straight quotes, three dots, "->" for an arrow, "-" for a bullet or a middle dot, ">" in paths.
+      Converted by a script over the string literals and comments of every tracked Python and JavaScript file (never
+      regular expressions or code), the pages and guides by hand. Kept: check marks, crosses, up and down arrows, ×,
+      ≈, ± and currency signs. What the AI writes is shown the same way: the agent's notes, summaries and review notes
+      (`store.plain`), Ask Relay's headline, summary, suggestions and follow-up questions (`askd._finish`), brand
+      palette names; what people typed is shown as typed. The Power BI file gets page names, titles, subtitles,
+      labels, text boxes, alt text, descriptions and display folders in plain characters (`report_builder`); measure,
+      column and table names stay (the report refers to them) and the Report & accessibility gate warns about them.
+      The AI is told (`GENBI.md`, Ask Relay's instructions). The map: `genbi_kit/plaintext.py` (new).
+    - **First-time tour** (`#/welcome`, `js/38-tour.js`, new): Welcome; Your brand (owners, Branding inside it);
+      Light or dark (Light, Dark, or Match my device, which follows the device as it changes); The basics (how a
+      dashboard is made, credits, Migration D2D, help). Skip the tour at any step. Shown once per person
+      (`POST /api/me/tour`), to people who start on or after 2026-11-12; Take the tour in the organisation menu opens
+      it again; a link to anything else opens as asked. It replaces the owner's one-page setup (`#/setup` opens its
+      brand step).
+    - **Migration D2D** (`#/migration`, `js/39-migration.js`, new; in the sidebar and the organisation menu): migrate
+      any dashboard to any dashboard (Cognos, Qlik, Looker, Tableau, Power BI, MicroStrategy, SAP BusinessObjects,
+      SSRS and more, any direction), how it works, what moves. **Contact PASDACS** sends the tools from and to,
+      roughly how many dashboards and a message to info@pasdacs.com (Reply-To the person), to the platform admins'
+      notifications and to a new **Migration D2D requests** card on the admin portal's Requests
+      (`POST /api/org/migration-request`, 5 an hour per person). Not self-service: PASDACS replies and switches it on.
+    - The privacy notice names requests sent to PASDACS in the app under Usage.
+    - Tests: see "Item 29 tests" in `docs/security-privacy-audit-2026-11-11.md`.
 
 Test data in the live install: none since the fresh start (item 18).
 
@@ -702,7 +732,7 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   For a public launch: stop overnight restarts (Windows Update active hours, or restart only by hand), and let Docker
   start without a sign-in or move D2D Relay to a server (see the audit, P3).
 - **GST 18% is not set yet** (item 25's deploy step): the auto mode refused Claude's direct write to the live payment
-  settings. The user sets it on the admin portal (http://127.0.0.1:8102 → Payments: GST 18, added on top), or allows
+  settings. The user sets it on the admin portal (http://127.0.0.1:8102 -> Payments: GST 18, added on top), or allows
   Claude to. Until then rupee prices have no GST added (test mode only).
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
@@ -719,13 +749,13 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   the invoice details are complete). Refunds: none (item 25); any made by hand on Razorpay are recorded.
 - **GST invoices (item 25) are live** (2026-11-12, with items 26 and 27). Still needed from the user: PASDACS's legal name, registered
   address, state, PIN and GSTIN; the SAC code (the accountant's; the setting suggests 998314); the LUT's ARN if one is
-  filed for 2026-27 (else dollar sales carry IGST, included in the price). They go on the admin portal (Payments → Tax
+  filed for 2026-27 (else dollar sales carry IGST, included in the price). They go on the admin portal (Payments -> Tax
   invoices), or the user sends them and they are set at the deploy. Live keys cannot sell until they are complete.
   **GST decided (the user, 2026-11-11: "₹100 + 18% GST"):** rupee prices have 18% GST added on top; at the deploy the
   live settings get GST 18, not included (25 credits ₹2,500 + ₹450 GST = ₹2,950; dollar prices abroad unchanged).
 - **Dollar prices (item 24) are live** (since 2026-11-11 ~20:13 IST): $1 a credit outside India, ₹100 in India.
   **The Razorpay account takes Indian cards only** (seen in test mode): until the user switches on international
-  payments (Razorpay Dashboard → Account & Settings → International payments; Razorpay reviews it), a buyer abroad
+  payments (Razorpay Dashboard -> Account & Settings -> International payments; Razorpay reviews it), a buyer abroad
   sees dollar prices but only an Indian card goes through.
 - **Abuse.** Anyone with a business mailbox can sign up and create an organisation (as asked). Since item 27 (live
   2026-11-12) its 50 starting credits wait for PASDACS's approval: info@pasdacs.com gets a review email for each new
@@ -744,7 +774,7 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   - **The AI runs on a personal Claude plan.** The AI engine signs in with a Claude subscription ("Ultra", no team
     seat), which Anthropic treats as a consumer plan: customers' data in it may be used to train models if the
     account's "Help improve Claude" setting is on (then kept up to 5 years; otherwise 30 days). At once: switch that
-    setting off (claude.ai › Settings › Privacy). For customers' data: an Anthropic API key (commercial terms: not
+    setting off (claude.ai > Settings > Privacy). For customers' data: an Anthropic API key (commercial terms: not
     used for training, a data processing addendum; D2D Relay supports it, provider `anthropic_api`) or a Team or
     Enterprise plan. The privacy notice says Anthropic handles the data, and nothing about training until then.
   - **The disk is not encrypted.** Windows reports BitLocker on C: as "waiting for activation": the database,

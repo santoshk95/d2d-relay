@@ -16,7 +16,7 @@ READ = """Stage: RFP READ. The pack is under attachments/ ({files}). request.md 
 team already knows. Run `genbi read attachments/` (Word, Excel, PDF, slides as text with page and sheet markers),
 then Read each PDF for its layout and tables.{correction}
 
-1. Write requirements.yaml exactly in this shape — every requirement, with where it is in the pack:
+1. Write requirements.yaml exactly in this shape - every requirement, with where it is in the pack:
 
 buyer:
   name: Contoso Retail Ltd
@@ -33,7 +33,7 @@ evaluation:
   - {{criterion: Price, weight: 40}}
 facts: ["Current estate: 1,842 Cognos reports (pack p. 4)"]    # buyer facts worth citing, each with its page
 requirements:
-  - id: R-001              # the pack's own numbering where it has one, else R-001, R-002 …
+  - id: R-001              # the pack's own numbering where it has one, else R-001, R-002 ...
     text: The supplier shall migrate all Cognos reports to Power BI.   # the requirement as written, trimmed
     page: 4                # page (PDF / Word) or sheet name (Excel) where it is
     source: rfp-pack.docx  # the file in attachments/ it came from
@@ -41,7 +41,7 @@ requirements:
     kind: mandatory        # mandatory, scored, information
     confidence: 0.95       # 0-1: how sure you are this is a requirement as stated
 
-2. Write gonogo.yaml — your recommendation for the named person who decides:
+2. Write gonogo.yaml - your recommendation for the named person who decides:
 
 recommendation: go         # go | no-go
 reasons: ["Fit: 28 of 32 requirements map to live or partly live modules", "Deadline leaves 18 working days"]
@@ -52,7 +52,7 @@ risks: ["R-017 asks for on-premises hosting only"]
 effort: "roughly 3 waves"  # only what the pack and the registry support; no invented day counts
 deadline_ok: true
 
-Rules: list every requirement you find (a pack of this size has dozens — do not stop early); ids unique; page and
+Rules: list every requirement you find (a pack of this size has dozens - do not stop early); ids unique; page and
 source on every one; kinds only mandatory, scored or information; modules only from sources/registry.json. Do not
 write any other file. End with 2-4 sentences for the bid team: how many requirements, the deadline and format rules,
 and your recommendation in one line."""
@@ -67,7 +67,7 @@ Read the pack again with this in mind and rewrite requirements.yaml and gonogo.y
 
 ANSWER = """Stage: RFP ANSWER. The bid team confirmed requirements.yaml and decided to go.{correction} Draft the compliance
 matrix: for every requirement, a status and an answer with its evidence. The only evidence you may cite:
-  module:<id>   a module in sources/registry.json (its name, platforms, journey, checkpoints — Relay's own facts)
+  module:<id>   a module in sources/registry.json (its name, platforms, journey, checkpoints - Relay's own facts)
   library:<id>  an item in sources/library.json (past answers and case studies the tenant chose to reuse)
 Nothing else: no client names, numbers, certifications or references that are not in those two files.
 
@@ -98,7 +98,7 @@ ANSWER_CORRECTION = """ They then sent the matrix back with this comment (also a
 
 Rewrite matrix.yaml with it, keeping what was right."""
 
-REDTEAM = """Stage: RFP RED TEAM. Read requirements.yaml, matrix.yaml and pricing.yaml as the buyer's evaluator would —
+REDTEAM = """Stage: RFP RED TEAM. Read requirements.yaml, matrix.yaml and pricing.yaml as the buyer's evaluator would -
 critically, against the evaluation criteria and format rules in requirements.yaml. Write redteam.yaml:
 
 findings:
@@ -136,5 +136,5 @@ def redteam() -> str:
 
 
 def fix(file: str, problems: list[str]) -> str:
-    shown = problems[:25] + ([f"… and {len(problems) - 25} more"] if len(problems) > 25 else [])
+    shown = problems[:25] + ([f"... and {len(problems) - 25} more"] if len(problems) > 25 else [])
     return FIX.format(file=file, n=len(problems), problems="\n".join(f"- {p}" for p in shown))

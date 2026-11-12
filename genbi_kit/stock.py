@@ -1,17 +1,17 @@
 """Power BI's own visuals ("stock" or built-in visuals) with every Format-pane option.
 
-A definition uses one as `type: pbi.<visualType>` (pbi.clusteredColumnChart, pbi.lineChart, pbi.cardVisual, pbi.kpi, …).
+A definition uses one as `type: pbi.<visualType>` (pbi.clusteredColumnChart, pbi.lineChart, pbi.cardVisual, pbi.kpi, ...).
 Nothing is embedded in the PBIP: Power BI draws them itself, so they work in every tenant (including those that block
 custom visuals), in exports, subscriptions, mobile and Copilot.
 
 Where everything comes from:
 - The field wells (data roles), their limits and the field combinations each visual accepts are Power BI's own: read
   from Power BI Desktop 2.159 (dataRoles / dataViewMappings conditions in its bundles) and checked against
-  Microsoft's PBIR authoring references. Friendly aliases (axis, legend, values, smallMultiples, …) map to them.
+  Microsoft's PBIR authoring references. Friendly aliases (axis, legend, values, smallMultiples, ...) map to them.
 - Every formatting object and property, with its type and allowed values, comes from Power BI's report-theme schema
   (`schemas/powerbi/reportThemeSchema.json`, version 5.78, extracted from the same Desktop install; Microsoft also
   publishes it under MIT in microsoft/powerbi-desktop-samples). Objects of the visual itself go to `objects`, the
-  shared container objects (title, subTitle, background, border, dropShadow, padding, visualHeader, visualTooltip, …)
+  shared container objects (title, subTitle, background, border, dropShadow, padding, visualHeader, visualTooltip, ...)
   to `visualContainerObjects`, exactly as Power BI Desktop writes them.
 - Value encoding follows what Desktop writes: typed literals (`12D`, `3L`, `'Top'`), colors as solid fills or theme
   colors (ThemeDataColor), selectors per series (metadata), per category value (scopeId), per data point
@@ -343,7 +343,7 @@ def check_fields(v: dict, entry: dict, kind_of) -> None:
             if want == G and kind != "Column":
                 raise FormatError(f"{v['id']}: well {role} ({entry['role_info'][role]['displayName']}) takes a column, got {ref}")
             if want == M and kind != "Measure":
-                raise FormatError(f"{v['id']}: well {role} ({entry['role_info'][role]['displayName']}) takes a measure, got {ref} — "
+                raise FormatError(f"{v['id']}: well {role} ({entry['role_info'][role]['displayName']}) takes a measure, got {ref} - "
                                   f"make a measure for it")
         if cap is not None and len(refs) > cap and role not in entry["drill"]:
             raise FormatError(f"{v['id']}: well {role} ({entry['role_info'][role]['displayName']}) takes at most {cap} field"
@@ -468,14 +468,14 @@ def _value(spec: dict, value, ctx: Ctx, where: str) -> tuple[dict, bool]:
     if kind == "text":
         return _lit(str(value)), False
     raise FormatError(f"{ctx.vid}: {where} is a structured property ({spec.get('ref')}); give the exact Power BI value as "
-                      f"{{raw: …}} (see `genbi catalog` for the object) or leave it out")
+                      f"{{raw: ...}} (see `genbi catalog` for the object) or leave it out")
 
 
 def _selector(entry_vt: str, obj: str, item: dict, ctx: Ctx, data_bound: bool, is_container: bool, gradient: bool) -> dict | None:
     target, state = item.get("for"), item.get("state")
     if is_container:
         if target is not None or state is not None:
-            raise FormatError(f"{ctx.vid}: {obj} is part of the visual's container — it takes no `for` / `state`")
+            raise FormatError(f"{ctx.vid}: {obj} is part of the visual's container - it takes no `for` / `state`")
         return None
     sel: dict = {}
     if isinstance(target, str) and target.strip().lower() in WILDCARD:
@@ -568,7 +568,7 @@ def theme_value(spec: dict, value, where: str):
     if spec["kind"] == "complex":
         if isinstance(value, dict) and "raw" in value:
             return value["raw"]
-        raise FormatError(f"theme.styles {where} is structured; give it as {{raw: …}}")
+        raise FormatError(f"theme.styles {where} is structured; give it as {{raw: ...}}")
     return value
 
 
@@ -641,16 +641,16 @@ def prototype_format(vt: str, fmt: dict | None, styles: dict | None = None) -> d
 
 def describe(entry: dict) -> list[str]:
     """`genbi catalog pbi.<visual>`: wells, rules and every format object with its properties and allowed values."""
-    lines = [f"{entry['name']}: {entry['displayName']} — Power BI's built-in visual '{entry['visualType']}'"
+    lines = [f"{entry['name']}: {entry['displayName']} - Power BI's built-in visual '{entry['visualType']}'"
              + (f". {entry['description']}" if entry.get("description") else "")]
-    lines.append("  fields (well: what it takes — aliases):")
+    lines.append("  fields (well: what it takes - aliases):")
     for r, k in entry["roles"].items():
         i = entry["role_info"][r]
         cap = i["max"]
         what = {"Grouping": "column", "Measure": "measure", "GroupingOrMeasure": "column or measure"}[k]
-        lines.append(f"    {r} — {i['displayName']} ({what}{', max ' + str(cap) if cap is not None else ', several'}"
+        lines.append(f"    {r} - {i['displayName']} ({what}{', max ' + str(cap) if cap is not None else ', several'}"
                      f"{', drill hierarchy' if r in entry['drill'] else ''}){': ' + i['description'] if i['description'] else ''}"
-                     + (f" — also: {', '.join(i['aliases'])}" if i["aliases"] else ""))
+                     + (f" - also: {', '.join(i['aliases'])}" if i["aliases"] else ""))
     lines.append("  needs: " + " or ".join(" + ".join(g) for g in entry["required"]))
     if entry["conditions"]:
         lines.append("  Power BI's combinations: " + " or ".join(
@@ -668,13 +668,13 @@ def describe(entry: dict) -> list[str]:
                 vals = [str(v) if str(v).lower() == str(lab).lower() else f"{v}={lab}" for v, lab in zip(s["values"], s["labels"])]
                 parts.append(f"{p} ({' | '.join(vals)})")
             elif k in ("number", "int") and ("min" in s or "max" in s):
-                parts.append(f"{p} ({k} {s.get('min', '')}–{s.get('max', '')})")
+                parts.append(f"{p} ({k} {s.get('min', '')}-{s.get('max', '')})")
             else:
                 parts.append(f"{p} ({'structured: ' + str(s.get('ref')) if k == 'complex' else k})")
         return f"    {name}: " + ", ".join(parts)
 
-    lines.append("  format — the visual's own objects:")
+    lines.append("  format - the visual's own objects:")
     lines += [show(o, p) for o, p in sorted(entry["objects"].items())]
-    lines.append("  format — container objects (shared by every visual):")
+    lines.append("  format - container objects (shared by every visual):")
     lines += [show(o, p) for o, p in sorted(entry["container"].items())]
     return lines

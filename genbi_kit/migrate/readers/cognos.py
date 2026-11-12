@@ -11,12 +11,12 @@ CognosExports reads what a Cognos administrator can hand over without a server c
     audit.csv            the Audit database export (COGIPF_RUNREPORT): timestamp, report path, user, status, run time
     data/*.csv           optional: the tables behind the packages (the sample estate ships them; a client extracts them)
 
-Report specifications are read with the namespaces Cognos has used over the years (report/8.x … 16.x); the reader
+Report specifications are read with the namespaces Cognos has used over the years (report/8.x ... 16.x); the reader
 looks at local names, so an archive mixing versions is fine. Objects are read page by page with a progress callback
 and a pause hook, and a cursor lets a scan resume from the same page after a restart.
 
 CognosRest is the thin client for a live server (Cognos Analytics 11.1+ REST API): it signs in, lists the content
-store, downloads specifications and the audit rows into the same export layout, then CognosExports reads them — one
+store, downloads specifications and the audit rows into the same export layout, then CognosExports reads them - one
 code path for both. It backs off on HTTP 429 (Retry-After) and reports every wait plainly.
 """
 from __future__ import annotations
@@ -346,7 +346,7 @@ class CognosExports:
                 "namespace": self.manifest.get("namespace"), "team_folders": sum(1 for f in folders if not f.startswith("My content")),
                 "personal_folders": sum(1 for f in folders if f.startswith("My content")), "users": self.manifest.get("users"),
                 "objects": sum(1 for r in rows if r["type"] != "Folder"), "usage_source": "Audit database export" if audit.exists() else None,
-                "usage_days": days, "permissions": "Read content, read audit — no write access (an export cannot write)",
+                "usage_days": days, "permissions": "Read content, read audit - no write access (an export cannot write)",
                 "data_files": len(list((self.root / "data").glob("*.csv"))) if (self.root / "data").is_dir() else 0,
                 "estimate_seconds": max(2, round(len(rows) / 60))}
 
@@ -382,7 +382,7 @@ class CognosExports:
                         est["problems"].append(f"{row.get('name') or row.get('id')}: {e}")
                 found = self._found(est)
                 progress({"phase": phase, "page": p + 1, "pages": pages, "found": found, "cursor": {"phase": phase, "page": p + 1},
-                          "text": f"reading {phase} — page {p + 1} of {pages}" if pages > 1 else f"reading {phase} — 1 page",
+                          "text": f"reading {phase} - page {p + 1} of {pages}" if pages > 1 else f"reading {phase} - 1 page",
                           "pct": self._pct(phase, p + 1, pages, groups)})
                 if not pause():
                     raise Stopped(f"stopped while reading {phase}, page {p + 1} of {pages}", {"phase": phase, "page": p + 1})
@@ -456,7 +456,7 @@ class CognosExports:
         model.finish(est)
         est["problems"] = list(dict.fromkeys(est["problems"] + model.validate(est)))
         progress({"phase": "done", "page": 1, "pages": 1, "found": self._found(est), "cursor": None, "pct": 100,
-                  "text": f"scan complete — {len(est['reports']):,} objects in {est['read_seconds']} s"})
+                  "text": f"scan complete - {len(est['reports']):,} objects in {est['read_seconds']} s"})
         return est
 
     def _found(self, est: dict) -> dict:
@@ -477,7 +477,7 @@ class CognosExports:
         audit = self.root / "audit.csv"
         est["usage"] = {"source": "Audit database export" if audit.exists() else None, "from": None, "to": None, "runs": 0, "days": 0}
         if not audit.exists():
-            progress({"phase": "usage", "page": 1, "pages": 1, "text": "no Audit database export in the archive — usage unknown", "level": "warn", "pct": 80})
+            progress({"phase": "usage", "page": 1, "pages": 1, "text": "no Audit database export in the archive - usage unknown", "level": "warn", "pct": 80})
             return
         by_path: dict[str, dict] = {}
         n, lo, hi = 0, None, None
@@ -512,7 +512,7 @@ class CognosExports:
                           "last_run_days": days[0] if days else None, "users": len(u["users"]),
                           "failed_days": min((d for d in (_days(t, as_of) for t in u["failed"]) if d is not None), default=None)}
         progress({"phase": "usage", "page": 1, "pages": 1, "pct": 86, "found": self._found(est),
-                  "text": f"{est['usage']['days']} days of the Audit database read — {n:,} runs; "
+                  "text": f"{est['usage']['days']} days of the Audit database read - {n:,} runs; "
                           f"{sum(1 for r in est['reports'] if r['usage']['last_run_days'] is not None and r['usage']['last_run_days'] <= 90):,} objects used in 90 days, "
                           f"{sum(1 for r in est['reports'] if r['usage']['last_run_days'] is None):,} never run"})
 
@@ -541,7 +541,7 @@ class CognosExports:
         shared = {d["id"] for r in est["reports"] for d in est["datasets"] if d["id"] == r.get("dataset")}
         progress({"phase": "dependencies", "page": 1, "pages": 1, "pct": 96, "found": self._found(est),
                   "text": f"linking {len(est['reports']):,} objects to {sum(1 for d in est['datasets'] if d['kind'] == 'package')} packages and "
-                          f"{sum(1 for d in est['datasets'] if d['kind'] == 'data module')} data modules — {len(shared)} shared objects in use"
+                          f"{sum(1 for d in est['datasets'] if d['kind'] == 'data module')} data modules - {len(shared)} shared objects in use"
                           + (f"; {missing} reports point to missing packages" if missing else "")})
 
 
@@ -593,8 +593,8 @@ class CognosRest:
                     wait = min(wait, 60)
                     self.retries += 1
                     self.waits.append(wait)
-                    self.progress({"phase": "wait", "level": "warn", "text": (f"server asked to slow down (HTTP 429) — waiting {wait:g} s, then continuing"
-                                                                              if e.code == 429 else f"server error (HTTP {e.code}) — trying again in {wait:g} s")})
+                    self.progress({"phase": "wait", "level": "warn", "text": (f"server asked to slow down (HTTP 429) - waiting {wait:g} s, then continuing"
+                                                                              if e.code == 429 else f"server error (HTTP {e.code}) - trying again in {wait:g} s")})
                     self.sleep(wait)
                     continue
                 raise ReadError(f"HTTP {e.code} from {path}")
@@ -618,11 +618,11 @@ class CognosRest:
         return {"ok": True, "product": session.get("product") or "IBM Cognos Analytics", "version": session.get("version") or info.get("version") or "unknown",
                 "namespace": self.namespace or session.get("namespace"), "team_folders": folders.get("total_folders") or folders.get("folders"),
                 "personal_folders": folders.get("personal_folders"), "users": session.get("users"), "objects": folders.get("total_objects") or folders.get("objects"),
-                "usage_source": f"Audit database — {audit.get('days')} days available" if audit.get("days") else None, "usage_days": audit.get("days"),
+                "usage_source": f"Audit database - {audit.get('days')} days available" if audit.get("days") else None, "usage_days": audit.get("days"),
                 "permissions": session.get("permissions") or "Read content, read audit", "estimate_seconds": max(5, round((folders.get("total_objects") or 100) / 6))}
 
     def download(self, dest: Path, progress=None, pause=None, scope: dict | None = None) -> Path:
-        """Everything the export reader needs, written as files under `dest` — so the same reader runs on it."""
+        """Everything the export reader needs, written as files under `dest` - so the same reader runs on it."""
         self.progress = progress or (lambda e: None)
         pause = pause or (lambda: True)
         scope = scope or {}
@@ -643,7 +643,7 @@ class CognosRest:
                 objects += items
                 total = out.get("total") or len(objects)
                 self.progress({"phase": "listing", "page": page, "pages": max(1, -(-total // self.page_size)), "pct": min(10, page),
-                               "text": f"listing the content store ({root.replace('_', ' ')}) — page {page} of {max(1, -(-total // self.page_size))}"})
+                               "text": f"listing the content store ({root.replace('_', ' ')}) - page {page} of {max(1, -(-total // self.page_size))}"})
                 if not pause():
                     raise Stopped("stopped while listing the content store")
                 if len(items) < self.page_size:
@@ -675,7 +675,7 @@ class CognosRest:
                         continue
                     (dest / sub / f"{o['id']}.{ext}").write_bytes(payload)
                 self.progress({"phase": api if api != "modules" else "data modules", "page": p + 1, "pages": pages, "pct": 10 + round(60 * (list(kinds).index(t) + (p + 1) / pages) / len(kinds)),
-                               "text": f"reading {api.replace('modules', 'data modules')} — page {p + 1} of {pages}", "found": {TYPES.get(t, t) + 's': min(len(items), (p + 1) * self.page_size)}})
+                               "text": f"reading {api.replace('modules', 'data modules')} - page {p + 1} of {pages}", "found": {TYPES.get(t, t) + 's': min(len(items), (p + 1) * self.page_size)}})
                 if not pause():
                     raise Stopped(f"stopped while reading {api}")
         if scope.get("usage", True):
@@ -686,7 +686,7 @@ class CognosRest:
                 items = out.get("items") or []
                 rows += items
                 self.progress({"phase": "usage", "page": page, "pages": max(1, -(-(out.get('total') or len(rows)) // 5000)), "pct": 72 + min(20, page * 2),
-                               "text": f"reading the Audit database — {len(rows):,} runs so far"})
+                               "text": f"reading the Audit database - {len(rows):,} runs so far"})
                 if not pause():
                     raise Stopped("stopped while reading the audit")
                 if len(items) < 5000:

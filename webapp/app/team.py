@@ -1,8 +1,8 @@
-"""Team & agents (build-plan v2, P10): who — person or agent — is on what right now, what is waiting for a person,
+"""Team & agents (build-plan v2, P10): who - person or agent - is on what right now, what is waiting for a person,
 where the time goes, how good the agents' work is, and the hours and FTE saved against the AI cost. Every number
 comes from records the platform keeps: project runs (agent, model, provider, stage, duration, cost, outcome),
-checkpoints (decided, accepted, sent back, seconds, by whom), usage rows and the job queue — nothing is estimated
-beyond the hourly rate the admin sets under Admin › Branding. Viewers do not see this page.
+checkpoints (decided, accepted, sent back, seconds, by whom), usage rows and the job queue - nothing is estimated
+beyond the hourly rate the admin sets under Admin > Branding. Viewers do not see this page.
 """
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def work_stages() -> set[str]:
 
 
 def is_agent_run(r: dict, llm: set | None = None) -> bool:
-    """Agent work: an AI job kind, or a workbench step's run (stage "<module>.<step>" — an agent step, or rules and
+    """Agent work: an AI job kind, or a workbench step's run (stage "<module>.<step>" - an agent step, or rules and
     platform reads recorded with model "rules"), whichever module registered it."""
     st = str(r.get("stage") or "")
     return st in (llm if llm is not None else llm_stages()) or ("." in st and st.split(".", 1)[0] in _modules()) or r.get("model") == "rules"
@@ -198,7 +198,7 @@ def build(u: dict, period: str = "30d") -> dict:
         role = here.get("agent") or agents.name(cur["kind"])                  # a workbench step names its own agent and what it is doing
         doing = here.get("doing") or agents.doing(cur["kind"])
         doing = doing[:1].upper() + doing[1:]
-        now_rows.append({"who": f"Agent · {role}", "kind": "agent", "role": role, "does": agents.does(cur["kind"]),
+        now_rows.append({"who": f"Agent - {role}", "kind": "agent", "role": role, "does": agents.does(cur["kind"]),
                          "on": f"{doing}: {here['name']}" if here["name"] else f"{doing} for someone else",
                          "module": here["module"], "status": "working", "since": cur.get("started"), "link": here["link"], "model": cur.get("model")})
     for p in person_rows:
@@ -215,7 +215,7 @@ def build(u: dict, period: str = "30d") -> dict:
     work = [r for r in in_period if r.get("stage") in work_kinds and not home.is_fix(r)]
     fixes = [r for r in in_period if home.is_fix(r)]
     cost_runs = sum((r.get("cost_usd") or 0) for r in in_period)
-    # the cost rows mirrored from agent runs (source run:…) are already in cost_runs, whatever module ran them
+    # the cost rows mirrored from agent runs (source run:...) are already in cost_runs, whatever module ran them
     cost_other = db.one("SELECT COALESCE(SUM(cost_usd), 0) AS c FROM usage WHERE ts >= ? AND NOT (kind = 'llm' AND COALESCE(source, '') LIKE 'run:%')", (since,))["c"]
     ai_cost = round(cost_runs + cost_other, 2)
     months = []

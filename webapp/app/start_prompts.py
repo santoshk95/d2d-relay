@@ -1,5 +1,5 @@
 """What the web app asks the agent to do for a Start (build-plan v2, P10): read every attachment and write
-analysis.yaml — three views a person confirms (process map, fields & rules, plan & modules). The patterns follow
+analysis.yaml - three views a person confirms (process map, fields & rules, plan & modules). The patterns follow
 prompts.py (SYSTEM / stage prompt / fix round); the format is spelled out in the stage prompt, and the folder's guide
 (CLAUDE.md, written by app/guides.py for a Start) says what the folder holds and the rules."""
 from __future__ import annotations
@@ -19,7 +19,7 @@ READ = """Stage: START READ. A person wants to start something (request.md: the 
 correction is appended at the bottom, newest last). Read everything they attached and show what you understood.
 
 1. Read request.md.
-2. Run `genbi read attachments/` — it prints what every attachment says and lists the key frames it extracted from
+2. Run `genbi read attachments/` - it prints what every attachment says and lists the key frames it extracted from
    each video. Then look with Read at every image in attachments/ and every frame it listed (the screens, fields,
    clicks and values are in the pictures), and at each PDF for its layout and tables.{links}{connections}
 3. Write analysis.yaml exactly in this shape (YAML, plain keys, nothing else at the top level):
@@ -53,7 +53,7 @@ plan:                          # which Relay modules build what, in order, and w
   estimate: 9 working days      # optional, only when the attachments support it
   hours_saved_month: 120        # optional, only when the attachments support it
 
-Module ids you may use (id — name — the checks it opens):
+Module ids you may use (id - name - the checks it opens):
 {modules}
 
 Rules: every view must have at least one row; confidence is between 0 and 1; a step needs id, actor and action; a
@@ -68,11 +68,11 @@ The person looked at the {view} view and corrected it (also recorded at the bott
 
 {comment}
 
-Read the attachments again with this in mind, then rewrite analysis.yaml — all three views, keeping what was right
+Read the attachments again with this in mind, then rewrite analysis.yaml - all three views, keeping what was right
 and changing what the correction says. End with 1-3 sentences on what changed."""
 
 LINKS = """
-   The brief also names links ({links}); you cannot open them here — note them in `summary` as sources the person
+   The brief also names links ({links}); you cannot open them here - note them in `summary` as sources the person
    will give access to, and do not invent their content."""
 
 CONNECTIONS = """
@@ -92,7 +92,7 @@ def module_lines() -> str:
         if m["pl"] in ("hidden", "platform"):
             continue
         checks = registry.confirm_for(m, "develop" if "develop" in m["work"] else (m["work"][0] if m["work"] else "engage"))
-        out.append(f"- {m['id']} — {m['name']} — {', '.join(c[0] for c in checks)}")
+        out.append(f"- {m['id']} - {m['name']} - {', '.join(c[0] for c in checks)}")
     return "\n".join(out)
 
 
@@ -108,5 +108,5 @@ def read(st: dict, folder: Path, correction: str | None = None, view: str | None
 
 
 def fix(problems: list[str]) -> str:
-    shown = problems[:25] + ([f"… and {len(problems) - 25} more"] if len(problems) > 25 else [])
+    shown = problems[:25] + ([f"... and {len(problems) - 25} more"] if len(problems) > 25 else [])
     return FIX.format(n=len(problems), problems="\n".join(f"- {p}" for p in shown))

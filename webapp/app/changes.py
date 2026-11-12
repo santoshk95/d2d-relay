@@ -31,7 +31,7 @@ def _label(v: dict) -> str:
         name = v["format"]["kpi"]["label"]
     else:
         name = v.get("id")
-    return f"{name} ({kind}{' · ' + v['chart'] if v.get('chart') else ''})"
+    return f"{name} ({kind}{' - ' + v['chart'] if v.get('chart') else ''})"
 
 
 ASPECTS = (("type", "visual type"), ("chart", "chart type"), ("title", "title"), ("subtitle", "subtitle"),
@@ -58,7 +58,7 @@ def diff(old: dict | None, new: dict) -> dict:
 
     if old is None:
         pages = _pages(new)
-        items = [{"kind": "added", "text": f"Page {name} — {len(vs)} visual{'s' if len(vs) != 1 else ''}"} for name, vs in pages.items()]
+        items = [{"kind": "added", "text": f"Page {name} - {len(vs)} visual{'s' if len(vs) != 1 else ''}"} for name, vs in pages.items()]
         section("Pages", items)
         section("Measures", [{"kind": "added", "text": f"[{m.get('name')}]", "after": _norm(m.get("expression"))}
                              for m in new.get("measures") or []])
@@ -69,7 +69,7 @@ def diff(old: dict | None, new: dict) -> dict:
 
     # pages and visuals
     po, pn = _pages(old), _pages(new)
-    section("Pages", [{"kind": "added", "text": f"Page {n} — {len(pn[n])} visuals"} for n in pn if n not in po]
+    section("Pages", [{"kind": "added", "text": f"Page {n} - {len(pn[n])} visuals"} for n in pn if n not in po]
             + [{"kind": "removed", "text": f"Page {n}"} for n in po if n not in pn])
     vis = []
     for page in pn:
@@ -81,14 +81,14 @@ def diff(old: dict | None, new: dict) -> dict:
         for i in b:
             if i in a:
                 what = [label for key, label in ASPECTS if _norm(a[i].get(key)) != _norm(b[i].get(key))]
-                if "formatting" in what:            # which format settings: colors, labels, header …
+                if "formatting" in what:            # which format settings: colors, labels, header ...
                     fa, fb = a[i].get("format") or {}, b[i].get("format") or {}
                     keys = sorted(k for k in set(fa) | set(fb) if _norm(fa.get(k)) != _norm(fb.get(k))) \
                         if isinstance(fa, dict) and isinstance(fb, dict) else []
                     if keys:
                         what[what.index("formatting")] = f"formatting ({', '.join(keys)})"
                 if what:
-                    item = {"kind": "changed", "text": f"{page}: {_label(b[i])} — {', '.join(what)}"}
+                    item = {"kind": "changed", "text": f"{page}: {_label(b[i])} - {', '.join(what)}"}
                     if "chart type" in what or "visual type" in what:
                         item.update(before=_label(a[i]), after=_label(b[i]))
                     vis.append(item)
@@ -103,7 +103,7 @@ def diff(old: dict | None, new: dict) -> dict:
             what = [w for k, w in (("expression", "DAX"), ("format", "format"), ("description", "description"))
                     if _norm(mo[n].get(k)) != _norm(mn[n].get(k))]
             if what:
-                item = {"kind": "changed", "text": f"[{n}] — {', '.join(what)}"}
+                item = {"kind": "changed", "text": f"[{n}] - {', '.join(what)}"}
                 if "DAX" in what:
                     item.update(before=_norm(mo[n].get("expression")), after=_norm(mn[n].get("expression")))
                 elif "format" in what:
@@ -126,7 +126,7 @@ def diff(old: dict | None, new: dict) -> dict:
     ccn = {key(c): c for c in new.get("calculated_columns") or []}
     model += [{"kind": "added", "text": f"Calculated column {k}", "after": _norm(ccn[k].get("expression"))} for k in ccn if k not in cco]
     model += [{"kind": "removed", "text": f"Calculated column {k}"} for k in cco if k not in ccn]
-    model += [{"kind": "changed", "text": f"Calculated column {k} — DAX", "before": _norm(cco[k].get("expression")),
+    model += [{"kind": "changed", "text": f"Calculated column {k} - DAX", "before": _norm(cco[k].get("expression")),
                "after": _norm(ccn[k].get("expression"))} for k in ccn if k in cco and _norm(cco[k].get("expression")) != _norm(ccn[k].get("expression"))]
     ro, rn = {_rel(r) for r in old.get("relationships") or []}, {_rel(r) for r in new.get("relationships") or []}
     model += [{"kind": "added", "text": f"Relationship {r}"} for r in sorted(rn - ro)]

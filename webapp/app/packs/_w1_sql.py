@@ -1,4 +1,4 @@
-"""W1 Data & Analytics — the SQL warehouses reached over their documented HTTP APIs (beside Oracle REST-enabled SQL in
+"""W1 Data & Analytics - the SQL warehouses reached over their documented HTTP APIs (beside Oracle REST-enabled SQL in
 _w1): Teradata Query Service, IBM Db2 REST (dbapi v4), the Snowflake SQL API v2 and Databricks SQL Statement Execution.
 Each is a `_w1.SqlKind`: one `execute(c, sql)` that runs a statement and returns (columns, rows) with the vendor's
 types decoded, its data dictionary as SQL, and writes only with an approval id. The mock lab's simulators
@@ -43,7 +43,7 @@ class Db2(_w1.SqlKind):
     """IBM Db2 Warehouse / Db2 on Cloud through the Db2 REST API v4 (a token from the user's password; SQL jobs)."""
     kind, label, dialect = "db2", "IBM Db2 (REST)", "postgres"
     signin = ["password"]
-    fields = [("base_url", "REST address (…/dbapi/v4)", True), ("deployment_id", "Deployment id (CRN)", True), ("user", "User id", True)]
+    fields = [("base_url", "REST address (.../dbapi/v4)", True), ("deployment_id", "Deployment id (CRN)", True), ("user", "User id", True)]
     secrets = {"password": ["password"]}
     simulator = "db2"
     probe = "SELECT COUNT(*) AS N FROM SYSCAT.TABLES"
@@ -140,7 +140,7 @@ class Databricks(_w1.SqlKind):
     """Databricks SQL through the Statement Execution API 2.0 (a personal access token; JSON_ARRAY chunks)."""
     kind, label, dialect = "databricks_sql", "Databricks SQL (Statement Execution)", "databricks"
     signin = ["api_key"]
-    fields = [("base_url", "Workspace address (https://adb-….azuredatabricks.net)", True), ("warehouse_id", "SQL warehouse id", True), ("catalog", "Catalog", False)]
+    fields = [("base_url", "Workspace address (https://adb-....azuredatabricks.net)", True), ("warehouse_id", "SQL warehouse id", True), ("catalog", "Catalog", False)]
     secrets = {"api_key": ["token"]}
     simulator = "databricks_sql"
     probe = "SELECT COUNT(*) AS n FROM information_schema.tables"

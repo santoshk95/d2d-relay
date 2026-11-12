@@ -1,6 +1,6 @@
 /* ---------------- D2D Relay: the organisation and its credits (app/orgs.py): the chip in the top bar (organisation and
    credits left), Organisation (#/org: owner, people, credits and their history), Request credits (Buy credits is in
-   37-payments.js), the first-time setup of a new organisation's owner (#/setup: the brand), and Organisations for the
+   37-payments.js), Migration D2D and Take the tour in its menu (38-tour.js, 39-migration.js), and Organisations for the
    platform admins (#/orgs).
    Every rule is the server's; this file only shows it. ---------------- */
 ICONS.palette = ICONS.palette || 'M12 3a9 9 0 0 0 0 18c1 0 1.6-.7 1.6-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.3-4-7.8-9-7.8zM6.5 12.5h.01M8.5 8h.01M13 6.5h.01M17 9.5h.01';
@@ -10,8 +10,8 @@ ICONS.building = ICONS.building || 'M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 
 const ORG = () => (S.me && S.me.org) || {};
 const credits = n => `${Number(n || 0).toLocaleString()} credit${n === 1 ? '' : 's'}`;
 const costOf = what => (ORG().costs || {})[what] || 0;
-/* " · 15 credits" after a button's label (nothing outside an organisation) */
-const costTag = what => ORG().id && costOf(what) ? h('span', {class: 'cost'}, ` · ${costOf(what)} credits`) : null;
+/* " - 15 credits" after a button's label (nothing outside an organisation) */
+const costTag = what => ORG().id && costOf(what) ? h('span', {class: 'cost'}, ` - ${costOf(what)} credits`) : null;
 /* every price in one line: "a new dashboard uses 25, a change 10, Ask Relay 10 for up to 5 questions" */
 const costLine = (c = ORG().costs || {}) => `a new dashboard uses ${c.dashboard || 0}, a change ${c.change || 0}`
   + (c.ask ? `, Ask Relay ${c.ask} for up to ${c.ask_questions || 5} questions` : '');
@@ -31,14 +31,16 @@ function orgMenu(anchor) {
   const o = ORG();
   popover(anchor, [
     h('div', {class: 'pmhead'}, h('div', {class: 'small faint'}, 'Your organisation'), h('b', {}, o.name),
-      h('div', {class: 'small muted'}, 'Owner: ', o.owner ? (o.is_owner ? 'you' : o.owner.name) : '—', ` · @${o.domain}`)),
+      h('div', {class: 'small muted'}, 'Owner: ', o.owner ? (o.is_owner ? 'you' : o.owner.name) : '-', ` - @${o.domain}`)),
     h('div', {style: 'padding:2px 12px 10px'}, h('div', {class: 'credbig'}, Number(o.credits || 0).toLocaleString()),
-      h('div', {class: 'small muted'}, `credits left · ${costLine()}`),
+      h('div', {class: 'small muted'}, `credits left - ${costLine()}`),
       o.pending_request ? h('div', {class: 'small', style: 'margin-top:6px'}, h('span', {class: 'tag warn'}, 'Waiting for PASDACS'),
         ` ${Number(o.pending_request.credits).toLocaleString()} ${isStart(o.pending_request) ? 'starting credits, under review' : 'credits asked for'}`) : null),
     (o.pay || {}).on ? h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); buyDialog(); }}, icon('coin'), h('span', {class: 'grow'}, 'Buy credits')) : null,
     h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); requestDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Request credits')),
     h('a', {class: 'pmitem', href: '#/org', onclick: closePopover}, icon('building'), h('span', {class: 'grow'}, 'Organisation, people and credit history')),
+    h('a', {class: 'pmitem', href: '#/migration', onclick: closePopover}, icon('swap'), h('span', {class: 'grow'}, 'Migration D2D')),
+    h('a', {class: 'pmitem', href: '#/welcome', onclick: () => { closePopover(); TOUR.step = 0; }}, icon('spark'), h('span', {class: 'grow'}, 'Take the tour')),
     h('a', {class: 'pmitem', href: '/privacy.html', target: '_blank', rel: 'noopener', onclick: closePopover}, icon('shield'), h('span', {class: 'grow'}, 'Privacy notice')),
   ], 'profile');
 }
@@ -49,19 +51,18 @@ async function refreshOrg(force) {
   ORG_AT = Date.now();
   try { const me = await api('/api/me'); S.me.org = me.org; renderOrgChip(); } catch (e) { /* the chip keeps its last value */ }
 }
-/* after /api/me: the chip, and a new organisation's owner goes to the first-time setup */
+/* after /api/me: the chip, and someone new (or a new organisation's owner) goes to the first-time tour (38-tour.js) */
 function orgAfterMe(me) {
   ORG_AT = Date.now();
   renderOrgChip();
-  const o = (me && me.org) || {};
-  if (o.setup_needed && o.is_owner && !location.hash.startsWith('#/setup')) location.hash = '#/setup';
+  if (typeof tourAfterMe === 'function') tourAfterMe(me);
 }
 /* the credits line on Dashboards */
 function creditsLine() {
   const o = ORG();
   if (!o.id) return null;
   return h('div', {class: 'credline'}, icon('coin'), h('span', {}, h('b', {}, credits(o.credits)), ` left in ${o.name}`),
-    h('span', {}, `· ${costLine()}`),
+    h('span', {}, `- ${costLine()}`),
     o.pending_request ? h('span', {class: 'tag warn'}, isStart(o.pending_request)
       ? `${Number(o.pending_request.credits).toLocaleString()} starting credits, waiting for PASDACS's review`
       : `${Number(o.pending_request.credits).toLocaleString()} credits asked for, waiting for PASDACS`) : null,
@@ -118,7 +119,7 @@ function requestDialog(reason) {
       [...picks.children].forEach(b => { b.classList.toggle('on', b === e.currentTarget); b.setAttribute('aria-pressed', String(b === e.currentTarget)); });
     }}, n.toLocaleString())));
   custom.oninput = () => { const n = parseInt(custom.value, 10); if (n > 0) { amount = n; [...picks.children].forEach(b => { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); }); } };
-  const msg = h('textarea', {rows: 3, placeholder: 'Anything we should know (optional): an invoice or purchase order reference, a deadline…'});
+  const msg = h('textarea', {rows: 3, placeholder: 'Anything we should know (optional): an invoice or purchase order reference, a deadline...'});
   const mailto = () => {
     const subject = `D2D Relay: ${amount} credits for ${o.name}`;
     const body = `Hello PASDACS,\n\nPlease add ${amount} credits to our D2D Relay organisation.\n\nOrganisation: ${o.name} (@${o.domain})\n`
@@ -145,8 +146,8 @@ function requestDialog(reason) {
     reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
     h('p', {style: 'margin-top:0'}, h('b', {}, 'PASDACS approves every credit request. '), `Tell us how many credits ${o.name} needs: we reply by email, and once it is approved the credits appear here at once.`,
       (o.pay || {}).on ? [' Or ', h('a', {href: '#', onclick: e => { e.preventDefault(); e.currentTarget.closest('.modal').remove(); buyDialog(reason); }}, 'buy credits online'), ' now.'] : null),
-    h('dl', {class: 'kv small'}, h('dt', {}, 'Organisation'), h('dd', {}, `${o.name} · @${o.domain}`),
-      h('dt', {}, 'Requested by'), h('dd', {}, `${me.name || ''} · ${me.email || ''}`), h('dt', {}, 'Credits now'), h('dd', {}, credits(o.credits))),
+    h('dl', {class: 'kv small'}, h('dt', {}, 'Organisation'), h('dd', {}, `${o.name} - @${o.domain}`),
+      h('dt', {}, 'Requested by'), h('dd', {}, `${me.name || ''} - ${me.email || ''}`), h('dt', {}, 'Credits now'), h('dd', {}, credits(o.credits))),
     h('label', {class: 'f'}, 'Credits you need'), h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, picks, custom),
     h('div', {class: 'hint'}, `Credits: ${costLine()}.`),
     h('label', {class: 'f'}, 'Message ', h('small', {}, 'optional')), msg,
@@ -157,14 +158,14 @@ function requestDialog(reason) {
 
 /* ---------------- Organisation (#/org) ---------------- */
 const LEDGER = r => r.kind === 'start' ? 'Starting credits'
-  : r.kind === 'adjust' && r.what === 'purchase' ? 'Bought online' + (r.note ? ` · ${r.note}` : '')
-  : r.kind === 'adjust' ? (r.delta > 0 ? 'Added by PASDACS' : 'Taken back by PASDACS') + (r.note ? ` · ${r.note}` : '')
+  : r.kind === 'adjust' && r.what === 'purchase' ? 'Bought online' + (r.note ? ` - ${r.note}` : '')
+  : r.kind === 'adjust' ? (r.delta > 0 ? 'Added by PASDACS' : 'Taken back by PASDACS') + (r.note ? ` - ${r.note}` : '')
   : (r.kind === 'refund' ? 'Given back: ' : '') + (r.what === 'dashboard' ? 'new dashboard' : r.what === 'ask' ? 'Ask Relay questions' : 'change')
-    + (r.note && r.kind === 'charge' ? ` · ${r.note}` : '');
+    + (r.note && r.kind === 'charge' ? ` - ${r.note}` : '');
 async function renderOrg() {
   const page = h('div', {class: 'page'});
   $('#main').replaceChildren(page);
-  document.title = 'Organisation · D2D Relay';
+  document.title = 'Organisation - D2D Relay';
   let d;
   try { d = await api('/api/org'); } catch (e) { return page.append(h('div', {class: 'note err'}, e.message)); }
   if (location.hash !== '#/org') return;
@@ -180,7 +181,7 @@ async function renderOrg() {
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1;min-width:0'}, h('div', {class: 'eyebrow'}, 'Organisation'),
       h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, h('h1', {}, d.name), rename),
-      h('div', {class: 'meta'}, `@${d.domain} · since ${when(d.created)} · ${d.people.length} ${d.people.length === 1 ? 'person' : 'people'} · `
+      h('div', {class: 'meta'}, `@${d.domain} - since ${when(d.created)} - ${d.people.length} ${d.people.length === 1 ? 'person' : 'people'} - `
         + `${d.dashboards} dashboard${d.dashboards === 1 ? '' : 's'}`))),
     h('div', {class: 'orggrid'},
       h('div', {class: 'card'}, h('h3', {}, 'Credits'),
@@ -206,14 +207,14 @@ async function renderOrg() {
     h('div', {class: 'card'}, h('h3', {}, 'Credit history'),
       d.ledger.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'What', 'Who', 'Dashboard', 'Credits', 'Left'], 4),
         h('tbody', {}, d.ledger.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, LEDGER(r)), h('td', {}, r.user_name || 'Relay'),
-          h('td', {}, r.project_open ? h('a', {href: '#/p/' + r.project_id}, r.project_name || r.project_id) : r.project_name || '—'),
+          h('td', {}, r.project_open ? h('a', {href: '#/p/' + r.project_id}, r.project_name || r.project_id) : r.project_name || '-'),
           h('td', {class: 'n delta' + (r.delta > 0 ? ' plus' : '')}, (r.delta > 0 ? '+' : '') + r.delta), h('td', {class: 'n'}, r.balance))))))
         : h('div', {class: 'muted small'}, 'Nothing yet.')),
     payBox,
     billBox,
     h('div', {class: 'card'}, h('h3', {}, 'Credit requests'),
       (d.requests || []).length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['Asked', 'Who', 'Credits', 'Answer', ''], 2),
-        h('tbody', {}, d.requests.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, isStart(r) ? 'Starting credits' : r.user_name || '—'),
+        h('tbody', {}, d.requests.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, isStart(r) ? 'Starting credits' : r.user_name || '-'),
           h('td', {class: 'n'}, Number(r.credits).toLocaleString()), h('td', {}, requestState(r)),
           h('td', {class: 'n'}, r.status === 'pending' && !isStart(r) && (d.may_manage || r.user_id === (S.me || {}).id)
             ? h('button', {class: 'btn sm ghost', type: 'button', onclick: async () => {
@@ -263,7 +264,7 @@ function peopleCard(d, th) {
         h('td', {class: 'n'}, remove(p))))))),
     (d.removed || []).length ? h('details', {class: 'more', style: 'margin-top:10px'}, h('summary', {}, `Removed (${d.removed.length})`),
       h('div', {class: 'stack', style: 'gap:6px;margin-top:8px'}, d.removed.map(p => h('div', {class: 'row', style: 'gap:8px;flex-wrap:wrap'},
-        h('span', {}, h('b', {}, p.name), ` · ${p.email}`, h('span', {class: 'small faint'}, ` · removed ${when(p.deactivated)}`)), h('span', {class: 'spacer'}),
+        h('span', {}, h('b', {}, p.name), ` - ${p.email}`, h('span', {class: 'small faint'}, ` - removed ${when(p.deactivated)}`)), h('span', {class: 'spacer'}),
         h('button', {class: 'btn sm', type: 'button', onclick: () => act(() => api('/api/org/people', {json: {email: p.email, role: 'member'}}), `${p.name} is back in ${d.name}`)}, 'Add back')))))
       : null);
 }
@@ -293,7 +294,7 @@ function addPersonDialog(d) {
 }
 function transferDialog(d) {
   const others = d.people.filter(p => p.id !== (S.me || {}).id);
-  const who = h('select', {class: 'sel'}, others.map(p => h('option', {value: p.id}, `${p.name} · ${p.email}${p.owner ? ' (owner)' : ''}`)));
+  const who = h('select', {class: 'sel'}, others.map(p => h('option', {value: p.id}, `${p.name} - ${p.email}${p.owner ? ' (owner)' : ''}`)));
   const stay = h('input', {type: 'checkbox', checked: true});
   const err = h('div', {class: 'err-msg', role: 'alert'});
   const ok = h('button', {class: 'btn primary', type: 'button'}, 'Transfer');
@@ -313,50 +314,19 @@ function transferDialog(d) {
 function requestState(r) {
   if (r.status === 'pending') return h('span', {class: 'tag warn'}, 'Waiting for PASDACS');
   if (r.status === 'approved') return h('span', {}, h('span', {class: 'tag ok'}, `Approved +${Number(r.granted || 0).toLocaleString()}`),
-    r.note ? h('span', {class: 'small muted'}, ` ${r.note}`) : null, h('span', {class: 'small faint'}, ` · ${when(r.decided)}`));
+    r.note ? h('span', {class: 'small muted'}, ` ${r.note}`) : null, h('span', {class: 'small faint'}, ` - ${when(r.decided)}`));
   if (r.status === 'declined') return h('span', {}, h('span', {class: 'tag err'}, 'Declined'), h('span', {class: 'small muted'}, ` ${r.note || ''}`),
-    h('span', {class: 'small faint'}, ` · ${when(r.decided)}`));
+    h('span', {class: 'small faint'}, ` - ${when(r.decided)}`));
   return h('span', {class: 'small muted'}, `Withdrawn${r.decided_name ? ' by ' + r.decided_name : ''}`);
 }
 
-/* ---------------- the first-time setup of a new organisation (its owner, once): the brand ---------------- */
-function renderSetup() {
-  const o = ORG();
-  if (!o.id || !o.is_owner || !o.setup_needed) { history.replaceState(null, '', '#/d2d'); return renderDashboards(); }
-  document.title = 'Set up · D2D Relay';
-  const brandBox = h('div');
-  const finish = async (skip, btn) => {
-    btn.disabled = true;
-    try { await api('/api/org/setup', {method: 'POST'}); } catch (e) { btn.disabled = false; return notify(e.message, 'err'); }
-    S.me.org.setup_needed = false;
-    notify(skip ? 'You can set your brand any time under Branding.' : `${o.name} is set up.`, 'ok');
-    location.hash = '#/new';
-  };
-  const skipBtn = h('button', {class: 'btn', type: 'button', onclick: () => finish(true, skipBtn)}, 'Skip for now');
-  const doneBtn = h('button', {class: 'btn primary', type: 'button', onclick: () => finish(false, doneBtn)}, icon('check'), 'Finish and start a dashboard');
-  $('#main').replaceChildren(h('div', {class: 'page'},
-    h('div', {class: 'eyebrow'}, 'Welcome to D2D Relay'), h('h1', {}, `Set up ${o.name}`),
-    h('div', {class: 'muted', style: 'margin:4px 0 16px'}, 'Done once, at the start. Everyone in your organisation uses it.'),
-    h('div', {class: 'steps'}, [['Organisation', 'done'], ['Brand', 'cur'], ['First dashboard', '']].map(([s, c], i) =>
-      h('div', {class: 'step ' + c}, h('b', {}, c === 'done' ? '✓' : i + 1), h('span', {}, s)))),
-    h('div', {class: 'card'}, h('h3', {}, `${o.name} is ready`),
-      h('dl', {class: 'kv small'}, h('dt', {}, 'Owner'), h('dd', {}, `you (${(S.me || {}).email || ''})`),
-        h('dt', {}, 'Who joins'), h('dd', {}, `everyone who signs in with an @${o.domain} address`),
-        h('dt', {}, 'Credits'), h('dd', {}, (o.credits ? `${credits(o.credits)} to start`
-          : isStart(o.pending_request) ? `none yet: PASDACS is reviewing ${o.name} and adds ${credits(o.pending_request.credits)} to start when it approves (you get an email)`
-          : 'none yet: PASDACS approves every credit request (Request credits)') + ` · ${costLine()}`))),
-    h('h2', {style: 'margin:22px 0 4px'}, 'Your brand'),
-    h('div', {class: 'muted', style: 'margin-bottom:10px'}, 'Add your logo and a few words about your brand. Relay makes report palettes from them; pick one and every new dashboard uses it.'),
-    brandBox,
-    h('div', {class: 'row', style: 'justify-content:flex-end;gap:10px;margin-top:16px;flex-wrap:wrap'}, skipBtn, doneBtn)));
-  renderBranding({into: brandBox, route: '#/setup'});
-}
+/* the first-time setup of a new organisation (its owner, once: the brand) is a step of the first-time tour (38-tour.js) */
 
 /* ---------------- Organisations (#/orgs, the platform's admins) ---------------- */
 async function renderOrgs() {
   const page = h('div', {class: 'page wide'});
   $('#main').replaceChildren(page);
-  document.title = 'Organisations · D2D Relay admin';
+  document.title = 'Organisations - D2D Relay admin';
   let d;
   try { d = await api('/api/admin/orgs'); } catch (e) { return page.append(h('div', {class: 'note err'}, e.message)); }
   if (location.hash !== '#/orgs') return;
@@ -410,14 +380,14 @@ async function renderOrgs() {
         h('td', {}, h('b', {}, o.name), o.platform ? h('span', {class: 'tag', style: 'margin-left:6px'}, 'Platform') : null,
           o.status && o.status !== 'active' ? h('span', {class: 'tag err', style: 'margin-left:6px'}, o.status) : null,
           h('div', {class: 'small muted'}, '@' + o.domain)),
-        h('td', {}, o.owner ? [o.owner.name, h('div', {class: 'small muted'}, o.owner.email)] : '—'),
+        h('td', {}, o.owner ? [o.owner.name, h('div', {class: 'small muted'}, o.owner.email)] : '-'),
         h('td', {class: 'small', style: 'white-space:nowrap', title: (o.connectors || []).map(kindLabel).join(', ') || null},
           !(o.connectors || []).length ? h('span', {class: 'muted'}, 'CSV only') : o.connectors.length === d.catalogue.length ? `All ${o.connectors.length}`
             : o.connectors.length > 2 ? `${kindLabel(o.connectors[0])} +${o.connectors.length - 1}` : o.connectors.map(kindLabel).join(', ')),
         h('td', {class: 'n'}, o.people), h('td', {class: 'n'}, o.dashboards), h('td', {class: 'n'}, o.spent),
         h('td', {class: 'n'}, h('b', {}, o.credits), o.pending ? h('div', {}, h('a', {href: '#/requests', class: 'tag warn', style: 'text-decoration:none'},
           `asks for ${Number(o.pending.credits).toLocaleString()}`)) : null),
-        h('td', {class: 'n'}, o.last_login ? ago(o.last_login) : '—'),
+        h('td', {class: 'n'}, o.last_login ? ago(o.last_login) : '-'),
         h('td', {class: 'n'}, h('div', {class: 'row', style: 'gap:6px;justify-content:flex-end;flex-wrap:nowrap'},
           h('button', {class: 'btn sm', type: 'button', onclick: () => connectorsDialog(o)}, icon('plug'), 'Connectors'),
           h('button', {class: 'btn sm', type: 'button', onclick: () => adjust(o)}, icon('plus'), 'Credits'))))))))),
@@ -428,7 +398,7 @@ async function renderOrgs() {
 async function renderRequests() {
   const page = h('div', {class: 'page wide'});
   $('#main').replaceChildren(page);
-  document.title = 'Requests · D2D Relay admin';
+  document.title = 'Requests - D2D Relay admin';
   let d;
   try { d = await api('/api/admin/requests'); } catch (e) { return page.append(h('div', {class: 'note err'}, e.message)); }
   if (location.hash !== '#/requests') return;
@@ -442,7 +412,7 @@ async function renderRequests() {
     const ok = h('button', {class: 'btn primary' + (approve ? '' : ' danger'), type: 'button'}, approve ? 'Approve and add the credits' : 'Decline');
     const m = modal(isStart(r) ? `${approve ? 'Approve' : 'Decline'}: ${r.org_name}, a new organisation (${Number(r.credits).toLocaleString()} starting credits)`
       : `${approve ? 'Approve' : 'Decline'}: ${r.org_name} asks for ${Number(r.credits).toLocaleString()} credits`, h('div', {class: 'mbody'},
-      h('p', {class: 'muted small', style: 'margin-top:0'}, `${r.user_name || ''} · ${r.email || ''} · ${when(r.created)}. ${r.org_name} has ${credits(r.org_credits)} now.`),
+      h('p', {class: 'muted small', style: 'margin-top:0'}, `${r.user_name || ''} - ${r.email || ''} - ${when(r.created)}. ${r.org_name} has ${credits(r.org_credits)} now.`),
       r.message ? h('div', {class: 'note small', style: 'margin-top:0'}, r.message) : null,
       approve ? [h('label', {class: 'f'}, 'Credits to add'), n] : null,
       h('label', {class: 'f'}, approve ? 'Note ' : 'Why ', h('small', {}, approve ? 'optional' : 'they are told, in the app and by email')), note, err,
@@ -457,12 +427,12 @@ async function renderRequests() {
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('div', {class: 'eyebrow'}, 'Platform'), h('h1', {}, 'Requests'),
       h('div', {class: 'meta'}, 'What organisations asked PASDACS for. Each request also went to the contact mailbox by email, unless shown otherwise.'))),
-    h('div', {class: 'card'}, h('h3', {}, `Credit requests${d.pending ? ` · ${d.pending} waiting` : ''}`), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
+    h('div', {class: 'card'}, h('h3', {}, `Credit requests${d.pending ? ` - ${d.pending} waiting` : ''}`), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
       'Organisations get credits only when you approve a request. Approving adds them at once; the organisation is told either way.'),
       d.credits.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['Asked', 'Organisation', 'Who', 'Message', 'Credits', 'Answer', ''], 4),
         h('tbody', {}, d.credits.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, h('b', {}, r.org_name)),
           h('td', {}, r.user_name || '', h('div', {class: 'small muted'}, r.email || '')),
-          h('td', {class: 'small'}, isStart(r) ? [h('span', {class: 'tag'}, 'New organisation'), ' starting credits'] : r.message || '—'),
+          h('td', {class: 'small'}, isStart(r) ? [h('span', {class: 'tag'}, 'New organisation'), ' starting credits'] : r.message || '-'),
           h('td', {class: 'n'}, Number(r.credits || 0).toLocaleString()),
           h('td', {}, requestState(r), r.status === 'pending' && !r.emailed ? h('div', {class: 'small muted'}, 'not emailed') : null,
             r.decided_name && (r.status === 'approved' || r.status === 'declined') ? h('div', {class: 'small faint'}, 'by ' + r.decided_name) : null),
@@ -473,8 +443,15 @@ async function renderRequests() {
     h('div', {class: 'card'}, h('h3', {}, 'Connector requests'), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
       'Sent from Connections. Switch a connector on with Connectors on Organisations.'),
       d.connectors.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Organisation', 'Who', 'Connectors', 'Message', 'Emailed'], 5),
-        h('tbody', {}, d.connectors.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, r.org_name), h('td', {}, `${r.name || ''} · ${r.email || ''}`),
-          h('td', {}, (r.kinds || []).map(kindLabel).join(', ')), h('td', {}, r.message || '—'), h('td', {class: 'n'}, sent(r)))))))
+        h('tbody', {}, d.connectors.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, r.org_name), h('td', {}, `${r.name || ''} - ${r.email || ''}`),
+          h('td', {}, (r.kinds || []).map(kindLabel).join(', ')), h('td', {}, r.message || '-'), h('td', {class: 'n'}, sent(r)))))))
+        : h('div', {class: 'muted small'}, 'None yet.')),
+    h('div', {class: 'card'}, h('h3', {}, 'Migration D2D requests'), h('div', {class: 'muted small', style: 'margin:-6px 0 8px'},
+      'Sent from Migration D2D: the BI tools an organisation moves its dashboards from and to. Reply to them by email to agree the work.'),
+      (d.migrations || []).length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Organisation', 'Who', 'From', 'To', 'Dashboards', 'Message', 'Emailed'], 7),
+        h('tbody', {}, d.migrations.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, r.org_name), h('td', {}, `${r.name || ''} - ${r.email || ''}`),
+          h('td', {}, (r.source || []).map(k => (d.bi_tools || {})[k] || k).join(', ')), h('td', {}, (r.target || []).map(k => (d.bi_tools || {})[k] || k).join(', ')),
+          h('td', {}, r.dashboards ? Number(r.dashboards).toLocaleString() : '-'), h('td', {}, r.message || '-'), h('td', {class: 'n'}, sent(r)))))))
         : h('div', {class: 'muted small'}, 'None yet.')));
 }
 

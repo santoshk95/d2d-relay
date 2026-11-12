@@ -1,4 +1,4 @@
-"""Boomi AtomSphere — the platform API (…/api/rest/v1/{account}): Process/query, ExecutionRecord/query (status,
+"""Boomi AtomSphere - the platform API (.../api/rest/v1/{account}): Process/query, ExecutionRecord/query (status,
 execution time, duration and inbound document count in Boomi's typed-array JSON), ProcessSchedules/query."""
 from __future__ import annotations
 

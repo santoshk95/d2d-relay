@@ -1,5 +1,5 @@
 """Readers that are next in line (build-plan D3). Each lists what it will read, in the tool's own terms, and refuses
-to read until it is built — so the start screen can show the tool with status "next" instead of a surprise."""
+to read until it is built - so the start screen can show the tool with status "next" instead of a surprise."""
 from __future__ import annotations
 
 
@@ -18,7 +18,7 @@ class _Stub:
         self.root = root
 
     def test(self) -> dict:
-        raise NotSupported(f"{self.LABEL} is next: the reader will read {', '.join(self.READS[:3])} … (not built yet).")
+        raise NotSupported(f"{self.LABEL} is next: the reader will read {', '.join(self.READS[:3])} ... (not built yet).")
 
     def read(self, *_, **__) -> dict:
         self.test()

@@ -5,7 +5,7 @@ const sv = (t, a, txt) => { const e = document.createElementNS(NS_SVG, t); for (
 const tipEsc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 function tipOn(e, html) { const t = $('#tip'); t.innerHTML = html; t.hidden = false; const r = t.getBoundingClientRect(); t.style.left = Math.min(e.clientX + 14, innerWidth - r.width - 8) + 'px'; t.style.top = Math.max(4, e.clientY - r.height - 10) + 'px'; }
 function tipOff() { $('#tip').hidden = true; }
-const fmtN = (n, d = 1) => n == null ? '—' : Number(n).toLocaleString(undefined, {maximumFractionDigits: d});
+const fmtN = (n, d = 1) => n == null ? '-' : Number(n).toLocaleString(undefined, {maximumFractionDigits: d});
 // Column chart (one series, the last column labelled; hover for every value)
 function colChart(rows, {height = 190, unit = '', fmtv = v => fmtN(v), label = 'chart'} = {}) {
   const W = 560, H = height, padL = 40, padB = 26, padT = 14;
@@ -98,7 +98,7 @@ async function startChooser(intent) {
   const go = href => { if (mm) mm.remove(); location.hash = href.replace(/^#/, ''); };
   const row = (href, ic, name, sub, extra) => h('a', {class: 'ichoice', href, onclick: e => { e.preventDefault(); go(href); }},
     h('span', {class: 'iico'}, icon(ic)), h('span', {class: 'grow'}, h('b', {}, name), h('small', {}, sub), extra ? h('small', {class: 'faint'}, extra) : null), icon('chevr'));
-  const footer = () => h('p', {class: 'small muted', style: 'margin:16px 0 0'}, 'Not sure where it belongs? ', h('a', {href: '#/start', onclick: e => { e.preventDefault(); go('#/start'); }}, 'Describe it and attach anything'), ` — ${brandName()} reads it and suggests where it goes.`);
+  const footer = () => h('p', {class: 'small muted', style: 'margin:16px 0 0'}, 'Not sure where it belongs? ', h('a', {href: '#/start', onclick: e => { e.preventDefault(); go('#/start'); }}, 'Describe it and attach anything'), ` - ${brandName()} reads it and suggests where it goes.`);
   const pickIntent = () => {
     body.replaceChildren(h('p', {class: 'small muted', style: 'margin-top:0'}, `Pick the kind of work. Next you choose the system or area, and ${brandName()} takes you to the right place to start.`),
       h('div', {class: 'ichoices'}, INTENTS.map(it => h('button', {class: 'ichoice', type: 'button', onclick: () => pickArea(it)},
@@ -108,7 +108,7 @@ async function startChooser(intent) {
   };
   const pickArea = it => {
     const back = intent ? null : h('button', {class: 'btn sm ghost', type: 'button', onclick: pickIntent}, icon('chevl'), 'Other kinds of work');
-    const q = h('input', {type: 'search', placeholder: 'Find a system or area, e.g. SAP, Power BI, invoices…', 'aria-label': 'Find a system or area'});
+    const q = h('input', {type: 'search', placeholder: 'Find a system or area, e.g. SAP, Power BI, invoices...', 'aria-label': 'Find a system or area'});
     const list = h('div', {});
     const draw = () => {
       const s = q.value.trim().toLowerCase();
@@ -124,14 +124,14 @@ async function startChooser(intent) {
         }
         for (const p of reg.pillars) {
           const ms = reg.modules.filter(m => m.pl === p.id && usable(m) && (m.live || {})[it.work] && hit(m.name, m.sub, (m.platforms || []).join(' ')));
-          if (ms.length) parts.push(h('div', {class: 'ichead'}, p.name), h('div', {class: 'ichoices'}, ms.map(m => row(intentHref(m, it.work, packs), m.icon, m.name, m.sub, (m.platforms || []).slice(0, 4).join(' · ')))));
+          if (ms.length) parts.push(h('div', {class: 'ichead'}, p.name), h('div', {class: 'ichoices'}, ms.map(m => row(intentHref(m, it.work, packs), m.icon, m.name, m.sub, (m.platforms || []).slice(0, 4).join(' - ')))));
         }
         if (it.id === 'discover') {
           const est = reg.modules.find(m => m.id === 'assess' && usable(m));
           if (est && hit(est.name, est.sub, 'estimate size price')) parts.push(h('div', {class: 'ichead'}, 'Size and price it'), h('div', {class: 'ichoices'}, row(est.route, est.icon, est.name, 'Read the estate, size it and estimate the effort and cost per wave')));
         }
       }
-      list.replaceChildren(...(parts.length ? parts : [h('div', {class: 'muted small', style: 'padding:12px 0'}, `Nothing matches “${q.value.trim()}”. `, h('a', {href: '#/start', onclick: e => { e.preventDefault(); go('#/start'); }}, 'Describe it instead'), ` and ${brandName()} will suggest where it goes.`)]));
+      list.replaceChildren(...(parts.length ? parts : [h('div', {class: 'muted small', style: 'padding:12px 0'}, `Nothing matches "${q.value.trim()}". `, h('a', {href: '#/start', onclick: e => { e.preventDefault(); go('#/start'); }}, 'Describe it instead'), ` and ${brandName()} will suggest where it goes.`)]));
     };
     q.oninput = draw;
     body.replaceChildren(...[back ? h('div', {style: 'margin-bottom:8px'}, back) : null, h('p', {style: 'margin:0 0 10px'}, h('b', {}, it.title + '. '), h('span', {class: 'muted'}, it.line)),
@@ -146,7 +146,7 @@ async function startChooser(intent) {
 }
 function intentStrip() {
   return h('section', {class: 'intents', 'aria-labelledby': 'intents-h'},
-    h('div', {class: 'section-title', style: 'margin-top:0'}, h('h2', {id: 'intents-h'}, 'What do you want to do?'), h('span', {class: 'hint'}, h('a', {href: '#/new'}, 'New dashboard'), ' · ', h('a', {href: '#/modules'}, 'All modules →'))),
+    h('div', {class: 'section-title', style: 'margin-top:0'}, h('h2', {id: 'intents-h'}, 'What do you want to do?'), h('span', {class: 'hint'}, h('a', {href: '#/new'}, 'New dashboard'), ' - ', h('a', {href: '#/modules'}, 'All modules'))),
     h('div', {class: 'intent-grid'}, INTENTS.map(it => h('button', {class: 'intent', type: 'button', 'aria-haspopup': 'dialog', onclick: () => startChooser(it.id)},
       h('span', {class: 'iico'}, icon(it.icon)), h('b', {}, it.title), h('span', {class: 'il'}, it.line))),
       h('a', {class: 'intent', href: '#/start'}, h('span', {class: 'iico'}, icon('clip')), h('b', {}, 'Start from an idea'),
@@ -164,24 +164,24 @@ async function renderHome() {
   const first = (me.name || '').split(/\s+/)[0], hour = new Date().getHours();
   const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const pl = PERIOD_LABEL[period];
-  const promise = viewer ? 'Your reports, answers and alerts — and how fresh and proven they are.'
+  const promise = viewer ? 'Your reports, answers and alerts - and how fresh and proven they are.'
     : k.runs ? `Agents did ${fmtN(k.agent_hours)} hours of work in the last ${pl}: ${k.runs} runs, ${k.delivered} dashboard${k.delivered === 1 ? '' : 's'} published after every review gate.`
     : `No agent runs in the last ${pl} yet. Start a dashboard and the numbers below fill in from real work.`;
   const delta = (cur, prev, unit) => prev == null || cur == null || (!prev && !cur) ? {} : {delta: `${cur - prev >= 0 ? '+' : ''}${fmtN(cur - prev)}${unit} vs previous ${pl}`, good: cur - prev > 0, bad: cur - prev < 0};
   const kpis = h('div', {class: 'g5'},
     kpiTile('Hours of agent work', fmtN(k.agent_hours), 'run time of plan, build, revise and fix rounds', {href: '#/d2d', ...delta(k.agent_hours, k.agent_hours_prev, ' h')}),
-    kpiTile('Right first time', k.rft == null ? '—' : fmtN(k.rft) + ' %', k.runs ? `${k.runs} runs · ${k.fix_rounds} fix round${k.fix_rounds === 1 ? '' : 's'}` : 'runs that needed no fix round', {href: '#/d2d', ...delta(k.rft, k.rft_prev, ' pts')}),
+    kpiTile('Right first time', k.rft == null ? '-' : fmtN(k.rft) + ' %', k.runs ? `${k.runs} runs - ${k.fix_rounds} fix round${k.fix_rounds === 1 ? '' : 's'}` : 'runs that needed no fix round', {href: '#/d2d', ...delta(k.rft, k.rft_prev, ' pts')}),
     kpiTile('Delivered & proven', String(k.delivered), 'published after every review gate', {href: '#/d2d'}),
-    kpiTile('Waiting for a person', String(k.waiting), k.waiting ? `oldest ${fmtN(k.waiting_oldest_h)} h · median ${fmtN(k.waiting_median_h)} h` : 'nothing waiting for you', {href: '#/d2d'}),
+    kpiTile('Waiting for a person', String(k.waiting), k.waiting ? `oldest ${fmtN(k.waiting_oldest_h)} h - median ${fmtN(k.waiting_median_h)} h` : 'nothing waiting for you', {href: '#/d2d'}),
     k.net_value != null
-      ? kpiTile('Net value', `${b.currency || ''}${fmtN(k.net_value, 0)}`, `hours × rate − AI cost (${usd(k.ai_cost_usd)})`, {href: me.admin ? '#/admin/costs' : null})
-      : kpiTile('AI cost', usd(k.ai_cost_usd), me.admin ? 'set an hourly rate under Admin › Branding to see net value' : 'models and warehouse queries', {href: me.admin ? '#/admin/costs' : null}));
+      ? kpiTile('Net value', `${b.currency || ''}${fmtN(k.net_value, 0)}`, `hours × rate - AI cost (${usd(k.ai_cost_usd)})`, {href: me.admin ? '#/admin/costs' : null})
+      : kpiTile('AI cost', usd(k.ai_cost_usd), me.admin ? 'set an hourly rate under Admin > Branding to see net value' : 'models and warehouse queries', {href: me.admin ? '#/admin/costs' : null}));
   const hours = d.months.map(m => [m.month, m.hours]), cost = d.months.map(m => [m.month, m.cost_usd]), rft = d.months.filter(m => m.rft != null).map(m => [m.month, m.rft]);
   const now = d.now, inf = d.inflight, maxMod = Math.max(1, ...inf.modules.map(m => m.n)), busy = inf.modules.filter(m => m.n || m.running || m.paused);
   const ag = (S.health || {}).agent || {};
   main.replaceChildren(h('div', {class: 'page', id: 'homepage'},
     h('section', {class: 'hero'}, h('div', {class: 'row', style: 'align-items:flex-end'},
-      h('div', {style: 'flex:1;min-width:280px'}, h('div', {class: 'eyebrow'}, (b.partner ? b.full : 'RELAY by PASDACS') + ' · Data & analytics practice'),
+      h('div', {style: 'flex:1;min-width:280px'}, h('div', {class: 'eyebrow'}, (b.partner ? b.full : 'RELAY by PASDACS') + ' - Data & analytics practice'),
         h('h1', {}, greet + (first ? ', ' + first : '')), h('div', {class: 'promise'}, promise)),
       h('div', {class: 'row', style: 'gap:10px'},
         h('div', {class: 'segbtn', role: 'group', 'aria-label': 'Period'}, Object.entries(PERIOD_LABEL).map(([kk, l]) => h('button', {class: period === kk ? 'on' : '', 'aria-pressed': String(period === kk), onclick: () => { S.period = kk; renderHome(); }}, l))),
@@ -197,49 +197,49 @@ async function renderHome() {
       h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Right first time'), h('span', {class: 'sp'}), h('span', {class: 'small muted'}, 'runs with no fix round')),
         lineChart(rft, {min: 0, max: 100, unit: ' %', label: `Right first time by month: ${rft.map(r => `${r[0]} ${fmtN(r[1])} %`).join(', ')}`}),
         h('div', {class: 'small muted', style: 'margin-top:6px'}, 'A fix round is the agent repairing what a review gate or the DAX engine rejected.')),
-      h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Work in flight'), h('span', {class: 'sp'}), h('span', {class: 'small muted'}, `${inf.by_status.running} running · ${inf.by_status.waiting} waiting`)),
-        busy.length ? h('div', {class: 'bars'}, busy.map(m => bar2(m.name, m.n, maxMod, m.route, m.unit ? `${fmtN(m.n, 0)} ${m.unit}` : (m.running ? `${fmtN(m.n, 0)} · ${m.running} running` : m.paused ? `${fmtN(m.n, 0)} · ${m.paused} paused` : fmtN(m.n, 0)))))
+      h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Work in flight'), h('span', {class: 'sp'}), h('span', {class: 'small muted'}, `${inf.by_status.running} running - ${inf.by_status.waiting} waiting`)),
+        busy.length ? h('div', {class: 'bars'}, busy.map(m => bar2(m.name, m.n, maxMod, m.route, m.unit ? `${fmtN(m.n, 0)} ${m.unit}` : (m.running ? `${fmtN(m.n, 0)} - ${m.running} running` : m.paused ? `${fmtN(m.n, 0)} - ${m.paused} paused` : fmtN(m.n, 0)))))
           : h('div', {class: 'muted small', style: 'padding:8px 0'}, 'Nothing in flight. Work you start shows here, module by module.'),
         busy.length && busy.length < inf.modules.length ? h('div', {class: 'small muted', style: 'margin-top:8px'}, `Modules with nothing in flight are left out (${inf.modules.length - busy.length}).`) : null,
         inf.by_status.attention ? h('div', {class: 'note err', style: 'margin:10px 0 0'}, `${inf.by_status.attention} dashboard${inf.by_status.attention === 1 ? '' : 's'} need attention.`) : null),
-      h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Waiting for a person'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/d2d'}, 'All dashboards →')),
+      h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Waiting for a person'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/d2d'}, 'All dashboards')),
         d.waiting.length ? h('div', {class: 'stack', style: 'gap:6px'}, d.waiting.map(w => h('a', {href: '#/p/' + w.pid, class: 'wait'},
-          h('div', {class: 'wt'}, h('b', {}, w.name), h('small', {}, `${w.module} · ${w.what}`)), h('span', {class: 'pill ' + ((Date.now() / 1000 - w.since) > 86400 ? 'err' : (Date.now() / 1000 - w.since) > 3600 ? 'you' : 'plain')}, ago(w.since)))))
+          h('div', {class: 'wt'}, h('b', {}, w.name), h('small', {}, `${w.module} - ${w.what}`)), h('span', {class: 'pill ' + ((Date.now() / 1000 - w.since) > 86400 ? 'err' : (Date.now() / 1000 - w.since) > 3600 ? 'you' : 'plain')}, ago(w.since)))))
           : h('div', {class: 'muted small', style: 'padding:8px 0'}, 'Nothing is waiting for you.'))),
     h('div', {class: 'g3', style: 'margin-top:16px'},
       h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Agents right now'), h('span', {class: 'sp'}), h('span', {class: 'pill ' + (now.running ? 'run' : ag.ok === false ? 'err' : 'ok') + ' plain'}, now.running ? 'Working' : ag.ok === false ? 'Agent offline' : 'Idle')),
-        now.running ? h('div', {class: 'feed'}, h('div', {class: 'fi'}, h('span', {class: 'ft'}, dur((now.running.age_s || 0) * 1000)), h('span', {}, h('b', {}, now.running.agent || 'Agent'), ` · ${now.running.doing || 'working'} · `,   // any module's agent, by name; the folder only for people who may open it
-            now.running.link ? h('a', {href: now.running.link}, now.running.name || now.running.module) : h('span', {class: 'muted'}, `${now.running.module || 'a module'} — someone else’s work`))),
+        now.running ? h('div', {class: 'feed'}, h('div', {class: 'fi'}, h('span', {class: 'ft'}, dur((now.running.age_s || 0) * 1000)), h('span', {}, h('b', {}, now.running.agent || 'Agent'), ` - ${now.running.doing || 'working'} - `,   // any module's agent, by name; the folder only for people who may open it
+            now.running.link ? h('a', {href: now.running.link}, now.running.name || now.running.module) : h('span', {class: 'muted'}, `${now.running.module || 'a module'} - someone else's work`))),
           now.queue ? h('div', {class: 'fi'}, h('span', {class: 'ft'}, 'queue'), h('span', {}, `${now.queue} job${now.queue === 1 ? '' : 's'} waiting for the build lane`)) : null)
           : h('div', {class: 'muted small', style: 'padding:8px 0'}, now.queue ? `${now.queue} job(s) queued; the agent is about to start.` : 'One agent, one job at a time. Nothing is running.'),
         h('div', {class: 'small muted', style: 'margin-top:10px'}, (S.health && S.health.daxcheck) ? "DAX checker on: Power BI's engine checks every measure before publishing." : 'DAX checker off: publishing waits until it runs on this PC.')),
-      h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Recently proven'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/d2d'}, 'Dashboards →')),
+      h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Recently proven'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/d2d'}, 'Dashboards')),
         d.recent.length ? h('div', {class: 'stack', style: 'gap:10px'}, d.recent.map(r => h('a', {href: `#/p/${r.pid}/versions`, class: 'wait'}, h('span', {class: 'proven'}, icon('check')),
-          h('div', {class: 'wt'}, h('b', {}, `${r.name} v${r.v}`), h('small', {}, `${r.checks} of ${r.gates} review gates passed · published ${ago(r.when)}`)))))
+          h('div', {class: 'wt'}, h('b', {}, `${r.name} v${r.v}`), h('small', {}, `${r.checks} of ${r.gates} review gates passed - published ${ago(r.when)}`)))))
           : h('div', {class: 'muted small', style: 'padding:8px 0'}, 'Nothing published yet.')),
-      h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Questions to Ask D'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/askd'}, 'Open →')),
+      h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Questions to Ask D'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/askd'}, 'Open')),
         h('div', {class: 'g2', style: 'gap:10px'}, h('div', {class: 'mini'}, h('div', {class: 'mv'}, fmtN(k.questions, 0)), h('div', {class: 'small muted'}, `questions in ${pl}`)),
           h('div', {class: 'mini'}, h('div', {class: 'mv'}, fmtN(inf.modules.find(m => m.id === 'schedule').n, 0)), h('div', {class: 'small muted'}, 'reports and alerts scheduled'))),
-        h('div', {class: 'small muted', style: 'margin-top:10px'}, 'Answers use each person’s own access; every query is audited.'))),
-    // P12: Service desk triage (tickets → groups → an agent can handle → near SLA); empty state until a source is connected
-    sd ? h('div', {class: 'card', style: 'margin:16px 0 0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Service desk'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/servicedesk'}, 'Open →')),
+        h('div', {class: 'small muted', style: 'margin-top:10px'}, 'Answers use each person\'s own access; every query is audited.'))),
+    // P12: Service desk triage (tickets -> groups -> an agent can handle -> near SLA); empty state until a source is connected
+    sd ? h('div', {class: 'card', style: 'margin:16px 0 0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Service desk'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/servicedesk'}, 'Open')),
       sd.sources ? [h('div', {style: 'display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))'},
         [[sd.open_tickets, 'open tickets'], [sd.to_act, 'groups to act on'], [sd.agent, 'an agent can handle'], [sd.near_sla, 'near SLA breach']].map(([v, l]) => h('div', {class: 'mini'}, h('div', {class: 'mv'}, fmtN(v, 0)), h('div', {class: 'small muted'}, l)))),
-        h('div', {class: 'small muted', style: 'margin-top:10px'}, sd.by_source.map(x => `${x.label} ${fmtN(x.open, 0)}`).join(' · ') + ' · summaries written back after approval')]
-        : h('div', {class: 'muted small', style: 'padding:8px 0'}, (sd.hint || 'Connect Jira, Freshservice or ServiceNow') + ' — tickets summarised, duplicates grouped, priority by business impact; nothing written back without your approval.')) : null,
+        h('div', {class: 'small muted', style: 'margin-top:10px'}, sd.by_source.map(x => `${x.label} ${fmtN(x.open, 0)}`).join(' - ') + ' - summaries written back after approval')]
+        : h('div', {class: 'muted small', style: 'padding:8px 0'}, (sd.hint || 'Connect Jira, Freshservice or ServiceNow') + ' - tickets summarised, duplicates grouped, priority by business impact; nothing written back without your approval.')) : null,
     // P14: Data health (health across the watched assets, open incidents); empty state until something is watched
-    ob ? h('div', {class: 'card', style: 'margin:16px 0 0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Data health'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/observability'}, 'Open →')), ob.watched ? [h('div', {style: 'display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))'}, [[ob.health_pct == null ? '—' : fmtN(ob.health_pct) + ' %', 'assets passing every check'], [fmtN(ob.open, 0), 'open incidents'], [fmtN(ob.watched, 0), 'assets watched'], [ob.time_to_fix_h == null ? '—' : fmtN(ob.time_to_fix_h) + ' h', 'median time to fix']].map(([v, l]) => h('div', {class: 'mini'}, h('div', {class: 'mv'}, v), h('div', {class: 'small muted'}, l)))), h('div', {class: 'small muted', style: 'margin-top:10px'}, ob.layers.map(l => `${l.label} ${l.open ? l.open + ' open' : 'ok'}`).join(' · ') + ' · warnings, tickets and fixes only after your approval')] : h('div', {class: 'muted small', style: 'padding:8px 0'}, (ob.hint || 'Nothing watched yet') + ' — freshness, volume, schema, distribution and reconciliation checked across every layer, with the impact traced before anyone acts on a wrong number.')) : null,
+    ob ? h('div', {class: 'card', style: 'margin:16px 0 0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Data health'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/observability'}, 'Open')), ob.watched ? [h('div', {style: 'display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))'}, [[ob.health_pct == null ? '-' : fmtN(ob.health_pct) + ' %', 'assets passing every check'], [fmtN(ob.open, 0), 'open incidents'], [fmtN(ob.watched, 0), 'assets watched'], [ob.time_to_fix_h == null ? '-' : fmtN(ob.time_to_fix_h) + ' h', 'median time to fix']].map(([v, l]) => h('div', {class: 'mini'}, h('div', {class: 'mv'}, v), h('div', {class: 'small muted'}, l)))), h('div', {class: 'small muted', style: 'margin-top:10px'}, ob.layers.map(l => `${l.label} ${l.open ? l.open + ' open' : 'ok'}`).join(' - ') + ' - warnings, tickets and fixes only after your approval')] : h('div', {class: 'muted small', style: 'padding:8px 0'}, (ob.hint || 'Nothing watched yet') + ' - freshness, volume, schema, distribution and reconciliation checked across every layer, with the impact traced before anyone acts on a wrong number.')) : null,
     // P11: the consulting studio (proposals, decks, documents, RFP responses); a small empty state until something is briefed
-    su && !viewer ? h('div', {class: 'card', style: 'margin:16px 0 0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Studio'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/studio'}, 'Open →')),
+    su && !viewer ? h('div', {class: 'card', style: 'margin:16px 0 0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Studio'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/studio'}, 'Open')),
       su.items ? [h('div', {style: 'display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))'},
         [[su.items, 'deliverables'], [su.awaiting, 'waiting for you'], [su.running, 'Relay is working on'], [su.final, 'final']].map(([v, l]) => h('div', {class: 'mini'}, h('div', {class: 'mv'}, fmtN(v, 0)), h('div', {class: 'small muted'}, l)))),
-        h('div', {class: 'small muted', style: 'margin-top:10px'}, su.recent.slice(0, 3).map(r => h('a', {href: '#/studio/' + r.id, style: 'margin-right:12px'}, `${r.name} · ${r.status_label}`)))]
-        : h('div', {class: 'muted small', style: 'padding:8px 0'}, su.hint, ' ', h('a', {href: '#/rfp'}, 'RFP & bid response →'))) : null,
-    // P16: Self-healing (open cases, fixed, rules) and AI SDLC changes in flight — small cards with safe empty states
+        h('div', {class: 'small muted', style: 'margin-top:10px'}, su.recent.slice(0, 3).map(r => h('a', {href: '#/studio/' + r.id, style: 'margin-right:12px'}, `${r.name} - ${r.status_label}`)))]
+        : h('div', {class: 'muted small', style: 'padding:8px 0'}, su.hint, ' ', h('a', {href: '#/rfp'}, 'RFP & bid response'))) : null,
+    // P16: Self-healing (open cases, fixed, rules) and AI SDLC changes in flight - small cards with safe empty states
     hl || sl ? h('div', {class: 'g2', style: 'margin:16px 0 0'},
-      hl ? h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Self-healing'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/heal'}, 'Open →')), hl.open || hl.fixed_30d ? [h('div', {style: 'display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))'}, [[fmtN(hl.open, 0), 'open cases'], [fmtN(hl.waiting_for_you, 0), 'need a person'], [fmtN(hl.fixed_30d, 0), 'fixed in 30 days'], [fmtN(hl.rules_total, 0), 'rules']].map(([v, l]) => h('div', {class: 'mini'}, h('div', {class: 'mv'}, v), h('div', {class: 'small muted'}, l)))), h('div', {class: 'small muted', style: 'margin-top:10px'}, 'diagnosed with the logs and the lineage, fixed on a copy, applied only after your approval')] : h('div', {class: 'muted small', style: 'padding:8px 0'}, (hl.hint || 'Nothing to heal right now') + ' — refreshes, gates, sign-ins, schedules and integration runs are watched; a failure becomes a case here.')) : null,
-      sl ? h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Changes in flight'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/sdlc'}, 'Open →')), sl.open || sl.released_30d ? [h('div', {style: 'display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))'}, [[fmtN(sl.open, 0), 'in flight'], [fmtN(sl.waiting_for_you, 0), 'waiting for a person'], [fmtN(sl.released_30d, 0), 'released in 30 days'], [fmtN(sl.repos, 0), 'repositories']].map(([v, l]) => h('div', {class: 'mini'}, h('div', {class: 'mv'}, v), h('div', {class: 'small muted'}, l)))), h('div', {class: 'small muted', style: 'margin-top:10px'}, 'plan, pull request, UAT and release each confirmed by a named person; Relay never merges')] : h('div', {class: 'muted small', style: 'padding:8px 0'}, (sl.hint || 'No change in flight') + ' — bring a repository and a change request becomes a tested pull request through approved steps.')) : null) : null,
-    reg ? [h('div', {class: 'section-title'}, h('h2', {}, 'Modules by pillar'), h('span', {class: 'hint'}, h('a', {href: '#/modules'}, 'All modules →'))),
+      hl ? h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Self-healing'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/heal'}, 'Open')), hl.open || hl.fixed_30d ? [h('div', {style: 'display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))'}, [[fmtN(hl.open, 0), 'open cases'], [fmtN(hl.waiting_for_you, 0), 'need a person'], [fmtN(hl.fixed_30d, 0), 'fixed in 30 days'], [fmtN(hl.rules_total, 0), 'rules']].map(([v, l]) => h('div', {class: 'mini'}, h('div', {class: 'mv'}, v), h('div', {class: 'small muted'}, l)))), h('div', {class: 'small muted', style: 'margin-top:10px'}, 'diagnosed with the logs and the lineage, fixed on a copy, applied only after your approval')] : h('div', {class: 'muted small', style: 'padding:8px 0'}, (hl.hint || 'Nothing to heal right now') + ' - refreshes, gates, sign-ins, schedules and integration runs are watched; a failure becomes a case here.')) : null,
+      sl ? h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Changes in flight'), h('span', {class: 'sp'}), h('a', {class: 'small', href: '#/sdlc'}, 'Open')), sl.open || sl.released_30d ? [h('div', {style: 'display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))'}, [[fmtN(sl.open, 0), 'in flight'], [fmtN(sl.waiting_for_you, 0), 'waiting for a person'], [fmtN(sl.released_30d, 0), 'released in 30 days'], [fmtN(sl.repos, 0), 'repositories']].map(([v, l]) => h('div', {class: 'mini'}, h('div', {class: 'mv'}, v), h('div', {class: 'small muted'}, l)))), h('div', {class: 'small muted', style: 'margin-top:10px'}, 'plan, pull request, UAT and release each confirmed by a named person; Relay never merges')] : h('div', {class: 'muted small', style: 'padding:8px 0'}, (sl.hint || 'No change in flight') + ' - bring a repository and a change request becomes a tested pull request through approved steps.')) : null) : null,
+    reg ? [h('div', {class: 'section-title'}, h('h2', {}, 'Modules by pillar'), h('span', {class: 'hint'}, h('a', {href: '#/modules'}, 'All modules'))),
       h('div', {class: 'g6'}, reg.pillars.map(p => { const ms = reg.modules.filter(m => m.pl === p.id), live = ms.filter(m => ['available', 'partly'].includes(m.state)).length;
         return h('a', {class: 'card pillar-tile', href: '#/modules', onclick: () => setTimeout(() => { const el = document.getElementById('pl-' + p.id); if (el) el.scrollIntoView(); }, 60)},
           h('div', {class: 'small muted'}, p.name), h('div', {class: 'mv'}, String(live), h('span', {class: 'small muted', style: 'font-weight:400'}, ` of ${ms.length} live`)),

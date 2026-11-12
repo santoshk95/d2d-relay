@@ -113,7 +113,7 @@ def _build(estate: dict, report: dict, pack: rules.RulePack | None, data_dir: Pa
             role = c.get("role") or ("measure" if c["type"] in ("int", "decimal") else "attribute")
             hidden = role in ("measure", "key") or (t is fact_t and role == "date") or c["name"].lower().endswith("key")
             cols.append({"name": c["name"], "type": DAX_TYPES.get(c["type"], "string"), **({"hidden": True} if hidden else {})})
-        tables.append({"name": t["name"], "csv": t.get("file") or f"{t['name'].lower()}.csv", "description": f"{t['name']} from {estate['source']['label']} {ds['kind']} “{ds['name']}”",
+        tables.append({"name": t["name"], "csv": t.get("file") or f"{t['name'].lower()}.csv", "description": f"{t['name']} from {estate['source']['label']} {ds['kind']} \"{ds['name']}\"",
                        "columns": cols})
         plan["lineage"].append({"from": f"{ds['name']}.{t['name']}", "kind": "source_table", "to": f"{t['name']}", "detail": f"{len(cols)} columns"})
     for r in ds.get("relationships") or []:
@@ -173,7 +173,7 @@ def _build(estate: dict, report: dict, pack: rules.RulePack | None, data_dir: Pa
             rid, info = rules.filter_rule(f["expression"], ctx)
             if rid is None:
                 plan["gaps"].append({"item": f["expression"], "query": q["name"], "function": "filter", "reason": info["reason"], "expression": f["expression"], "kind": "filter"})
-                plan["decisions"].append(f"filter {f['expression']}: {info['reason']} → noted for the agent")
+                plan["decisions"].append(f"filter {f['expression']}: {info['reason']} -> noted for the agent")
                 continue
             q_filters[q["name"]].append((rid, info, f))
     # a constant filter every query shares becomes a report slicer with that default; one that only some queries
@@ -189,14 +189,14 @@ def _build(estate: dict, report: dict, pack: rules.RulePack | None, data_dir: Pa
                     filters.append({"field": info["field"], "label": info["label"]})
                     plan["filters"].append({"query": qn, "expression": f["expression"], "field": info["field"], "rule": rid, "prompt": info.get("prompt")})
                     plan["rules_used"][rid] = plan["rules_used"].get(rid, 0) + 1
-                    plan["decisions"].append(f"filter {f['expression']} → slicer on {info['field']} (prompt → multi-select)")
+                    plan["decisions"].append(f"filter {f['expression']} -> slicer on {info['field']} (prompt -> multi-select)")
                 continue
             if (info["field"], info["default"]) in shared:
                 if not any(x["field"] == info["field"] for x in filters):
                     filters.append({"field": info["field"], "label": info["label"], "default": info["default"]})
                     plan["filters"].append({"query": qn, "expression": f["expression"], "field": info["field"], "rule": rid, "default": info["default"]})
                     plan["rules_used"][rid] = plan["rules_used"].get(rid, 0) + 1
-                    plan["decisions"].append(f"filter {f['expression']} → slicer on {info['field']}, default {info['default']} (every query has it)")
+                    plan["decisions"].append(f"filter {f['expression']} -> slicer on {info['field']}, default {info['default']} (every query has it)")
                 continue
             m = re.match(r"^(.+?)\[(.+)\]$", info["field"])
             t, c = m.group(1), m.group(2)
@@ -206,7 +206,7 @@ def _build(estate: dict, report: dict, pack: rules.RulePack | None, data_dir: Pa
             q_calc.setdefault(qn, []).append((f"{rules.dax_col(t, c)} = {dax_v}", f"{ctx.aliases.get(t, 'f')}.{_dq(c)} = {sql_v}", t))
             plan["filters"].append({"query": qn, "expression": f["expression"], "field": info["field"], "rule": "cog.filter.measure", "default": v})
             plan["rules_used"]["cog.filter.measure"] = plan["rules_used"].get("cog.filter.measure", 0) + 1
-            plan["decisions"].append(f"filter {f['expression']} → CALCULATE on {qn}'s measures and WHERE in its visuals (only this query has it)")
+            plan["decisions"].append(f"filter {f['expression']} -> CALCULATE on {qn}'s measures and WHERE in its visuals (only this query has it)")
     for qn, conds in q_calc.items():
         q_where[qn] = [s for _, s, _ in conds]
         ctxs[qn].extra_where = q_where[qn]
@@ -227,15 +227,15 @@ def _build(estate: dict, report: dict, pack: rules.RulePack | None, data_dir: Pa
             desc = f"{estate['source']['label']}: {it['expression']}"
             if tr.dax and not tr.gaps and mode != "ai_led":
                 measures.append({"name": mname, "expression": tr.dax, "format": tr.format or "", "folder": "Converted", "description": desc})
-                plan["decisions"].append(f"{it['name']} → measure [{mname}] ({', '.join(sorted(set(tr.rules))) or 'rule'})")
+                plan["decisions"].append(f"{it['name']} -> measure [{mname}] ({', '.join(sorted(set(tr.rules))) or 'rule'})")
             else:
                 reason = "; ".join(g["reason"] for g in tr.gaps) or ("the agent reworks every calculation (AI-led)" if mode == "ai_led" else "no rule")
                 measures.append({"name": mname, "expression": tr.dax if (tr.dax and mode == "ai_led") else "BLANK ()", "format": tr.format or "", "folder": "Converted",
-                                 "description": f"NO RULE YET — the agent writes this measure. {desc} ({reason})"})
+                                 "description": f"NO RULE YET - the agent writes this measure. {desc} ({reason})"})
                 for g in (tr.gaps or [{"function": "ai", "reason": reason, "expression": it["expression"]}]):
                     plan["gaps"].append({**g, "item": it["name"], "query": q["name"], "measure": mname, "kind": "measure", "sql": tr.sql, "window": tr.window,
                                          "filter": " && ".join(d for d, _, _ in q_calc.get(q["name"], [])) or None})
-                plan["decisions"].append(f"{it['name']} → measure [{mname}]: {reason} → agent")
+                plan["decisions"].append(f"{it['name']} -> measure [{mname}]: {reason} -> agent")
             item_ref[(q["name"], it["name"])] = {"ref": f"[{mname}]", "kind": "measure", "sql": tr.sql, "window": tr.window, "format": tr.format, "rules": tr.rules, "gap": bool(tr.gaps) or mode == "ai_led"}
             plan["measures"].append({"item": it["name"], "query": q["name"], "measure": mname, "rules": sorted(set(tr.rules)), "confidence": tr.confidence, "gaps": tr.gaps, "dax": tr.dax})
             plan["lineage"].append({"from": f"{q['name']}.{it['name']}", "kind": "transform", "to": f"[{mname}]", "detail": it["expression"]})
@@ -262,7 +262,7 @@ def _build(estate: dict, report: dict, pack: rules.RulePack | None, data_dir: Pa
             q = v.get("query")
             ctx = ctxs.get(q)
             if vr["type"] is None or ctx is None:
-                plan["unsupported"].append({"what": f"{v['kind']} “{v.get('title') or v['id']}”", "reason": vr["reason"] if ctx else f"the visual's query {q} is not in the report"})
+                plan["unsupported"].append({"what": f"{v['kind']} \"{v.get('title') or v['id']}\"", "reason": vr["reason"] if ctx else f"the visual's query {q} is not in the report"})
                 plan["visuals"].append({"id": v["id"], "kind": v["kind"], "type": None, "rule": None, "confidence": "low", "reason": vr["reason"], "title": v.get("title")})
                 continue
             vis, meta = _visual(v, vr, ctx, item_ref, filters, has_date, fact_t, plan)
@@ -279,7 +279,7 @@ def _build(estate: dict, report: dict, pack: rules.RulePack | None, data_dir: Pa
             plan["visuals"].append({"id": v["id"], "def_id": vis["id"], "page": p["name"], "kind": v["kind"], "type": vis["type"], "chart": vis.get("chart"), "rule": vr["rule"],
                                     "confidence": vr["confidence"], "reason": vr["reason"], "title": vis.get("title"), "proof": meta})
             plan["rules_used"][vr["rule"]] = plan["rules_used"].get(vr["rule"], 0) + 1
-            plan["decisions"].append(f"{v['kind']} “{v.get('title') or v['id']}” → {vis['type']}{' ' + vis['chart'] if vis.get('chart') else ''} ({vr['rule']})")
+            plan["decisions"].append(f"{v['kind']} \"{v.get('title') or v['id']}\" {vis['type']}{' ' + vis['chart'] if vis.get('chart') else ''} ({vr['rule']})")
             if vis["type"] == "atlasGauges" and vis.get("chart") == "card":
                 kpis.append(vis)
             else:
@@ -300,13 +300,13 @@ def _build(estate: dict, report: dict, pack: rules.RulePack | None, data_dir: Pa
             fields = [item_ref[(q["name"], it["name"])]["ref"] for it in q.get("items") or [] if (q["name"], it["name"]) in item_ref][:8]
             if fields:
                 sql, meta = _table_sql(q["name"], [it["name"] for it in q.get("items") or [] if (q["name"], it["name"]) in item_ref][:8], ctx, item_ref, filters, has_date, fact_t)
-                pages.append({"name": "Page1", "rows": [{"visuals": [{"id": "p1_list", "type": "table", "title": f"{report['name']} — data", "fields": fields, "prototype": {"sql": sql}}]}]})
+                pages.append({"name": "Page1", "rows": [{"visuals": [{"id": "p1_list", "type": "table", "title": f"{report['name']} - data", "fields": fields, "prototype": {"sql": sql}}]}]})
                 plan["visuals"].append({"id": "p1_list", "def_id": "p1_list", "page": "Page1", "kind": "list", "type": "table", "rule": "cog.viz.list", "confidence": "low",
                                         "reason": "no drawable visual: the first query as a table", "title": None, "proof": meta})
     ai_gaps = [g for g in plan["gaps"] if g.get("kind") == "measure"]
     plan["ai"] = len(ai_gaps)
     defn = {"name": _report_title(report["name"]),
-            "description": f"Converted from {estate['source']['label']} {report['type'].lower()} “{report['name']}” ({report['folder']}) by Relay — rules first"
+            "description": f"Converted from {estate['source']['label']} {report['type'].lower()} \"{report['name']}\" ({report['folder']}) by Relay - rules first"
                            + (f"; {len(ai_gaps)} calculation(s) for the agent" if ai_gaps else "") + (f". Review comment: {comment}" if comment else ""),
             "tables": tables, **({"calculated_columns": calc_cols} if calc_cols else {}), "relationships": rel, "measures": measures,
             **({"filters": filters} if filters else {}), "pages": pages}
@@ -443,7 +443,7 @@ def _visual(v: dict, vr: dict, ctx: Context, item_ref: dict, filters: list[dict]
     if typ == "table":
         items = [c for c in v.get("columns") or [] if (q, c) in item_ref] or ([cat] if cat else []) + measures
         if not items:
-            plan["unsupported"].append({"what": f"{kind} “{title}”", "reason": "none of its columns could be converted"})
+            plan["unsupported"].append({"what": f"{kind} \"{title}\"", "reason": "none of its columns could be converted"})
             return None, {}
         sql, meta = _table_sql(q, items, ctx, item_ref, filters, has_date, fact_t)
         vis = {"id": vid, "type": "table", "title": title, "fields": [item_ref[(q, c)]["ref"] for c in items]}
@@ -454,7 +454,7 @@ def _visual(v: dict, vr: dict, ctx: Context, item_ref: dict, filters: list[dict]
     if not measures:
         measures = [m for (qq, m), ref in item_ref.items() if qq == q and ref["kind"] == "measure"][:1]
         if not measures:
-            plan["unsupported"].append({"what": f"{kind} “{title}”", "reason": "its query has no measure to draw"})
+            plan["unsupported"].append({"what": f"{kind} \"{title}\"", "reason": "its query has no measure to draw"})
             return None, {}
     if typ in ("atlasColumns", "atlasLines", "atlasParts") and not cat:
         cat = next((c for (qq, c), ref in item_ref.items() if qq == q and ref["kind"] == "column"), None)
@@ -505,18 +505,18 @@ def write_project(d: Path, estate: dict, report: dict, defn: dict, plan: dict, s
              "source_queries": [{"name": q["name"], "items": q.get("items"), "filters": q.get("filters")} for q in report.get("queries") or []]}
     (d / "migrate_brief.json").write_text(json.dumps(brief, indent=1, ensure_ascii=False), encoding="utf-8")
     lines = [f"# {report['name']}", "", "## What the user asked for", "",
-             f"Convert the {estate['source']['label']} {report['type'].lower()} “{report['name']}” ({report['folder']}) to Power BI with the same numbers. "
-             f"definition.yaml was written by Relay's conversion rules from the report's specification; the data in data/ is the {ds['kind']} “{ds['name']}” behind it.", "",
+             f"Convert the {estate['source']['label']} {report['type'].lower()} \"{report['name']}\" ({report['folder']}) to Power BI with the same numbers. "
+             f"definition.yaml was written by Relay's conversion rules from the report's specification; the data in data/ is the {ds['kind']} \"{ds['name']}\" behind it.", "",
              "## Data (in data/)", ""] + [f"- {t['file']} ({t['name']})" for t in ds.get("tables") or [] if t.get("file")]
-    lines += ["", "## Conversion", "", f"- Mode: {mode.replace('_', ' ')}", f"- Calculations by rules: {len(plan['measures']) - plan['ai']} · for the agent: {plan['ai']}",
-              f"- Visuals: {plan['summary']['visuals']} on {plan['summary']['pages']} page(s)" + (f" · not converted: {plan['summary']['unsupported']}" if plan["summary"]["unsupported"] else "")]
+    lines += ["", "## Conversion", "", f"- Mode: {mode.replace('_', ' ')}", f"- Calculations by rules: {len(plan['measures']) - plan['ai']} - for the agent: {plan['ai']}",
+              f"- Visuals: {plan['summary']['visuals']} on {plan['summary']['pages']} page(s)" + (f" - not converted: {plan['summary']['unsupported']}" if plan["summary"]["unsupported"] else "")]
     if plan["gaps"]:
         lines += ["", "## Calculations and filters without a rule (migrate_brief.json has the detail)", ""]
         for g in plan["gaps"]:
-            lines.append(f"- {g.get('item')}: {g['expression']} — {g['reason']}" + (f" → measure [{g['measure']}] is BLANK () until written" if g.get("measure") else ""))
+            lines.append(f"- {g.get('item')}: {g['expression']} - {g['reason']}" + (f" -> measure [{g['measure']}] is BLANK () until written" if g.get("measure") else ""))
     if plan["unsupported"]:
         lines += ["", "## Not converted (a person decides)", ""] + [f"- {u['what']}: {u['reason']}" for u in plan["unsupported"]]
     if comment:
         lines += ["", "## Review comment", "", comment]
-    lines += ["", "## Custom visuals", "", "- Custom visuals: never — use the catalogue only"]
+    lines += ["", "## Custom visuals", "", "- Custom visuals: never - use the catalogue only"]
     (d / "request.md").write_text("\n".join(lines) + "\n", encoding="utf-8")

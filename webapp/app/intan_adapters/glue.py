@@ -1,6 +1,6 @@
-"""AWS Glue — the Glue API (JSON 1.1 targets AWSGlue.GetJobs, GetJobRuns, GetTriggers). With boto3 installed and no
+"""AWS Glue - the Glue API (JSON 1.1 targets AWSGlue.GetJobs, GetJobRuns, GetTriggers). With boto3 installed and no
 endpoint override the call is signed properly; the mock lab's endpoint checks the access key id in a SigV4-shaped
-header, which is all a simulator can do. Job descriptions may carry "owner:" and "<from> → <to>"."""
+header, which is all a simulator can do. Job descriptions may carry "owner:" and "<from> -> <to>"."""
 from __future__ import annotations
 
 import time

@@ -3,7 +3,7 @@ turn it into today's report definition (definition.yaml -> PBIP builder -> revie
 with a live preview, and the proof of numbers against the source.
 
     model.py          the neutral model: datasets, reports, queries, calculations, filters, prompts, pages, visuals,
-                      usage, owners, folders, dependencies — plain dicts, JSON on disk (estate.json)
+                      usage, owners, folders, dependencies - plain dicts, JSON on disk (estate.json)
     expr.py           the Cognos expression language parsed into a small AST (shared by the rules and the simulator)
     readers/          cognos (exports, deployment archives, REST), qlik (Qlik Sense unbuild, QlikView project
                       folders, load scripts), stubs (MicroStrategy, Tableau, SSRS, BusinessObjects: next)

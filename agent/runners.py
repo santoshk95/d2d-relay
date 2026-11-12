@@ -1,6 +1,6 @@
 """Other agent CLIs behind the agent's Runner interface (platform plan, phase 8): OpenAI Codex CLI, Gemini CLI and
 Antigravity CLI. Each runs headless in the project folder and streams JSON lines, which are turned into the same
-normalised events as Claude Code's (start, say, tool, result, done with usage — or error), so the web app, the
+normalised events as Claude Code's (start, say, tool, result, done with usage - or error), so the web app, the
 activity log, the cost records and the review gates work the same for every runner.
 
 The same limits as Claude Code, as far as each CLI can enforce them:
@@ -25,7 +25,7 @@ from pathlib import Path
 
 def _short(text, n: int = 400) -> str:
     text = " ".join(str(text or "").split())
-    return text if len(text) <= n else text[: n - 1] + "…"
+    return text if len(text) <= n else text[: n - 3] + "..."
 
 
 def _prompt(run) -> str:

@@ -19,7 +19,7 @@ async function shareDialog(st) {
     expires: s.expires, name: s.name, email: s.email}));
   const body = h('div', {class: 'mbody share'});
   const results = h('div', {class: 'dir'});
-  const search = h('input', {type: 'text', placeholder: 'Add people or teams…', autocomplete: 'off'});
+  const search = h('input', {type: 'text', placeholder: 'Add people or teams...', autocomplete: 'off'});
   let timer;
   search.oninput = () => { clearTimeout(timer); timer = setTimeout(find, 200); };
   async function find() {
@@ -28,7 +28,7 @@ async function shareDialog(st) {
     const d = await api('/api/directory?q=' + encodeURIComponent(q));
     const taken = new Set(grants.map(g => g.principal_type + ':' + g.principal_id));
     const items = [...d.users.filter(u => u.id !== data.owner.id).map(u => ({principal_type: 'user', principal_id: u.id, name: u.name, email: u.email})),
-      ...d.teams.map(t => ({principal_type: 'team', principal_id: t.id, name: t.name, email: `Team · ${t.members} people`}))]
+      ...d.teams.map(t => ({principal_type: 'team', principal_id: t.id, name: t.name, email: `Team - ${t.members} people`}))]
       .filter(x => !taken.has(x.principal_type + ':' + x.principal_id));
     results.replaceChildren(...(items.length ? items.map(x => h('button', {type: 'button', onclick: () => {
       grants.push({...x, permission: 'view', expires: null}); search.value = ''; results.replaceChildren(); draw(); }},
@@ -53,7 +53,7 @@ async function shareDialog(st) {
     const teamSel = h('select', {class: 'sel'}, data.teams.map(t => h('option', {value: t.id, selected: t.id === team}, t.name)));
     teamSel.onchange = () => { team = teamSel.value; };
     body.replaceChildren(...[
-      h('div', {class: 'row', style: 'gap:8px'}, icon('user'), h('span', {}, h('b', {}, data.owner.name), h('span', {class: 'muted small'}, ` · owner · ${data.owner.email}`))),
+      h('div', {class: 'row', style: 'gap:8px'}, icon('user'), h('span', {}, h('b', {}, data.owner.name), h('span', {class: 'muted small'}, ` - owner - ${data.owner.email}`))),
       h('label', {class: 'f'}, 'General access'), visSel,
       vis === 'team' ? h('div', {style: 'margin-top:8px'}, teamSel, h('div', {class: 'hint'}, 'Everyone in this team can edit it.')) : null,
       h('label', {class: 'f'}, 'People and teams'), search, results,
@@ -72,5 +72,5 @@ async function shareDialog(st) {
     } catch (err) { notify(err.message, 'err'); e.target.disabled = false; }
   }
   draw();
-  const m = modal(`Share “${st.name}”`, body);
+  const m = modal(`Share "${st.name}"`, body);
 }

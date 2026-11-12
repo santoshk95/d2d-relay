@@ -1,23 +1,23 @@
-"""Excel & spreadsheet models (registry id `excel`) — from fragile workbooks to governed models: finance and planning
-workbooks read, explained, fixed and rebuilt as governed SQL models with certified metrics — or kept, with checks.
+"""Excel & spreadsheet models (registry id `excel`) - from fragile workbooks to governed models: finance and planning
+workbooks read, explained, fixed and rebuilt as governed SQL models with certified metrics - or kept, with checks.
 Workbooks (.xlsx / .xlsm), their VBA modules (.bas) and Power Query M (.pq / .m) are uploaded; the mock lab's finance
 workbooks stand in (tests/mocklab/fixtures/excel_models).
 
-Assess   Connect → Inventory → Health → Findings → Estimate: every sheet, formula, name, link, macro and query; the
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: every sheet, formula, name, link, macro and query; the
          workbook evaluated again by Relay's formula engine and compared with the numbers Excel cached; formula
          errors, numbers typed in place of an input, links to other workbooks, hidden sheets that feed nothing, tie-outs
          that do not tie out, macros writing to personal paths, queries reading local files.
-Develop  Describe → Shape → Build → Prove → Ship → Run: a governed model from a workbook — every sheet's column
+Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run: a governed model from a workbook - every sheet's column
          formulas translated to SQL by rules (lookups as joins, typed-in numbers as the inputs they mean), the agent
          drafting what no rule translates; built in DuckDB and proven against the workbook's own numbers; approved;
          the outputs become draft metrics in Formulas & metrics, where the four-eyes review certifies them.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: a workbook fixed — a #REF! rebuilt from its column's
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: a workbook fixed - a #REF! rebuilt from its column's
          pattern, a typed-in rate replaced by its input, a link to another workbook replaced by the input it equals;
          each fix proven by evaluating the workbook again (no error left, no other number moves); approved; the fixed
          workbook handed back.
-Migrate  Discover → Decide → Convert → Prove → Hand over → Run: a set of workbooks moved out of Excel — rebuild,
-         keep with checks, hand masters to Master data, retire — converted and proven like Develop.
-Run      Watch → Alert → Fix → Approve → Report: each round the latest upload is read again: errors and tie-outs that do
+Migrate  Discover -> Decide -> Convert -> Prove -> Hand over -> Run: a set of workbooks moved out of Excel - rebuild,
+         keep with checks, hand masters to Master data, retire - converted and proven like Develop.
+Run      Watch -> Alert -> Fix -> Approve -> Report: each round the latest upload is read again: errors and tie-outs that do
          not tie out go to a ticket or a Change item after a person approves.
 """
 from __future__ import annotations
@@ -44,7 +44,7 @@ class Workbooks(wb.Platform):
     kinds = ()
     uploads = (".xlsx", ".zip")                       # macro workbooks (.xlsm), VBA modules (.bas) and Power Query (.pq) come in a .zip
     simulator = "tests/mocklab/fixtures/excel_models (a budget model, an AR tie-out, a pricing calculator with VBA, a supplier master, Power Query M)"
-    reads = "formulas with the values Excel cached, names, links, hidden sheets, VBA modules and Power Query M — the files are never changed; a fixed copy is handed back"
+    reads = "formulas with the values Excel cached, names, links, hidden sheets, VBA modules and Power Query M - the files are never changed; a fixed copy is handed back"
 
 
 FILES = Workbooks()
@@ -70,7 +70,7 @@ def _hours(m: float) -> str:
 def _cost(h: float) -> str:
     b = registry.brand()
     rate, cur = float(b.get("hourly_rate") or 0), b.get("currency") or ""
-    return f" · {cur}{rate * h:,.0f}" if rate else ""
+    return f" - {cur}{rate * h:,.0f}" if rate else ""
 
 
 def recompute(book: dict) -> dict:
@@ -105,7 +105,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
     rows = FILES.test(ctx)
     if not rows:
         raise wb.StepFailed("Nothing to read: upload the workbooks.")
-    return {"summary": f"{len(rows)} upload(s) opened — read-only.", "counts": {"files": len(rows)},
+    return {"summary": f"{len(rows)} upload(s) opened - read-only.", "counts": {"files": len(rows)},
             "data": {"columns": ["Source", "Kind", "Status", "What Relay sees", "Access"], "rows": [[r["source"], r["kind"], "opened" if r["ok"] else "refused", r["sees"], r["scope"]] for r in rows]}}
 
 
@@ -115,7 +115,7 @@ def a_inventory(ctx: wb.Ctx) -> dict:
     for b in src["books"]:
         for sh in b["sheets"].values():
             f = sum(1 for c in sh["cells"].values() if c["f"])
-            recs.append({"id": f"{b['name']}|{sh['name']}", "object": f"{b['name']} › {sh['name']}", "kind": "hidden sheet" if sh["hidden"] else "sheet", "rows": sh["max_row"],
+            recs.append({"id": f"{b['name']}|{sh['name']}", "object": f"{b['name']} > {sh['name']}", "kind": "hidden sheet" if sh["hidden"] else "sheet", "rows": sh["max_row"],
                          "formulas": f, "names": len(b["names"]), "links": len(b["links"])})
     for v in src["vba"]:
         recs.append({"id": v["name"], "object": v["name"], "kind": "VBA module", "rows": v["text"].count("\n"), "formulas": None, "names": None, "links": None})
@@ -143,7 +143,7 @@ def a_health(ctx: wb.Ctx) -> dict:
                 ps = [p for p in mdm_rules.pairs(recs) if p["action"] != "not_match"] if len(recs) > 3 else []
                 if ps:
                     found.append({"id": f"duplicates:{b['name']}!{sh['name']}", "kind": "duplicates", "book": b["name"], "where": sh["name"], "route": "mdm", "minutes": 3 * len(ps),
-                                  "issue": f"{len(ps)} duplicate pair(s) in the master {sh['name']} — for Master data"})
+                                  "issue": f"{len(ps)} duplicate pair(s) in the master {sh['name']} - for Master data"})
     except ImportError:
         pass
     ctx.put("findings", found)
@@ -180,9 +180,9 @@ def a_findings(ctx: wb.Ctx) -> dict:
     recs = []
     for (k, b), fs in groups.items():
         rid = f"{k}:{b}"
-        recs.append({"id": rid, "kind": k, "object": f"{b}: {', '.join(f['where'] for f in fs[:6])}" + (" …" if len(fs) > 6 else ""), "issue": fs[0]["issue"] + (f" (and {len(fs) - 1} more like it)" if len(fs) > 1 else ""),
+        recs.append({"id": rid, "kind": k, "object": f"{b}: {', '.join(f['where'] for f in fs[:6])}" + (" ..." if len(fs) > 6 else ""), "issue": fs[0]["issue"] + (f" (and {len(fs) - 1} more like it)" if len(fs) > 1 else ""),
                      "route": fs[0]["route"], "n": len(fs), "decision": (have.get(rid) or {}).get("decision", "keep")})
-    return {"summary": f"{len(recs)} group(s) of findings — keep what matters, ignore what does not.", "counts": {"groups": len(recs)}, "records": recs,
+    return {"summary": f"{len(recs)} group(s) of findings - keep what matters, ignore what does not.", "counts": {"groups": len(recs)}, "records": recs,
             "items": [f"{r['object']}: {r['issue']}" for r in recs[:6]],
             "data": {"columns": ["What", "Where", "Why", "Who fixes it"], "rows": [[{**xr.LABEL, "duplicates": "Duplicates in masters"}[r["kind"]], r["object"], r["issue"], r["route"]] for r in recs]}}
 
@@ -209,7 +209,7 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     ctx.output("workbook-assessment.md", f"# Workbook assessment: {ctx.title}\n\n" + "\n".join(f"## {i['title']}\n\n{i['detail']}\n\nEffort: {i['effort']}\n" for i in items) + f"\n{note}\n",
                label="Assessment (Markdown)")
     return {"summary": f"{len(items)} group(s) of work, about {_hours(total)}{_cost(total / 60)}.", "counts": {"groups": len(items), "hours": round(total / 60, 1)},
-            "data": {"items": items, "total": _hours(total), "note": note + ("" if registry.brand().get("hourly_rate") else " Set an hourly rate under Admin › Branding to see the cost.")}}
+            "data": {"items": items, "total": _hours(total), "note": note + ("" if registry.brand().get("hourly_rate") else " Set an hourly rate under Admin > Branding to see the cost.")}}
 
 
 # ================================================================== Fix / change: a workbook fixed and proven
@@ -244,9 +244,9 @@ def _propose(book: dict, f: dict) -> dict:
             except (xr.XlError, xr.External):
                 continue
             if xr.close(v, (book["sheets"][sheet]["cells"].get(a1) or {}).get("v")):
-                return {"new": cand, "why": f"the linked value equals the input {n} — the link is replaced by it"}
+                return {"new": cand, "why": f"the linked value equals the input {n} - the link is replaced by it"}
         del bk
-        return {"new": "", "why": "no input of this workbook equals the linked value — say which input it is"}
+        return {"new": "", "why": "no input of this workbook equals the linked value - say which input it is"}
     return {"new": "", "why": ""}
 
 
@@ -263,7 +263,7 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
         if ps:
             known = [p for p in ps if p["new"]]
             checks.append({"name": k, "label": xr.LABEL[k], "status": "pass" if len(known) == len(ps) else "warn", "measured": f"{len(known)} of {len(ps)} proposed by rules",
-                           "detail": "; ".join(f"{p['where']}: {p['new'] or '(a person says)'} — {p['why']}" for p in ps[:4])[:600]})
+                           "detail": "; ".join(f"{p['where']}: {p['new'] or '(a person says)'} - {p['why']}" for p in ps[:4])[:600]})
     return {"summary": f"{sum(1 for p in props if p['new'])} of {len(props)} fix(es) proposed by rules.", "data": {"checks": checks}}
 
 
@@ -275,8 +275,8 @@ def c_fix(ctx: wb.Ctx) -> dict:
         if p["id"] in have:
             r["new"] = have[p["id"]].get("new", r["new"])
         recs.append(r)
-    return {"summary": f"{len(recs)} cell(s): the proposed formula for each — change any before you confirm.", "counts": {"cells": len(recs)}, "records": recs,
-            "data": {"columns": ["Cell", "Now", "Proposed", "Why"], "rows": [[f"{r['book']} › {r['cell']}", r["old"], r["new"] or "—", r["why"]] for r in recs]}}
+    return {"summary": f"{len(recs)} cell(s): the proposed formula for each - change any before you confirm.", "counts": {"cells": len(recs)}, "records": recs,
+            "data": {"columns": ["Cell", "Now", "Proposed", "Why"], "rows": [[f"{r['book']} > {r['cell']}", r["old"], r["new"] or "-", r["why"]] for r in recs]}}
 
 
 def _validate_fix(recs: list[dict], ctx: wb.Ctx | None = None) -> list[str]:
@@ -338,14 +338,14 @@ def c_prove(ctx: wb.Ctx) -> dict:
         checks.append({"name": f"errors:{name}", "label": f"{name}: no error left", "status": "fail" if still else "pass", "measured": f"{fixed} cell(s) recover", "detail": ", ".join(still)[:300] or "every formula computes", "evidence": ev})
         checks.append({"name": f"moved:{name}", "label": f"{name}: no other number moves", "status": "fail" if moved else "pass", "detail": ", ".join(moved)[:300] or "only the error cells change", "evidence": ev})
     open_ = [r["cell"] for r in ctx.records("fix") if not r.get("new")]
-    checks.append({"name": "open", "label": "Every cell has its fix", "status": "warn" if open_ else "pass", "detail": (", ".join(open_)[:300] + " — left as they are") if open_ else "all"})
+    checks.append({"name": "open", "label": "Every cell has its fix", "status": "warn" if open_ else "pass", "detail": (", ".join(open_)[:300] + " - left as they are") if open_ else "all"})
     return {"summary": f"{len(recs)} fix(es) proven by evaluating the workbook again.", "counts": {"fixes": len(recs)}, "data": {"checks": checks}}
 
 
 def c_approve(ctx: wb.Ctx) -> dict:
     recs = [r for r in ctx.records("fix") if r.get("new") and r["new"] != r["old"]]
     return {"summary": f"{len(recs)} fix(es) to hand back, released by the named approver.",
-            "data": {"items": [{"title": f"{r['book']} › {r['cell']}", "detail": f"{r['old']} → {r['new']}", "effort": ""} for r in recs[:80]], "total": f"{len(recs)} fix(es)"}}
+            "data": {"items": [{"title": f"{r['book']} > {r['cell']}", "detail": f"{r['old']} {r['new']}", "effort": ""} for r in recs[:80]], "total": f"{len(recs)} fix(es)"}}
 
 
 def c_learn(ctx: wb.Ctx) -> dict:
@@ -369,7 +369,7 @@ def c_learn(ctx: wb.Ctx) -> dict:
             db.run("INSERT OR REPLACE INTO excel_fixes (id, book, cell, old, new, kind, item, by, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                    (f"xf-{ctx.id}|{f['name']}|{r['cell']}"[:200], f["name"], r["cell"], r["old"], r["new"], r["kind"], ctx.id, ctx.who or ctx.owner, time.time()))
     db.audit("excel.fixes", ctx.id, {"fixes": len(recs), "files": made}, ctx.who or ctx.owner)
-    return {"summary": f"The fixed workbook(s) are handed back: {', '.join(made) or 'none'} — Excel recalculates them when they are opened; put them back where the originals live.",
+    return {"summary": f"The fixed workbook(s) are handed back: {', '.join(made) or 'none'} - Excel recalculates them when they are opened; put them back where the originals live.",
             "counts": {"fixes": len(recs)}, "data": {"href": f"#/m/{MODULE}/i/{ctx.id}", "label": "The fixed workbook", "text": ", ".join(made)}}
 
 
@@ -404,7 +404,7 @@ def _shape_out(recs: list[dict]) -> dict:
     n = {"rules": sum(1 for r in recs if r["how"] == "rules"), "open": sum(1 for r in recs if not r["sql"])}
     return {"summary": f"{len(recs)} computed column(s): {n['rules']} translated to SQL by rules, {n['open']} for Relay's agent or a person.", "counts": {**n, "columns": len(recs), "agent": n["open"]},
             "records": recs, "data": {"columns": ["Workbook", "Sheet", "Column", "Formula (row 2)", "How", "Why not"],
-                                      "rows": [[r["book"], r["sheet"], r["header"], r["formula"], r["how"] or "—", r["problem"]] for r in recs]}}
+                                      "rows": [[r["book"], r["sheet"], r["header"], r["formula"], r["how"] or "-", r["problem"]] for r in recs]}}
 
 
 def _validate_model(recs: list[dict], ctx: wb.Ctx | None = None) -> list[str]:
@@ -416,7 +416,7 @@ def _validate_model(recs: list[dict], ctx: wb.Ctx | None = None) -> list[str]:
             try:
                 sqlglot.parse_one(f"SELECT {q} AS x FROM t", read="duckdb")
             except Exception as e:  # noqa: BLE001 - shown to the person
-                out.append(f"{r.get('sheet')}.{r.get('header') or r.get('column')}: the SQL does not parse — {str(e).splitlines()[0][:120]}")
+                out.append(f"{r.get('sheet')}.{r.get('header') or r.get('column')}: the SQL does not parse - {str(e).splitlines()[0][:120]}")
     return out
 
 
@@ -477,7 +477,7 @@ def _build(ctx: wb.Ctx, books: list[dict], recs: list[dict]) -> tuple[str, list[
         for s in xr.order(tables):
             ex = {r["column"]: r["sql"] for r in recs if r["book"] == b["name"] and r["sheet"] == s and r.get("sql")}
             if ex:
-                parts.append(f"-- {b['name']} › {s}\n" + xr.model_sql(s, tables[s], ex) + ";")
+                parts.append(f"-- {b['name']} > {s}\n" + xr.model_sql(s, tables[s], ex) + ";")
                 views.append(f"{xr.table_name(s)}__model")
     return "\n\n".join(parts), views
 
@@ -511,7 +511,7 @@ def _prove(ctx: wb.Ctx, books: list[dict], recs: list[dict]) -> list[dict]:
                 got = con.execute(f'SELECT * FROM "{xr.table_name(s)}__model" ORDER BY _row').fetchall()
                 names = [d[0] for d in con.description]
             except Exception as e:  # noqa: BLE001 - a SQL the person or the agent wrote
-                checks.append({"name": f"{b['name']}|{s}", "label": f"{b['name']} › {s}", "status": "fail", "detail": f"the model does not run: {str(e).splitlines()[0][:200]}"})
+                checks.append({"name": f"{b['name']}|{s}", "label": f"{b['name']} > {s}", "status": "fail", "detail": f"the model does not run: {str(e).splitlines()[0][:200]}"})
                 continue
             same, diff, skipped = 0, [], 0
             for g in got:
@@ -527,13 +527,13 @@ def _prove(ctx: wb.Ctx, books: list[dict], recs: list[dict]) -> list[dict]:
                         same += 1
                     else:
                         diff.append(f"{col} row {d['_row']}: {d[col]!r} vs {cached!r}")
-            ev = ctx.evidence(f"{b['name']} › {s}: the model against the workbook", {"same": same, "differ": diff[:200], "skipped_errors": skipped, "sql": xr.model_sql(s, t, ex)}, kind="proof", ok=not diff)
-            checks.append({"name": f"{b['name']}|{s}", "label": f"{b['name']} › {s}: the model gives the workbook's numbers", "status": "fail" if diff else "pass",
+            ev = ctx.evidence(f"{b['name']} > {s}: the model against the workbook", {"same": same, "differ": diff[:200], "skipped_errors": skipped, "sql": xr.model_sql(s, t, ex)}, kind="proof", ok=not diff)
+            checks.append({"name": f"{b['name']}|{s}", "label": f"{b['name']} > {s}: the model gives the workbook's numbers", "status": "fail" if diff else "pass",
                            "measured": f"{same} of {same + len(diff)}", "expected": "all", "evidence": ev,
                            "detail": f"{same} value(s) agree" + (f"; {len(diff)} differ ({diff[0]})" if diff else "") + (f"; {skipped} error cell(s) of the workbook left out" if skipped else "")})
         con.close()
     open_ = [f"{r['sheet']}.{r['header']}" for r in recs if not r.get("sql")]
-    checks.append({"name": "open", "label": "Every computed column is in the model", "status": "warn" if open_ else "pass", "detail": (", ".join(open_)[:300] + " — left in Excel") if open_ else "all"})
+    checks.append({"name": "open", "label": "Every computed column is in the model", "status": "warn" if open_ else "pass", "detail": (", ".join(open_)[:300] + " - left in Excel") if open_ else "all"})
     return checks
 
 
@@ -543,7 +543,7 @@ def d_describe(ctx: wb.Ctx) -> dict:
     for b in src["books"]:
         for s in b["sheets"]:
             t = xr.table_of(b, s)
-            rows.append([b["name"], s, len(t["data"]), len(t["cols"]) - len(t["formulas"]), len(t["formulas"]), ", ".join(map(str, t["totals"])) or "—"])
+            rows.append([b["name"], s, len(t["data"]), len(t["cols"]) - len(t["formulas"]), len(t["formulas"]), ", ".join(map(str, t["totals"])) or "-"])
         for n, v in xr._named_values(b).items():
             rows.append([b["name"], f"input {n}", "", "", "", v])
     return {"summary": f"{len(src['books'])} workbook(s): their sheets as tables (input and computed columns) and their named inputs.", "counts": {"workbooks": len(src["books"])},
@@ -572,7 +572,7 @@ def d_prove(ctx: wb.Ctx) -> dict:
 def d_ship(ctx: wb.Ctx) -> dict:
     outs = [r for r in ctx.records("shape") if r.get("sql")]
     return {"summary": "The named approver confirms the model, and its outputs go to Formulas & metrics as drafts.",
-            "data": {"items": [{"title": f"{r['sheet']} › {r['header']}", "detail": r["sql"][:160], "effort": ""} for r in outs[:60]], "total": f"{len(outs)} column(s)"}}
+            "data": {"items": [{"title": f"{r['sheet']} > {r['header']}", "detail": r["sql"][:160], "effort": ""} for r in outs[:60]], "total": f"{len(outs)} column(s)"}}
 
 
 def _publish(ctx: wb.Ctx, recs: list[dict]) -> list[str]:
@@ -595,7 +595,7 @@ def _publish(ctx: wb.Ctx, recs: list[dict]) -> list[str]:
 def d_run(ctx: wb.Ctx) -> dict:
     made = _publish(ctx, ctx.records("shape"))
     db.audit("excel.model.published", ctx.id, {"metrics": made}, ctx.who or ctx.owner)
-    return {"summary": f"{len(made)} draft metric(s) in Formulas & metrics — their four-eyes review certifies them; the model's SQL is in model.sql.",
+    return {"summary": f"{len(made)} draft metric(s) in Formulas & metrics - their four-eyes review certifies them; the model's SQL is in model.sql.",
             "data": {"href": "#/metrics", "label": "Formulas & metrics", "text": ", ".join(made[:6])}}
 
 
@@ -651,7 +651,7 @@ def m_prove(ctx: wb.Ctx) -> dict:
 def m_handover(ctx: wb.Ctx) -> dict:
     dec = ctx.records("decide")
     return {"summary": "The named owner signs off: the rebuilt models, the workbooks kept with checks, the masters for Master data.",
-            "data": {"items": [{"title": r["book"], "detail": f"{r['decision']} — {r['why']}", "effort": ""} for r in dec], "total": f"{len(dec)} workbook(s)"}}
+            "data": {"items": [{"title": r["book"], "detail": f"{r['decision']} - {r['why']}", "effort": ""} for r in dec], "total": f"{len(dec)} workbook(s)"}}
 
 
 def m_run(ctx: wb.Ctx) -> dict:
@@ -698,7 +698,7 @@ def r_fix(ctx: wb.Ctx) -> dict:
             "data": {"columns": ["What", "Proposed route"], "rows": [[r["what"], r["route"]] for r in recs]}}
 
 
-RFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("ticket", "Raise a ticket"), ("change", "A Change item (fix the workbook)"), ("expected", "Expected — no action"))),
+RFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("ticket", "Raise a ticket"), ("change", "A Change item (fix the workbook)"), ("expected", "Expected - no action"))),
                              wb.Column("note", "Note", "longtext"), wb.Column("what", "What", readonly=True)], add=False, remove=False, label="group")
 
 
@@ -713,14 +713,14 @@ def r_approve(ctx: wb.Ctx) -> dict:
                              team_id=(db.project(ctx.id) or {}).get("team_id"), parent=ctx.id)
             h = ctx._handoff({"kind": "change", "label": b["what"][:120], "status": "Change item started", "link": f"#/m/{MODULE}/i/{item['id']}", "output": item["id"]})
         else:
-            h = {"kind": "expected", "status": "expected — recorded"}
+            h = {"kind": "expected", "status": "expected - recorded"}
         rows.append([b["what"][:160], b["route"], h.get("status"), h.get("case") or h.get("checkpoint") or h.get("output") or ""])
     return {"summary": f"{len(rows)} hand-off(s), as you approved.", "data": {"columns": ["What", "Route", "Status", "Reference"], "rows": rows}}
 
 
 def r_report(ctx: wb.Ctx) -> dict:
     n = len(ctx.get("breaks") or [])
-    ctx.output(f"workbook-report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", f"# Workbook run report: {ctx.title}\n\n" + "".join(f"- {b['what']} → {b.get('route')}\n" for b in ctx.records("fix")),
+    ctx.output(f"workbook-report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", f"# Workbook run report: {ctx.title}\n\n" + "".join(f"- {b['what']} {b.get('route')}\n" for b in ctx.records("fix")),
                label="Run report (Markdown)")
     return {"summary": f"{n} group(s) this round.", "counts": {"groups": n}, "data": {"columns": ["Round", "Groups"], "rows": [[time.strftime("%d %b %H:%M", time.gmtime()), n]]}}
 
@@ -731,7 +731,7 @@ def _cards(u: dict) -> list[dict]:
              "empty": "None yet: a Change item proposes each fix by rules, proves it by evaluating the workbook again and hands the fixed workbook back."}]
 
 
-GUIDE = """# Excel & spreadsheet models — the work item
+GUIDE = """# Excel & spreadsheet models - the work item
 
 This folder is one work item of Relay's Excel & spreadsheet models module. Relay reads the workbooks (formulas and the
 values Excel cached), evaluates them again with its own formula engine and translates each sheet's column formulas into
@@ -739,7 +739,7 @@ SQL by rules; you are asked only for the formulas no rule translates.
 
 - `model.json` (written by the app before your run): the columns to translate, each with its Excel formula; the sheets as
   tables with their columns; the workbook's named inputs with their values.
-- `model_out.json`: what you write — {"<id>": "<one DuckDB SQL expression over t, the sheet's own row>"}.
+- `model_out.json`: what you write - {"<id>": "<one DuckDB SQL expression over t, the sheet's own row>"}.
 
 Use only the tables, columns and inputs given; never invent a number."""
 
@@ -751,16 +751,16 @@ wb.register(wb.Pack(
     schemas={"finding": FIND_EDIT.columns, "fix": FIX_EDIT.columns, "column": MODEL_EDIT.columns, "workbook": DECIDE_EDIT.columns},
     cards=_cards,
     work={
-        "assess": wb.Work(title="See every sheet, formula, link, macro and query — and whether the numbers hold", steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="The workbooks, macros and queries you upload are opened — never changed"),
+        "assess": wb.Work(title="See every sheet, formula, link, macro and query - and whether the numbers hold", steps={
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="The workbooks, macros and queries you upload are opened - never changed"),
             "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Workbook reader", text="Every sheet with its formulas, names and links; the VBA modules and Power Query"),
             "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Formula checker",
                               text="Relay's formula engine evaluates the workbook again; errors, typed-in inputs, links to other workbooks, hidden sheets, tie-outs, macro paths"),
-            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="What needs attention — you keep or ignore each finding"),
-            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Fixes, tie-outs for Finance, masters for Master data, sheets to retire — with the time")}),
+            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="What needs attention - you keep or ignore each finding"),
+            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Fixes, tie-outs for Finance, masters for Master data, sheets to retire - with the time")}),
         "develop": wb.Work(title="A governed model from a workbook: translated by rules, proven against its own numbers, metrics drafted", steps={
-            "Describe": wb.Step(kind="platform", run=d_describe, agent="Workbook reader", text="The sheets as tables — input and computed columns — and the named inputs"),
-            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Model builder", edit=MODEL_EDIT, confirm="the model — ask Relay to translate the rest first, or go on without them",
+            "Describe": wb.Step(kind="platform", run=d_describe, agent="Workbook reader", text="The sheets as tables - input and computed columns - and the named inputs"),
+            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Model builder", edit=MODEL_EDIT, confirm="the model - ask Relay to translate the rest first, or go on without them",
                              text="Each computed column as SQL by rules: lookups become joins, typed-in numbers the inputs they mean; Relay's agent drafts what no rule translates",
                              actions={"agent": wb.Action(label="Ask Relay to translate the rest", kind="agent", prompt=_draft_prompt, check=_draft_check, after=_draft_after, agent="Model builder (AI)",
                                                          help="The agent writes one SQL expression per column no rule translates; each is checked, then proven like the others.")}),
@@ -771,14 +771,14 @@ wb.register(wb.Pack(
         "change": wb.Work(title="Fix a workbook: each fix proposed by rules and proven by evaluating the workbook again", needs_source=True, steps={
             "Request": wb.Step(kind="platform", run=c_request, view="text", agent="Workbook reader", text="The formula errors, typed-in inputs and links to other workbooks"),
             "Diagnose": wb.Step(kind="deterministic", run=c_diagnose, view="gates", agent="Formula checker", text="The fix for each: the column's pattern, the input meant, the input a link equals"),
-            "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Formula checker", edit=FIX_EDIT, confirm_if=lambda ctx, out: True, text="The proposed formula for each cell — you confirm or change it"),
+            "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Formula checker", edit=FIX_EDIT, confirm_if=lambda ctx, out: True, text="The proposed formula for each cell - you confirm or change it"),
             "Prove": wb.Step(kind="proof", run=c_prove, view="gates", agent="Prover", back_to="fix", text="Evaluated again: no error left, no other number moves"),
             "Approve": wb.Step(kind="person", run=c_approve, view="plan", approver=True, text="The named approver releases the fixes"),
             "Learn": wb.Step(kind="deterministic", run=c_learn, view="link", agent="Publisher", text="The fixed workbook is handed back; the fixes are kept")}),
         "migrate": wb.Work(title="Move workbooks out of Excel: rebuild, keep with checks, masters to Master data, retire", steps={
             "Discover": wb.Step(kind="platform", run=m_discover, agent="Workbook reader", text="Every workbook, sheet, formula, macro and query"),
             "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Rationaliser", edit=DECIDE_EDIT, text="Rebuild, keep with checks, hand to Master data or retire each workbook"),
-            "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Model builder", edit=MODEL_EDIT, confirm="the models — ask Relay to translate the rest first, or go on without them",
+            "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Model builder", edit=MODEL_EDIT, confirm="the models - ask Relay to translate the rest first, or go on without them",
                                confirm_if=lambda ctx, out: bool((out.get("counts") or {}).get("agent")),
                                text="The rebuilt workbooks' computed columns as SQL by rules; the agent drafts the rest",
                                actions={"agent": wb.Action(label="Ask Relay to translate the rest", kind="agent", prompt=_draft_prompt, check=_draft_check, after=_draft_after, agent="Model builder (AI)",

@@ -1,4 +1,4 @@
-"""Data pipelines & ETL — expressions in the ETL tools' own languages, translated to SQL by rules (rules first: an
+"""Data pipelines & ETL - expressions in the ETL tools' own languages, translated to SQL by rules (rules first: an
 expression the rules cannot translate is left for Relay's agent, with the reason).
 
 Languages: `adf` (Azure Data Factory data flow expressions), `ssis` (SSIS expression language), `infa` (Informatica
@@ -40,7 +40,7 @@ def tokens(text: str) -> list[tuple[str, str]]:
     while i < len(text):
         m = TOKEN.match(text, i)
         if not m:
-            raise Untranslatable(f"cannot read “{text[i:i + 20]}”")
+            raise Untranslatable(f"cannot read \"{text[i:i + 20]}\"")
         i = m.end()
         k = m.lastgroup
         if k == "ws":
@@ -69,7 +69,7 @@ class _P:
     def expect(self, v):
         k, x = self.take()
         if x != v:
-            raise Untranslatable(f"expected “{v}”, found “{x or 'the end'}”")
+            raise Untranslatable(f"expected \"{v}\", found \"{x or 'the end'}\"")
 
     def expr(self, rbp: int = 0):
         left = self.prefix()
@@ -139,14 +139,14 @@ class _P:
                 return ("call", v.lower(), args)
             name = v.split("@")[-1] if "@" in v else v
             return ("col", name.split(".")[-1] if self.lang != "sql" else name)
-        raise Untranslatable(f"unexpected “{v or 'end'}”")
+        raise Untranslatable(f"unexpected \"{v or 'end'}\"")
 
 
 def parse(text: str, lang: str):
     p = _P(tokens(text), lang)
     e = p.expr(0)
     if p.peek()[0] != "end":
-        raise Untranslatable(f"unexpected “{p.peek()[1]}”")
+        raise Untranslatable(f"unexpected \"{p.peek()[1]}\"")
     return e
 
 
@@ -293,7 +293,7 @@ def _call(name: str, args: list, f, lang: str) -> str:
 
 
 def translate(text: str, lang: str, resolve=lambda c: c) -> tuple[str | None, set[str], str]:
-    """(sql | None, columns it reads, problem) — never raises."""
+    """(sql | None, columns it reads, problem) - never raises."""
     try:
         if lang == "sql":
             return text, set(), ""

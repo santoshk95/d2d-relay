@@ -8,7 +8,7 @@ produces the PBIP download, as decided.
 
 GitHub: each person links their own GitHub account (OAuth app set up by an Admin); "Version to GitHub" commits the
 published definition, PBIP folder and check reports to a repository and branch they choose, through the Git Data
-API (blobs, tree, commit, ref) — no git binary, nothing shared.
+API (blobs, tree, commit, ref) - no git binary, nothing shared.
 
 Exports: PNG and PDF of a dashboard prototype or an insight page, drawn in the agent's headless browser.
 Channels: each person's own Slack or Microsoft Teams incoming webhooks (encrypted); a post carries a title, a short
@@ -100,7 +100,7 @@ def decide_review(pid: str, rid: str, decision: str, comment: str, u: dict) -> d
         r["comments"].append({"who": u["id"], "when": time.time(), "text": comment.strip()[:2000]})
     store.save(st)
     store.log(pid, {"kind": "user", "text": f"Review of v{r['v']}: " + ("approved" if decision == "approve" else "changes requested")
-                    + (f" — {comment.strip()[:200]}" if comment.strip() else "")})
+                    + (f" - {comment.strip()[:200]}" if comment.strip() else "")})
     db.audit("review.approve" if decision == "approve" else "review.changes", pid, {"version": r["v"]}, u["id"])
     from . import notify                              # D2D Relay: the person who asked hears the answer
     notify.add(r["requested_by"], "review", f"{u['name']} " + ("approved" if decision == "approve" else "asked for changes to")
@@ -213,7 +213,7 @@ def _gh(method: str, path: str, token: str, **kw) -> httpx.Response:
 def _token(uid: str) -> str:
     t = secrets_store.get(f"user:{uid}", "github_token")
     if not t:
-        raise PublishError("Connect your GitHub account first (Settings › GitHub).")
+        raise PublishError("Connect your GitHub account first (Settings > GitHub).")
     return t
 
 

@@ -1,12 +1,12 @@
 """Process mining platforms for Process mining & discovery: Celonis (the Data Integration API's data pool and data model:
 its load history and its activity table as the event log; the Data Push API for loading one after its own approval) and SAP Signavio Process Intelligence (its
-processes and their event logs, read-only) as Connector SDK adapters — one adapter + one mock each
+processes and their event logs, read-only) as Connector SDK adapters - one adapter + one mock each
 (tests/mocklab/sims/process.py: `celonis`, `signavio-pi`). UiPath Process Mining and Power Automate Process Mining
 come in as their CSV exports (uploads), as do SAP and Oracle extracts.
 
 Read-only by default: `test` signs in and lists what the account sees, `list_objects` the event logs on offer,
 `read` a page of events, `events` every event of one (paged through). Celonis writes only through
-connectors.request_write — after a named person accepted that very event log — with the approval's id in an
+connectors.request_write - after a named person accepted that very event log - with the approval's id in an
 X-Relay-Approval header.
 """
 from __future__ import annotations
@@ -56,7 +56,7 @@ class Celonis(sdk.Adapter):
 
     def test(self, c: dict) -> dict:
         m = self._model(c)
-        return {"ok": True, "sees": f"data pool {m['pool_name']}, data model {m.get('name')} (last load {str(m.get('lastLoadStatus') or '—').lower()})", "scope": c.get("scope")}
+        return {"ok": True, "sees": f"data pool {m['pool_name']}, data model {m.get('name')} (last load {str(m.get('lastLoadStatus') or '-').lower()})", "scope": c.get("scope")}
 
     def list_objects(self, c: dict, search: str = "") -> list[dict]:
         m = self._model(c)
@@ -98,7 +98,7 @@ class Celonis(sdk.Adapter):
         return out
 
     def _push(self, c: dict, obj: str, payload: dict, approval: str) -> dict:
-        """Data Push API: a job for the table, the CSV as an upserted chunk, then the job executed — the file is the one
+        """Data Push API: a job for the table, the CSV as an upserted chunk, then the job executed - the file is the one
         approved (its sha256 is checked first)."""
         if obj != "eventlog":
             raise sdk.ScopeError(f"Celonis: Relay loads event logs, not {obj!r}")

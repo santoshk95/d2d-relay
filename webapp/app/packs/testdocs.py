@@ -1,9 +1,9 @@
-"""Test plans & UAT scripts (registry id `testdocs`) — from requirements to signed-off tests, rules first (no agent step).
+"""Test plans & UAT scripts (registry id `testdocs`) - from requirements to signed-off tests, rules first (no agent step).
 
-Develop  Describe → Shape → Build → Prove → Ship → Run. The requirements come from an approved BRD (BRD & requirements)
+Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run. The requirements come from an approved BRD (BRD & requirements)
          or an uploaded list (CSV or Excel: id, requirement, acceptance criteria one per line). Shape turns every
-         Given / When / Then criterion into a test case by rules — Given becomes the preconditions, When the steps, Then
-         the expected result — plus a boundary case where a criterion names a limit ("over 10,000", "within 3 days")
+         Given / When / Then criterion into a test case by rules - Given becomes the preconditions, When the steps, Then
+         the expected result - plus a boundary case where a criterion names a limit ("over 10,000", "within 3 days")
          and a negative case where it says what must not happen; you correct them in place. Build writes the UAT
          scripts per requirement with synthetic test data (boundary values from the criterion's own numbers), the test
          plan (Excel), the UAT scripts (Word, the tenant's template) and import files for Xray, Zephyr Scale and
@@ -11,13 +11,13 @@ Develop  Describe → Shape → Build → Prove → Ship → Run. The requiremen
          requirement, that every case can run (steps, expected result, data) and flags duplicates. Ship is the business
          sign-off by the named approver. Run publishes the plan (versions kept) and links each requirement to its tests
          in the lineage graph, which BRD & requirements' Trace shows.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: a published plan against the BRD's newer version (or a new
-         upload) — added, changed and removed criteria, the cases they touch, new cases suggested, retired ones marked.
-Migrate  Discover → Decide → Convert → Prove → Hand over → Run: test cases exported from TestRail, Zephyr, Xray or Excel;
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: a published plan against the BRD's newer version (or a new
+         upload) - added, changed and removed criteria, the cases they touch, new cases suggested, retired ones marked.
+Migrate  Discover -> Decide -> Convert -> Prove -> Hand over -> Run: test cases exported from TestRail, Zephyr, Xray or Excel;
          keep, merge (duplicates suggested) or retire each; converted to the target tool's import format; proven
          case for case (counts, steps and expected results unchanged, references kept); published as a plan.
 Test managers: with a Jira Xray, Zephyr Scale or TestRail connection on the item, Run (and Change's Learn) asks to write
-the plan's new cases there — each write after its own approval — and reads them back, case by case (testdocs_managers.py).
+the plan's new cases there - each write after its own approval - and reads them back, case by case (testdocs_managers.py).
 Without one, the import files are what a person loads.
 """
 from __future__ import annotations
@@ -58,8 +58,8 @@ CREATE TABLE IF NOT EXISTS testdocs_versions (
 FILES = wb.FilesPlatform()
 FILES.label = "Requirement lists and test-case exports"
 FILES.uploads = UPLOADS
-FILES.reads = ("a list of requirements (id, requirement, acceptance criteria — Given / When / Then, one per line), or test cases exported "
-               "from TestRail, Zephyr Scale, Xray or Excel — a copy in this work item's folder")
+FILES.reads = ("a list of requirements (id, requirement, acceptance criteria - Given / When / Then, one per line), or test cases exported "
+               "from TestRail, Zephyr Scale, Xray or Excel - a copy in this work item's folder")
 FILES.simulator = "the test writes its own fixtures; tests/mocklab/sims/process.py has the xray, zephyr and testrail simulators the exports mirror"
 
 
@@ -83,15 +83,15 @@ def plans(u: dict) -> list[dict]:
 
 
 def plan_options(u: dict) -> list[tuple[str, str]]:
-    return [(p["id"], f"{p['name']} · version {p['version']} · {len(p['cases'])} cases") for p in plans(u)]
+    return [(p["id"], f"{p['name']} - version {p['version']} - {len(p['cases'])} cases") for p in plans(u)]
 
 
 def _brd_options(u: dict) -> list[tuple[str, str]]:
     try:
         from . import brd
-        return [("", "None — I upload a list of requirements")] + brd.document_options(u)
+        return [("", "None - I upload a list of requirements")] + brd.document_options(u)
     except Exception:  # noqa: BLE001 - BRD & requirements not here: upload the requirements
-        return [("", "None — I upload a list of requirements")]
+        return [("", "None - I upload a list of requirements")]
 
 
 def publish(ctx: wb.Ctx, reqs: list[dict], cases: list[dict], pid: str | None, note: str = "") -> dict:
@@ -178,7 +178,7 @@ def classify(ctx: wb.Ctx) -> dict:
     return out
 
 
-# ------------------------------------------------------------------ the rules: Given / When / Then → test cases
+# ------------------------------------------------------------------ the rules: Given / When / Then -> test cases
 
 GWT = re.compile(r"^\s*given\s+(?P<given>.+?),?\s+when\s+(?P<when>.+?),?\s+then\s+(?P<then>.+?)\s*\.?\s*$", re.I | re.S)
 NEG = re.compile(r"\b(not|never|no|cannot|can't|is refused|is rejected|is blocked|without)\b", re.I)
@@ -242,10 +242,10 @@ def cases_for(req: dict) -> list[dict]:
         lim = limit_of(c)
         if lim:
             vals = boundary_data(lim)
-            out.append({**base, "id": f"TC-{req['req']}-{i:02d}B", "type": "boundary", "title": f"{req['req']}: the limit “{lim['text']}” at its edge",
+            out.append({**base, "id": f"TC-{req['req']}-{i:02d}B", "type": "boundary", "title": f"{req['req']}: the limit \"{lim['text']}\" at its edge",
                         "preconditions": g["given"][:1].upper() + g["given"][1:], "steps": steps,
                         "expected": f"At {vals[0]['value']}: {g['then']}. At {vals[1]['value']}: it does not.",
-                        "data": "; ".join(f"{x['value']} ({'meets' if x['meets'] else 'does not meet'} “{lim['text']}”)" for x in vals)})
+                        "data": "; ".join(f"{x['value']} ({'meets' if x['meets'] else 'does not meet'} \"{lim['text']}\")" for x in vals)})
     return out
 
 
@@ -288,7 +288,7 @@ def _reqs_from_brd(did: str, ctx: wb.Ctx) -> list[dict]:
         if r.get("keep") is False:
             continue
         out.append({"id": r.get("req") or r.get("id"), "req": r.get("req") or r.get("id"), "title": (r.get("title") or r.get("statement") or "")[:200],
-                    "acceptance": r.get("acceptance") or "", "priority": r.get("priority") or "should", "from": f"BRD “{d['title']}” version {d['version']}"})
+                    "acceptance": r.get("acceptance") or "", "priority": r.get("priority") or "should", "from": f"BRD \"{d['title']}\" version {d['version']}"})
     return out
 
 
@@ -319,17 +319,17 @@ def requirements(ctx: wb.Ctx) -> list[dict]:
 def d_describe(ctx: wb.Ctx) -> dict:
     reqs = requirements(ctx)
     if not reqs:
-        raise wb.StepFailed("No requirements: pick an approved BRD (BRD & requirements) or upload a list (CSV or Excel: id, requirement, acceptance criteria — "
-                            "Given … when … then …, one per line).")
+        raise wb.StepFailed("No requirements: pick an approved BRD (BRD & requirements) or upload a list (CSV or Excel: id, requirement, acceptance criteria - "
+                            "Given ... when ... then ..., one per line).")
     ctx.put("requirements", reqs)
     crit = sum(len([c for c in str(r["acceptance"]).splitlines() if c.strip()]) for r in reqs)
     bad = [r["req"] for r in reqs if any(c.strip() and not split_gwt(c) for c in str(r["acceptance"]).splitlines())]
     none = [r["req"] for r in reqs if not str(r["acceptance"]).strip()]
     src = (ctx.get("brd") or {}).get("title")
-    return {"summary": f"{len(reqs)} requirement(s) with {crit} acceptance criteri{'on' if crit == 1 else 'a'}" + (f" from the BRD “{src}”" if src else "") +
+    return {"summary": f"{len(reqs)} requirement(s) with {crit} acceptance criteri{'on' if crit == 1 else 'a'}" + (f" from the BRD \"{src}\"" if src else "") +
                        (f"; {len(none)} without criteria ({', '.join(none[:4])})" if none else "") + (f"; {len(bad)} with a criterion that is not Given / When / Then" if bad else "") + ".",
             "counts": {"requirements": len(reqs), "criteria": crit},
-            "items": [f"{r}: no acceptance criteria — a person writes its tests" for r in none[:6]],
+            "items": [f"{r}: no acceptance criteria - a person writes its tests" for r in none[:6]],
             "data": {"columns": ["Requirement", "Title", "Priority", "Acceptance criteria", "From"],
                      "rows": [[r["req"], r["title"], r["priority"], r["acceptance"], r["from"]] for r in reqs]}}
 
@@ -346,7 +346,7 @@ def d_shape(ctx: wb.Ctx) -> dict:
     kinds = {k: sum(1 for c in cases if c.get("type") == k) for k, _ in TYPES}
     uncovered = [r["req"] for r in reqs if not any(c.get("req") == r["req"] for c in cases)]
     return {"summary": f"{len(cases)} test case(s) drafted by the rules from the acceptance criteria: {kinds['positive']} positive, {kinds['boundary']} boundary, "
-                       f"{kinds['negative']} negative" + (f"; {len(uncovered)} requirement(s) without a case — add them ({', '.join(uncovered[:4])})" if uncovered else "") + ".",
+                       f"{kinds['negative']} negative" + (f"; {len(uncovered)} requirement(s) without a case - add them ({', '.join(uncovered[:4])})" if uncovered else "") + ".",
             "records": cases, "counts": {"cases": len(cases), "uncovered": len(uncovered)},
             "items": [f"{r}: no test case yet" for r in uncovered[:6]],
             "data": _cases_table(cases)}
@@ -468,7 +468,7 @@ def write_outputs(ctx: wb.Ctx, reqs: list[dict], cases: list[dict], tag: str) ->
     ctx.put("doc_problems", _w4.doc_problems(info))
     return [{"title": f"test-plan-{tag}.xlsx", "detail": f"{len(cases)} cases, traceability to {len(reqs)} requirements"},
             {"title": f"uat-scripts-{tag}.docx", "detail": f"{len(scr)} UAT script(s) in your template, with an HTML preview"},
-            *[{"title": n.replace(".csv", f"-{tag}.csv"), "detail": "import file — a person loads it into the tool"} for n in files]]
+            *[{"title": n.replace(".csv", f"-{tag}.csv"), "detail": "import file - a person loads it into the tool"} for n in files]]
 
 
 def d_build(ctx: wb.Ctx) -> dict:
@@ -502,7 +502,7 @@ def coverage_checks(ctx: wb.Ctx, reqs: list[dict], cases: list[dict]) -> list[di
     dups = [v for v in fp.values() if len(v) > 1]
     rows = [{"name": "coverage", "label": "Every requirement has at least one test case", "status": "fail" if no_case else "pass",
              "measured": f"{len(reqs) - len(no_case)} of {len(reqs)}", "expected": "every requirement", "detail": ", ".join(no_case) or "all covered",
-             "evidence": ctx.evidence("Traceability: requirement → cases", {"rows": [{"requirement": r["req"], "cases": ", ".join(c["id"] for c in live if c.get("req") == r["req"]) or "none"} for r in reqs]}, kind="proof", ok=not no_case)},
+             "evidence": ctx.evidence("Traceability: requirement -> cases", {"rows": [{"requirement": r["req"], "cases": ", ".join(c["id"] for c in live if c.get("req") == r["req"]) or "none"} for r in reqs]}, kind="proof", ok=not no_case)},
             {"name": "criteria", "label": "Every Given / When / Then criterion has its case", "status": "warn" if crit_missing else "pass",
              "measured": f"{len(crit_missing)} without a case", "expected": "none", "detail": ", ".join(crit_missing[:6]) or "every criterion"},
             ctx.proof("references_real", label="Every case points at a real requirement", refs=sorted({c.get("req") or "" for c in live}), known=sorted(ids)),
@@ -519,15 +519,15 @@ def d_prove(ctx: wb.Ctx) -> dict:
     cases = ctx.records("shape")
     checks = coverage_checks(ctx, reqs, cases)
     bad = [c for c in checks if c["status"] == "fail"]
-    return {"summary": f"{len(cases)} case(s) over {len(reqs)} requirement(s): " + ("ready for sign-off." if not bad else f"{len(bad)} check(s) fail — {bad[0]['label'].lower()}."),
+    return {"summary": f"{len(cases)} case(s) over {len(reqs)} requirement(s): " + ("ready for sign-off." if not bad else f"{len(bad)} check(s) fail - {bad[0]['label'].lower()}."),
             "data": {"checks": checks}, "counts": {"cases": len(cases), "failing": len(bad)}, "ok": not bad}
 
 
 def d_ship(ctx: wb.Ctx) -> dict:
     reqs = ctx.get("requirements") or []
     cases = ctx.records("shape")
-    return {"summary": f"Sign off the test plan: {len(scripts_of(reqs, cases))} UAT script(s), {len(cases)} case(s) — the business approver confirms they test what was asked.",
-            "data": {"items": [{"title": s["script"], "detail": f"{s['title']} — {len(s['cases'])} case(s)"} for s in scripts_of(reqs, cases)[:12]]}}
+    return {"summary": f"Sign off the test plan: {len(scripts_of(reqs, cases))} UAT script(s), {len(cases)} case(s) - the business approver confirms they test what was asked.",
+            "data": {"items": [{"title": s["script"], "detail": f"{s['title']} - {len(s['cases'])} case(s)"} for s in scripts_of(reqs, cases)[:12]]}}
 
 
 def _lineage(ctx: wb.Ctx, p: dict) -> int:
@@ -561,7 +561,7 @@ def d_run(ctx: wb.Ctx, cases: list[dict] | None = None, note: str = "") -> dict:
     items = write_outputs(ctx, reqs, cases, f"v{v}")
     links = _lineage(ctx, p)
     notes = push_cases(ctx, p, cases)
-    out = {"summary": f"Version {v} of the test plan is published: {len(cases)} case(s), the UAT scripts and the import files; {links} requirement → test link(s) in the lineage graph"
+    out = {"summary": f"Version {v} of the test plan is published: {len(cases)} case(s), the UAT scripts and the import files; {links} requirement -> test link(s) in the lineage graph"
                       + (" (BRD & requirements' Trace shows them)" if p.get("brd_id") else "") + "." + (" " + "; ".join(notes) + "." if notes else ""),
            "counts": {"version": v, "cases": len(cases)}, "data": {"items": items}}
     ctx.put(f"out_{ctx.step_id}", out)
@@ -582,8 +582,8 @@ def c_request(ctx: wb.Ctx) -> dict:
     reqs = requirements(ctx) or p["requirements"]
     ctx.put("requirements", reqs)
     src = ctx.get("brd") or {}
-    return {"summary": f"Change to “{p['name']}” version {p['version']} ({len(p['cases'])} cases) against " +
-                       (f"the BRD “{src.get('title')}” version {src.get('version')} (the plan was built on version {p.get('brd_version')})" if src else "the uploaded requirements") + ".",
+    return {"summary": f"Change to \"{p['name']}\" version {p['version']} ({len(p['cases'])} cases) against " +
+                       (f"the BRD \"{src.get('title')}\" version {src.get('version')} (the plan was built on version {p.get('brd_version')})" if src else "the uploaded requirements") + ".",
             "data": {"text": ctx.brief or "(no request text)"}, "counts": {"cases": len(p["cases"])}}
 
 
@@ -610,7 +610,7 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
                "detail": ", ".join(c["id"] for c in im["touched"][:8]) or "none",
                "evidence": ctx.evidence("What the change touches", {"rows": [{"case": c["id"], "requirement": c.get("req"),
                                                                              "why": "requirement removed" if c.get("req") in im["removed"] else "criteria changed"} for c in im["touched"]]}, kind="proof", ok=True)}]
-    return {"summary": f"{len(im['added'])} requirement(s) added, {len(im['changed'])} changed, {len(im['removed'])} removed — {len(im['touched'])} test case(s) touched.",
+    return {"summary": f"{len(im['added'])} requirement(s) added, {len(im['changed'])} changed, {len(im['removed'])} removed - {len(im['touched'])} test case(s) touched.",
             "data": {"checks": checks}, "counts": {"touched": len(im["touched"])}, "items": [f"{c['id']} ({c.get('req')})" for c in im["touched"][:6]]}
 
 
@@ -638,7 +638,7 @@ def c_fix(ctx: wb.Ctx) -> dict:
                     recs.append({**n, "id": nid, "decision": "keep", "why": "new: from the " + ("new" if k in im.get("added", []) else "changed") + " criterion"})
     for r in recs:
         r["problem"] = "; ".join(case_problems(r, {x["req"] for x in ctx.get("requirements") or []}, retire_ok=True))
-    return {"summary": f"{sum(1 for r in recs if r.get('why', '').startswith('new'))} new case(s) suggested, {sum(1 for r in recs if r.get('decision') == 'retire')} to retire — "
+    return {"summary": f"{sum(1 for r in recs if r.get('why', '').startswith('new'))} new case(s) suggested, {sum(1 for r in recs if r.get('decision') == 'retire')} to retire - "
                        "correct them in place; a case that cannot run cannot be confirmed.",
             "records": recs, "counts": {"cases": len(recs)}, "data": {"columns": ["Case", "Requirement", "Decision", "Why", "Expected result"],
                                                                       "rows": [[r["id"], r.get("req"), r.get("decision"), r.get("why") or "", r.get("expected") or ""] for r in recs]}}
@@ -654,7 +654,7 @@ def _validate_fix(recs: list[dict], ctx: wb.Ctx) -> list[str]:
             out.append(f"{r.get('id')}: keep, merge or retire")
         p = case_problems(r, reqs, retire_ok=True)
         if r["decision"] == "keep" and r.get("req") not in reqs:
-            p = [x for x in p if "is not one of" not in x] + [f"{r.get('id')}: its requirement {r.get('req')} is gone — retire it"]
+            p = [x for x in p if "is not one of" not in x] + [f"{r.get('id')}: its requirement {r.get('req')} is gone - retire it"]
         r["problem"] = "; ".join(p)
         out += p
     return out
@@ -715,7 +715,7 @@ def m_discover(ctx: wb.Ctx) -> dict:
         c["fingerprint"] = fingerprint(c)
     ctx.put("source_cases", cases)
     tools = sorted({c["tool"] for c in cases})
-    return {"summary": f"{len(cases)} test case(s) from {len(up['cases'])} export(s) ({', '.join(tools)}) — read-only copies.",
+    return {"summary": f"{len(cases)} test case(s) from {len(up['cases'])} export(s) ({', '.join(tools)}) - read-only copies.",
             "counts": {"cases": len(cases)}, "data": {"columns": ["Case", "Title", "Steps", "Expected result", "References", "From"],
                                                       "rows": [[c["id"], c["title"], c["steps"], c["expected"], c["req"], f"{c['file']} row {c['row']} ({c['tool']})"] for c in cases]}}
 
@@ -739,7 +739,7 @@ def m_decide(ctx: wb.Ctx) -> dict:
             rec.update({k: have[c["id"]][k] for k in ("decision", "into") if k in have[c["id"]]})
         recs.append(rec)
     return {"summary": f"{sum(1 for r in recs if r['decision'] == 'keep')} to keep, {sum(1 for r in recs if r['decision'] == 'merge')} duplicate(s) to merge, "
-                       f"{sum(1 for r in recs if r['decision'] == 'retire')} to retire — decide each, with reasons.",
+                       f"{sum(1 for r in recs if r['decision'] == 'retire')} to retire - decide each, with reasons.",
             "records": recs, "counts": {"keep": sum(1 for r in recs if r["decision"] == "keep")},
             "data": {"columns": ["Case", "Title", "Decision", "Into", "Why"], "rows": [[r["id"], r["title"], r["decision"], r["into"], r["why"]] for r in recs]}}
 
@@ -777,7 +777,7 @@ def m_convert(ctx: wb.Ctx) -> dict:
     if target == "excel":
         ctx.output("test-cases.xlsx", _xlsx([{"req": x, "title": ""} for x in sorted({r["req"] for r in out if r["req"]})], out), label="Test cases (Excel)")
     else:
-        ctx.output(f"{target}-import.csv", files[f"{target}-import.csv"], label=f"{dict(TARGETS)[target]} — import file")
+        ctx.output(f"{target}-import.csv", files[f"{target}-import.csv"], label=f"{dict(TARGETS)[target]} - import file")
     ctx.put("converted", out)
     return {"summary": f"{len(out)} case(s) converted to {dict(TARGETS)[target]}" + (f", {sum(1 for r in out if r['merged'])} with duplicates merged in" if any(r["merged"] for r in out) else "") + ".",
             "counts": {"converted": len(out)}, "data": _cases_table(out)}
@@ -795,12 +795,12 @@ def m_prove(ctx: wb.Ctx) -> dict:
                "detail": ", ".join(lost) or f"{len(src)} found = {len(kept)} kept + {sum(1 for r in dec if r.get('decision') == 'merge')} merged + {sum(1 for r in dec if r.get('decision') == 'retire')} retired"},
               {"name": "content", "label": "Steps and expected results unchanged", "status": "fail" if altered else "pass", "measured": f"{len(kept) - len(altered)} of {len(kept)}",
                "expected": "every kept case", "detail": ", ".join(altered) or "the same fingerprint before and after",
-               "evidence": ctx.evidence("Old and new side by side", {"rows": [{"case": k, "before": f"{src[k]['steps']} → {src[k]['expected']}", "after": f"{conv[k]['steps']} → {conv[k]['expected']}" if k in conv else "missing"}
+               "evidence": ctx.evidence("Old and new side by side", {"rows": [{"case": k, "before": f"{src[k]['steps']} {src[k]['expected']}", "after": f"{conv[k]['steps']} {conv[k]['expected']}" if k in conv else "missing"}
                                                                               for k in kept]}, kind="proof", ok=not altered and not lost)},
               {"name": "references", "label": "References to requirements kept", "status": "fail" if refs_lost else "pass", "measured": f"{len(refs_lost)} lost", "expected": "none",
                "detail": ", ".join(refs_lost) or "every reference kept (merged cases add theirs)"}]
     bad = [c for c in checks if c["status"] == "fail"]
-    return {"summary": "Old and new side by side: " + ("every kept case converted, unchanged, with its references." if not bad else f"{bad[0]['label'].lower()} fails — {bad[0]['detail']}."),
+    return {"summary": "Old and new side by side: " + ("every kept case converted, unchanged, with its references." if not bad else f"{bad[0]['label'].lower()} fails - {bad[0]['detail']}."),
             "data": {"checks": checks}, "ok": not bad, "counts": {"kept": len(kept)}}
 
 
@@ -856,20 +856,20 @@ def push_cases(ctx: wb.Ctx, p: dict, cases: list[dict]) -> list[str]:
     keys = _brd_keys(ctx)
     for c in _tm(ctx):
         if not connectors.may_write(c):
-            raise wb.StepFailed(f"{c['name']} is read-only: change its scope to “Read & write — with approval” to write the cases, or remove it from the work item to use the import files.")
+            raise wb.StepFailed(f"{c['name']} is read-only: change its scope to \"Read & write - with approval\" to write the cases, or remove it from the work item to use the import files.")
         have = {r["case_id"]: r for r in db.q("SELECT * FROM testdocs_tm WHERE plan_id = ? AND connection = ?", (p["id"], c["id"]))}
         new = [x for x in cases if x["id"] not in have]
         changed = [x["id"] for x in cases if x["id"] in have and have[x["id"]]["fingerprint"] != fingerprint(x)]
         if new:
             _w4.request_push(ctx, c["id"], "cases", {"plan": f"{p['name']} v{p['version']}", "plan_id": p["id"], "cases": [_case_payload(x, keys) for x in new]},
-                             f"Write {len(new)} test case(s) of “{p['name']}” (version {p['version']}) to {c['name']}",
+                             f"Write {len(new)} test case(s) of \"{p['name']}\" (version {p['version']}) to {c['name']}",
                              items=[f"Where: {c['name']} ({tmg.ADAPTERS[c['kind']].label})"] + [f"{x['id']}: {str(x.get('title') or '')[:80]}" for x in new[:20]]
-                             + ([f"… and {len(new) - 20} more"] if len(new) > 20 else []))
+                             + ([f"... and {len(new) - 20} more"] if len(new) > 20 else []))
             notes.append(f"{len(new)} new case(s) wait for their write approval to {c['name']}")
         else:
             notes.append(f"{c['name']} already holds every case")
         if changed:
-            notes.append(f"changed since written to {c['name']} — update by hand there: {', '.join(changed[:8])}")
+            notes.append(f"changed since written to {c['name']} - update by hand there: {', '.join(changed[:8])}")
     return notes
 
 
@@ -889,7 +889,7 @@ def tm_view(ctx: wb.Ctx) -> dict:
             lines.append(f"waiting for the write approval: {x['what']}")
             continue
         if x["status"] == "failed":
-            lines.append(f"not written ({str(x['result'].get('error') or '')[:160]}) — run the step again")
+            lines.append(f"not written ({str(x['result'].get('error') or '')[:160]}) - run the step again")
             continue
         res = x["result"]
         if x["approval"] not in done:
@@ -912,17 +912,17 @@ def tm_view(ctx: wb.Ctx) -> dict:
                 got = back.get(k["key"])
                 n = len([s for s in _steps(want) if s]) or 1
                 if not got or _norm(got.get("title"))[:200] != _norm(want.get("title") or k["ref"])[:200] or len(got.get("steps") or []) != n:
-                    bad.append(f"{k['ref']} → {k['key']}" + ("" if got else " (not found)"))
-            checks.append({"name": f"tm-{x['approval'][-8:]}", "label": f"{c['name']}: every written case read back — title and steps", "status": "fail" if bad or err else "pass",
+                    bad.append(f"{k['ref']} {k['key']}" + ("" if got else " (not found)"))
+            checks.append({"name": f"tm-{x['approval'][-8:]}", "label": f"{c['name']}: every written case read back - title and steps", "status": "fail" if bad or err else "pass",
                            "measured": f"{len(created) - len(bad)} of {len(created)}", "expected": f"{len(created)}",
-                           "detail": err or ("; ".join(bad[:5]) if bad else ", ".join(k["key"] for k in created[:12]) + (" …" if len(created) > 12 else ""))
+                           "detail": err or ("; ".join(bad[:5]) if bad else ", ".join(k["key"] for k in created[:12]) + (" ..." if len(created) > 12 else ""))
                                      + ("; refused: " + "; ".join(f"{e['ref']}: {e['error']}" for e in (res.get("errors") or [])[:3]) if res.get("errors") else "")})
             done.add(x["approval"])
         lines.append(f"written to {res.get('where')}: {len(res.get('created') or [])} case(s)" + (f", {len(res.get('errors') or [])} refused" if res.get("errors") else ""))
     ctx.put("tm_reconciled", sorted(done))
     ctx.put("tm_checks", checks)
     data = dict(base.get("data") or {})
-    data["items"] = list(data.get("items") or []) + [{"title": "Test manager", "detail": ln} for ln in lines] + [{"title": g["label"], "detail": f"{g['status']}: {g['measured']} — {g['detail']}"} for g in checks]
+    data["items"] = list(data.get("items") or []) + [{"title": "Test manager", "detail": ln} for ln in lines] + [{"title": g["label"], "detail": f"{g['status']}: {g['measured']} - {g['detail']}"} for g in checks]
     ok_ = [g for g in checks if g["status"] == "pass"]
     return {"summary": (base.get("summary") or "") + (" " + "; ".join(lines) + "." if lines else "")
                        + (f" Read back from the tool: {sum(int(str(g['measured']).split(' of ')[0]) for g in ok_)} case(s) match." if ok_ else ""),
@@ -945,8 +945,8 @@ def _cards(u: dict) -> list[dict]:
 
 wb.register(wb.Pack(
     module=MODULE,
-    guide="# Test plans & UAT scripts — the work item\n\nTest cases are drafted by rules from the Given / When / Then acceptance criteria; people correct, "
-          "prove and sign them off. No agent step; nothing invented — a boundary value is the criterion's own number.",
+    guide="# Test plans & UAT scripts - the work item\n\nTest cases are drafted by rules from the Given / When / Then acceptance criteria; people correct, "
+          "prove and sign them off. No agent step; nothing invented - a boundary value is the criterion's own number.",
     lineage="each test case on the requirement it tests (from the BRD when there is one), and the plan that contains it",
     platforms={"files": FILES, **TMS},
     schemas={"test case": CASE_COLUMNS},
@@ -954,30 +954,30 @@ wb.register(wb.Pack(
     work={
         "develop": wb.Work(title="From requirements to signed-off test cases and UAT scripts", needs_source=False, steps={
             "Describe": wb.Step(kind="deterministic", run=d_describe, agent="Requirements reader",
-                                text="The requirements and their Given / When / Then criteria — from an approved BRD or your list"),
-            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Test designer", edit=CASE_EDIT, confirm="the test cases — preconditions, steps, expected result and test data",
-                             text="A test case per criterion, a boundary case at each limit it names and a negative case for what must not happen — drafted by rules, corrected by you"),
+                                text="The requirements and their Given / When / Then criteria - from an approved BRD or your list"),
+            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Test designer", edit=CASE_EDIT, confirm="the test cases - preconditions, steps, expected result and test data",
+                             text="A test case per criterion, a boundary case at each limit it names and a negative case for what must not happen - drafted by rules, corrected by you"),
             "Build": wb.Step(kind="deterministic", run=d_build, view="plan", agent="Script writer",
                              text="UAT scripts with synthetic test data, the test plan (Excel), the UAT scripts (Word) and import files for Xray, Zephyr Scale and TestRail"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Coverage checker", back_to="shape",
                              text="Every requirement and criterion covered, every case runnable and pointing at a real requirement, no duplicates"),
             "Ship": wb.Step(kind="person", run=d_ship, view="plan", approver=True, back_to="shape", text="The business approver signs off the test plan and the UAT scripts"),
             "Run": wb.Step(kind="deterministic", run=d_run, view="plan", agent="Publisher",
-                           text="The plan is published (versions kept) and each requirement is linked to its tests — BRD & requirements' Trace shows them")},
-            fields=[wb.Field("brd", "Approved BRD", "select", options=_brd_options, help="A BRD approved in BRD & requirements — or upload a list of requirements.")]),
+                           text="The plan is published (versions kept) and each requirement is linked to its tests - BRD & requirements' Trace shows them")},
+            fields=[wb.Field("brd", "Approved BRD", "select", options=_brd_options, help="A BRD approved in BRD & requirements - or upload a list of requirements.")]),
         "change": wb.Work(title="Keep a test plan in step with changed requirements", needs_source=False, steps={
             "Request": wb.Step(kind="deterministic", run=c_request, view="text", agent="Reader", text="The published plan and the newer requirements (the BRD's latest version, or an upload)"),
             "Diagnose": wb.Step(kind="proof", run=c_diagnose, view="gates", agent="Impact checker", confirm="what changed in the requirements and which cases it touches",
                                 text="Requirements added, changed and removed, and the test cases they touch"),
-            "Fix": wb.Step(kind="person", run=c_fix, edit=FIX_EDIT, text="New cases suggested for new and changed criteria, old ones marked to retire — you correct them"),
+            "Fix": wb.Step(kind="person", run=c_fix, edit=FIX_EDIT, text="New cases suggested for new and changed criteria, old ones marked to retire - you correct them"),
             "Prove": wb.Step(kind="proof", run=c_prove, view="gates", agent="Coverage checker", back_to="fix", text="Every requirement still covered, every case runnable, exactly what changes"),
             "Approve": wb.Step(kind="person", run=c_approve, view="plan", approver=True, text="The named approver releases the next version"),
             "Learn": wb.Step(kind="deterministic", run=c_learn, view="plan", agent="Publisher", text="The next version is published, with its scripts, import files and links")},
             fields=[wb.Field("plan", "Test plan to change", "select", options=plan_options, required=True),
                     wb.Field("brd", "Newer BRD (optional)", "select", options=_brd_options, help="Leave empty to use the plan's own BRD at its latest version, or upload a new list.")]),
         "migrate": wb.Work(title="Move test cases from one test manager to another, proven case for case", steps={
-            "Discover": wb.Step(kind="platform", run=m_discover, agent="Reader", text="The test cases exported from TestRail, Zephyr Scale, Xray or Excel — read-only"),
-            "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Librarian", edit=DECIDE_EDIT, confirm="keep, merge or retire each case — duplicates and empty cases suggested",
+            "Discover": wb.Step(kind="platform", run=m_discover, agent="Reader", text="The test cases exported from TestRail, Zephyr Scale, Xray or Excel - read-only"),
+            "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Librarian", edit=DECIDE_EDIT, confirm="keep, merge or retire each case - duplicates and empty cases suggested",
                               text="Keep, merge or retire each case, with the reasons"),
             "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Converter", text="The kept cases in the target tool's import format, duplicates merged in"),
             "Prove": wb.Step(kind="proof", run=m_prove, view="gates", agent="Checker", back_to="decide", text="Every kept case converted, steps and expected results unchanged, references kept"),

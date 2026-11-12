@@ -36,7 +36,7 @@ from . import KIT, atlas, caps, catalog, library_dir
 VKIT = Path(os.environ.get("GENBI_VKIT", "/opt/genbi/vkit"))
 NAME = re.compile(r"^[a-z][A-Za-z0-9]{2,39}$")
 API_VERSION = "5.11.1"
-# written by `new`, `build` and `test` — never edited by hand, and not part of the source a build depends on
+# written by `new`, `build` and `test` - never edited by hand, and not part of the source a build depends on
 MANAGED = ("src/common", "style/atlas.less", "capabilities.json", "test.png", "test.json")
 MODULE = re.compile(r"^(powerbi-visuals-api|powerbi-visuals-utils-[a-z]+|powerbi-models|d3(-[a-z]+)?)$")
 IMPORT = re.compile(r"""(?:\bfrom\s+|^\s*import\s+|\brequire\s*\()\s*["'`]([^"'`]+)["'`]""", re.M)
@@ -49,25 +49,25 @@ STYLE = {".less", ".css"}
 LESS_IMPORT = re.compile(r"@import\b([^;]*)", re.I)
 LESS_PLAIN_IMPORT = re.compile(r"""^\s*(?:\([a-z, ]*\)\s*)?["']([A-Za-z0-9_][A-Za-z0-9_.-]*\.(?:less|css))["']\s*$""", re.I)
 LESS_BANNED = [
-    (re.compile(r"@plugin\b", re.I), "a Less plugin — it would run code while the visual is built"),
+    (re.compile(r"@plugin\b", re.I), "a Less plugin - it would run code while the visual is built"),
     (re.compile(r"`"), "JavaScript in a style (backticks)"),
     (re.compile(r"\b(data-uri|image-size|image-width|image-height)\s*\(", re.I),
-     "a function that reads a file into the style — draw it in code, or keep the icon in assets/"),
-    (re.compile(r"""\burl\s*\(\s*(?!["']?data:)""", re.I), "url() — a visual's style loads nothing (data: URLs only)"),
+     "a function that reads a file into the style - draw it in code, or keep the icon in assets/"),
+    (re.compile(r"""\burl\s*\(\s*(?!["']?data:)""", re.I), "url() - a visual's style loads nothing (data: URLs only)"),
 ]
 BANNED = [
     (re.compile(r"\.(innerHTML|outerHTML)\b|insertAdjacentHTML|document\.write"),
-     "builds markup from a string — create nodes with el() or document.createElement"),
+     "builds markup from a string - create nodes with el() or document.createElement"),
     (re.compile(r"\beval\s*\(|\bnew\s+Function\s*\("), "runs code from a string"),
     (re.compile(r"\bfetch\s*\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon"),
-     "network access — a visual gets all its data from the data view"),
+     "network access - a visual gets all its data from the data view"),
     (re.compile(r"\b(localStorage|sessionStorage|indexedDB)\b|document\.cookie"), "browser storage is not available in Power BI"),
     (re.compile(r"\bset(Timeout|Interval)\s*\(\s*['\"`]"), "a timer with a code string"),
-    (re.compile(r"\bimport\s*\("), "dynamic import — import modules at the top of the file"),
-    (re.compile(r"Math\.random\s*\("), "random numbers — a visual must draw the same on every render (certification flags it)"),
-    (re.compile(r"""["'`]https?://(?!www\.w3\.org/)"""), "an external URL — a visual loads nothing from the web"),
+    (re.compile(r"\bimport\s*\("), "dynamic import - import modules at the top of the file"),
+    (re.compile(r"Math\.random\s*\("), "random numbers - a visual must draw the same on every render (certification flags it)"),
+    (re.compile(r"""["'`]https?://(?!www\.w3\.org/)"""), "an external URL - a visual loads nothing from the web"),
     (re.compile(r"\brequire\s*\.\s*(context|resolve)\b|\bwebpackContext\b|\bimport\s*\.\s*meta\b|__non_webpack_require__"),
-     "a build-time module lookup — import each module by name at the top of the file"),
+     "a build-time module lookup - import each module by name at the top of the file"),
 ]
 
 
@@ -152,11 +152,11 @@ def new(project: Path, name: str, title: str, description: str = "", like: str |
                           "letter (e.g. radialBars)")
     dest = source_dir(project, name)
     if dest.exists():
-        raise VisualError(f"visuals/{name} already exists — change it there, or pick another name")
+        raise VisualError(f"visuals/{name} already exists - change it there, or pick another name")
     taken = {n.lower(): e for n, e in catalog().items()}
     if name.lower() in taken:
         lib = taken[name.lower()].get("origin") == "library"
-        raise VisualError(f"{name} is already a visual" + (f" in the visual library — use it as it is (`genbi catalog {name}`), "
+        raise VisualError(f"{name} is already a visual" + (f" in the visual library - use it as it is (`genbi catalog {name}`), "
                                                            f"or `genbi visual edit {name}` to change it" if lib
                                                            else " in the catalog") + "; pick another name")
     src, old_title = _template(like)
@@ -184,7 +184,7 @@ def edit(project: Path, name: str) -> Path:
         raise VisualError(f"{name} is not in the visual library (see `genbi visual list`)")
     dest = source_dir(project, name)
     if dest.exists():
-        raise VisualError(f"visuals/{name} already exists in this project — change it there")
+        raise VisualError(f"visuals/{name} already exists in this project - change it there")
     _copy_source(lib, dest)
     shutil.copy2(lib / "pbiviz.json", dest / "pbiviz.json")
     if (lib / "assets" / "icon.png").exists():
@@ -219,11 +219,11 @@ def _check_code(f: Path, rel: str, code_root: Path) -> list[str]:
     for m in IMPORT.finditer(text):                    # the whole file: an import may span lines
         mod, i = m.group(1), _line_of(text, m.start(1))
         if any(c in mod for c in "!?\\") or "${" in mod:
-            out.append(f"{rel}:{i}: '{mod[:80]}' — no webpack loaders, queries or expressions in an import: name the "
+            out.append(f"{rel}:{i}: '{mod[:80]}' - no webpack loaders, queries or expressions in an import: name the "
                        "module or the file itself")
         elif mod.startswith("."):
             if not _inside(f.parent, code_root, mod):
-                out.append(f"{rel}:{i}: '{mod[:80]}' leaves the visual's folder — import only the visual's own files")
+                out.append(f"{rel}:{i}: '{mod[:80]}' leaves the visual's folder - import only the visual's own files")
         elif not MODULE.match(mod):
             out.append(f"{rel}:{i}: module '{mod[:80]}' is not installed (available: powerbi-visuals-api, "
                        "powerbi-visuals-utils-*, powerbi-models, d3 and d3-*)")
@@ -241,7 +241,7 @@ def _check_style(f: Path, rel: str) -> list[str]:
     for m in LESS_IMPORT.finditer(text):
         plain = LESS_PLAIN_IMPORT.match(m.group(1))
         if not plain or not (plain.group(1) == "atlas.less" or (f.parent / plain.group(1)).is_file()):
-            out.append(f"{rel}:{_line_of(text, m.start())}: @import{m.group(1)[:60]} — import only a .less or .css file of "
+            out.append(f"{rel}:{_line_of(text, m.start())}: @import{m.group(1)[:60]} - import only a .less or .css file of "
                        "the same folder, by its name (\"atlas.less\")")
     return out
 
@@ -251,7 +251,7 @@ def check_source(src: Path) -> list[str]:
     build run code or read files outside the visual: links, webpack loader syntax, imports leaving the visual's
     folder, Less plugins and file functions (before spending a build on it). The framework (src/common,
     style/atlas.less) is the kit's own."""
-    problems = [f"{p.relative_to(src).as_posix()}: a link — keep the visual's own files in its folder"
+    problems = [f"{p.relative_to(src).as_posix()}: a link - keep the visual's own files in its folder"
                 for p in sorted(src.rglob("*")) if p.is_symlink()]
     for part in BUILD_PARTS:
         for f in sorted((src / part).rglob("*")) if (src / part).is_dir() else []:
@@ -283,20 +283,20 @@ def _run(cmd: list[str], cwd: Path, timeout: int) -> subprocess.CompletedProcess
     except subprocess.TimeoutExpired:
         raise VisualError(f"{cmd[0]} took longer than {timeout // 60} minutes") from None
     except FileNotFoundError:
-        raise VisualError(f"{cmd[0]} is not installed here — custom visuals are built in the agent container") from None
+        raise VisualError(f"{cmd[0]} is not installed here - custom visuals are built in the agent container") from None
 
 
 def _report(out: str, work: Path, name: str, limit: int = 120) -> str:
     """Build output with the noise removed and paths shown as the project sees them."""
     text = ANSI.sub("", out).replace(str(work) + "/", f"visuals/{name}/").replace(str(work), f"visuals/{name}")
     lines = [ln.rstrip() for ln in text.splitlines() if not NOISE.search(ln)]
-    return "\n".join(lines[:limit] + ([f"… {len(lines) - limit} more lines"] if len(lines) > limit else []))
+    return "\n".join(lines[:limit] + ([f"... {len(lines) - limit} more lines"] if len(lines) > limit else []))
 
 
 def build(project: Path, name: str) -> dict:
     src = source_dir(project, name)
     if not (src / "pbiviz.json").exists():
-        raise VisualError(f"visuals/{name}/pbiviz.json not found — start the visual with `genbi visual new {name}`")
+        raise VisualError(f"visuals/{name}/pbiviz.json not found - start the visual with `genbi visual new {name}`")
     pv = json.loads((src / "pbiviz.json").read_text(encoding="utf-8"))
     vis = pv.get("visual") or {}
     if vis.get("name") != name or not str(vis.get("guid", "")).startswith(name):
@@ -536,9 +536,9 @@ def _browse(page_path: Path, png: Path) -> tuple[list[dict], list[str]]:
 def test(project: Path, name: str) -> dict:
     src, pkg = source_dir(project, name), package_path(project, name)
     if not pkg.exists():
-        raise VisualError(f"{name} is not built yet — run `genbi visual build {name}`")
+        raise VisualError(f"{name} is not built yet - run `genbi visual build {name}`")
     if _source_mtime(src) > pkg.stat().st_mtime:
-        raise VisualError(f"visuals/{name} changed after the last build — run `genbi visual build {name}` first")
+        raise VisualError(f"visuals/{name} changed after the last build - run `genbi visual build {name}` first")
     entry, js, css = atlas.read_package(pkg)
     cases, problems, notes = _cases(project, entry)
     html = (TEST_PAGE.replace("__NAME__", name).replace("__CSS__", css)
@@ -557,14 +557,14 @@ def test(project: Path, name: str) -> dict:
         problems += [f"{where}: {e[:400]}" for e in r["errors"]]
         if r["data"]:
             if r["landing"]:
-                problems.append(f"{where}: shows the landing page instead of the chart — the data did not reach the "
+                problems.append(f"{where}: shows the landing page instead of the chart - the data did not reach the "
                                 "field wells it needs (check the roles, mappings and `min` conditions in caps.js)")
             elif not r["marks"] and not r["texts"]:
                 problems.append(f"{where}: drew nothing")
             o = r["overflow"]
             side = max(o, key=o.get)
             if o[side] > 3:
-                notes.append(f"{where}: drawn {round(o[side])} px past the {side} edge — it will be cut off")
+                notes.append(f"{where}: drawn {round(o[side])} px past the {side} edge - it will be cut off")
             if r["overlaps"]:
                 notes.append(f"{where}: {r['overlaps']} pair(s) of labels overlap")
         elif not r["landing"] and not r["errors"]:

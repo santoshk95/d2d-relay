@@ -1,5 +1,5 @@
-"""Blue Prism — the Blue Prism API (v7): processes, sessions (runs with status and exception message — an
-"Element not found" exception is a screen change), schedules. The process description may carry "<from> → <to>"
+"""Blue Prism - the Blue Prism API (v7): processes, sessions (runs with status and exception message - an
+"Element not found" exception is a screen change), schedules. The process description may carry "<from> -> <to>"
 and "owner:"."""
 from __future__ import annotations
 

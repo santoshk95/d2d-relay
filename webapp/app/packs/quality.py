@@ -1,20 +1,20 @@
-"""Data quality & reconciliation (registry id `quality`) — the pilot module on the workbench.
+"""Data quality & reconciliation (registry id `quality`) - the pilot module on the workbench.
 
-Assess   Connect → Inventory → Health → Findings → Estimate: the connected warehouses (Snowflake, BigQuery, Fabric,
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: the connected warehouses (Snowflake, BigQuery, Fabric,
          Redshift, Athena, PostgreSQL, SQL Server) and uploaded CSV / Parquet / Excel files are profiled (DuckDB for
          uploads, the guarded read-only query for warehouses) and rules are suggested from what the data shows.
-Develop  Describe → Shape → Build → Prove → Ship → Run: rules authored and confirmed by a person (not null, unique,
-         range / accepted values, exists in, freshness, business totals — from an Excel tie-out — and reconciliation
+Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run: rules authored and confirmed by a person (not null, unique,
+         range / accepted values, exists in, freshness, business totals - from an Excel tie-out - and reconciliation
          of a source with its target); rules first, the agent only drafts the plain-English wording when asked; Build
          writes the checks as SQL and as dbt tests, Soda checks and a Great Expectations suite; Prove runs every rule;
          Ship is a named approval; Run publishes the rule set and starts a scheduled Run item.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: a live rule set edited with review — the current state,
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: a live rule set edited with review - the current state,
          the edit, a dry run against the data, approval, a new version.
-Run      Watch → Alert → Fix → Approve → Report: the live rule set on a schedule; breaks grouped with the likely cause
-         and any Data observability incident on the same table; a person decides per break — ticket, Self-healing,
-         expected — and only then do the hand-offs go out.
+Run      Watch -> Alert -> Fix -> Approve -> Report: the live rule set on a schedule; breaks grouped with the likely cause
+         and any Data observability incident on the same table; a person decides per break - ticket, Self-healing,
+         expected - and only then do the hand-offs go out.
 Rule sets are versioned in `quality_rulesets` / `quality_ruleset_versions`; lineage records each checked table,
-the rule set as a job that reads it, and source → target reconciliations.
+the rule set as a job that reads it, and source -> target reconciliations.
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS quality_ruleset_versions (
 
 WAREHOUSE = wb.WarehousePlatform()
 FILES = wb.FilesPlatform()
-FILES.reads = "the files you upload (CSV, Parquet, Excel — an Excel workbook with an `expected` column is read as a tie-out): a copy in this work item's folder, read with DuckDB"
+FILES.reads = "the files you upload (CSV, Parquet, Excel - an Excel workbook with an `expected` column is read as a tie-out): a copy in this work item's folder, read with DuckDB"
 MINUTES = {"confirm a suggested rule": 5, "supply a tie-out figure": 15, "set up a reconciliation": 30}
 CAUSE = {"not_null": "a load or an upstream form leaves the field empty", "unique": "rows loaded twice, or a key that is not really unique",
          "range": "a sign error, a unit change or a new code upstream", "referential": "the dimension is loaded after the facts, or a code was retired",
@@ -82,13 +82,13 @@ def rulesets(u: dict) -> list[dict]:
 
 
 def ruleset_options(u: dict) -> list[tuple[str, str]]:
-    return [(r["id"], f"{r['name']} · version {r['version']} · {len(r['rules'])} rules") for r in rulesets(u)]
+    return [(r["id"], f"{r['name']} - version {r['version']} - {len(r['rules'])} rules") for r in rulesets(u)]
 
 
 def assess_options(u: dict) -> list[tuple[str, str]]:
     rows = db.q("SELECT id, title FROM wb_items WHERE module = ? AND work = 'assess' AND status = 'done' ORDER BY updated DESC LIMIT 50", (MODULE,))
     vis = auth.access_map(u, [r["id"] for r in rows])
-    return [("", "No — start from the data")] + [(r["id"], r["title"]) for r in rows if r["id"] in vis]
+    return [("", "No - start from the data")] + [(r["id"], r["title"]) for r in rows if r["id"] in vis]
 
 
 def publish(ctx: wb.Ctx, rules: list[dict], dsets: list[dict], rid: str | None = None, note: str = "") -> dict:
@@ -112,7 +112,7 @@ def publish(ctx: wb.Ctx, rules: list[dict], dsets: list[dict], rid: str | None =
 
 
 def record_lineage(ctx: wb.Ctx, rs: dict, results: list[dict] | None = None) -> list[str]:
-    """Each checked table, the rule set as a job that reads it, and source → target reconciliations."""
+    """Each checked table, the rule set as a job that reads it, and source -> target reconciliations."""
     job = ctx.lineage_node("job", SYSTEM, f"Quality checks: {rs['name']}", label=f"Quality checks: {rs['name']} (v{rs['version']})",
                            properties={"ruleset": rs["id"], "version": rs["version"], "rules": len(rs["rules"])})
     tables = {}
@@ -172,7 +172,7 @@ def sources(ctx: wb.Ctx, wanted: list[str] | None = None, cap: int = 25) -> list
             raise wb.StepFailed(f"{c['name']} could not be read: {e}") from e
         pick = [o for o in objs if not want or any(o.lower() == w or o.lower().endswith("." + w) for w in want)][:cap if not want else 200]
         for o in pick:
-            out.append(qr.dataset({"source": "connection", "connection": c["id"], "object": o}, o, f"{o} · {c['name']}", c["name"]))
+            out.append(qr.dataset({"source": "connection", "connection": c["id"], "object": o}, o, f"{o} - {c['name']}", c["name"]))
     for f in ctx.files():
         if not f.get("table"):
             continue
@@ -315,7 +315,7 @@ def _wording_after(ctx: wb.Ctx, res: dict) -> dict:
             r.update(description=text[:400], worded_by="agent")
             n += 1
     ctx.evidence("Wording drafted by Relay", {"wording": w, "summary": res.get("text") or ""}, kind="agent", ok=True)
-    return {"summary": f"Relay drafted the wording of {n} rule(s) — check it before you confirm; the rules themselves did not change.", "records": recs,
+    return {"summary": f"Relay drafted the wording of {n} rule(s) - check it before you confirm; the rules themselves did not change.", "records": recs,
             "data": _rules_table(recs, _dmap(ctx))}
 
 
@@ -330,7 +330,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
     good = [r for r in rows if r["ok"]]
     if not good:
         raise wb.StepFailed("None of the sources answered: " + "; ".join(f"{r['source']}: {r['sees']}" for r in rows)[:600])
-    return {"summary": f"{len(good)} of {len(rows)} source(s) answered — read-only.", "counts": {"sources": len(rows), "answered": len(good)},
+    return {"summary": f"{len(good)} of {len(rows)} source(s) answered - read-only.", "counts": {"sources": len(rows), "answered": len(good)},
             "data": {"columns": ["Source", "Kind", "Status", "What Relay sees", "Access"], "rows": [[r["source"], r["kind"], "answered" if r["ok"] else "refused", r["sees"], r["scope"]] for r in rows]}}
 
 
@@ -344,7 +344,7 @@ def a_inventory(ctx: wb.Ctx) -> dict:
     ctx.put("inventory", found)
     recs = [{"id": d["key"], "include": d["key"] in keep, "dataset": d["name"], "where": d["where"] or "upload",
              "rows": (shape.get(d["key"]) or [None] * 3)[2], "columns": (shape.get(d["key"]) or [None] * 4)[3]} for d in found]
-    return {"summary": f"{len(found)} table(s) and file(s) found; {len(keep)} included for the health check — untick what is out of scope.",
+    return {"summary": f"{len(found)} table(s) and file(s) found; {len(keep)} included for the health check - untick what is out of scope.",
             "counts": {"found": len(found), "included": len(keep)}, "records": recs,
             "data": {"columns": ["Include", "Table or file", "Where", "Rows", "Columns"], "rows": [["yes" if r["include"] else "no", r["dataset"], r["where"], r["rows"], r["columns"]] for r in recs]}}
 
@@ -379,7 +379,7 @@ def a_health(ctx: wb.Ctx) -> dict:
         fs = [f for f in findings if f["dataset"] == d["name"] and f.get("measured") != ""]
         high = [f for f in fs if f["severity"] == "high"]
         checks.append({"name": d["key"], "label": f"Health of {d['name']}", "status": "fail" if high else "warn" if fs else "pass" if p else "fail",
-                       "measured": f"{p['rows']:,} rows · {len(p['columns'])} columns" if p else "not read", "expected": "",
+                       "measured": f"{p['rows']:,} rows - {len(p['columns'])} columns" if p else "not read", "expected": "",
                        "detail": f"{len(fs)} issue(s), {len(high)} high; {sum(1 for r in rules if r['dataset'] == d['key'])} rule(s) suggested" if p else "could not be read"})
     t = qr.tally(results)
     return {"summary": f"{len(dsets)} dataset(s) profiled; {len(rules)} rule(s) suggested from what the data shows; {t['fail']} fail today ({t['high fail']} high).",
@@ -390,7 +390,7 @@ def a_findings(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records("findings")}
     recs = [{**f, **({"decision": have[f["id"]].get("decision"), "severity": have[f["id"]].get("severity")} if f["id"] in have else {})} for f in ctx.get("findings") or []]
     high = sum(1 for r in recs if r["severity"] == "high")
-    return {"summary": (f"{len(recs)} finding(s), {high} high — keep what matters, ignore what does not." if recs else "No issues found: every suggested rule passes on today's data."),
+    return {"summary": (f"{len(recs)} finding(s), {high} high - keep what matters, ignore what does not." if recs else "No issues found: every suggested rule passes on today's data."),
             "counts": {"findings": len(recs), "high": high}, "records": recs, "items": [f"{r['dataset']}.{r['column']}: {r['issue']}" for r in recs[:6]],
             "data": {"columns": ["Dataset", "Column", "Issue", "Measured", "Severity", "Rule that catches it"],
                      "rows": [[r["dataset"], r["column"], r["issue"], r["measured"], r["severity"], r["rule"]] for r in recs]}}
@@ -407,7 +407,7 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     rules = ctx.get("suggested") or []
     kept = [f for f in ctx.records("findings") if f.get("decision") != "ignore"]
     hot = {f["dataset"] for f in kept if f.get("severity") == "high" and f.get("measured") != ""}
-    waves = [("Wave 1 — tables with high-severity findings", [d for d in dsets if d["name"] in hot]), ("Wave 2 — the rest", [d for d in dsets if d["name"] not in hot])]
+    waves = [("Wave 1 - tables with high-severity findings", [d for d in dsets if d["name"] in hot]), ("Wave 2 - the rest", [d for d in dsets if d["name"] not in hot])]
     b = registry.brand()
     rate, cur = float(b.get("hourly_rate") or 0), b.get("currency") or ""
     items, total_h = [], 0.0
@@ -422,16 +422,16 @@ def a_estimate(ctx: wb.Ctx) -> dict:
         h = (n_rule * MINUTES["confirm a suggested rule"] + n_tie * MINUTES["supply a tie-out figure"] + n_rec * MINUTES["set up a reconciliation"]) / 60
         total_h += h
         items.append({"title": name, "detail": f"{', '.join(d['name'] for d in ds)}: {n_rule} rule(s) to confirm, {n_tie} tie-out figure(s) to supply, {n_rec} reconciliation(s)",
-                      "effort": f"{h:.1f} h" + (f" · {cur}{rate * h:,.0f}" if rate else "")})
+                      "effort": f"{h:.1f} h" + (f" - {cur}{rate * h:,.0f}" if rate else "")})
     assumptions = "; ".join(f"{v} min to {k}" for k, v in MINUTES.items())
     ctx.output("assessment.md", "# Assessment: " + ctx.title + "\n\n" + "\n".join(f"## {i['title']}\n\n{i['detail']}\n\nEffort: {i['effort']}\n" for i in items)
-               + f"\nAssumptions: {assumptions}.\n" + ("" if rate else "No hourly rate is set (Admin › Branding), so no cost is shown.\n"), label="Assessment (Markdown)")
+               + f"\nAssumptions: {assumptions}.\n" + ("" if rate else "No hourly rate is set (Admin > Branding), so no cost is shown.\n"), label="Assessment (Markdown)")
     ctx.output("suggested-rules.yaml", yaml.safe_dump({"datasets": [{"key": d["key"], "name": d["name"], "label": d["label"]} for d in dsets],
                                                        "rules": [{k: r.get(k) for k in ("id", "kind", "dataset", "column", "check", "severity", "active", "why")} for r in rules]},
                                                       sort_keys=False, allow_unicode=True), label="Suggested rules (YAML)")
     return {"summary": f"{len(items)} wave(s), about {total_h:.1f} h of a person's time to confirm the rules" + (f" ({cur}{rate * total_h:,.0f} at the hourly rate)" if rate else "") + ".",
             "counts": {"waves": len(items), "hours": round(total_h, 1)},
-            "data": {"items": items, "total": f"{total_h:.1f} h", "note": f"Assumptions: {assumptions}." + ("" if rate else " Set an hourly rate under Admin › Branding to see the cost.")}}
+            "data": {"items": items, "total": f"{total_h:.1f} h", "note": f"Assumptions: {assumptions}." + ("" if rate else " Set an hourly rate under Admin > Branding to see the cost.")}}
 
 
 # ------------------------------------------------------------------ Develop
@@ -474,7 +474,7 @@ def d_shape(ctx: wb.Ctx) -> dict:
         _, probs = qr.parse(r, dmap)
         r["problem"] = "; ".join(probs)
     on = sum(1 for r in rules if r.get("active"))
-    return {"summary": f"{len(rules)} rule(s) — {on} on — from what the data shows" + (" and the Excel tie-out" if any(r.get("origin") == "tie-out" for r in rules) else "")
+    return {"summary": f"{len(rules)} rule(s) - {on} on - from what the data shows" + (" and the Excel tie-out" if any(r.get("origin") == "tie-out" for r in rules) else "")
             + ". Change, add or switch off rules, then confirm the design.", "counts": {"rules": len(rules), "on": on, "datasets": len(dsets)},
             "records": rules, "data": _rules_table(rules, dmap), "items": [f"{qr.KINDS[r['kind']]}: {(dmap.get(r['dataset']) or {}).get('name', '?')}.{r.get('column') or ''} {r.get('check') or ''}" for r in rules[:6]]}
 
@@ -519,7 +519,7 @@ def d_prove(ctx: wb.Ctx) -> dict:
     ctx.put("proof", t)
     return {"summary": f"{t['rules']} rule(s) run on the data now: {t['pass']} pass, {t['fail']} fail ({t['high fail']} high)" + (f", {t['error']} could not run" if t["error"] else "")
             + ". Accept to take them to go-live as they are, or send them back to Shape.", "counts": {k: v for k, v in t.items() if k != "skip"}, "data": _gates(results),
-            "items": [f"{g['label']}: {g['status']} — {g['detail']}" for g in results if g["status"] != "pass"][:6]}
+            "items": [f"{g['label']}: {g['status']} - {g['detail']}" for g in results if g["status"] != "pass"][:6]}
 
 
 def d_ship(ctx: wb.Ctx) -> dict:
@@ -544,14 +544,14 @@ def d_run(ctx: wb.Ctx) -> dict:
     cad = ctx.scope.get("cadence") or {"every": "day", "at": "06:00", "tz": "UTC"}
     run_id = rs.get("run_item")
     if not run_id or not db.one("SELECT 1 FROM wb_items WHERE id = ? AND closed IS NULL", (run_id,)):
-        item = wb.create(MODULE, "run", f"Run: {ctx.title}"[:160], who=ctx.owner, brief=f"Scheduled checks of the rule set “{rs['name']}”, published from {ctx.id}.",
+        item = wb.create(MODULE, "run", f"Run: {ctx.title}"[:160], who=ctx.owner, brief=f"Scheduled checks of the rule set \"{rs['name']}\", published from {ctx.id}.",
                          connections=ctx.st.get("connections") or [], scope={"ruleset": rs["id"], "schedule": cad}, approver=ctx.st.get("approver"),
                          visibility=(db.project(ctx.id) or {}).get("visibility") or "private", team_id=(db.project(ctx.id) or {}).get("team_id"), parent=ctx.id)
         run_id = item["id"]
         db.run("UPDATE quality_rulesets SET run_item = ? WHERE id = ?", (run_id, rs["id"]))
-    return {"summary": f"Rule set “{rs['name']}” version {rs['version']} is live; the Run item checks it {_lc(wb.schedule_text(cad))}.",
+    return {"summary": f"Rule set \"{rs['name']}\" version {rs['version']} is live; the Run item checks it {_lc(wb.schedule_text(cad))}.",
             "counts": {"version": rs["version"], "rules": len(rs["rules"])},
-            "data": {"href": f"#/m/{MODULE}/i/{run_id}", "label": "Open the Run item", "text": f"Version {rs['version']} · {len(rs['rules'])} rule(s) · {wb.schedule_text(cad)}"}}
+            "data": {"href": f"#/m/{MODULE}/i/{run_id}", "label": "Open the Run item", "text": f"Version {rs['version']} - {len(rs['rules'])} rule(s) - {wb.schedule_text(cad)}"}}
 
 
 # ------------------------------------------------------------------ Change
@@ -569,7 +569,7 @@ def c_request(ctx: wb.Ctx) -> dict:
     ctx.put("current", rs["rules"])
     ctx.put("datasets", rs["datasets"])
     ctx.put("version", rs["version"])
-    return {"summary": f"Change to “{rs['name']}” (version {rs['version']}, {len(rs['rules'])} rule(s) on {len(rs['datasets'])} dataset(s)).",
+    return {"summary": f"Change to \"{rs['name']}\" (version {rs['version']}, {len(rs['rules'])} rule(s) on {len(rs['datasets'])} dataset(s)).",
             "counts": {"rules": len(rs["rules"]), "version": rs["version"]}, "data": {"text": ctx.brief or "(no request text)"}}
 
 
@@ -609,23 +609,23 @@ def c_prove(ctx: wb.Ctx) -> dict:
     ctx.put("diff", {k: [r["id"] for r in v] for k, v in dif.items()})
     t = qr.tally(results)
     return {"summary": f"{len(dif['added'])} added, {len(dif['changed'])} changed, {len(dif['removed'])} removed; on the data now {t['pass']} pass, {t['fail']} fail"
-            + (f" — {len(newly)} newly failing" if newly else "") + ".", "counts": {"added": len(dif["added"]), "changed": len(dif["changed"]), "removed": len(dif["removed"]), "fail": t["fail"]},
-            "data": _gates(results), "items": [f"Newly failing: {g['label']} — {g['detail']}" for g in newly[:6]]}
+            + (f" - {len(newly)} newly failing" if newly else "") + ".", "counts": {"added": len(dif["added"]), "changed": len(dif["changed"]), "removed": len(dif["removed"]), "fail": t["fail"]},
+            "data": _gates(results), "items": [f"Newly failing: {g['label']} - {g['detail']}" for g in newly[:6]]}
 
 
 def c_approve(ctx: wb.Ctx) -> dict:
     d = ctx.get("diff") or {}
     return {"summary": f"Release version {(ctx.get('version') or 0) + 1}: {len(d.get('added') or [])} added, {len(d.get('changed') or [])} changed, {len(d.get('removed') or [])} removed.",
-            "data": {"items": [{"title": "Added", "detail": ", ".join(d.get("added") or []) or "—"}, {"title": "Changed", "detail": ", ".join(d.get("changed") or []) or "—"},
-                               {"title": "Removed", "detail": ", ".join(d.get("removed") or []) or "—"}]}}
+            "data": {"items": [{"title": "Added", "detail": ", ".join(d.get("added") or []) or "-"}, {"title": "Changed", "detail": ", ".join(d.get("changed") or []) or "-"},
+                               {"title": "Removed", "detail": ", ".join(d.get("removed") or []) or "-"}]}}
 
 
 def c_learn(ctx: wb.Ctx) -> dict:
     rs = publish(ctx, ctx.records("fix"), ctx.get("datasets") or [], ctx.get("ruleset"), note=(ctx.brief or "")[:300])
     record_lineage(ctx, rs)
-    return {"summary": f"Version {rs['version']} of “{rs['name']}” is live; the Run item uses it from its next check.", "counts": {"version": rs["version"], "rules": len(rs["rules"])},
+    return {"summary": f"Version {rs['version']} of \"{rs['name']}\" is live; the Run item uses it from its next check.", "counts": {"version": rs["version"], "rules": len(rs["rules"])},
             "data": {"href": f"#/m/{MODULE}/i/{rs['run_item']}" if rs.get("run_item") else f"#/m/{MODULE}/run", "label": "Open the Run item" if rs.get("run_item") else "Run & support",
-                     "text": f"Version {rs['version']} · {len(rs['rules'])} rule(s)"}}
+                     "text": f"Version {rs['version']} - {len(rs['rules'])} rule(s)"}}
 
 
 # ------------------------------------------------------------------ Run & support
@@ -638,7 +638,7 @@ def r_watch(ctx: wb.Ctx) -> dict:
     record_lineage(ctx, rs, results)
     ctx.put("results", results)
     t = qr.tally(results)
-    return {"summary": f"Version {rs['version']}: {t['rules']} rule(s) checked — {t['pass']} pass, {t['fail']} fail ({t['high fail']} high)" + (f", {t['error']} could not run" if t["error"] else "") + ".",
+    return {"summary": f"Version {rs['version']}: {t['rules']} rule(s) checked - {t['pass']} pass, {t['fail']} fail ({t['high fail']} high)" + (f", {t['error']} could not run" if t["error"] else "") + ".",
             "counts": {"rules": t["rules"], "pass": t["pass"], "fail": t["fail"]}, "data": _gates(results)}
 
 
@@ -663,7 +663,7 @@ def r_alert(ctx: wb.Ctx) -> dict:
     if not brks:
         return {"summary": "Every check passed: nothing to alert.", "next": "report", "counts": {"breaks": 0}}
     overlap = wb._observe_overlap({**ctx.st, "data": ctx.data})
-    items = [f"{b['dataset']}: {b['kind']} — {b['what'][:160]}" for b in brks[:6]]
+    items = [f"{b['dataset']}: {b['kind']} - {b['what'][:160]}" for b in brks[:6]]
     if overlap:
         items.append("Data observability watches the same table(s): " + ", ".join(o["label"] + (f" (open incident: {o['incident_title']})" if o.get("incident") else "") for o in overlap))
     return {"summary": f"{len(brks)} break(s) on {len({b['dataset'] for b in brks})} dataset(s), grouped by what failed, each with its likely cause.",
@@ -674,12 +674,12 @@ def r_alert(ctx: wb.Ctx) -> dict:
 def r_fix(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**b, **({k: have[b["id"]][k] for k in ("route", "note") if k in have[b["id"]]} if b["id"] in have else {})} for b in ctx.get("breaks") or []]
-    return {"summary": f"{len(recs)} break(s): choose who fixes each — a ticket to the service desk, Self-healing, or mark it expected. Nothing goes out until you confirm.",
+    return {"summary": f"{len(recs)} break(s): choose who fixes each - a ticket to the service desk, Self-healing, or mark it expected. Nothing goes out until you confirm.",
             "records": recs, "counts": {"tickets": sum(1 for r in recs if r["route"] == "ticket"), "self-healing": sum(1 for r in recs if r["route"] == "heal")},
             "data": {"columns": ["Dataset", "What failed", "Severity", "Proposed route", "Likely cause"], "rows": [[r["dataset"], r["kind"], r["severity"], r["route"], r["cause"]] for r in recs]}}
 
 
-FIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("ticket", "Raise a ticket"), ("heal", "Self-healing"), ("expected", "Expected — no action"), ("ignore", "Ignore this time"))),
+FIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("ticket", "Raise a ticket"), ("heal", "Self-healing"), ("expected", "Expected - no action"), ("ignore", "Ignore this time"))),
                             wb.Column("note", "Note for whoever fixes it", "longtext"), wb.Column("dataset", "Dataset", readonly=True), wb.Column("kind", "What failed", readonly=True),
                             wb.Column("severity", "Severity", readonly=True)], add=False, remove=False, label="break")
 
@@ -694,10 +694,10 @@ def r_approve(ctx: wb.Ctx) -> dict:
         elif b["route"] == "ticket":
             h = ctx.ticket(title, body, priority={"high": "P2", "medium": "P3"}.get(b["severity"], "P4"), about=b["dataset"])
         else:
-            h = {"kind": b["route"], "label": title, "status": "expected — recorded" if b["route"] == "expected" else "ignored this time"}
+            h = {"kind": b["route"], "label": title, "status": "expected - recorded" if b["route"] == "expected" else "ignored this time"}
         done.append(h)
         rows.append([b["dataset"], b["kind"], {"heal": "Self-healing", "ticket": "Ticket", "expected": "Expected", "ignore": "Ignored"}[b["route"]], h.get("status"), h.get("case") or h.get("checkpoint") or h.get("output") or ""])
-    return {"summary": f"{sum(1 for h in done if h['kind'] == 'heal')} to Self-healing, {sum(1 for h in done if h['kind'] == 'ticket')} ticket(s), {sum(1 for h in done if h['kind'] in ('expected', 'ignore'))} without action — as you approved.",
+    return {"summary": f"{sum(1 for h in done if h['kind'] == 'heal')} to Self-healing, {sum(1 for h in done if h['kind'] == 'ticket')} ticket(s), {sum(1 for h in done if h['kind'] in ('expected', 'ignore'))} without action - as you approved.",
             "data": {"columns": ["Dataset", "What failed", "Route", "Status", "Reference"], "rows": rows}, "counts": {"hand-offs": len(done)}}
 
 
@@ -712,30 +712,30 @@ def r_report(ctx: wb.Ctx) -> dict:
     hist.append([time.strftime("%d %b %H:%M", time.gmtime()), t["pass"], t["fail"]])
     rate = round(100 * t["pass"] / t["rules"], 1) if t["rules"] else None
     text = f"# Quality report: {ctx.title}\n\n{time.strftime('%d %B %Y %H:%M UTC', time.gmtime())}\n\n- Rules checked: {t['rules']}\n- Passed: {t['pass']}\n- Failed: {t['fail']} ({t['high fail']} high)\n" \
-           + "".join(f"- Break: {b['dataset']} · {b['kind']} → {b['route']}\n" for b in ctx.records("fix")) + "\n## Recent runs\n\n" + "".join(f"- {h[0]}: {h[1]} pass, {h[2]} fail\n" for h in hist)
+           + "".join(f"- Break: {b['dataset']} - {b['kind']} {b['route']}\n" for b in ctx.records("fix")) + "\n## Recent runs\n\n" + "".join(f"- {h[0]}: {h[1]} pass, {h[2]} fail\n" for h in hist)
     ctx.output(f"report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", text, label="Run report (Markdown)")
     return {"summary": f"{t['pass']} of {t['rules']} rule(s) passed" + (f" ({rate} %)" if rate is not None else "") + f"; {t['fail']} break(s) this run.",
             "counts": {"passed %": rate if rate is not None else 0, "breaks": t["fail"]}, "data": {"columns": ["Run", "Passed", "Failed"], "rows": hist}}
 
 
 def _cards(u: dict) -> list[dict]:
-    rows = [[r["name"], f"v{r['version']}", len(r["rules"]), len(r["datasets"]), (db.user(r.get("published_by") or "") or {}).get("name") or "—",
-             time.strftime("%d %b %Y", time.gmtime(r["published"])) if r.get("published") else "—", f"#/m/{MODULE}/i/{r['run_item']}" if r.get("run_item") else ""] for r in rulesets(u)]
+    rows = [[r["name"], f"v{r['version']}", len(r["rules"]), len(r["datasets"]), (db.user(r.get("published_by") or "") or {}).get("name") or "-",
+             time.strftime("%d %b %Y", time.gmtime(r["published"])) if r.get("published") else "-", f"#/m/{MODULE}/i/{r['run_item']}" if r.get("run_item") else ""] for r in rulesets(u)]
     return [{"title": "Live rule sets", "columns": ["Rule set", "Version", "Rules", "Datasets", "Published by", "When", "Run item"], "rows": rows,
              "empty": "No rule set is live yet: a Develop item's Run step publishes one."}]
 
 
-GUIDE = """# Data quality & reconciliation — the work item
+GUIDE = """# Data quality & reconciliation - the work item
 
 This folder is one work item of Relay's Data quality & reconciliation module. Rules are written by people and by the
 app's own rules engine; the agent is only asked to draft the plain-English wording of rules a person already chose.
 
-- `rules.json` (written by the app before your run): the rules — id, kind, dataset, column, check, severity.
+- `rules.json` (written by the app before your run): the rules - id, kind, dataset, column, check, severity.
 - Rule kinds: not_null (no blanks), unique (no repeats), range (a number range or accepted values), referential
   (every value exists in another dataset's column), freshness (the newest value is recent enough), business_total (a
   total ties out to a figure from Finance), reconcile (a target agrees with its source: counts, checksums, totals,
   sample rows).
-- `rules_wording.yaml`: what you write when asked — `wording:` mapping each rule id to one sentence.
+- `rules_wording.yaml`: what you write when asked - `wording:` mapping each rule id to one sentence.
 - `data/`: the person's uploads; `evidence/`: what earlier steps measured (profiles, check results).
 
 Never change a rule, never invent a table, column or number; say what you assumed."""
@@ -743,24 +743,24 @@ Never change a rule, never invent a table, column or number; say what you assume
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE,
-    lineage="each checked table, the rule set as a job that reads it (system “Relay quality”), and source → target reconciliations as feeds edges",
+    lineage="each checked table, the rule set as a job that reads it (system \"Relay quality\"), and source -> target reconciliations as feeds edges",
     platforms={"warehouse": WAREHOUSE, "files": FILES},
     schemas={"rule": RULE_COLUMNS, "finding": FINDINGS_EDIT.columns, "break": FIX_EDIT.columns},
     cards=_cards,
     work={
         "assess": wb.Work(title="Profile what you have and get rules suggested from the data", steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Each connection is tested and each upload opened — read-only, with the person's own sign-in"),
-            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", text="Every table and file the sources show, with its rows and columns — you untick what is out of scope", edit=wb.Edit(columns=[wb.Column("include", "Include", "bool"), wb.Column("dataset", "Table or file", readonly=True),
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Each connection is tested and each upload opened - read-only, with the person's own sign-in"),
+            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", text="Every table and file the sources show, with its rows and columns - you untick what is out of scope", edit=wb.Edit(columns=[wb.Column("include", "Include", "bool"), wb.Column("dataset", "Table or file", readonly=True),
                                                                                                         wb.Column("where", "Where", readonly=True), wb.Column("rows", "Rows", "number", readonly=True),
                                                                                                         wb.Column("columns", "Columns", "number", readonly=True)], add=False, remove=False, label="table")),
-            "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Profiler", text="Each included table is profiled — blanks, repeats, ranges, the newest date — and rules are suggested from what the data shows: rules first, no AI"),
-            "Findings": wb.Step(kind="person", run=a_findings, edit=FINDINGS_EDIT, text="What fails today, with the rule that would catch it — you keep or ignore each finding"),
-            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Waves by risk, with the time a person needs to confirm the rules — and the cost at your hourly rate when one is set")},
+            "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Profiler", text="Each included table is profiled - blanks, repeats, ranges, the newest date - and rules are suggested from what the data shows: rules first, no AI"),
+            "Findings": wb.Step(kind="person", run=a_findings, edit=FINDINGS_EDIT, text="What fails today, with the rule that would catch it - you keep or ignore each finding"),
+            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Waves by risk, with the time a person needs to confirm the rules - and the cost at your hourly rate when one is set")},
             fields=[wb.Field("objects", "Tables or views to look at", "longtext", help="One per line, e.g. SALES.ORDERS. Blank: the first tables the connection shows.")]),
         "develop": wb.Work(title="Author the rules with Relay's suggestions, prove them on the data, take them live", needs_source=False, steps={
-            "Describe": wb.Step(kind="platform", run=d_describe, agent="Connector", text="The tables you named and the files you uploaded are read — rows and columns — and an Excel tie-out's figures are picked up"),
-            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Rule writer", edit=RULES_EDIT, confirm="the rule set — every rule with its check and why it is suggested",
-                             text="Rules suggested from the data — not null, unique, ranges and accepted values, exists in, freshness, totals from your tie-out, reconciliation; you add, change or switch off rules (Relay can draft the wording)",
+            "Describe": wb.Step(kind="platform", run=d_describe, agent="Connector", text="The tables you named and the files you uploaded are read - rows and columns - and an Excel tie-out's figures are picked up"),
+            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Rule writer", edit=RULES_EDIT, confirm="the rule set - every rule with its check and why it is suggested",
+                             text="Rules suggested from the data - not null, unique, ranges and accepted values, exists in, freshness, totals from your tie-out, reconciliation; you add, change or switch off rules (Relay can draft the wording)",
                              actions={"wording": wb.Action(label="Ask Relay to draft the wording", kind="agent", prompt=_wording_prompt, check=_wording_check, after=_wording_after,
                                                            agent="Rule writer", help="The agent writes one plain-English sentence per rule; the rules do not change.")}),
             "Build": wb.Step(kind="deterministic", run=d_build, agent="Check builder", text="Each rule becomes SQL in its warehouse's own dialect; the set is exported as dbt tests, Soda checks and a Great Expectations suite"),
@@ -773,19 +773,19 @@ wb.register(wb.Pack(
         "change": wb.Work(title="Change a live rule set, proven on the data before it is released", needs_source=False, sources=False, platforms=("warehouse", "files"), steps={
             "Request": wb.Step(kind="deterministic", run=c_request, view="text", agent="Rule librarian", text="The change in plain words, and the live rule set it changes"),
             "Diagnose": wb.Step(kind="proof", run=c_diagnose, view="gates", agent="Prover", text="Today's rules run on today's data, so you see what passes and fails before anything changes"),
-            "Fix": wb.Step(kind="person", run=c_fix, edit=RULES_EDIT, confirm="the edited rule set", text="You edit the rules in place — change a check, add or switch off a rule"),
+            "Fix": wb.Step(kind="person", run=c_fix, edit=RULES_EDIT, confirm="the edited rule set", text="You edit the rules in place - change a check, add or switch off a rule"),
             "Prove": wb.Step(kind="proof", run=c_prove, view="gates", agent="Prover", back_to="fix", text="A dry run of the edited rules on the data, compared with today's results"),
             "Approve": wb.Step(kind="person", run=c_approve, view="plan", approver=True, text="The named approver releases the new version"),
             "Learn": wb.Step(kind="deterministic", run=c_learn, view="link", agent="Publisher", text="The new version is published and kept; the Run item uses it from its next check")},
             fields=[wb.Field("ruleset", "Rule set to change", "select", options=ruleset_options, required=True)]),
         "run": wb.Work(title="Check a live rule set on a schedule; breaks go to a person first", needs_source=False, sources=False, platforms=("warehouse", "files"), steps={
-            "Watch": wb.Step(kind="proof", run=r_watch, view="gates", agent="Watcher", text="The live rule set runs on its schedule — every rule, read-only"),
+            "Watch": wb.Step(kind="proof", run=r_watch, view="gates", agent="Watcher", text="The live rule set runs on its schedule - every rule, read-only"),
             "Alert": wb.Step(kind="deterministic", run=r_alert, agent="Triage", text="Breaks grouped by table and what failed, each with its likely cause and any Data observability incident on the same table"),
-            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=FIX_EDIT, text="Relay proposes who fixes each break — a ticket, Self-healing or expected — and you confirm or change it"),
+            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=FIX_EDIT, text="Relay proposes who fixes each break - a ticket, Self-healing or expected - and you confirm or change it"),
             "Approve": wb.Step(kind="platform", run=r_approve, agent="Dispatcher",
                                text="The approved hand-offs go out: a Self-healing case (it proposes and tests a fix before anything changes) or a ticket through the service desk's own write approval"),
             "Report": wb.Step(kind="deterministic", run=r_report, agent="Reporter", confirm_if=lambda ctx, out: bool(ctx.get("breaks")),
-                              text="A run report — what passed and failed, against the last runs; you confirm it when there were breaks")},
+                              text="A run report - what passed and failed, against the last runs; you confirm it when there were breaks")},
             fields=[wb.Field("ruleset", "Rule set to check", "select", options=ruleset_options, required=True),
                     wb.Field("schedule", "Check it", "cadence", default={"every": "day", "at": "06:00", "tz": "UTC"})]),
     }))

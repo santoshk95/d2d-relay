@@ -1,7 +1,7 @@
 """Display check: draw every page of a prototype in headless Chromium and read back what each visual shows.
 
-Fails on script errors, visuals that could not draw, and labels no business user should see — NaN, undefined,
-∞, [object …], doubled display units ($2.95BM). Warns on unformatted numbers, values cut off by their card and
+Fails on script errors, visuals that could not draw, and labels no business user should see - NaN, undefined,
+∞, [object ...], doubled display units ($2.95BM). Warns on unformatted numbers, values cut off by their card and
 visuals that draw nothing. Runs where Playwright is installed (the agent image): `genbi gates` and the agent
 service's POST /display-check, which the app calls for every version and before publishing.
 """
@@ -26,7 +26,7 @@ def offline(page, own: str | None = None) -> None:
 
 
 BROKEN = [(re.compile(r"\bNaN\b"), "shows NaN"), (re.compile(r"\bundefined\b"), 'shows "undefined"'),
-          (re.compile(r"\bInfinity\b|∞"), "shows ∞ (a division by zero?)"), (re.compile(r"\[object \w+\]"), "shows [object …]"),
+          (re.compile(r"\bInfinity\b|∞"), "shows ∞ (a division by zero?)"), (re.compile(r"\[object \w+\]"), "shows [object ...]"),
           (re.compile(r"\d(?:[KMB]|bn)\s?[KMB]\b"), "shows doubled display units")]
 RAW = re.compile(r"(?<![\w.,])-?\d+\.\d{5,}(?![\d])")
 
@@ -83,7 +83,7 @@ def check(html: Path, timeout_s: int = 120) -> dict:
         items.append(fail(f"script error while drawing: {e[:300]}"))
     for pg in res["pages"]:
         if pg["error"]:
-            items.append(fail(f"{pg['page']}: drawing the page stopped — {pg['error'][:300]}"))
+            items.append(fail(f"{pg['page']}: drawing the page stopped - {pg['error'][:300]}"))
         for v in pg["visuals"]:
             if v["type"] in SKIP:
                 continue
@@ -101,14 +101,14 @@ def check(html: Path, timeout_s: int = 120) -> dict:
                 m = rx.search(v["text"])
                 if m:
                     ctx = v["text"][max(0, m.start() - 30):m.end() + 30].replace("\n", " ").strip()
-                    items.append(fail(f"{where} {what}: \"…{ctx}…\""))
+                    items.append(fail(f"{where} {what}: \"...{ctx}...\""))
             raw = RAW.search(v["text"])
             if raw:
-                items.append(warn(f"{where} shows an unformatted number ({raw.group(0)}) — give the measure a format string"))
+                items.append(warn(f"{where} shows an unformatted number ({raw.group(0)}) - give the measure a format string"))
             if v["clipped"]:
-                items.append(warn(f"{where}: the value is cut off — the card is too narrow for it"))
+                items.append(warn(f"{where}: the value is cut off - the card is too narrow for it"))
             elif v["overflow"] and v["type"] != "table":
                 items.append(warn(f"{where}: its content spills out of its box"))
             if v["data"] and not v["marks"] and not v["text"].strip():
                 items.append(warn(f"{where} draws nothing"))
-    return gate("display", items, ok=f"{len(res['pages'])} pages and {n_vis} visuals drawn — no broken labels")
+    return gate("display", items, ok=f"{len(res['pages'])} pages and {n_vis} visuals drawn - no broken labels")

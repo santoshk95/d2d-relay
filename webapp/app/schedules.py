@@ -3,7 +3,7 @@
 A report renders an insight page, a dashboard prototype or a fresh Ask D answer in the agent's headless browser
 (PDF or PNG) and emails it from the owner's own email account; without an account it is kept for the owner to
 download from the notification. An alert checks one number (a dashboard measure, or one SELECT of the owner's) on
-a schedule and tells the owner — in the app, and by email when an account is chosen — when it crosses the
+a schedule and tells the owner - in the app, and by email when an account is chosen - when it crosses the
 threshold; it fires once per crossing and re-arms when the value comes back.
 
 Everything runs as the owner, with the owner's access at the time of the run: a dashboard or page they can no
@@ -42,7 +42,7 @@ class ScheduleError(Exception):
 
 
 def num(v: float) -> str:
-    """2,400 · 14,880,268.22 · 0.0731"""
+    """2,400 - 14,880,268.22 - 0.0731"""
     if v is None or not math.isfinite(v):
         return "no value"
     if float(v).is_integer():
@@ -330,7 +330,7 @@ async def _report(s: dict, u: dict) -> str:
     name = re.sub(r"[^\w\- ]+", "", f"{s['name']} {local:%Y-%m-%d}").strip() + "." + t["format"]
     (OUT / f"{s['id']}.{t['format']}").write_bytes(data)
     _state(s["id"], file=name, size=len(data), rendered=time.time())
-    how = _deliver(s, f"{s['name']} — {local:%a %d %b %Y}", [f"{title}: attached as {name}."],
+    how = _deliver(s, f"{s['name']} - {local:%a %d %b %Y}", [f"{title}: attached as {name}."],
                    [(name, "application/pdf" if t["format"] == "pdf" else "image/png", data)])
     if how == "in the app":
         notify.add(s["owner_id"], "report", f"Report ready: {s['name']}", f"{name}, {len(data) // 1024} KB", f"/api/schedules/{s['id']}/latest")
@@ -352,7 +352,7 @@ async def _alert(s: dict, u: dict) -> str:
         db.audit("alert.fired", s["id"], {"value": value, "op": t["op"], "threshold": t["threshold"]}, s["owner_id"])
         how = _deliver(s, f"Alert: {s['name']}", [line], [])
         return f"fired: {vtxt} ({how})"
-    return f"{vtxt} — " + ("still past the threshold" if hit else "within the threshold")
+    return f"{vtxt} - " + ("still past the threshold" if hit else "within the threshold")
 
 
 async def run(sid: str, manual: bool = False) -> dict:
@@ -711,10 +711,10 @@ def _body_from(out: dict, u: dict) -> dict:
 def _label(t: dict) -> str:
     names = {p["id"]: p.get("name") for p in store.all_projects()}
     d = names.get(t.get("project"), t.get("project"))
-    return {"dashboard": lambda: f"Dashboard · {d}", "page": lambda: f"Page · {t.get('id')}",
-            "askd": lambda: f"Ask D · “{t.get('question')}”",
-            "metric": lambda: f"[{t.get('measure')}] {t.get('op')} {num(t.get('threshold'))} · {d}",
-            "sql": lambda: f"SQL {t.get('op')} {num(t.get('threshold'))} · {d}"}[t["type"]]()
+    return {"dashboard": lambda: f"Dashboard - {d}", "page": lambda: f"Page - {t.get('id')}",
+            "askd": lambda: f"Ask D - \"{t.get('question')}\"",
+            "metric": lambda: f"[{t.get('measure')}] {t.get('op')} {num(t.get('threshold'))} - {d}",
+            "sql": lambda: f"SQL {t.get('op')} {num(t.get('threshold'))} - {d}"}[t["type"]]()
 
 
 async def draft(u: dict, request: str, previous: dict | None = None) -> dict:
@@ -752,7 +752,7 @@ async def draft(u: dict, request: str, previous: dict | None = None) -> dict:
     people = {r["id"]: r["name"] for r in db.q("SELECT id, name FROM users")}
     what = _label(t)
     if t["type"] == "page":
-        what = "Page · " + next((p["title"] for p in pages.mine(u) if p["id"] == t["id"]), t["id"])
+        what = "Page - " + next((p["title"] for p in pages.mine(u) if p["id"] == t["id"]), t["id"])
     return {"draft": body, "explanation": str(out.get("explanation") or "")[:600],
             "summary": {"what": what, "when": describe(body["cadence"], body["tz"]),
                         "next_run": next_run(body["cadence"], body["tz"], time.time()),

@@ -1,17 +1,17 @@
-"""Anomaly & risk detection (registry id `anomaly`) — unusual numbers caught early, each with its reason, and a person
+"""Anomaly & risk detection (registry id `anomaly`) - unusual numbers caught early, each with its reason, and a person
 reviewing every finding before anything goes out.
 
 Detectors (anomaly_rules): rules and plain statistics on metrics over time (z-score, IQR, seasonal residuals, a
-business threshold) and on table rows (unusual rows per group by IQR, row rules) — no model to trust blindly. Data
+business threshold) and on table rows (unusual rows per group by IQR, row rules) - no model to trust blindly. Data
 comes from uploads, warehouse connections and a dashboard's data (predict_data: Ask D's guarded engine).
-Assess   Connect → Inventory → Health → Findings → Estimate: what is watchable, and what is unusual today.
-Develop  Describe → Shape → Build → Prove → Ship → Run: detectors suggested from the data and confirmed by a person,
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: what is watchable, and what is unusual today.
+Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run: detectors suggested from the data and confirmed by a person,
          compiled, proven on the history (the findings each would have raised, and how noisy it is), approved by name
          and published with a scheduled Run item.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: a live detector set edited, with a dry run.
-Run      Watch → Alert → Fix → Approve → Report: the live detectors on a schedule; every new finding waits for a
-         person — an alert through Reports & alerts (a schedules alert on the dashboard's measure), a ticket through
-         the service desk's own write approval, expected or ignored — and only then does anything go out.
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: a live detector set edited, with a dry run.
+Run      Watch -> Alert -> Fix -> Approve -> Report: the live detectors on a schedule; every new finding waits for a
+         person - an alert through Reports & alerts (a schedules alert on the dashboard's measure), a ticket through
+         the service desk's own write approval, expected or ignored - and only then does anything go out.
 Detector sets are versioned in `anomaly_sets` / `anomaly_set_versions`; each finding and the decision on it are rows
 of `anomaly_findings` (a finding decided once is not raised again)."""
 from __future__ import annotations
@@ -45,7 +45,7 @@ CREATE INDEX IF NOT EXISTS anomaly_findings_fp ON anomaly_findings (set_id, fing
 FILES = wb.FilesPlatform()
 WAREHOUSE = wb.WarehousePlatform()
 PLATFORMS = {"files": FILES, "warehouse": WAREHOUSE, "dashboards": pdat.DASHBOARDS}
-ROUTES = (("alert", "Alert (Reports & alerts)"), ("ticket", "Raise a ticket"), ("expected", "Expected — no action"), ("ignore", "Ignore this time"))
+ROUTES = (("alert", "Alert (Reports & alerts)"), ("ticket", "Raise a ticket"), ("expected", "Expected - no action"), ("ignore", "Ignore this time"))
 
 
 # ------------------------------------------------------------------ detector sets (versioned) and findings
@@ -64,7 +64,7 @@ def dsets(u: dict) -> list[dict]:
 
 
 def set_options(u: dict) -> list[tuple[str, str]]:
-    return [(s["id"], f"{s['name']} · version {s['version']} · {len(s['detectors'])} detectors") for s in dsets(u)]
+    return [(s["id"], f"{s['name']} - version {s['version']} - {len(s['detectors'])} detectors") for s in dsets(u)]
 
 
 def publish(ctx: wb.Ctx, detectors: list[dict], datasets: list[dict], sid: str | None = None, note: str = "") -> dict:
@@ -105,7 +105,7 @@ def _grain(ctx: wb.Ctx, ref: dict, date: str, value: str | None) -> str:
 
 
 def suggest(ctx: wb.Ctx, dsets_: list[dict]) -> list[dict]:
-    """Detectors suggested from what the data shows — rules first, nothing invented: a threshold waits for the person's
+    """Detectors suggested from what the data shows - rules first, nothing invented: a threshold waits for the person's
     number, switched off."""
     out = []
     for d in dsets_:
@@ -126,7 +126,7 @@ def suggest(ctx: wb.Ctx, dsets_: list[dict]) -> list[dict]:
             out.append({**base, "id": f"iqr-{pdat.slug(d['name'], 20)}-{pdat.slug(value, 16)}", "kind": "iqr", "date": date, "grain": grain, "active": False,
                         "why": "a robust second opinion on the same metric (off: switch it on to compare)"})
             out.append({**base, "id": f"threshold-{pdat.slug(d['name'], 20)}-{pdat.slug(value, 16)}", "kind": "threshold", "date": date, "grain": grain, "params": "> ?", "active": False,
-                        "severity": "high", "why": "a business limit: Relay does not guess the number — write it (e.g. > 50000) and switch it on"})
+                        "severity": "high", "why": "a business limit: Relay does not guess the number - write it (e.g. > 50000) and switch it on"})
         group = next((t for t in texts if 1 < len(pdat.distinct(ctx, d["ref"], t, 51)) <= 50), None)
         if dates and not group:
             continue                                        # a metric table: the detectors over time above cover it
@@ -171,7 +171,7 @@ DET_EDIT = wb.Edit(columns=DET_COLUMNS, validate=_validate, label="detector")
 
 
 def label(d: dict, dmap: dict) -> str:
-    return f"{ar.KINDS.get(d.get('kind'), d.get('kind'))} · {(dmap.get(d.get('dataset')) or {}).get('name', '?')}.{d.get('value') or ''}" + (f" by {d['grain']}" if d.get("kind") in ar.SERIES_KINDS else "")
+    return f"{ar.KINDS.get(d.get('kind'), d.get('kind'))} - {(dmap.get(d.get('dataset')) or {}).get('name', '?')}.{d.get('value') or ''}" + (f" by {d['grain']}" if d.get("kind") in ar.SERIES_KINDS else "")
 
 
 def run_detectors(ctx: wb.Ctx, dets: list[dict], dmap: dict, tag: str) -> tuple[list[dict], list[dict]]:
@@ -210,7 +210,7 @@ def run_detectors(ctx: wb.Ctx, dets: list[dict], dmap: dict, tag: str) -> tuple[
                           kind="detector", ok=True)
         gates.append({"name": d["id"], "label": lab, "status": "pass" if not fs else "warn" if share <= 10 else "fail", "severity": d.get("severity"), "kind": d["kind"],
                       "measured": f"{len(fs)} finding(s) in {points} {'period' if d['kind'] in ar.SERIES_KINDS else 'row'}s ({share:g} %)", "expected": "a few, each with its reason",
-                      "detail": ("; ".join(f"{x['at']}: {x['reason']}" for x in found if x["detector"] == d["id"])[:400] if fs else "nothing unusual") + (" — too noisy: raise k or narrow it" if share > 10 else ""),
+                      "detail": ("; ".join(f"{x['at']}: {x['reason']}" for x in found if x["detector"] == d["id"])[:400] if fs else "nothing unusual") + (" - too noisy: raise k or narrow it" if share > 10 else ""),
                       "evidence": ev})
     return gates, found
 
@@ -218,13 +218,13 @@ def run_detectors(ctx: wb.Ctx, dets: list[dict], dmap: dict, tag: str) -> tuple[
 def _table(dets: list[dict], dmap: dict) -> dict:
     return {"columns": ["On", "Detector", "Dataset", "Number", "By / per", "Sensitivity or rule", "Severity", "Why"],
             "rows": [["yes" if d.get("active") else "no", ar.KINDS.get(d.get("kind"), d.get("kind")), (dmap.get(d.get("dataset")) or {}).get("name", "?"), d.get("value"),
-                      d.get("grain") if d.get("kind") in ar.SERIES_KINDS else d.get("group") or "—", d.get("params") or "default", d.get("severity"), d.get("why") or ""] for d in dets]}
+                      d.get("grain") if d.get("kind") in ar.SERIES_KINDS else d.get("group") or "-", d.get("params") or "default", d.get("severity"), d.get("why") or ""] for d in dets]}
 
 
 # ------------------------------------------------------------------ hand-offs (only after a person decided)
 
 def alert_for(ctx: wb.Ctx, f: dict, det: dict, ds: dict) -> dict:
-    """An alert through Reports & alerts: a schedules alert on the dashboard's own data, owned by the item's owner — the
+    """An alert through Reports & alerts: a schedules alert on the dashboard's own data, owned by the item's owner - the
     latest period's value against the bound the detector used. Only for a dashboard's data (alerts check a dashboard)."""
     from .. import schedules
     if ds["ref"]["source"] != "dashboard":
@@ -284,7 +284,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
     good = [r for r in rows if r["ok"]]
     if not good:
         raise wb.StepFailed("None of the sources answered: " + "; ".join(f"{r['source']}: {r['sees']}" for r in rows)[:600])
-    return {"summary": f"{len(good)} of {len(rows)} source(s) answered — read-only.", "counts": {"sources": len(rows), "answered": len(good)},
+    return {"summary": f"{len(good)} of {len(rows)} source(s) answered - read-only.", "counts": {"sources": len(rows), "answered": len(good)},
             "data": {"columns": ["Source", "Kind", "Status", "What Relay sees", "Access"], "rows": [[r["source"], r["kind"], "answered" if r["ok"] else "refused", r["sees"], r["scope"]] for r in rows]}}
 
 
@@ -297,8 +297,8 @@ def a_inventory(ctx: wb.Ctx) -> dict:
     for d in dsets_:
         cols = pdat.columns(ctx, d["ref"])
         dates, nums, _ = pdat.kind_cols(cols)
-        recs.append({"id": d["key"], "include": bool(nums), "dataset": d["name"], "where": d["where"], "dates": ", ".join(dates) or "—", "numbers": ", ".join(nums[:6]) or "—"})
-    return {"summary": f"{len(recs)} table(s) and file(s); {sum(1 for r in recs if r['include'])} with numbers to watch are included — untick what is out of scope.",
+        recs.append({"id": d["key"], "include": bool(nums), "dataset": d["name"], "where": d["where"], "dates": ", ".join(dates) or "-", "numbers": ", ".join(nums[:6]) or "-"})
+    return {"summary": f"{len(recs)} table(s) and file(s); {sum(1 for r in recs if r['include'])} with numbers to watch are included - untick what is out of scope.",
             "counts": {"found": len(recs), "included": sum(1 for r in recs if r["include"])}, "records": recs,
             "data": {"columns": ["Include", "Dataset", "Where", "Dates", "Numbers"], "rows": [["yes" if r["include"] else "no", r["dataset"], r["where"], r["dates"], r["numbers"]] for r in recs]}}
 
@@ -326,7 +326,7 @@ def a_findings(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**{k: f[k] for k in ("id", "label", "at", "reason", "severity", "value", "expected")}, "decision": (have.get(f["id"]) or {}).get("decision") or "keep",
              **({"severity": have[f["id"]]["severity"]} if f["id"] in have else {})} for f in ctx.get("found") or []]
-    return {"summary": f"{len(recs)} finding(s) — a person reviews each: keep what matters, ignore what does not." if recs else "Nothing unusual today with the suggested detectors.",
+    return {"summary": f"{len(recs)} finding(s) - a person reviews each: keep what matters, ignore what does not." if recs else "Nothing unusual today with the suggested detectors.",
             "counts": {"findings": len(recs)}, "records": recs, "items": [f"{r['label']} at {r['at']}: {r['reason']}" for r in recs[:6]],
             "data": {"columns": ["Detector", "Where", "Why it is unusual", "Severity"], "rows": [[r["label"], r["at"], r["reason"], r["severity"]] for r in recs]}}
 
@@ -338,9 +338,9 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     rate, cur = float(b.get("hourly_rate") or 0), b.get("currency") or ""
     h1 = (len(dets) * MINUTES["confirm a detector"] + len(kept) * MINUTES["review a finding"]) / 60
     h2 = len({d["dataset"] for d in dets}) * MINUTES["set a business threshold"] / 60
-    items = [{"title": "Wave 1 — the suggested detectors and today's findings", "detail": f"{len(dets)} detector(s) to confirm, {len(kept)} finding(s) to review", "effort": f"{h1:.1f} h" + (f" · {cur}{rate * h1:,.0f}" if rate else "")},
-             {"title": "Wave 2 — business thresholds", "detail": "one limit per dataset that only a person can set", "effort": f"{h2:.1f} h" + (f" · {cur}{rate * h2:,.0f}" if rate else "")}]
-    note = "Assumptions: " + "; ".join(f"{v} min to {k}" for k, v in MINUTES.items()) + "." + ("" if rate else " Set an hourly rate under Admin › Branding to see the cost.")
+    items = [{"title": "Wave 1 - the suggested detectors and today's findings", "detail": f"{len(dets)} detector(s) to confirm, {len(kept)} finding(s) to review", "effort": f"{h1:.1f} h" + (f" - {cur}{rate * h1:,.0f}" if rate else "")},
+             {"title": "Wave 2 - business thresholds", "detail": "one limit per dataset that only a person can set", "effort": f"{h2:.1f} h" + (f" - {cur}{rate * h2:,.0f}" if rate else "")}]
+    note = "Assumptions: " + "; ".join(f"{v} min to {k}" for k, v in MINUTES.items()) + "." + ("" if rate else " Set an hourly rate under Admin > Branding to see the cost.")
     ctx.output("assessment.md", f"# Anomaly assessment: {ctx.title}\n\n" + "".join(f"## {i['title']}\n\n{i['detail']}\n\nEffort: {i['effort']}\n\n" for i in items) + note + "\n", label="Assessment (Markdown)")
     return {"summary": f"About {h1 + h2:.1f} h of a person's time to put these detectors live.", "counts": {"hours": round(h1 + h2, 1)}, "data": {"items": items, "total": f"{h1 + h2:.1f} h", "note": note}}
 
@@ -356,8 +356,8 @@ def d_describe(ctx: wb.Ctx) -> dict:
     for d in dsets_:
         cols = pdat.columns(ctx, d["ref"])
         dates, nums, texts = pdat.kind_cols(cols)
-        rows.append([d["name"], d["where"], ", ".join(dates) or "—", ", ".join(nums[:6]) or "—", ", ".join(texts[:4]) or "—"])
-    return {"summary": f"{len(dsets_)} dataset(s) read — read-only.", "counts": {"datasets": len(dsets_)},
+        rows.append([d["name"], d["where"], ", ".join(dates) or "-", ", ".join(nums[:6]) or "-", ", ".join(texts[:4]) or "-"])
+    return {"summary": f"{len(dsets_)} dataset(s) read - read-only.", "counts": {"datasets": len(dsets_)},
             "data": {"columns": ["Dataset", "Where", "Dates", "Numbers", "Text"], "rows": rows}}
 
 
@@ -368,7 +368,7 @@ def d_shape(ctx: wb.Ctx) -> dict:
     dets = have + [d for d in suggest(ctx, list(dmap.values())) if d["id"] not in ids]
     _validate(dets, ctx)
     on = sum(1 for d in dets if d.get("active"))
-    return {"summary": f"{len(dets)} detector(s) — {on} on — suggested from the data. Change the sensitivity, write a business threshold, switch detectors on or off, then confirm the design.",
+    return {"summary": f"{len(dets)} detector(s) - {on} on - suggested from the data. Change the sensitivity, write a business threshold, switch detectors on or off, then confirm the design.",
             "counts": {"detectors": len(dets), "on": on}, "records": dets, "data": _table(dets, dmap), "items": [label(d, dmap) for d in dets if d.get("active")][:6]}
 
 
@@ -396,7 +396,7 @@ def d_prove(ctx: wb.Ctx) -> dict:
     dets = ctx.get("built") or []
     gates, found = run_detectors(ctx, dets, _dmap(ctx), "Proof on the history")
     ctx.put("proof", {"findings": len(found), "noisy": sum(1 for g in gates if g["status"] == "fail")})
-    return {"summary": f"Run on the history: {len(found)} finding(s) from {len(gates)} detector(s), each with its reason — these are what the live set would have raised. "
+    return {"summary": f"Run on the history: {len(found)} finding(s) from {len(gates)} detector(s), each with its reason - these are what the live set would have raised. "
                        "Accept to take them to go-live, or send them back to Shape.",
             "counts": {"detectors": len(gates), "findings": len(found), "too noisy": sum(1 for g in gates if g["status"] == "fail")}, "data": {"checks": gates},
             "items": [f"{f['label']} at {f['at']}: {f['reason']}" for f in found[:6]]}
@@ -425,7 +425,7 @@ def _run_item(ctx: wb.Ctx, s: dict, cad: dict) -> str:
     if rid and db.one("SELECT 1 FROM wb_items WHERE id = ? AND closed IS NULL", (rid,)):
         return rid
     p = db.project(ctx.id) or {}
-    item = wb.create(MODULE, "run", f"Run: {ctx.title}"[:160], who=ctx.owner, brief=f"Scheduled checks of the detector set “{s['name']}”, published from {ctx.id}.",
+    item = wb.create(MODULE, "run", f"Run: {ctx.title}"[:160], who=ctx.owner, brief=f"Scheduled checks of the detector set \"{s['name']}\", published from {ctx.id}.",
                      connections=ctx.st.get("connections") or [], scope={"set": s["id"], "schedule": cad}, approver=ctx.st.get("approver"),
                      visibility=p.get("visibility") or "private", team_id=p.get("team_id"), parent=ctx.id)
     db.run("UPDATE anomaly_sets SET run_item = ? WHERE id = ?", (item["id"], s["id"]))
@@ -438,8 +438,8 @@ def d_run(ctx: wb.Ctx) -> dict:
     _record_lineage(ctx, s)
     cad = wb.check_schedule(ctx.scope.get("cadence") or {"every": "day", "at": "07:00", "tz": "UTC"})
     rid = _run_item(ctx, s, cad)
-    return {"summary": f"Detector set “{s['name']}” version {s['version']} is live; the Run item checks it {wb.schedule_text(cad).lower()}.", "counts": {"version": s["version"], "detectors": len(s["detectors"])},
-            "data": {"href": f"#/m/{MODULE}/i/{rid}", "label": "Open the Run item", "text": f"Version {s['version']} · {len(s['detectors'])} detector(s) · {wb.schedule_text(cad)}"}}
+    return {"summary": f"Detector set \"{s['name']}\" version {s['version']} is live; the Run item checks it {wb.schedule_text(cad).lower()}.", "counts": {"version": s["version"], "detectors": len(s["detectors"])},
+            "data": {"href": f"#/m/{MODULE}/i/{rid}", "label": "Open the Run item", "text": f"Version {s['version']} - {len(s['detectors'])} detector(s) - {wb.schedule_text(cad)}"}}
 
 
 # ------------------------------------------------------------------ Change
@@ -457,7 +457,7 @@ def _set_or_fail(ctx: wb.Ctx) -> dict:
 
 def c_request(ctx: wb.Ctx) -> dict:
     s = _set_or_fail(ctx)
-    return {"summary": f"Change to “{s['name']}” (version {s['version']}, {len(s['detectors'])} detectors).", "counts": {"detectors": len(s["detectors"]), "version": s["version"]},
+    return {"summary": f"Change to \"{s['name']}\" (version {s['version']}, {len(s['detectors'])} detectors).", "counts": {"detectors": len(s["detectors"]), "version": s["version"]},
             "data": {"text": ctx.brief or "(no request text)"}}
 
 
@@ -482,7 +482,7 @@ def c_prove(ctx: wb.Ctx) -> dict:
     before = set(ctx.get("before") or [])
     now_ = {f["fingerprint"] for f in found}
     ctx.put("diff", {"new": len(now_ - before), "gone": len(before - now_)})
-    return {"summary": f"Dry run: {len(found)} finding(s) — {len(now_ - before)} new, {len(before - now_)} no longer raised.", "counts": {"findings": len(found), "new": len(now_ - before), "gone": len(before - now_)},
+    return {"summary": f"Dry run: {len(found)} finding(s) - {len(now_ - before)} new, {len(before - now_)} no longer raised.", "counts": {"findings": len(found), "new": len(now_ - before), "gone": len(before - now_)},
             "data": {"checks": gates}}
 
 
@@ -495,9 +495,9 @@ def c_approve(ctx: wb.Ctx) -> dict:
 def c_learn(ctx: wb.Ctx) -> dict:
     s = publish(ctx, ctx.records("fix"), ctx.get("datasets") or [], ctx.get("set"), (ctx.brief or "")[:300])
     _record_lineage(ctx, s)
-    return {"summary": f"Version {s['version']} of “{s['name']}” is live; the Run item uses it from its next check.", "counts": {"version": s["version"]},
+    return {"summary": f"Version {s['version']} of \"{s['name']}\" is live; the Run item uses it from its next check.", "counts": {"version": s["version"]},
             "data": {"href": f"#/m/{MODULE}/i/{s['run_item']}" if s.get("run_item") else f"#/m/{MODULE}/run", "label": "Open the Run item" if s.get("run_item") else "Run & support",
-                     "text": f"Version {s['version']} · {len(s['detectors'])} detector(s)"}}
+                     "text": f"Version {s['version']} - {len(s['detectors'])} detector(s)"}}
 
 
 # ------------------------------------------------------------------ Run & support
@@ -517,7 +517,7 @@ def r_watch(ctx: wb.Ctx) -> dict:
         f["finding"] = rows.get(f["fingerprint"])
     ctx.put("new", new)
     _record_lineage(ctx, s)
-    return {"summary": f"Version {s['version']}: {len(gates)} detector(s) run — {len(found)} finding(s), {len(new)} new since the last review.",
+    return {"summary": f"Version {s['version']}: {len(gates)} detector(s) run - {len(found)} finding(s), {len(new)} new since the last review.",
             "counts": {"detectors": len(gates), "findings": len(found), "new": len(new)}, "data": {"checks": gates}}
 
 
@@ -525,7 +525,7 @@ def r_alert(ctx: wb.Ctx) -> dict:
     new = ctx.get("new") or []
     if not new:
         return {"summary": "Nothing new since the last review: nothing to alert.", "next": "report", "counts": {"new": 0}}
-    return {"summary": f"{len(new)} new finding(s), each with its reason — a person decides what happens to each.", "counts": {"new": len(new), "high": sum(1 for f in new if f["severity"] == "high")},
+    return {"summary": f"{len(new)} new finding(s), each with its reason - a person decides what happens to each.", "counts": {"new": len(new), "high": sum(1 for f in new if f["severity"] == "high")},
             "items": [f"{f['label']} at {f['at']}: {f['reason']}" for f in new[:6]],
             "data": {"columns": ["Detector", "Where", "Value", "Expected", "Why it is unusual", "Severity"], "rows": [[f["label"], f["at"], f["value"], f["expected"], f["reason"], f["severity"]] for f in new]}}
 
@@ -539,7 +539,7 @@ def r_fix(ctx: wb.Ctx) -> dict:
         default = "alert" if f["kind"] in ar.SERIES_KINDS and f["dataset_key"] in dash else "ticket" if f["severity"] == "high" else "expected"
         h = have.get(f["id"]) or {}
         recs.append({**{k: f.get(k) for k in ("id", "finding", "detector", "label", "at", "reason", "severity", "value", "expected", "kind", "dataset_key", "score", "low", "high")}, "route": h.get("route") or default, "note": h.get("note") or ""})
-    return {"summary": f"{len(recs)} finding(s): Relay proposes what happens to each — an alert, a ticket, expected or ignore. Nothing goes out until you confirm.", "records": recs,
+    return {"summary": f"{len(recs)} finding(s): Relay proposes what happens to each - an alert, a ticket, expected or ignore. Nothing goes out until you confirm.", "records": recs,
             "counts": {"alerts": sum(1 for r in recs if r["route"] == "alert"), "tickets": sum(1 for r in recs if r["route"] == "ticket")},
             "data": {"columns": ["Detector", "Where", "Why it is unusual", "Proposed"], "rows": [[r["label"], r["at"], r["reason"], dict(ROUTES)[r["route"]]] for r in recs]}}
 
@@ -563,14 +563,14 @@ def r_approve(ctx: wb.Ctx) -> dict:
             h = service_desk_ticket(ctx, f"Unusual {det.get('value') or 'value'} on {ds.get('name') or 'a dataset'} at {r['at']}"[:200], body,
                                     {"high": "P2", "medium": "P3"}.get(r["severity"], "P4"), about=ds.get("name") or "", origin=f"anomaly:{ctx.id}:{r['finding']}")
         else:
-            h = {"status": {"expected": "expected — recorded, not raised again", "ignore": "ignored this time"}[r["route"]]}
+            h = {"status": {"expected": "expected - recorded, not raised again", "ignore": "ignored this time"}[r["route"]]}
         db.run("UPDATE anomaly_findings SET status = ?, route = ?, decided_by = ?, decided = ?, note = ?, handoff = ?, updated = ? WHERE id = ?",
                ({"alert": "alerted", "ticket": "ticketed", "expected": "expected", "ignore": "ignored"}[r["route"]], r["route"], ctx.who, now, (r.get("note") or "")[:500] or None,
                 (h.get("status") or "")[:300], now, r["finding"]))
         rows.append([r["label"], r["at"], dict(ROUTES)[r["route"]], h.get("status") or ""])
     db.audit("anomaly.findings.decided", ctx.get("set"), {"findings": len(rows), "item": ctx.id}, ctx.who)
     return {"summary": f"{sum(1 for r in ctx.records('fix') if r['route'] == 'alert')} alert(s), {sum(1 for r in ctx.records('fix') if r['route'] == 'ticket')} ticket(s), "
-                       f"{sum(1 for r in ctx.records('fix') if r['route'] in ('expected', 'ignore'))} without action — as you approved.",
+                       f"{sum(1 for r in ctx.records('fix') if r['route'] in ('expected', 'ignore'))} without action - as you approved.",
             "data": {"columns": ["Detector", "Where", "Decision", "What happened"], "rows": rows}, "counts": {"decided": len(rows)}}
 
 
@@ -598,7 +598,7 @@ def _cards(u: dict) -> list[dict]:
             {"title": "Findings waiting for a person", "columns": ["Detector set", "Where", "Why it is unusual", "Severity"], "rows": open_[:20], "empty": "Nothing waiting."}]
 
 
-GUIDE = """# Anomaly & risk detection — the work item
+GUIDE = """# Anomaly & risk detection - the work item
 
 This folder is one work item of Relay's anomaly module. Detectors are rules and plain statistics run by the app
 (z-score, IQR, seasonal residuals, thresholds, row rules); every finding carries its reason and its numbers, and a
@@ -613,22 +613,22 @@ FIELDS = [wb.Field("dashboard", "A dashboard's data to watch", "select", options
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE,
-    lineage="each dataset a detector set reads, and the detector set as a job (system “Relay anomaly detection”)",
+    lineage="each dataset a detector set reads, and the detector set as a job (system \"Relay anomaly detection\")",
     platforms=PLATFORMS, schemas={"detector": DET_COLUMNS, "finding": FIX_EDIT.columns}, cards=_cards,
     work={
         "assess": wb.Work(title="See what is unusual in your numbers today", needs_source=False, steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Each source is tested — uploads, warehouses and a dashboard's data — read-only, with the owner's own access"),
-            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", text="Every table with numbers to watch — you untick what is out of scope",
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Each source is tested - uploads, warehouses and a dashboard's data - read-only, with the owner's own access"),
+            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", text="Every table with numbers to watch - you untick what is out of scope",
                                  edit=wb.Edit(columns=[wb.Column("include", "Include", "bool"), wb.Column("dataset", "Dataset", readonly=True), wb.Column("where", "Where", readonly=True),
                                                        wb.Column("numbers", "Numbers", readonly=True)], add=False, remove=False, label="dataset")),
-            "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Detector", text="Detectors suggested from the data run on it today: each finding with its reason — rules and statistics, no AI"),
+            "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Detector", text="Detectors suggested from the data run on it today: each finding with its reason - rules and statistics, no AI"),
             "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="A person reviews each finding: keep what matters, ignore what does not"),
             "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="The time a person needs to put the detectors live")},
             fields=FIELDS),
         "develop": wb.Work(title="Detectors suggested from your data, proven on its history, taken live", needs_source=False, steps={
-            "Describe": wb.Step(kind="platform", run=d_describe, agent="Connector", text="The data read — dates, numbers and text — read-only"),
-            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Detector designer", edit=DET_EDIT, confirm="the detectors — each with its sensitivity or rule and why it is suggested",
-                             text="Detectors suggested from the data — seasonal residuals, z-scores, IQR, unusual rows per group, row rules; a business threshold waits for your number"),
+            "Describe": wb.Step(kind="platform", run=d_describe, agent="Connector", text="The data read - dates, numbers and text - read-only"),
+            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Detector designer", edit=DET_EDIT, confirm="the detectors - each with its sensitivity or rule and why it is suggested",
+                             text="Detectors suggested from the data - seasonal residuals, z-scores, IQR, unusual rows per group, row rules; a business threshold waits for your number"),
             "Build": wb.Step(kind="deterministic", run=d_build, agent="Detector builder", text="Each detector compiled with what it reads and its parameters, exported as YAML"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Prover", back_to="shape", text="Every detector run on the history: the findings it would have raised, with reasons, and how noisy it is"),
             "Ship": wb.Step(kind="person", run=d_ship, view="plan", approver=True, text="The named approver confirms what goes live and how often it runs"),
@@ -643,9 +643,9 @@ wb.register(wb.Pack(
             "Learn": wb.Step(kind="deterministic", run=c_learn, view="link", agent="Publisher", text="The new version is published and kept; the Run item uses it from its next check")},
             fields=[wb.Field("set", "Detector set to change", "select", options=set_options, required=True)]),
         "run": wb.Work(title="Check a live detector set on a schedule; every finding goes to a person first", needs_source=False, sources=False, platforms=("files", "warehouse", "dashboards"), steps={
-            "Watch": wb.Step(kind="proof", run=r_watch, view="gates", agent="Watcher", text="The live detectors run on today's data — read-only; findings already decided are not raised again"),
+            "Watch": wb.Step(kind="proof", run=r_watch, view="gates", agent="Watcher", text="The live detectors run on today's data - read-only; findings already decided are not raised again"),
             "Alert": wb.Step(kind="deterministic", run=r_alert, agent="Triage", text="New findings with their reasons and the numbers behind them"),
-            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=FIX_EDIT, text="Relay proposes what happens to each finding — an alert, a ticket, expected or ignore — and you confirm or change it"),
+            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=FIX_EDIT, text="Relay proposes what happens to each finding - an alert, a ticket, expected or ignore - and you confirm or change it"),
             "Approve": wb.Step(kind="platform", run=r_approve, agent="Dispatcher", text="What you approved goes out: an alert through Reports & alerts, a ticket through the service desk's own write approval"),
             "Report": wb.Step(kind="deterministic", run=r_report, agent="Reporter", confirm_if=lambda ctx, out: bool(ctx.get("new")), text="A run report; you confirm it when there were new findings")},
             fields=[wb.Field("set", "Detector set to check", "select", options=set_options, required=True), wb.Field("schedule", "Check it", "cadence", default={"every": "day", "at": "07:00", "tz": "UTC"})]),

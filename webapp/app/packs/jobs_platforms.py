@@ -1,5 +1,5 @@
-"""The workload schedulers of Job scheduling as Connector SDK adapters — one adapter + one mock-lab simulator each
-(tests/mocklab/sims/schedulers.py: `controlm`, `autosys`, `cron`) — into the W2 neutral shape: each job an automation
+"""The workload schedulers of Job scheduling as Connector SDK adapters - one adapter + one mock-lab simulator each
+(tests/mocklab/sims/schedulers.py: `controlm`, `autosys`, `cron`) - into the W2 neutral shape: each job an automation
 (kind "job") with its schedule, its command, its parameters and the jobs it waits for (`deps`); each run a run.
 
   Control-M   Automation API: an API token in x-api-key (or a session token from session/login); deploy/jobs (the

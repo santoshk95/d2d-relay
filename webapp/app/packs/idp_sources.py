@@ -1,10 +1,10 @@
-"""Document processing — where the documents come from besides an upload: an Outlook mailbox's attachments and a
+"""Document processing - where the documents come from besides an upload: an Outlook mailbox's attachments and a
 SharePoint or OneDrive folder, both through Microsoft Graph, read-only.
 
 The mailbox is a connection of its own (kind m365_mail: an Entra ID app with Mail.Read on that mailbox, the secret in
 the secrets store). A folder is read through the SharePoint or OneDrive connection the studio already files to, at the
-path the Run item names. Each round takes what it has not taken before — a message's attachment by its id, a file by
-its id and its last change — and copies it into the Run item, so the documents read, the evidence and the results all
+path the Run item names. Each round takes what it has not taken before - a message's attachment by its id, a file by
+its id and its last change - and copies it into the Run item, so the documents read, the evidence and the results all
 stay with the item. Nothing is moved, flagged or deleted in the mailbox or the folder: Relay only reads.
 """
 from __future__ import annotations

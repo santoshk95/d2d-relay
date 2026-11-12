@@ -1,4 +1,4 @@
-"""SFTP file drops — a listing of the watched folders (an SFTP server through paramiko when installed, a local
+"""SFTP file drops - a listing of the watched folders (an SFTP server through paramiko when installed, a local
 folder, or the mock lab's HTTP listing). Each drop you describe (folder, what reads it, from / to systems) becomes
 an integration; each file that arrives is a run whose volume is its size, so a file 18 % smaller than usual
 stands out."""
@@ -13,8 +13,8 @@ from . import base
 KIND, LABEL, GROUP = "sftp", "SFTP file drops", "Files & mail"
 AUTH = "SFTP user (read-only) or none for a local folder"
 DOCS = "SFTP listing (paramiko) / local folder / mock-lab HTTP listing; drops described in the source settings"
-CONFIG = [{"name": "url", "label": "Server", "hint": "sftp://host, a local folder, or the mock lab's http://… listing", "required": True},
-          {"name": "drops", "label": "Watched drops (JSON)", "hint": '[{"name": "Bank statements SFTP → ADF", "path": "/inbound/bank", "from_system": "Bank SFTP", "to_system": "Azure Data Factory", "schedule": "Daily 07:00", "owner": "Treasury"}]', "required": True}]
+CONFIG = [{"name": "url", "label": "Server", "hint": "sftp://host, a local folder, or the mock lab's http://... listing", "required": True},
+          {"name": "drops", "label": "Watched drops (JSON)", "hint": '[{"name": "Bank statements SFTP -> ADF", "path": "/inbound/bank", "from_system": "Bank SFTP", "to_system": "Azure Data Factory", "schedule": "Daily 07:00", "owner": "Treasury"}]', "required": True}]
 SECRETS = [{"name": "username", "label": "User"}, {"name": "password", "label": "Password or key passphrase"}]
 
 
@@ -66,7 +66,7 @@ def discover(cfg: dict, secrets: dict, now: float | None = None) -> dict:
             if s:
                 systems[s] = {"name": s, "kind": "system"}
         mine = sorted([f for f in files if f["path"].startswith(d["path"].rstrip("/") + "/")], key=lambda f: f["mtime"])
-        out["integrations"].append({"ext_id": d["path"], "name": d.get("name") or f"{d.get('from_system')} → {d.get('to_system')}", "kind": "File", "via": d.get("to_system"), "from_system": d.get("from_system"), "to_system": d.get("to_system"),
+        out["integrations"].append({"ext_id": d["path"], "name": d.get("name") or f"{d.get('from_system')} {d.get('to_system')}", "kind": "File", "via": d.get("to_system"), "from_system": d.get("from_system"), "to_system": d.get("to_system"),
                                     "schedule": d.get("schedule") or "Unknown", "owner": d.get("owner"), "properties": {"path": d["path"], "files": len(mine), "latest": mine[-1]["path"] if mine else None}})
         for f in mine:
             out["runs"].append({"integration": d["path"], "ext_id": f["path"], "started": f["mtime"], "ended": f["mtime"], "status": "success", "duration_s": None, "volume": f["size"], "error": None})

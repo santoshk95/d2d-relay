@@ -1,4 +1,4 @@
-"""Identity & access (registry id `iam`) on the workbench — Microsoft Entra ID and Okta through their APIs, the HR systems
+"""Identity & access (registry id `iam`) on the workbench - Microsoft Entra ID and Okta through their APIs, the HR systems
 (Workday, SuccessFactors or an export) as the source of truth for who works here; Google Workspace, AWS IAM and SAP roles
 through their exports.
 
@@ -32,7 +32,7 @@ def _today(days: int = 0) -> str:
 
 
 def _leavers(inv) -> dict:
-    """Who has left, from every HR source in the item: employee id and e-mail → (name, end date, the HR system)."""
+    """Who has left, from every HR source in the item: employee id and e-mail -> (name, end date, the HR system)."""
     out = {}
     for system, rows in inv.rows("worker"):
         for r in rows:
@@ -59,7 +59,7 @@ def rule_leavers_active(ctx, inv, spec=None) -> list[dict]:
                 hits.append((u, lv))
         if hits:
             after = [(u, lv) for u, lv in hits if u.get("last_signin") and lv[1] and u["last_signin"] > lv[1]]
-            what = "; ".join(f"{lv[0]} left on {lv[1]} ({lv[2]}) — the account is still on" + (f", signed in on {u['last_signin']}" if (u, lv) in after else "") for u, lv in hits[:4])
+            what = "; ".join(f"{lv[0]} left on {lv[1]} ({lv[2]}) - the account is still on" + (f", signed in on {u['last_signin']}" if (u, lv) in after else "") for u, lv in hits[:4])
             out.append(w3.finding("leaver_active", system, "user", ", ".join(str(lv[0]) for _, lv in hits[:6]), what, "high", measured=f"{len(hits)} account(s), {len(after)} used after leaving",
                                   fix="Switch the accounts off (a Change item does it after approval) and review what they did after the leaving date.", work="change",
                                   keys=[u["key"] for u, _ in hits],
@@ -81,7 +81,7 @@ def rule_no_mfa(ctx, inv, spec=None) -> list[dict]:
                                   measured=", ".join(who[:6]), fix="Enrol a factor, or for a service account move it to a workload identity with no password.",
                                   work="change", keys=[u["key"] for u in bad],
                                   proposals=[{"action": "manual", "entity": "user", "key": str(u["key"]), "label": w_, "field": "", "value": "", "before": "",
-                                              "why": "the person (or the service owner) enrols a factor — Relay never sets up MFA on someone's behalf"} for u, w_ in zip(bad, who)]))
+                                              "why": "the person (or the service owner) enrols a factor - Relay never sets up MFA on someone's behalf"} for u, w_ in zip(bad, who)]))
     return out
 
 
@@ -97,7 +97,7 @@ def rule_secrets(ctx, inv, spec=None) -> list[dict]:
             if exp and exp <= soon:
                 gone = exp < _today()
                 out.append(w3.finding("secret_expiry", system, "app", str(a.get("name")), f"{a.get('name')}: its client secret {'expired on' if gone else 'expires on'} {exp}"
-                                      + (" — its sign-ins fail" if gone else ""), "high" if gone else "medium", measured=exp,
+                                      + (" - its sign-ins fail" if gone else ""), "high" if gone else "medium", measured=exp,
                                       fix="Add a new secret (Relay can do it after approval), store it where the app reads it, then remove the old one.", work="change", keys=[a["key"]]))
     return out
 
@@ -138,7 +138,7 @@ PLATFORMS = {
                             "users with their last sign-in, groups, app registrations and their secrets, and the sign-in log through an app registration"),
     "okta": w3.SysPlatform("Okta", ("okta",), "tests/mocklab/sims/okta.py: okta (Management API, SSWS token)", "users with their MFA factors and lifecycle, and groups through an API token"),
     "hr": w3.SysPlatform("HR systems (who works here)", ("workday", "successfactors"), "tests/mocklab/sims/hr.py: workday, successfactors",
-                         "workers with their leaving dates — read-only, as the source of truth for joiners and leavers"),
+                         "workers with their leaving dates - read-only, as the source of truth for joiners and leavers"),
     "exports": w3.SysPlatform("Google Workspace, AWS IAM, SAP roles, HR exports", (), "export fixtures the tests write", "accounts, groups and workers you upload (CSV, Excel)",
                               uploads=(".csv", ".xlsx", ".json")),
 }
@@ -148,21 +148,21 @@ def _kinds() -> set:
     return {"entra_id", "okta"}
 
 
-GUIDE = """# Identity & access — the work item
+GUIDE = """# Identity & access - the work item
 
 Relay's identity module reads accounts, groups and app registrations, checks them against HR (who works here, who left
 and when) and switches accounts on or off only after a named person approves that very change. Rules do the reading,
-mapping and checks; the agent is asked only to read a log no rule recognises (diagnose.json → diagnosis.yaml). Never
+mapping and checks; the agent is asked only to read a log no rule recognises (diagnose.json -> diagnosis.yaml). Never
 invent an account, a person or a date; never show or store a password or a secret."""
 
 w3.hook(MODULE)
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE, platforms=PLATFORMS,
-    lineage="each identity system and object read (system → entity), the HR system it is checked against, an account change as a write into the identity system",
+    lineage="each identity system and object read (system -> entity), the HR system it is checked against, an account change as a write into the identity system",
     schemas={"inventory": ["include", "system", "object", "records"], "finding": ["decision", "severity", "system", "what"]},
     work={
-        "assess": w3.assess_work(SPEC, "See who can still get in — leavers with access, missing MFA, expiring secrets — checked against HR"),
+        "assess": w3.assess_work(SPEC, "See who can still get in - leavers with access, missing MFA, expiring secrets - checked against HR"),
         "develop": w3.develop_work(SPEC, "Create joiners' accounts: mapping agreed, a dry run, one approved write, read back"),
         "change": w3.change_work(SPEC, "Switch a leaver's accounts off (or correct an account), with approval, checked on the system"),
         "migrate": w3.migrate_work(SPEC, "Move accounts between identity systems, reconciled record by record", _kinds),

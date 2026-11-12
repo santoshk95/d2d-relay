@@ -1,7 +1,7 @@
-"""The document & deck engine (build-plan v2, P11 — Consulting studio).
+"""The document & deck engine (build-plan v2, P11 - Consulting studio).
 
 A deck or a document is described in YAML (deck.yaml / doc.yaml, see spec.py): title, audience, template, sections
-of slides (or blocks) with a layout — title, bullets, two-column, table, chart, diagram, quote, closing — speaker
+of slides (or blocks) with a layout - title, bullets, two-column, table, chart, diagram, quote, closing - speaker
 notes, and every figure with a `source` reference (a dashboard measure, a table in the brief's attachments, an
 Assess / Programme / RFP record, a library item). Nothing invented: a figure without a source is a check failure.
 

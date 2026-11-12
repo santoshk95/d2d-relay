@@ -1,4 +1,4 @@
-"""Mail-rule file drops — a mailbox folder read over IMAP (imaplib, standard library) or the mock lab's HTTP listing;
+"""Mail-rule file drops - a mailbox folder read over IMAP (imaplib, standard library) or the mock lab's HTTP listing;
 each rule you describe (folder, subject match, from / to systems) becomes an integration, each day's matching
 messages one run whose volume is the number of attachments."""
 from __future__ import annotations
@@ -15,8 +15,8 @@ from . import base
 KIND, LABEL, GROUP = "mail", "Mail file drops", "Files & mail"
 AUTH = "mailbox user (IMAP, read-only)"
 DOCS = "IMAP folder listing (imaplib) or the mock lab's HTTP listing; rules described in the source settings"
-CONFIG = [{"name": "url", "label": "Mailbox", "hint": "imaps://host or the mock lab's http://… listing", "required": True},
-          {"name": "rules", "label": "Mail rules (JSON)", "hint": '[{"name": "Supplier statements inbox → finance share", "folder": "INBOX/Suppliers", "subject_match": "statement", "from_system": "Finance inbox", "to_system": "Finance share", "schedule": "Daily"}]', "required": True}]
+CONFIG = [{"name": "url", "label": "Mailbox", "hint": "imaps://host or the mock lab's http://... listing", "required": True},
+          {"name": "rules", "label": "Mail rules (JSON)", "hint": '[{"name": "Supplier statements inbox -> finance share", "folder": "INBOX/Suppliers", "subject_match": "statement", "from_system": "Finance inbox", "to_system": "Finance share", "schedule": "Daily"}]', "required": True}]
 SECRETS = [{"name": "username", "label": "User"}, {"name": "password", "label": "Password or app password"}]
 
 
@@ -59,7 +59,7 @@ def discover(cfg: dict, secrets: dict, now: float | None = None) -> dict:
                 systems[s] = {"name": s, "kind": "system"}
         msgs = [x for x in _messages(cfg["url"], r.get("folder") or "INBOX", secrets, now - 42 * 86400) if (r.get("subject_match") or "").lower() in (x.get("subject") or "").lower()]
         rid = f"{r.get('folder')}:{r.get('subject_match')}"
-        out["integrations"].append({"ext_id": rid, "name": r.get("name") or f"{r.get('from_system')} → {r.get('to_system')}", "kind": "File", "via": "Mail rule", "from_system": r.get("from_system"), "to_system": r.get("to_system"),
+        out["integrations"].append({"ext_id": rid, "name": r.get("name") or f"{r.get('from_system')} {r.get('to_system')}", "kind": "File", "via": "Mail rule", "from_system": r.get("from_system"), "to_system": r.get("to_system"),
                                     "schedule": r.get("schedule") or "On event", "owner": r.get("owner"), "properties": {"folder": r.get("folder"), "subject_match": r.get("subject_match"), "messages": len(msgs)}})
         per_day = collections.defaultdict(list)
         for x in msgs:

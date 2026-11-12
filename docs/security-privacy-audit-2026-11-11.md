@@ -1,4 +1,4 @@
-# D2D Relay security, privacy and data governance audit — 11 November 2026
+# D2D Relay security, privacy and data governance audit - 11 November 2026
 
 The user asked for a full sweep of security, data governance and privacy before D2D Relay is launched to the public.
 This covers the live site (image `d2d-relay:442a396`, the one running) and the work folder (`c4aade0`, with item 25,
@@ -58,7 +58,7 @@ not committed**.
 | P5 | Medium | No end to keeping dashboards, removed people and idle organisations; no self-service account erasure | Open |
 | P6 | Low | Small data-sharing details (Razorpay notes, sign-in alert mailbox) | Open |
 
-### S1 Critical — the AI could run its own code through a custom visual's `caps.js` (fixed)
+### S1 Critical - the AI could run its own code through a custom visual's `caps.js` (fixed)
 
 **What.** `genbi visual build` turned `caps.js` into `capabilities.json` by running it with Node
 (`node mk_caps.js`, which `require`s the file). The AI writes `caps.js`: it is part of every custom visual. Node ran it
@@ -80,7 +80,7 @@ helpers and `E([...])`. Anything else is refused with its line, so the AI rewrit
 byte-identical to what `mk_caps.js` wrote for all 26 `caps.js` files in the image and the repository (the Atlas
 families, the library visuals and the starter). The agent's guide (`GENBI.md`) says so.
 
-### S2 Critical — a Python file in the AI's folder ran as the toolkit (fixed)
+### S2 Critical - a Python file in the AI's folder ran as the toolkit (fixed)
 
 **What.** `genbi` is `python -m genbi_kit.cli`, run in the dashboard's folder. Python puts the current folder first
 on its search path, so a `genbi_kit/__init__.py` or a `json.py` that the AI writes there (its Write tool may) ran in place
@@ -92,7 +92,7 @@ the Claude sign-in when `genbi sql "select 1"` ran as the AI engine's user.
 **Fix.** `genbi` runs with `python -P` (never the current folder), and the AI engine's environment has
 `PYTHONSAFEPATH=1` for any other Python it starts (`Dockerfile`, `agent/Dockerfile`, `docker/relay_init.py`).
 
-### S3 Critical — a visual's build ran code and read files through its style and imports (fixed)
+### S3 Critical - a visual's build ran code and read files through its style and imports (fixed)
 
 **What.** The build copied the whole visual folder and ran pbiviz (webpack, Less, TypeScript) on it:
 - Less runs a `@plugin "file"` with Node's `require`: code execution at build time;
@@ -112,13 +112,13 @@ own `tsconfig.json`, `eslint.config.mjs`, `package.json` and a `pbiviz.json` who
 build, every code and style file is checked: no links, no loader syntax or queries in an import, relative imports stay
 inside the visual's folder, no `require.context` / `import.meta` / `__non_webpack_require__`, no Less `@plugin`,
 backticks, file functions or `url()` other than `data:`, and `@import` only of a file of the same folder by its name.
-The real visuals still build: the starter, an Atlas family and a library visual, offline, in 3–4 seconds each.
+The real visuals still build: the starter, an Atlas family and a library visual, offline, in 3-4 seconds each.
 
-### S4 High — one Linux user for the AI engine, with every organisation's folders (open)
+### S4 High - one Linux user for the AI engine, with every organisation's folders (open)
 
 Project folders are shared by the web app and the AI engine through the group `relaydata` (read and write), and the
 Claude sign-in sits in the AI engine's home. So keeping organisations apart from each other rests entirely on the AI
-never running code of its own (Claude Code's managed settings, `bash_guard.py`, the toolkit's checks: S1–S3 were the
+never running code of its own (Claude Code's managed settings, `bash_guard.py`, the toolkit's checks: S1-S3 were the
 gaps in that). The AI engine's API (`127.0.0.1:8090`: `/runs`, `/display-check`, `/forget`) has no key and takes any
 folder under the projects root, so anything that runs in the web container can start a run in any organisation's
 folder.
@@ -126,9 +126,9 @@ folder.
 Recommended, in order of effort:
 1. The AI engine's API on a Unix socket that only the web app's user may use (checked by the peer's user id).
 2. Each job in a short-lived container that mounts only its dashboard's folder (and no Claude sign-in file:
-   an API key passed for the run). This is the change that makes S1–S3-type bugs harmless.
+   an API key passed for the run). This is the change that makes S1-S3-type bugs harmless.
 
-### S5 High — the DAX checker on the PC took any model from its queue (fixed; restart the helper)
+### S5 High - the DAX checker on the PC took any model from its queue (fixed; restart the helper)
 
 The DAX checker reads requests from a folder the containers share and loaded the model with a full refresh. The app
 only ever sends DAX tables, but the checker did not check: a model with an OLE DB data source, a Power Query partition
@@ -144,15 +144,15 @@ sources, an M partition and expressions were refused. A JSON with `dataSources` 
 rewrite. **The running helper keeps the old script until it is closed and started again** (after the deploy folder
 has the new file).
 
-### S6 High — no limit on where the containers connect (open)
+### S6 High - no limit on where the containers connect (open)
 
 The web container needs Anthropic, Microsoft Graph and Razorpay; nothing stops anything in it from reaching any
-other address. Since S1–S3 are fixed, the AI's own tools cannot reach the internet, as the privacy notice says, but the
+other address. Since S1-S3 are fixed, the AI's own tools cannot reach the internet, as the privacy notice says, but the
 container can. Recommended: an egress allowlist (a small forward proxy, or firewall rules on the host for the Docker
 network) for `api.anthropic.com`, `login.microsoftonline.com`, `graph.microsoft.com`, `api.razorpay.com` and the
 connector hosts PASDACS switches on.
 
-### S7 Medium — free credits can be collected with subdomains (addressed: starting credits are reviewed)
+### S7 Medium - free credits can be collected with subdomains (addressed: starting credits are reviewed)
 
 **Update, same day:** the user chose review (work log item 27). A new organisation starts with no credits, PASDACS
 gets an email for each one (with organisations from the same network and on the same parent domain, to spot this),
@@ -165,7 +165,7 @@ brands' country domains) also cannot cover the tens of thousands of disposable d
 suffix list), put Cloudflare Turnstile on "Send code", cap new organisations per day, or start new organisations at 0
 credits until PASDACS approves.
 
-### S8 Medium — the first person from a domain owns the organisation (now disclosed; decision open)
+### S8 Medium - the first person from a domain owns the organisation (now disclosed; decision open)
 
 Anyone at a company domain who signs in first becomes its owner; everyone after joins automatically. Owners can open
 every dashboard in the organisation (with its files), and every member sees the others' names, email addresses and
@@ -174,7 +174,7 @@ this plainly (section "Who in your organisation sees what"). Options: verify the
 owner rights (a DNS record or PASDACS's check), let owners approve people who join, or keep dashboards private from
 owners unless shared.
 
-### S9 Medium — PASDACS owners have console views on the public site (fixed)
+### S9 Medium - PASDACS owners have console views on the public site (fixed)
 
 **Fixed:** `/api/tenancy/audit`, `usage`, `usage.csv`, `prices`, `people`, `packs` and `access` answer 404 on the public
 site (`edition.EXTRA_BLOCKED`); `/api/tenancy/me`, `switch` and `return` stay. What follows is the finding as found.
@@ -185,14 +185,14 @@ names, credit requests, payments), usage across organisations and the price book
 no platform powers; this one bypasses Cloudflare Access. Recommended: on the public site, answer only
 `/api/tenancy/me`, `switch` and `return` (add the other `/api/tenancy/*` paths to `edition.EXTRA_BLOCKED`).
 
-### S10 Medium — the admin portal trusts requests that do not come through Cloudflare (open)
+### S10 Medium - the admin portal trusts requests that do not come through Cloudflare (open)
 
 `portal.access_refusal` checks the Cloudflare Access token only when `cf-connecting-ip` is present. That is right for
 the PC itself, but any container on the same Docker network (the web container included) also arrives without it,
 leaving only the email code. Recommended: without `cf-connecting-ip`, accept only the Docker host's own address, and
 replace the whole `pasdacs.com` domain with a short list of named admin addresses (in Cloudflare Access too).
 
-### S11 Medium — Starlette 0.41.3 (open; one bug mitigated)
+### S11 Medium - Starlette 0.41.3 (open; one bug mitigated)
 
 The live image has FastAPI 0.115.6 with Starlette 0.41.3:
 - CVE-2025-62727: many ranges in one `Range` header take quadratic time in `FileResponse` and the static files, which
@@ -204,7 +204,7 @@ The live image has FastAPI 0.115.6 with Starlette 0.41.3:
 Recommended: upgrade FastAPI to a release that allows Starlette 0.49.1 or later, run the suites, and add `pip-audit`
 to the release steps.
 
-### S12 Low — security headers (fixed)
+### S12 Low - security headers (fixed)
 
 The live site sent no security headers. Every answer now carries `X-Content-Type-Options: nosniff`,
 `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`, a base
@@ -214,7 +214,7 @@ Checked in headless Chromium: the app's sandboxed prototype frame still loads an
 cannot frame the app. A script policy (`script-src`) is not set yet: it needs the screens' and Razorpay's sources
 listed first.
 
-### S13 Low — sign-in code guessing (fixed: a daily cap)
+### S13 Low - sign-in code guessing (fixed: a daily cap)
 
 **Fixed:** at most 20 codes a day per address (`otp.PER_DAY`), so at most 100 guesses a day. Turnstile is still worth
 adding.
@@ -223,27 +223,27 @@ adding.
 non-stop against one address (each code is also emailed to its owner, 144 a day). Recommended: a daily cap per
 address (for example 20 codes) and Turnstile on "Send code" (it also protects the sending mailbox's reputation).
 
-### S14 Low — model names on `/api/health` (fixed)
+### S14 Low - model names on `/api/health` (fixed)
 
 **Fixed:** `/api/health` passes on only whether the AI engine is up and busy (all the screens use).
 
 `/api/health` passes the AI engine's health through, with `models` (the real model ids behind "the Relay Model").
 If they are to stay private, keep only `ok` and `busy` for people who are not PASDACS.
 
-### S15 Low — reachable routes from RELAY (open)
+### S15 Low - reachable routes from RELAY (open)
 
 The reachable routes check their own permissions, but several are RELAY's, not D2D Relay's: `/api/me/ai` (bring your own AI key), `/api/workbench/*`, `/api/validate/*`, `/api/workspace*`,
 `/api/tenancy/prices`, `/api/registry/{id}/interest`, `/auth/github/callback`, `/auth/microsoft/callback`,
 `/auth/observe/hook/{id}`, `/gallery`. Recommended: the public site answers an allowlist, as the admin portal does
 (`portal.API`), instead of a blocklist.
 
-### S16 Low — build supply chain (open)
+### S16 Low - build supply chain (open)
 
 The visual kit's dev dependencies use `^` ranges and there is no lockfile, so two builds can get different packages;
 the Antigravity CLI is checked against the checksum in the same manifest it is downloaded from (pin it with
 `AGY_IMAGE`, as the live build does). Recommended: commit a `package-lock.json` for the kit.
 
-### S17 Low — a warehouse sign-in can be finished in someone else's browser (open)
+### S17 Low - a warehouse sign-in can be finished in someone else's browser (open)
 
 `/auth/connector/callback` stores the warehouse's token for the person who started the sign-in (from the stored
 state), whoever's browser comes back with the code; the "signed in as another person" check runs after the token is
@@ -278,7 +278,7 @@ Microsoft mail and GitHub callbacks check their state the same way; their featur
 
 ## Data governance and privacy
 
-### P1 High — customers' data on a personal Claude plan (open: the user's decision)
+### P1 High - customers' data on a personal Claude plan (open: the user's decision)
 
 Already in `LOG.md` ("Still open"). The AI engine signs in with a consumer Claude subscription, so customers' uploads,
 samples and questions are processed under consumer terms: they may be used for training if "Help improve Claude" is
@@ -287,7 +287,7 @@ subscriber's own use, not as the engine of a service sold to others (check Anthr
 an Anthropic API key under the Commercial Terms (no training by default, a DPA available; D2D Relay already supports
 the `anthropic_api` provider), with a spend limit set in the Anthropic Console.
 
-### P2 High — no terms, refund policy, contact page or DPA (open)
+### P2 High - no terms, refund policy, contact page or DPA (open)
 
 The site has a privacy notice only. Needed before selling to the public:
 - **Terms of service:** who may use it, acceptable use (no unlawful data, no attempts to break the AI's limits),
@@ -301,7 +301,7 @@ The site has a privacy notice only. Needed before selling to the public:
   PASDACS is their processor. Business customers will ask for a DPA: what PASDACS does with the data, its
   sub-processors (Anthropic, Microsoft, Cloudflare, Razorpay), security, breach notice and deletion at the end.
 
-### P3 High — the PC: disk, backups, secrets (open)
+### P3 High - the PC: disk, backups, secrets (open)
 
 Already partly in `LOG.md`: BitLocker is off and the backups are on the same disk. Also: the live `.env` (database
 password, Razorpay keys and webhook secret, mail app ids) and `tunnel.env` sit in the Downloads folder of the Windows
@@ -311,7 +311,7 @@ Recommended: BitLocker with the recovery key kept apart; an encrypted backup cop
 `data\backups` dumps); a dedicated Windows account or machine for D2D Relay; `RELAY_SECRET_KEY` set in `.env` rather
 than generated beside the data.
 
-### P4 Medium — the privacy notice (two corrections made; legal review open)
+### P4 Medium - the privacy notice (two corrections made; legal review open)
 
 Changed in the work folder (`webapp/static/privacy.html`):
 - a new section, **Who in your organisation sees what**: joining by email domain, owners opening every dashboard,
@@ -328,7 +328,7 @@ For the lawyer, beyond the review already in `LOG.md`:
   the incident steps down now), and the notice in the languages asked for.
 - **"PASDACS's own server in India"** is a desktop PC; say so, or move to a server.
 
-### P5 Medium — keeping data with no end (open)
+### P5 Medium - keeping data with no end (open)
 
 What works: dashboards and conversations can be deleted (with the AI's transcripts), an organisation can be erased by
 PASDACS on request (accounting records stay, without people's names), logs go after a year, the answer cache after
@@ -340,7 +340,7 @@ missing:
   after 18 months without a sign-in, erasure after 24, written in the privacy notice;
 - removed people's rows: anonymise after the log period.
 
-### P6 Low — small data-sharing details (open)
+### P6 Low - small data-sharing details (open)
 
 - Razorpay's order notes include the buyer's email and the workspace id. Razorpay already gets the email from the
   checkout form, so the notes can drop it.
@@ -375,8 +375,8 @@ touched.
 |---|---|
 | Before the fixes: S1 and S2 as the AI engine's user (another organisation's CSV, the sign-in file, `id`) | Both worked |
 | `caps.js` read as data vs `mk_caps.js` | Byte-identical for all 26 shipped files |
-| 14 kinds of code in `caps.js` (require, process, templates, spreads, variables, getters, computed keys, escaped names, code after the object…) | All refused; plain data with comments, trailing commas, shorthand and escapes read |
-| S1–S3 end to end with `genbi`, as the AI engine's user | Python modules in the folder ignored; `caps.js`, Less `@plugin` never ran; `data-uri`, loader syntax, imports leaving the folder, `require.context` refused |
+| 14 kinds of code in `caps.js` (require, process, templates, spreads, variables, getters, computed keys, escaped names, code after the object...) | All refused; plain data with comments, trailing commas, shorthand and escapes read |
+| S1-S3 end to end with `genbi`, as the AI engine's user | Python modules in the folder ignored; `caps.js`, Less `@plugin` never ran; `data-uri`, loader syntax, imports leaving the folder, `require.context` refused |
 | Real builds, offline | Starter, an Atlas family and a library visual built; their `capabilities.json` as `mk_caps.js` writes it; no stray config reached the build |
 | The AI engine's service with `PYTHONSAFEPATH=1` | Starts and answers |
 | DAX checker guard with Power BI's library | Data sources, an M partition and expressions refused; duplicate-key trick neutralised |
@@ -419,7 +419,7 @@ second alert, a decline told to the owner and credits asked for after it).
 
 | Other checks on the release candidate | Result |
 |---|---|
-| The sandbox escapes S1–S3, end to end as the AI engine's user; 26 `caps.js` vs `mk_caps.js`; 14 kinds of code; real builds | All refused; byte-identical; all refused; starter, family and library built offline |
+| The sandbox escapes S1-S3, end to end as the AI engine's user; 26 `caps.js` vs `mk_caps.js`; 14 kinds of code; real builds | All refused; byte-identical; all refused; starter, family and library built offline |
 | The new source checks over all 31 shipped visual sources (Atlas families, library, starter, both copies) | 0 problems |
 | The shell guard's 64 cases (`guard_cases.py`) | 22 allowed, 42 refused, 0 wrong |
 | Cloudflare Access on the admin portal (`access_check.py`: forged, expired, another application's and another team's tokens, a non-PASDACS address, not set up) | 10 of 10 |
@@ -448,7 +448,7 @@ the AI, whatever it is told), a real Razorpay checkout, real email delivery, and
 
 ## Suggested order before the public launch
 
-1. Deploy these fixes (S1–S3, S5, S9, S11 mitigation, S12–S14, the notice, the starting-credit review).
+1. Deploy these fixes (S1-S3, S5, S9, S11 mitigation, S12-S14, the notice, the starting-credit review).
 2. The AI on an Anthropic API key (P1).
 3. Terms, refund and cancellation, contact, DPA; the lawyer's review of the notice (P2, P4).
 4. BitLocker, an encrypted backup off the PC, a dedicated account or machine (P3).

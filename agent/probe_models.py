@@ -83,7 +83,7 @@ def catalog(results: list[dict]) -> dict:
         pinned.append({"id": r["name"], "label": f"{fam.title()} {ver}", "model": r["model"], "family": fam,
                        "version": ver, "latest": False, "relative_cost": rel(r["model"]), "note": FAMILIES.get(fam, "")})
     order = list(FAMILIES)
-    newest_first = lambda ver: tuple(-int(x) for x in (ver.split(".") + ["0"])[:2])     # 5.5, 5.1, 5, 4.6 …
+    newest_first = lambda ver: tuple(-int(x) for x in (ver.split(".") + ["0"])[:2])     # 5.5, 5.1, 5, 4.6 ...
     pinned.sort(key=lambda e: (order.index(e["family"]) if e["family"] in order else 99, newest_first(e["version"])))
     return {"checked": time.strftime("%Y-%m-%d"), "default": DEFAULT,
             "about": "Models this Claude login can use (agent/probe_models.py). relative_cost: price per token vs "

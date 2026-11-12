@@ -1,4 +1,4 @@
-"""Data governance & catalogue — the rules (no agent): catalogue health, the fixes they propose, glossary duplicates,
+"""Data governance & catalogue - the rules (no agent): catalogue health, the fixes they propose, glossary duplicates,
 and the mapping of one catalogue onto another. Everything reads the neutral catalogue of _w1_cat."""
 from __future__ import annotations
 
@@ -71,7 +71,7 @@ def same_class(a, b, tool: str) -> bool:
 
 def health(cat: dict) -> list[dict]:
     """Every finding of the catalogue: [{id, kind, object, name, issue, route, minutes, evidence}]. A catalogue without
-    certificates (the Purview Data Map) is judged by its descriptions instead ("2019 copy of …", "backup of …")."""
+    certificates (the Purview Data Map) is judged by its descriptions instead ("2019 copy of ...", "backup of ...")."""
     out: list[dict] = []
     assets = cat["assets"]
     certs = any(a.get("certified") for a in assets)
@@ -86,7 +86,7 @@ def health(cat: dict) -> list[dict]:
             add("owner", a["key"], a["name"], f"{a['kind'].title()} {a['name']} has no owner", {"schema": schema_of(a), "platform": a["platform"]})
         legacy = a.get("certified") == "Deprecated" or (not certs and LEGACY_RX.search(a.get("description") or ""))
         if a["kind"] in ("table", "view") and legacy and (downstream.get(a["key"]) or schema_of(a) in ("DW", "MART")):
-            add("deprecated", a["key"], a["name"], f"{a['name']} is " + ("certified Deprecated" if a.get("certified") == "Deprecated" else f"described as legacy (“{(a.get('description') or '')[:60]}”)")
+            add("deprecated", a["key"], a["name"], f"{a['name']} is " + ("certified Deprecated" if a.get("certified") == "Deprecated" else f"described as legacy (\"{(a.get('description') or '')[:60]}\")")
                 + " but is still " + (f"read by {downstream[a['key']]} object(s)" if downstream.get(a["key"]) else f"in the {schema_of(a)} schema"),
                 {"downstream": [e["to"] for e in cat["edges"] if e["from"] == a["key"]][:10]})
         if a["kind"] == "report" and certs and a.get("certified") != "Certified":
@@ -111,7 +111,7 @@ def health(cat: dict) -> list[dict]:
             cls = twin.most_common(1)[0][0] if twin else by_name
             parent = by.get(a.get("parent") or "", {}).get("name") or (a.get("parent") or "").split(":")[-1]
             add("personal", a["key"], f"{parent}.{a['name']}" if parent else a["name"], f"{parent + '.' if parent else ''}{a['name']} looks like {CLASS_LABEL.get(cls, cls).lower()} but is not classified"
-                + (f" — {sum(twin.values())} column(s) of the same name are" if twin else ""), {"proposed": cls, "twins": sum(twin.values()) if twin else 0})
+                + (f" - {sum(twin.values())} column(s) of the same name are" if twin else ""), {"proposed": cls, "twins": sum(twin.values()) if twin else 0})
     # the glossary
     terms = cat["terms"]
     groups: dict[str, list[dict]] = {}
@@ -123,14 +123,14 @@ def health(cat: dict) -> list[dict]:
             keep = sorted(ts, key=lambda t: (t.get("status") != "Approved", not t.get("definition"), t["name"]))[0]
             for t in ts:
                 if t is not keep:
-                    add("duplicate", f"term:{t['name']}", t["name"], f"The term “{t['name']}” duplicates “{keep['name']}”", {"keep": keep["name"], "definition": keep.get("definition")})
+                    add("duplicate", f"term:{t['name']}", t["name"], f"The term \"{t['name']}\" duplicates \"{keep['name']}\"", {"keep": keep["name"], "definition": keep.get("definition")})
     for t in terms:
         if t.get("status") == "Obsolete":
             continue
         if not (t.get("definition") or "").strip():
-            add("no_definition", f"term:{t['name']}", t["name"], f"The term “{t['name']}” has no definition")
+            add("no_definition", f"term:{t['name']}", t["name"], f"The term \"{t['name']}\" has no definition")
         if not t.get("steward") and (t.get("definition") or "").strip():
-            add("steward", f"term:{t['name']}", t["name"], f"The term “{t['name']}” has no steward")
+            add("steward", f"term:{t['name']}", t["name"], f"The term \"{t['name']}\" has no steward")
     # scans: the latest run of each source
     last: dict[str, dict] = {}
     for s in cat["scans"]:
@@ -158,13 +158,13 @@ def propose(finding: dict, cat: dict, learned: list[dict]) -> dict:
         plat = Counter(x["owner"] for x in cat["assets"] if x["kind"] in GOVERNED and x.get("owner") and x["platform"] == a.get("platform"))
         if plat:
             return {"change": "owner", "value": plat.most_common(1)[0][0], "why": f"the most common owner on {a.get('platform')}"}
-        return {"change": "owner", "value": "", "why": "nobody owns anything near it — say who"}
+        return {"change": "owner", "value": "", "why": "nobody owns anything near it - say who"}
     if k == "personal":
         return {"change": "classify", "value": finding["evidence"].get("proposed") or "personal", "why": "the column of the same name is classified" if finding["evidence"].get("twins") else "its name"}
     if k == "duplicate":
-        return {"change": "retire_term", "value": finding["evidence"].get("keep", ""), "why": f"keep “{finding['evidence'].get('keep')}”, retire the duplicate"}
+        return {"change": "retire_term", "value": finding["evidence"].get("keep", ""), "why": f"keep \"{finding['evidence'].get('keep')}\", retire the duplicate"}
     if k == "no_definition":
-        return {"change": "define", "value": "", "why": "no rule defines a term — Relay's agent drafts it from the metrics and the glossary"}
+        return {"change": "define", "value": "", "why": "no rule defines a term - Relay's agent drafts it from the metrics and the glossary"}
     if k == "description":
         return {"change": "describe", "value": "", "why": "Relay's agent drafts it from the columns and the lineage"}
     if k == "steward":

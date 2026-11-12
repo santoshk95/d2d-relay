@@ -1,4 +1,4 @@
-"""API gateways — Azure API Management (ARM, api-version 2022-08-01: apis with contact and backend, reports/byRequest
+"""API gateways - Azure API Management (ARM, api-version 2022-08-01: apis with contact and backend, reports/byRequest
 as runs, subscriptions with their expiry, api releases whose notes announce schema changes) or a Kong-style gateway
 (admin API /services and /routes; requests from the file-log plugin's JSON records)."""
 from __future__ import annotations

@@ -125,7 +125,7 @@ def _tokens(text: str) -> list[tuple[str, object, int]]:
     while i < len(text):
         m = _TOKEN.match(text, i)
         if not m:
-            raise CapsError(f"line {line}: {text[i:i + 20]!r} is not allowed in caps.js — it holds plain data only "
+            raise CapsError(f"line {line}: {text[i:i + 20]!r} is not allowed in caps.js - it holds plain data only "
                             "(texts, numbers, true/false/null, arrays, objects and the helpers)")
         kind, raw = m.lastgroup, m.group()
         if kind == "num":

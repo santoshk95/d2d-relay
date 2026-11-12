@@ -1,4 +1,4 @@
-/* ---------------- UX round 2 (ui-ux-audit.md, items B–H): confirm dialog, skeletons, popovers, notifications panel,
+/* ---------------- UX round 2 (ui-ux-audit.md, items B-H): confirm dialog, skeletons, popovers, notifications panel,
    command palette (Ctrl+K), profile menu, pinned dashboards ---------------- */
 
 /* D: one confirm dialog in the app's style. Resolves true when confirmed. */
@@ -52,7 +52,7 @@ async function notesPanel(anchor) {
   const list = h('div', {class: 'nplist'}, skel('rows'));
   const p = popover(anchor, [h('div', {class: 'nphead'}, h('b', {}, 'Notifications'), h('span', {class: 'spacer'}),
       h('button', {class: 'btn sm ghost', onclick: async () => { draw(await api('/api/notifications/read', {method: 'POST'})); refreshNotes(); }}, 'Mark all read')),
-    list, h('a', {class: 'npall', href: '#/notifications'}, 'See all notifications →')], 'notes');
+    list, h('a', {class: 'npall', href: '#/notifications'}, 'See all notifications')], 'notes');
   const draw = n => list.replaceChildren(...(n.items.length ? n.items.slice(0, 10).map(x => h('button', {class: 'note-row' + (x.read ? '' : ' unread'), type: 'button',
       onclick: () => { closePopover(); openNote(x); }},
     h('span', {class: 'nicon ' + x.kind}, icon(NOTE_ICON[x.kind] || 'info')),
@@ -72,7 +72,7 @@ async function togglePin(pid) {
 }
 setTimeout(() => { if (!isAdminPortal()) loadPins(); }, 600);
 
-/* C: command palette — every page, dashboard, insight page and the common actions, from the keyboard */
+/* C: command palette - every page, dashboard, insight page and the common actions, from the keyboard */
 async function palette() {
   closePopover();
   const route = location.hash;
@@ -86,7 +86,7 @@ async function palette() {
     ...navGroups(route).flatMap(g => g.items.map(([href, ic, label]) => ({k: 'Go to', t: label, ic, run: go(href)}))),
     ...S.projects.map(p => ({k: 'Dashboard', t: p.name, ic: 'grid', sub: (STATUS[p.status] || [p.status])[0], run: go('#/p/' + p.id)})),
   ];
-  const input = h('input', {type: 'text', placeholder: 'Search dashboards, pages, settings — or type an action', role: 'combobox',
+  const input = h('input', {type: 'text', placeholder: 'Search dashboards, pages, settings - or type an action', role: 'combobox',
     'aria-expanded': 'true', 'aria-controls': 'palist', 'aria-autocomplete': 'list', 'aria-label': 'Command palette'});
   const listEl = h('div', {class: 'palist', id: 'palist', role: 'listbox'});
   let shown = [], at = 0;
@@ -98,7 +98,7 @@ async function palette() {
     at = Math.min(at, Math.max(0, shown.length - 1));
     listEl.replaceChildren(...(shown.length ? shown.map((it, i) => h('div', {class: 'paitem' + (i === at ? ' on' : ''), role: 'option', id: 'pa' + i, 'aria-selected': String(i === at),
         onmousemove: () => { if (at !== i) { at = i; draw(); } }, onclick: () => pick(i)},
-      icon(it.ic), h('span', {class: 'grow'}, it.t, it.sub ? h('span', {class: 'faint small'}, ' · ' + it.sub) : null),
+      icon(it.ic), h('span', {class: 'grow'}, it.t, it.sub ? h('span', {class: 'faint small'}, ' - ' + it.sub) : null),
       it.hint ? h('kbd', {}, it.hint) : null, h('span', {class: 'pak'}, it.k)))
       : [h('div', {class: 'muted small', style: 'padding:14px'}, 'Nothing matches.')]));
     input.setAttribute('aria-activedescendant', shown.length ? 'pa' + at : '');
@@ -111,7 +111,7 @@ async function palette() {
     else if (e.key === 'ArrowUp') { e.preventDefault(); at = Math.max(at - 1, 0); draw(); }
     else if (e.key === 'Enter') { e.preventDefault(); pick(at); }
   };
-  const m = modal('Go to…', h('div', {class: 'pabody'}, input, listEl, h('div', {class: 'pafoot faint small'}, '↑ ↓ to move · Enter to open · Esc to close')));
+  const m = modal('Go to...', h('div', {class: 'pabody'}, input, listEl, h('div', {class: 'pafoot faint small'}, '↑ ↓ to move - Enter to open - Esc to close')));
   m.classList.add('palette');
   draw();
   setTimeout(() => input.focus(), 40);
@@ -134,7 +134,7 @@ function profileMenu(anchor) {
   const item = (ic, label, fn, hint) => h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); fn(); }}, icon(ic), h('span', {class: 'grow'}, label), hint ? h('kbd', {}, hint) : null);
   popover(anchor, [
     h('div', {class: 'pmhead'}, h('b', {}, me.name || me.email), h('div', {class: 'small muted'}, me.email),
-      h('div', {class: 'small faint'}, role + (!me.org && me.teams && me.teams.length ? ' · ' + me.teams.map(t => t.name).join(', ') : '') + (me.auth === 'single' ? ' · single-user mode' : ''))),
+      h('div', {class: 'small faint'}, role + (!me.org && me.teams && me.teams.length ? ' - ' + me.teams.map(t => t.name).join(', ') : '') + (me.auth === 'single' ? ' - single-user mode' : ''))),
     me.tenant && me.tenant.name ? h('div', {class: 'small muted', style: 'padding:0 12px 6px'}, 'Workspace: ', h('b', {}, me.tenant.name), me.tenant.acting ? ' (as a guest)' : '') : null,
     me.tenant && ((me.tenant.enter || []).length || me.tenant.acting) ? item('building', 'Switch workspace', () => workspaceMenu($('#ws button') || $('#me button'))) : null,
     me.org && me.org.id && !isAdminPortal() ? item('building', 'Organisation and credits', () => { location.hash = '/org'; }) : null,   // D2D Relay

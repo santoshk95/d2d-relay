@@ -1,6 +1,6 @@
-"""DAX function names and keywords. Power BI rejects a measure whose variable (VAR x = …) is named like one of
-them, ignoring case — e.g. `VAR LastDate` (LASTDATE), `VAR Value` (VALUE), `VAR Date` (DATE) — and every measure
-that uses it then fails too ("refers to a Measure object … which has an error")."""
+"""DAX function names and keywords. Power BI rejects a measure whose variable (VAR x = ...) is named like one of
+them, ignoring case - e.g. `VAR LastDate` (LASTDATE), `VAR Value` (VALUE), `VAR Date` (DATE) - and every measure
+that uses it then fails too ("refers to a Measure object ... which has an error")."""
 
 FUNCTIONS = """
 ABS ACCRINT ACCRINTM ACOS ACOSH ACOT ACOTH ADDCOLUMNS ADDMISSINGITEMS ALL ALLCROSSFILTERED ALLEXCEPT ALLNOBLANKROW

@@ -3,10 +3,10 @@ new host is one class: GitHub (the person's own P6 OAuth token), a generic Git-o
 (what the tests exercise), GitLab, Azure DevOps and Bitbucket following their public APIs, and a local path host
 for the end-to-end flow (test hooks only). Trackers: Jira through P12's adapter (read a ticket), Azure Boards.
 
-A host does four things: `creds()` for `genbi repo` (user, token — never stored here), `test()` (reachable, sees the
+A host does four things: `creds()` for `genbi repo` (user, token - never stored here), `test()` (reachable, sees the
 default branch), `open_pr(head, base, title, body)` (a pull / merge request; nothing is ever merged by Relay) and
 `pr_state(number)`. Credentials come from the secrets store by name (`sdlc:<repo id>:token`, org scope) or, for
-GitHub, from the person's own stored token — a run gets them injected, the page never shows them.
+GitHub, from the person's own stored token - a run gets them injected, the page never shows them.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ class HostError(Exception):
 
 
 PROVIDERS = {
-    "github": {"label": "GitHub", "signin": "your GitHub account (Settings › GitHub, the same sign-in publishing uses)", "api": "GitHub REST API: repos, git refs, pulls", "url_hint": "https://github.com/org/repo.git"},
+    "github": {"label": "GitHub", "signin": "your GitHub account (Settings > GitHub, the same sign-in publishing uses)", "api": "GitHub REST API: repos, git refs, pulls", "url_hint": "https://github.com/org/repo.git"},
     "gitea": {"label": "Gitea / generic Git over HTTP", "signin": "an account and token on the host", "api": "Gitea API v1: repos, branches, pulls (Forgejo and Gogs alike)", "url_hint": "https://git.example.com/org/repo.git"},
     "gitlab": {"label": "GitLab", "signin": "a project or personal access token (api, write_repository)", "api": "GitLab REST API v4: projects, merge_requests", "url_hint": "https://gitlab.com/group/project.git"},
     "azure": {"label": "Azure DevOps", "signin": "a personal access token (Code: read & write)", "api": "Azure DevOps REST 7.1: git/repositories, pullrequests", "url_hint": "https://dev.azure.com/org/project/_git/repo"},
@@ -106,7 +106,7 @@ class GitHub(Host):
     def _h(self) -> dict:
         t = self.token()
         if not t:
-            raise HostError("Connect your GitHub account first (Settings › GitHub).")
+            raise HostError("Connect your GitHub account first (Settings > GitHub).")
         return {"Authorization": f"Bearer {t}", "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
 
     def test(self) -> dict:
@@ -323,7 +323,7 @@ def jira_ticket(source_id: str, key: str) -> dict:
     s = itsm._src(source_id)
     if s["kind"] != "jira":
         raise HostError("Only a Jira source can be read for a change request here (Freshservice tickets come through Service desk's hand-off).")
-    t = itsm.adapter_for(s).issue(key)                   # already in the normalised shape (title, description, url …)
+    t = itsm.adapter_for(s).issue(key)                   # already in the normalised shape (title, description, url ...)
     return {"key": t.get("key") or key, "title": t.get("title") or "", "description": t.get("description") or "", "url": t.get("url"), "priority": t.get("priority"), "reporter": t.get("reporter"), "source": s["name"]}
 
 

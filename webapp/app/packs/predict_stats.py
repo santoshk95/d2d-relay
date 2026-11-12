@@ -1,4 +1,4 @@
-"""Forecasting maths for Predictive analytics & forecasting (registry id `predict`) — simple, explainable methods only,
+"""Forecasting maths for Predictive analytics & forecasting (registry id `predict`) - simple, explainable methods only,
 in numpy (no model library, no AI): seasonal naive (the baseline every other method must beat), exponential smoothing
 (ETS: Holt-Winters with an additive trend and season, smoothing weights chosen by the in-sample one-step error), and a
 linear trend with seasonal effects (ordinary least squares). Each method is back-tested on a holdout of the latest
@@ -38,7 +38,7 @@ def seasonal_naive(y: list[float], m: int, h: int) -> list[float]:
 
 
 def linear_seasonal(y: list[float], m: int, h: int) -> list[float]:
-    """y_t = a + b·t + s_(t mod m), least squares (the seasonal effects sum to zero through dummy coding)."""
+    """y_t = a + b-t + s_(t mod m), least squares (the seasonal effects sum to zero through dummy coding)."""
     n = len(y)
     if n < 3:
         return seasonal_naive(y, m, h)
@@ -94,8 +94,8 @@ GRID_G = (0.05, 0.2, 0.5)
 
 
 def ets(y: list[float], m: int, h: int) -> tuple[list[float], dict]:
-    """Holt-Winters with the smoothing weights — and the seasonal form, additive or multiplicative when every value is
-    positive — that give the smallest one-step error on the history (a small grid: explainable and repeatable).
+    """Holt-Winters with the smoothing weights - and the seasonal form, additive or multiplicative when every value is
+    positive - that give the smallest one-step error on the history (a small grid: explainable and repeatable).
     Returns the forecasts and what was chosen."""
     arr = np.asarray([float(v) for v in y], dtype=float)
     if len(arr) < 4:
@@ -128,7 +128,7 @@ def forecast(method: str, y: list[float], m: int, h: int) -> tuple[list[float], 
 
 def accuracy(actual: list[float], fc: list[float]) -> dict:
     """MAPE (mean absolute percentage error, periods with a zero actual left out), WAPE (absolute errors over the
-    total of the actuals — stable when some periods are small), bias (forecast minus actual, as a share), RMSE."""
+    total of the actuals - stable when some periods are small), bias (forecast minus actual, as a share), RMSE."""
     a = np.asarray([float(v) for v in actual], dtype=float)
     f = np.asarray([float(v) for v in fc[:len(a)]], dtype=float)
     if not len(a):
@@ -148,7 +148,7 @@ def _r(v, d: int = 2):
 
 
 def holdout_for(n: int, m: int, horizon: int) -> int:
-    """How many of the latest periods the back-test hides: one cycle (or the horizon) — never more than a quarter of the
+    """How many of the latest periods the back-test hides: one cycle (or the horizon) - never more than a quarter of the
     history, at least one period."""
     want = max(horizon, m if m > 1 else 0) or horizon
     return max(1, min(want, n // 4))
@@ -172,7 +172,7 @@ def backtest(periods: list[str], y: list[float], m: int, horizon: int, holdout: 
 
 
 def recommend(models: dict, tolerance_pp: float = 1.0) -> str:
-    """The most accurate method on the holdout (lowest WAPE) — unless a simpler one is within `tolerance_pp`
+    """The most accurate method on the holdout (lowest WAPE) - unless a simpler one is within `tolerance_pp`
     percentage points of it: the simplest method that is accurate enough wins."""
     scored = [(mm["wape"], meth) for meth, mm in models.items() if mm.get("wape") is not None]
     if not scored:

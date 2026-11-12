@@ -88,7 +88,7 @@ KINDS = {
 }
 # Where a group's work goes. Modules that exist today get the real thing (D2D: a dashboard change request through the
 # existing API); the others are recorded as work items with a link to the module page until their phase ships.
-TARGETS = {"d2d": {"label": "D2D · Dashboards", "link": "#/d2d", "live": True, "what": "a dashboard change request"},
+TARGETS = {"d2d": {"label": "D2D - Dashboards", "link": "#/d2d", "live": True, "what": "a dashboard change request"},
            "sdlc": {"label": "AI SDLC", "link": "#/m/sdlc", "live": False, "what": "a change request (P16)"},
            "heal": {"label": "Self-healing", "link": "#/m/heal", "live": False, "what": "a fix to diagnose and test (P16)"},
            "semantics": {"label": "Ontology & semantics", "link": "#/metrics", "live": True, "what": "a metric definition to settle"},
@@ -97,7 +97,7 @@ STATUS_LABEL = {"open": "To act on", "awaiting": "Waiting for approval", "sent_b
                 "sent": "With a person", "handed": "Turned into work", "closed": "Closed"}
 # What a source may do (the Connections hub's words). Read-only by default; even with a grant, every write waits for a
 # named person's approval of exactly what is written (a checkpoint per change).
-SCOPES = {"read": "Read-only", "comment": "Read & comment", "write": "Read & write — with approval"}
+SCOPES = {"read": "Read-only", "comment": "Read & comment", "write": "Read & write - with approval"}
 WRITE_KIND = "itsm.write"
 OPS = {"create": "Raise a ticket", "comment": "Add a comment"}
 NEEDS = {"create": ("write",), "comment": ("comment", "write")}
@@ -106,7 +106,7 @@ OPTIONS = {"jira": {"project": "Project for new tickets (key)", "issue_type": "I
            "freshservice": {"group": "Group for new tickets", "requester": "Requester e-mail for new tickets"},
            "servicenow": {"group": "Assignment group for new incidents", "requester": "Caller for new incidents (user name)"}}
 WRITE_STATUS = {"waiting": "Waiting for approval", "written": "Written", "failed": "Not written", "sent_back": "Sent back", "refused": "Refused", "withdrawn": "Withdrawn"}
-WRITE_HOOKS: dict = {}                  # origin prefix -> fn(write, event) — the module that asked hears what happened
+WRITE_HOOKS: dict = {}                  # origin prefix -> fn(write, event) - the module that asked hears what happened
 
 
 class ItsmError(Exception):
@@ -160,7 +160,7 @@ def public_source(s: dict) -> dict:
             "label": k.get("short", s["kind"]), "has_secret": secrets_store.get("org", s.get("secret_name") or _secret_name(s["id"])) is not None,
             "status_label": {"new": "Not read yet", "ok": "Connected", "sign_in": "Sign in again", "error": "Error", "paused": "Paused"}.get(
                 "paused" if s["paused"] else s["status"], s["status"]),
-            # for the Connections hub (read-only there): who added it and the screen that manages it — never the credential
+            # for the Connections hub (read-only there): who added it and the screen that manages it - never the credential
             "owner": (db.one("SELECT name FROM users WHERE id = ?", (s["created_by"],)) or {}).get("name") if s.get("created_by") else None,
             "module": MODULE, "link": ROUTE, "category": "crm"}
 
@@ -187,7 +187,7 @@ def save_source(body: dict, who: str | None, sid: str | None = None) -> dict:
     url = (body.get("base_url") or "").strip().rstrip("/")
     if not url.startswith(("http://", "https://")):
         raise HTTPException(400, "The base URL must start with https:// (or http:// for a simulator).")
-    name = (body.get("name") or f"{KINDS[kind]['short']} · {url.split('//', 1)[1].split('/')[0]}").strip()[:80]
+    name = (body.get("name") or f"{KINDS[kind]['short']} - {url.split('//', 1)[1].split('/')[0]}").strip()[:80]
     account = (body.get("account") or "").strip()[:200]          # Jira: the service account's e-mail (empty = bearer token)
     projects = _projects(body.get("projects"))
     try:
@@ -465,7 +465,7 @@ def _decision(gid: str, action: str, who: str | None, detail: dict | None = None
 
 
 def _name(uid: str | None) -> str:
-    """A person by name (what screens and written comments show — never a raw id); agents and the scheduler by role."""
+    """A person by name (what screens and written comments show - never a raw id); agents and the scheduler by role."""
     if not uid:
         return "Relay"
     row = db.one("SELECT name FROM users WHERE id = ?", (uid,))
@@ -563,12 +563,12 @@ def write_back(gid: str, who: str, checkpoint_id: str | None = None) -> dict:
             errors.append(f"{r['key']}: its source is gone"); continue
         scope = s.get("scope") or "read"
         if scope == "read" or s.get("paused"):          # read-only by default: nothing is written to this source's tickets
-            errors.append(f"{r['key']}: {s['name']} is {'paused' if s.get('paused') else 'read-only'} — nothing written"); continue
+            errors.append(f"{r['key']}: {s['name']} is {'paused' if s.get('paused') else 'read-only'} - nothing written"); continue
         try:
             ad = adapters.get(s["id"]) or adapters.setdefault(s["id"], adapter_for(s))
             others = [k for k in keys if k != r["key"]]
             text = (f"Relay triage - {g['priority']} ({triage.PRIORITY_LABEL[g['priority']]})\n\n{g['summary']}\n\n{g['reason']}\n\n"
-                    + (f"Grouped with {len(others)} ticket{'s' if len(others) != 1 else ''}: {', '.join(others[:12])}{' …' if len(others) > 12 else ''}.\n\n" if others else "")
+                    + (f"Grouped with {len(others)} ticket{'s' if len(others) != 1 else ''}: {', '.join(others[:12])}{' ...' if len(others) > 12 else ''}.\n\n" if others else "")
                     + f"{g['route_reason']} Approved by {_name(who)}; group {gid}.")
             label = f"relay-{gid}"
             if s["kind"] == "jira":
@@ -614,8 +614,8 @@ def _fresh_priority(p: str) -> int:
 
 # ------------------------------------------------------------------ writes other modules ask for (consolidation): a new ticket, a comment
 # The only way any other module writes to a service desk. The source's scope must allow it (read-only by default;
-# "Read & comment" for a comment, "Read & write — with approval" for a new ticket), and a checkpoint (kind itsm.write)
-# opens with exactly what will be written; the adapter writes when — and only when — a named person accepts it, once.
+# "Read & comment" for a comment, "Read & write - with approval" for a new ticket), and a checkpoint (kind itsm.write)
+# opens with exactly what will be written; the adapter writes when - and only when - a named person accepts it, once.
 
 def register_write_hook(prefix: str, fn) -> None:
     """The module that asks hears what happened: fn(write, event), event = written | failed | sent_back | withdrawn |
@@ -631,8 +631,8 @@ def _why_not(s: dict, op: str) -> str:
     if s.get("paused"):
         return f"{s['name']} is paused: resume it before Relay writes to it."
     need = SCOPES["write"] if op == "create" else SCOPES["comment"]
-    return (f"{s['name']} is {SCOPES.get(s.get('scope') or 'read', 'read-only').lower()}: to {OPS[op].lower()} it must allow “{need}”. "
-            "An admin, or the person who added the source, changes that under Service desk › Sources.")
+    return (f"{s['name']} is {SCOPES.get(s.get('scope') or 'read', 'read-only').lower()}: to {OPS[op].lower()} it must allow \"{need}\". "
+            "An admin, or the person who added the source, changes that under Service desk > Sources.")
 
 
 def ticket_target() -> dict | None:
@@ -663,7 +663,7 @@ def _clean(s: dict, op: str, payload: dict) -> dict:
         out["project"] = (o.get("project") or (s["projects"] or [""])[0]).upper()
         out["issue_type"] = o.get("issue_type") or "Task"
         if not out["project"] and "service_desk" not in out:
-            raise WriteRefused(f"{s['name']} does not say which project new tickets go to: set it under Service desk › Sources › May do.")
+            raise WriteRefused(f"{s['name']} does not say which project new tickets go to: set it under Service desk > Sources > May do.")
     else:
         out["project"] = o.get("group") or (s["projects"] or [""])[0]
         if o.get("requester"):
@@ -675,8 +675,8 @@ def _lines(s: dict, op: str, p: dict) -> list[tuple[str, str]]:
     if op == "comment":
         return [("Ticket", p["key"]), ("Comment", p["text"])]
     where = (f"service desk {p['service_desk']}, request type {p['request_type']}" if p.get("service_desk")
-             else f"project {p['project']} · {p.get('issue_type')}" if s["kind"] == "jira" else f"group {p['project']}" if p.get("project") else "its default group")
-    return [("Where", f"{s['name']} · {where}"), ("Title", p["title"]), ("Priority", f"{p['priority']} ({triage.PRIORITY_LABEL.get(p['priority'], '')})"),
+             else f"project {p['project']} - {p.get('issue_type')}" if s["kind"] == "jira" else f"group {p['project']}" if p.get("project") else "its default group")
+    return [("Where", f"{s['name']} - {where}"), ("Title", p["title"]), ("Priority", f"{p['priority']} ({triage.PRIORITY_LABEL.get(p['priority'], '')})"),
             ("Labels", ", ".join(p["labels"])), ("Description", p["description"])]
 
 
@@ -716,7 +716,7 @@ def request_write(sid: str, op: str, payload: dict, *, who: str | None, module: 
     now = time.time()
     db.run("INSERT INTO itsm_writes (id, source_id, op, target, payload, fingerprint, module, origin, link, status, requested_by, created, updated) "
            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'waiting', ?, ?, ?)", (wid, sid, op, p.get("key") or p.get("project"), json.dumps(p), fp, module, origin, link, who, now, now))
-    ev = {"summary": f"{OPS[op]} on {s['name']} ({KINDS[s['kind']]['short']}) for {module} — exactly this is written, once, signed with your name, after you "
+    ev = {"summary": f"{OPS[op]} on {s['name']} ({KINDS[s['kind']]['short']}) for {module} - exactly this is written, once, signed with your name, after you "
                      "accept; nothing before.", "items": [f"{k}: {v[:200]}" for k, v in rows], "columns": ["What", "Will be written"], "rows": [[k, v] for k, v in rows],
           "op": op, "source": {"id": sid, "name": s["name"], "kind": s["kind"]}, "payload": p, "fingerprint": fp, "module": module, "write": wid}
     title = name or (f"{OPS[op]} on {s['name']}: {p['title']}" if op == "create" else f"Comment on {p['key']} ({s['name']})")
@@ -840,7 +840,7 @@ def draft_payload(d: dict) -> dict:
     if d.get("owner"):
         lines.append(f"Owner: {d['owner']}")
     for e in (d.get("evidence") or [])[:6]:
-        lines.append(" · ".join(str(e.get(k)) for k in ("when", "status", "duration", "error") if e.get(k)))
+        lines.append(" - ".join(str(e.get(k)) for k in ("when", "status", "duration", "error") if e.get(k)))
     lines.append(f"From {d['module']} in Relay.")
     return {"title": d["title"], "description": "\n\n".join(x for x in lines if x), "priority": d.get("priority") or "P3", "labels": [d["module"].lower().replace(" ", "-")]}
 
@@ -851,7 +851,7 @@ def raise_draft(origin: str, sid: str | None, who: str) -> dict:
         raise HTTPException(404, "No such draft (it may have been raised already).")
     s = _src(sid) if sid else ticket_target()
     if not s:
-        raise WriteRefused("No source may raise tickets yet: an admin allows “Read & write — with approval” on one under Sources.")
+        raise WriteRefused("No source may raise tickets yet: an admin allows \"Read & write - with approval\" on one under Sources.")
     return request_write(s["id"], "create", draft_payload(d), who=who, module=d["module"], origin=origin, link=d["link"], name=f"Raise a ticket on {s['name']}: {d['title']}")
 
 
@@ -864,7 +864,7 @@ def accept(gid: str, who: str) -> dict:
         raise HTTPException(409, "This group was already written back; it needs a new approval only if its tickets change.")
     if not group_writable(gid, g["members"]):
         raise ItsmError("Nothing can be written back: the tickets' sources are read-only (or paused). An admin, or the person who added a source, "
-                        "allows comments under Service desk › Sources › May do.")
+                        "allows comments under Service desk > Sources > May do.")
     cid = g.get("checkpoint_id")
     c = checkpoints.get(cid) if cid else None
     if not c or c["status"] != "open":

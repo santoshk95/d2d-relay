@@ -1,24 +1,24 @@
 """AI SDLC (build-plan v2, P16): bring a Git repository and a tracker; a change request becomes an approved plan,
 agent development on a branch, generated tests with security and dependency scans, a reviewer agent and a named
-human review, UAT on synthetic data (DemoData), and a release a named approver accepts — one governed AI setup for
+human review, UAT on synthetic data (DemoData), and a release a named approver accepts - one governed AI setup for
 the whole team, audited per request.
 
-Journey Request → Plan → Develop → QA → UAT → Release → Run. A request (from a tracker ticket read through P12's
+Journey Request -> Plan -> Develop -> QA -> UAT -> Release -> Run. A request (from a tracker ticket read through P12's
 Jira adapter or Azure Boards, from a Service desk hand-off, from an Integration analytics / Data observability
 "code fix" work row, from a Self-healing case that needs code, or in plain words) is a folder `output/projects/<id>/`
-with kind `sdlc`: request.md, repo/ (the clone — the agent has git only through `genbi repo`, with the credential
+with kind `sdlc`: request.md, repo/ (the clone - the agent has git only through `genbi repo`, with the credential
 injected per run and never written to disk), repo-index.yaml (languages, test and lint commands, CODEOWNERS,
 contributing notes, conventions), plan.yaml, tests/qa.json, review.yaml, uat/, release.md.
 
-Jobs in the one sequential lane: `sdlc_plan` (LLM: files touched, risks, tests to add, estimate → checkpoint
+Jobs in the one sequential lane: `sdlc_plan` (LLM: files touched, risks, tests to add, estimate -> checkpoint
 `sdlc.plan` for a tech lead), `sdlc_dev` (LLM: small commits on `relay/<id>`; every AI call and file change logged
-against the request), `sdlc_qa` (the repository's own test command in a throwaway container of the right runtime —
+against the request), `sdlc_qa` (the repository's own test command in a throwaway container of the right runtime -
 images present locally only, otherwise recorded as not available; generated tests counted; pip-audit / npm audit
-where present; the regex secret scan always), `sdlc_review` (LLM reviewer → findings → checkpoint `sdlc.review` =
+where present; the regex secret scan always), `sdlc_review` (LLM reviewer -> findings -> checkpoint `sdlc.review` =
 the pull request with test results, for a named human reviewer), UAT (synthetic data through the DemoData recipe
-runner where the change touches data → checkpoint `sdlc.uat`, business sign-off), `sdlc_release` (after checkpoint
+runner where the change touches data -> checkpoint `sdlc.uat`, business sign-off), `sdlc_release` (after checkpoint
 `sdlc.release` with a named approver: the branch is pushed and a pull / merge request opened through the host
-adapter — nothing is merged by Relay; a change record and a roll-back note are written). Run links to Self-healing.
+adapter - nothing is merged by Relay; a change record and a roll-back note are written). Run links to Self-healing.
 Governance: the team's AI setup (provider policy, model, budgets from the existing providers and quotas), the
 policies card (which repositories, who may approve each step, required scans) in `sdlc_settings`, audit per request.
 """
@@ -58,9 +58,9 @@ STAGES = ["request", "plan", "develop", "qa", "uat", "release", "run"]
 STAGE_LABEL = {"request": "Request", "plan": "Plan", "develop": "Develop", "qa": "QA", "uat": "UAT", "release": "Release", "run": "Run"}
 STAGE_OF = {"waiting": "request", "blocked": "request", "planning": "plan", "plan_review": "plan", "developing": "develop", "qa": "qa", "reviewing": "qa", "review": "qa",
             "uat": "uat", "release_review": "release", "releasing": "release", "released": "run", "closed": "run", "error": "develop"}
-STATUS_LABEL = {"waiting": "Waiting to start", "blocked": "Blocked", "planning": "Planning", "plan_review": "Plan — tech lead to approve", "developing": "Developing", "qa": "QA running",
-                "reviewing": "Reviewer agent reading", "review": "Review — named reviewer to approve", "uat": "UAT — business sign-off", "release_review": "Release — approver to accept",
-                "releasing": "Releasing", "released": "Released — pull request open", "closed": "Closed", "error": "Run failed"}
+STATUS_LABEL = {"waiting": "Waiting to start", "blocked": "Blocked", "planning": "Planning", "plan_review": "Plan - tech lead to approve", "developing": "Developing", "qa": "QA running",
+                "reviewing": "Reviewer agent reading", "review": "Review - named reviewer to approve", "uat": "UAT - business sign-off", "release_review": "Release - approver to accept",
+                "releasing": "Releasing", "released": "Released - pull request open", "closed": "Closed", "error": "Run failed"}
 OPEN = ("waiting", "blocked", "planning", "plan_review", "developing", "qa", "reviewing", "review", "uat", "release_review", "releasing", "error")
 TEST_PATH = re.compile(r"(^|/)(tests?|spec|__tests__)(/|$)|(^|/)test_[^/]+\.py$|_test\.(py|go|js|ts)$|\.(test|spec)\.(js|ts|tsx|jsx)$|Test[A-Z]\w*\.java$", re.I)
 DATA_PATH = re.compile(r"\.(sql|dtsx|xaml|dbt|yml|yaml)$|(^|/)(models|pipelines|mappings|etl|dags|migrations|sql)/", re.I)
@@ -93,7 +93,7 @@ def _j(s, default):
 
 
 def _when(t: float | None) -> str:
-    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%Y-%m-%d %H:%M") if t else "—"
+    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%Y-%m-%d %H:%M") if t else "-"
 
 
 def _slug(s: str) -> str:
@@ -344,7 +344,7 @@ def create_request(who: str, repo_id: str | None, title: str, text: str, source:
     rid = "sdlc-" + _slug(title) + "-" + _secrets.token_hex(2)
     extra = ""
     if ticket:
-        extra = f"\n## Ticket {ticket.get('key')} ({ticket.get('source') or 'tracker'})\n\n{ticket.get('title') or ''}\n\n{(ticket.get('description') or '')[:6000]}\n" + (f"\nPriority: {ticket.get('priority')} · reporter: {ticket.get('reporter')}\n" if ticket.get("priority") or ticket.get("reporter") else "")
+        extra = f"\n## Ticket {ticket.get('key')} ({ticket.get('source') or 'tracker'})\n\n{ticket.get('title') or ''}\n\n{(ticket.get('description') or '')[:6000]}\n" + (f"\nPriority: {ticket.get('priority')} - reporter: {ticket.get('reporter')}\n" if ticket.get("priority") or ticket.get("reporter") else "")
     _folder(rid, title, text or (ticket or {}).get("description") or title, who, extra)
     now = time.time()
     db.run("INSERT INTO sdlc_requests (id, repo_id, title, text, source, source_id, ticket_key, ticket_url, status, stage, owner_id, assignees, work, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'waiting', 'request', ?, ?, ?, ?, ?)",
@@ -455,7 +455,7 @@ def _ensure_clone(r: dict, repo_row: dict) -> Path:
 def _index(r: dict, repo_row: dict, clone: Path) -> dict:
     idx = gk.write_index(clone, store.ROOT / r["id"] / "repo-index.yaml")
     db.run("UPDATE sdlc_repos SET index_json = ?, indexed = ?, default_branch = COALESCE(?, default_branch) WHERE id = ?", (json.dumps({k: v for k, v in idx.items() if k != "file"}), time.time(), idx.get("branch"), repo_row["id"]))
-    _log(r["id"], "index", f"Indexed {idx['files']} files: {idx.get('main_language') or 'no code'} · test: {idx.get('test_command') or 'not found'} · lint: {idx.get('lint_command') or 'none'} · CODEOWNERS: {len(idx.get('codeowners') or [])} rule(s)",
+    _log(r["id"], "index", f"Indexed {idx['files']} files: {idx.get('main_language') or 'no code'} - test: {idx.get('test_command') or 'not found'} - lint: {idx.get('lint_command') or 'none'} - CODEOWNERS: {len(idx.get('codeowners') or [])} rule(s)",
          {k: idx.get(k) for k in ("languages", "test_command", "lint_command", "runtime_image", "ci", "conventions")})
     return idx
 
@@ -466,7 +466,7 @@ def _run_env(repo_row: dict) -> dict:
 
 
 def _log_run(rid: str, stage: str, res: dict) -> None:
-    _log(rid, "ai", f"{stage}: {res.get('turns') or 0} turns · ${(res.get('cost_usd') or 0):.2f} · {res.get('model') or ''}" + ("" if res.get("ok", True) else " · failed"),
+    _log(rid, "ai", f"{stage}: {res.get('turns') or 0} turns - ${(res.get('cost_usd') or 0):.2f} - {res.get('model') or ''}" + ("" if res.get("ok", True) else " - failed"),
          {k: res.get(k) for k in ("model", "turns", "cost_usd", "duration_ms", "session_id", "ok")})
 
 
@@ -517,12 +517,12 @@ def planned(rid: str, plan: dict, summary: str = "") -> dict:
     checkpoints.withdraw(KINDS["plan"], rid, who="system")
     files, risks, tests = plan.get("files") or [], plan.get("risks") or [], plan.get("tests") or []
     est = plan.get("estimate") or {}
-    ev = {"summary": plan.get("summary") or "", "items": [f"{f.get('kind', 'modify')} {f.get('path')}: {f.get('change')}" for f in files[:8]] + [f"Risk: {x.get('risk')} — {x.get('mitigation')}" for x in risks[:4]] + [f"Test: {t.get('name')} ({t.get('file')})" for t in tests[:4]],
-          "counts": {"files": len(files), "risks": len(risks), "tests": len(tests), "hours": est.get("hours") or "—"}, "plan": plan, "rows": files,
+    ev = {"summary": plan.get("summary") or "", "items": [f"{f.get('kind', 'modify')} {f.get('path')}: {f.get('change')}" for f in files[:8]] + [f"Risk: {x.get('risk')} - {x.get('mitigation')}" for x in risks[:4]] + [f"Test: {t.get('name')} ({t.get('file')})" for t in tests[:4]],
+          "counts": {"files": len(files), "risks": len(risks), "tests": len(tests), "hours": est.get("hours") or "-"}, "plan": plan, "rows": files,
           "request": {"id": rid, "title": r["title"], "source": r["source"], "ticket": r.get("ticket_key")}, "touches_data": bool(plan.get("touches_data"))}
     cp = checkpoints.open(KINDS["plan"], rid, MODULE, f"Plan: {r['title']}", "plan", ev, link=f"{ROUTE}/{rid}", assignee=_approver("plan", r), agent="Relay", opened_by="agent")
     _set(rid, checkpoint_id=cp["id"])
-    _log(rid, "plan", f"Plan ready: {len(files)} file(s), {len(tests)} test(s), {len(risks)} risk(s), estimate {est.get('hours') or '—'} h — waiting for the tech lead", {"summary": (plan.get("summary") or "")[:300]})
+    _log(rid, "plan", f"Plan ready: {len(files)} file(s), {len(tests)} test(s), {len(risks)} risk(s), estimate {est.get('hours') or '-'} h - waiting for the tech lead", {"summary": (plan.get("summary") or "")[:300]})
     worker.app_note(rid, "sdlc_plan", f"Plan ready: {plan.get('summary') or ''} Waiting for the tech lead's approval.", "ok")
     db.audit("sdlc.planned", rid, {"files": len(files), "tests": len(tests), "risks": len(risks), "summary": summary[:200]}, "agent")
     return _row(rid)
@@ -548,7 +548,7 @@ async def _plan_job(pid: str, args: dict) -> None:
                 break
             if attempt == worker.FIX_ROUNDS:
                 raise RuntimeError(f"plan.yaml still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-            worker.app_note(pid, "sdlc_plan", f"The check found {len(problems)} problem(s) in plan.yaml — Relay is fixing them.", "warn", problems)
+            worker.app_note(pid, "sdlc_plan", f"The check found {len(problems)} problem(s) in plan.yaml - Relay is fixing them.", "warn", problems)
             res = await worker.agent(pid, "sdlc_plan", sdlc_prompts.fix("plan.yaml", problems), worker.TURNS["fix"], "plan", resume=res.get("session_id"), system=sdlc_prompts.SYSTEM)
             _log_run(pid, "plan fix", res)
         planned(pid, load_yaml(d / "plan.yaml"), res.get("text") or "")
@@ -559,7 +559,7 @@ async def _plan_job(pid: str, args: dict) -> None:
         raise
 
 
-worker.register_job("sdlc_plan", _plan_job, status="planning", done="Plan ready — the tech lead approves it", llm=True, turns=80, timeout_s=2400)
+worker.register_job("sdlc_plan", _plan_job, status="planning", done="Plan ready - the tech lead approves it", llm=True, turns=80, timeout_s=2400)
 
 
 # ------------------------------------------------------------------ Develop
@@ -568,7 +568,7 @@ def check_dev(r: dict, clone: Path) -> list[str]:
     out = []
     st = gk.status(clone)
     if st["branch"] != r["branch"]:
-        out.append(f"the clone is on branch {st['branch']}, not {r['branch']} — run `genbi repo branch {r['branch']}`")
+        out.append(f"the clone is on branch {st['branch']}, not {r['branch']} - run `genbi repo branch {r['branch']}`")
     if st["unstaged"] or st["untracked"] or any(st["staged"].values()):
         out.append("changes are not committed: run `genbi repo status` and `genbi repo commit -m \"...\" <paths>` for each change")
     commits = gk.log(clone, 50, since=r["base_sha"]) if r.get("base_sha") else []
@@ -636,7 +636,7 @@ async def _dev_job(pid: str, args: dict) -> None:
                 if any(p.startswith("no commit") for p in problems):
                     raise RuntimeError("The agent made no commit on the branch: " + "; ".join(problems[:3]))
                 break                                   # uncommitted work is committed by the app in developed(); the rest is for the reviewer
-            worker.app_note(pid, "sdlc_dev", f"The check found {len(problems)} problem(s) — Relay is fixing them.", "warn", problems)
+            worker.app_note(pid, "sdlc_dev", f"The check found {len(problems)} problem(s) - Relay is fixing them.", "warn", problems)
             res = await worker.agent(pid, "sdlc_dev", sdlc_prompts.fix("the branch", problems), worker.TURNS["fix"], "develop", resume=res.get("session_id"), system=sdlc_prompts.SYSTEM, env=_run_env(repo_row))
             _log_run(pid, "develop fix", res)
         developed(pid)                                  # queues sdlc_qa: the folder's queued job must stay as enqueue left it
@@ -646,7 +646,7 @@ async def _dev_job(pid: str, args: dict) -> None:
         raise
 
 
-worker.register_job("sdlc_dev", _dev_job, status="developing", done="Developed on a branch — QA runs next", llm=True, turns=150, timeout_s=3600)
+worker.register_job("sdlc_dev", _dev_job, status="developing", done="Developed on a branch - QA runs next", llm=True, turns=150, timeout_s=3600)
 
 
 # ------------------------------------------------------------------ QA: tests in a throwaway container, scans, generated tests
@@ -685,7 +685,7 @@ def container_run(image: str, cmd: str, pid: str, sub: str = "repo", env: dict |
     if api is None:
         return {"status": "skipped", "note": "no container runtime is available to this web app (no Docker socket): not run", "image": image, "cmd": cmd}
     if api.get(f"/images/{image}/json").status_code != 200:
-        return {"status": "skipped", "note": f"runtime image {image} not available locally — pull it on the host to run this step; Relay never pulls images on its own", "image": image, "cmd": cmd}
+        return {"status": "skipped", "note": f"runtime image {image} not available locally - pull it on the host to run this step; Relay never pulls images on its own", "image": image, "cmd": cmd}
     bind = _bind(pid, sub)
     if not bind:
         return {"status": "skipped", "note": "the projects folder has no host path for a bind mount (set HOST_PROJECTS_DIR or D2D_PROJECTS_VOLUME)", "image": image, "cmd": cmd}
@@ -731,7 +731,7 @@ def run_qa(rid: str) -> dict:
         qa["tests"] = {"status": "skipped", "note": "no runtime image is known for this repository's main language"}
     else:
         qa["tests"] = container_run(image, test_cmd, rid, "repo", label="tests")
-    _log(rid, "test", f"Tests ({test_cmd or 'none'}): {qa['tests']['status']}" + (f" — {qa['tests'].get('note')}" if qa["tests"].get("note") else f" in {qa['tests'].get('seconds')} s"), {k: v for k, v in qa["tests"].items() if k != "output"})
+    _log(rid, "test", f"Tests ({test_cmd or 'none'}): {qa['tests']['status']}" + (f" - {qa['tests'].get('note')}" if qa["tests"].get("note") else f" in {qa['tests'].get('seconds')} s"), {k: v for k, v in qa["tests"].items() if k != "output"})
     hits = gk.scan_secrets(clone)
     changed = {f["path"] for f in files}
     qa["secret_scan"] = {"status": "fail" if hits else "pass", "findings": hits[:50], "in_change": [h for h in hits if h["file"] in changed][:50], "scanned": "whole tree"}
@@ -752,7 +752,7 @@ def run_qa(rid: str) -> dict:
                 qa["dependency_scan"]["note"] = "npm audit needs the registry; QA runs without network"
         else:
             qa["dependency_scan"] = {"status": "skipped", "note": "no pip-audit / npm audit target (requirements.txt or package-lock.json) for this repository", "tool": None}
-        _log(rid, "scan", f"Dependency scan ({qa['dependency_scan'].get('tool') or '—'}): {qa['dependency_scan']['status']}" + (f" — {qa['dependency_scan'].get('note')}" if qa["dependency_scan"].get("note") else ""), {k: v for k, v in qa["dependency_scan"].items() if k != "output"})
+        _log(rid, "scan", f"Dependency scan ({qa['dependency_scan'].get('tool') or '-'}): {qa['dependency_scan']['status']}" + (f" - {qa['dependency_scan'].get('note')}" if qa["dependency_scan"].get("note") else ""), {k: v for k, v in qa["dependency_scan"].items() if k != "output"})
     else:
         qa["dependency_scan"] = {"status": "skipped", "note": "dependency scan is off in the policy"}
     if idx.get("lint_command") and image:
@@ -775,7 +775,7 @@ async def _qa_job(pid: str, args: dict) -> None:
     try:
         qa = await asyncio.to_thread(run_qa, pid)
         t = qa["tests"]
-        worker.app_note(pid, "sdlc_qa", f"Tests {t['status']}" + (f" ({t.get('note')})" if t.get("note") else "") + f" · {len(qa['generated_tests'])} test file(s) in the change · secret scan {qa['secret_scan']['status']} · dependencies {qa['dependency_scan']['status']}.",
+        worker.app_note(pid, "sdlc_qa", f"Tests {t['status']}" + (f" ({t.get('note')})" if t.get("note") else "") + f" - {len(qa['generated_tests'])} test file(s) in the change - secret scan {qa['secret_scan']['status']} - dependencies {qa['dependency_scan']['status']}.",
                         "warn" if t["status"] in ("fail", "timeout") or qa["secret_scan"]["in_change"] else "ok")
         d = store.ROOT / pid
         if args.get("review_ready") and (d / "review.yaml").exists():
@@ -790,7 +790,7 @@ async def _qa_job(pid: str, args: dict) -> None:
         raise
 
 
-worker.register_job("sdlc_qa", _qa_job, status="qa", done="QA done — the reviewer agent reads the change next")
+worker.register_job("sdlc_qa", _qa_job, status="qa", done="QA done - the reviewer agent reads the change next")
 
 
 # ------------------------------------------------------------------ Review (the reviewer agent, then a named human)
@@ -825,18 +825,18 @@ def reviewed(rid: str, review: dict, summary: str = "") -> dict:
     checkpoints.withdraw(KINDS["review"], rid, who="system")
     findings = review.get("findings") or []
     t = qa.get("tests") or {}
-    items = [f"Reviewer agent: {review.get('verdict', '').replace('_', ' ')} — {review.get('summary') or ''}",
-             f"Tests ({t.get('cmd') or 'repository command'}): {t.get('status')}" + (f" — {t.get('note')}" if t.get("note") else ""),
-             f"Generated tests: {len(qa.get('generated_tests') or [])} file(s) · secret scan: {(qa.get('secret_scan') or {}).get('status')} ({len((qa.get('secret_scan') or {}).get('in_change') or [])} in this change) · dependencies: {(qa.get('dependency_scan') or {}).get('status')}",
+    items = [f"Reviewer agent: {review.get('verdict', '').replace('_', ' ')} - {review.get('summary') or ''}",
+             f"Tests ({t.get('cmd') or 'repository command'}): {t.get('status')}" + (f" - {t.get('note')}" if t.get("note") else ""),
+             f"Generated tests: {len(qa.get('generated_tests') or [])} file(s) - secret scan: {(qa.get('secret_scan') or {}).get('status')} ({len((qa.get('secret_scan') or {}).get('in_change') or [])} in this change) - dependencies: {(qa.get('dependency_scan') or {}).get('status')}",
              f"{len(qa.get('commits') or [])} commit(s), {len(qa.get('files') or [])} file(s) on {r.get('branch')} from {r.get('base')}"]
     rows = [{"file": x.get("file") or "", "line": x.get("line") or "", "severity": x.get("severity"), "finding": x.get("text"), "fix": x.get("fix") or ""} for x in findings]
-    ev = {"summary": f"Pull request: {r['title']} ({r.get('branch')} → {r.get('base')})", "items": items, "counts": {"findings": len(findings), "high": sum(1 for x in findings if x.get("severity") == "high"), "tests": t.get("status") or "—", "files": len(qa.get("files") or [])},
+    ev = {"summary": f"Pull request: {r['title']} ({r.get('branch')} {r.get('base')})", "items": items, "counts": {"findings": len(findings), "high": sum(1 for x in findings if x.get("severity") == "high"), "tests": t.get("status") or "-", "files": len(qa.get("files") or [])},
           "columns": ["file", "line", "severity", "finding", "fix"], "rows": rows, "review": review, "qa": {k: v for k, v in qa.items() if k not in ("tests",)} | {"tests": {k: v for k, v in t.items() if k != "output"}},
           "pr": {"title": r["title"], "head": r.get("branch"), "base": r.get("base"), "files": qa.get("files"), "commits": qa.get("commits")}, "request": {"id": rid, "title": r["title"]}}
     cp = checkpoints.open(KINDS["review"], rid, MODULE, f"Review the pull request: {r['title']}", "table", ev, link=f"{ROUTE}/{rid}", assignee=_approver("review", r), agent="Relay reviewer", opened_by="agent")
     _set(rid, checkpoint_id=cp["id"])
-    _log(rid, "review", f"Reviewer agent: {review.get('verdict')} with {len(findings)} finding(s) — the named reviewer decides", {"summary": (review.get("summary") or "")[:300], "verdict": review.get("verdict")})
-    worker.app_note(rid, "sdlc_review", f"Reviewer agent: {review.get('verdict', '').replace('_', ' ')} — {review.get('summary') or ''} Waiting for the named reviewer.", "ok" if review.get("verdict") == "approve" else "warn")
+    _log(rid, "review", f"Reviewer agent: {review.get('verdict')} with {len(findings)} finding(s) - the named reviewer decides", {"summary": (review.get("summary") or "")[:300], "verdict": review.get("verdict")})
+    worker.app_note(rid, "sdlc_review", f"Reviewer agent: {review.get('verdict', '').replace('_', ' ')} - {review.get('summary') or ''} Waiting for the named reviewer.", "ok" if review.get("verdict") == "approve" else "warn")
     db.audit("sdlc.reviewed", rid, {"verdict": review.get("verdict"), "findings": len(findings), "summary": summary[:200]}, "agent")
     return _row(rid)
 
@@ -865,7 +865,7 @@ async def _review_job(pid: str, args: dict) -> None:
         raise
 
 
-worker.register_job("sdlc_review", _review_job, status="reviewing", done="Reviewed — a named reviewer approves the pull request", llm=True, turns=60, timeout_s=1800)
+worker.register_job("sdlc_review", _review_job, status="reviewing", done="Reviewed - a named reviewer approves the pull request", llm=True, turns=60, timeout_s=1800)
 
 
 # ------------------------------------------------------------------ UAT on synthetic data
@@ -886,7 +886,7 @@ def start_uat(rid: str, who: str) -> dict:
                 _log(rid, "uat", f"Synthetic data generated: {len(s['tables'])} table(s), {s['rows']:,} rows (DemoData recipe, no real data)", {"tables": [t["table"] for t in s["tables"]]})
                 if idx.get("test_command") and idx.get("runtime_image"):
                     uat["tests"] = container_run(idx["runtime_image"], idx["test_command"], rid, "repo", env={"RELAY_UAT_DATA": "/work/../uat/data"}, label="uat")
-                    _log(rid, "uat", f"Tests on the synthetic data: {uat['tests']['status']}" + (f" — {uat['tests'].get('note')}" if uat["tests"].get("note") else ""), {k: v for k, v in uat["tests"].items() if k != "output"})
+                    _log(rid, "uat", f"Tests on the synthetic data: {uat['tests']['status']}" + (f" - {uat['tests'].get('note')}" if uat["tests"].get("note") else ""), {k: v for k, v in uat["tests"].items() if k != "output"})
             except datagen.RecipeError as e:
                 uat["data"] = {"error": str(e)[:400]}
                 _log(rid, "uat", f"The synthetic-data recipe has problems: {str(e)[:200]}")
@@ -897,14 +897,14 @@ def start_uat(rid: str, who: str) -> dict:
     rows = [{"table": t["table"], "rows": t["rows"], "file": t["file"]} for t in ((uat["data"] or {}).get("tables") or [])]
     items = [f"Step {i + 1}: {s}" for i, s in enumerate(uat["steps"][:8])]
     if uat["data"] and uat["data"].get("tables"):
-        items.insert(0, f"Synthetic data: {len(rows)} table(s), {uat['data']['rows']:,} rows — no real personal data")
+        items.insert(0, f"Synthetic data: {len(rows)} table(s), {uat['data']['rows']:,} rows - no real personal data")
     elif uat["data"] and uat["data"].get("error"):
         items.insert(0, f"Synthetic data: {uat['data']['error']}")
     else:
         items.insert(0, "The change touches no data: sign off on the steps below against the plan's acceptance criteria")
     if uat["tests"]:
-        items.append(f"Tests on the synthetic data: {uat['tests']['status']}" + (f" — {uat['tests'].get('note')}" if uat["tests"].get("note") else ""))
-    ev = {"summary": f"UAT: {r['title']} — business sign-off", "items": items, "counts": {"steps": len(uat["steps"]), "tables": len(rows), "rows": (uat["data"] or {}).get("rows") or 0},
+        items.append(f"Tests on the synthetic data: {uat['tests']['status']}" + (f" - {uat['tests'].get('note')}" if uat["tests"].get("note") else ""))
+    ev = {"summary": f"UAT: {r['title']} - business sign-off", "items": items, "counts": {"steps": len(uat["steps"]), "tables": len(rows), "rows": (uat["data"] or {}).get("rows") or 0},
           "columns": ["table", "rows", "file"], "rows": rows, "uat": uat, "request": {"id": rid, "title": r["title"]}}
     cp = checkpoints.open(KINDS["uat"], rid, MODULE, f"UAT sign-off: {r['title']}", "table", ev, link=f"{ROUTE}/{rid}", assignee=_approver("uat", r), agent="Relay", opened_by=who)
     _set(rid, checkpoint_id=cp["id"])
@@ -935,9 +935,9 @@ def start_release(rid: str, who: str) -> dict:
     _set(rid, status="release_review", stage="release", note=None)
     checkpoints.withdraw(KINDS["release"], rid, who="system")
     commits = qa.get("commits") or []
-    ev = {"summary": f"Release {r['title']}: push {r.get('branch')} and open a pull request against {r.get('base')} — nothing is merged by Relay",
-          "items": [f"{len(commits)} commit(s), {len(qa.get('files') or [])} file(s)", f"Tests: {(qa.get('tests') or {}).get('status')} · secret scan: {(qa.get('secret_scan') or {}).get('status')} · dependencies: {(qa.get('dependency_scan') or {}).get('status')}",
-                    f"Reviewer agent: {(r.get('review') or {}).get('verdict', '—')} · human review and UAT accepted", f"Roll back: {(r.get('plan') or {}).get('rollback') or 'revert the merge commit'}"],
+    ev = {"summary": f"Release {r['title']}: push {r.get('branch')} and open a pull request against {r.get('base')} - nothing is merged by Relay",
+          "items": [f"{len(commits)} commit(s), {len(qa.get('files') or [])} file(s)", f"Tests: {(qa.get('tests') or {}).get('status')} - secret scan: {(qa.get('secret_scan') or {}).get('status')} - dependencies: {(qa.get('dependency_scan') or {}).get('status')}",
+                    f"Reviewer agent: {(r.get('review') or {}).get('verdict', '-')} - human review and UAT accepted", f"Roll back: {(r.get('plan') or {}).get('rollback') or 'revert the merge commit'}"],
           "counts": {"commits": len(commits), "files": len(qa.get("files") or [])}, "request": {"id": rid, "title": r["title"]}, "approver": approver}
     cp = checkpoints.open(KINDS["release"], rid, MODULE, f"Release: {r['title']}", "text", ev, link=f"{ROUTE}/{rid}", assignee=approver, agent="Relay", opened_by=who)
     _set(rid, checkpoint_id=cp["id"])
@@ -949,14 +949,14 @@ def start_release(rid: str, who: str) -> dict:
 def _change_record(r: dict, pr: dict, push: dict, who: str) -> str:
     plan, qa, review, uat = r.get("plan") or {}, r.get("qa") or {}, r.get("review") or {}, r.get("uat") or {}
     decisions = db.q("SELECT kind, name, decided_by, decided, comment FROM checkpoints WHERE subject = ? AND status = 'accepted' ORDER BY decided", (r["id"],))
-    lines = [f"# Change record — {r['title']}", "", f"Request {r['id']} · source {r['source']}" + (f" · ticket {r['ticket_key']}" if r.get("ticket_key") else ""), f"Repository {_repo(r['repo_id'])['name']} · branch {r.get('branch')} → {r.get('base')} · pull request {pr.get('url')} (#{pr.get('number')}) — opened, not merged", "",
+    lines = [f"# Change record - {r['title']}", "", f"Request {r['id']} - source {r['source']}" + (f" - ticket {r['ticket_key']}" if r.get("ticket_key") else ""), f"Repository {_repo(r['repo_id'])['name']} - branch {r.get('branch')} {r.get('base')} - pull request {pr.get('url')} (#{pr.get('number')}) - opened, not merged", "",
              "## What changed", "", plan.get("summary") or "", "", "### Files", ""] + [f"- {f.get('status')} {f.get('path')}" for f in qa.get("files") or []] + ["", "### Commits", ""] + [f"- {c.get('sha')} {c.get('message')}" for c in qa.get("commits") or []]
-    lines += ["", "## Proof", "", f"- Tests: {(qa.get('tests') or {}).get('status')}" + (f" — {(qa.get('tests') or {}).get('note')}" if (qa.get("tests") or {}).get("note") else ""), f"- Generated tests: {len(qa.get('generated_tests') or [])} file(s)",
+    lines += ["", "## Proof", "", f"- Tests: {(qa.get('tests') or {}).get('status')}" + (f" - {(qa.get('tests') or {}).get('note')}" if (qa.get("tests") or {}).get("note") else ""), f"- Generated tests: {len(qa.get('generated_tests') or [])} file(s)",
               f"- Secret scan: {(qa.get('secret_scan') or {}).get('status')} ({len((qa.get('secret_scan') or {}).get('findings') or [])} finding(s) in the tree, {len((qa.get('secret_scan') or {}).get('in_change') or [])} in the change)",
-              f"- Dependency scan: {(qa.get('dependency_scan') or {}).get('status')}" + (f" — {(qa.get('dependency_scan') or {}).get('note')}" if (qa.get("dependency_scan") or {}).get("note") else ""),
-              f"- Reviewer agent: {review.get('verdict')} — {review.get('summary') or ''} ({len(review.get('findings') or [])} finding(s))",
+              f"- Dependency scan: {(qa.get('dependency_scan') or {}).get('status')}" + (f" - {(qa.get('dependency_scan') or {}).get('note')}" if (qa.get("dependency_scan") or {}).get("note") else ""),
+              f"- Reviewer agent: {review.get('verdict')} - {review.get('summary') or ''} ({len(review.get('findings') or [])} finding(s))",
               f"- UAT: {len(uat.get('steps') or [])} step(s)" + (f", synthetic data {len((uat.get('data') or {}).get('tables') or [])} table(s)" if (uat.get("data") or {}).get("tables") else ""), "", "## Approvals", ""]
-    lines += [f"- {c['name']} — {(db.user(c['decided_by']) or {}).get('name') or c['decided_by']} at {_when(c['decided'])}" + (f" ({c['comment']})" if c.get("comment") else "") for c in decisions]
+    lines += [f"- {c['name']} - {(db.user(c['decided_by']) or {}).get('name') or c['decided_by']} at {_when(c['decided'])}" + (f" ({c['comment']})" if c.get("comment") else "") for c in decisions]
     lines += [f"- Released by {(db.user(who) or {}).get('name') or who} at {_when(time.time())}", "", "## Roll back", "", plan.get("rollback") or "Revert the merge commit; the branch stays for reference.",
               "", f"The pull request is open on the host for the team to merge; Relay never merges. Branch head {push.get('head', '')[:12]}.", ""]
     return "\n".join(lines)
@@ -974,9 +974,9 @@ async def _release_job(pid: str, args: dict) -> None:
         push = await asyncio.to_thread(gk.push, clone, r["branch"], "origin", host.creds())
         _log(pid, "git", f"Pushed {push['branch']} ({push['head'][:8]}) to {push['remote']}", push, who)
         body = f"{(r.get('plan') or {}).get('summary') or ''}\n\nOpened by Relay for change request {pid} ({r['source']}" + (f", ticket {r['ticket_key']}" if r.get("ticket_key") else "") + \
-               f").\n\nTests: {((r.get('qa') or {}).get('tests') or {}).get('status')} · secret scan: {((r.get('qa') or {}).get('secret_scan') or {}).get('status')} · reviewer agent: {(r.get('review') or {}).get('verdict')}.\n\nRoll back: {(r.get('plan') or {}).get('rollback') or 'revert the merge commit'}."
+               f").\n\nTests: {((r.get('qa') or {}).get('tests') or {}).get('status')} - secret scan: {((r.get('qa') or {}).get('secret_scan') or {}).get('status')} - reviewer agent: {(r.get('review') or {}).get('verdict')}.\n\nRoll back: {(r.get('plan') or {}).get('rollback') or 'revert the merge commit'}."
         pr = await asyncio.to_thread(host.open_pr, r["branch"], r.get("base") or repo_row["default_branch"], f"{r['title']} (Relay {pid})", body)
-        _log(pid, "release", f"Pull request #{pr.get('number')} opened: {pr.get('url')} — not merged", pr, who)
+        _log(pid, "release", f"Pull request #{pr.get('number')} opened: {pr.get('url')} - not merged", pr, who)
         record = _change_record(r, pr, push, who)
         (store.ROOT / pid / "release.md").write_text(record, encoding="utf-8")
         rel = {"pushed": push, "pr": pr, "who": who, "when": time.time(), "change_record": "release.md", "rollback": (r.get("plan") or {}).get("rollback"), "merged": False}
@@ -990,7 +990,7 @@ async def _release_job(pid: str, args: dict) -> None:
         db.audit("sdlc.released", pid, {"pr": pr, "branch": r["branch"], "head": push["head"]}, who)
         for uid in {who, r.get("owner_id")}:
             if uid and db.user(uid):
-                notify.add(uid, "build", f"Pull request open: {r['title']}", f"#{pr.get('number')} on {repo_row['name']} — not merged by Relay.", f"{ROUTE}/{pid}")
+                notify.add(uid, "build", f"Pull request open: {r['title']}", f"#{pr.get('number')} on {repo_row['name']} - not merged by Relay.", f"{ROUTE}/{pid}")
         store.update(pid, status="released", job=None, error=None)
     except Exception as e:
         _set(pid, status="error", stage="release", note=str(e)[:300])
@@ -998,7 +998,7 @@ async def _release_job(pid: str, args: dict) -> None:
         raise
 
 
-worker.register_job("sdlc_release", _release_job, status="releasing", done="Released — the pull request is open")
+worker.register_job("sdlc_release", _release_job, status="releasing", done="Released - the pull request is open")
 
 
 # ------------------------------------------------------------------ the pull request link back on the ticket (consolidation)
@@ -1012,7 +1012,7 @@ WRITEBACK_KIND = "sdlc.writeback"
 def _writeback_text(r: dict, pr: dict) -> str:
     qa = r.get("qa") or {}
     return (f"Relay opened pull request #{pr.get('number')} for this ticket: {pr.get('url')}\n\n"
-            f"{r['title']} — tests {((qa.get('tests') or {}).get('status')) or 'not run'}, secret scan {((qa.get('secret_scan') or {}).get('status')) or '—'}, "
+            f"{r['title']} - tests {((qa.get('tests') or {}).get('status')) or 'not run'}, secret scan {((qa.get('secret_scan') or {}).get('status')) or '-'}, "
             "reviewed by the reviewer agent and a named reviewer, UAT signed off, release approved. Relay does not merge: the team merges it.")
 
 
@@ -1039,14 +1039,14 @@ def request_writeback(rid: str, who: str | None) -> dict | None:
         except itsm.ItsmError as e:
             out.update(status="not_allowed", note=str(e)[:300])
     else:                                                    # Azure Boards: this module's own checkpoint for exactly the comment
-        ev = {"summary": f"A comment on Azure Boards work item {r['ticket_key']} with the pull request link — exactly this is written, once, after you accept.",
+        ev = {"summary": f"A comment on Azure Boards work item {r['ticket_key']} with the pull request link - exactly this is written, once, after you accept.",
               "items": [f"Work item: {r['ticket_key']}", f"Comment: {text[:200]}"], "columns": ["What", "Will be written"], "rows": [["Work item", r["ticket_key"]], ["Comment", text]],
               "text": text, "request": {"id": rid, "title": r["title"]}}
         cp = checkpoints.open(WRITEBACK_KIND, rid, MODULE, f"Pull request link on work item {r['ticket_key']}: {r['title']}"[:200], "table", ev, link=f"{ROUTE}/{rid}",
                               assignee=approver, agent="Relay", opened_by=who)
         out.update(status="waiting", checkpoint=cp["id"], source="Azure Boards")
     _set(rid, release={**rel, "writeback": out})
-    _log(rid, "release", f"Pull request link on {r['ticket_key']}: " + ("waiting for a named approval" if out["status"] == "waiting" else f"not written — {out.get('note')}"),
+    _log(rid, "release", f"Pull request link on {r['ticket_key']}: " + ("waiting for a named approval" if out["status"] == "waiting" else f"not written - {out.get('note')}"),
          {k: out.get(k) for k in ("status", "tracker", "checkpoint", "note")}, who)
     db.audit("sdlc.writeback.requested", rid, {k: out.get(k) for k in ("status", "tracker", "ticket", "checkpoint")}, who)
     return out

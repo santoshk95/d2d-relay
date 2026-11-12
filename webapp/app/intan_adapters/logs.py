@@ -1,6 +1,6 @@
-"""System logs — lines from a log collector (the mock lab's HTTP endpoint) or files on disk, read for the jobs and
+"""System logs - lines from a log collector (the mock lab's HTTP endpoint) or files on disk, read for the jobs and
 transfers they record: `job=<name> status=<ok|failed> src="<system>" dst="<system>" [kind=file|refresh|job]
-[rows=N] [ms=N] [owner="…"] [file=…] [error="…"]` as key=value tokens on a timestamped line. What only the logs
+[rows=N] [ms=N] [owner="..."] [file=...] [error="..."]` as key=value tokens on a timestamped line. What only the logs
 know about (no inventory, no owner) is exactly what Integration analytics flags."""
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ def discover(cfg: dict, secrets: dict, now: float | None = None) -> dict:
             systems[s] = {"name": s, "kind": "system"}
         if key not in integ:
             what = {"file": "export", "refresh": "refresh", "job": p["job"]}.get(kind, p["job"])
-            integ[key] = {"ext_id": key, "name": p.get("name") or f"{p['src']} → {p['dst']} {what}", "kind": {"file": "File", "refresh": "Refresh"}.get(kind, "Job"), "via": p.get("via") or p["dst"] if kind == "refresh" else p.get("via"),
+            integ[key] = {"ext_id": key, "name": p.get("name") or f"{p['src']} {p['dst']} {what}", "kind": {"file": "File", "refresh": "Refresh"}.get(kind, "Job"), "via": p.get("via") or p["dst"] if kind == "refresh" else p.get("via"),
                           "from_system": p["src"], "to_system": p["dst"], "schedule": p.get("schedule") or "Unknown", "owner": p.get("owner"), "feeds": [p["dataset"]] if p.get("dataset") else [],
                           "properties": {"found_in": f"{p['src']} logs" if kind != "refresh" else f"{p['dst']} gateway logs", "host": p.get("host"), "file": p.get("file"), "runs": 0}}
             out["integrations"].append(integ[key])

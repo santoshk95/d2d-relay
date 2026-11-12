@@ -35,7 +35,7 @@ class Teamcenter(SysAdapter):
     signin = ["password"]
     fields = [("base_url", "Teamcenter web tier (https://<host>)", True), ("user", "User", True), ("group", "Group", False), ("role", "Role", False)]
     secrets = {"password": ["password"]}
-    ENTITIES = {"part": ("Item", "Items (the Item... saved query) — keyed by item id"), "change": ("EPMJob", "Workflow processes")}
+    ENTITIES = {"part": ("Item", "Items (the Item... saved query) - keyed by item id"), "change": ("EPMJob", "Workflow processes")}
     CREATES = ("part",)
     JOBS = "Workflow processes"
 
@@ -67,7 +67,7 @@ class Teamcenter(SysAdapter):
         found = self._call(api, "Query-2010-04-SavedQuery/findSavedQueries", {"inputCriteria": [{"queryNames": [name], "queryDescs": [], "queryType": 0}]})
         q = (found.get("savedQueries") or [None])[0]
         if not q:
-            raise connectors.ConnectorError(f"Teamcenter has no saved query “{name}”.")
+            raise connectors.ConnectorError(f"Teamcenter has no saved query \"{name}\".")
         entry = "Item ID" if name == "Item..." else "Status"
         res = self._call(api, "Query-2008-06-SavedQuery/executeSavedQueries", {"input": [{"query": q, "entries": [entry], "values": ["*"], "maxNumToReturn": 0, "limitList": [],
                                                                                           "resultsType": 0}]})
@@ -136,9 +136,9 @@ class Windchill(SysAdapter):
     simulator = "windchill"
     docs = "https://support.ptc.com/help/wnc/r13.0.0.0/en/#page/Windchill_Help_Center/WCRESTOverview.html"
     signin = ["password"]
-    fields = [("base_url", "Windchill server (https://<host>)", True), ("username", "User", True), ("container", "Product context (Containers('OR:…'))", True)]
+    fields = [("base_url", "Windchill server (https://<host>)", True), ("username", "User", True), ("container", "Product context (Containers('OR:...'))", True)]
     secrets = {"password": ["password"]}
-    ENTITIES = {"part": ("Parts", "Parts (ProdMgmt) — keyed by part number"), "change": ("ChangeNotices", "Change notices (ChangeMgmt)")}
+    ENTITIES = {"part": ("Parts", "Parts (ProdMgmt) - keyed by part number"), "change": ("ChangeNotices", "Change notices (ChangeMgmt)")}
     CREATES = ("part",)
     JOBS = "Workflow work items"
 

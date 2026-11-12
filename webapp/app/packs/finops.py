@@ -1,10 +1,10 @@
-"""Cost & licence optimisation (registry id `finops`) — what the licences and the cloud cost, what is not used, what
+"""Cost & licence optimisation (registry id `finops`) - what the licences and the cloud cost, what is not used, what
 could be smaller, and a savings plan a named person approves; as a consulting engagement.
 
-Engagement  Inventory → Findings → Savings → Approve → Act.
+Engagement  Inventory -> Findings -> Savings -> Approve -> Act.
 Inventory   the exports a person uploads, recognised by their own columns: Microsoft 365's Active users report, the
             Power BI activity log, UiPath Orchestrator's robot licences, Azure Cost Management's cost details and
-            Azure Monitor's CPU averages, Snowflake's warehouse metering, SHOW WAREHOUSES and load history — and the
+            Azure Monitor's CPU averages, Snowflake's warehouse metering, SHOW WAREHOUSES and load history - and the
             tenant's own price list (contract prices: what the platform cannot know). Plus Relay's own AI cost from
             its usage records. Every line in each tool's own terms; a person keeps or drops lines.
 Findings    rules first, with the person's thresholds (the wizard): licences not used for N days as of the exports'
@@ -12,8 +12,8 @@ Findings    rules first, with the person's thresholds (the wizard): licences not
             columns); resources whose average utilisation is below the threshold with a smaller size in the price
             list (VMs: the price difference; warehouses: the credits saved by the size's credits per hour);
             resources that are idle (under 1 %): their whole cost. Each finding with its evidence; a saving only
-            where the price list gives the prices — otherwise the person enters it with its source.
-Savings     the savings plan — actions, monthly and yearly savings — and the savings plan document through the
+            where the price list gives the prices - otherwise the person enters it with its source.
+Savings     the savings plan - actions, monthly and yearly savings - and the savings plan document through the
             P11 docs engine, every figure sourced.
 Approve     the named approver approves the plan (nothing is changed by Relay).
 Act         each approved action goes to the people who make the change: a ticket through the service desk's own
@@ -42,8 +42,8 @@ KINDS = {"unused": "Unused licences", "rightsize": "Smaller size", "idle": "Idle
 class ExportsPlatform(wb.FilesPlatform):
     label = "Licence and cloud-cost exports"
     uploads = (".csv", ".xlsx")
-    reads = ("exports you upload — Microsoft 365 Active users, the Power BI activity log, UiPath robot licences, Azure cost details and CPU, Snowflake "
-             "metering, warehouses and load — and your price list; plus Relay's own AI cost. Copies in this work item's folder; nothing is changed anywhere")
+    reads = ("exports you upload - Microsoft 365 Active users, the Power BI activity log, UiPath robot licences, Azure cost details and CPU, Snowflake "
+             "metering, warehouses and load - and your price list; plus Relay's own AI cost. Copies in this work item's folder; nothing is changed anywhere")
     simulator = "tests/mocklab/finops_sim.py: the exports in each tool's own columns, with unused licences and oversized resources planted"
 
 
@@ -196,9 +196,9 @@ def inventory(ctx: wb.Ctx) -> dict:
     recs = cx.keep_edits(ctx, lines, ("include",))
     if not [x for x in lines if x["kind"] != "platform"]:
         raise wb.StepFailed("None of the uploads is a licence or cloud-cost export Relay recognises" + (f" ({', '.join(ex['unknown'])})" if ex["unknown"] else "")
-                            + ": upload Microsoft 365 Active users, the Power BI activity log, UiPath robots, Azure cost details, Snowflake metering — and your price list.")
+                            + ": upload Microsoft 365 Active users, the Power BI activity log, UiPath robots, Azure cost details, Snowflake metering - and your price list.")
     return {"summary": f"{sum(1 for x in lines if x['kind'] == 'licence')} licence line(s), {sum(1 for x in lines if x['kind'] in ('resource', 'warehouse'))} resource(s) and Relay's AI cost, "
-                       f"as of {rec['as_of_day']}" + (f"; not recognised: {', '.join(ex['unknown'])}" if ex["unknown"] else "") + (" — no price list, so no saving can be priced" if not ex["prices"] else "") + ".",
+                       f"as of {rec['as_of_day']}" + (f"; not recognised: {', '.join(ex['unknown'])}" if ex["unknown"] else "") + (" - no price list, so no saving can be priced" if not ex["prices"] else "") + ".",
             "counts": {"licences": sum(x["count"] for x in lines if x["kind"] == "licence"), "resources": sum(1 for x in lines if x["kind"] in ("resource", "warehouse"))}, "records": recs,
             "data": {"columns": ["Keep", "Kind", "Item", "Count", "Monthly cost", "Utilisation %", "From"],
                      "rows": [["yes" if x.get("include") else "no", x["kind"], x["item"], x["count"], x.get("monthly"), x.get("utilisation"), x["from"]] for x in recs]}}
@@ -226,7 +226,7 @@ def findings(ctx: wb.Ctx) -> dict:
                 price = x.get("unit_price")
                 found.append({"id": f"unused-{x['id']}", "kind": "unused", "item": x["item"], "count": len(idle),
                               "what": f"Remove {len(idle)} unused {x['item']} licence(s)", "evidence": f"{len(idle)} of {x['count']} holders show no activity in {cx.num(idle_days)} days as of the exports' date",
-                              "who": ", ".join(h["who"] for h in idle[:12]) + (" …" if len(idle) > 12 else ""),
+                              "who": ", ".join(h["who"] for h in idle[:12]) + (" ..." if len(idle) > 12 else ""),
                               "saving": round(len(idle) * price, 2) if price is not None else None, "saving_source": f"price list: {x['item']} at {cx.num(price, 2)} per month × {len(idle)}" if price is not None else "",
                               "currency": x.get("currency") or ""})
         elif x["kind"] == "resource" and x.get("utilisation") is not None:
@@ -251,18 +251,18 @@ def findings(ctx: wb.Ctx) -> dict:
                 saving = round(x["credits_month"] * (1 - small["cph"] / cur["cph"]) * credit["price"], 2)
             found.append({"id": f"size-{x['id']}", "kind": "rightsize", "item": x["item"], "count": 1, "what": f"Resize {x['item']} from {x.get('size')} to {(small or {}).get('product') or 'a smaller size'}",
                           "evidence": f"average running {cx.num(x['utilisation'], 1)} % of the time over {x.get('days')} days (threshold {cx.num(low)} %)", "saving": saving,
-                          "saving_source": (f"{cx.num(x['credits_month'], 2)} credits a month × (1 − {cx.num(small['cph'])} ÷ {cx.num(cur['cph'])} credits per hour) × "
+                          "saving_source": (f"{cx.num(x['credits_month'], 2)} credits a month × (1 - {cx.num(small['cph'])} ÷ {cx.num(cur['cph'])} credits per hour) × "
                                             f"{cx.num(credit['price'], 2)} per credit, from the price list") if saving is not None else "", "currency": (credit or {}).get("currency") or ""})
     for f in found:
         f.update(decision="keep", origin="relay")
     recs = cx.keep_edits(ctx, found, ("decision", "saving", "saving_source"))
     priced = [r for r in recs if r.get("saving") not in (None, "")]
     return {"summary": f"{len(recs)} finding(s): {sum(1 for r in recs if r['kind'] == 'unused')} on unused licences, {sum(1 for r in recs if r['kind'] == 'rightsize')} on sizes, "
-                       f"{sum(1 for r in recs if r['kind'] == 'idle')} idle — {len(priced)} priced from your price list. Keep or ignore each; enter a saving with its source where Relay has no price.",
+                       f"{sum(1 for r in recs if r['kind'] == 'idle')} idle - {len(priced)} priced from your price list. Keep or ignore each; enter a saving with its source where Relay has no price.",
             "counts": {"findings": len(recs), "priced": len(priced)}, "records": recs,
             "items": [f"{r['what']}: {r['evidence']}" for r in recs][:8],
             "data": {"columns": ["Kind", "Finding", "Evidence", "Saving per month", "Where the saving comes from"],
-                     "rows": [[KINDS.get(r["kind"], r["kind"]), r["what"], r["evidence"], r.get("saving"), r.get("saving_source") or "—"] for r in recs]}}
+                     "rows": [[KINDS.get(r["kind"], r["kind"]), r["what"], r["evidence"], r.get("saving"), r.get("saving_source") or "-"] for r in recs]}}
 
 
 def _find_validate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
@@ -272,7 +272,7 @@ def _find_validate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
             continue
         s = r.get("saving")
         if s in (None, ""):
-            probs.append(f"{r['what']}: Relay has no price for it — enter the saving per month and where it comes from, or ignore it.")
+            probs.append(f"{r['what']}: Relay has no price for it - enter the saving per month and where it comes from, or ignore it.")
             continue
         try:
             if float(s) < 0:
@@ -307,9 +307,9 @@ def savings(ctx: wb.Ctx) -> dict:
     p2, f2 = cx.say("Unused licences {u}, smaller sizes {r}, idle resources {i} a month.", u=(rec["by_kind"]["unused"], f"{S}#by_kind.unused", f"money:{cur}"),
                     r=(rec["by_kind"]["rightsize"], f"{S}#by_kind.rightsize", f"money:{cur}"), i=(rec["by_kind"]["idle"], f"{S}#by_kind.idle", f"money:{cur}"))
     day = cx.iso_day(time.time())
-    doc = {"kind": "doc", "title": f"Savings plan: {ctx.title}"[:70], "subtitle": f"Cost & licence optimisation · {day}", "audience": "the budget holder and the approver", "date": day,
+    doc = {"kind": "doc", "title": f"Savings plan: {ctx.title}"[:70], "subtitle": f"Cost & licence optimisation - {day}", "audience": "the budget holder and the approver", "date": day,
            "sections": [{"title": "The savings", "blocks": [{"kind": "paragraph", "text": p1, "figures": f1}, {"kind": "paragraph", "text": p2, "figures": f2}] + nv.blocks(ctx, "In short")},
-                        {"title": "The actions", "blocks": [{"kind": "table", "table": cx.table(["Kind", "Action", "Evidence", "Saving per month", "Where the saving comes from"], ch or [["—"] * 5],
+                        {"title": "The actions", "blocks": [{"kind": "table", "table": cx.table(["Kind", "Action", "Evidence", "Saving per month", "Where the saving comes from"], ch or [["-"] * 5],
                                                                                               f"{S}#rows", "Each action with its evidence and the source of its saving")} for ch in cx.chunks(rec["rows"])]},
                         {"title": "Method", "blocks": [{"kind": "bullets", "bullets": ["Licences: not used for the number of days the engagement set, as of the exports' own date.",
                                                                                       "Sizes: average utilisation under the engagement's threshold, priced at the next smaller size of your price list.",
@@ -319,7 +319,7 @@ def savings(ctx: wb.Ctx) -> dict:
     gates = [a["gate"], ctx.proof("sourced", label="Every figure of the plan resolves to the savings record", figures=[{"label": x["text"], "value": x["value"], "source": x["source"]} for x in f1 + f2])]
     ctx.put("summary", {"monthly": month, "yearly": rec["yearly"], "currency": cur, "actions": len(acts), "when": time.time()})
     ok = a["ok"] and gates[-1]["status"] == "pass"
-    return {"summary": (f"{len(acts)} action(s), {cx.money(month, cur)} a month — the savings plan passes every check." if ok else "The savings plan did not pass its checks: " + "; ".join(a["problems"][:3])),
+    return {"summary": (f"{len(acts)} action(s), {cx.money(month, cur)} a month - the savings plan passes every check." if ok else "The savings plan did not pass its checks: " + "; ".join(a["problems"][:3])),
             "ok": ok, "counts": {"actions": len(acts), "monthly": month}, "data": {"checks": gates}}
 
 
@@ -328,7 +328,7 @@ def approve(ctx: wb.Ctx) -> dict:
     cur = rec.get("currency") or ""
     return {"summary": f"Approve the savings plan: {rec.get('count', 0)} action(s), {cx.money(rec.get('monthly', 0), cur)} a month. Relay changes nothing: approved actions go to the people who make the change.",
             "data": {"items": [{"title": a["what"], "detail": a["evidence"], "effort": cx.money(a["saving"], cur) + " a month"} for a in rec.get("actions") or []],
-                     "total": f"{cx.money(rec.get('monthly', 0), cur)} a month · {cx.money(rec.get('yearly', 0), cur)} a year", "note": "The savings plan document is in the outputs."}}
+                     "total": f"{cx.money(rec.get('monthly', 0), cur)} a month - {cx.money(rec.get('yearly', 0), cur)} a year", "note": "The savings plan document is in the outputs."}}
 
 
 def act(ctx: wb.Ctx) -> dict:
@@ -350,7 +350,7 @@ def act(ctx: wb.Ctx) -> dict:
         else:
             h = ctx.ticket(a["what"], body, priority="P3", about=a["what"])
         rows.append([a["what"], h.get("status"), h.get("checkpoint") or h.get("output") or h.get("group") or ""])
-    return {"summary": f"{len(rows)} action(s) handed to the people who make the change — each through its own approval.", "counts": {"hand-offs": len(rows)},
+    return {"summary": f"{len(rows)} action(s) handed to the people who make the change - each through its own approval.", "counts": {"hand-offs": len(rows)},
             "data": {"columns": ["Action", "Status", "Reference"], "rows": rows}}
 
 
@@ -361,12 +361,12 @@ def _page_cards(u: dict) -> list[dict]:
     for r in rows:
         if r["id"] in vis:
             s = (wb._load(r["id"]).get("data") or {}).get("summary") or {}
-            out.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), s.get("actions", "—"), cx.money(s["monthly"], s.get("currency")) if s.get("monthly") is not None else "—",
-                        cx.money(s["yearly"], s.get("currency")) if s.get("yearly") is not None else "—", f"#/m/{MODULE}/i/{r['id']}"])
+            out.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), s.get("actions", "-"), cx.money(s["monthly"], s.get("currency")) if s.get("monthly") is not None else "-",
+                        cx.money(s["yearly"], s.get("currency")) if s.get("yearly") is not None else "-", f"#/m/{MODULE}/i/{r['id']}"])
     return [{"title": "Savings plans", "columns": ["Engagement", "Status", "Actions", "A month", "A year", "Open"], "rows": out, "empty": "No savings plan yet."}]
 
 
-GUIDE = """# Cost & licence optimisation — the work item
+GUIDE = """# Cost & licence optimisation - the work item
 
 This folder is one engagement of Relay's Cost & licence optimisation module.
 
@@ -374,7 +374,7 @@ This folder is one engagement of Relay's Cost & licence optimisation module.
   Azure cost details and CPU, Snowflake metering, warehouses and load) and their price list.
 - `sources/exports.json`, `savings.json`: what was read and the savings plan (every action with its evidence and
   the source of its saving).
-- `narrative.yaml`: what you write when asked — a few paragraphs, every number declared with its `record:` source.
+- `narrative.yaml`: what you write when asked - a few paragraphs, every number declared with its `record:` source.
 
 Never write a price, a saving or a count the records do not hold."""
 
@@ -388,15 +388,15 @@ wb.register(wb.Pack(
         title="Find unused licences and oversized resources in your exports, and a savings plan a named person approves",
         journey=["Inventory", "Findings", "Savings", "Approve", "Act"],
         steps={
-            "Inventory": wb.Step(kind="platform", run=inventory, agent="Licence reader", edit=INV_EDIT, confirm="what was read — licences and resources, in each tool's own terms",
+            "Inventory": wb.Step(kind="platform", run=inventory, agent="Licence reader", edit=INV_EDIT, confirm="what was read - licences and resources, in each tool's own terms",
                                  text="Your exports recognised by their own columns, with your price list and Relay's own AI cost; you keep or drop lines"),
             "Findings": wb.Step(kind="deterministic", run=findings, agent="Cost analyst", edit=FIND_EDIT, confirm="each finding with its evidence and the source of its saving",
-                                text="Unused licences, smaller sizes and idle resources by your thresholds — each with its evidence, priced from your price list"),
+                                text="Unused licences, smaller sizes and idle resources by your thresholds - each with its evidence, priced from your price list"),
             "Savings": wb.Step(kind="deterministic", run=savings, view="gates", agent="Savings planner", confirm=False,
                                actions={"wording": nv.action(("savings", "exports"), "Explain the savings plan for the budget holder: what is not used, what could be smaller, what it saves.",
                                                              agent="Savings planner", rebuild=lambda ctx: savings(ctx))},
-                               text="The savings plan — actions, monthly and yearly savings — and its document through the docs engine, every figure sourced"),
-            "Approve": wb.Step(kind="person", run=approve, view="plan", approver=True, confirm="the savings plan — nothing is changed until the owners make the change",
+                               text="The savings plan - actions, monthly and yearly savings - and its document through the docs engine, every figure sourced"),
+            "Approve": wb.Step(kind="person", run=approve, view="plan", approver=True, confirm="the savings plan - nothing is changed until the owners make the change",
                                text="The named approver approves the savings plan"),
             "Act": wb.Step(kind="platform", run=act, agent="Dispatcher", text="Each approved action goes to the people who make the change, as a ticket through the service desk's own approval")},
         fields=[wb.Field("idle_days", "A licence not used for this many days is unused", "number", required=True, default=90),

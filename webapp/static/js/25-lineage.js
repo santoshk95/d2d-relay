@@ -69,13 +69,13 @@ function lineageMap(opts = {}) {
   svg.append(defs, gE, gN);
   const empty = h('div', {class: 'lempty', hidden: true});
   const zin = h('button', {class: 'iconbtn', type: 'button', 'aria-label': 'Zoom in', title: 'Zoom in (+)', onclick: () => zoomBy(1.25)}, icon('plus'));
-  const zout = h('button', {class: 'iconbtn', type: 'button', 'aria-label': 'Zoom out', title: 'Zoom out (−)', onclick: () => zoomBy(0.8)}, icon('x'));
-  zout.replaceChildren(h('span', {'aria-hidden': 'true', style: 'font-weight:700;font-size:16px;line-height:1'}, '−'));
+  const zout = h('button', {class: 'iconbtn', type: 'button', 'aria-label': 'Zoom out', title: 'Zoom out (-)', onclick: () => zoomBy(0.8)}, icon('x'));
+  zout.replaceChildren(h('span', {'aria-hidden': 'true', style: 'font-weight:700;font-size:16px;line-height:1'}, '-'));
   const zfit = h('button', {class: 'iconbtn', type: 'button', 'aria-label': 'Fit the map to the screen', title: 'Fit', onclick: () => fit()}, icon('target'));
   const wrap = h('div', {class: 'lmap-wrap', style: `height:${opts.height || 520}px`}, svg, empty, h('div', {class: 'lzoom'}, zout, zfit, zin));
   const byId = () => Object.fromEntries(st.data.nodes.map(n => [n.id, n]));
   const flow = e => e.kind === 'contains' ? [e.to, e.from] : [e.from, e.to];        // [upstream, downstream]
-  const labelOf = n => { const l = n.label || n.name || n.id; return l.length > 32 ? l.slice(0, 31) + '…' : l; };
+  const labelOf = n => { const l = n.label || n.name || n.id; return l.length > 32 ? l.slice(0, 31) + '...' : l; };
   const widthOf = n => st.big ? Math.max(150, Math.min(220, labelOf(n).length * 7.2 + 36)) : Math.max(110, Math.min(230, labelOf(n).length * 6.8 + 34));
 
   function layout() {
@@ -173,7 +173,7 @@ function lineageMap(opts = {}) {
       const p = sv('path', {d, class: 'ledge ' + colourKey(e), 'data-from': e.from, 'data-to': e.to});
       p.setAttribute('marker-end', `url(#lm-${markerFor(p.getAttribute('class'))})`);
       const hit = sv('path', {d, class: 'ehit'});
-      const txt = `<b>${lesc((nodes[e.from] || {}).label || e.from)}</b> → <b>${lesc((nodes[e.to] || {}).label || e.to)}</b><br>${lesc(e.label || e.kind)}${e.status ? ' · ' + lesc(e.status) : ''}${e.signal ? '<br>' + lesc(e.signal) : ''}`;
+      const txt = `<b>${lesc((nodes[e.from] || {}).label || e.from)}</b> -> <b>${lesc((nodes[e.to] || {}).label || e.to)}</b><br>${lesc(e.label || e.kind)}${e.status ? ' - ' + lesc(e.status) : ''}${e.signal ? '<br>' + lesc(e.signal) : ''}`;
       hit.addEventListener('mousemove', ev => tipOn(ev, txt)); hit.addEventListener('mouseleave', tipOff);
       hit.addEventListener('click', () => { if (opts.onEdge) opts.onEdge(e); });
       if (e.label && (st.layout === 'radial' || st.layout === 'network')) {
@@ -198,7 +198,7 @@ function lineageMap(opts = {}) {
       if (dot) g.append(sv('circle', {cx: -p.w / 2 + 13, cy: 0, r: 4.5, style: `fill:${st.colour === 'status' ? LIN_STATUS_COL[statusKey(n.status)] : kindColour(n.kind)}`}));
       g.append(sv('text', {x: dot ? 6 : 0, y: 4.5, 'text-anchor': 'middle', style: `font-size:${st.big ? 14 : 12.5}px;font-weight:${n.id === st.focus || st.big ? 600 : 500}`}, labelOf(n)));
       if (n.badge) { const b = sv('g', {class: 'badge'}); b.append(sv('circle', {cx: p.w / 2 - 6, cy: -p.h / 2 + 2, r: 10}), sv('text', {x: p.w / 2 - 6, y: -p.h / 2 + 6, 'text-anchor': 'middle'}, String(n.badge))); g.append(b); }
-      const tip = `<b>${lesc(n.label || n.name)}</b><br>${lesc(LIN_KIND_NAME[n.kind] || n.kind)}${n.system ? ' · ' + lesc(n.system) : ''}${n.status ? '<br>' + lesc(n.status) : ''}${n.owner ? '<br>Owner: ' + lesc(n.owner) : ''}`;
+      const tip = `<b>${lesc(n.label || n.name)}</b><br>${lesc(LIN_KIND_NAME[n.kind] || n.kind)}${n.system ? ' - ' + lesc(n.system) : ''}${n.status ? '<br>' + lesc(n.status) : ''}${n.owner ? '<br>Owner: ' + lesc(n.owner) : ''}`;
       g.addEventListener('mousemove', ev => tipOn(ev, tip)); g.addEventListener('mouseleave', tipOff);
       g.addEventListener('click', ev => { ev.stopPropagation(); activate(n.id); });
       g.addEventListener('keydown', ev => {
@@ -296,13 +296,13 @@ function lineageMap(opts = {}) {
 
 /* ---------- a search box with suggestions from /api/lineage/search ---------- */
 function lineageSearch({placeholder, label, onPick, kinds}) {
-  const input = h('input', {type: 'search', placeholder: placeholder || 'Find a table, report, flow or bot…', 'aria-label': label || 'Search the map', role: 'combobox', 'aria-expanded': 'false', 'aria-autocomplete': 'list'});
+  const input = h('input', {type: 'search', placeholder: placeholder || 'Find a table, report, flow or bot...', 'aria-label': label || 'Search the map', role: 'combobox', 'aria-expanded': 'false', 'aria-autocomplete': 'list'});
   const list = h('div', {class: 'lopts', role: 'listbox', hidden: true}), box = h('div', {class: 'lcombo'}, input, list);
   let items = [], at = 0, timer = null;
   const close = () => { list.hidden = true; input.setAttribute('aria-expanded', 'false'); };
   const draw = () => {
     list.replaceChildren(...(items.length ? items.map((n, i) => h('div', {class: 'lopt' + (i === at ? ' on' : ''), role: 'option', 'aria-selected': String(i === at), onmousedown: e => { e.preventDefault(); pick(i); }},
-      h('i', {class: 'lkind', style: `background:${kindColour(n.kind)}`}), h('span', {}, n.label), h('small', {}, `${LIN_KIND_NAME[n.kind] || n.kind}${n.system ? ' · ' + n.system : ''}`)))
+      h('i', {class: 'lkind', style: `background:${kindColour(n.kind)}`}), h('span', {}, n.label), h('small', {}, `${LIN_KIND_NAME[n.kind] || n.kind}${n.system ? ' - ' + n.system : ''}`)))
       : [h('div', {class: 'lopt muted'}, 'Nothing matches.')]));
     list.hidden = false; input.setAttribute('aria-expanded', 'true');
   };
@@ -321,9 +321,9 @@ function lineageSearch({placeholder, label, onPick, kinds}) {
 const kindDot = k => h('i', {class: 'lkind', style: `background:${kindColour(k)}`, 'aria-hidden': 'true'});
 const mapLegend = (mode, extra) => h('div', {class: 'legend'}, mode === 'status'
   ? [['Healthy', 'ok'], ['At risk / degraded', 'warn'], ['Failing (dashed)', 'bad'], ['No owner (dotted)', 'mute']].map(([l, k]) => h('span', {}, h('i', {style: `background:${LIN_STATUS_COL[k]}`}), l))
-  : mode === 'direction' ? [h('span', {}, h('i', {style: 'background:var(--up)'}), 'Upstream — where its data comes from'), h('span', {}, h('i', {style: 'background:var(--down)'}), 'Downstream — what changes if it changes')]
+  : mode === 'direction' ? [h('span', {}, h('i', {style: 'background:var(--up)'}), 'Upstream - where its data comes from'), h('span', {}, h('i', {style: 'background:var(--down)'}), 'Downstream - what changes if it changes')]
   : Object.entries(LIN_FAMILY_NAME).map(([f, l]) => h('span', {}, h('i', {style: `background:${LIN_FAMILY_COL[f]}`}), l)), extra || null);
-const mapTable = nodes => asTable(['Item', 'Kind', 'System', 'Role', 'Status'], nodes.map(n => [n.label || n.name, LIN_KIND_NAME[n.kind] || n.kind, n.system || '—', n.role === 'focus' ? 'focus' : n.role === 'up' ? `upstream (${Math.abs(n.hop || 0)} hop${Math.abs(n.hop || 0) === 1 ? '' : 's'})` : n.role === 'down' ? `downstream (${n.hop || 0} hop${n.hop === 1 ? '' : 's'})` : '—', n.status || '—']));
+const mapTable = nodes => asTable(['Item', 'Kind', 'System', 'Role', 'Status'], nodes.map(n => [n.label || n.name, LIN_KIND_NAME[n.kind] || n.kind, n.system || '-', n.role === 'focus' ? 'focus' : n.role === 'up' ? `upstream (${Math.abs(n.hop || 0)} hop${Math.abs(n.hop || 0) === 1 ? '' : 's'})` : n.role === 'down' ? `downstream (${n.hop || 0} hop${n.hop === 1 ? '' : 's'})` : '-', n.status || '-']));
 const LIN_KIND_GROUPS = [['Tables', ['table']], ['Columns', ['column']], ['Measures & entities', ['measure', 'entity']], ['Reports & pages', ['report', 'page']], ['Jobs, flows & bots', ['job', 'flow', 'bot', 'api', 'file_drop', 'queue']], ['Systems & owners', ['system', 'owner']]];
 function kindChecks(state, onChange) {
   return LIN_KIND_GROUPS.map(([label, ks]) => { const on = ks.every(k => state.has(k));
@@ -332,9 +332,9 @@ function kindChecks(state, onChange) {
 }
 async function emptyMap(main, crumbs, title) {
   const me = S.me || {};
-  main.replaceChildren(h('div', {class: 'page'}, pageHead({crumbs, eyebrow: brandName() + ' · Knowledge map', title}),
+  main.replaceChildren(h('div', {class: 'page'}, pageHead({crumbs, eyebrow: brandName() + ' - Knowledge map', title}),
     h('div', {class: 'card empty'}, h('h3', {}, 'Nothing on the map yet'),
-      h('div', {class: 'muted', style: 'max-width:560px;margin:0 auto'}, 'Relay builds the map from your dashboards (sources → model tables → measures → pages → report), the organisation ontology and the integrations it discovers. Publish a dashboard, add entities under Metrics & ontology, or scan a source under Integration analytics.'),
+      h('div', {class: 'muted', style: 'max-width:560px;margin:0 auto'}, 'Relay builds the map from your dashboards (sources -> model tables -> measures -> pages -> report), the organisation ontology and the integrations it discovers. Publish a dashboard, add entities under Metrics & ontology, or scan a source under Integration analytics.'),
       h('div', {class: 'row', style: 'justify-content:center;margin-top:14px'},
         me.builder ? h('button', {class: 'btn primary', type: 'button', onclick: async e => { e.target.disabled = true; try { await api('/api/lineage/sync', {method: 'POST'}); route(); } catch (err) { notify(err.message, 'err'); e.target.disabled = false; } }}, icon('spark'), 'Build the map now') : null,
         h('a', {class: 'btn', href: '#/integrations'}, 'Integration analytics'), h('a', {class: 'btn', href: '#/metrics'}, 'Metrics & ontology')))));
@@ -344,7 +344,7 @@ async function emptyMap(main, crumbs, title) {
 const LN = {focus: null, depth: 2, dir: 'both', kinds: new Set(['table', 'measure', 'entity', 'report', 'page', 'job', 'flow', 'bot', 'api', 'file_drop', 'queue', 'system', 'owner']), whole: false};
 async function renderLineage() {
   const main = $('#main');
-  if (!$('#lineagepage')) main.replaceChildren(h('div', {class: 'page'}, pageHead({crumbs: [['Home', '#/'], ['Knowledge map', '#/graph'], ['Lineage']], eyebrow: brandName() + ' · Knowledge map', title: 'Lineage'}), skel('cards')));
+  if (!$('#lineagepage')) main.replaceChildren(h('div', {class: 'page'}, pageHead({crumbs: [['Home', '#/'], ['Knowledge map', '#/graph'], ['Lineage']], eyebrow: brandName() + ' - Knowledge map', title: 'Lineage'}), skel('cards')));
   const qp = hashParams();
   if (qp.get('focus')) { LN.focus = qp.get('focus'); LN.whole = false; }
   if (qp.get('depth')) LN.depth = Math.max(1, Math.min(6, +qp.get('depth') || 2));
@@ -364,7 +364,7 @@ async function renderLineage() {
     } catch (e) { if (LN.focus && !LN.whole) { LN.focus = sm.suggested ? sm.suggested.id : null; LN.whole = !LN.focus; return LN.focus || LN.whole ? load() : null; } notify(e.message, 'err'); return; }
     map.draw(data, {focus: LN.whole ? null : LN.focus, layout: LN.whole ? 'network' : 'flow', colour: 'direction'});
     const c = data.counts || {};
-    counts.textContent = LN.whole ? `Showing the ${data.nodes.length} most connected of ${c.nodes_total} items · ${data.edges.length} of ${c.edges_total} links` : `${c.upstream || 0} upstream · ${c.downstream || 0} downstream within ${LN.depth} hop${LN.depth === 1 ? '' : 's'} · ${data.nodes.length} of ${c.nodes_total} items shown`;
+    counts.textContent = LN.whole ? `Showing the ${data.nodes.length} most connected of ${c.nodes_total} items - ${data.edges.length} of ${c.edges_total} links` : `${c.upstream || 0} upstream - ${c.downstream || 0} downstream within ${LN.depth} hop${LN.depth === 1 ? '' : 's'} - ${data.nodes.length} of ${c.nodes_total} items shown`;
     tableBox.replaceChildren(mapTable(data.nodes));
     if (!LN.whole) showSide(LN.focus); else side.replaceChildren(h('h3', {}, 'Whole map'), h('div', {class: 'small muted'}, 'The busiest items and their links. Click one to see its impact, or search for anything.'));
   };
@@ -374,27 +374,27 @@ async function renderLineage() {
     let n;
     try { n = await api(`/api/lineage/node/${encodeURIComponent(id)}`); } catch (e) { side.replaceChildren(h('div', {class: 'note err'}, e.message)); return; }
     const im = n.impact, p = n.properties || {};
-    side.replaceChildren(h('h3', {style: 'margin:0'}, n.label), h('div', {class: 'small muted'}, [LIN_KIND_NAME[n.kind] || n.kind, n.system, n.status, n.owner ? 'owner ' + n.owner : null].filter(Boolean).join(' · ')),
-      h('div', {}, h('b', {}, 'Impact if this changes'), h('div', {class: 'muted'}, im.downstream ? `${im.downstream} downstream${im.reports.length ? ' · ' + im.reports.length + ' report' + (im.reports.length === 1 ? '' : 's') : ''}` : 'Nothing downstream.'),
-        im.reports.length ? h('div', {class: 'small muted'}, im.reports.slice(0, 5).join(', ') + (im.reports.length > 5 ? ' …' : '')) : null),
+    side.replaceChildren(h('h3', {style: 'margin:0'}, n.label), h('div', {class: 'small muted'}, [LIN_KIND_NAME[n.kind] || n.kind, n.system, n.status, n.owner ? 'owner ' + n.owner : null].filter(Boolean).join(' - ')),
+      h('div', {}, h('b', {}, 'Impact if this changes'), h('div', {class: 'muted'}, im.downstream ? `${im.downstream} downstream${im.reports.length ? ' - ' + im.reports.length + ' report' + (im.reports.length === 1 ? '' : 's') : ''}` : 'Nothing downstream.'),
+        im.reports.length ? h('div', {class: 'small muted'}, im.reports.slice(0, 5).join(', ') + (im.reports.length > 5 ? ' ...' : '')) : null),
       h('div', {class: 'row'}, id !== LN.focus || LN.whole ? h('button', {class: 'btn sm', type: 'button', onclick: () => { LN.whole = false; location.hash = `#/lineage?focus=${encodeURIComponent(id)}&depth=${LN.depth}`; }}, 'Focus here') : null,
         h('a', {class: 'btn sm', href: `#/graph?focus=${encodeURIComponent(id)}`}, 'Open in knowledge map'), p.link ? h('a', {class: 'btn sm', href: p.link}, 'Open') : null),
-      n.upstream.length || n.downstream.length ? h('div', {class: 'small'}, h('b', {}, `${n.upstream.length} directly upstream · ${n.downstream.length} directly downstream`)) : null,
-      h('div', {class: 'note', style: 'margin:0'}, h('b', {}, 'How to read this map: '), 'click a table, job or report — upstream (where its data comes from) is orange, downstream (what changes if it changes) is blue. Esc clears.'));
+      n.upstream.length || n.downstream.length ? h('div', {class: 'small'}, h('b', {}, `${n.upstream.length} directly upstream - ${n.downstream.length} directly downstream`)) : null,
+      h('div', {class: 'note', style: 'margin:0'}, h('b', {}, 'How to read this map: '), 'click a table, job or report - upstream (where its data comes from) is orange, downstream (what changes if it changes) is blue. Esc clears.'));
   };
   const depthSel = h('select', {class: 'sel', 'aria-label': 'Depth', style: 'width:auto', onchange: e => { LN.depth = +e.target.value; load(); }}, [1, 2, 3, 4].map(d => h('option', {value: d, selected: d === LN.depth}, 'Depth ' + d)));
   const dirSeg = h('div', {class: 'segbtn', role: 'group', 'aria-label': 'Direction'}, [['up', 'Upstream'], ['both', 'Both'], ['down', 'Downstream']].map(([k, l]) => h('button', {type: 'button', class: LN.dir === k ? 'on' : '', 'aria-pressed': String(LN.dir === k), onclick: () => { LN.dir = k; [...dirSeg.children].forEach(b => { b.classList.toggle('on', b.textContent === l); b.setAttribute('aria-pressed', String(b.textContent === l)); }); load(); }}, l)));
   main.replaceChildren(h('div', {class: 'page', id: 'lineagepage'},
-    pageHead({crumbs: [['Home', '#/'], ['Knowledge map', '#/graph'], ['Lineage']], eyebrow: brandName() + ' · Knowledge map', title: 'Lineage',
-      promise: 'Where each number comes from: sources → model tables → measures → pages → reports, and the jobs, flows and bots that move the data between your systems.',
+    pageHead({crumbs: [['Home', '#/'], ['Knowledge map', '#/graph'], ['Lineage']], eyebrow: brandName() + ' - Knowledge map', title: 'Lineage',
+      promise: 'Where each number comes from: sources -> model tables -> measures -> pages -> reports, and the jobs, flows and bots that move the data between your systems.',
       actions: [h('button', {class: 'btn', type: 'button', onclick: () => map.png('lineage')}, icon('download'), 'PNG'),
-        (S.me || {}).builder ? h('button', {class: 'btn', type: 'button', onclick: async e => { e.target.disabled = true; try { const r = await api('/api/lineage/sync', {method: 'POST'}); notify(`Map rebuilt: ${r.dashboards.reports} dashboards, ${r.ontology.entities} entities`, 'ok'); sm = await api('/api/lineage/summary'); load(); } catch (err) { notify(err.message, 'err'); } e.target.disabled = false; }}, icon('spark'), 'Rebuild from today’s data') : null]}),
+        (S.me || {}).builder ? h('button', {class: 'btn', type: 'button', onclick: async e => { e.target.disabled = true; try { const r = await api('/api/lineage/sync', {method: 'POST'}); notify(`Map rebuilt: ${r.dashboards.reports} dashboards, ${r.ontology.entities} entities`, 'ok'); sm = await api('/api/lineage/summary'); load(); } catch (err) { notify(err.message, 'err'); } e.target.disabled = false; }}, icon('spark'), 'Rebuild from today\'s data') : null]}),
     h('div', {class: 'toolbar'}, lineageSearch({onPick: n => { LN.whole = false; location.hash = `#/lineage?focus=${encodeURIComponent(n.id)}&depth=${LN.depth}`; }}),
       kindChecks(LN.kinds, load), depthSel, dirSeg,
       h('button', {class: 'btn' + (LN.whole ? ' primary' : ''), type: 'button', 'aria-pressed': String(LN.whole), onclick: () => { LN.whole = !LN.whole; load(); }}, LN.whole ? 'Back to focus' : 'Whole map')),
     h('div', {class: 'row'}, counts, h('span', {class: 'sp', style: 'flex:1'}), mapLegend('direction')),
     h('div', {class: 'grid g-side'}, h('div', {}, map.el, tableBox), side)));
-  document.title = `Lineage · ${S.brand ? S.brand.full : 'RELAY by PASDACS'}`;
+  document.title = `Lineage - ${S.brand ? S.brand.full : 'RELAY by PASDACS'}`;
   await load();
 }
 
@@ -402,7 +402,7 @@ async function renderLineage() {
 const GR = {mode: 'explore', focus: null, hops: 1, layout: 'network', colour: 'type', kinds: new Set(Object.keys(LIN_KIND_NAME)), from: null, to: null};
 async function renderGraph() {
   const main = $('#main');
-  if (!$('#graphpage')) main.replaceChildren(h('div', {class: 'page'}, pageHead({crumbs: [['Home', '#/'], ['Knowledge map']], eyebrow: brandName() + ' · Knowledge map', title: 'Knowledge map'}), skel('cards')));
+  if (!$('#graphpage')) main.replaceChildren(h('div', {class: 'page'}, pageHead({crumbs: [['Home', '#/'], ['Knowledge map']], eyebrow: brandName() + ' - Knowledge map', title: 'Knowledge map'}), skel('cards')));
   const qp = hashParams();
   if (qp.get('focus')) { GR.focus = qp.get('focus'); GR.mode = 'explore'; }
   let sm;
@@ -427,7 +427,7 @@ async function renderGraph() {
         data = await api(`/api/lineage/slice?id=${encodeURIComponent(GR.focus)}&depth=${GR.hops}&kinds=${[...GR.kinds].join(',')}`);
         map.draw(data, {focus: GR.focus, layout: GR.layout, colour: GR.colour});
         const c = data.counts;
-        counts.replaceChildren(`Showing ${data.nodes.length} of ${fmtN(c.nodes_total, 0)} items · ${data.edges.length} of ${fmtN(c.edges_total, 0)} links · ${GR.hops} hop${GR.hops === 1 ? '' : 's'} from `, h('b', {}, (data.nodes.find(n => n.id === GR.focus) || {}).label || ''));
+        counts.replaceChildren(`Showing ${data.nodes.length} of ${fmtN(c.nodes_total, 0)} items - ${data.edges.length} of ${fmtN(c.edges_total, 0)} links - ${GR.hops} hop${GR.hops === 1 ? '' : 's'} from `, h('b', {}, (data.nodes.find(n => n.id === GR.focus) || {}).label || ''));
         showDetails(GR.focus);
       }
       legend.replaceChildren(mapLegend(GR.colour));
@@ -441,42 +441,42 @@ async function renderGraph() {
     det.replaceChildren(skel('rows'));
     let n;
     try { n = await api(`/api/lineage/node/${encodeURIComponent(id)}`); } catch (e) { det.replaceChildren(h('div', {class: 'note err'}, e.message)); return; }
-    const p = n.properties || {}, role = id === GR.focus ? 'focus' : (data && (data.nodes.find(x => x.id === id) || {}).role) || '—';
+    const p = n.properties || {}, role = id === GR.focus ? 'focus' : (data && (data.nodes.find(x => x.id === id) || {}).role) || '-';
     const props = Object.entries(p).filter(([k, v]) => !k.startsWith('_') && v != null && v !== '' && !['link', 'tagged_by', 'tagged', 'personal', 'note'].includes(k) && typeof v !== 'object').slice(0, 8);
     const tag = async personal => { try { await api(`/api/lineage/node/${encodeURIComponent(id)}/tags`, {method: 'PUT', json: {personal}}); notify('Tag saved', 'ok'); showDetails(id); } catch (e) { notify(e.message, 'err'); } };
     det.replaceChildren(
       h('div', {class: 'row'}, h('span', {class: 'pill plain info'}, LIN_KIND_NAME[n.kind] || n.kind), n.status ? h('span', {class: 'pill plain ' + ({ok: 'ok', warn: 'you', bad: 'err', mute: 'mute', none: 'mute'}[statusKey(n.status)])}, n.status) : null, p.personal ? h('span', {class: 'pill plain you'}, p.personal === 'anonymised' ? 'Anonymised' : 'Personal data') : null),
       h('h3', {style: 'margin:0;font-family:var(--mono);font-size:14px;overflow-wrap:anywhere'}, n.label),
-      h('div', {class: 'small muted'}, [n.system, n.owner ? 'owner ' + n.owner : null, n.source ? 'from ' + n.source : null].filter(Boolean).join(' · ')),
+      h('div', {class: 'small muted'}, [n.system, n.owner ? 'owner ' + n.owner : null, n.source ? 'from ' + n.source : null].filter(Boolean).join(' - ')),
       h('div', {class: 'row'},
         h('button', {class: 'btn sm primary', type: 'button', onclick: () => { GR.focus = id; GR.hops = Math.min(3, GR.hops + 1); load(); }}, 'Expand'),
         h('button', {class: 'btn sm', type: 'button', onclick: () => { GR.focus = id; GR.hops = 1; location.hash = `#/graph?focus=${encodeURIComponent(id)}`; }}, 'Focus'),
-        h('button', {class: 'btn sm', type: 'button', onclick: () => { const im = n.impact; modal(`Impact: ${n.label}`, h('div', {class: 'mbody'}, h('p', {}, im.text), im.items.length ? h('table', {class: 'utable'}, h('tr', {}, ['Item', 'Kind', 'Hops', 'Status'].map((t, i) => h('th', {class: i ? '' : 'l'}, t))), im.items.map(x => h('tr', {}, h('td', {}, x.label), h('td', {}, LIN_KIND_NAME[x.kind] || x.kind), h('td', {class: 'n'}, x.hop), h('td', {}, x.status || '—')))) : null)); }}, 'Impact'),
+        h('button', {class: 'btn sm', type: 'button', onclick: () => { const im = n.impact; modal(`Impact: ${n.label}`, h('div', {class: 'mbody'}, h('p', {}, im.text), im.items.length ? h('table', {class: 'utable'}, h('tr', {}, ['Item', 'Kind', 'Hops', 'Status'].map((t, i) => h('th', {class: i ? '' : 'l'}, t))), im.items.map(x => h('tr', {}, h('td', {}, x.label), h('td', {}, LIN_KIND_NAME[x.kind] || x.kind), h('td', {class: 'n'}, x.hop), h('td', {}, x.status || '-')))) : null)); }}, 'Impact'),
         h('a', {class: 'btn sm', href: `#/lineage?focus=${encodeURIComponent(id)}`}, 'Lineage map'), p.link ? h('a', {class: 'btn sm', href: p.link}, 'Open') : null),
-      h('dl', {class: 'kv-list'}, ['Kind', LIN_KIND_NAME[n.kind] || n.kind, 'Role', role === 'up' ? 'upstream' : role === 'down' ? 'downstream' : role, 'Impact', n.impact.downstream ? `${n.impact.downstream} downstream` : 'nothing downstream', 'Links', `${n.upstream.length} in · ${n.downstream.length} out`, 'First seen', when(n.first_seen), 'Last seen', ago(n.last_seen), ...props.flatMap(([k, v]) => [k.replace(/_/g, ' '), String(v)])].map((t, i) => h(i % 2 ? 'dd' : 'dt', {}, t))),
+      h('dl', {class: 'kv-list'}, ['Kind', LIN_KIND_NAME[n.kind] || n.kind, 'Role', role === 'up' ? 'upstream' : role === 'down' ? 'downstream' : role, 'Impact', n.impact.downstream ? `${n.impact.downstream} downstream` : 'nothing downstream', 'Links', `${n.upstream.length} in - ${n.downstream.length} out`, 'First seen', when(n.first_seen), 'Last seen', ago(n.last_seen), ...props.flatMap(([k, v]) => [k.replace(/_/g, ' '), String(v)])].map((t, i) => h(i % 2 ? 'dd' : 'dt', {}, t))),
       n.kind === 'column' || n.kind === 'table' ? h('div', {}, h('div', {class: 'small', style: 'font-weight:600;margin-bottom:6px'}, 'Personal data'),
         me.builder ? h('div', {class: 'row'}, [['personal', 'Tag as personal'], ['anonymised', 'Anonymised'], ['none', 'Not personal']].map(([k, l]) => h('button', {class: 'btn sm' + ((p.personal || 'none') === k ? ' primary' : ''), type: 'button', 'aria-pressed': String((p.personal || 'none') === k), onclick: () => tag(k)}, l))) : h('div', {class: 'small muted'}, p.personal ? `Tagged ${p.personal}.` : 'Not tagged.'),
-        h('div', {class: 'lnote'}, 'A personal-data tag follows the column lineage. Hashing keeps data pseudonymised (still personal); only “Anonymised” stops it.')) : null);
+        h('div', {class: 'lnote'}, 'A personal-data tag follows the column lineage. Hashing keeps data pseudonymised (still personal); only "Anonymised" stops it.')) : null);
   };
   const seg = (name, pairs, get, set) => h('div', {class: 'segbtn', role: 'group', 'aria-label': name}, pairs.map(([k, l]) => h('button', {type: 'button', class: get() === k ? 'on' : '', 'aria-pressed': String(get() === k), onclick: e => { set(k); [...e.currentTarget.parentElement.children].forEach(b => { const on = b === e.currentTarget; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); }}, l)));
   const pathBar = h('div', {class: 'toolbar', hidden: GR.mode !== 'path'},
-    lineageSearch({placeholder: 'From…', label: 'Path from', onPick: n => { GR.from = n; }}), h('span', {class: 'muted', 'aria-hidden': 'true'}, '→'),
-    lineageSearch({placeholder: 'To…', label: 'Path to', onPick: n => { GR.to = n; }}),
+    lineageSearch({placeholder: 'From...', label: 'Path from', onPick: n => { GR.from = n; }}), h('span', {class: 'muted', 'aria-hidden': 'true'}, '->'),
+    lineageSearch({placeholder: 'To...', label: 'Path to', onPick: n => { GR.to = n; }}),
     h('button', {class: 'btn primary', type: 'button', onclick: () => { if (!(GR.from && GR.to)) return notify('Pick both ends of the path.', 'err'); load(); }}, 'Find path'));
   const exploreBar = h('div', {class: 'toolbar', hidden: GR.mode !== 'explore'},
-    lineageSearch({placeholder: 'Search tables, reports, bots, flows, entities… (/)', onPick: n => { GR.focus = n.id; location.hash = `#/graph?focus=${encodeURIComponent(n.id)}`; }}),
+    lineageSearch({placeholder: 'Search tables, reports, bots, flows, entities... (/)', onPick: n => { GR.focus = n.id; location.hash = `#/graph?focus=${encodeURIComponent(n.id)}`; }}),
     seg('Layout', [['network', 'Network'], ['flow', 'Data flow'], ['radial', 'Radial']], () => GR.layout, v => { GR.layout = v; map.setLayout(v); }),
     seg('Colour', [['type', 'Colour: type'], ['status', 'Status']], () => GR.colour, v => { GR.colour = v; map.setColour(v); legend.replaceChildren(mapLegend(v)); }),
     seg('Hops', [[1, '1 hop'], [2, '2'], [3, '3']], () => GR.hops, v => { GR.hops = v; load(); }),
     kindChecks(GR.kinds, load));
   main.replaceChildren(h('div', {class: 'page', id: 'graphpage'},
-    pageHead({crumbs: [['Home', '#/'], ['Knowledge map']], eyebrow: brandName() + ' · Knowledge map', title: 'Knowledge map',
-      promise: 'Reports, pipelines, bots, workflows, APIs, tables and the entities that tie them together — on one map you can search.',
+    pageHead({crumbs: [['Home', '#/'], ['Knowledge map']], eyebrow: brandName() + ' - Knowledge map', title: 'Knowledge map',
+      promise: 'Reports, pipelines, bots, workflows, APIs, tables and the entities that tie them together - on one map you can search.',
       actions: seg('Mode', [['explore', 'Explorer'], ['path', 'Path finder']], () => GR.mode, v => { GR.mode = v; exploreBar.hidden = v !== 'explore'; pathBar.hidden = v !== 'path'; load(); })}),
     exploreBar, pathBar,
     h('div', {class: 'row', style: 'margin-bottom:10px'}, counts, h('span', {style: 'flex:1'}), legend),
     h('div', {class: 'grid g-side'}, h('div', {}, map.el, tableBox), det)));
   document.addEventListener('keydown', function slash(e) { if (!$('#graphpage')) return document.removeEventListener('keydown', slash); if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) { e.preventDefault(); const i = $('#graphpage .lcombo input'); if (i) i.focus(); } });
-  document.title = `Knowledge map · ${S.brand ? S.brand.full : 'RELAY by PASDACS'}`;
+  document.title = `Knowledge map - ${S.brand ? S.brand.full : 'RELAY by PASDACS'}`;
   await load();
 }

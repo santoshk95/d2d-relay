@@ -18,7 +18,7 @@ audit         platform-level events: who, on which instance, did what to which o
 meta          key/value: schema version, last backup, settings
 phase 7       notifications, usage (LLM / warehouse / extract cost records), quotas, email_accounts, schedules
 
-P17 (docs/P17-tenancy.md): every tenant has its own copy of all of the above — Postgres schema `public` for the
+P17 (docs/P17-tenancy.md): every tenant has its own copy of all of the above - Postgres schema `public` for the
 platform tenant (this install's own workspace, where the data always was) and `t_<id>` for the others; SQLite
 `index.db` and `tenants/<id>.db`. The control plane (tenants, entitlements, the people directory, access grants,
 hand-overs, its audit, the price book) lives in schema `relay` / `control.db`, all tables named `tn_*`.
@@ -64,7 +64,7 @@ def tenant() -> str:
 
 @contextlib.contextmanager
 def use(tid: str):
-    """with db.use(tid): … — work inside one tenant (its schema, folders and secrets), then back to the caller's."""
+    """with db.use(tid): ... - work inside one tenant (its schema, folders and secrets), then back to the caller's."""
     token = TENANT.set(tid)
     try:
         yield tid
@@ -84,7 +84,7 @@ _module_check = None                    # tenancy.py registers fn(tenant, module
 
 
 def each_tenant(module: str | None = None):
-    """for t in db.each_tenant(): … — one background pass per active tenant, with that tenant set inside the body.
+    """for t in db.each_tenant(): ... - one background pass per active tenant, with that tenant set inside the body.
     Every scheduler / watcher loop wraps its pass in this (sync or async bodies alike). With a module id, tenants
     that have that module switched off are skipped."""
     prev = TENANT.get()
@@ -232,7 +232,7 @@ CREATE TABLE IF NOT EXISTS connections (
 CREATE TABLE IF NOT EXISTS connection_tables (
   connection_id TEXT NOT NULL REFERENCES connections(id), object TEXT NOT NULL, alias TEXT NOT NULL,
   object_type TEXT, rows INTEGER, added REAL NOT NULL, PRIMARY KEY (connection_id, object));
--- phase 4: semantic layer — team metrics (versioned, reviewed), terms, context notes, organisation ontology
+-- phase 4: semantic layer - team metrics (versioned, reviewed), terms, context notes, organisation ontology
 CREATE TABLE IF NOT EXISTS metrics (
   id TEXT PRIMARY KEY, team_id TEXT NOT NULL REFERENCES teams(id), name TEXT NOT NULL, created REAL NOT NULL,
   created_by TEXT);
@@ -391,13 +391,13 @@ def _pg_path() -> None:
     _pg["path"] = t
 
 
-# Build-plan v2 (P10+): phase modules add their own tables and columns without touching SCHEMA — one call each at
+# Build-plan v2 (P10+): phase modules add their own tables and columns without touching SCHEMA - one call each at
 # import time (main.py imports every phase module through phases.py before the app starts).
 SCHEMA_PARTS: list[str] = []
 
 
 def register_schema(sql: str, added_columns: dict[str, dict[str, str]] | None = None) -> None:
-    """A phase's DDL (CREATE TABLE IF NOT EXISTS …, indexes) and the columns it adds to existing tables."""
+    """A phase's DDL (CREATE TABLE IF NOT EXISTS ..., indexes) and the columns it adds to existing tables."""
     if sql not in SCHEMA_PARTS:
         SCHEMA_PARTS.append(sql)
     for table, cols in (added_columns or {}).items():
@@ -525,7 +525,7 @@ def tables() -> list[str]:
 
 
 def _columns(table: str) -> set[str]:
-    """The columns of a table in the current tenant (Postgres: its schema only — every tenant has a `users`)."""
+    """The columns of a table in the current tenant (Postgres: its schema only - every tenant has a `users`)."""
     if BACKEND == "postgres":
         return {r["column_name"] for r in q("SELECT column_name FROM information_schema.columns WHERE table_name = ? "
                                               "AND table_schema = current_schema()", (table,))}
@@ -660,7 +660,7 @@ def drop_tenant(tid: str) -> None:
 
 
 def ctl_meta(key: str, default: str | None = None) -> str | None:
-    """A control-plane setting (the price book …): the same whichever tenant asks."""
+    """A control-plane setting (the price book ...): the same whichever tenant asks."""
     row = one("SELECT value FROM relay.tn_meta WHERE key = ?", (key,))
     return row["value"] if row else default
 

@@ -1,5 +1,5 @@
 """Charts for the HTML twin (inline SVG, one system: the brand accent first, then neutral steps, labelled axes, a
-<title> for screen readers) — the deck gets native PowerPoint charts from the same data (pptx_build.py)."""
+<title> for screen readers) - the deck gets native PowerPoint charts from the same data (pptx_build.py)."""
 from __future__ import annotations
 
 import math
@@ -81,7 +81,7 @@ def svg(chart: dict, colours: dict | None = None, width: int = W, height: int = 
         for t in ticks:
             parts.append(f'<line x1="{x0}" y1="{sy(t):.1f}" x2="{x1}" y2="{sy(t):.1f}" stroke="{line}"/><text x="{x0 - 8}" y="{sy(t) + 4:.1f}" text-anchor="end" font-size="12" fill="{muted}">{escape(fmt(t, unit))}</text>')
         for i, c in enumerate(cats):
-            label = c if len(c) <= 14 else c[:13] + "…"
+            label = c if len(c) <= 14 else c[:13] + "..."
             parts.append(f'<text x="{sx(i):.1f}" y="{y1 + 18}" text-anchor="middle" font-size="12" fill="{ink}"><title>{escape(c)}</title>{escape(label)}</text>')
         if kind == "line":
             for j, s in enumerate(series):

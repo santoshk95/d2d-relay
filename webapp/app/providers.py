@@ -210,7 +210,7 @@ def _litellm_params(r: dict) -> dict:
 
 def write_gateway_config() -> Path:
     """The LiteLLM proxy's config (models + D2D key check), in a volume only the web app and the gateway mount.
-    The gateway restarts to load it (orchestrator) — or picks it up on its next start."""
+    The gateway restarts to load it (orchestrator) - or picks it up on its next start."""
     GATEWAY_DIR.mkdir(parents=True, exist_ok=True)
     models, table = [], {}
     for t in db.each_tenant():                  # P17: every tenant's routes, each with its own credentials
@@ -235,7 +235,7 @@ def write_gateway_config() -> Path:
 
 
 def gateway_token(uid: str, ttl_s: int) -> str:
-    """A short-lived key for one run: who, their teams, until when — signed with the gateway's key (HMAC-SHA256).
+    """A short-lived key for one run: who, their teams, until when - signed with the gateway's key (HMAC-SHA256).
     The gateway checks it and that the requested model's route allows one of the teams."""
     t = db.tenant()
     body = base64.urlsafe_b64encode(json.dumps({"u": uid, "t": sorted(_teams(uid)), "n": "" if t == db.PLATFORM else t,
@@ -308,7 +308,7 @@ CLI_DEFAULTS = {"codex": "the CLI's default model", "gemini": "the CLI's default
 
 
 def cli_model_id(kind: str) -> str:
-    """The picker's one entry for a CLI provider: the model itself comes from Settings › My AI provider."""
+    """The picker's one entry for a CLI provider: the model itself comes from Settings > My AI provider."""
     return "cli:" + kind
 
 
@@ -323,13 +323,13 @@ def catalog_for(uid: str | None, base: dict) -> dict:
     if s["kind"] in CLI_KINDS:
         label = CLI_KINDS[s["kind"]][3]
         model = s.get("cli_model") or CLI_DEFAULTS[s["kind"]]
-        entry = {"id": cli_model_id(s["kind"]), "label": f"{label} · {model}", "family": s["kind"], "latest": False,
+        entry = {"id": cli_model_id(s["kind"]), "label": f"{label} - {model}", "family": s["kind"], "latest": False,
                  "group": f"Your AI provider: {label}",
-                 "note": f"Runs on {label} with {model} (set under Settings › My AI provider)."}
+                 "note": f"Runs on {label} with {model} (set under Settings > My AI provider)."}
         return {"default": entry["id"], "models": [entry], "provider": s["kind"]}
     if s["kind"] != "litellm":
         return {**base, "provider": s["kind"]}
-    models = [{"id": r["alias"], "label": f"{r['label']} · {ROUTE_PROVIDERS[r['provider']]}", "family": r["provider"],
+    models = [{"id": r["alias"], "label": f"{r['label']} - {ROUTE_PROVIDERS[r['provider']]}", "family": r["provider"],
                "latest": True} for r in routes_for(uid)]
     return {"default": s.get("route") or (models[0]["id"] if models else base["default"]), "models": models or base["models"],
             "provider": "litellm"}

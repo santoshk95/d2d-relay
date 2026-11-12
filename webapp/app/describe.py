@@ -71,13 +71,13 @@ async def draft_table(u: dict, source: str, project_ids: list[str], include_all:
         return {"drafted": 0, "table": t}
     others = [x for x in semantic.context(project_ids) if x["source"] != source][:20]
     lines = [f"Table `{t['table']}` (source {t['source']}, {t.get('rows') or 0:,} rows). Current table description: {t.get('description') or '(none)'}",
-             "Columns (name · type · distinct values · blanks · examples · existing description):"]
+             "Columns (name - type - distinct values - blanks - examples - existing description):"]
     for c in t["columns"]:
-        lines.append(f"- {c['name']} · {c['type']} · {c.get('distinct')} distinct · {c.get('nulls') or 0} blank · "
-                     f"e.g. {', '.join(map(str, (c.get('samples') or [])[:6]))}" + (f" · values range from {c.get('min')} (lowest) to {c.get('max')} (highest)" if c.get("min") is not None else "")
-                     + (f" · described: {c['description']}" if c.get("description") else "") + (" · SENSITIVE: do not repeat its values" if c.get("sensitive") else ""))
+        lines.append(f"- {c['name']} - {c['type']} - {c.get('distinct')} distinct - {c.get('nulls') or 0} blank - "
+                     f"e.g. {', '.join(map(str, (c.get('samples') or [])[:6]))}" + (f" - values range from {c.get('min')} (lowest) to {c.get('max')} (highest)" if c.get("min") is not None else "")
+                     + (f" - described: {c['description']}" if c.get("description") else "") + (" - SENSITIVE: do not repeat its values" if c.get("sensitive") else ""))
     if t.get("joins"):
-        lines.append("Joins: " + "; ".join(f"{j['many']} → {j['one']}" for j in t["joins"]))
+        lines.append("Joins: " + "; ".join(f"{j['many']} {j['one']}" for j in t["joins"]))
     if others:
         lines.append("Other tables in the same data: " + ", ".join(f"{o['table']}" + (f" ({o['description']})" if o.get("description") else "") for o in others))
     want = [c["name"] for c in missing]
@@ -164,9 +164,9 @@ async def draft_entity(u: dict, eid: str, project_ids: list[str]) -> dict:
              f"Current meaning: {e.get('description') or '(none)'}", "Where it lives in the data:"]
     for w in d["where"]:
         if w.get("visible"):
-            lines.append(f"- {w['source']} › {w['tbl']}[{w['col']}] · {w.get('rows') or 0:,} rows, {w.get('distinct')} distinct"
-                         + (f" · table: {w['table_description']}" if w.get("table_description") else "")
-                         + (f" · column: {w['column_description']}" if w.get("column_description") else ""))
+            lines.append(f"- {w['source']} > {w['tbl']}[{w['col']}] - {w.get('rows') or 0:,} rows, {w.get('distinct')} distinct"
+                         + (f" - table: {w['table_description']}" if w.get("table_description") else "")
+                         + (f" - column: {w['column_description']}" if w.get("column_description") else ""))
     if d["live_examples"]:
         lines.append("Real records: " + "; ".join(", ".join(f"{k}={v}" for k, v in x["values"].items()) for x in d["live_examples"][:6]))
     if d["relations"]:

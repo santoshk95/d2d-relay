@@ -1,4 +1,4 @@
-/* ---------------- All modules, module pages and Admin › Branding (P9) ---------------- */
+/* ---------------- All modules, module pages and Admin > Branding (P9) ---------------- */
 const WORK_NAME = {assess: 'Assess', develop: 'Develop', change: 'Fix / change', migrate: 'Migrate', run: 'Run & support', engage: 'Engagement'};
 const STATE_PILL = {available: ['Live', 'ok'], partly: ['Partly live', 'info'], preview: ['Design preview', 'info'], planned: ['Planned', 'mute'], locked: ['Not in your plan', 'outline'],
   off: ['Not switched on', 'mute']};
@@ -16,8 +16,8 @@ function moduleCard(m) {
     h('div', {class: 'ptop'}, h('div', {class: 'pico'}, icon(m.icon)), statePill(st)),
     h('div', {class: 'pname'}, m.name), h('div', {class: 'psub'}, m.sub), h('div', {class: 'ptext'}, m.text),
     m.platforms.length ? h('div', {class: 'pchips'}, m.platforms.slice(0, 3).map(p => h('span', {class: 'chipx'}, p)), m.platforms.length > 3 ? h('span', {class: 'chipx'}, '+' + (m.platforms.length - 3)) : null) : null,
-    h('div', {class: 'pstat'}, m.work.length ? m.work.map(w => WORK_NAME[w]).join(' · ') : m.pl === 'consulting' ? 'Engagement' : (m.stat || '')),
-    h('div', {class: 'popen'}, st === 'available' ? 'Open →' : st === 'locked' ? 'Ask about this module' : m.pl === 'consulting' ? 'Engage PASDACS →' : 'How it will work →'));
+    h('div', {class: 'pstat'}, m.work.length ? m.work.map(w => WORK_NAME[w]).join(' - ') : m.pl === 'consulting' ? 'Engagement' : (m.stat || '')),
+    h('div', {class: 'popen'}, st === 'available' ? 'Open' : st === 'locked' ? 'Ask about this module' : m.pl === 'consulting' ? 'Engage PASDACS' : 'How it will work'));
 }
 async function renderModules() {
   if (!S.registry) await loadRegistry();
@@ -26,17 +26,17 @@ async function renderModules() {
   const sections = reg.pillars.map(p => [p, reg.modules.filter(m => m.pl === p.id)]).filter(x => x[1].length);
   const total = sections.reduce((n, s) => n + s[1].length, 0);
   $('#main').replaceChildren(h('div', {class: 'page'},
-    pageHead({crumbs: [['Home', '#/'], ['All modules']], eyebrow: brandName() + ' · All modules', title: 'Everything Relay does, by pillar',
+    pageHead({crumbs: [['Home', '#/'], ['All modules']], eyebrow: brandName() + ' - All modules', title: 'Everything Relay does, by pillar',
       promise: `Six pillars, ${total} modules. Live ones open their screen; planned ones show how they will work, step by step, before they are built.`,
       actions: me.builder === false ? null : h('a', {class: 'btn primary', href: '#/new'}, icon('plus'), 'New dashboard')}),
     h('div', {class: 'row', style: 'gap:8px'}, sections.map(([p]) => h('button', {class: 'btn sm', type: 'button', onclick: () => document.getElementById('pl-' + p.id).scrollIntoView({behavior: 'smooth'})}, p.name))),
-    h('div', {class: 'note', style: 'margin:16px 0 4px'}, h('b', {}, 'Every module lists the work it does: '), 'Assess · Develop · Fix / change · Migrate · Run & support. Consulting modules are engagements.'),
+    h('div', {class: 'note', style: 'margin:16px 0 4px'}, h('b', {}, 'Every module lists the work it does: '), 'Assess - Develop - Fix / change - Migrate - Run & support. Consulting modules are engagements.'),
     ...sections.flatMap(([p, ms]) => [
       h('div', {class: 'section-title', id: 'pl-' + p.id}, h('h2', {}, p.name), h('span', {class: 'small muted'}, p.line),
         h('span', {class: 'hint'}, `${ms.filter(m => ['available', 'partly', 'preview'].includes(m.state)).length} of ${ms.length} ready`)),
       h('div', {class: 'products'}, ms.map(moduleCard))]),
     me.admin ? null : h('p', {class: 'small muted', style: 'margin-top:24px'}, 'You see the modules your role uses. Ask an admin if you need another.')));
-  document.title = `All modules · ${S.brand ? S.brand.full : 'RELAY by PASDACS'}`;
+  document.title = `All modules - ${S.brand ? S.brand.full : 'RELAY by PASDACS'}`;
 }
 async function renderModule(id, work) {
   const main = $('#main');
@@ -53,55 +53,55 @@ async function renderModule(id, work) {
   const studioHref = `#/studio?type=${encodeURIComponent(studioType || 'proposal')}&module=${encodeURIComponent(m.id)}`;
   if (m.state === 'locked') {
     main.replaceChildren(h('div', {class: 'page'},
-      pageHead({crumbs: [['Home', '#/'], ['All modules', '#/modules'], [m.name]], eyebrow: brandName() + ' · ' + pillar.name, title: m.name, promise: m.text, actions: statePill('locked')}),
-      h('div', {class: 'card', style: 'max-width:720px'}, h('h3', {}, 'This module isn’t part of your plan yet'),
+      pageHead({crumbs: [['Home', '#/'], ['All modules', '#/modules'], [m.name]], eyebrow: brandName() + ' - ' + pillar.name, title: m.name, promise: m.text, actions: statePill('locked')}),
+      h('div', {class: 'card', style: 'max-width:720px'}, h('h3', {}, 'This module isn\'t part of your plan yet'),
         h('p', {class: 'muted'}, b.partner ? `${b.full} can add it.` : 'A PASDACS consultant can switch it on. Your data and work stay as they are.'),
         h('button', {class: 'btn primary', type: 'button', onclick: () => interest(m)}, b.partner ? 'Ask ' + b.name : 'Ask a PASDACS consultant'))));
     return;
   }
-  if (m.state === 'off') {                      // P17: switched off for this workspace — the same page the workbench shows
+  if (m.state === 'off') {                      // P17: switched off for this workspace - the same page the workbench shows
     if (typeof wbOff === 'function') return wbOff(id, false);
     const t = (S.me || {}).tenant || {};
     main.replaceChildren(h('div', {class: 'page'},
-      pageHead({crumbs: [['Home', '#/'], ['All modules', '#/modules'], [m.name]], eyebrow: brandName() + ' · ' + pillar.name, title: m.name, promise: m.text, actions: statePill('off')}),
+      pageHead({crumbs: [['Home', '#/'], ['All modules', '#/modules'], [m.name]], eyebrow: brandName() + ' - ' + pillar.name, title: m.name, promise: m.text, actions: statePill('off')}),
       h('div', {class: 'card', style: 'max-width:720px'}, h('h3', {}, `Not switched on for ${t.name || 'this workspace'}`),
         h('p', {class: 'muted'}, `${m.name} is not switched on for this workspace, so its screens cannot be opened here. Nothing is deleted: what was made with it comes back when it is switched on again.`),
         h('button', {class: 'btn primary', type: 'button', onclick: () => interest(m)}, 'Ask your administrator'))));
     return;
   }
   main.replaceChildren(h('div', {class: 'page'},
-    pageHead({crumbs: [['Home', '#/'], ['All modules', '#/modules'], [m.name]], eyebrow: `${brandName()} · ${pillar.name} · ${m.name}`, title: m.sub, promise: m.text, actions: statePill(m.state)}),
+    pageHead({crumbs: [['Home', '#/'], ['All modules', '#/modules'], [m.name]], eyebrow: `${brandName()} - ${pillar.name} - ${m.name}`, title: m.sub, promise: m.text, actions: statePill(m.state)}),
     m.work.length ? h('div', {class: 'row', style: 'margin-bottom:12px'}, h('span', {class: 'small muted'}, 'What do you need?'),
       h('nav', {class: 'worktabs', 'aria-label': 'Work type'}, m.work.map(k => h('a', {href: `#/m/${id}/${k}`, class: k === w ? 'on' : '', 'aria-current': k === w ? 'page' : null}, (m.live[k] ? '● ' : '') + WORK_NAME[k])))) : null,
     h('ol', {class: 'journey', 'aria-label': 'How it works'}, m.plan.journey.map((j, i) => h('li', {class: viaStudio && i === m.plan.journey.length - 1 ? 'on' : ''}, h('span', {class: 'dot'}), h('div', {class: 'jl'}, `${i + 1} ${j}`), h('div', {class: 'js'}, i === 0 ? 'starts here' : viaStudio && i === m.plan.journey.length - 1 ? 'in the studio' : ' ')))),
     h('div', {class: 'g-side'},
       h('div', {class: 'stack'},
         liveRoute ? h('div', {class: 'banner ok'}, h('div', {class: 'ic'}, icon('check')), h('div', {class: 'txt'}, h('div', {class: 't'}, 'Live today.'), h('div', {class: 'd'}, 'This work runs in the app now.')), h('a', {class: 'btn primary', href: liveRoute}, 'Open'))
-          : viaStudio ? h('div', {class: 'banner ok'}, h('div', {class: 'ic'}, icon('check')), h('div', {class: 'txt'}, h('div', {class: 't'}, `Partly live: the last step, ${m.plan.journey[m.plan.journey.length - 1]}, runs in the studio.`), h('div', {class: 'd'}, `The deck or pack is drafted from this module's facts and the records you pick, in your template, every figure sourced — ${m.stat || 'through Proposals & decks'}.`)),
+          : viaStudio ? h('div', {class: 'banner ok'}, h('div', {class: 'ic'}, icon('check')), h('div', {class: 'txt'}, h('div', {class: 't'}, `Partly live: the last step, ${m.plan.journey[m.plan.journey.length - 1]}, runs in the studio.`), h('div', {class: 'd'}, `The deck or pack is drafted from this module's facts and the records you pick, in your template, every figure sourced - ${m.stat || 'through Proposals & decks'}.`)),
             (S.me || {}).builder === false ? null : h('a', {class: 'btn primary', href: studioHref}, icon('file'), 'Prepare the deck in the studio'))
           : h('div', {class: 'banner info'}, h('div', {class: 'ic'}, icon('info')), h('div', {class: 'txt'}, h('div', {class: 't'}, m.state === 'partly' ? 'Partly live.' : m.state === 'preview' ? 'Designed, not built yet.' : 'Planned.'),
             h('div', {class: 'd'}, m.plan.live || 'This page shows how it will work; it is designed step by step before it is built.'))),
-        h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'How it works — ' + (WORK_NAME[w] || 'engagement').toLowerCase())), h('div', {class: 'ph-steps'}, m.plan.steps.map(s => h('div', {}, s)))),
+        h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'How it works - ' + (WORK_NAME[w] || 'engagement').toLowerCase())), h('div', {class: 'ph-steps'}, m.plan.steps.map(s => h('div', {}, s)))),
         m.platforms.length ? h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'card-head'}, h('h3', {}, 'Platforms'), h('span', {class: 'sp'}), h('span', {class: 'small muted'}, m.platforms.length + ' covered')),
           h('div', {class: 'row', style: 'gap:8px'}, m.platforms.map(p => h('span', {class: 'chipx'}, p))),
-          h('p', {class: 'small muted', style: 'margin:10px 0 0'}, 'Missing one? Tell us — new platforms are added as connectors and rules, and reused by every client.')) : null),
+          h('p', {class: 'small muted', style: 'margin:10px 0 0'}, 'Missing one? Tell us - new platforms are added as connectors and rules, and reused by every client.')) : null),
       h('div', {class: 'stack'},
-        h('div', {class: 'card', style: 'margin:0'}, h('h3', {}, 'Where you confirm'), h('div', {class: 'small muted', style: 'margin:4px 0 10px'}, 'Always a person in the loop — the agent waits at each of these:'),
+        h('div', {class: 'card', style: 'margin:0'}, h('h3', {}, 'Where you confirm'), h('div', {class: 'small muted', style: 'margin:4px 0 10px'}, 'Always a person in the loop - the agent waits at each of these:'),
           h('div', {class: 'confirm'}, m.confirm.map(([s, v]) => h('div', {}, h('span', {class: 'proven'}, icon('check')), h('span', {}, h('b', {}, s + ': '), v))))),
         typeof connectionsCard === 'function' && m.platforms.length && (S.me || {}).builder !== false ? connectionsCard(m) : null,     // P10: the module's connections and the wizard
         h('div', {class: 'card', style: 'margin:0'}, h('h3', {}, 'Same rules as everywhere'), h('div', {class: 'rules', style: 'margin-top:8px'}, m.rules.map(t => h('div', {}, icon('check'), t)))),
         m.plan.builds ? h('div', {class: 'card', style: 'margin:0'}, h('h3', {}, 'Works with'), h('div', {class: 'row', style: 'gap:6px;margin-top:8px'}, m.plan.builds.map(x => h('span', {class: 'chipx'}, x)))) : null,
         h('div', {class: 'card', style: 'margin:0'}, h('h3', {}, m.state === 'available' ? 'Need something else?' : 'Want it sooner?'),
-          h('p', {class: 'small muted'}, 'Tell us the systems involved — it decides what we build first.'),
+          h('p', {class: 'small muted'}, 'Tell us the systems involved - it decides what we build first.'),
           h('button', {class: 'btn', type: 'button', onclick: () => interest(m)}, 'I need this'))))));
-  document.title = `${m.name} · ${b.full || 'RELAY by PASDACS'}`;
+  document.title = `${m.name} - ${b.full || 'RELAY by PASDACS'}`;
 }
 async function interest(m) {
-  try { await api(`/api/registry/${m.id}/interest`, {method: 'POST'}); notify(`Noted — ${m.name} is on the list; the admins have been told.`, 'ok'); }
+  try { await api(`/api/registry/${m.id}/interest`, {method: 'POST'}); notify(`Noted - ${m.name} is on the list; the admins have been told.`, 'ok'); }
   catch (e) { notify(e.message, 'err'); }
 }
 
-/* ---------------- Admin › Branding (white-label, hourly rate, edition) ---------------- */
+/* ---------------- Admin > Branding (white-label, hourly rate, edition) ---------------- */
 async function adminBranding() {
   const d = await api('/api/admin/branding'), s = {...d.saved}, b = d.brand;
   const fld = (label, el, hint) => h('div', {}, h('label', {class: 'f'}, label), el, hint ? h('div', {class: 'hint'}, hint) : null);
@@ -120,13 +120,13 @@ async function adminBranding() {
   const fx = h('input', {type: 'number', min: 0.0001, step: 0.01, value: b.usd_rate || 1, style: 'max-width:160px'});
   // P11: the studio's templates (PowerPoint and Word, up to 2 MB each) and the house-style notes its checks show
   const tpl = d.templates || {}, tplFiles = {};
-  const tplBox = (key, label, accept) => { const cur = tpl[key] || {}; const inp = h('input', {type: 'file', accept, 'aria-label': label}); const txt = h('div', {class: 'small muted'}, cur.set ? `${cur.name || 'a template'} is set.` : 'None yet — the RELAY template is used.');
-    inp.onchange = () => { const f = inp.files[0]; if (!f) return; if (f.size > 2 * 1024 * 1024) { notify('Keep the template under 2 MB.', 'err'); inp.value = ''; return; } const r = new FileReader(); r.onload = () => { tplFiles[key] = r.result; tplFiles[key + '_name'] = f.name; txt.textContent = `${f.name} · ${size(f.size)} (saved with the form)`; }; r.readAsDataURL(f); };
+  const tplBox = (key, label, accept) => { const cur = tpl[key] || {}; const inp = h('input', {type: 'file', accept, 'aria-label': label}); const txt = h('div', {class: 'small muted'}, cur.set ? `${cur.name || 'a template'} is set.` : 'None yet - the RELAY template is used.');
+    inp.onchange = () => { const f = inp.files[0]; if (!f) return; if (f.size > 2 * 1024 * 1024) { notify('Keep the template under 2 MB.', 'err'); inp.value = ''; return; } const r = new FileReader(); r.onload = () => { tplFiles[key] = r.result; tplFiles[key + '_name'] = f.name; txt.textContent = `${f.name} - ${size(f.size)} (saved with the form)`; }; r.readAsDataURL(f); };
     const remove = cur.set ? h('button', {class: 'btn sm', type: 'button', onclick: () => { tplFiles[key] = ''; tplFiles[key + '_name'] = ''; txt.textContent = 'Removed (saved with the form).'; }}, 'Remove') : null;
     return h('div', {}, h('label', {class: 'f'}, label), h('div', {class: 'row'}, inp, remove), txt); };
-  const house = h('textarea', {rows: 3, placeholder: 'e.g. “Titles in sentence case; no exclamation marks; say ‘client’, not ‘customer’; numbers with the Indian grouping”'}, tpl.house_style || '');
+  const house = h('textarea', {rows: 3, placeholder: 'e.g. "Titles in sentence case; no exclamation marks; say \'client\', not \'customer\'; numbers with the Indian grouping"'}, tpl.house_style || '');
   const logos = {}, logoBox = (key, label) => { const inp = h('input', {type: 'file', accept: '.svg,.png,image/svg+xml,image/png', 'aria-label': label}); const cur = h('div', {class: 'small muted'}, s[key] ? 'A logo is set.' : 'None yet.');
-    inp.onchange = () => { const f = inp.files[0]; if (!f) return; if (f.size > 200000) { notify('Keep the logo under 200 KB.', 'err'); inp.value = ''; return; } const r = new FileReader(); r.onload = () => { logos[key] = r.result; cur.textContent = `${f.name} · ${size(f.size)} (saved with the form)`; }; r.readAsDataURL(f); };
+    inp.onchange = () => { const f = inp.files[0]; if (!f) return; if (f.size > 200000) { notify('Keep the logo under 200 KB.', 'err'); inp.value = ''; return; } const r = new FileReader(); r.onload = () => { logos[key] = r.result; cur.textContent = `${f.name} - ${size(f.size)} (saved with the form)`; }; r.readAsDataURL(f); };
     const remove = s[key] ? h('button', {class: 'btn sm', type: 'button', onclick: () => { logos[key] = ''; cur.textContent = 'Removed (saved with the form).'; }}, 'Remove') : null;
     return h('div', {}, h('label', {class: 'f'}, label), h('div', {class: 'row'}, inp, remove), cur); };
   const save = h('button', {class: 'btn primary', onclick: async () => {
@@ -138,7 +138,7 @@ async function adminBranding() {
   const preview = h('div', {class: 'card', style: 'margin:0'}, h('h3', {}, 'How it shows'), h('div', {class: 'small muted', style: 'margin-bottom:10px'}, 'The rail, the sign-in page, outgoing mail and PDF covers use this.'),
     h('div', {class: 'row', style: 'gap:14px;align-items:center'}, b.partner ? [b.logo_light ? h('img', {src: b.logo_light, alt: '', style: 'height:36px'}) : partnerMark(b), h('div', {}, h('b', {}, b.full), h('div', {class: 'small muted'}, b.tagline))] : svgEl(RELAY_LOGO, 'relaylogo')),
     h('div', {class: 'powered', style: 'margin-top:14px;padding:10px 0 0;border-top:1px solid var(--line)'}, b.partner ? [markEl(), h('span', {}, 'Powered by ', h('b', {}, 'PASDACS Relay'))] : h('span', {class: 'faint'}, 'RELAY by PASDACS')),
-    h('p', {class: 'small muted', style: 'margin:12px 0 0'}, 'Partners carry their own name, mark, colours and logos everywhere; the “Powered by PASDACS Relay” line stays. The platform’s own look cannot be renamed.'));
+    h('p', {class: 'small muted', style: 'margin:12px 0 0'}, 'Partners carry their own name, mark, colours and logos everywhere; the "Powered by PASDACS Relay" line stays. The platform\'s own look cannot be renamed.'));
   return h('div', {class: 'grid2'},
     h('div', {class: 'card formcard', style: 'margin:0'},
       h('h3', {}, 'White-label'),
@@ -151,7 +151,7 @@ async function adminBranding() {
       fld('Contact address (shown on the sign-in page)', contact),
       h('h3', {style: 'margin-top:22px'}, 'Edition and value'),
       fld('Edition', edition, 'Decides which modules are in the plan; the catalogue, menu and Home follow it.'),
-      h('div', {class: 'opts'}, fld('Hourly rate of the work agents replace', h('div', {class: 'row'}, currency, rate), 'Home shows net value = agent hours × rate − AI cost once a rate is set.'),
+      h('div', {class: 'opts'}, fld('Hourly rate of the work agents replace', h('div', {class: 'row'}, currency, rate), 'Home shows net value = agent hours × rate - AI cost once a rate is set.'),
         fld('Exchange rate: one US dollar in your currency', fx, 'AI cost is recorded in US dollars.')),
       h('h3', {style: 'margin-top:22px'}, 'Studio templates and house style'),
       h('div', {class: 'opts'}, tplBox('template_pptx', 'PowerPoint template (.pptx or .potx)', '.pptx,.potx'), tplBox('template_docx', 'Word template (.docx or .dotx)', '.docx,.dotx')),

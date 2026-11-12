@@ -1,8 +1,8 @@
-"""Collaboration & content (registry id `collab`) on the workbench — SharePoint, OneDrive and Teams content through
+"""Collaboration & content (registry id `collab`) on the workbench - SharePoint, OneDrive and Teams content through
 Microsoft Graph; Google Workspace and Confluence through their exports.
 
 Assess   sites and the files and folders in their document libraries, each with its sharing; rules: content shared by
-         an anonymous link (anyone with the link can open it — Finance's "Month end" folder), content shared with the
+         an anonymous link (anyone with the link can open it - Finance's "Month end" folder), content shared with the
          whole organisation, folders nobody has touched in two years.
 Develop  a folder structure from an upload (a new team's library): names checked against SharePoint's rules and what
          is already there, a named approver, one approved write, read back.
@@ -29,10 +29,10 @@ def rule_anonymous(ctx, inv, spec=None) -> list[dict]:
         bad = [r for r in rows if str(r.get("sharing") or "") == "anonymous link"]
         if bad:
             out.append(w3.finding("anonymous_link", system, "item", ", ".join(f"{r.get('site')}/{r.get('name')}" for r in bad[:6]),
-                                  f"{len(bad)} item(s) shared by an anonymous link — anyone with the link can open them: " + ", ".join(f"{r.get('site')} › {r.get('name')}" for r in bad[:4]),
+                                  f"{len(bad)} item(s) shared by an anonymous link - anyone with the link can open them: " + ", ".join(f"{r.get('site')} > {r.get('name')}" for r in bad[:4]),
                                   "high", measured=", ".join(str(r.get("name")) for r in bad[:6]), fix="Remove the anonymous link (a Change item does it after approval); share with named people instead.",
                                   work="change", keys=[r["key"] for r in bad],
-                                  proposals=[{"action": "update", "entity": "item", "key": str(r["key"]), "label": f"{r.get('site')} › {r.get('name')}", "field": "sharing", "value": "members",
+                                  proposals=[{"action": "update", "entity": "item", "key": str(r["key"]), "label": f"{r.get('site')} > {r.get('name')}", "field": "sharing", "value": "members",
                                               "before": "anonymous link", "why": "anyone with the link can open it"} for r in bad]))
     return out
 
@@ -70,15 +70,15 @@ rule_stale.label = f"Folders untouched for {STALE_YEARS} years"
 
 
 def monitor_anonymous(ctx, seen) -> list[dict]:
-    """Run › Watch: an anonymous link is a break — whoever has the link can open the content."""
+    """Run > Watch: an anonymous link is a break - whoever has the link can open the content."""
     out = []
     for c, a in w3.systems(ctx):
         if "item" not in a.ENTITIES:
             continue
         for r in seen.records(c, a, "item"):
             if r.get("sharing") == "anonymous link":
-                err = f"{r.get('site')} › {r.get('name')} is shared by an anonymous link"
-                out.append({"name": f"{c['id']}:anon:{r['key']}", "label": f"{r.get('site')} › {r.get('name')} · {c['name']}", "status": "fail", "measured": "anonymous link",
+                err = f"{r.get('site')} > {r.get('name')} is shared by an anonymous link"
+                out.append({"name": f"{c['id']}:anon:{r['key']}", "label": f"{r.get('site')} > {r.get('name')} - {c['name']}", "status": "fail", "measured": "anonymous link",
                             "expected": "members only", "detail": err, "break": {"conn": c["id"], "system": c["name"], "job": f"Sharing: {r.get('name')}", "label": f"Sharing: {r.get('name')}",
                                                                                    "status": "exposed", "streak": 0, "error": err, "since": None, "run": str(r["key"])}})
     return out
@@ -108,20 +108,20 @@ def _kinds() -> set:
     return {"m365_content"}
 
 
-GUIDE = """# Collaboration & content — the work item
+GUIDE = """# Collaboration & content - the work item
 
 Relay's content module reads sites, files and folders with their sharing, narrows access (an anonymous link removed)
 and creates or moves folders only after a named person approves that very change. It reads names, sizes, dates and
-sharing — never the documents' contents. Never invent a file, a link or a date."""
+sharing - never the documents' contents. Never invent a file, a link or a date."""
 
 w3.hook(MODULE)
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE, platforms=PLATFORMS,
-    lineage="each content platform and the libraries read (system → entity), folders created as a write into the library",
+    lineage="each content platform and the libraries read (system -> entity), folders created as a write into the library",
     schemas={"inventory": ["include", "system", "object", "records"], "finding": ["decision", "severity", "system", "what"]},
     work={
-        "assess": w3.assess_work(SPEC, "See what is shared too widely — anonymous links, organisation-wide sharing, stale folders"),
+        "assess": w3.assess_work(SPEC, "See what is shared too widely - anonymous links, organisation-wide sharing, stale folders"),
         "develop": w3.develop_work(SPEC, "Set up a library's folders: names checked, a dry run, one approved write, read back"),
         "change": w3.change_work(SPEC, "Remove an anonymous link (or narrow other sharing) with approval, checked on the system"),
         "migrate": w3.migrate_work(SPEC, "Move folders between libraries, reconciled record by record", _kinds),

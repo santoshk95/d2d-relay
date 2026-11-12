@@ -85,7 +85,7 @@ def profile(workdir: Path) -> str:
         dates = [c for c in t["columns"] if c["type"] == "date"]
         lines.append(f"## {t['file']}  ({t['rows']:,} rows; SQL view `{t['view']}`)")
         if dates:
-            lines.append("Date coverage: " + "; ".join(f"{c['name']} {c['min'][:10]} → {c['max'][:10]}" for c in dates))
+            lines.append("Date coverage: " + "; ".join(f"{c['name']} {c['min'][:10]} {c['max'][:10]}" for c in dates))
         lines.append("")
         lines.append("| column | type | distinct | nulls | min | max | notes |")
         lines.append("|---|---|---|---|---|---|---|")
@@ -103,8 +103,8 @@ def profile(workdir: Path) -> str:
         lines.append("")
     if unreadable:
         lines += ["## Files that could not be read (no SQL view)", ""] + [f"- {u}" for u in unreadable] + [""]
-    lines.append("## Likely relationships (many → one)")
-    lines += [f"- {r['many']} → {r['one']}  ({r['matched']:.0%} of values match)" for r in rels] or ["- none found by name"]
+    lines.append("## Likely relationships (many -> one)")
+    lines += [f"- {r['many']} {r['one']}  ({r['matched']:.0%} of values match)" for r in rels] or ["- none found by name"]
     md = "\n".join(lines) + "\n"
     (workdir / "profile.md").write_text(md, encoding="utf-8")
     (workdir / "profile.json").write_text(json.dumps({"tables": tables, "relationships": rels, "unreadable": unreadable},

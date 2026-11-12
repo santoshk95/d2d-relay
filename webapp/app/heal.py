@@ -1,24 +1,24 @@
 """Self-healing (build-plan v2, P16): watch what the platform already observes, diagnose with the logs and the
-lineage, propose a fix, prove it on a copy, apply it when a person approves — through the owning module's own
-guarded path — and keep the rule for next time.
+lineage, propose a fix, prove it on a copy, apply it when a person approves - through the owning module's own
+guarded path - and keep the rule for next time.
 
 Watch: dashboard refresh and gate failures (project runs, extracts and review gates), expired warehouse sign-ins
 (connections), the DAX checker's heartbeat, schedules that paused, integration runs that failed with a retry-able
 error (P13), and the work rows other modules leave for Self-healing (P12 `itsm_work`, P13 `intan_work`, P14
 `observe_work` with kind heal). Each becomes a **case**: a folder `output/projects/<id>/` with kind `heal`,
-evidence/ (the activity log, run history, lineage neighbours, the configuration it may read — secrets never),
+evidence/ (the activity log, run history, lineage neighbours, the configuration it may read - secrets never),
 diagnosis.yaml, fix/ (the copy with before / after) and tests/.
 
-Diagnose: a learned (or built-in) rule for the failure's signature proposes its fix at once — "seen N times" — and
+Diagnose: a learned (or built-in) rule for the failure's signature proposes its fix at once - "seen N times" - and
 the agent run is skipped unless the person asks; otherwise the registered job `heal_diagnose` (an LLM run in the
 case folder) writes diagnosis.yaml (cause, confidence, evidence rows, the fix, the test). Checkpoint `heal.diagnosis`
-(view text) — nothing runs until a person accepts the proposed fix.
+(view text) - nothing runs until a person accepts the proposed fix.
 Fix on a copy: job `heal_fix` applies the change on a copy (a copied dashboard definition is edited by the agent and
 re-checked by the definition validator; a copied configuration is validated by the owning module's validator), runs
 the proposed test and records before / after. Checkpoint `heal.apply` (view table).
-Approve & apply: on accept the change goes through the owning module's own path — the dashboard's extract or revise
+Approve & apply: on accept the change goes through the owning module's own path - the dashboard's extract or revise
 job, `connectors.renew` / `connectors.request_write` (a guarded write with its own per-change approval),
-`schedules.save`, `observe.set_asset_checks` — never by editing files behind a module's back. An accepted fix becomes
+`schedules.save`, `observe.set_asset_checks` - never by editing files behind a module's back. An accepted fix becomes
 (or strengthens) a rule in `heal_rules`, keyed by the signature; rules can be disabled, every change is audited.
 """
 from __future__ import annotations
@@ -73,21 +73,21 @@ CREATE TABLE IF NOT EXISTS heal_rules (
 FIX_KINDS = {
     "rerun_extract": {"what": "pull the stale warehouse tables again through the dashboard's own extract job", "keys": [], "module": "D2D"},
     "renew_connection": {"what": "ask the connection's owner to sign in again; what paused on it resumes when it works", "keys": [], "module": "Connections"},
-    "notify_hold": {"what": "tell the people responsible and hold what depends on it — no configuration changes", "keys": [], "module": "DAX checker"},
+    "notify_hold": {"what": "tell the people responsible and hold what depends on it - no configuration changes", "keys": [], "module": "DAX checker"},
     "dashboard_revise": {"what": "a change to the dashboard definition, applied through the dashboard's own revise path", "keys": ["file", "edit"], "module": "D2D"},
     "rerun_integration": {"what": "run the integration again on its platform (a guarded write on its connection, with its own approval)", "keys": ["integration", "action"], "module": "Integration analytics"},
     "schedule_update": {"what": "change a schedule setting (email account, cadence, recipients) and resume it", "keys": ["email_account_id", "cadence", "recipients"], "module": "Schedules"},
     "threshold": {"what": "tune a data check's threshold on one asset", "keys": ["check", "asset", "config"], "module": "Data observability"},
     "retry_policy": {"what": "a retry policy on an integration: attempts and the wait between them", "keys": ["integration", "attempts", "wait_s"], "module": "Integration analytics"},
-    "needs_code": {"what": "a code change — AI SDLC opens a change request from this case", "keys": [], "module": "AI SDLC"},
+    "needs_code": {"what": "a code change - AI SDLC opens a change request from this case", "keys": [], "module": "AI SDLC"},
 }
 ROUTE_TEXT = {"config": "a configuration change through the owning module", "code": "a code change through AI SDLC"}
 STEPS = ["watch", "diagnose", "fix", "prove", "approve", "learn"]
 STEP_LABEL = {"watch": "Watch", "diagnose": "Diagnose", "fix": "Fix", "prove": "Prove", "approve": "Approve", "learn": "Learn"}
 STEP_OF = {"waiting": "watch", "diagnosing": "diagnose", "diagnosed": "diagnose", "sent_back": "diagnose", "fixing": "fix", "held": "prove", "proven": "approve",
            "applying": "approve", "applied": "learn", "needs_code": "fix", "recovered": "learn", "closed": "learn", "error": "fix"}
-STATUS_LABEL = {"waiting": "Waiting to start", "diagnosing": "Diagnosing", "diagnosed": "Fix proposed — confirm it", "sent_back": "Sent back", "fixing": "Fixing on a copy",
-                "held": "Needs a person", "proven": "Proven — approve to apply", "applying": "Applying (write awaiting approval)", "applied": "Applied", "needs_code": "Needs code → AI SDLC",
+STATUS_LABEL = {"waiting": "Waiting to start", "diagnosing": "Diagnosing", "diagnosed": "Fix proposed - confirm it", "sent_back": "Sent back", "fixing": "Fixing on a copy",
+                "held": "Needs a person", "proven": "Proven - approve to apply", "applying": "Applying (write awaiting approval)", "applied": "Applied", "needs_code": "Needs code -> AI SDLC",
                 "recovered": "Recovered on its own", "closed": "Closed", "error": "Run failed"}
 OPEN = ("waiting", "diagnosing", "diagnosed", "sent_back", "fixing", "held", "proven", "applying", "error")
 RETRYABLE = re.compile(r"timeout|timed out|\b50[234]\b|\b429\b|rate limit|connection reset|temporarily|unavailable|ECONNRESET|try again|throttl", re.I)
@@ -102,7 +102,7 @@ BUILTIN = {
                       "fix": {"kind": "rerun_extract", "module": "D2D", "text": "Pull the stale warehouse tables again through the dashboard's own extract job.", "change": {}, "risk": "low"},
                       "test": {"what": "The same tables pull into a copy of the project from the same connection.", "how": "Each stale table is extracted into the case's fix/copy folder with the connection owner's stored sign-in (read-only).", "expect": "Every table arrives with rows and a newer extract time than the stale file."}},
     "warehouse_signin": {"kind": "warehouse_signin", "title": "Expired warehouse sign-in: renew the connection, tell the owner", "route": "config",
-                         "cause": "The stored sign-in for the warehouse connection no longer works (expired or revoked); everything that reads through it — extracts, schedules, Ask D — waits on it.",
+                         "cause": "The stored sign-in for the warehouse connection no longer works (expired or revoked); everything that reads through it - extracts, schedules, Ask D - waits on it.",
                          "fix": {"kind": "renew_connection", "module": "Connections", "text": "Mark the connection for renewal and tell its owner to sign in again; the schedules paused on it resume once it works.", "change": {}, "risk": "low"},
                          "test": {"what": "Confirms the stored sign-in really is refused (not a one-off outage).", "how": "A read-only connection test runs with the stored credentials.", "expect": "The warehouse refuses the sign-in; if it accepts it, the case closes as recovered."}},
     "daxcheck_offline": {"kind": "daxcheck_offline", "title": "DAX checker off: tell the admins, hold publishing", "route": "config",
@@ -111,7 +111,7 @@ BUILTIN = {
                          "test": {"what": "Confirms the checker is still silent.", "how": "The heartbeat file is read again.", "expect": "No heartbeat in the last 30 seconds; if it is back, the case closes as recovered."}},
     "integration_retry": {"kind": "integration_retry", "title": "Integration run failed with a retry-able error: run it again", "route": "config",
                           "cause": "The integration's last run failed on a transient error (timeout, throttling, a short outage) rather than on its logic or data.",
-                          "fix": {"kind": "rerun_integration", "module": "Integration analytics", "text": "Run the integration again on its platform — a guarded write on its connection that needs its own approval.", "change": {"action": "rerun"}, "risk": "low"},
+                          "fix": {"kind": "rerun_integration", "module": "Integration analytics", "text": "Run the integration again on its platform - a guarded write on its connection that needs its own approval.", "change": {"action": "rerun"}, "risk": "low"},
                           "test": {"what": "The platform is reachable again.", "how": "A read-only test of the platform's connection, and the run history is read for repeated failures.", "expect": "The connection answers; the failure did not repeat on every run."}},
     "schedule_mail": {"kind": "schedule_mail", "title": "Schedule paused: its email account is missing or expired", "route": "config",
                       "cause": "The schedule's email account was removed or its sign-in expired, so the schedule paused instead of sending.",
@@ -135,7 +135,7 @@ def _j(s, default):
 
 
 def _when(t: float | None) -> str:
-    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%Y-%m-%d %H:%M") if t else "—"
+    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%Y-%m-%d %H:%M") if t else "-"
 
 
 def _slug(s: str) -> str:
@@ -154,7 +154,7 @@ def ensure_builtin() -> None:
         sig = f"gate:{gid}"
         if not db.one("SELECT 1 FROM heal_rules WHERE signature = ?", (sig,)):
             db.run("INSERT INTO heal_rules (id, signature, kind, title, cause, fix, test, origin, enabled, seen, applied, created, updated) VALUES (?, ?, 'gate_failure', ?, ?, ?, ?, 'builtin', 1, 0, 0, ?, ?)",
-                   ("rule-gate-" + gid.replace("_", "-"), sig, f"Review gate failed: {gid.replace('_', ' ')} — fix the definition", f"The latest version fails the '{gid.replace('_', ' ')}' review gate; the problems the gate lists point at the definition keys to change.",
+                   ("rule-gate-" + gid.replace("_", "-"), sig, f"Review gate failed: {gid.replace('_', ' ')} - fix the definition", f"The latest version fails the '{gid.replace('_', ' ')}' review gate; the problems the gate lists point at the definition keys to change.",
                     json.dumps(GATE_FIX), json.dumps(GATE_TEST), now, now))
 
 
@@ -181,7 +181,7 @@ def set_rule(rid: str, enabled: bool, who: str) -> dict:
 
 
 def learn(case: dict, who: str) -> dict:
-    """An accepted, applied fix becomes a rule for its signature — or strengthens the one that proposed it."""
+    """An accepted, applied fix becomes a rule for its signature - or strengthens the one that proposed it."""
     diag = case.get("diagnosis") or {}
     now = time.time()
     have = db.one("SELECT * FROM heal_rules WHERE signature = ?", (case["signature"],))
@@ -223,7 +223,7 @@ def public(r: dict, with_detail: bool = False) -> dict:
     out["step"] = STEP_OF.get(r["status"], r.get("step") or "watch")
     out["step_index"] = STEPS.index(out["step"])
     out["kind_label"] = (BUILTIN.get(r["signature"]) or {}).get("title") or ("Review gate failed" if r["signature"].startswith("gate:") else r["kind"].replace("_", " ").capitalize())
-    out["route_label"] = "Configuration" if r["route"] == "config" else "Code → AI SDLC"
+    out["route_label"] = "Configuration" if r["route"] == "config" else "Code -> AI SDLC"
     out["age_s"] = round(time.time() - (r.get("since") or r["created"]))
     out["open"] = r["status"] in OPEN
     if r.get("rule_id"):
@@ -264,8 +264,8 @@ def _folder(cid: str, cand: dict, who: str | None) -> Path:
                 "case": {k: cand.get(k) for k in ("signature", "kind", "source", "source_id", "place", "route")}})
     db.add_project(cid, _owner_user(who))
     (d / "request.md").write_text(f"# Self-healing case: {cand['title']}\n\n## What the watcher saw ({_when(time.time())})\n\n{cand.get('what') or ''}\n\n"
-                                  f"- Where: {cand.get('place') or '—'}\n- Signature: {cand['signature']}\n- Source: {cand['source']} {cand['source_id']}\n"
-                                  f"- Suggested route: {cand.get('route') or 'config'} — {ROUTE_TEXT.get(cand.get('route') or 'config')}\n\n"
+                                  f"- Where: {cand.get('place') or '-'}\n- Signature: {cand['signature']}\n- Source: {cand['source']} {cand['source_id']}\n"
+                                  f"- Suggested route: {cand.get('route') or 'config'} - {ROUTE_TEXT.get(cand.get('route') or 'config')}\n\n"
                                   "Nothing changes on a live system until a named person approves the fix in the validation queue.\n", encoding="utf-8")
     return d
 
@@ -375,7 +375,7 @@ def _write_evidence(case: dict) -> list[str]:
             files.append(_dump(d, "schedule.json", {k: (_j(s[k], {}) if k in ("target", "cadence", "state") else s[k]) for k in s if k != "recipients"} | {"recipients": len(_j(s["recipients"], []))}))
             rows.append({"when": _when(s.get("last_run") or s.get("updated")), "what": f"schedule {s['status']}", "detail": (s.get("paused_reason") or s.get("last_error") or "")[:300]})
             accounts = db.q("SELECT id, kind, address, status, error FROM email_accounts WHERE owner_id = ?", (s["owner_id"],))
-            files.append(_dump(d, "email_accounts.json", [{**a, "address": a["address"][:3] + "…@" + a["address"].split("@")[-1] if "@" in a["address"] else "…"} for a in accounts]))
+            files.append(_dump(d, "email_accounts.json", [{**a, "address": a["address"][:3] + "...@" + a["address"].split("@")[-1] if "@" in a["address"] else "..."} for a in accounts]))
     if sub.get("connection"):
         try:
             c = connectors._row(sub["connection"])
@@ -406,7 +406,7 @@ def _write_evidence(case: dict) -> list[str]:
             imp.pop("path", None)
             files.append(_dump(d, "incident.json", {k: inc.get(k) for k in ("id", "check_kind", "check_label", "title", "what", "severity", "status", "cause", "measured", "expected", "rows", "asset", "first_seen", "last_seen", "tool")} | {"impact": imp}))
             for r in (inc.get("rows") or [])[:6]:
-                rows.append({"when": _when(inc.get("last_seen")), "what": str(r.get("what") or r.get("What") or inc.get("check_label")), "detail": f"measured {r.get('measured') or r.get('Measured')} · expected {r.get('expected') or r.get('Expected')}"[:300]})
+                rows.append({"when": _when(inc.get("last_seen")), "what": str(r.get("what") or r.get("What") or inc.get("check_label")), "detail": f"measured {r.get('measured') or r.get('Measured')} - expected {r.get('expected') or r.get('Expected')}"[:300]})
         except Exception:  # noqa: BLE001
             pass
     if sub.get("group"):
@@ -463,7 +463,7 @@ def _watch_dashboards() -> list[dict]:
             for g in bad[:3]:
                 if g.get("id") in ("approval", "kpis", "dax"):
                     continue
-                out.append({"signature": f"gate:{g.get('id')}", "kind": "gate_failure", "source": "project", "source_id": f"{pid}:v{vs[-1].get('v')}:{g.get('id')}", "title": f"Gate failed: {g.get('name')} — {name}",
+                out.append({"signature": f"gate:{g.get('id')}", "kind": "gate_failure", "source": "project", "source_id": f"{pid}:v{vs[-1].get('v')}:{g.get('id')}", "title": f"Gate failed: {g.get('name')} - {name}",
                             "what": (g.get("summary") or "")[:600], "place": f"Dashboard {name} v{vs[-1].get('v')}", "since": st.get("updated"), "route": "config", "owner_id": owner,
                             "subject": {"project": pid, "version": vs[-1].get("v"), "gate": g.get("id"), "gates": [x.get("id") for x in bad]}})
     return out
@@ -557,7 +557,7 @@ def _watch_work() -> list[dict]:
     if "itsm_work" in tables:
         for w in db.q("SELECT w.*, g.title AS gtitle, g.summary AS gsummary, g.category AS gcat, g.priority AS gprio FROM itsm_work w JOIN itsm_groups g ON g.id = w.group_id WHERE w.target = 'heal' AND w.status = 'recorded'"):
             out.append({"signature": f"itsm:{(w.get('gcat') or 'ticket').lower().replace(' ', '_')}", "kind": "generic", "source": "itsm_work", "source_id": w["id"], "title": w["gtitle"] or "Service desk ticket", "what": (w.get("gsummary") or "") + (f"\n\n{w['note']}" if w.get("note") else ""),
-                        "place": f"Service desk · {w.get('gcat') or 'ticket'} · {w.get('gprio') or ''}".strip(" ·"), "since": w["created"], "route": "config", "owner_id": w.get("who"),
+                        "place": f"Service desk - {w.get('gcat') or 'ticket'} - {w.get('gprio') or ''}".strip(" -"), "since": w["created"], "route": "config", "owner_id": w.get("who"),
                         "subject": {"group": w["group_id"]}, "work": {"module": "itsm", "table": "itsm_work", "id": w["id"]}})
     return out
 
@@ -692,10 +692,10 @@ def diagnosed(cid: str, diag: dict, rule: dict | None = None, summary: str = "")
     checkpoints.withdraw(KIND_DIAG, cid, who="system")
     r = _row(cid)
     conf = round(float(diag.get("confidence") or 0) * 100)
-    items = [f"Fix ({FIX_KINDS.get(f.get('kind'), {}).get('module') or f.get('module') or '—'}): {f.get('text') or '—'}",
-             f"Test on a copy: {(diag.get('test') or {}).get('what') or '—'}", f"Confidence {conf} % · risk {f.get('risk') or 'low'}"]
+    items = [f"Fix ({FIX_KINDS.get(f.get('kind'), {}).get('module') or f.get('module') or '-'}): {f.get('text') or '-'}",
+             f"Test on a copy: {(diag.get('test') or {}).get('what') or '-'}", f"Confidence {conf} % - risk {f.get('risk') or 'low'}"]
     if rule:
-        items.insert(0, f"Rule '{rule['title']}' — seen {diag.get('seen') or rule['seen']} time{'' if (diag.get('seen') or rule['seen']) == 1 else 's'}, applied {rule['applied']} time{'' if rule['applied'] == 1 else 's'}; the agent run was skipped")
+        items.insert(0, f"Rule '{rule['title']}' - seen {diag.get('seen') or rule['seen']} time{'' if (diag.get('seen') or rule['seen']) == 1 else 's'}, applied {rule['applied']} time{'' if rule['applied'] == 1 else 's'}; the agent run was skipped")
     ev = {"summary": diag.get("cause") or "", "items": items, "counts": {"confidence %": conf, "evidence rows": len(diag.get("evidence") or [])},
           "columns": ["when", "what", "detail"], "rows": diag.get("evidence") or [], "diagnosis": diag, "case": {"id": cid, "signature": r["signature"], "title": r["title"], "place": r["place"]}}
     cp = checkpoints.open(KIND_DIAG, cid, MODULE, f"Fix: {r['title']}", "text", ev, link=f"{ROUTE}/{cid}", assignee=r.get("owner_id") if r.get("owner_id") and db.user(r["owner_id"]) else None, agent="Relay", opened_by="agent")
@@ -721,7 +721,7 @@ async def _diagnose_job(pid: str, args: dict) -> None:
                 break
             if attempt == worker.FIX_ROUNDS:
                 raise RuntimeError(f"diagnosis.yaml still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-            worker.app_note(pid, "heal_diagnose", f"The check found {len(problems)} problem(s) in diagnosis.yaml — Relay is fixing them.", "warn", problems)
+            worker.app_note(pid, "heal_diagnose", f"The check found {len(problems)} problem(s) in diagnosis.yaml - Relay is fixing them.", "warn", problems)
             res = await worker.agent(pid, "heal_diagnose", heal_prompts.fix(problems), worker.TURNS["fix"], "diagnosis", resume=res.get("session_id"), system=heal_prompts.SYSTEM)
         diag = load_diagnosis(d)
         diag["from_rule"] = None
@@ -732,7 +732,7 @@ async def _diagnose_job(pid: str, args: dict) -> None:
         raise
 
 
-worker.register_job("heal_diagnose", _diagnose_job, status="diagnosing", done="Diagnosis ready — confirm the proposed fix", llm=True, turns=60, timeout_s=1800)
+worker.register_job("heal_diagnose", _diagnose_job, status="diagnosing", done="Diagnosis ready - confirm the proposed fix", llm=True, turns=60, timeout_s=1800)
 
 
 # ------------------------------------------------------------------ fix on a copy (proof)
@@ -761,19 +761,19 @@ def _prove(case: dict, diag: dict) -> dict:
         (copy_dir / "data").mkdir(parents=True)
         pulled, errors = [], []
         for file, x in m.items():
-            before.append([file, f"{x.get('rows')} rows · {_when(x.get('extracted'))}"])
+            before.append([file, f"{x.get('rows')} rows - {_when(x.get('extracted'))}"])
             try:
                 c = connectors._row(x["connection_id"])
                 r = connectors.extract(c, x["object"], file[:-len(".parquet")], copy_dir, "heal")
-                after.append([file, f"{r.get('rows')} rows · {_when(r.get('extracted'))}"])
+                after.append([file, f"{r.get('rows')} rows - {_when(r.get('extracted'))}"])
                 pulled.append(file)
             except connectors.Reconsent as e:
-                errors.append(f"{file}: the sign-in expired ({e}) — renew the connection first")
+                errors.append(f"{file}: the sign-in expired ({e}) - renew the connection first")
                 after.append([file, "sign-in expired"])
             except Exception as e:  # noqa: BLE001
                 errors.append(f"{file}: {str(e)[:200]}")
                 after.append([file, "failed"])
-        test = {"ok": bool(pulled) and not errors, "text": f"{len(pulled)} of {len(m)} table(s) pulled into the copy" + (": " + "; ".join(errors) if errors else " — every table arrived with rows and a newer extract time."), "errors": errors}
+        test = {"ok": bool(pulled) and not errors, "text": f"{len(pulled)} of {len(m)} table(s) pulled into the copy" + (": " + "; ".join(errors) if errors else " - every table arrived with rows and a newer extract time."), "errors": errors}
     elif kind == "renew_connection":
         cid = sub.get("connection")
         if not cid:
@@ -794,7 +794,7 @@ def _prove(case: dict, diag: dict) -> dict:
         if test["ok"] and c["status"] == "reconsent":              # the read-only test is proof, not a state change
             db.run("UPDATE connections SET status = 'reconsent', error = ? WHERE id = ?", (c.get("error"), c["id"]))
         paused = db.q("SELECT name FROM schedules WHERE owner_id = ? AND status = 'paused' AND paused_reason LIKE 'Connection:%'", (c["owner_id"],))
-        after = [["status", "reconsent → the owner signs in again"], ["owner told", (db.user(c["owner_id"]) or {}).get("name") or c["owner_id"]], ["schedules that resume", ", ".join(p["name"] for p in paused) or "none"]]
+        after = [["status", "reconsent -> the owner signs in again"], ["owner told", (db.user(c["owner_id"]) or {}).get("name") or c["owner_id"]], ["schedules that resume", ", ".join(p["name"] for p in paused) or "none"]]
         case["subject"] = {**sub, "connection": cid}
         _set(case["id"], subject=case["subject"])
     elif kind == "notify_hold":
@@ -810,7 +810,7 @@ def _prove(case: dict, diag: dict) -> dict:
             return {"before": [], "after": [], "test": {"ok": False, "text": "The integration is no longer listed."}, "summary": "gone"}
         runs = db.q("SELECT * FROM intan_runs WHERE integration_id = ? ORDER BY started DESC LIMIT 10", (i["id"],))
         last = runs[0] if runs else {}
-        before = [["last run", f"{last.get('status')} · {_when(last.get('started'))}"], ["error", (last.get("error") or "")[:160]], ["failures in last 10", str(sum(1 for r in runs if r["status"].lower() in ("failed", "error")))]]
+        before = [["last run", f"{last.get('status')} - {_when(last.get('started'))}"], ["error", (last.get("error") or "")[:160]], ["failures in last 10", str(sum(1 for r in runs if r["status"].lower() in ("failed", "error")))]]
         cid = sub.get("connection")
         if cid:
             c = connectors._row(cid)
@@ -820,10 +820,10 @@ def _prove(case: dict, diag: dict) -> dict:
                 ok = True
             except Exception as e:  # noqa: BLE001
                 reach, ok = f"{c['name']} does not answer: {str(e)[:160]}", False
-            after = [["re-run", f"requested on {c['name']} — a guarded write with its own approval"], ["platform", reach]]
+            after = [["re-run", f"requested on {c['name']} - a guarded write with its own approval"], ["platform", reach]]
             test = {"ok": ok, "text": reach + ("; the failure was transient, a re-run is safe." if ok else "")}
         else:
-            after = [["re-run", f"the owner ({i.get('owner') or 'not named'}) is told to re-run it — no write-capable connection for {i.get('via') or 'this platform'} exists"]]
+            after = [["re-run", f"the owner ({i.get('owner') or 'not named'}) is told to re-run it - no write-capable connection for {i.get('via') or 'this platform'} exists"]]
             test = {"ok": True, "text": f"No write-capable connection for {i.get('via') or 'this platform'}: Relay cannot re-run it itself; the owner is told with the error and the evidence."}
     elif kind == "schedule_update":
         sid = sub.get("schedule")
@@ -842,7 +842,7 @@ def _prove(case: dict, diag: dict) -> dict:
                 return schedules.describe(c, tz)
             except (KeyError, TypeError):
                 return json.dumps(c)
-        before = [["status", f"{s['status']} — {(s.get('paused_reason') or '')[:120]}"], ["email account", s.get("email_account_id") or "in the app"], ["recipients", str(len(s["recipients"]))], ["cadence", cad(s["cadence"], s["tz"])]]
+        before = [["status", f"{s['status']} - {(s.get('paused_reason') or '')[:120]}"], ["email account", s.get("email_account_id") or "in the app"], ["recipients", str(len(s["recipients"]))], ["cadence", cad(s["cadence"], s["tz"])]]
         try:
             clean = schedules.validate(u, body)
             nxt = schedules.next_run(clean["cadence"], clean["tz"], time.time())
@@ -947,11 +947,11 @@ def _yaml_diff(a: str, b: str) -> list[str]:
                     walk(x[k], y[k], f"{path}.{k}" if path else str(k))
         elif isinstance(x, list) and isinstance(y, list):
             if len(x) != len(y):
-                out.append(f"{path}: {len(x)} → {len(y)} items")
+                out.append(f"{path}: {len(x)} {len(y)} items")
             for i, (p, q) in enumerate(zip(x, y)):
                 walk(p, q, f"{path}[{(p.get('name') or p.get('id') or i) if isinstance(p, dict) else i}]")
         elif x != y:
-            out.append(f"{path}: {str(x)[:40]!r} → {str(y)[:40]!r}")
+            out.append(f"{path}: {str(x)[:40]!r} {str(y)[:40]!r}")
     walk(ya, yb, "")
     return out
 
@@ -982,7 +982,7 @@ def proven(cid: str, proof: dict) -> dict:
     for k, v in fix["after"]:
         keys.setdefault(k, ["", ""])[1] = v
     rows = [{"setting": k, "before": b, "after": a} for k, (b, a) in keys.items()]
-    ev = {"summary": f"{fix['text']} — proven on a copy: {fix['test'].get('text', '')}", "items": [f"Applied through {fix['module']} only after you accept", f"Test: {fix['test'].get('text', '')}"] + [f"{x['setting']}: {x['before'] or '—'} → {x['after'] or '—'}" for x in rows[:5]],
+    ev = {"summary": f"{fix['text']} - proven on a copy: {fix['test'].get('text', '')}", "items": [f"Applied through {fix['module']} only after you accept", f"Test: {fix['test'].get('text', '')}"] + [f"{x['setting']}: {x['before'] or '-'} {x['after'] or '-'}" for x in rows[:5]],
           "counts": {"settings": len(rows), "test": "pass"}, "columns": ["setting", "before", "after"], "rows": rows, "fix": fix, "case": {"id": cid, "title": r["title"], "place": r["place"]}}
     cp = checkpoints.open(KIND_APPLY, cid, MODULE, f"Approve & apply: {r['title']}", "table", ev, link=f"{ROUTE}/{cid}", assignee=r.get("owner_id") if r.get("owner_id") and db.user(r["owner_id"]) else None, agent="Relay", opened_by="agent")
     _set(cid, checkpoint_id=cp["id"])
@@ -1005,7 +1005,7 @@ async def _fix_job(pid: str, args: dict) -> None:
             for _ in range(worker.FIX_ROUNDS):
                 if proof["test"].get("ok"):
                     break
-                worker.app_note(pid, "heal_fix", "The copy does not pass yet — Relay is fixing it: " + proof["test"].get("text", ""), "warn")
+                worker.app_note(pid, "heal_fix", "The copy does not pass yet - Relay is fixing it: " + proof["test"].get("text", ""), "warn")
                 res = await worker.agent(pid, "heal_fix", heal_prompts.fix([proof["test"]["text"]]), worker.TURNS["fix"], "fix", resume=res.get("session_id"), system=heal_prompts.SYSTEM)
                 proof = {**proof, **(await asyncio.to_thread(_check_copy, case, proof["original"]))}
         _set(pid, diagnosis=diag)                   # the proof may have resolved placeholders in the change (e.g. which email account)
@@ -1016,7 +1016,7 @@ async def _fix_job(pid: str, args: dict) -> None:
         raise
 
 
-worker.register_job("heal_fix", _fix_job, status="fixing", done="Fix proven on a copy — approve it to apply", llm=True, turns=60, timeout_s=1800)
+worker.register_job("heal_fix", _fix_job, status="fixing", done="Fix proven on a copy - approve it to apply", llm=True, turns=60, timeout_s=1800)
 
 
 # ------------------------------------------------------------------ approve & apply (through the owning module), learn
@@ -1068,7 +1068,7 @@ def _apply(case: dict, who: str) -> dict:
         if st["status"] not in ("awaiting_review", "done", "error") or not st.get("versions"):
             raise HTTPException(409, f"The dashboard cannot take a change request right now (status {st['status']}).")
         diff = (fix.get("test") or {}).get("diff") or []
-        text = (f"Self-healing case {case['id']} — {case['title']}. Apply the change proven on a copy: {fix.get('text')}. "
+        text = (f"Self-healing case {case['id']} - {case['title']}. Apply the change proven on a copy: {fix.get('text')}. "
                 f"Edited keys on the copy: {'; '.join(diff[:12]) or 'see fix/copy/definition.yaml in the case folder'}. Make the same edit here so the '{sub.get('gate')}' gate passes; change nothing else.")
         store.note(pid, "Change request from Self-healing", text)
         store.log(pid, {"kind": "user", "stage": "revise", "text": text})
@@ -1193,7 +1193,7 @@ def _after_apply(cid: str, who: str, res: dict) -> None:
 async def _apply_job(pid: str, args: dict) -> None:
     r = _row(pid)
     who = args.get("who") or r.get("owner_id") or db.ADMIN_ID
-    worker.app_note(pid, "heal_apply", f"Applying the approved fix through {(r['fix'] or {}).get('module') or 'its module'}…")
+    worker.app_note(pid, "heal_apply", f"Applying the approved fix through {(r['fix'] or {}).get('module') or 'its module'}...")
     try:
         res = await asyncio.to_thread(_apply, r, who)
     except HTTPException as e:
@@ -1434,7 +1434,7 @@ def api_rule_enable(rid: str, body: Enable):
 @router.post("/api/heal/test/seed")
 def api_test_seed():
     """Tests only (D2D_TEST_HOOKS=1): a paused schedule (missing mail account) on a sample dashboard, a connection whose
-    sign-in expired, and a failed integration run — then one watch pass."""
+    sign-in expired, and a failed integration run - then one watch pass."""
     if not TEST_HOOKS:
         raise HTTPException(404, "Not found")
     u = _builder()
@@ -1449,12 +1449,12 @@ def seed_sample(who: str, pid: str = "heal-sample-board") -> dict:
         (d / "data" / "sales.csv").write_text("id,sale_date,amount\n1,2026-10-01,120\n2,2026-10-02,80\n", encoding="utf-8")
         (d / "versions" / "v1" / "definition.yaml").write_text("name: Sales board sample\ntables:\n- name: Sales\n  csv: sales.csv\n  columns:\n  - {name: Id, source: id, type: int}\n  - {name: Date, source: sale_date, type: date}\n  - {name: Amount, source: amount, type: number}\nmeasures:\n- name: Net Sales\n  expression: SUM ( Sales[Amount] )\npages:\n- name: Overview\n  rows:\n  - visuals:\n    - {id: k1, type: kpiCard, fields: {value: '[Net Sales]'}}\n", encoding="utf-8")
         store.save({"id": pid, "name": "Sales board sample", "prompt": "sample dashboard for self-healing", "status": "done", "created": now - 5 * 86400, "versions": [{"v": 1, "pages": ["Overview"], "visuals": 1,
-                    "gates": [{"id": "definition", "name": "Report definition", "status": "pass", "summary": "ok"}, {"id": "report_rules", "name": "Report & accessibility", "status": "fail", "summary": "Overview: KPI k1 has no alt text — screen readers announce only its type"}]}],
+                    "gates": [{"id": "definition", "name": "Report definition", "status": "pass", "summary": "ok"}, {"id": "report_rules", "name": "Report & accessibility", "status": "fail", "summary": "Overview: KPI k1 has no alt text - screen readers announce only its type"}]}],
                     "runs": [], "job": None, "error": None, "approved": 1, "output": {"pbip": "Sales board sample.pbip"}, "files": [{"name": "sales.csv", "bytes": 60}], "images": []})
         db.add_project(pid, who)
     sid = "sc-heal-sample"
     if not db.one("SELECT 1 FROM schedules WHERE id = ?", (sid,)):
-        db.run("INSERT INTO schedules (id, owner_id, kind, name, target, cadence, tz, email_account_id, recipients, status, paused_reason, next_run, state, created, updated) VALUES (?, ?, 'report', 'Sales board — Monday 08:00', ?, ?, 'UTC', 'ea-gone', ?, 'paused', ?, ?, '{}', ?, ?)",
+        db.run("INSERT INTO schedules (id, owner_id, kind, name, target, cadence, tz, email_account_id, recipients, status, paused_reason, next_run, state, created, updated) VALUES (?, ?, 'report', 'Sales board - Monday 08:00', ?, ?, 'UTC', 'ea-gone', ?, 'paused', ?, ?, '{}', ?, ?)",
                (sid, who, json.dumps({"type": "dashboard", "project": pid}), json.dumps({"freq": "weekly", "time": "08:00", "weekday": 0}), json.dumps([who]), "Email: its email account was removed.", now + 86400, now - 3600, now - 3600))
     cid = "conn-heal-sample"
     if not db.one("SELECT 1 FROM connections WHERE id = ?", (cid,)):

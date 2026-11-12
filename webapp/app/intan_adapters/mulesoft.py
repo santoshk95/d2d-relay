@@ -1,6 +1,6 @@
-"""MuleSoft Anypoint Platform — Runtime Manager (CloudHub applications) and Anypoint Analytics events (requests per
+"""MuleSoft Anypoint Platform - Runtime Manager (CloudHub applications) and Anypoint Analytics events (requests per
 API with status code and response time, the "runs" of an always-on application). Signs in with a connected app
-(client credentials → token) or a ready token."""
+(client credentials -> token) or a ready token."""
 from __future__ import annotations
 
 import time

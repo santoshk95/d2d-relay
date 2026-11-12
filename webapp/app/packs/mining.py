@@ -1,18 +1,18 @@
-"""Process mining & discovery (registry id `mining`) — event logs from ERP and ticketing turned into the real process:
+"""Process mining & discovery (registry id `mining`) - event logs from ERP and ticketing turned into the real process:
 variants, delays, rework and what to automate first; an event log built from SAP or Oracle extracts and proven; KPIs
 watched on a schedule. Celonis and SAP Signavio Process Intelligence are read through their APIs (mining_sources);
 UiPath Process Mining, Power Automate Process Mining and SAP / Oracle extracts come in as CSV, Excel or XES.
 
-Assess   Connect → Inventory → Health → Findings → Estimate: every log read (the columns found by name, a person
-         corrects them; rules first — a column that is not in the file is refused), then mined: variants, throughput
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: every log read (the columns found by name, a person
+         corrects them; rules first - a column that is not in the file is refused), then mined: variants, throughput
          time, waits between activities (bottlenecks), rework, ping-pong, cancellations, and the fit with a published
          process; findings kept or ignored; what to automate first, ranked by the hours a month it takes people, with
          the minutes per event as an assumption a person sets.
-Develop  Describe → Shape → Build → Prove → Ship → Run: an event log designed from ERP tables (SAP EBAN / EKKO / EKBE /
+Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run: an event log designed from ERP tables (SAP EBAN / EKKO / EKBE /
          RBKP / BSAK, Oracle PO / AP tables: known date columns become activities by rule), built with DuckDB, proven
          (every event reconciles with the dates in the tables, every case key has its purchase order), approved by a
          named person, loaded into Celonis after its own approval, and watched by a scheduled Run item.
-Run      Watch → Alert → Fix → Approve → Report: the KPIs (throughput time, the slowest wait, rework, variants) against
+Run      Watch -> Alert -> Fix -> Approve -> Report: the KPIs (throughput time, the slowest wait, rework, variants) against
          the baseline; a drift grouped with its likely cause; a person decides the hand-off before it goes out.
 """
 from __future__ import annotations
@@ -47,7 +47,7 @@ MINUTES = 5                                     # the default minutes a person s
 FILES = wb.FilesPlatform()
 FILES.label = "Event logs and ERP extracts"
 FILES.uploads = UPLOADS
-FILES.reads = ("event logs (CSV, Excel, XES — UiPath Process Mining and Power Automate Process Mining exports included) and SAP or Oracle table extracts — "
+FILES.reads = ("event logs (CSV, Excel, XES - UiPath Process Mining and Power Automate Process Mining exports included) and SAP or Oracle table extracts - "
                "a copy in this work item's folder, read with DuckDB")
 FILES.simulator = "synthetic fixtures in tests/mocklab/fixtures/mining/ (a purchase-to-pay log, its slower November, SAP extracts)"
 
@@ -119,7 +119,7 @@ def _sources(ctx: wb.Ctx) -> list[dict]:
         except Exception as e:  # noqa: BLE001 - ConnectorError / Reconsent / ScopeError: shown to the person
             raise wb.StepFailed(f"{c['name']} could not be read: {e}") from e
         db.audit("connection.read", c["id"], {"kind": c["kind"], "object": obj, "rows": len(rows), "module": MODULE}, ctx.who or ctx.owner)
-        name = f"{c['name']} · {next((o.get('type') for o in objs if o['object'] == obj), None) or obj}"
+        name = f"{c['name']} - {next((o.get('type') for o in objs if o['object'] == obj), None) or obj}"
         key = _w4.slug(name, 40)
         (ctx.dir / "sources").mkdir(exist_ok=True)
         (ctx.dir / "sources" / f"raw-{key}.json").write_text(json.dumps({"columns": cols, "rows": rows}, default=str), encoding="utf-8")
@@ -190,7 +190,7 @@ def analyse(lg: dict) -> dict:
     return {"cases": len(cases), "events": sum(acts.values()), "activities": dict(acts), "variants": len(vs),
             "top": [{"path": v["path"], "cases": v["cases"], "share": round(v["cases"] / n, 3), "median_h": round(_median(v["durations"]) / 3600, 1)} for v in vs[:8]],
             "throughput_h": round(_median(thr) / 3600, 1), "throughput_p90_h": round(_p90(thr) / 3600, 1), "waits": pairs[:12],
-            "pairs": {f"{a} → {b}": round(_median(v) / 3600, 1) for (a, b), v in waits.items()},
+            "pairs": {f"{a} {b}": round(_median(v) / 3600, 1) for (a, b), v in waits.items()},
             "rework": dict(rework), "rework_rate": round(sum(1 for evs in cases.values() if len({e[1] for e in evs}) < len(evs)) / n, 3), "pingpong": pingpong,
             "span_days": round(span, 1), "per_month": {a: round(k * 30 / span, 1) for a, k in acts.items()}, "people": dict(people),
             "first": list(first.most_common(1)[0]) if first else None, "last": dict(last)}
@@ -214,7 +214,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
         raise wb.StepFailed("Connect Celonis or Signavio Process Intelligence, or upload an event log (CSV, Excel or XES) or an ERP extract.")
     if all(r[2] == "refused" for r in rows):
         raise wb.StepFailed("None of the sources answered: " + "; ".join(f"{r[0]}: {r[3]}" for r in rows)[:500])
-    return {"summary": f"{sum(1 for r in rows if r[2] != 'refused')} of {len(rows)} source(s) answered — read-only.", "data": {"columns": ["Source", "Kind", "Status", "What Relay sees"], "rows": rows}}
+    return {"summary": f"{sum(1 for r in rows if r[2] != 'refused')} of {len(rows)} source(s) answered - read-only.", "data": {"columns": ["Source", "Kind", "Status", "What Relay sees"], "rows": rows}}
 
 
 def _describe(rec: dict, lg: dict | None, rows: int | None) -> dict:
@@ -242,18 +242,18 @@ def a_inventory(ctx: wb.Ctx) -> dict:
         ok = bool(lg and lg["events"])
         rec["include"] = bool(prev.get("include", True)) and ok
         rec["why"] = ("" if ok else "not an event log: no header row" if not s["header"] and s["kind"] != "xes"
-                      else "Relay could not tell which columns are the case, the activity and the time — name them, then tick Include")
+                      else "Relay could not tell which columns are the case, the activity and the time - name them, then tick Include")
         recs.append(rec)
     if not recs:
         raise wb.StepFailed("Nothing to mine: upload an event log (CSV, Excel or XES) or connect Celonis or Signavio Process Intelligence.")
     on = [r for r in recs if r["include"]]
     odd = [r for r in recs if r["why"]]
     return {"summary": f"{len(recs)} source(s): {len(on)} event log(s) with {sum(r['cases'] for r in on):,} cases and {sum(r['events'] for r in on):,} events"
-            + (f"; {len(odd)} whose columns Relay could not tell — name them" if odd else "") + ". Check the columns Relay found, untick what is out of scope, then confirm.",
+            + (f"; {len(odd)} whose columns Relay could not tell - name them" if odd else "") + ". Check the columns Relay found, untick what is out of scope, then confirm.",
             "records": recs, "counts": {"logs": len(on), "cases": sum(r["cases"] for r in on)},
             "items": [f"{r['source']}: {r['why']}" for r in odd][:6],
-            "data": {"columns": ["Include", "Log", "Cases", "Events", "Activities", "From", "To", "Case · activity · time"],
-                     "rows": [["yes" if r["include"] else "no", r["source"], r["cases"], r["events"], r["activities"], r["from"], r["to"], f"{r['case']} · {r['activity']} · {r['time']}"] for r in recs]}}
+            "data": {"columns": ["Include", "Log", "Cases", "Events", "Activities", "From", "To", "Case - activity - time"],
+                     "rows": [["yes" if r["include"] else "no", r["source"], r["cases"], r["events"], r["activities"], r["from"], r["to"], f"{r['case']} - {r['activity']} - {r['time']}"] for r in recs]}}
 
 
 def _validate_inventory(recs: list[dict], ctx: wb.Ctx) -> list[str]:
@@ -277,13 +277,13 @@ def _validate_inventory(recs: list[dict], ctx: wb.Ctx) -> list[str]:
         for k in bad:
             out.append(f"{r['source']}: there is no column {r.get(k)!r} for the {k} (the log has {', '.join(head[:8])})")
         if (r.get("resource") or "").strip() and r["resource"].strip() not in head:
-            out.append(f"{r['source']}: there is no column {r['resource']!r} for who did it — leave it empty if the log does not say")
+            out.append(f"{r['source']}: there is no column {r['resource']!r} for who did it - leave it empty if the log does not say")
             bad.append("resource")
         if bad:
             continue
         lg = _read(ctx, r)
         if not (lg and lg["events"]):
-            out.append(f"{r['source']}: no row has a time Relay can read in {r['time']!r} — is it the right column?")
+            out.append(f"{r['source']}: no row has a time Relay can read in {r['time']!r} - is it the right column?")
             continue
         r.update(_describe(r, lg, r.get("rows")))
         r["why"] = ""
@@ -316,7 +316,7 @@ def a_health(ctx: wb.Ctx) -> dict:
             continue
         an = analyse(lg)
         results[r["key"]] = an
-        eid = ctx.evidence(f"Mined: {r['source']}", {"rows": [{"variant": " → ".join(v["path"]), "cases": v["cases"], "share": v["share"], "median hours": v["median_h"]} for v in an["top"]],
+        eid = ctx.evidence(f"Mined: {r['source']}", {"rows": [{"variant": " ".join(v["path"]), "cases": v["cases"], "share": v["share"], "median hours": v["median_h"]} for v in an["top"]],
                                                "waits": an["waits"], "rework": an["rework"], "pingpong": an["pingpong"], "throughput_h": an["throughput_h"], "columns": lg["columns"]}, kind="mining", ok=True)
         if r.get("rows") is not None:
             ok_ = lg["events"] + lg["skipped"] == r["rows"]
@@ -328,7 +328,7 @@ def a_health(ctx: wb.Ctx) -> dict:
         checks.append({"name": f"start-{r['key']}", "label": f"{r['source']}: the cases start the same way", "status": "pass" if share >= 0.9 else "warn",
                        "measured": f"{share:.0%} start with {fa}", "expected": "90 % or more", "detail": "complete cases" if share >= 0.9 else "a log cut off at the start shows cases already under way"})
         checks.append({"name": f"variants-{r['key']}", "label": f"{r['source']}: {an['variants']} variant(s), throughput {an['throughput_h']} h median (p90 {an['throughput_p90_h']} h)", "status": "pass",
-                       "measured": f"the top variant is {an['top'][0]['share']:.0%} of the cases" if an["top"] else "—", "detail": " → ".join(an["top"][0]["path"]) if an["top"] else "", "evidence": eid})
+                       "measured": f"the top variant is {an['top'][0]['share']:.0%} of the cases" if an["top"] else "-", "detail": " ".join(an["top"][0]["path"]) if an["top"] else "", "evidence": eid})
         if proc:
             from .. import lineage
 
@@ -339,7 +339,7 @@ def a_health(ctx: wb.Ctx) -> dict:
             pn = lineage.node_id("process", processdocs.SYSTEM, proc["id"])
             if db.one("SELECT 1 FROM lineage_nodes WHERE id = ?", (pn,)):
                 ctx.lineage_edge(ln, pn, "relates", {"fitness": conf["fitness"], "what": "the log against the published map"})
-            checks.append({"name": f"fit-{r['key']}", "label": f"{r['source']} against the published “{proc['name']}” (version {proc['version']})",
+            checks.append({"name": f"fit-{r['key']}", "label": f"{r['source']} against the published \"{proc['name']}\" (version {proc['version']})",
                            "status": "pass" if conf["fitness"] >= 0.9 else "warn" if conf["fitness"] >= 0.7 else "fail",
                            "measured": f"{conf['fitness']:.0%} of the moves", "expected": "90 % or more",
                            "detail": ("not on the map: " + ", ".join(sorted(orig.get(x, x) for x in conf["missing"])[:5])) if conf["missing"] else "every activity is on the map",
@@ -356,8 +356,8 @@ def a_health(ctx: wb.Ctx) -> dict:
         last = loads[0] if loads else {}
         good = last.get("loadStatus") == "SUCCESS"
         checks.append({"name": f"loads-{_w4.slug(cn['name'], 24)}", "label": f"{cn['name']}: the data model's last load", "status": "pass" if good else "warn",
-                       "measured": f"{last.get('loadStatus') or 'unknown'} · {last.get('endDate') or last.get('startDate') or ''}".strip(" ·"),
-                       "detail": "loaded" if good else ((last.get("message") or err or "no load history") + " — the event log may miss its newest events")[:400]})
+                       "measured": f"{last.get('loadStatus') or 'unknown'} - {last.get('endDate') or last.get('startDate') or ''}".strip(" -"),
+                       "detail": "loaded" if good else ((last.get("message") or err or "no load history") + " - the event log may miss its newest events")[:400]})
     ctx.put("analysis", results)
     return {"summary": f"{len(results)} log(s) mined: " + "; ".join(f"{a['cases']} cases, {a['variants']} variants, {a['throughput_h']} h median" for a in results.values()) + ".",
             "counts": {"logs": len(results), "variants": sum(a["variants"] for a in results.values())}, "data": {"checks": checks},
@@ -369,7 +369,7 @@ def a_findings(ctx: wb.Ctx) -> dict:
     out = []
     for key, an in (ctx.get("analysis") or {}).items():
         for w in an["waits"][:3]:
-            out.append({"id": f"wait-{key}-{_w4.slug(w['from'] + w['to'], 30)}", "kind": "delay", "what": f"{w['from']} → {w['to']}: {w['median_h']} h median wait over {w['cases']} case(s) ({w['total_h']} h in all)",
+            out.append({"id": f"wait-{key}-{_w4.slug(w['from'] + w['to'], 30)}", "kind": "delay", "what": f"{w['from']} {w['to']}: {w['median_h']} h median wait over {w['cases']} case(s) ({w['total_h']} h in all)",
                         "severity": "high" if w is an["waits"][0] else "medium", "decision": "keep"})
         for a, k in sorted(an["rework"].items(), key=lambda kv: -kv[1]):
             out.append({"id": f"rework-{key}-{_w4.slug(a, 30)}", "kind": "rework", "what": f"{a} is done more than once in {k} case(s) ({k / max(1, an['cases']):.0%})", "severity": "medium", "decision": "keep"})
@@ -380,7 +380,7 @@ def a_findings(ctx: wb.Ctx) -> dict:
         for a, k in ends.items():
             out.append({"id": f"end-{key}-{_w4.slug(a, 30)}", "kind": "exit", "what": f"{k} case(s) end with {a} instead of the usual end", "severity": "low", "decision": "keep"})
     recs = [{**f, **({"decision": have[f["id"]]["decision"]} if f["id"] in have else {})} for f in out]
-    return {"summary": f"{len(recs)} finding(s): delays, rework, ping-pong and other endings — keep what matters.", "records": recs, "counts": {"findings": len(recs)},
+    return {"summary": f"{len(recs)} finding(s): delays, rework, ping-pong and other endings - keep what matters.", "records": recs, "counts": {"findings": len(recs)},
             "items": [f["what"][:200] for f in recs[:6]], "data": {"columns": ["Kind", "What", "Severity"], "rows": [[f["kind"], f["what"], f["severity"]] for f in recs]}}
 
 
@@ -406,13 +406,13 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     b = registry.brand()
     rate, cur = float(b.get("hourly_rate") or 0), b.get("currency") or ""
     total = sum(r["hours"] for r in recs if r["route"] != "none")
-    ctx.output("automate-first.md", "# What to automate first\n\n" + "\n".join(f"{i}. {r['activity']}: {r['per_month']} a month × {r['minutes']} min = {r['hours']} h a month → {dict(ROUTES)[r['route']]}"
+    ctx.output("automate-first.md", "# What to automate first\n\n" + "\n".join(f"{i}. {r['activity']}: {r['per_month']} a month × {r['minutes']} min = {r['hours']} h a month {dict(ROUTES)[r['route']]}"
                                                                          for i, r in enumerate(recs, 1)) + f"\n\nAssumption: the minutes a person spends on one event (default {MINUTES}).\n", label="What to automate first (Markdown)")
-    return {"summary": f"What to automate first: {len(recs)} activit{'y' if len(recs) == 1 else 'ies'} people do, ranked by the hours a month they take — {total:.1f} h in all"
+    return {"summary": f"What to automate first: {len(recs)} activit{'y' if len(recs) == 1 else 'ies'} people do, ranked by the hours a month they take - {total:.1f} h in all"
             + (f" ({cur}{rate * total:,.0f} a month)" if rate else "") + ". The minutes per event are an assumption: set them, then confirm.",
             "records": recs, "counts": {"candidates": len(recs), "hours a month": round(total, 1)},
-            "data": {"items": [{"title": r["activity"], "detail": f"{r['per_month']} a month × {r['minutes']} min → {dict(ROUTES).get(r['route'], r['route'])} ({r['why']})", "effort": f"{r['hours']} h a month"} for r in recs],
-                     "total": f"{total:.1f} h a month", "note": f"Assumption: {MINUTES} minutes per event unless you set it per activity." + ("" if rate else " Set an hourly rate under Admin › Branding to see the cost.")}}
+            "data": {"items": [{"title": r["activity"], "detail": f"{r['per_month']} a month × {r['minutes']} min {dict(ROUTES).get(r['route'], r['route'])} ({r['why']})", "effort": f"{r['hours']} h a month"} for r in recs],
+                     "total": f"{total:.1f} h a month", "note": f"Assumption: {MINUTES} minutes per event unless you set it per activity." + ("" if rate else " Set an hourly rate under Admin > Branding to see the cost.")}}
 
 
 def _validate_estimate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
@@ -485,7 +485,7 @@ def a_whatif(ctx: wb.Ctx) -> dict:
             continue
         lg = _read(ctx, inv)
         if not (lg and lg["events"]):
-            raise wb.StepFailed(f"{inv['source']} no longer reads as an event log — check the inventory.")
+            raise wb.StepFailed(f"{inv['source']} no longer reads as an event log - check the inventory.")
         changes = {r["activity"]: {"share": float(r.get("share") or 0) if r.get("route") != "none" else 0.0, "wait_cut": float(r.get("wait_cut") or 0), "stop_rework": bool(r.get("stop_rework"))}
                    for r in mine}
         before = replay(lg, {})
@@ -510,9 +510,9 @@ def a_whatif(ctx: wb.Ctx) -> dict:
                              "activities change. A what-if is an estimate, not a forecast.\n\n" + "\n".join(lines), label="What-if (Markdown)")
     first = next(iter(results.values()))
     cur_data = next((s.get("data") for s in (ctx.st or {}).get("steps", []) if s["id"] == ctx.step_id), None) or {}
-    return {"summary": f"What-if: median throughput {first['before']['throughput_h']} h → {first['after']['throughput_h']} h, {saved:.1f} h a month of people's work saved"
-            + (f" ({cur}{rate * saved:,.0f} a month)" if rate else "") + " — the log replayed with your changes.",
-            "data": {**cur_data, "compare": {"title": "What-if — the log replayed with your changes", "columns": ["Log", "Measure", "Today", "What-if"], "rows": rows, "evidence": eid}}}
+    return {"summary": f"What-if: median throughput {first['before']['throughput_h']} h {first['after']['throughput_h']} h, {saved:.1f} h a month of people's work saved"
+            + (f" ({cur}{rate * saved:,.0f} a month)" if rate else "") + " - the log replayed with your changes.",
+            "data": {**cur_data, "compare": {"title": "What-if - the log replayed with your changes", "columns": ["Log", "Measure", "Today", "What-if"], "rows": rows, "evidence": eid}}}
 
 
 WHATIF_KEEP = ("minutes", "route", "share", "wait_cut", "stop_rework")
@@ -576,7 +576,7 @@ def d_shape(ctx: wb.Ctx) -> dict:
                 continue
             rid = f"{name}.{c}"
             doc = DOC_DATES.get((name.lower(), c.lower()))
-            why = (f"{name}.{c} is “{known}” in the ERP's own data model" if known else f"left out: {doc}" if doc else "a date column with no known meaning — name it or leave it out") \
+            why = (f"{name}.{c} is \"{known}\" in the ERP's own data model" if known else f"left out: {doc}" if doc else "a date column with no known meaning - name it or leave it out") \
                 + ("" if key else f"; {name} has no case key ({', '.join(CASE_KEYS)})")
             rec = {"id": rid, "include": bool(known) and bool(key), "table": name, "column": c, "activity": known or f"{name}: {c}", "case_key": key,
                    "filter": SAP_FILTERS.get((name.lower(), c.lower()), ""), "why": why}
@@ -614,7 +614,7 @@ def _validate_design(recs: list[dict], ctx: wb.Ctx) -> list[str]:
         if not str(r.get("activity") or "").strip():
             out.append(f"{where}: name the activity")
         elif names.count(str(r["activity"]).strip().lower()) > 1:
-            out.append(f"{where}: two columns are both “{r['activity']}” — name them apart")
+            out.append(f"{where}: two columns are both \"{r['activity']}\" - name them apart")
         if (r.get("filter") or "").strip():
             m = FILTER_RE.match(r["filter"])
             if not m or m.group(1).lower() not in cols:
@@ -652,8 +652,8 @@ def _ts(info: dict, col: str) -> str:
 
 
 def _cond(info: dict, r: dict, keyed: bool = True) -> str:
-    """The rows of a table that are this activity: its date is there, the person's filter (checked above) holds and —
-    unless `keyed` is False — the row has a case key."""
+    """The rows of a table that are this activity: its date is there, the person's filter (checked above) holds and -
+    unless `keyed` is False - the row has a case key."""
     out = f"{_ts(info, _col(info, r['column']))} IS NOT NULL"
     m = FILTER_RE.match(r.get("filter") or "")
     if m:
@@ -695,7 +695,7 @@ def d_build(ctx: wb.Ctx) -> dict:
     ctx.output("eventlog.csv", text, label="The event log (CSV)")
     ctx.output("eventlog.sql", sql + "\n", label="The event log's SQL (DuckDB; the same shape runs on the warehouse)")
     import yaml
-    ctx.output("kpis.yaml", yaml.safe_dump({"kpis": [{"name": "Throughput time", "formula": "median of (last event − first event) per case", "unit": "hours"},
+    ctx.output("kpis.yaml", yaml.safe_dump({"kpis": [{"name": "Throughput time", "formula": "median of (last event - first event) per case", "unit": "hours"},
                                                      {"name": "Rework rate", "formula": "share of cases with an activity done more than once"},
                                                      {"name": "Slowest wait", "formula": "the directly-follows pair with the largest total waiting time"}],
                                             "activities": [{"activity": r["activity"], "from": f"{r['table']}.{r['column']}", "case_key": r["case_key"], "filter": r.get("filter") or None} for r in rows]},
@@ -740,21 +740,21 @@ def d_prove(ctx: wb.Ctx) -> dict:
         span = con.execute("SELECT MIN(timestamp), MAX(timestamp) FROM read_csv_auto(?, header = true)", [str(ctx.dir / "outputs" / "eventlog.csv")]).fetchone()
     finally:
         con.close()
-    checks.append(ctx.proof("references_real", label=f"Every case is an order in {head['table']} (its “{head['activity'].lower()}”)", refs=sorted(set(refs)), known=keys))
+    checks.append(ctx.proof("references_real", label=f"Every case is an order in {head['table']} (its \"{head['activity'].lower()}\")", refs=sorted(set(refs)), known=keys))
     lo, hi_ = span
     plausible = bool(lo and hi_) and str(lo)[:4] >= "1990" and str(hi_)[:10] <= time.strftime("%Y-%m-%d", time.gmtime(time.time() + 86400))
     checks.append({"name": "dates", "label": "The dates are plausible: none in the future, none before 1990", "status": "pass" if plausible else "fail", "measured": f"{str(lo)[:10]} to {str(hi_)[:10]}",
-                   "detail": "every event between the two" if plausible else "a date column read the wrong way — check its format in Shape"})
+                   "detail": "every event between the two" if plausible else "a date column read the wrong way - check its format in Shape"})
     lg = _w4.read_eventlog(ctx.dir / "outputs" / "eventlog.csv")
     an = analyse(lg) if lg and lg["events"] else None
     if an:
         ctx.put("kpis", _kpis(an))
         checks.append({"name": "kpis", "label": f"KPIs: throughput {an['throughput_h']} h median, rework {an['rework_rate']:.0%}, {an['variants']} variant(s)", "status": "pass",
-                       "detail": f"slowest wait: {an['waits'][0]['from']} → {an['waits'][0]['to']} ({an['waits'][0]['median_h']} h median)" if an["waits"] else "",
+                       "detail": f"slowest wait: {an['waits'][0]['from']} {an['waits'][0]['to']} ({an['waits'][0]['median_h']} h median)" if an["waits"] else "",
                        "evidence": ctx.evidence("The KPIs on the built log", {k: an[k] for k in ("cases", "events", "variants", "throughput_h", "throughput_p90_h", "rework_rate", "waits", "top")}, kind="proof", ok=True)})
     bad = [c for c in checks if c["status"] == "fail"]
     return {"summary": f"{len(checks)} proof(s): " + ("every event reconciles, every case is an order and the dates are plausible" if not bad
-                                                      else f"{len(bad)} fail ({bad[0]['detail'][:120]}) — send it back to Shape, or confirm with the reason") + ".",
+                                                      else f"{len(bad)} fail ({bad[0]['detail'][:120]}) - send it back to Shape, or confirm with the reason") + ".",
             "data": {"checks": checks}, "counts": {"failing": len(bad)}}
 
 
@@ -767,7 +767,7 @@ def d_ship(ctx: wb.Ctx) -> dict:
     k = ctx.get("kpis") or {}
     cel = _w4.tracker_connection(ctx, ("celonis",))
     return {"summary": f"Go live: the event log ({(ctx.get('built') or {}).get('events')} events) and its KPIs" + (f", loaded into {cel['name']} after its own approval" if cel else "") + ", watched on a schedule.",
-            "data": {"items": [{"title": "The event log", "detail": f"{(ctx.get('built') or {}).get('events')} events — eventlog.csv and its SQL"},
+            "data": {"items": [{"title": "The event log", "detail": f"{(ctx.get('built') or {}).get('events')} events - eventlog.csv and its SQL"},
                                {"title": "The KPIs today", "detail": f"throughput {k.get('throughput_h')} h, rework {k.get('rework_rate', 0):.0%}, {k.get('variants')} variant(s)"},
                                {"title": "Then", "detail": "a Run item compares them with today's on its schedule; a drift waits for a person before anything goes out"}]}}
 
@@ -780,10 +780,10 @@ def d_run(ctx: wb.Ctx) -> dict:
     last = _w4.push_of(ctx.id, "run")
     if cel and (not last or last["status"] == "failed"):
         if not connectors.may_write(cel):
-            raise wb.StepFailed(f"{cel['name']} is read-only: change its scope to “Read & write — with approval” to load the event log, or remove it.")
+            raise wb.StepFailed(f"{cel['name']} is read-only: change its scope to \"Read & write - with approval\" to load the event log, or remove it.")
         _w4.request_push(ctx, cel["id"], "eventlog", {"file": "eventlog.csv", "sha256": built.get("sha256"), "table": "RELAY_P2P_EVENT_LOG"},
                          f"Load the event log ({built.get('events')} events) into {cel['name']}", step="run",
-                         items=[f"Events: {built.get('events')} in {built.get('cases')} cases", "Into: the data pool's table RELAY_P2P_EVENT_LOG (replaced)", f"File: eventlog.csv (sha256 {str(built.get('sha256'))[:12]}…)"])
+                         items=[f"Events: {built.get('events')} in {built.get('cases')} cases", "Into: the data pool's table RELAY_P2P_EVENT_LOG (replaced)", f"File: eventlog.csv (sha256 {str(built.get('sha256'))[:12]}...)"])
     run_id = ctx.get("run_item")
     if not run_id or not db.one("SELECT 1 FROM wb_items WHERE id = ? AND closed IS NULL", (run_id,)):
         cad = ctx.scope.get("cadence") or {"every": "day", "at": "06:00", "tz": "UTC"}
@@ -804,7 +804,7 @@ def d_run_state(ctx: wb.Ctx) -> dict:
     if p:
         res = p["result"] or {}
         load = {"awaiting": "; loading the event log into Celonis is waiting for its own approval", "written": f"; the event log is written to Celonis ({res.get('rows')} rows, push job {((res.get('created') or [{}])[0]).get('key')})",
-                "failed": f"; loading into Celonis failed ({str(res.get('error') or '')[:160]}) — run the step again to ask for a new approval"}.get(p["status"], "")
+                "failed": f"; loading into Celonis failed ({str(res.get('error') or '')[:160]}) - run the step again to ask for a new approval"}.get(p["status"], "")
     return {"summary": "Live: a Run item watches the KPIs on its schedule" + load + ".", "ok": not (p and p["status"] == "failed"),
             "data": {"href": f"#/m/{MODULE}/i/{run_id}", "label": "Open the Run item", "text": f"The KPIs today: throughput {(ctx.get('kpis') or {}).get('throughput_h')} h median, rework {(ctx.get('kpis') or {}).get('rework_rate', 0):.0%}."}}
 
@@ -864,9 +864,9 @@ def r_watch(ctx: wb.Ctx) -> dict:
     ctx.put("analysis", {k: an[k] for k in ("cases", "events", "variants", "throughput_h", "throughput_p90_h", "rework_rate", "waits", "pairs")})
     ctx.put("grew", [{"pair": p, "now": n_, "then": t_} for p, n_, t_ in grew[:3]])
     ctx.put("results", rows)
-    ctx.evidence(f"Mined: {lg['source']}", {"rows": [{"variant": " → ".join(v["path"]), "cases": v["cases"]} for v in an["top"]], "waits": an["waits"], "baseline": base}, kind="mining", ok=True)
+    ctx.evidence(f"Mined: {lg['source']}", {"rows": [{"variant": " ".join(v["path"]), "cases": v["cases"]} for v in an["top"]], "waits": an["waits"], "baseline": base}, kind="mining", ok=True)
     bad = sum(1 for r in rows if r["status"] == "fail")
-    return {"summary": f"{lg['source']}: {an['cases']} cases, throughput {an['throughput_h']} h median — " + (f"{bad} KPI(s) drifted from the baseline." if bad else "every KPI within its limit."),
+    return {"summary": f"{lg['source']}: {an['cases']} cases, throughput {an['throughput_h']} h median - " + (f"{bad} KPI(s) drifted from the baseline." if bad else "every KPI within its limit."),
             "data": {"checks": rows}, "counts": {"cases": an["cases"], "drifted": bad}}
 
 
@@ -876,7 +876,7 @@ def r_alert(ctx: wb.Ctx) -> dict:
         ctx.put("breaks", [])
         return {"summary": "Every KPI is within its limit: nothing to alert.", "next": "report", "counts": {"breaks": 0}}
     g = (ctx.get("grew") or [None])[0]
-    cause = f"the wait {g['pair']} grew from {g['then']} h to {g['now']} h (median)" if g else "no single wait explains it — look at the variants"
+    cause = f"the wait {g['pair']} grew from {g['then']} h to {g['now']} h (median)" if g else "no single wait explains it - look at the variants"
     brks = [{"id": f"b-{r['name']}", "kpi": r["label"], "what": r["detail"], "cause": cause if r["name"] in ("throughput", "wait") else "more cases are done twice: look at the rework in the variants",
              "route": "ticket", "note": ""} for r in bad]
     ctx.put("breaks", brks)
@@ -887,11 +887,11 @@ def r_alert(ctx: wb.Ctx) -> dict:
 def r_fix(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**b, **({k: have[b["id"]][k] for k in ("route", "note") if k in have[b["id"]]} if b["id"] in have else {})} for b in ctx.get("breaks") or []]
-    return {"summary": f"{len(recs)} drift(s): choose who looks at each — a ticket for the process owner, or expected. Nothing goes out until you confirm.", "records": recs,
+    return {"summary": f"{len(recs)} drift(s): choose who looks at each - a ticket for the process owner, or expected. Nothing goes out until you confirm.", "records": recs,
             "data": {"columns": ["KPI", "Route", "Likely cause"], "rows": [[r["kpi"], r["route"], r["cause"]] for r in recs]}}
 
 
-FIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("ticket", "Raise a ticket"), ("expected", "Expected — no action"))), wb.Column("note", "Note", "longtext"),
+FIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("ticket", "Raise a ticket"), ("expected", "Expected - no action"))), wb.Column("note", "Note", "longtext"),
                             wb.Column("kpi", "KPI", readonly=True), wb.Column("cause", "Likely cause", readonly=True)], add=False, remove=False, label="drift")
 
 
@@ -901,15 +901,15 @@ def r_approve(ctx: wb.Ctx) -> dict:
         if b["route"] == "ticket":
             h = ctx.ticket(f"Process KPI drift: {b['kpi']}", f"{b['what']}\n\nLikely cause: {b['cause']}\n\n{b.get('note') or ''}\nWork item: {wb.route_of(ctx.st)}", priority="P3", about=b["kpi"])
         else:
-            h = {"kind": "expected", "status": "expected — recorded"}
+            h = {"kind": "expected", "status": "expected - recorded"}
         rows.append([b["kpi"], b["route"], h.get("status"), h.get("output") or h.get("checkpoint") or ""])
-    return {"summary": f"{sum(1 for r in rows if r[1] == 'ticket')} ticket(s), {sum(1 for r in rows if r[1] != 'ticket')} expected — as you approved.", "data": {"columns": ["KPI", "Route", "Status", "Reference"], "rows": rows}}
+    return {"summary": f"{sum(1 for r in rows if r[1] == 'ticket')} ticket(s), {sum(1 for r in rows if r[1] != 'ticket')} expected - as you approved.", "data": {"columns": ["KPI", "Route", "Status", "Reference"], "rows": rows}}
 
 
 def r_report(ctx: wb.Ctx) -> dict:
     an = ctx.get("analysis") or {}
     rows = [[r["label"], r["status"], r["detail"]] for r in ctx.get("results") or []]
-    text = f"# Process report: {ctx.title}\n\n{time.strftime('%d %B %Y', time.gmtime())}\n\n- Cases: {an.get('cases')}\n- Throughput (median): {an.get('throughput_h')} h\n- Rework rate: {an.get('rework_rate', 0):.0%}\n- Variants: {an.get('variants')}\n\n" + "".join(f"- {r[0]}: {r[1]} — {r[2]}\n" for r in rows)
+    text = f"# Process report: {ctx.title}\n\n{time.strftime('%d %B %Y', time.gmtime())}\n\n- Cases: {an.get('cases')}\n- Throughput (median): {an.get('throughput_h')} h\n- Rework rate: {an.get('rework_rate', 0):.0%}\n- Variants: {an.get('variants')}\n\n" + "".join(f"- {r[0]}: {r[1]} - {r[2]}\n" for r in rows)
     ctx.output(f"process-report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", text, label="Process report (Markdown)")
     return {"summary": f"The process this round: {an.get('cases')} cases, throughput {an.get('throughput_h')} h, rework {an.get('rework_rate', 0):.0%}.", "data": {"columns": ["KPI", "Status", "Detail"], "rows": rows}}
 
@@ -924,9 +924,9 @@ def _on_done(ctx: wb.Ctx) -> None:
     if not recs:
         return
     ctx.output("automate-first.md", "# What to automate first\n\n" + "\n".join(
-        f"{i}. {r['activity']}: {r['per_month']} a month × {r['minutes']} min = {r['hours']} h a month → {dict(ROUTES).get(r['route'], r['route'])}" for i, r in enumerate(recs, 1))
+        f"{i}. {r['activity']}: {r['per_month']} a month × {r['minutes']} min = {r['hours']} h a month {dict(ROUTES).get(r['route'], r['route'])}" for i, r in enumerate(recs, 1))
         + "\n\nThe minutes per event are the assumptions confirmed in the Estimate step.\n"
-        + "".join(f"\nWhat-if on {w['source']}: median throughput {w['before']['throughput_h']} h → {w['after']['throughput_h']} h, {w['hours_saved']} h a month of people's work saved.\n"
+        + "".join(f"\nWhat-if on {w['source']}: median throughput {w['before']['throughput_h']} h {w['after']['throughput_h']} h, {w['hours_saved']} h a month of people's work saved.\n"
                   for w in (ctx.get("whatif") or {}).values()), label="What to automate first (Markdown)")
     wb._mutate(ctx.id, lambda s: wb._save_ctx(ctx, s))
 
@@ -941,33 +941,33 @@ def _cards(u: dict) -> list[dict]:
 def _process_options(u: dict) -> list[tuple[str, str]]:
     try:
         from . import processdocs
-        return [("", "No — just mine the logs")] + processdocs.process_options(u)
+        return [("", "No - just mine the logs")] + processdocs.process_options(u)
     except Exception:  # noqa: BLE001
-        return [("", "No — just mine the logs")]
+        return [("", "No - just mine the logs")]
 
 
 wb.register(wb.Pack(
     module=MODULE,
-    guide="# Process mining & discovery — the work item\n\nEvent logs are mined by rules here; nothing is drafted by an agent. Every figure comes from the log.",
+    guide="# Process mining & discovery - the work item\n\nEvent logs are mined by rules here; nothing is drafted by an agent. Every figure comes from the log.",
     lineage="the event log built from ERP tables as a job that reads them",
     platforms={"files": FILES, "mining": MINING},
     schemas={"log": INV_EDIT.columns, "activity": DESIGN_EDIT.columns},
     cards=_cards,
     on_done=_on_done,
     work={
-        "assess": wb.Work(title="See how the work really runs — variants, delays, rework — and what to automate first", platforms=("files", "mining"), steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Celonis or Signavio PI tested with your key, uploads opened — read-only"),
-            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Log reader", edit=INV_EDIT, text="Every event log with its cases, events and period, and the columns Relay found — you correct them"),
+        "assess": wb.Work(title="See how the work really runs - variants, delays, rework - and what to automate first", platforms=("files", "mining"), steps={
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Celonis or Signavio PI tested with your key, uploads opened - read-only"),
+            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Log reader", edit=INV_EDIT, text="Every event log with its cases, events and period, and the columns Relay found - you correct them"),
             "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Miner", text="Mined by rules: variants, throughput, waits, rework, ping-pong; the rows reconcile; the fit with a published process"),
-            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="Delays, rework, ping-pong and other endings — keep or ignore each"),
+            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="Delays, rework, ping-pong and other endings - keep or ignore each"),
             "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", edit=EST_EDIT, confirm="what to automate first, with the minutes per event you set",
-                                text="What to automate first: the activities people do, ranked by the hours a month they take — and a what-if on the real log",
+                                text="What to automate first: the activities people do, ranked by the hours a month they take - and a what-if on the real log",
                                 actions={"whatif": wb.Action(label="Run the what-if", kind="platform", run=a_whatif, agent="Simulator",
                                                              help="Replays the event log with the share a bot takes, the cut in each wait and the re-work stopped, as set per activity.")})},
             fields=[wb.Field("process", "Compare with a published process", "select", options=_process_options, help="Its BPMN map is checked against the log (conformance).")]),
         "develop": wb.Work(title="Build an event log from SAP or Oracle extracts, prove it, load it and watch it", platforms=("files", "mining"), steps={
             "Describe": wb.Step(kind="platform", run=d_describe, agent="Connector", text="The ERP extracts are read: tables, rows and columns"),
-            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Log designer", edit=DESIGN_EDIT, text="Activities from the ERP's own date columns (rules first), with the case key and filters — you confirm the design"),
+            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Log designer", edit=DESIGN_EDIT, text="Activities from the ERP's own date columns (rules first), with the case key and filters - you confirm the design"),
             "Build": wb.Step(kind="deterministic", run=d_build, agent="Log builder", text="The event log built with DuckDB, with its SQL and the KPI definitions"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Prover", back_to="shape", text="Every event reconciles with a date in the tables; every case has its key; the KPIs on the built log"),
             "Ship": wb.Step(kind="person", run=d_ship, view="plan", approver=True, text="The named approver takes it live"),

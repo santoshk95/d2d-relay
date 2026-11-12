@@ -1,7 +1,7 @@
 """The rule engine: deterministic mappings from the source (Cognos expressions, Cognos visuals) to the report
 definition schema (DAX measures, calculated columns, slicers, catalogue visuals) and the prototype SQL that proves
-them. Every translation names the rules it used, carries a confidence and lists its gaps — the calculations no rule
-covers, in one line each ("running-total: no DAX rule yet") — so the converter asks the agent only for those.
+them. Every translation names the rules it used, carries a confidence and lists its gaps - the calculations no rule
+covers, in one line each ("running-total: no DAX rule yet") - so the converter asks the agent only for those.
 
 Two emitters share one AST (expr.py): DAX for the measure / column, DuckDB SQL for the visual's prototype query.
 Window functions carry the SQL for running totals, ranks and moving averages even where the DAX has no rule yet, so
@@ -28,15 +28,15 @@ RULES = {
     "cog.agg.count": ("count, count distinct", "high", "COUNT / DISTINCTCOUNT"),
     "cog.agg.minmax": ("minimum, maximum", "high", "MIN / MAX"),
     "cog.agg.auto": ("auto-summarised measure", "high", "a measure column in a calculation is summed (Cognos auto group & summarise)"),
-    "cog.agg.for": ("aggregate … for level", "medium", "CALCULATE ( …, ALLSELECTED ( ), VALUES ( level ) ) — a total at the named level"),
-    "cog.agg.report": ("aggregate … for report", "high", "CALCULATE ( …, ALLSELECTED ( ) ) — the total of the whole report"),
+    "cog.agg.for": ("aggregate ... for level", "medium", "CALCULATE ( ..., ALLSELECTED ( ), VALUES ( level ) ) - a total at the named level"),
+    "cog.agg.report": ("aggregate ... for report", "high", "CALCULATE ( ..., ALLSELECTED ( ) ) - the total of the whole report"),
     "cog.agg.percentage": ("percentage", "high", "DIVIDE by the report (or level) total"),
-    "cog.arith": ("+ − ×", "high", "arithmetic as written"),
-    "cog.arith.divide": ("division", "high", "DIVIDE ( a, b ) — blank instead of an error on zero"),
-    "cog.if": ("if … then … else", "high", "IF"),
-    "cog.case": ("case … when", "high", "SWITCH"),
+    "cog.arith": ("+ - ×", "high", "arithmetic as written"),
+    "cog.arith.divide": ("division", "high", "DIVIDE ( a, b ) - blank instead of an error on zero"),
+    "cog.if": ("if ... then ... else", "high", "IF"),
+    "cog.case": ("case ... when", "high", "SWITCH"),
     "cog.logic": ("and, or, not, comparisons", "high", "&&, ||, NOT and the same operators"),
-    "cog.in": ("in (…)", "high", "IN { … }"),
+    "cog.in": ("in (...)", "high", "IN { ... }"),
     "cog.isnull": ("is null / is missing", "high", "ISBLANK"),
     "cog.between": ("between", "high", "two comparisons"),
     "cog.str.concat": ("|| concatenation", "high", "&"),
@@ -50,7 +50,7 @@ RULES = {
     "cog.attr.calc": ("calculated attribute", "medium", "a calculated column on the dimension or Date table"),
     "cog.filter.constant": ("filter: item = constant", "high", "a report slicer with that default value"),
     "cog.filter.prompt": ("filter: item = ?prompt?", "high", "a report slicer (multi-select) with no default"),
-    "cog.filter.measure": ("filter: item = constant on one query only", "medium", "CALCULATE ( …, column = value ) on that query's measures and WHERE in its visuals"),
+    "cog.filter.measure": ("filter: item = constant on one query only", "medium", "CALCULATE ( ..., column = value ) on that query's measures and WHERE in its visuals"),
     "cog.viz.list": ("list", "high", "table visual, first measure sorted descending"),
     "cog.viz.crosstab": ("crosstab", "medium", "stacked column chart with the column edge as the legend (Power BI's matrix is the hand-built alternative)"),
     "cog.viz.column": ("column / bar chart", "high", "Relay Columns (clustered)"),
@@ -101,7 +101,7 @@ def dax_col(table: str, col: str) -> str:
 
 class Context:
     """What the translator knows: the dataset's tables and columns, the query's data items, which items became
-    measures (and their DAX names), the fact table and its date column, SQL aliases, and — per visual — the columns
+    measures (and their DAX names), the fact table and its date column, SQL aliases, and - per visual - the columns
     the visual groups by (for `for` levels and window partitions) and its row order (for running aggregates)."""
 
     def __init__(self, dataset: dict, items: list[dict], fact: str | None = None):
@@ -351,7 +351,7 @@ class _Emit:
         plain = arg["t"] == "ref" and self.ctx.resolve(arg["path"]) is not None
         if n.get("distinct"):
             if fn != "count" or not plain:
-                return self.gap(fn, f"{fn}(distinct …) is only a rule for a plain column", n)
+                return self.gap(fn, f"{fn}(distinct ...) is only a rule for a plain column", n)
             self.rule("cog.agg.count")
             t, c = self.ctx.resolve(arg["path"])
             dax, sql = f"DISTINCTCOUNT ( {dax_col(t, c)} )", f"COUNT(DISTINCT {self.ctx.alias(t)}.{_dq(c)})"
@@ -369,13 +369,13 @@ class _Emit:
         if n.get("for") is not None:
             if not n["for"]:
                 self.rule("cog.agg.report")
-                return f"CALCULATE ( {dax}, ALLSELECTED ( ) )", f"{sql_fn}({sql}) OVER ()" if sql_fn in ("SUM", "MIN", "MAX") else self.gap(fn, f"{fn} … for report of a non-additive aggregate has no SQL rule", n)
+                return f"CALCULATE ( {dax}, ALLSELECTED ( ) )", f"{sql_fn}({sql}) OVER ()" if sql_fn in ("SUM", "MIN", "MAX") else self.gap(fn, f"{fn} ... for report of a non-additive aggregate has no SQL rule", n)
             self.rule("cog.agg.for")
             dax_f, sql_p = self.partition(n["for"])
             self.tr.window = True
             if sql_fn in ("SUM", "MIN", "MAX"):
                 return f"CALCULATE ( {dax}, ALLSELECTED ( ), {dax_f} )", f"{sql_fn}({sql}) OVER ({sql_p.strip()})"
-            return self.gap(fn, f"{fn} … for level of a non-additive aggregate has no SQL rule", n)
+            return self.gap(fn, f"{fn} ... for level of a non-additive aggregate has no SQL rule", n)
         return dax, sql
 
     def call(self, n, mode: str) -> tuple:
@@ -637,7 +637,7 @@ def visual_rule(v: dict) -> dict:
 # ------------------------------------------------------------------ prediction ("Ready to convert")
 
 def predict(report: dict, dataset: dict | None, pack: "RulePack | None" = None) -> dict:
-    """Before any conversion: automatic / needs review / not yet — with a confidence and a one-line reason, from the
+    """Before any conversion: automatic / needs review / not yet - with a confidence and a one-line reason, from the
     rules alone (no AI). auto = every calculation and visual has a rule (or one calculation needs the agent);
     review = 1-3 calculations without a rule, a medium-confidence visual, or a filter without a rule;
     no = an unsupported feature, no dataset, or 4+ calculations without a rule."""
@@ -664,7 +664,7 @@ def predict(report: dict, dataset: dict | None, pack: "RulePack | None" = None) 
                 gaps.append({**g, "item": it["name"]})
         for f in q.get("filters") or []:
             if filter_rule(f["expression"], ctx)[0] is None:
-                notes.append(f"filter “{f['expression']}” has no rule")
+                notes.append(f"filter \"{f['expression']}\" has no rule")
     unsupported = []
     for p in report.get("pages") or []:
         for v in p.get("visuals") or []:

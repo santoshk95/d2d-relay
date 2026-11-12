@@ -1,22 +1,22 @@
-"""BRD & requirements (registry id `brd`) — workshop notes, call recordings, e-mails and whiteboards in; a BRD in the
+"""BRD & requirements (registry id `brd`) - workshop notes, call recordings, e-mails and whiteboards in; a BRD in the
 tenant's template, user stories with acceptance criteria, a sign-off by each business owner, a backlog pushed to Jira or
 Azure Boards after its own approval, and every requirement traced from its source to the build, the tests and the
 sign-off.
 
-Develop  Gather → Draft → Review → Approve → Backlog → Trace. Gather reads every upload into passages with ids (Word,
+Develop  Gather -> Draft -> Review -> Approve -> Backlog -> Trace. Gather reads every upload into passages with ids (Word,
          PDF, slides, sheets, e-mail, call transcripts, page exports; recordings and whiteboard photos are looked at by
          the agent); Draft is the agent's: brd.yaml with scope, stakeholders, current and future process, requirements,
-         rules, data, risks and open questions — each citing the passage it rests on, word for word, checked strictly
+         rules, data, risks and open questions - each citing the passage it rests on, word for word, checked strictly
          (an unknown passage, a quote that is not in it or a figure no cited passage holds is refused); the BRD is built
          in the tenant's Word template by the P11 docs engine. Review records the business owners' comments and the
          answers to the open questions (listed, never guessed). Approve builds the version for approval and asks each
          business owner to sign it (a checkpoint each), then the named approver. Backlog turns the approved requirements
          into user stories with Given / When / Then acceptance criteria. Trace asks for the write to Jira or Azure
          Boards (its own approval), reads the keys back and shows the traceability matrix.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: an approved BRD changed with review — what the change
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: an approved BRD changed with review - what the change
          touches (requirements, stories, keys, tests), the agent's drafted change (sourced), proof, release, a new version
          and the tracker updated after its approval.
-Migrate  Collect → Read → Standardise → Gaps → Approve → Backlog → Trace: old specs (Word, PDF, Confluence or SharePoint
+Migrate  Collect -> Read -> Standardise -> Gaps -> Approve -> Backlog -> Trace: old specs (Word, PDF, Confluence or SharePoint
          exports) read and mapped to the BRD template by the agent; duplicates and contradictions listed with where they
          came from; gaps against how the system really behaves (the knowledge map); owners approve the standard version.
 Approved BRDs are kept in `brd_documents` / `brd_versions` (every version); Test plans & UAT reads them.
@@ -52,14 +52,14 @@ CREATE TABLE IF NOT EXISTS brd_versions (
 FILES = wb.FilesPlatform()
 FILES.label = "Workshop notes, recordings, e-mails and whiteboards"
 FILES.uploads = UPLOADS
-FILES.reads = ("the files you upload — Word, PDF, slides, sheets, e-mails (.eml), call transcripts (.vtt / .srt), Confluence or SharePoint page exports; "
-               "recordings and whiteboard photos are looked at by the agent — a copy in this work item's folder")
+FILES.reads = ("the files you upload - Word, PDF, slides, sheets, e-mails (.eml), call transcripts (.vtt / .srt), Confluence or SharePoint page exports; "
+               "recordings and whiteboard photos are looked at by the agent - a copy in this work item's folder")
 FILES.simulator = "synthetic fixtures in tests/mocklab/fixtures/brd/ (notes, transcript, e-mail, whiteboard, recording, old specs)"
 
 
 class TrackerPlatform(wb.Platform):
     id = "tracker"
-    label = "Azure Boards (where the backlog goes) — or Jira through a Service desk source"
+    label = "Azure Boards (where the backlog goes) - or Jira through a Service desk source"
     kinds = trk.TRACKERS
     simulator = "tests/mocklab/sims/process.py: azure-boards (Azure DevOps REST 7.1); Jira: jira-software (Jira Cloud REST v3) behind a Service desk source"
     reads = "the project and its work item types; Jira through the Service desk's source. Stories are written only after you approve each write"
@@ -105,7 +105,7 @@ def documents(u: dict) -> list[dict]:
 
 
 def document_options(u: dict) -> list[tuple[str, str]]:
-    return [(d["id"], f"{d['title']} · version {d['version']} · {len(d['requirements'])} requirements") for d in documents(u)]
+    return [(d["id"], f"{d['title']} - version {d['version']} - {len(d['requirements'])} requirements") for d in documents(u)]
 
 
 def publish(ctx: wb.Ctx, reqs: list[dict], stories: list[dict], did: str | None, signed: list[dict], file: str, note: str = "") -> dict:
@@ -136,7 +136,7 @@ def _list(v) -> list:
 
 
 def _given(lines: list[str]) -> list[str]:
-    return [f"“{l[:60]}” is not Given / When / Then" for l in lines if not (re.search(r"\bgiven\b", l, re.I) and re.search(r"\bwhen\b", l, re.I) and re.search(r"\bthen\b", l, re.I))]
+    return [f"\"{l[:60]}\" is not Given / When / Then" for l in lines if not (re.search(r"\bgiven\b", l, re.I) and re.search(r"\bwhen\b", l, re.I) and re.search(r"\bthen\b", l, re.I))]
 
 
 def check_brd(y: dict, segs: dict) -> list[str]:
@@ -170,7 +170,7 @@ def check_brd(y: dict, segs: dict) -> list[str]:
         acc = [str(a) for a in _list(r.get("acceptance")) if str(a).strip()]
         if r.get("type") in STORY_TYPES:
             if not acc:
-                out.append(f"{where}: give at least one acceptance criterion (Given … when … then …)")
+                out.append(f"{where}: give at least one acceptance criterion (Given ... when ... then ...)")
             out += [f"{where}: {p}" for p in _given(acc)]
             st = r.get("story") if isinstance(r.get("story"), dict) else {}
             if not all(str(st.get(k) or "").strip() for k in ("as_a", "i_want", "so_that")):
@@ -181,7 +181,7 @@ def check_brd(y: dict, segs: dict) -> list[str]:
                 out += _w4.check_sources(f"{label} {i}", _w4.parse_refs(x.get("sources")), segs, need_quote=False)
     for i, q in enumerate(_list(y.get("open_questions")), 1):
         if not isinstance(q, dict) or not str(q.get("question") or "").strip().endswith("?"):
-            out.append(f"open question {i}: write it as a question (ending with ?) — what the sources do not settle")
+            out.append(f"open question {i}: write it as a question (ending with ?) - what the sources do not settle")
         elif q.get("sources"):
             out += _w4.check_sources(f"open question {i}", _w4.parse_refs(q.get("sources")), segs, need_quote=False)
     return out
@@ -234,15 +234,15 @@ def _validate_reqs(recs: list[dict], ctx: wb.Ctx) -> list[str]:
         acc = [a for a in str(r.get("acceptance") or "").splitlines() if a.strip()]
         if r.get("type") in STORY_TYPES:
             if not acc:
-                out.append(f"{where}: give at least one acceptance criterion (Given … when … then …), one per line")
+                out.append(f"{where}: give at least one acceptance criterion (Given ... when ... then ...), one per line")
             out += [f"{where}: {p}" for p in _given(acc)]
     return out
 
 
 REQ_COLUMNS = [wb.Column("keep", "Keep", "bool"), wb.Column("req", "Id", readonly=True), wb.Column("title", "Title"), wb.Column("statement", "Requirement", "longtext"),
                wb.Column("type", "Type", "select", options=TYPES), wb.Column("priority", "Priority", "select", options=PRIORITIES),
-               wb.Column("source", "Source", help="the passage ids it rests on (from the evidence, e.g. workshop-notes.docx#p4), comma-separated — or “stated by <your name>”"),
-               wb.Column("acceptance", "Acceptance criteria", "longtext", help="one per line: Given … when … then …")]
+               wb.Column("source", "Source", help="the passage ids it rests on (from the evidence, e.g. workshop-notes.docx#p4), comma-separated - or \"stated by <your name>\""),
+               wb.Column("acceptance", "Acceptance criteria", "longtext", help="one per line: Given ... when ... then ...")]
 REQ_EDIT = wb.Edit(columns=REQ_COLUMNS, validate=_validate_reqs, label="requirement")
 
 
@@ -274,9 +274,9 @@ def _brd_doc(ctx: wb.Ctx, name: str, version: int, status: str, reqs: list[dict]
                 _w4.table(["Question", "Why it is open"], [[q.get("question"), q.get("why")] for q in rec["open_questions"] if isinstance(q, dict) and not any(d["q"] == q.get("id") for d in rec["decisions"])],
                           f"record:{name}#open_questions", "Listed, not guessed"),
                 _w4.table(["Question", "Answer", "Answered by"], [[d["question"], d["answer"], d["by"]] for d in rec["decisions"]], f"record:{name}#decisions", "Answered in review")]},
-            {"title": "Sign-off", "blocks": [_w4.table(["Business owner", "Decision", "When"], [[s["person"], s["decision"], s["when"]] for s in rec["signed"]] or [["—", status, ""]],
+            {"title": "Sign-off", "blocks": [_w4.table(["Business owner", "Decision", "When"], [[s["person"], s["decision"], s["when"]] for s in rec["signed"]] or [["-", status, ""]],
                                                        f"record:{name}#signed", "Approval with names and dates")]}]
-    return _w4.build_doc(ctx, name, f"Business requirements: {ctx.title}", f"Version {version} · {status}", secs, {name: rec}, label=f"BRD version {version} ({status})",
+    return _w4.build_doc(ctx, name, f"Business requirements: {ctx.title}", f"Version {version} - {status}", secs, {name: rec}, label=f"BRD version {version} ({status})",
                          audience="the business owners and the delivery team")
 
 
@@ -296,26 +296,26 @@ def d_gather(ctx: wb.Ctx) -> dict:
             t = connectors.sdk.get(c["kind"]).test(c)
             tracker.append(f"{c['name']}: {t.get('sees')}")
         except (connectors.ConnectorError, connectors.sdk.ScopeError) as e:
-            tracker.append(f"{c['name']}: could not be read — {e}")
+            tracker.append(f"{c['name']}: could not be read - {e}")
     tg = _target(ctx)
     if tg["kind"] == "jira":
         try:
             from .. import itsm
             t = itsm.adapter_for(itsm._src(tg["id"])).test()
-            tracker.append(f"{tg['name']} (Service desk): {tg['system']} as {t.get('account')}" + ("" if not tg["gone"] else " — it may not raise tickets yet (Service desk › Sources › May do)"))
+            tracker.append(f"{tg['name']} (Service desk): {tg['system']} as {t.get('account')}" + ("" if not tg["gone"] else " - it may not raise tickets yet (Service desk > Sources > May do)"))
         except Exception as e:  # noqa: BLE001 - shown, not fatal: the backlog can still be exported
-            tracker.append(f"{tg['name']}: could not be read — {str(e)[:160]}")
+            tracker.append(f"{tg['name']}: could not be read - {str(e)[:160]}")
     ctx.put("tracker_seen", tracker)
-    return {"summary": f"{len(read['files'])} file(s) read into {texts} passage(s) Relay can cite" + (f"; {', '.join(tracker)}" if tracker else "; no tracker connected — the backlog will be exported as CSV") + ".",
+    return {"summary": f"{len(read['files'])} file(s) read into {texts} passage(s) Relay can cite" + (f"; {', '.join(tracker)}" if tracker else "; no tracker connected - the backlog will be exported as CSV") + ".",
             "counts": {"files": len(read["files"]), "passages": texts, "media": sum(1 for f in read["files"] if f["passages"] == 0)}, "data": rows,
             "items": [f"{f['name']}: {f['kind']}, {f['what']}" for f in read["files"][:8]]}
 
 
-DRAFT = """Read WORK.md, then sources/segments.json: every passage of the uploads with its id (file#where) — workshop
+DRAFT = """Read WORK.md, then sources/segments.json: every passage of the uploads with its id (file#where) - workshop
 notes, e-mails, call transcripts, page exports. Look at the images and recordings in data/ yourself (`genbi read
 data/<file>` gives a video's key frames; Read an image to see a whiteboard).
 
-FILE brd.yaml — the business requirements document, in this shape:
+FILE brd.yaml - the business requirements document, in this shape:
 
 title: <what the work is>
 scope: <one paragraph: what is in and out, from the sources>
@@ -330,7 +330,7 @@ requirements:
     priority: must | should | could | wont
     owner: <role, from the sources>
     sources: [{ref: workshop-notes.docx#p4, quote: "the exact words it rests on"}]
-    acceptance: ["Given …, when …, then …"]          # functional, rule, data and report requirements
+    acceptance: ["Given ..., when ..., then ..."]          # functional, rule, data and report requirements
     story: {as_a: <role>, i_want: <capability>, so_that: <benefit>}
 rules: [{id: RULE-01, text, sources}]
 risks: [{risk, mitigation, sources}]
@@ -338,7 +338,7 @@ open_questions: [{id: Q-01, question: <ends with ?>, why: <what the sources leav
 
 Every requirement cites at least one passage id from sources/segments.json with the words it rests on, copied word
 for word. A figure (an amount, a number of days, a percentage) must be in a passage it cites. Where the sources do not
-settle something, write an open question — never guess. British English."""
+settle something, write an open question - never guess. British English."""
 
 
 def _draft_prompt(ctx: wb.Ctx) -> str:
@@ -364,7 +364,7 @@ def _draft_after(ctx: wb.Ctx, res: dict) -> dict:
     qs = _list(y.get("open_questions"))
     media = sum(1 for r in recs if r["sources"] and all((segs.get(x["ref"]) or {}).get("kind") == "media" for x in r["sources"]))
     return {"summary": f"{len(recs)} requirement(s) drafted from {len({x['ref'].split('#')[0] for r in recs for x in r['sources']})} source file(s), each citing its passage; "
-            f"{len(qs)} open question(s) listed, not guessed" + (f"; {media} rest on a recording alone — check them against it" if media else "")
+            f"{len(qs)} open question(s) listed, not guessed" + (f"; {media} rest on a recording alone - check them against it" if media else "")
             + (f". The document check found {len(probs)} problem(s): {probs[0]}" if probs else ". The BRD is in your template (Word and an HTML preview).") + " Correct the rows, then confirm.",
             "counts": {"requirements": len(recs), "open questions": len(qs), "must": sum(1 for r in recs if r["priority"] == "must")},
             "records": recs, "data": _reqs_table(recs), "items": [f"{r['req']}: {r['statement'][:140]}" for r in recs[:6]]}
@@ -383,7 +383,7 @@ def d_review(ctx: wb.Ctx) -> dict:
             rec = {"id": str(q.get("id") or f"Q-{len(recs)}"), "kind": "open question", "ref": str(q.get("id") or ""), "text": q.get("question"), "decision": "still open", "comment": ""}
             recs.append({**rec, **{k: have[rec["id"]][k] for k in ("decision", "comment") if rec["id"] in have}})
     nq = sum(1 for r in recs if r["kind"] == "open question")
-    return {"summary": f"{len(reqs)} requirement(s) for the business owners to comment on in place, {nq} open question(s) to answer — what nobody can answer yet stays open, never guessed.",
+    return {"summary": f"{len(reqs)} requirement(s) for the business owners to comment on in place, {nq} open question(s) to answer - what nobody can answer yet stays open, never guessed.",
             "records": recs, "counts": {"requirements": len(reqs), "open questions": nq},
             "data": {"columns": ["Kind", "Ref", "Text", "Decision", "Comment or answer"], "rows": [[r["kind"], r["ref"], r["text"], r["decision"], r["comment"]] for r in recs]}}
 
@@ -448,7 +448,7 @@ def d_approve(ctx: wb.Ctx) -> dict:
     ctx.put("decisions", decisions)
     owners, probs = _w4.people(ctx.scope.get("owners") or "")
     if probs:
-        raise wb.StepFailed("; ".join(probs) + " — correct the business owners (one e-mail or name per line).")
+        raise wb.StepFailed("; ".join(probs) + " - correct the business owners (one e-mail or name per line).")
     info = _brd_doc(ctx, f"brd-v{v}", v, "for approval", reqs, ctx.get("brd") or {}, decisions)
     _w4.ask_signoff(ctx, owners, round_=round_, what=f"BRD version {v} for approval: {len(reqs)} requirement(s). Open the work item to read it (Word and an HTML preview).",
                     items=[f"{r['req']}: {r['statement'][:160]}" for r in reqs[:10]], role="business owner")
@@ -505,7 +505,7 @@ def d_backlog(ctx: wb.Ctx) -> dict:
         stories.append({**s, **{k: have[s["id"]][k] for k in ("include", "summary", "acceptance", "priority") if s["id"] in have}})
     tg = _target(ctx)
     where = {"jira": f"{tg['system']} through {tg['name']} (one approval per story)", "boards": f"{tg['name']} (Azure Boards)"}.get(tg["kind"], "CSV files to import (no tracker connected)")
-    return {"summary": f"BRD version {ctx.get('doc_version')} is approved and kept. {len(stories)} user stor{'y' if len(stories) == 1 else 'ies'} from it, each with its acceptance criteria — "
+    return {"summary": f"BRD version {ctx.get('doc_version')} is approved and kept. {len(stories)} user stor{'y' if len(stories) == 1 else 'ies'} from it, each with its acceptance criteria - "
             f"they go to {where} once you confirm and approve the write.", "records": stories, "counts": {"stories": len(stories), "requirements": len(reqs)},
             "data": {"columns": ["Story", "Requirement", "Summary", "Priority", "Acceptance criteria"], "rows": [[s["story"], s["req"], s["summary"], s["priority"], s["acceptance"]] for s in stories]},
             "items": [f"{s['story']} ({s['req']}): {s['summary'][:120]}" for s in stories[:6]]}
@@ -518,7 +518,7 @@ def _validate_stories(recs: list[dict], ctx: wb.Ctx) -> list[str]:
         if not s.get("include"):
             continue
         if not re.match(r"^\s*As an? .+,? I want .+", str(s.get("summary") or ""), re.I):
-            out.append(f"{s.get('story')}: write it as “As a …, I want …, so that …”")
+            out.append(f"{s.get('story')}: write it as \"As a ..., I want ..., so that ...\"")
         acc = [a for a in str(s.get("acceptance") or "").splitlines() if a.strip()]
         if not acc:
             out.append(f"{s.get('story')}: give at least one acceptance criterion")
@@ -530,13 +530,13 @@ def _validate_stories(recs: list[dict], ctx: wb.Ctx) -> list[str]:
 
 STORY_EDIT = wb.Edit(columns=[wb.Column("include", "Include", "bool"), wb.Column("story", "Story", readonly=True), wb.Column("req", "Requirement", readonly=True),
                               wb.Column("summary", "User story", "longtext"), wb.Column("priority", "Priority", "select", options=PRIORITIES),
-                              wb.Column("acceptance", "Acceptance criteria", "longtext", help="one per line: Given … when … then …")], add=False, remove=False, validate=_validate_stories, label="story")
+                              wb.Column("acceptance", "Acceptance criteria", "longtext", help="one per line: Given ... when ... then ...")], add=False, remove=False, validate=_validate_stories, label="story")
 
 
 def _story_payload(ctx: wb.Ctx, s: dict, reqs: dict) -> dict:
     r = reqs.get(s["req"]) or {}
     return {"ref": s["story"], "summary": s["summary"], "priority": s.get("priority"), "acceptance": [a for a in str(s.get("acceptance") or "").splitlines() if a.strip()],
-            "description": f"{r.get('statement') or ''} — from BRD “{ctx.title}” version {ctx.get('doc_version')}, {s['req']}; source: {r.get('where') or ''}",
+            "description": f"{r.get('statement') or ''} - from BRD \"{ctx.title}\" version {ctx.get('doc_version')}, {s['req']}; source: {r.get('where') or ''}",
             "labels": ["brd", ctx.get("doc") or "", s["req"]]}
 
 
@@ -568,14 +568,14 @@ def d_trace(ctx: wb.Ctx) -> dict:
                label="Backlog for Azure Boards' CSV import")
     if tg["kind"] == "jira" and todo:
         if tg["gone"]:
-            raise wb.StepFailed(f"{tg['name']} may not raise tickets: an admin allows it under Service desk › Sources › May do (Read & write), or pick no Jira project to use the CSV files.")
+            raise wb.StepFailed(f"{tg['name']} may not raise tickets: an admin allows it under Service desk > Sources > May do (Read & write), or pick no Jira project to use the CSV files.")
         waiting = {p["result"].get("ref") for p in _w4.latest_pushes(ctx.id, "trace") if p["status"] == "awaiting"}
         for s in todo:
             if s["story"] not in waiting:
                 _w4.desk_write(ctx, tg["id"], "create", _desk_story(ctx, s, reqs), step="trace", ref=s["story"], name=f"Story {s['story']} to {tg['system']}: {s['summary'][:110]}")
     elif tg["kind"] == "boards" and todo:
         if not connectors.may_write(tg["conn"]):
-            raise wb.StepFailed(f"{tg['name']} is read-only: change its scope to “Read & write — with approval” to push the backlog, or remove it from the work item to use the CSV files.")
+            raise wb.StepFailed(f"{tg['name']} is read-only: change its scope to \"Read & write - with approval\" to push the backlog, or remove it from the work item to use the CSV files.")
         _w4.request_push(ctx, tg["id"], "stories", {"stories": [_story_payload(ctx, s, reqs) for s in todo]},
                          f"Push {len(todo)} user stor{'y' if len(todo) == 1 else 'ies'} to {tg['name']} (BRD {ctx.title}, version {ctx.get('doc_version')})", step="trace",
                          items=[f"{s['story']} ({s['req']}): {s['summary'][:150]}" for s in todo[:8]])
@@ -589,7 +589,7 @@ def _story_state(s: dict, keys: dict, latest: list[dict], tg: dict) -> str:
     p = next((p for p in latest if p["target"] == "jira" and p["result"].get("ref") == s["story"]), None) or next((p for p in latest if p["target"] != "jira"), None)
     if not p:
         return "CSV export" if tg["kind"] == "csv" else "not asked yet"
-    return {"awaiting": "awaiting its write approval", "failed": "not written — run Trace again"}.get(p["status"], "not written")
+    return {"awaiting": "awaiting its write approval", "failed": "not written - run Trace again"}.get(p["status"], "not written")
 
 
 def _tests_of(nid: str) -> list[str]:
@@ -611,7 +611,7 @@ def _trace_view(ctx: wb.Ctx) -> dict:
         nid = lineage.node_id("requirement", f"{SYSTEM} {ctx.get('doc')}", r["req"])
         tests = _tests_of(nid)
         rows.append({"id": r["req"], "requirement": f"{r['req']}: {r.get('title') or r['statement'][:60]}", "source": r.get("where") or "", "version": f"v{ctx.get('doc_version')}",
-                     "signed": signed, "story": ", ".join(s["story"] for s in ss) or "—", "tracker": ", ".join(_story_state(s, keys, latest, tg) for s in ss) or "—",
+                     "signed": signed, "story": ", ".join(s["story"] for s in ss) or "-", "tracker": ", ".join(_story_state(s, keys, latest, tg) for s in ss) or "-",
                      "tests": ", ".join(tests) or "none yet"})
     pushed = sum(1 for s in stories if (keys.get(s["story"]) or {}).get("key"))
     waiting = sum(1 for p in latest if p["status"] == "awaiting")
@@ -705,7 +705,7 @@ def c_request(ctx: wb.Ctx) -> dict:
     ctx.put("stories_now", d["stories"])
     ctx.put("doc", d["id"])
     ctx.put("doc_version", d["version"])
-    return {"summary": f"Change to “{d['title']}” (version {d['version']}, {len(d['requirements'])} requirement(s), {len(d['stories'])} stor{'y' if len(d['stories']) == 1 else 'ies'})"
+    return {"summary": f"Change to \"{d['title']}\" (version {d['version']}, {len(d['requirements'])} requirement(s), {len(d['stories'])} stor{'y' if len(d['stories']) == 1 else 'ies'})"
             + (f"; {len(read['files'])} new file(s) read" if read["files"] else "") + ".", "counts": {"requirements": len(d["requirements"]), "version": d["version"]},
             "data": {"text": ctx.brief or "(no request text)"}}
 
@@ -730,10 +730,10 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
         hit = r["req"] in named or len(words & _toks(f"{r.get('title')} {r['statement']}")) >= 2
         nid = lineage.node_id("requirement", f"{SYSTEM} {ctx.get('doc')}", r["req"])
         ss = [s for s in stories if s.get("req") == r["req"]]
-        rec = {"id": r["req"], "req": r["req"], "touched": hit, "statement": r["statement"], "stories": ", ".join(s.get("key") or s["story"] for s in ss) or "—", "tests": ", ".join(_tests_of(nid)) or "—"}
+        rec = {"id": r["req"], "req": r["req"], "touched": hit, "statement": r["statement"], "stories": ", ".join(s.get("key") or s["story"] for s in ss) or "-", "tests": ", ".join(_tests_of(nid)) or "-"}
         recs.append({**rec, **({"touched": have[r["req"]]["touched"]} if r["req"] in have else {})})
     t = [r for r in recs if r["touched"]]
-    return {"summary": f"The request touches {len(t)} of {len(recs)} requirement(s)" + (f", with {sum(1 for r in t if r['stories'] != '—')} stor{'y' if len(t) == 1 else 'ies'} in the tracker and their tests" if t else "")
+    return {"summary": f"The request touches {len(t)} of {len(recs)} requirement(s)" + (f", with {sum(1 for r in t if r['stories'] != '-')} stor{'y' if len(t) == 1 else 'ies'} in the tracker and their tests" if t else "")
             + ". Tick what the change is about before anything is drafted.", "records": recs, "counts": {"touched": len(t), "requirements": len(recs)},
             "data": {"columns": ["Touched", "Requirement", "Statement", "Stories", "Tests"], "rows": [["yes" if r["touched"] else "no", r["req"], r["statement"], r["stories"], r["tests"]] for r in recs]},
             "items": [f"{r['req']}: {r['statement'][:140]}" for r in t[:6]]}
@@ -743,7 +743,7 @@ DIAG_EDIT = wb.Edit(columns=[wb.Column("touched", "Touched", "bool"), wb.Column(
                              wb.Column("stories", "Stories", readonly=True), wb.Column("tests", "Tests", readonly=True)], add=False, remove=False, label="requirement")
 
 CHANGE = """Read WORK.md, request.md (the change request), sources/segments.json (the passages you may cite: the request
-itself as request#p1…, and any new upload) and current.json (the approved requirements this change starts from; the
+itself as request#p1..., and any new upload) and current.json (the approved requirements this change starts from; the
 ones the person ticked are marked touched: true).
 
 FILE brd_change.yaml:
@@ -751,12 +751,12 @@ FILE brd_change.yaml:
 changes:
   - op: change | add | remove
     id: BR-003                    # an existing id for change / remove; the next free BR-0xx for add
-    title: …
-    statement: …                  # change / add
+    title: ...
+    statement: ...                  # change / add
     type: functional | non-functional | rule | data | report
     priority: must | should | could | wont
     sources: [{ref: request#p1, quote: "the words the change rests on"}]
-    acceptance: ["Given …, when …, then …"]
+    acceptance: ["Given ..., when ..., then ..."]
     story: {as_a, i_want, so_that}
     why: <one line>
 
@@ -814,7 +814,7 @@ def _change_after(ctx: wb.Ctx, res: dict) -> dict:
                            "priority": c.get("priority") or base.get("priority"), "statement": c.get("statement") or base.get("statement") or ""}, segs)
         recs.append({**rec, "op": c["op"], "why": str(c.get("why") or "")})
     ctx.evidence("The agent's change (brd_change.yaml)", {"change": y, "summary": res.get("text") or ""}, kind="agent", ok=True)
-    return {"summary": f"{sum(1 for r in recs if r['op'] == 'change')} changed, {sum(1 for r in recs if r['op'] == 'add')} added, {sum(1 for r in recs if r['op'] == 'remove')} removed — each citing what it rests on. "
+    return {"summary": f"{sum(1 for r in recs if r['op'] == 'change')} changed, {sum(1 for r in recs if r['op'] == 'add')} added, {sum(1 for r in recs if r['op'] == 'remove')} removed - each citing what it rests on. "
             "Correct the rows, then confirm.", "records": recs, "data": {"columns": ["Change", "Requirement", "Statement", "From", "Why"],
                                                                          "rows": [[r["op"], r["req"], r["statement"], r["where"], r["why"]] for r in recs]}, "counts": {"changes": len(recs)}}
 
@@ -890,7 +890,7 @@ def c_learn(ctx: wb.Ctx) -> dict:
             st = _story_of(c, n)
             stories.append(st)
             new.append({"ref": st["story"], "summary": st["summary"], "priority": st["priority"], "acceptance": [a for a in st["acceptance"].splitlines() if a.strip()],
-                        "description": f"{c['statement']} — from BRD “{ctx.title}” version {v}, {c['req']}", "labels": ["brd", ctx.get("doc"), c["req"]]})
+                        "description": f"{c['statement']} - from BRD \"{ctx.title}\" version {v}, {c['req']}", "labels": ["brd", ctx.get("doc"), c["req"]]})
     d = publish(ctx, after, stories, ctx.get("doc"), [], f"brd-v{v}-approved.docx", note=(ctx.brief or "")[:300])
     tg = _target(ctx)
     if tg["kind"] == "jira" and not tg["gone"]:
@@ -910,9 +910,9 @@ def _learn_view(ctx: wb.Ctx, d: dict | None = None) -> dict:
     d = d or document(ctx.get("doc") or "") or {}
     ps = _w4.latest_pushes(ctx.id, "learn")
     state = ("nothing to update" if not ps else "done" if all(p["status"] == "written" for p in ps) else
-             f"{sum(1 for p in ps if p['status'] == 'awaiting')} waiting for their own approval in the Validation queue" if any(p["status"] == "awaiting" for p in ps) else "failed — see the activity")
-    return {"summary": f"Version {d.get('version')} of “{d.get('title')}” is approved and kept; tracker updates: {state}.", "counts": {"version": d.get("version") or 0},
-            "data": {"href": f"#/m/{MODULE}/i/{ctx.id}", "label": "This work item", "text": f"Version {d.get('version')} · {len(d.get('requirements') or [])} requirement(s)"}}
+             f"{sum(1 for p in ps if p['status'] == 'awaiting')} waiting for their own approval in the Validation queue" if any(p["status"] == "awaiting" for p in ps) else "failed - see the activity")
+    return {"summary": f"Version {d.get('version')} of \"{d.get('title')}\" is approved and kept; tracker updates: {state}.", "counts": {"version": d.get("version") or 0},
+            "data": {"href": f"#/m/{MODULE}/i/{ctx.id}", "label": "This work item", "text": f"Version {d.get('version')} - {len(d.get('requirements') or [])} requirement(s)"}}
 
 
 _w4.REFRESH["brd.learn"] = lambda ctx: _learn_view(ctx)
@@ -947,7 +947,7 @@ def m_standardise(ctx: wb.Ctx) -> dict:
                        "decision": "merge" if kind == "duplicate" else "", "note": ""}
                 issues.append({**rec, **{k: have[iid][k] for k in ("decision", "note") if iid in have}})
     return {"summary": f"{len(reqs)} requirement(s) mapped to the BRD template; {sum(1 for x in issues if x['kind'] == 'duplicate')} duplicate(s) and "
-            f"{sum(1 for x in issues if x['kind'] == 'contradiction')} contradiction(s), each with where it came from — decide each one.",
+            f"{sum(1 for x in issues if x['kind'] == 'contradiction')} contradiction(s), each with where it came from - decide each one.",
             "records": issues, "counts": {"requirements": len(reqs), "duplicates": sum(1 for x in issues if x["kind"] == "duplicate"), "contradictions": sum(1 for x in issues if x["kind"] == "contradiction")},
             "data": {"columns": ["Kind", "A", "B", "A says", "B says", "Where"], "rows": [[x["kind"], x["a"], x["b"], x["a_text"], x["b_text"], x["where"]] for x in issues]},
             "items": [f"{x['kind']}: {x['a']} / {x['b']}" for x in issues[:6]]}
@@ -957,9 +957,9 @@ def _validate_issues(recs: list[dict], ctx: wb.Ctx) -> list[str]:
     out = []
     for x in recs:
         if x.get("decision") not in ("merge", "keep A", "keep B", "keep both"):
-            out.append(f"{x['a']} / {x['b']}: decide — merge, keep A, keep B or keep both")
+            out.append(f"{x['a']} / {x['b']}: decide - merge, keep A, keep B or keep both")
         elif x["kind"] == "contradiction" and x["decision"] in ("keep both", "merge"):
-            out.append(f"{x['a']} / {x['b']}: a contradiction cannot stand — keep A or keep B")
+            out.append(f"{x['a']} / {x['b']}: a contradiction cannot stand - keep A or keep B")
     return out
 
 
@@ -982,7 +982,7 @@ def m_gaps(ctx: wb.Ctx) -> dict:
             hit = [n for n in nodes if _w4.norm(nm) in _w4.norm(n["label"] or n["name"]) or _w4.norm(n["label"] or n["name"]) in _w4.norm(nm)]
             if not hit:
                 gid = f"gap-{r['req']}-{_w4.slug(nm, 24)}"
-                rec = {"id": gid, "kind": "not on the knowledge map", "req": r["req"], "what": f"{r['req']} names “{nm}”, which the knowledge map does not have — the system may not do this today",
+                rec = {"id": gid, "kind": "not on the knowledge map", "req": r["req"], "what": f"{r['req']} names \"{nm}\", which the knowledge map does not have - the system may not do this today",
                        "decision": "", "note": ""}
                 gaps.append({**rec, **{k: have[gid][k] for k in ("decision", "note") if gid in have}})
     text = _w4.norm(" ".join(r["statement"] for r in reqs))
@@ -993,9 +993,9 @@ def m_gaps(ctx: wb.Ctx) -> dict:
     near = [n for n in nodes if n["kind"] in ("report", "flow", "bot") and _w4.norm(n["label"] or n["name"]) not in text and near_spec(n)]
     for n in near[:25]:
         gid = f"gap-map-{_w4.slug(n['name'], 30)}"
-        rec = {"id": gid, "kind": "no requirement", "req": "—", "what": f"the knowledge map has {n['kind']} “{n['label'] or n['name']}” ({n['system']}); no requirement says what it should do",
+        rec = {"id": gid, "kind": "no requirement", "req": "-", "what": f"the knowledge map has {n['kind']} \"{n['label'] or n['name']}\" ({n['system']}); no requirement says what it should do",
                "decision": "", "note": "", "requirement": {"id": f"gap-{_w4.slug(n['name'], 20)}", "req": "", "keep": True, "title": n["label"] or n["name"],
-                                                           "statement": f"The {n['kind']} “{n['label'] or n['name']}” keeps working as it does today.", "type": "report" if n["kind"] == "report" else "functional",
+                                                           "statement": f"The {n['kind']} \"{n['label'] or n['name']}\" keeps working as it does today.", "type": "report" if n["kind"] == "report" else "functional",
                                                            "priority": "should", "source": "", "sources": [], "where": f"the knowledge map: {n['kind']} {n['label'] or n['name']}",
                                                            "acceptance": f"Given the {n['kind']} runs today, when the change goes live, then it gives the same results", "origin": "knowledge map",
                                                            "as_a": "business user", "i_want": f"the {n['kind']} {n['label'] or n['name']} to keep working", "so_that": "nothing that works today is lost"}}
@@ -1011,7 +1011,7 @@ def _validate_gaps(recs: list[dict], ctx: wb.Ctx) -> list[str]:
     for g in recs:
         ok = ("accept the gap", "ignore") + (("add as requirement",) if g.get("kind") == "no requirement" else ())
         if g.get("decision") not in ok:
-            out.append(f"{g.get('req')}: decide — {', '.join(ok)}")
+            out.append(f"{g.get('req')}: decide - {', '.join(ok)}")
     return out
 
 
@@ -1024,22 +1024,22 @@ GAP_EDIT = wb.Edit(columns=[wb.Column("kind", "Gap", readonly=True), wb.Column("
 
 def _cards(u: dict) -> list[dict]:
     rows = [[d["title"], f"v{d['version']}", len(d["requirements"]), len(d["stories"]), sum(1 for s in d["stories"] if s.get("key")), _w4.user_name(d.get("approved_by")),
-             time.strftime("%d %b %Y", time.gmtime(d["approved"])) if d.get("approved") else "—", f"#/m/{MODULE}/i/{d['item']}" if d.get("item") else ""] for d in documents(u)]
+             time.strftime("%d %b %Y", time.gmtime(d["approved"])) if d.get("approved") else "-", f"#/m/{MODULE}/i/{d['item']}" if d.get("item") else ""] for d in documents(u)]
     return [{"title": "Approved BRDs", "columns": ["BRD", "Version", "Requirements", "Stories", "In the tracker", "Approved by", "When", "Work item"], "rows": rows,
              "empty": "No BRD is approved yet: a Develop item's Approve step records one."}]
 
 
-GUIDE = """# BRD & requirements — the work item
+GUIDE = """# BRD & requirements - the work item
 
 This folder is one work item of Relay's BRD & requirements module. The agent drafts; people review, sign off and
 approve; nothing reaches Jira or Azure Boards without its own approval.
 
-- `data/`: the uploads — workshop notes, e-mails (.eml), call transcripts (.vtt / .srt), recordings, whiteboard photos,
+- `data/`: the uploads - workshop notes, e-mails (.eml), call transcripts (.vtt / .srt), recordings, whiteboard photos,
   old specs. `genbi read data/<file>` reads any of them (a video's key frames, a PDF's pages).
-- `sources/segments.json`: every passage the app read, with its id (`<file>#<where>`) — the only things a requirement
+- `sources/segments.json`: every passage the app read, with its id (`<file>#<where>`) - the only things a requirement
   may cite. A recording or an image has one passage `<file>#media` with no text: look at it yourself, but a figure
   needs a passage that says it.
-- `brd.yaml` (Draft / Read): the BRD — scope, stakeholders, current and future process, requirements (BR-001…, each
+- `brd.yaml` (Draft / Read): the BRD - scope, stakeholders, current and future process, requirements (BR-001..., each
   with sources [{ref, quote}], acceptance criteria Given / When / Then and a user story), rules, risks, open questions.
 - `brd_change.yaml` (Change): what changes in an approved BRD; `current.json` is where it starts from.
 
@@ -1055,40 +1055,40 @@ wb.register(wb.Pack(
     cards=_cards,
     work={
         "develop": wb.Work(title="From workshop notes, recordings and e-mails to an approved BRD and a backlog in Jira or Azure Boards", platforms=("files", "tracker"), steps={
-            "Gather": wb.Step(kind="platform", run=d_gather, agent="Reader", text="Every upload is read into passages with ids — notes, e-mails, transcripts, page exports; recordings and whiteboard photos are looked at by the agent"),
+            "Gather": wb.Step(kind="platform", run=d_gather, agent="Reader", text="Every upload is read into passages with ids - notes, e-mails, transcripts, page exports; recordings and whiteboard photos are looked at by the agent"),
             "Draft": wb.Step(kind="agent", prompt=_draft_prompt, check=_draft_check, after=_draft_after, agent="BRD writer", edit=REQ_EDIT, turns=60,
-                             text="The agent drafts the BRD in your template: scope, stakeholders, current vs future process, requirements, rules, data, risks — each requirement citing the passage it rests on"),
+                             text="The agent drafts the BRD in your template: scope, stakeholders, current vs future process, requirements, rules, data, risks - each requirement citing the passage it rests on"),
             "Review": wb.Step(kind="person", run=d_review, edit=REVIEW_EDIT, confirm="the business owners' comments in place, and the answers to the open questions",
-                              text="Business owners comment in place; open questions are answered or stay open — never guessed"),
+                              text="Business owners comment in place; open questions are answered or stay open - never guessed"),
             "Approve": wb.Step(kind="deterministic", run=d_approve, agent="Sign-off clerk", approver=True, edit=SIGN_EDIT, back_to="review",
                                confirm="sign-off by each business owner, then the named approver", text="The version for approval goes to each business owner to sign (names and dates); every version is kept"),
-            "Backlog": wb.Step(kind="deterministic", run=d_backlog, agent="Story writer", edit=STORY_EDIT, text="User stories and acceptance criteria from the approved requirements — you confirm them before they go anywhere"),
-            "Trace": wb.Step(kind="platform", run=d_trace, agent="Tracer", edit=TRACE_EDIT, confirm="the trace — every requirement to its source, the sign-off, its stories and their keys",
+            "Backlog": wb.Step(kind="deterministic", run=d_backlog, agent="Story writer", edit=STORY_EDIT, text="User stories and acceptance criteria from the approved requirements - you confirm them before they go anywhere"),
+            "Trace": wb.Step(kind="platform", run=d_trace, agent="Tracer", edit=TRACE_EDIT, confirm="the trace - every requirement to its source, the sign-off, its stories and their keys",
                              text="The stories go to Jira or Azure Boards after their own approval (or as CSV files); each requirement is traced to its source, the build, the tests and the sign-off")},
-            fields=[wb.Field("owners", "Business owners who sign off", "longtext", help="One per line: the e-mail or name of each business owner. Blank: the named approver signs alone."), wb.Field("jira", "Jira project for the stories", "select", options=_w4.desk_options, help="A Service desk source that may raise tickets (Service desk › Sources › May do: Read & write, with the project and the issue type Story). Each story is written after its own approval. Or connect Azure Boards above, or neither: the backlog is exported as CSV files.")]),
-        "change": wb.Work(title="Change an approved BRD — what it touches, a sourced change, proof, release and the tracker updated", needs_source=False, platforms=("files", "tracker"), steps={
+            fields=[wb.Field("owners", "Business owners who sign off", "longtext", help="One per line: the e-mail or name of each business owner. Blank: the named approver signs alone."), wb.Field("jira", "Jira project for the stories", "select", options=_w4.desk_options, help="A Service desk source that may raise tickets (Service desk > Sources > May do: Read & write, with the project and the issue type Story). Each story is written after its own approval. Or connect Azure Boards above, or neither: the backlog is exported as CSV files.")]),
+        "change": wb.Work(title="Change an approved BRD - what it touches, a sourced change, proof, release and the tracker updated", needs_source=False, platforms=("files", "tracker"), steps={
             "Request": wb.Step(kind="deterministic", run=c_request, view="text", agent="Reader", text="The change in plain words, the approved BRD it changes, and any new notes"),
-            "Diagnose": wb.Step(kind="deterministic", run=c_diagnose, agent="Impact reader", edit=DIAG_EDIT, confirm="what the change touches — requirements, stories and tests",
+            "Diagnose": wb.Step(kind="deterministic", run=c_diagnose, agent="Impact reader", edit=DIAG_EDIT, confirm="what the change touches - requirements, stories and tests",
                                 text="Which requirements the request touches, with their stories in the tracker and their tests"),
-            "Fix": wb.Step(kind="agent", prompt=_change_prompt, check=_change_check, after=_change_after, agent="BRD writer", edit=CHANGE_EDIT, text="The agent drafts the change — changed, added and removed requirements, each citing what it rests on"),
+            "Fix": wb.Step(kind="agent", prompt=_change_prompt, check=_change_check, after=_change_after, agent="BRD writer", edit=CHANGE_EDIT, text="The agent drafts the change - changed, added and removed requirements, each citing what it rests on"),
             "Prove": wb.Step(kind="proof", run=c_prove, view="gates", agent="Checker", back_to="fix", text="Every change cites a real passage, figures are sourced, ids stay unique, stories are accounted for and the new version builds"),
             "Approve": wb.Step(kind="person", run=c_approve, view="plan", approver=True, text="The named approver releases the new version"),
             "Learn": wb.Step(kind="deterministic", run=c_learn, view="link", agent="Publisher", text="The new version is kept; the tracker's stories are updated after their own approval")},
-            fields=[wb.Field("brd", "BRD to change", "select", options=document_options, required=True), wb.Field("jira", "Jira project its stories are in", "select", options=_w4.desk_options, help="A Service desk source that may raise tickets (Service desk › Sources › May do: Read & write, with the project and the issue type Story). Each story is written after its own approval. Or connect Azure Boards above, or neither: the backlog is exported as CSV files.")]),
-        "migrate": wb.Work(title="Old specs in Word, PDF, Confluence or SharePoint to the standard BRD — duplicates, contradictions and gaps found", platforms=("files", "tracker"),
+            fields=[wb.Field("brd", "BRD to change", "select", options=document_options, required=True), wb.Field("jira", "Jira project its stories are in", "select", options=_w4.desk_options, help="A Service desk source that may raise tickets (Service desk > Sources > May do: Read & write, with the project and the issue type Story). Each story is written after its own approval. Or connect Azure Boards above, or neither: the backlog is exported as CSV files.")]),
+        "migrate": wb.Work(title="Old specs in Word, PDF, Confluence or SharePoint to the standard BRD - duplicates, contradictions and gaps found", platforms=("files", "tracker"),
                            journey=["Collect", "Read", "Standardise", "Gaps", "Approve", "Backlog", "Trace"], steps={
-            "Collect": wb.Step(kind="platform", run=m_collect, agent="Reader", text="Bring old specs in Word, PDF, Confluence or SharePoint exports — every passage read with its id"),
+            "Collect": wb.Step(kind="platform", run=m_collect, agent="Reader", text="Bring old specs in Word, PDF, Confluence or SharePoint exports - every passage read with its id"),
             "Read": wb.Step(kind="agent", prompt=_draft_prompt, check=_draft_check, after=_draft_after, agent="BRD writer", edit=REQ_EDIT, turns=60, confirm="every old requirement mapped to your BRD template",
                             text="The agent reads them and maps every requirement to your BRD template, each with the passage it came from"),
             "Standardise": wb.Step(kind="deterministic", run=m_standardise, agent="Standardiser", edit=ISSUE_EDIT, confirm="the duplicates and contradictions, each decided",
-                                   text="Duplicates and contradictions listed with where they came from — rules first"),
+                                   text="Duplicates and contradictions listed with where they came from - rules first"),
             "Gaps": wb.Step(kind="deterministic", run=m_gaps, agent="Gap finder", edit=GAP_EDIT, confirm="the gaps against how the system really behaves",
                             text="Gaps against how the system really behaves (from the knowledge map) flagged"),
             "Approve": wb.Step(kind="deterministic", run=d_approve, agent="Sign-off clerk", approver=True, edit=SIGN_EDIT, back_to="standardise",
                                confirm="sign-off by each owner of the standard version, then the named approver", text="Owners approve the standard version"),
             "Backlog": wb.Step(kind="deterministic", run=d_backlog, agent="Story writer", edit=STORY_EDIT, confirm="the user stories before they go to the tracker",
                                text="User stories and acceptance criteria from the standard BRD"),
-            "Trace": wb.Step(kind="platform", run=d_trace, agent="Tracer", edit=TRACE_EDIT, confirm="the trace — every requirement to its source, the sign-off, its stories and their keys",
+            "Trace": wb.Step(kind="platform", run=d_trace, agent="Tracer", edit=TRACE_EDIT, confirm="the trace - every requirement to its source, the sign-off, its stories and their keys",
                              text="The backlog goes to Jira or Azure Boards after its own approval; every requirement traced")},
-            fields=[wb.Field("owners", "Owners who approve the standard version", "longtext", help="One per line: the e-mail or name of each owner. Blank: the named approver signs alone."), wb.Field("jira", "Jira project for the stories", "select", options=_w4.desk_options, help="A Service desk source that may raise tickets (Service desk › Sources › May do: Read & write, with the project and the issue type Story). Each story is written after its own approval. Or connect Azure Boards above, or neither: the backlog is exported as CSV files.")]),
+            fields=[wb.Field("owners", "Owners who approve the standard version", "longtext", help="One per line: the e-mail or name of each owner. Blank: the named approver signs alone."), wb.Field("jira", "Jira project for the stories", "select", options=_w4.desk_options, help="A Service desk source that may raise tickets (Service desk > Sources > May do: Read & write, with the project and the issue type Story). Each story is written after its own approval. Or connect Azure Boards above, or neither: the backlog is exported as CSV files.")]),
     }))

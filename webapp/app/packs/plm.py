@@ -1,4 +1,4 @@
-"""PLM (registry id `plm`) on the workbench — Siemens Teamcenter and PTC Windchill through their REST services;
+"""PLM (registry id `plm`) on the workbench - Siemens Teamcenter and PTC Windchill through their REST services;
 3DEXPERIENCE / ENOVIA, Oracle Agile PLM, SAP PLM, Aras Innovator and Arena PLM through their exports.
 
 Assess   parts / items and engineering changes in each system's own terms, and the workflow processes; rules: changes
@@ -7,7 +7,7 @@ Assess   parts / items and engineering changes in each system's own terms, and t
 Develop  new parts from an upload into Teamcenter or Windchill: mapping suggested and corrected, a dry run (a name, no
          number used twice), a named approver, one approved write, read back and reconciled.
 Change   an overdue change or an aborted workflow, diagnosed from the system, released with approval.
-Migrate  parts between PLM systems (Windchill → Teamcenter …), keep / merge / retire, crosswalk, proven record by record.
+Migrate  parts between PLM systems (Windchill -> Teamcenter ...), keep / merge / retire, crosswalk, proven record by record.
 Run      changes and workflows watched on a schedule; breaks go to a person first.
 """
 from __future__ import annotations
@@ -60,7 +60,7 @@ rule_long_in_work.label = f"Parts still in work after {IN_WORK_DAYS} days"
 
 
 def rule_aborted_workflows(ctx, inv, spec=None) -> list[dict]:
-    """A change workflow aborted in the last week leaves its change in limbo — one abort is enough (a failing *job*
+    """A change workflow aborted in the last week leaves its change in limbo - one abort is enough (a failing *job*
     needs a streak; a workflow carries one change)."""
     out = []
     since = wb.lab_now() - 7 * 86400
@@ -77,7 +77,7 @@ def rule_aborted_workflows(ctx, inv, spec=None) -> list[dict]:
 rule_aborted_workflows.label = "Change workflows aborted in the last 7 days"
 
 def monitor_overdue(ctx, seen) -> list[dict]:
-    """Run › Watch: an engineering change past its due date is a break (production waits on it), like a failed job."""
+    """Run > Watch: an engineering change past its due date is a break (production waits on it), like a failed job."""
     out = []
     for c, a in w3.systems(ctx):
         if "change" not in a.ENTITIES:
@@ -86,7 +86,7 @@ def monitor_overdue(ctx, seen) -> list[dict]:
             d = r.get("overdue_days") or 0
             if d > 0:
                 err = f"{r.get('name')} is {r.get('state')} and {d} day(s) past its due date {r.get('due')}"
-                out.append({"name": f"{c['id']}:change:{r['key']}", "label": f"{r.get('name')} · {c['name']}", "status": "fail", "measured": f"{d} day(s) late", "expected": "decided by its due date",
+                out.append({"name": f"{c['id']}:change:{r['key']}", "label": f"{r.get('name')} - {c['name']}", "status": "fail", "measured": f"{d} day(s) late", "expected": "decided by its due date",
                             "detail": err, "break": {"conn": c["id"], "system": c["name"], "job": str(r.get("name")), "label": str(r.get("name")), "status": "overdue", "streak": 0,
                                                      "error": err, "since": None, "run": str(r["key"])}})
     return out
@@ -110,9 +110,9 @@ SPEC = w3.Spec(
 
 PLATFORMS = {
     "teamcenter": w3.SysPlatform("Siemens Teamcenter", ("teamcenter",), "tests/mocklab/sims/plm.py: teamcenter (JSON REST, SOA services)",
-                                 "items, workflow processes and engineering changes through saved queries — a session login"),
+                                 "items, workflow processes and engineering changes through saved queries - a session login"),
     "windchill": w3.SysPlatform("PTC Windchill", ("windchill",), "tests/mocklab/sims/plm.py: windchill (REST Services, OData v4, CSRF nonce)",
-                                "parts and change notices through Windchill REST Services — basic auth"),
+                                "parts and change notices through Windchill REST Services - basic auth"),
     "exports": w3.SysPlatform("3DEXPERIENCE, Agile PLM, SAP PLM, Aras, Arena (exports)", (), "export fixtures the tests write", "parts, BOMs and changes you upload (CSV, Excel)",
                               uploads=(".csv", ".xlsx", ".json")),
 }
@@ -122,20 +122,20 @@ def _kinds() -> set:
     return {k for p in PLATFORMS.values() for k in p.kinds}
 
 
-GUIDE = """# PLM — the work item
+GUIDE = """# PLM - the work item
 
 Relay's PLM module reads parts, engineering changes and workflow processes, and brings parts in or moves them between
 PLM systems with a record-by-record reconciliation. Rules do the reading, mapping and checks; the agent is asked only to
-read a log no rule recognises (diagnose.json → diagnosis.yaml). Never invent a part, a revision or a date."""
+read a log no rule recognises (diagnose.json -> diagnosis.yaml). Never invent a part, a revision or a date."""
 
 w3.hook(MODULE)
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE, platforms=PLATFORMS,
-    lineage="each PLM system and object read (system → entity), parts created as a write into the PLM system, a migration as feeds edges between systems",
+    lineage="each PLM system and object read (system -> entity), parts created as a write into the PLM system, a migration as feeds edges between systems",
     schemas={"inventory": ["include", "system", "object", "records"], "finding": ["decision", "severity", "system", "what"]},
     work={
-        "assess": w3.assess_work(SPEC, "See what the PLM holds — overdue changes, aborted workflows, duplicate parts"),
+        "assess": w3.assess_work(SPEC, "See what the PLM holds - overdue changes, aborted workflows, duplicate parts"),
         "develop": w3.develop_work(SPEC, "Bring new parts into the PLM: mapping agreed, a dry run, one approved write, read back"),
         "change": w3.change_work(SPEC, "Move an overdue change or an aborted workflow on, diagnosed from the system, released with approval"),
         "migrate": w3.migrate_work(SPEC, "Move parts between PLM systems, reconciled record by record", _kinds),

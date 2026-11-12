@@ -1,9 +1,9 @@
-"""D2D Relay › Branding: the person's logo and a few words about their brand become 2-3 report palettes, made by the
+"""D2D Relay > Branding: the person's logo and a few words about their brand become 2-3 report palettes, made by the
 Relay Model; they pick one, and every new dashboard uses it (main.create_project, unless they untick it).
 
 Stored in the meta table as JSON (one brand per install: D2D Relay has one client):
-  {"logo": "data:image/png;base64,…", "logo_colors": ["#RRGGBB", …], "description": "…",
-   "variants": [{"name", "why", "accent", "colors": [6-8 × "#RRGGBB"], "look": soft|flat|3d, "dark": bool}, …],
+  {"logo": "data:image/png;base64,...", "logo_colors": ["#RRGGBB", ...], "description": "...",
+   "variants": [{"name", "why", "accent", "colors": [6-8 × "#RRGGBB"], "look": soft|flat|3d, "dark": bool}, ...],
    "chosen": 0 | null, "updated": <time>}
 """
 from __future__ import annotations
@@ -16,6 +16,8 @@ import time
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
+
+from genbi_kit.plaintext import human
 
 from . import askd, auth, db
 
@@ -127,7 +129,7 @@ def _clean_variant(v: dict) -> dict | None:
     if not HEX.match(accent):
         accent = colors[0]
     look = v.get("look") if v.get("look") in LOOKS else "soft"
-    return {"name": str(v.get("name") or "Palette")[:40], "why": str(v.get("why") or "")[:240], "accent": accent,
+    return {"name": human(str(v.get("name") or "Palette"))[:40], "why": human(str(v.get("why") or ""))[:240], "accent": accent,
             "colors": colors, "look": look, "dark": bool(v.get("dark"))}
 
 

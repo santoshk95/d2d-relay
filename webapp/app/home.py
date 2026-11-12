@@ -1,7 +1,7 @@
 """Home: the platform's insight dashboard on real records (build-plan v2, P9). Every number comes from what the app
-already keeps — project runs (agent time, cost, outcome), versions and their review gates, publishes, Ask D
+already keeps - project runs (agent time, cost, outcome), versions and their review gates, publishes, Ask D
 questions, schedules, the job queue and the agent's lanes. Nothing is estimated; where a measure needs data the
-platform does not record yet (people's time, checkpoints — P10), it is left out rather than invented.
+platform does not record yet (people's time, checkpoints - P10), it is left out rather than invented.
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ PERIODS = {"7d": 7 * 86400, "30d": 30 * 86400, "6m": 183 * 86400}
 LLM_STAGES = {"plan", "build", "revise", "data", "fix"}
 WAITING = {"awaiting_kpis": "Confirm the KPIs", "awaiting_review": "Review the prototype"}
 RUNNING = {"queued", "extracting", "generating_data", "planning", "building", "revising", "building_pbi"}
-# Module workbench: modules add their rows to "Work in flight" — fn(u) -> [{"id", "name", "n", "running", "route"}].
+# Module workbench: modules add their rows to "Work in flight" - fn(u) -> [{"id", "name", "n", "running", "route"}].
 INFLIGHT: list = []
 
 

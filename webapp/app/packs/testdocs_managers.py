@@ -1,8 +1,8 @@
-"""Test plans & UAT scripts — the test managers a plan's cases are written to: Jira Xray (Cloud), Zephyr Scale (Cloud)
+"""Test plans & UAT scripts - the test managers a plan's cases are written to: Jira Xray (Cloud), Zephyr Scale (Cloud)
 and TestRail. One Connector SDK adapter each, read-only by default like every connection: `test` signs in and counts
 the project's cases, `read` lists them. A write happens only through connectors.request_write, after a named person
 accepted exactly those cases, and carries the approval's id (X-Relay-Approval); the keys come back to the work item
-(_w4.push_written) and the cases are read back from the tool and compared — title and steps, case by case.
+(_w4.push_written) and the cases are read back from the tool and compared - title and steps, case by case.
 
   cases   payload {"from", "plan", "cases": [{"ref", "title", "req", "type", "priority", "preconditions", "steps": [...], "data", "expected"}]}
           Xray        POST /api/v2/import/test/bulk (the test importer), then the job's status for the keys
@@ -54,7 +54,7 @@ class XrayCloud(_Manager):
     DEFAULT = "https://xray.cloud.getxray.app"
     signin = ["api_key"]
     fields = [("base_url", "Xray API (https://xray.cloud.getxray.app, or eu.xray.cloud.getxray.app)", False), ("project_key", "Jira project key (LK)", True),
-              ("client_id", "API key client id (Xray › API keys)", True)]
+              ("client_id", "API key client id (Xray > API keys)", True)]
     secrets = {"api_key": ["client_secret"]}
 
     def _h(self, c: dict) -> dict:
@@ -216,7 +216,7 @@ class TestRail(_Manager):
 
     def create(self, c: dict, payload: dict, approval: str) -> dict:
         h = {**self._h(c), "X-Relay-Approval": approval}
-        body = {"name": f"Relay — {payload.get('plan') or 'test plan'}"[:250], "description": "Written by Relay after an approval"}
+        body = {"name": f"Relay - {payload.get('plan') or 'test plan'}"[:250], "description": "Written by Relay after an approval"}
         if c["config"].get("suite_id"):
             body["suite_id"] = int(c["config"]["suite_id"])
         sec = _call("TestRail", "POST", self._api(c, f"add_section/{c['config'].get('project_id')}"), headers=h, json=body).json()
@@ -234,7 +234,7 @@ class TestRail(_Manager):
                 raise
             except connectors.ConnectorError as e:
                 errors.append({"ref": x["ref"], "error": str(e)[:300]})
-        return {"ok": not errors, "created": created, "errors": errors, "where": f"TestRail section “{sec.get('name')}”", "section": sec.get("id")}
+        return {"ok": not errors, "created": created, "errors": errors, "where": f"TestRail section \"{sec.get('name')}\"", "section": sec.get("id")}
 
 
 ADAPTERS = {a.kind: a for a in (XrayCloud(), ZephyrScale(), TestRail())}

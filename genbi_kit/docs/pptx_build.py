@@ -66,7 +66,7 @@ def _text(tf, lines: list[str], size: int, colour: str | None, font: str | None,
     for ln in lines:
         p = tf.paragraphs[0] if first else tf.add_paragraph()
         first = False
-        p.text = ("• " + ln) if bullets else ln
+        p.text = ("- " + ln) if bullets else ln
         p.space_after = Pt(space)
         if align is not None:
             p.alignment = align
@@ -135,7 +135,7 @@ class DeckBuilder:
     def _brand_line(self, s, dark: bool) -> None:
         colour = "#A3B1C2" if dark else self.c["muted"]
         tb = s.shapes.add_textbox(Inches(0.6), self.H - Inches(0.5), self.W - Inches(1.2), Inches(0.35))
-        _text(tb.text_frame, [f"{self.t.owner}  ·  {self.m['title']}  ·  {self.info['slides']}" + (f"  ·  {self.t.powered}" if self.t.partner else "")], 10, colour, self.f["body"])
+        _text(tb.text_frame, [f"{self.t.owner}  -  {self.m['title']}  -  {self.info['slides']}" + (f"  -  {self.t.powered}" if self.t.partner else "")], 10, colour, self.f["body"])
 
     def _fill_placeholders(self, s, layout: str, title: str, subtitle: str):
         """A tenant template: its title placeholder gets the title; a subtitle / body placeholder the subtitle."""
@@ -179,7 +179,7 @@ class DeckBuilder:
                     r.font.bold = True
                     r.font.size = Pt(18)
                 continue
-            p.text = "•  " + p.text
+            p.text = "-  " + p.text
             for r in p.runs:
                 r.font.size = Pt(18 if len(lines) <= 5 else 15)
         return tb
@@ -244,7 +244,7 @@ class DeckBuilder:
                         if self.generated:
                             run.font.name = self.f["body"]
         self.info["tables"] += 1
-        self._caption(s, (tbl["caption"] + "  ·  " if tbl["caption"] else "") + f"Source: {self._source_name(tbl['source'])}", t + rh * rows + Inches(0.1))
+        self._caption(s, (tbl["caption"] + "  -  " if tbl["caption"] else "") + f"Source: {self._source_name(tbl['source'])}", t + rh * rows + Inches(0.1))
         self._notes(s, u["notes"])
 
     def slide_chart(self, u):
@@ -283,7 +283,7 @@ class DeckBuilder:
                     ser.format.line.color.rgb = rgb(charts.PALETTE[i % len(charts.PALETTE)])
         set_alt(gf, ch["alt"] or ch["title"] or u["title"])
         self.info["charts"] += 1
-        self._caption(s, f"Source: {self._source_name(ch['source'])}" + (f"  ·  {ch['unit']}" if ch["unit"] else ""), t + hgt - Inches(0.4))
+        self._caption(s, f"Source: {self._source_name(ch['source'])}" + (f"  -  {ch['unit']}" if ch["unit"] else ""), t + hgt - Inches(0.4))
         self._notes(s, u["notes"])
 
     def slide_diagram(self, u):
@@ -341,9 +341,9 @@ class DeckBuilder:
         q = u["quote"]
         l, t, w, hgt = self._body_box(s, top=Inches(1.6))
         tb = s.shapes.add_textbox(l + Inches(0.6), t + Inches(0.6), w - Inches(1.2), hgt - Inches(1.6))
-        _text(tb.text_frame, ["“" + q["text"] + "”"], 26, self.c["accent_text"] if self.generated else None, self.f["head"] if self.generated else None, bold=False)
+        _text(tb.text_frame, ["\"" + q["text"] + "\""], 26, self.c["accent_text"] if self.generated else None, self.f["head"] if self.generated else None, bold=False)
         who = s.shapes.add_textbox(l + Inches(0.6), self.H - Inches(1.6), w - Inches(1.2), Inches(0.5))
-        _text(who.text_frame, [("— " + q["who"]) if q["who"] else ""], 14, self.c["muted"] if self.generated else None, self.f["body"] if self.generated else None)
+        _text(who.text_frame, [("- " + q["who"]) if q["who"] else ""], 14, self.c["muted"] if self.generated else None, self.f["body"] if self.generated else None)
         self._caption(s, f"Source: {self._source_name(q['source'])}", self.H - Inches(1.15))
         self._notes(s, u["notes"])
 

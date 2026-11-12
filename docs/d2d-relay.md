@@ -39,13 +39,13 @@ one-container layout kept behind its own Unix socket. The web app and the AI eng
 streamed from the engine to the web app, so they restart together anyway, and inside the container they already run
 as separate Linux users that cannot read each other's keys.
 | Code sender | info@pasdacs.com through Microsoft Graph (delegated Mail.Send, signed in once) |
-| Data sources | CSV / flat files (New dashboard → upload), or demo data Relay generates. Connectors (BigQuery, Snowflake, Fabric, Redshift, Athena, Oracle) only once PASDACS switches them on for the organisation (see "Connectors") |
+| Data sources | CSV / flat files (New dashboard -> upload), or demo data Relay generates. Connectors (BigQuery, Snowflake, Fabric, Redshift, Athena, Oracle) only once PASDACS switches them on for the organisation (see "Connectors") |
 
 ## What was kept and what was switched off
 
 `webapp/app/edition.py` is the one place that decides this.
 
-- **Kept:** Dashboards (D2D: plan → KPIs → prototype → review → Power BI file), the review gates and the Power BI engine
+- **Kept:** Dashboards (D2D: plan -> KPIs -> prototype -> review -> Power BI file), the review gates and the Power BI engine
   check, the visual library, sample data, Connections (connectors on request), Ask Relay, Branding, organisations
   and credits, sharing a dashboard, and asking a colleague to review a version (the Review card on its Overview).
   There is no administration on the public site: every `/api/admin` path answers 404 there. PASDACS works on the
@@ -137,11 +137,11 @@ shortcut plus a double-click never runs two.
 The codes are sent AS info@pasdacs.com with a delegated sign-in. No client secret is needed (the pasdacs.com tenant
 blocks them), and no Exchange policy is needed: a delegated app can only send as the account that signed in.
 
-1. Go to Entra admin center → **App registrations → New registration**. Name it "D2D Relay sign-in mail", choose
+1. Go to Entra admin center -> **App registrations -> New registration**. Name it "D2D Relay sign-in mail", choose
    **single tenant**, leave the redirect URI empty, and click Register. Copy the **Application (client) ID** and the
    **Directory (tenant) ID**.
 2. Under **Authentication**, set **Allow public client flows** to **Yes**, then Save.
-3. Under **API permissions → Add → Microsoft Graph → Delegated permissions**, add **Mail.Send** and **offline_access**
+3. Under **API permissions -> Add -> Microsoft Graph -> Delegated permissions**, add **Mail.Send** and **offline_access**
    (User.Read is already there). Then click **Grant admin consent**.
 4. Put the two IDs in `.env` (`RELAY_OTP_MS_TENANT`, `RELAY_OTP_MS_CLIENT_ID`) and run `docker compose up -d`.
 5. Sign the mailbox in once. Run the command below, open the link it prints, enter the code, and sign in as
@@ -172,7 +172,7 @@ organisation "PASDACS". On the public site it is an organisation like any other;
 ## Admin portal
 
 https://admin-d2d.pasdacs.com is PASDACS's own site: **Organisations** (every organisation, its credits and
-connectors), **Requests** (credits and connectors organisations asked for) and **Notifications**. It is a container
+connectors), **Requests** (credits, connectors and Migration D2D that organisations asked for) and **Notifications**. It is a container
 of its own (`d2d-relay-admin`); the public site answers none of its APIs. Two locks, both required:
 
 1. **Cloudflare Access** in front of the hostname. The admin portal checks Access's signed token on every request that
@@ -185,24 +185,25 @@ of its own (`d2d-relay-admin`); the public site answers none of its APIs. Two lo
 
 To open it through the internet (Cloudflare dashboard, once):
 
-1. **Zero Trust → Access → Applications → Add an application → Self-hosted.** Name "D2D Relay admin", domain
+1. **Zero Trust -> Access -> Applications -> Add an application -> Self-hosted.** Name "D2D Relay admin", domain
    `admin-d2d.pasdacs.com`. Add a policy: Action **Allow**, Include **Emails ending in** `@pasdacs.com`. Login method:
    One-time PIN, or PASDACS's Microsoft sign-in if it is set up in Zero Trust.
 2. From the application's overview, copy the **Application Audience (AUD) Tag**. The team name is the first part of
-   your team domain (`<team>.cloudflareaccess.com`, Zero Trust → Settings).
+   your team domain (`<team>.cloudflareaccess.com`, Zero Trust -> Settings).
 3. In `.env`: `RELAY_ADMIN_ACCESS_TEAM=<team>` and `RELAY_ADMIN_ACCESS_AUD=<tag>`, then `docker compose up -d admin`.
-4. **Networks → Tunnels → d2d-relay → Public hostname → Add:** subdomain `admin-d2d`, domain `pasdacs.com`, service
+4. **Networks -> Tunnels -> d2d-relay -> Public hostname -> Add:** subdomain `admin-d2d`, domain `pasdacs.com`, service
    **HTTP**, URL `d2d-relay-admin:8000`. Do this last, so the hostname never exists without Access in front of it.
 
 ## Organisations and credits
 
 Anyone with a business email address can sign in. Free and disposable mail (Gmail, Outlook, Yahoo, iCloud, Proton,
-Mailinator …) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTRA` / `RELAY_PUBLIC_DOMAINS_ALLOW`
+Mailinator ...) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTRA` / `RELAY_PUBLIC_DOMAINS_ALLOW`
 (comma-separated).
 
 - **The first person from a domain** names their organisation after the code and becomes its main owner. They then
-  see the first-time setup: the brand (logo, description, palette), which they can skip. Everyone who signs in later
-  from the same domain joins that organisation as a member, and the owners are told.
+  get the first-time tour (below), with the brand (logo, description, palette) as one of its steps, all of it
+  skippable. Everyone who signs in later from the same domain joins that organisation as a member, and the owners are
+  told.
 - **People** (Organisation page). An organisation can have several owners. Owners add people from the
   organisation's own domain as members or owners (each gets an invitation email and signs in with a code), change
   anyone's role, and remove people: a removed person is signed out and cannot sign in again until an owner adds them
@@ -220,7 +221,7 @@ Mailinator …) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTR
 | Start | 50 (`RELAY_CREDITS_START`), once PASDACS has reviewed and approved the new organisation (below); more are bought online (Payments, below) or come when PASDACS approves a request |
 | New dashboard (plan, KPIs and first prototype) | 25 (`RELAY_CREDITS_DASHBOARD`) |
 | A change: revise the plan, a change request, building a suggested custom visual, an Ask Relay answer sent to a dashboard | 10 (`RELAY_CREDITS_CHANGE`) |
-| Ask Relay: up to 5 answered questions in one conversation (`RELAY_CREDITS_ASK_QUESTIONS`), charged at its 1st, 6th, 11th … question | 10 (`RELAY_CREDITS_ASK`) |
+| Ask Relay: up to 5 answered questions in one conversation (`RELAY_CREDITS_ASK_QUESTIONS`), charged at its 1st, 6th, 11th ... question | 10 (`RELAY_CREDITS_ASK`) |
 | Confirming the plan, fixing failed review gates, approving and publishing, brand palettes | free |
 
 A request without enough credits is refused before anything starts, with the balance in the message. When a run
@@ -239,8 +240,8 @@ business mailbox can sign up, but a new organisation starts with none:
    network in the last 30 days, other organisations on the same parent domain (`x1.example.com` and `x2.example.com`
    are both on `example.com`), and the browser. Every PASDACS person also gets a notification. (This email replaces
    the sign-in alert for a new organisation.)
-2. The owner sees "starting credits, waiting for PASDACS's review" (top bar, Dashboards, Organisation, first-time
-   setup) and can set up the brand and invite colleagues meanwhile. A dashboard or Ask Relay question asked before the
+2. The owner sees "starting credits, waiting for PASDACS's review" (top bar, Dashboards, Organisation, the first-time
+   tour) and can set up the brand and invite colleagues meanwhile. A dashboard or Ask Relay question asked before the
    answer is refused with that explanation.
 3. PASDACS answers it on the admin portal under **Requests** (it is marked "New organisation"): **Approve** adds the
    credits at once as "Starting credits" (the amount can be changed) and emails the owner; **Decline** needs a reason,
@@ -267,16 +268,16 @@ when PASDACS approves a request (for invoices and bank transfers):
 2. On the admin portal, **Requests** lists it as waiting (and Organisations shows what each organisation asks for).
    **Approve** adds the credits at once, the amount asked or another one, with an optional note for their credit
    history. **Decline** needs a reason. Either way the person who asked and the owner are told in the app and by email.
-3. For a request that came by email, **Organisations → Credits** adds credits by hand with a note (a negative number
+3. For a request that came by email, **Organisations -> Credits** adds credits by hand with a note (a negative number
    takes credits back).
 
 ### 2. Public address (Cloudflare tunnel)
 
 pasdacs.com's DNS is on Cloudflare, so no port is opened on this PC.
 
-1. In Cloudflare, go to **Zero Trust → Networks → Tunnels → Create a tunnel** (type Cloudflared) and name it
+1. In Cloudflare, go to **Zero Trust -> Networks -> Tunnels -> Create a tunnel** (type Cloudflared) and name it
    `d2d-relay`. Copy the token from the "Install connector" step.
-2. In the tunnel, go to **Public hostname → Add**. Set subdomain `d2d`, domain `pasdacs.com`, service **HTTP**, and
+2. In the tunnel, go to **Public hostname -> Add**. Set subdomain `d2d`, domain `pasdacs.com`, service **HTTP**, and
    URL `d2d-relay:8000` (the public site's container answers to that name too). Keep the name one level under
    pasdacs.com: Cloudflare's free certificate covers `d2d.pasdacs.com`, not `app.d2d.pasdacs.com` (that needs its paid
    Advanced Certificate Manager).
@@ -317,6 +318,52 @@ PASDACS's own workspace has every connector switched on. For BigQuery, the simpl
 service-account JSON (roles BigQuery Data Viewer + BigQuery Job User). Queries are read-only and limited to 1 GB
 scanned by default.
 
+## First-time tour
+
+Someone new who opens the front page gets a short tour (`#/welcome`, `js/38-tour.js`), skippable at every step:
+
+1. **Welcome**: what Dashboards, Ask Relay and the brand are, and the organisation (owner, who joins, credits or the
+   starting-credit review).
+2. **Your brand** (owners only): Branding inside the tour (logo, a few words, palettes). For a new organisation's main
+   owner this is the organisation's first-time setup; skipping it is fine, Branding stays in the sidebar.
+3. **Light or dark**: Light, Dark or Match my device (follows the computer or phone, also when it changes). Kept in
+   that browser; the sun or moon button in the top bar changes it any time. Reports keep their brand colours.
+4. **The basics**: how a dashboard is made, the credits (Request credits), Migration D2D, where to ask.
+
+Finished or skipped, it is not shown on its own again (`POST /api/me/tour`, one flag per person). It is shown only to
+people who started on or after 2026-11-12 (`platform.TOUR_SINCE`); everyone can open it again from the organisation
+menu (the organisation's name in the top bar -> **Take the tour**). A link to anything else, such as a shared
+dashboard, opens what it points to, not the tour. `#/setup`, the old setup address, opens the brand step.
+
+## Migration D2D
+
+"Migrate any dashboard to any dashboard": moving an organisation's dashboards from one BI tool to another (Cognos,
+Qlik, Looker, Tableau, Power BI, MicroStrategy, SAP BusinessObjects, SSRS and more, in any direction). It is not
+self-service: the page (`#/migration`, in the sidebar and the organisation menu; `js/39-migration.js`) says what it
+does and how, and **Contact PASDACS** asks which tools the dashboards are in and should go to, roughly how many, and a
+message.
+
+1. The request goes to info@pasdacs.com (`RELAY_CREDITS_CONTACT`) by email, Reply-To the person, to the platform
+   admins' notifications, and to **Migration D2D requests** on the admin portal's **Requests** page
+   (`POST /api/org/migration-request`, at most 5 an hour per person; the tools are `orgs.BI_TOOLS`). A prefilled email
+   link is the fallback.
+2. PASDACS replies by email to agree what moves and when, and does the work with the organisation (the migration
+   toolkit is `genbi_kit/migrate`: readers for Cognos and Qlik, the conversion to Power BI, and the proof that the
+   numbers match).
+
+## Text people read
+
+Everything D2D Relay shows, emails or writes into a Power BI file uses plain keyboard characters (the user's request
+of 2026-11-12): a hyphen for a long dash, straight quotes, three dots, "->" for an arrow, "-" for a bullet or a
+middle dot, ">" between the parts of a path. Check marks, crosses, up and down arrows, ×, ≈, ± and currency signs stay.
+
+- New text in the code follows the same rule.
+- What the AI writes is shown the same way (`genbi_kit/plaintext.py`): its notes and summaries, review notes, Ask
+  Relay's answers. What people typed is shown as they typed it.
+- The Power BI file gets page names, titles, subtitles, labels, text boxes, alt text, descriptions and display folders
+  in plain characters (`report_builder`). Measure, column and table names are left as they are, because the report
+  refers to them; the Report & accessibility gate warns about them, and the AI is told (`GENBI.md`).
+
 ## Payments (Razorpay)
 
 **On the live site, buying is off until Razorpay activates the account** (the user's decision of 2026-11-12): the
@@ -336,13 +383,13 @@ added once Razorpay has captured the payment, by whichever of these comes first,
 
 **Setting it up**
 
-1. Razorpay Dashboard, test mode first → Account & Settings → API keys → generate. In `.env` (never in commits):
+1. Razorpay Dashboard, test mode first -> Account & Settings -> API keys -> generate. In `.env` (never in commits):
    `RELAY_RAZORPAY_KEY_ID` and `RELAY_RAZORPAY_KEY_SECRET`.
-2. Razorpay Dashboard → Account & Settings → Webhooks → Add new webhook: the URL above; a secret (a long random
+2. Razorpay Dashboard -> Account & Settings -> Webhooks -> Add new webhook: the URL above; a secret (a long random
    string, the same one in `.env` as `RELAY_RAZORPAY_WEBHOOK_SECRET`); the events `payment.captured`, `order.paid`,
    `payment.failed` and `refund.processed`. In test mode Razorpay asks for an OTP: 754081.
 3. Restart web and admin so they read the keys: `docker compose up -d --no-deps web admin`.
-4. Admin portal → **Payments**: the packs (credits, a price in whole rupees and, for buyers outside India, one in
+4. Admin portal -> **Payments**: the packs (credits, a price in whole rupees and, for buyers outside India, one in
    whole US dollars), GST added on top of rupee prices (0: none added, the price is what people pay), a note under
    the rupee prices, who may buy (each organisation's owners, or everyone in it), and **Sell credits online**. The
    page also shows which keys are in use, the webhook URL, and the takings in each currency.
@@ -354,11 +401,11 @@ series starts clean). It carries PASDACS's legal name, address, state, PIN and G
 the place of supply, the SAC code, the taxable value and the tax: CGST and SGST (UTGST in a union territory without a
 legislature) when the buyer's state is PASDACS's, otherwise IGST. Dollar sales to buyers abroad are exports of
 services: zero-rated under a Letter of Undertaking (its ARN on the admin portal), else IGST included in the dollar
-price; the rupee value is the one Razorpay converted at. The buyer gets the invoice by email and on Organisation →
-Payments → Invoice (printable); PASDACS gets a copy, and **Payments → Tax invoices → invoices 20YY-YY (CSV)** gives
+price; the rupee value is the one Razorpay converted at. The buyer gets the invoice by email and on Organisation ->
+Payments -> Invoice (printable); PASDACS gets a copy, and **Payments -> Tax invoices -> invoices 20YY-YY (CSV)** gives
 a year's invoices for the GST returns (GSTR-1).
 
-- **PASDACS's details** go on the admin portal: Payments → Tax invoices (legal name, address, state, PIN, GSTIN, SAC
+- **PASDACS's details** go on the admin portal: Payments -> Tax invoices (legal name, address, state, PIN, GSTIN, SAC
   code, invoice prefix, LUT ARN, description), and the GST rate with whether rupee prices include GST or have it
   added. With live keys, selling stays shut until they are complete. Have the accountant confirm the SAC code and
   rate.
@@ -377,12 +424,12 @@ people are (GST follows the billing address). The server offers and accepts only
 which carries no GST, is not open to buyers in India. A pack without a dollar price is not sold outside India; with no
 dollar prices at all, everyone pays in rupees. GST and the note under the prices are shown in India only. Dollar
 buyers pay by card. Test keys take dollar orders as they are; with live keys, dollars need Razorpay's international
-payments switched on for the account (Razorpay Dashboard → Account & Settings → International payments). Whether a
+payments switched on for the account (Razorpay Dashboard -> Account & Settings -> International payments). Whether a
 sale abroad in dollars carries GST is a question for PASDACS's accountant (an export of services is usually
 zero-rated).
 
 **Test keys** (`rzp_test_...`) move no money, so with them only PASDACS's own workspace can buy (anyone else would
-get credits for nothing): sign in to the public site as info@pasdacs.com, Organisation → Buy credits, and pay with
+get credits for nothing): sign in to the public site as info@pasdacs.com, Organisation -> Buy credits, and pay with
 the UPI ID `success@razorpay` (`failure@razorpay` shows a failure) or a test card from Razorpay's documentation.
 **Live keys** (`rzp_live_...`, once Razorpay has activated the account) open selling to every organisation while
 **Sell credits online** is on. Going live: replace both keys and the webhook secret with live ones (the live webhook
@@ -390,13 +437,13 @@ is added again in live mode), restart, and switch selling on.
 
 **What people see.** **Buy credits** on Organisation, in the menu under the organisation chip, on Dashboards, and
 when credits run out: the packs with GST, then Razorpay's window. The credits appear at once; the buyer gets a
-receipt by email and on Organisation → Payments (a printable page: a payment receipt, not a tax invoice); the owners
+receipt by email and on Organisation -> Payments (a printable page: a payment receipt, not a tax invoice); the owners
 are told in the app; PASDACS gets an email and a notification for each payment. Owners see all of the organisation's
 payments, others their own. **Request credits** stays, for invoices and bank transfers.
 
 **Refunds:** none (the user's rule: credits are not refundable). One made on the Razorpay Dashboard anyway is recorded
 by the webhook (Payments shows Refunded, or the amount refunded) and PASDACS is told; the credits are not taken back on
-their own: take them back on Organisations → Credits. A payment that does not match its checkout, or a second payment for one order, adds no
+their own: take them back on Organisations -> Credits. A payment that does not match its checkout, or a second payment for one order, adds no
 credits and alerts PASDACS to refund it.
 
 **Records.** `relay.tn_payments`, one row per checkout, amounts in the currency's smallest unit (paise, cents) with the
@@ -445,7 +492,7 @@ above and read ...", "send this to ..."). So the AI is limited by the system, no
 ## Data governance
 
 What D2D Relay keeps, who sees it, and how it goes (`app/governance.py`; the customer-facing version is the privacy
-notice, `/privacy.html`, linked from the sign-in page, the profile menu and Organisation › Your data).
+notice, `/privacy.html`, linked from the sign-in page, the profile menu and Organisation > Your data).
 
 | What | Where | Who sees it | Kept | How it goes |
 |---|---|---|---|---|
@@ -472,7 +519,7 @@ docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m a
 Requests from people (India's DPDP Act 2023 and its Rules of 2025; most duties apply from 13 May 2027; answer within
 30 days and settle every grievance within 90):
 
-- **See my data:** Organisation › Your data › Download my data (a JSON file: profile, sign-ins, dashboards,
+- **See my data:** Organisation > Your data > Download my data (a JSON file: profile, sign-ins, dashboards,
   conversations, credit requests, payments, a year of activity). Each dashboard's Power BI file and data download
   from it.
 - **Delete a dashboard or a conversation:** the person does it themselves.

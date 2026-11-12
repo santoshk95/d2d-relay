@@ -31,7 +31,7 @@ CONNECTORS = {
 }
 KEEP_KINDS = set(CONNECTORS)
 
-# APIs of screens that are not part of D2D Relay (on top of the dropped modules' own `api=[…]` prefixes)
+# APIs of screens that are not part of D2D Relay (on top of the dropped modules' own `api=[...]` prefixes)
 EXTRA_BLOCKED = ("/api/schedules", "/api/schedules-draft", "/api/schedules-measures", "/api/schedules-preview", "/api/semantic","/api/pages", "/api/reviews", "/api/studio", "/api/rfp",
                  "/api/servicedesk", "/api/lineage", "/api/graph", "/api/intan", "/api/observe", "/api/migrate-bi", "/api/heal",
                  "/api/sdlc", "/api/start", "/api/team", "/api/m/", "/api/tenancy/tenants", "/api/email",

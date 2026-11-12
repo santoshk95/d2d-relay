@@ -1,5 +1,5 @@
-"""Automation Anywhere (Automation 360 Control Room) — the Control Room API: POST /v2/authentication for a token,
-/v2/repository/workspaces/public/files/list (bots), /v3/activity/list (runs with status and message — "UI element
+"""Automation Anywhere (Automation 360 Control Room) - the Control Room API: POST /v2/authentication for a token,
+/v2/repository/workspaces/public/files/list (bots), /v3/activity/list (runs with status and message - "UI element
 not found" is a screen change), /v1/schedule/automations/list, /v2/credentialvault/credentials/list (names only)."""
 from __future__ import annotations
 

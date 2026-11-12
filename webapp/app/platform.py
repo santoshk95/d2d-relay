@@ -27,7 +27,7 @@ def _user_out(u: dict) -> dict:
 def _guest(u: dict) -> None:
     """A guest from another tenant (P17) is managed through their access grant, not as a person of this workspace."""
     if u.get("home_tenant"):
-        raise HTTPException(409, "This person is a guest from another workspace; change or end their access under Admin › Partner access.")
+        raise HTTPException(409, "This person is a guest from another workspace; change or end their access under Admin > Partner access.")
 
 
 def _all_users() -> list[dict]:
@@ -526,6 +526,31 @@ def set_my_pins(body: Pins):
     pins = list(dict.fromkeys(p for p in body.pins if isinstance(p, str) and re.fullmatch(r"[\w-]{1,80}", p)))[:20]
     db.set_meta(f"pins:{u['id']}", json.dumps(pins))
     return my_pins()
+
+
+# D2D Relay (2026-11-12): the first-time tour (brand, light or dark, the basics). Shown once to people who start using
+# D2D Relay from this day on, finished or skipped; "Take the tour" in the profile menu opens it again.
+TOUR_SINCE = 1794441600                     # 2026-11-12 00:00 UTC: people who signed in before it know the app already
+
+
+class Tour(BaseModel):
+    step: str = ""                          # "done", or the step it was skipped at
+
+
+def tour_due(u: dict) -> bool:
+    """Whether the person has yet to see the first-time tour."""
+    if db.meta(f"tour:{u['id']}"):
+        return False
+    row = db.one("SELECT created FROM users WHERE id = ?", (u["id"],))
+    return bool(row) and (row["created"] or 0) >= TOUR_SINCE
+
+
+@router.post("/api/me/tour")
+def tour_seen(body: Tour):
+    """The person finished or skipped the first-time tour: it is not shown on its own again."""
+    u = auth.current.get()
+    db.set_meta(f"tour:{u['id']}", json.dumps({"when": time.time(), "step": re.sub(r"[^a-z]", "", body.step.lower())[:20]}))
+    return {"ok": True}
 
 
 @router.get("/api/me/ai")

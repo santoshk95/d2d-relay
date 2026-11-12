@@ -1,14 +1,14 @@
-"""Data warehouse & lakehouse — the estate model and the rules (rules first; the agent only for procedural code).
+"""Data warehouse & lakehouse - the estate model and the rules (rules first; the agent only for procedural code).
 
 The estate, the same for every platform:
   tables    [{"name": "DW.FACT_SALES", "kind": "TABLE"|"VIEW", "rows", "bytes", "columns": [{"name", "type", "logical"}],
               "keys": [...], "partitioned": bool, "comment"}]
   views     {"MART.V_SALES_DASHBOARD": select sql}
-  routines  [{"name", "type" (PACKAGE BODY, PROCEDURE, MACRO, BTEQ, TRIGGER…), "lines", "text"}]
+  routines  [{"name", "type" (PACKAGE BODY, PROCEDURE, MACRO, BTEQ, TRIGGER...), "lines", "text"}]
   history   [{"text", "user", "start", "elapsed_ms", "status", "error", "rows"}]
   jobs      [{"job", "status", "start", "error"}]
 read from the source's own data dictionary through its API (Oracle ALL_* / DBA_HIST, Teradata DBC, Db2 SYSCAT,
-Snowflake INFORMATION_SCHEMA) or from its exports (ddl/*.sql, views.sql, code/*, history/*.csv — SQL Server, Netezza,
+Snowflake INFORMATION_SCHEMA) or from its exports (ddl/*.sql, views.sql, code/*, history/*.csv - SQL Server, Netezza,
 Greenplum and Hive have no HTTP API).
 
   usage     per table: queries in the history window, the people and services that ran them, the last time
@@ -324,9 +324,9 @@ def health(est: dict, use: dict) -> list[dict]:
         u = use.get(t["name"]) or {}
         tail = t["name"].split(".")[-1]
         if LEGACY_RX.search(tail) or (t.get("comment") and LEGACY_WORDS.search(t["comment"])):
-            add(t["name"], "legacy", "low", f"looks like a copy, backup or temporary table{(' (' + t['comment'] + ')') if t.get('comment') else ''} — retire it rather than move it", t.get("comment") or tail, {"comment": t.get("comment")})
+            add(t["name"], "legacy", "low", f"looks like a copy, backup or temporary table{(' (' + t['comment'] + ')') if t.get('comment') else ''} - retire it rather than move it", t.get("comment") or tail, {"comment": t.get("comment")})
         elif have_history and not u.get("queries") and t["kind"] == "TABLE":
-            add(t["name"], "unused", "low", "never queried in the history window — a retire candidate", "0 queries", {})
+            add(t["name"], "unused", "low", "never queried in the history window - a retire candidate", "0 queries", {})
         if u.get("failed"):
             errs = sorted({q.get("error") or "" for q in est["history"] if q.get("status") == "FAILED" and t["name"].split(".")[-1].lower() in (q.get("text") or "").lower()})[:3]
             add(t["name"], "failing", "medium", f"{u['failed']} quer{'y' if u['failed'] == 1 else 'ies'} on it failed: {'; '.join(e[:120] for e in errs if e) or 'see the history'}", f"{u['failed']} failed", {"errors": errs})
@@ -337,7 +337,7 @@ def health(est: dict, use: dict) -> list[dict]:
             obj = next((n for n in use if n.split(".")[-1].lower() in (q.get("text") or "").lower()), "the warehouse")
             add(obj, "slow", "low", f"a query took {q['elapsed_ms'] / 1000:.0f} s: {(q.get('text') or '')[:120]}", f"{q['elapsed_ms'] / 1000:.0f} s", {"query": q})
     for r in est["routines"]:
-        add(r["name"], "code", "low", f"{r['type'].lower()} with {r['lines']} line(s) of procedural code — Relay's agent drafts it as dbt models or target SQL", f"{r['lines']} lines", {})
+        add(r["name"], "code", "low", f"{r['type'].lower()} with {r['lines']} line(s) of procedural code - Relay's agent drafts it as dbt models or target SQL", f"{r['lines']} lines", {})
     failed_jobs = [j for j in est["jobs"] if str(j.get("status") or "").upper() in ("FAILED", "FAILURE", "ERROR")]
     for name in sorted({j["job"] for j in failed_jobs}):
         js = [j for j in failed_jobs if j["job"] == name]
@@ -441,7 +441,7 @@ def view_sql(name: str, sql: str, source: str, target: str) -> tuple[str | None,
     read = {"ansi": None, "postgres": "postgres"}.get(source, source)
     odd = re.findall(r"(?i)\bROWNUM\b|\bCONNECT\s+BY\b|\(\+\)|\bQUALIFY\b|\bSAMPLE\b", sql or "")
     if odd and source in ("oracle", "teradata"):
-        return None, f"uses {', '.join(sorted({o.upper() for o in odd}))}, which no rule rewrites for {target} — Relay's agent drafts it"
+        return None, f"uses {', '.join(sorted({o.upper() for o in odd}))}, which no rule rewrites for {target} - Relay's agent drafts it"
     try:
         body = sqlglot.transpile(sql, read=read, write=target, pretty=True)[0]
     except Exception as e:  # noqa: BLE001 - a view the parser does not read goes to the agent

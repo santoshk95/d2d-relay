@@ -1,20 +1,20 @@
-"""Job scheduling & orchestration (registry id `jobs`) — the batch estate on Control-M and AutoSys (adapters in
+"""Job scheduling & orchestration (registry id `jobs`) - the batch estate on Control-M and AutoSys (adapters in
 jobs_platforms.py), cron files, and the W2 kit's run history, diagnosis and approvals (_w2.py).
 
-Assess   Connect → Inventory → Health → Findings → Estimate: every job with its schedule, command and the jobs it waits
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: every job with its schedule, command and the jobs it waits
          for; rules: a job that ends not OK (its cause from its own output: a renamed source column, a robot's changed
          screen), the jobs held back behind it, a password on a command line, a file that arrives late, a job running far
          longer than it used to, two versions of one job, jobs nobody schedules any more.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn (Control-M): a failing job diagnosed from its runs and
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn (Control-M): a failing job diagnosed from its runs and
          output; its definition changed in a copy (a parameter), validated by Control-M's own build (nothing written);
          the named approver releases it; after its own approval the folder is deployed, the failed order rerun, and the
          jobs that waited for it watched until they end; the fix kept as a rule.
-Migrate  Discover → Decide → Convert → Prove → Hand over → Run: cron jobs (crontab files) to Control-M: a commented-out
+Migrate  Discover -> Decide -> Convert -> Prove -> Hand over -> Run: cron jobs (crontab files) to Control-M: a commented-out
          line retires, each job becomes a Control-M job by rules, proven by Control-M's build and by the next run times
          on both sides agreeing, signed off, deployed after approval.
-Run      Watch → Alert → Fix → Approve → Report: Control-M's orders since the last round; jobs that end not OK or wait
+Run      Watch -> Alert -> Fix -> Approve -> Report: Control-M's orders since the last round; jobs that end not OK or wait
          behind one grouped by cause; a person routes each (a Change item, Self-healing, a rerun after approval, a ticket).
-(Develop is not offered yet: a new job is designed with its pipeline — Data pipelines or Workflows hand it over.)
+(Develop is not offered yet: a new job is designed with its pipeline - Data pipelines or Workflows hand it over.)
 """
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ class SchedPlatform(wb.Platform):
 
 PLATFORMS = {
     "controlm": SchedPlatform("Control-M", ("controlm_api",), (".json",), jp.ControlMApi.simulator,
-                              "folders and job definitions, orders and their output — read-only; a changed folder, a rerun or a new folder only after approval"),
+                              "folders and job definitions, orders and their output - read-only; a changed folder, a rerun or a new folder only after approval"),
     "autosys": SchedPlatform("AutoSys", ("autosys_aews",), (".jil",), jp.AutoSysAews.simulator, "jobs, their JIL and run history"),
     "cron": SchedPlatform("cron (crontab files)", (), (".tab", ".cron", ".txt"), "tests/mocklab/sims/schedulers.py: cron (files)", "crontab files you upload"),
 }
@@ -124,7 +124,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
     n8._save(ctx, "estate.json", {"autos": autos, "runs": runs})
     for r in rows:
         ctx.evidence(f"Read: {r['source']}", r, kind="read", ok=r["ok"])
-    return {"summary": f"{len(good)} of {len(rows)} source(s) answered: {len(autos)} job(s), {len(runs)} run(s) — read-only.", "counts": {"sources": len(rows), "jobs": len(autos), "runs": len(runs)},
+    return {"summary": f"{len(good)} of {len(rows)} source(s) answered: {len(autos)} job(s), {len(runs)} run(s) - read-only.", "counts": {"sources": len(rows), "jobs": len(autos), "runs": len(runs)},
             "data": _w2.table(["Source", "Kind", "Status", "What Relay sees"], [[r["source"], r["kind"], "answered" if r["ok"] else "refused", r["sees"]] for r in rows])}
 
 
@@ -139,7 +139,7 @@ def a_inventory(ctx: wb.Ctx) -> dict:
                      "schedule": a.get("schedule") or "not scheduled", "waits_for": ", ".join(d.split(":", 1)[-1] for d in a.get("deps") or []), "runs": h["runs"], "failed": h["failed"], "auto": a["id"]})
     if not recs:
         raise wb.StepFailed("The sources show no jobs.")
-    return {"summary": f"{len(recs)} job(s) in {len({r['folder'] for r in recs})} folder(s), {sum(1 for r in recs if r['waits_for'])} waiting for others — untick what is out of scope.",
+    return {"summary": f"{len(recs)} job(s) in {len({r['folder'] for r in recs})} folder(s), {sum(1 for r in recs if r['waits_for'])} waiting for others - untick what is out of scope.",
             "records": recs, "counts": {"jobs": len(recs)},
             "data": _w2.table(["Job", "Platform", "Folder", "Schedule", "Waits for", "Runs", "Failed"], [[r["flow"], r["platform"], r["folder"], r["schedule"], r["waits_for"], r["runs"], r["failed"]] for r in recs])}
 
@@ -193,7 +193,7 @@ def _sched(ctx: wb.Ctx, *, write: bool = False) -> tuple[dict, object]:
     if not cs:
         raise wb.StepFailed("Start the work item with the Control-M or AutoSys connection the job runs on.")
     if write and not connectors.may_write(cs[0]):
-        raise wb.StepFailed(f"{cs[0]['name']} is read-only: change its scope to “Read & write — with approval” so the release can be approved.")
+        raise wb.StepFailed(f"{cs[0]['name']} is read-only: change its scope to \"Read & write - with approval\" so the release can be approved.")
     return cs[0], (jp.ControlMApi() if cs[0]["kind"] == "controlm_api" else jp.AutoSysAews())
 
 
@@ -203,7 +203,7 @@ def _ctm(ctx: wb.Ctx, *, write: bool = False) -> dict:
     if not c:
         raise wb.StepFailed("This step needs the Control-M connection.")
     if write and not connectors.may_write(c):
-        raise wb.StepFailed(f"{c['name']} is read-only: change its scope to “Read & write — with approval” so the deploy can be approved.")
+        raise wb.StepFailed(f"{c['name']} is read-only: change its scope to \"Read & write - with approval\" so the deploy can be approved.")
     return c
 
 
@@ -219,7 +219,7 @@ def c_request(ctx: wb.Ctx) -> dict:
     jobs = a.estate(c)
     j = next((x for x in jobs if x["name"].upper() == want), None)
     if not j:
-        raise wb.StepFailed(f"No job named “{ctx.scope.get('job')}” on {c['name']}: " + ", ".join(x["name"] for x in jobs[:10]))
+        raise wb.StepFailed(f"No job named \"{ctx.scope.get('job')}\" on {c['name']}: " + ", ".join(x["name"] for x in jobs[:10]))
     runs = a.runs(c, jobs)
     mine = [r for r in runs if r["target"] == j["id"]]
     down = [x["id"] for x in jobs if j["id"] in (x.get("deps") or [])]
@@ -233,7 +233,7 @@ def c_request(ctx: wb.Ctx) -> dict:
 
 
 def _learned_changes(vars_: dict) -> list[dict]:
-    """Fixes Relay learned on any scheduler that name a variable and its old value — proposed where this job has that value."""
+    """Fixes Relay learned on any scheduler that name a variable and its old value - proposed where this job has that value."""
     out = []
     for r in db.q("SELECT * FROM w2_fix_rules WHERE module = ? ORDER BY updated DESC", (MODULE,)):
         f = _w2.j(r["fix"], {})
@@ -261,7 +261,7 @@ def c_fix(ctx: wb.Ctx) -> dict:
             v = str(ctx.scope["variable"])
             recs = [{"id": "p-0", "variable": v, "now": vars_.get(v, ""), "new": str(ctx.scope.get("value") or ""), "why": "the change you named"}]
     where = "Control-M" if kind == "controlm_api" else "AutoSys"
-    return {"summary": (f"{len(recs)} change(s) to the definition, on a copy: " + "; ".join(f"{r['variable']} {r['now']} → {r['new'] or '(type the new value)'}" for r in recs)
+    return {"summary": (f"{len(recs)} change(s) to the definition, on a copy: " + "; ".join(f"{r['variable']} {r['now']} {r['new'] or '(type the new value)'}" for r in recs)
                         + f". Nothing changes on {where} until the release is approved.") if recs else "No rule knows a change for this: name the variable and its new value (the work item's fields).",
             "records": recs, "counts": {"changes": len(recs)}, "items": _fix_problems(recs, ctx)[:6],
             "data": _w2.table(["Variable", "Now", "New value", "Why"], [[r["variable"], r["now"], r["new"], r["why"]] for r in recs])}
@@ -332,8 +332,8 @@ def c_approve(ctx: wb.Ctx) -> dict:
     folder, j, _ = _changed(ctx)
     how = (f"Deploy {folder} with the changed {j['name']}, rerun its failed order and watch what waits for it." if (f.get("kind") or "controlm_api") == "controlm_api"
            else f"Update {j['name']}'s JIL on AutoSys, restart it and watch what waits for it.")
-    return {"summary": how, "data": {"items": [{"title": "The change", "detail": "; ".join(f"{r['variable']}: {r['now']} → {r['new']}" for r in ctx.records("fix"))},
-                                               {"title": "Then", "detail": "The change is applied, the job run again and the jobs that waited for it watched — one approval for exactly that; the fix is kept as a rule."}]}}
+    return {"summary": how, "data": {"items": [{"title": "The change", "detail": "; ".join(f"{r['variable']}: {r['now']} {r['new']}" for r in ctx.records("fix"))},
+                                               {"title": "Then", "detail": "The change is applied, the job run again and the jobs that waited for it watched - one approval for exactly that; the fix is kept as a rule."}]}}
 
 
 def c_learn(ctx: wb.Ctx) -> dict:
@@ -378,7 +378,7 @@ def _learn_view(ctx: wb.Ctx) -> dict:
 _w2.REFRESH["jobs.change.learn"] = _learn_view
 
 
-# ================================================================== Migrate (cron or AutoSys → Control-M)
+# ================================================================== Migrate (cron or AutoSys -> Control-M)
 
 DOW = {"0": "SUN", "1": "MON", "2": "TUE", "3": "WED", "4": "THU", "5": "FRI", "6": "SAT", "7": "SUN"}
 JIL_DOW = {"mo": "MON", "tu": "TUE", "we": "WED", "th": "THU", "fr": "FRI", "sa": "SAT", "su": "SUN"}
@@ -548,20 +548,20 @@ def m_decide(ctx: wb.Ctx) -> dict:
             elif blk:
                 dec, why = "keep", "a person moves it: " + "; ".join(blk)
             else:
-                dec, why = "move", f"{a['schedule'] or ('when its conditions are met' if waits else 'on demand')}" + (f" (the box {s['from_box']}'s schedule)" if s.get("from_box") else "") + " → a Control-M job; "
+                dec, why = "move", f"{a['schedule'] or ('when its conditions are met' if waits else 'on demand')}" + (f" (the box {s['from_box']}'s schedule)" if s.get("from_box") else "") + " -> a Control-M job; "
                 why += ("its conditions become events: " + waits) if waits else "no conditions"
                 if s.get("run_calendar"):
                     why += f"; the calendar {s['run_calendar']} must be on Control-M with the same dates"
         elif not a["active"]:
             dec, why = "retire", "commented out in the crontab"
         else:
-            dec, why = "move", f"{a['schedule']} → a Control-M job; cron had no dependencies — add the jobs it waits for in Waits for"
+            dec, why = "move", f"{a['schedule']} -> a Control-M job; cron had no dependencies - add the jobs it waits for in Waits for"
         rid = a["id"]
         h = have.get(rid) or {}
         recs.append({"id": rid, "auto": a["id"], "flow": a["name"], "platform": "autosys" if a["platform"] == "autosys_aews" else "cron", "decision": h.get("decision") or dec,
                      "why": h.get("why") or why, "waits_for": h.get("waits_for", waits), "fix": ""})
     return {"summary": f"{sum(1 for r in recs if r['decision'] == 'move')} to move, {sum(1 for r in recs if r['decision'] == 'retire')} to retire, {sum(1 for r in recs if r['decision'] == 'keep')} kept"
-            + " — AutoSys conditions are filled in; add what each cron job waits for (cron has no dependencies).",
+            + " - AutoSys conditions are filled in; add what each cron job waits for (cron has no dependencies).",
             "records": recs, "data": _w2.table(["Job", "From", "Decision", "Why", "Waits for"], [[r["flow"], r["platform"], r["decision"], r["why"], r["waits_for"]] for r in recs])}
 
 
@@ -576,7 +576,7 @@ def _validate_decide(recs, ctx):
         if r.get("decision") == "move" and a and a["platform"] == "autosys_aews":
             blk = jil_blockers(a["definition"], jil_schedule(a["definition"], est.get("boxes") or {}))
             if blk:
-                out.append(f"{r['flow']}: rules cannot move it as it stands ({'; '.join(blk)}) — keep it, or change it in AutoSys first")
+                out.append(f"{r['flow']}: rules cannot move it as it stands ({'; '.join(blk)}) - keep it, or change it in AutoSys first")
     if not names:
         out.append("nothing is moved: decide at least one job to move")
     return out
@@ -637,7 +637,7 @@ def m_convert(ctx: wb.Ctx) -> dict:
     for fn, f in out.items():
         ctx.output(f"{fn}.json", json.dumps({fn: f}, indent=2), label=f"The Control-M folder {fn} (JSON)")
     jobs = [(fn, k, v) for fn, f in out.items() for k, v in f.items() if isinstance(v, dict)]
-    return {"summary": f"{len(moving)} job(s) written as Control-M folder{'s' if len(out) > 1 else ''} {', '.join(out)} by rules — the schedule from the cron fields or the JIL, "
+    return {"summary": f"{len(moving)} job(s) written as Control-M folder{'s' if len(out) > 1 else ''} {', '.join(out)} by rules - the schedule from the cron fields or the JIL, "
                        "what each waits for as events" + (", on-demand AutoSys jobs in a folder that is not ordered automatically" if len(out) > 1 else "") + ".",
             "counts": {"converted": len(moving)},
             "data": _w2.table(["Folder", "Job", "When", "Waits for"], [[fn, k, json.dumps(v.get("When")) if v.get("When") else "on demand",
@@ -739,7 +739,7 @@ def m_prove(ctx: wb.Ctx) -> dict:
                              f"different: {', '.join(bad)}" if bad else f"{len(trig)} job(s): {', '.join(jn for jn, _ in trig)}", "started by their conditions on both"))
     for jn, calname, good in cal:
         rows.append(_w2.gate(f"calendar-{jn}", f"{jn} runs on the AutoSys calendar {calname}", "warn" if good else "fail",
-                             f"Control-M's MonthDaysCalendar {calname} must hold the same dates — check it against the AutoSys calendar (autocal_asc)" if good else "the calendar is not on the job",
+                             f"Control-M's MonthDaysCalendar {calname} must hold the same dates - check it against the AutoSys calendar (autocal_asc)" if good else "the calendar is not on the job",
                              "the same calendar dates"))
     bad = [g for g in rows if g["status"] == "fail"]
     return {"summary": f"{len(pairs) + len(cal) + len(demand) + len(trig)} job(s): Control-M's build " + ("refuses" if probs else "accepts") + f" the folder{'s' if len(conv) > 1 else ''}"
@@ -807,7 +807,7 @@ def d_describe(ctx: wb.Ctx) -> dict:
            "common_host": max(hosts, key=lambda h: sum(1 for a in autos if a.get("host") == h)) if hosts else "",
            "common_user": max(users, key=lambda u: sum(1 for a in autos if (a.get("owner") or (a.get("definition") or {}).get("RunAs")) == u)) if users else ""}
     n8._save(ctx, "develop-estate.json", est)
-    return {"summary": f"{c['name']} ({'Control-M' if c['kind'] == 'controlm_api' else 'AutoSys'}): {len(autos)} job(s) on {len(hosts)} host(s) — the new job's name must be free, its host one the scheduler knows."
+    return {"summary": f"{c['name']} ({'Control-M' if c['kind'] == 'controlm_api' else 'AutoSys'}): {len(autos)} job(s) on {len(hosts)} host(s) - the new job's name must be free, its host one the scheduler knows."
                        + (" " + ctx.brief[:200] if ctx.brief else ""), "counts": {"jobs": len(autos), "hosts": len(hosts)},
             "data": _w2.table(["Host", "Jobs on it"], [[h, sum(1 for a in autos if a.get("host") == h)] for h in hosts])}
 
@@ -817,9 +817,9 @@ def d_shape(ctx: wb.Ctx) -> dict:
     have = ctx.records(ctx.step_id)
     recs = have or [{"id": "job-1", "name": str(ctx.scope.get("job") or "").upper(), "command": "", "host": est.get("common_host", ""), "run_as": est.get("common_user", ""),
                      "every": "daily", "at": "02:00", "days": "", "waits_for": "", "variables": "", "description": (ctx.brief or "")[:200]}]
-    return {"summary": f"{len(recs)} new job(s): name, command, host, who it runs as, when, what it waits for — rules check each before anything is built.",
+    return {"summary": f"{len(recs)} new job(s): name, command, host, who it runs as, when, what it waits for - rules check each before anything is built.",
             "records": recs, "counts": {"jobs": len(recs)},
-            "data": _w2.table(["Job", "Host", "When", "Waits for"], [[r.get("name"), r.get("host"), _when_text(r), r.get("waits_for") or "—"] for r in recs])}
+            "data": _w2.table(["Job", "Host", "When", "Waits for"], [[r.get("name"), r.get("host"), _when_text(r), r.get("waits_for") or "-"] for r in recs])}
 
 
 def _when_text(r: dict) -> str:
@@ -849,15 +849,15 @@ def _validate_new(recs, ctx):
     for r, n in zip(recs, names):
         lab = n or "a job"
         if not NAME_RE.match(n):
-            out.append(f"{lab}: the name is upper case letters, digits and _ (3–64), starting with a letter")
+            out.append(f"{lab}: the name is upper case letters, digits and _ (3-64), starting with a letter")
         if n in (est.get("jobs") or []):
-            out.append(f"{n}: a job of that name is already on the scheduler — pick another (changing it is a Change item)")
+            out.append(f"{n}: a job of that name is already on the scheduler - pick another (changing it is a Change item)")
         if names.count(n) > 1:
             out.append(f"{n}: two new jobs share the name")
         if not str(r.get("command") or "").strip():
             out.append(f"{lab}: the command is needed")
         elif jp.secrets_in_command(str(r["command"]), lab):
-            out.append(f"{lab}: the command carries a password — pass it from the scheduler's vault or a variable, never on the command line")
+            out.append(f"{lab}: the command carries a password - pass it from the scheduler's vault or a variable, never on the command line")
         if est.get("hosts") and r.get("host") not in est["hosts"]:
             out.append(f"{lab}: {r.get('host') or 'no host'} is not a host the scheduler knows ({', '.join(est['hosts'][:6])})")
         if not str(r.get("run_as") or "").strip():
@@ -870,12 +870,12 @@ def _validate_new(recs, ctx):
         if e == "hourly" and not re.match(r"^:?[0-5]?\d$", str(r.get("at") or "").split(":")[-1]):
             out.append(f"{lab}: an hourly job runs at a minute past the hour (for example :15)")
         if e == "weekly" and (not _list(r.get("days")) or any(d.upper()[:3] not in WEEK for d in _list(r.get("days")))):
-            out.append(f"{lab}: the days of the week are MON … SUN, comma separated")
+            out.append(f"{lab}: the days of the week are MON ... SUN, comma separated")
         if e == "monthly":
             if kind == "autosys_aews":
-                out.append(f"{lab}: AutoSys runs on days of the month through a calendar — create the calendar in AutoSys first, or pick days of the week")
+                out.append(f"{lab}: AutoSys runs on days of the month through a calendar - create the calendar in AutoSys first, or pick days of the week")
             elif not _list(r.get("days")) or any(not (d.isdigit() and 1 <= int(d) <= 31) for d in _list(r.get("days"))):
-                out.append(f"{lab}: the days of the month are 1 … 31, comma separated")
+                out.append(f"{lab}: the days of the month are 1 ... 31, comma separated")
         for w_ in _list(r.get("waits_for")):
             if w_ not in (est.get("jobs") or []) and w_ not in names:
                 out.append(f"{lab}: waits for {w_}, which is neither on the scheduler nor a new job here")
@@ -971,8 +971,8 @@ def d_build(ctx: wb.Ctx) -> dict:
         n8._save(ctx, "new-definition.json", {"kind": "autosys_aews", "jobs": jobs, "jil": text})
         ctx.output("new-jobs.jil", text, label="The new jobs (JIL)")
         what = "JIL"
-    return {"summary": f"{len(recs)} job(s) written as {what} by rules — the schedule, the conditions, the variables and an alarm when it ends not OK.", "counts": {"jobs": len(recs)},
-            "data": _w2.table(["Job", "When", "Waits for"], [[r["name"], _when_text(r), r.get("waits_for") or "—"] for r in recs])}
+    return {"summary": f"{len(recs)} job(s) written as {what} by rules - the schedule, the conditions, the variables and an alarm when it ends not OK.", "counts": {"jobs": len(recs)},
+            "data": _w2.table(["Job", "When", "Waits for"], [[r["name"], _when_text(r), r.get("waits_for") or "-"] for r in recs])}
 
 
 def _next_rule(r: dict, start: datetime, n: int = 5) -> list[float]:
@@ -1046,7 +1046,7 @@ def d_prove(ctx: wb.Ctx) -> dict:
     if demand:
         rows.append(_w2.gate("demand", "On-demand jobs are not scheduled", "pass", ", ".join(demand), "not scheduled"))
     rows.append(_w2.gate("waits", "Every job it waits for is there and signals it ended OK", "fail" if bad_waits else "pass", len(bad_waits), 0, "; ".join(bad_waits)[:300] or
-                         ", ".join(f"{n} ← {r.get('waits_for')}" for n, r in recs.items() if r.get("waits_for")) or "no waits"))
+                         ", ".join(f"{n} <- {r.get('waits_for')}" for n, r in recs.items() if r.get("waits_for")) or "no waits"))
     leaks = [n for n, r in recs.items() if jp.secrets_in_command(str(r.get("command") or ""), n)]
     rows.append(_w2.gate("secrets", "No password on a command line", "fail" if leaks else "pass", len(leaks), 0, ", ".join(leaks)))
     bad = [g for g in rows if g["status"] == "fail"]
@@ -1059,7 +1059,7 @@ def d_ship(ctx: wb.Ctx) -> dict:
     recs = ctx.records("shape")
     c, _ = _sched(ctx)
     return {"summary": f"Put {len(recs)} new job(s) on {c['name']}: the named approver signs off; then the deploy waits for its own approval.",
-            "data": {"items": [{"title": r["name"], "detail": f"{_when_text(r)} on {r['host']} as {r['run_as']}" + (f"; waits for {r['waits_for']}" if r.get("waits_for") else "") + f" — {r['command'][:120]}"}
+            "data": {"items": [{"title": r["name"], "detail": f"{_when_text(r)} on {r['host']} as {r['run_as']}" + (f"; waits for {r['waits_for']}" if r.get("waits_for") else "") + f" - {r['command'][:120]}"}
                                for r in recs]}}
 
 
@@ -1082,7 +1082,7 @@ def _drun_view(ctx: wb.Ctx) -> dict:
     if p and p["status"] == "written":
         r = p["result"]
         on = r.get("jobs") or [j for j in ctx.get("new_jobs") or []]
-        return {"summary": f"On the scheduler: {', '.join(on)}" + (f" in {', '.join(r.get('folders'))}" if r.get("folders") else "") + " — read back after the deploy. Watch them with a Run item.",
+        return {"summary": f"On the scheduler: {', '.join(on)}" + (f" in {', '.join(r.get('folders'))}" if r.get("folders") else "") + " - read back after the deploy. Watch them with a Run item.",
                 "counts": {"deployed": len(on)}, "data": {"text": "Start a Run item on the same connection to watch the first runs."}}
     if p and p["status"] == "awaiting":
         return {"summary": "The deploy waits for its own approval in the Validation queue.", "data": {"href": "#/validate", "label": "Open the Validation queue", "text": p["what"]}}
@@ -1134,21 +1134,21 @@ def r_approve(ctx: wb.Ctx) -> dict:
                            scope={"job": b["workflow"]}, approver=ctx.st.get("approver"), parent=ctx.id)
             h = ctx._handoff({"kind": "change", "label": title, "status": "Change work item opened", "link": wb.route_of(it), "item": it["id"]})
         else:
-            h = {"kind": b["route"], "label": title, "status": "expected — recorded" if b["route"] == "expected" else "ignored this time"}
+            h = {"kind": b["route"], "label": title, "status": "expected - recorded" if b["route"] == "expected" else "ignored this time"}
         out.append(h)
         rows.append([b["workflow"], b["cause"], b["route"], h.get("status"), h.get("item") or h.get("case") or h.get("checkpoint") or ""])
     return {"summary": f"{len(out)} hand-off(s) as you approved.", "data": _w2.table(["Job", "Cause", "Route", "Status", "Reference"], rows), "counts": {"hand-offs": len(out)}}
 
 
 RFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("change", "Open a Change work item"), ("heal", "Self-healing"), ("ticket", "Raise a ticket"), ("rerun", "Rerun (after approval)"),
-                                                                       ("expected", "Expected — no action"), ("ignore", "Ignore this time"))),
+                                                                       ("expected", "Expected - no action"), ("ignore", "Ignore this time"))),
                              wb.Column("note", "Note for whoever fixes it", "longtext"), wb.Column("workflow", "Job", readonly=True), wb.Column("cause", "Cause", readonly=True)], add=False, remove=False, label="cause")
 
 
-GUIDE = """# Job scheduling — the work item
+GUIDE = """# Job scheduling - the work item
 
-Relay's job scheduling reads the batch estate on Control-M, AutoSys and cron — each job, its schedule, its command and
-what it waits for — finds what fails and why from the jobs' own output, and changes a definition only through a
+Relay's job scheduling reads the batch estate on Control-M, AutoSys and cron - each job, its schedule, its command and
+what it waits for - finds what fails and why from the jobs' own output, and changes a definition only through a
 release a named person approved. Nothing is invented: every finding comes from a definition or a run."""
 
 wb.register(wb.Pack(
@@ -1162,12 +1162,12 @@ wb.register(wb.Pack(
             "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Checker", text="Rules: jobs ending not OK and their cause, what is held behind them, passwords on command lines, late files, slow-downs, duplicates"),
             "Findings": wb.Step(kind="deterministic", run=n8.a_findings, agent="Checker", edit=n8.FIND_EDIT, text="The findings, for you to keep or ignore"),
             "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Effort per kind of finding")}),
-        "develop": wb.Work(title="A new job on Control-M or AutoSys — defined with you, proven on its run times and what it waits for, deployed after approval", needs_source=False,
+        "develop": wb.Work(title="A new job on Control-M or AutoSys - defined with you, proven on its run times and what it waits for, deployed after approval", needs_source=False,
                            platforms=("controlm", "autosys"),
                            fields=[wb.Field("job", "The new job's name (optional)"), wb.Field("folder", "Control-M folder for it (a new one)", default="RELAY_NEW_JOBS")], steps={
-            "Describe": wb.Step(kind="platform", run=d_describe, agent="Reader", text="The scheduler read: its jobs, hosts and users — what the new job must fit"),
+            "Describe": wb.Step(kind="platform", run=d_describe, agent="Reader", text="The scheduler read: its jobs, hosts and users - what the new job must fit"),
             "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Designer", edit=NEW_EDIT, confirm="the new jobs: command, host, who it runs as, when, what it waits for",
-                             text="The job as you want it — rules refuse a taken name, an unknown host, a password on the command line, a wait on a job that is not there"),
+                             text="The job as you want it - rules refuse a taken name, an unknown host, a password on the command line, a wait on a job that is not there"),
             "Build": wb.Step(kind="deterministic", run=d_build, agent="Builder", text="The definition by rules: a Control-M folder or AutoSys JIL, with an alarm when it ends not OK"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Checker", back_to="shape",
                              text="The scheduler accepts it; the next five runs fall when you asked; every wait is real; no password on a command line"),
@@ -1176,13 +1176,13 @@ wb.register(wb.Pack(
         "change": wb.Work(title="Fix a failing Control-M or AutoSys job from its runs, released with approval", needs_source=False, platforms=("controlm", "autosys"), steps={
             "Request": wb.Step(kind="platform", run=c_request, agent="Run reader", text="The job, its orders and output, and what waits for it"),
             "Diagnose": wb.Step(kind="deterministic", run=n8.c_diagnose, view="gates", agent="Diagnoser", edit=n8.DIAG_EDIT, text="Each failure's own words name its cause, rules first"),
-            "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Fixer", edit=FIX_EDIT, text="The job's definition changed in a copy (a variable) — you confirm the new value"),
+            "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Fixer", edit=FIX_EDIT, text="The job's definition changed in a copy (a variable) - you confirm the new value"),
             "Prove": wb.Step(kind="proof", run=c_prove, view="gates", agent="Checker", back_to="fix", text="Only the variable differs; Control-M's build accepts the folder; what waits for it is listed"),
             "Approve": wb.Step(kind="person", run=c_approve, view="plan", approver=True, text="The named approver releases the change"),
             "Learn": wb.Step(kind="platform", run=c_learn, agent="Deployer", text="After its own approval: the folder deployed, the failed order rerun, what waited for it watched; the fix kept as a rule")},
             fields=[wb.Field("job", "Job to fix", "text", required=True, help="Its name on the scheduler"), wb.Field("variable", "Variable to change (if you know it)", "text"),
                     wb.Field("value", "New value (if you know it)", "text")]),
-        "migrate": wb.Work(title="Move cron or AutoSys jobs to Control-M — the same run times and conditions, proven before it ships", platforms=("cron", "autosys", "controlm"), steps={
+        "migrate": wb.Work(title="Move cron or AutoSys jobs to Control-M - the same run times and conditions, proven before it ships", platforms=("cron", "autosys", "controlm"), steps={
             "Discover": wb.Step(kind="platform", run=m_discover, agent="Scanner", text="The crontab files, and AutoSys's jobs and boxes (connected or a JIL export): every job, its schedule and user"),
             "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Decider", edit=DECIDE_EDIT,
                               text="Move, retire or keep each; AutoSys's conditions filled in, what each cron job waits for added by you (cron had no dependencies)"),
@@ -1196,7 +1196,7 @@ wb.register(wb.Pack(
         "run": wb.Work(title="Watch Control-M's orders; failures go to a person first", needs_source=False, platforms=("controlm",), steps={
             "Watch": wb.Step(kind="platform", run=r_watch, view="gates", agent="Watcher", text="The orders since the last round: what ended not OK and what waits behind it"),
             "Alert": wb.Step(kind="deterministic", run=n8.r_alert, agent="Triage", text="Failures grouped by job and cause, each with its likely cause"),
-            "Fix": wb.Step(kind="deterministic", run=n8.r_fix, agent="Triage", edit=RFIX_EDIT, text="Relay proposes who fixes each — a Change item, Self-healing, a rerun, a ticket — and you confirm"),
+            "Fix": wb.Step(kind="deterministic", run=n8.r_fix, agent="Triage", edit=RFIX_EDIT, text="Relay proposes who fixes each - a Change item, Self-healing, a rerun, a ticket - and you confirm"),
             "Approve": wb.Step(kind="platform", run=r_approve, agent="Dispatcher", text="The approved hand-offs go out"),
             "Report": wb.Step(kind="deterministic", run=n8.r_report, agent="Reporter", confirm_if=lambda ctx, out: bool(ctx.get("breaks")), text="A run report against the last rounds")},
             fields=[wb.Field("desk", "Service desk for tickets", "select", options=_w2.desk_options), wb.Field("schedule", "Watch it", "cadence", default={"every": "hour", "tz": "UTC"})]),

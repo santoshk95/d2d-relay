@@ -1,4 +1,4 @@
-"""`genbi repo` — git for the Relay agent, through the toolkit only (build-plan v2, P16 AI SDLC).
+"""`genbi repo` - git for the Relay agent, through the toolkit only (build-plan v2, P16 AI SDLC).
 
     genbi repo clone <url> [--dir repo] [--branch main] [--depth N]
     genbi repo index [--dir repo]            languages, test / lint commands, CODEOWNERS, contributing notes -> repo-index.yaml
@@ -11,8 +11,8 @@
     genbi repo push [--branch b] [--dir repo]
 
 Git itself is dulwich (pure Python), so the agent image needs no git binary and the agent cannot run git directly:
-Bash is limited to `genbi …`. The credential comes only from this process's environment — GENBI_REPO_USER and
-GENBI_REPO_TOKEN, which the web app injects per run — and is never written to the clone's config, never printed.
+Bash is limited to `genbi ...`. The credential comes only from this process's environment - GENBI_REPO_USER and
+GENBI_REPO_TOKEN, which the web app injects per run - and is never written to the clone's config, never printed.
 Without it, clone and push work for public or local repositories only. The web app calls the same functions for
 the clone before planning and the push at release (after a named approver accepts)."""
 from __future__ import annotations
@@ -321,7 +321,7 @@ def _codeowners(root: Path) -> list[dict]:
 
 
 def index(path: Path) -> dict:
-    """Languages, the test and lint commands, CODEOWNERS, contributing notes, CI and conventions — what the agent
+    """Languages, the test and lint commands, CODEOWNERS, contributing notes, CI and conventions - what the agent
     must follow. Written to repo-index.yaml next to the clone by the CLI; the web app keeps a copy on the request."""
     root = Path(path)
     if not (root / ".git").exists():
@@ -434,7 +434,7 @@ def scan_secrets(path: Path, only: list[str] | None = None, max_bytes: int = 400
                 m = rx.search(line)
                 if m:
                     hit = m.group(0)
-                    out.append({"file": str(f.relative_to(root)).replace("\\", "/"), "line": i, "kind": label, "match": hit[:6] + "…" + hit[-3:] if len(hit) > 12 else "…"})
+                    out.append({"file": str(f.relative_to(root)).replace("\\", "/"), "line": i, "kind": label, "match": hit[:6] + "..." + hit[-3:] if len(hit) > 12 else "..."})
                     break
     return out
 
@@ -453,14 +453,14 @@ def cmd_repo(args) -> None:
             r = write_index(d, cwd / "repo-index.yaml")
             langs = ", ".join(f"{x['language']} {x['files']}" for x in r["languages"]) or "no code files"   # Python 3.11 in the agent image: no nested same-quote f-strings
             print(f"Indexed {r['files']} files: {langs}.")
-            print(f"test: {r['test_command'] or 'not found'} · lint: {r['lint_command'] or 'not found'} · runtime: {r['runtime_image'] or '?'} · CODEOWNERS: {len(r['codeowners'])} rule(s) · CI: {', '.join(r['ci']) or 'none'}")
-            print(f"conventions: {r['conventions']['indentation']}, {r['conventions']['line_endings']} line endings · written to repo-index.yaml")
+            print(f"test: {r['test_command'] or 'not found'} - lint: {r['lint_command'] or 'not found'} - runtime: {r['runtime_image'] or '?'} - CODEOWNERS: {len(r['codeowners'])} rule(s) - CI: {', '.join(r['ci']) or 'none'}")
+            print(f"conventions: {r['conventions']['indentation']}, {r['conventions']['line_endings']} line endings - written to repo-index.yaml")
         elif args.action == "branch":
             r = branch(d, args.name)
             print(f"On branch {r['branch']} ({'created' if r['created'] else 'existing'}, head {r['head'][:8]}).")
         elif args.action == "status":
             r = status(d)
-            print(f"branch {r['branch']} · head {r['head'][:8]}")
+            print(f"branch {r['branch']} - head {r['head'][:8]}")
             for k, v in r["staged"].items():
                 for p in v:
                     print(f"staged {k}: {p}")

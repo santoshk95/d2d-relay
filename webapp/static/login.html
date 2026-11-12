@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Sign in · D2D Relay</title>
+<title>Sign in - D2D Relay</title>
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="relay-mark.svg">
 <link rel="stylesheet" href="css/fonts.css">
@@ -54,7 +54,7 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
     <div class="brand" id="brand"></div>
     <div><h1>Your data to a Power BI dashboard.</h1>
       <p>Bring your CSV files, describe the dashboard you need, and get a Power BI file (.pbix) with every number checked.</p></div>
-    <div class="powered"><span>D2D · Data to Decision — a Relay Platform product by PASDACS</span></div>
+    <div class="powered"><span>D2D: Data to Decision, a Relay Platform product by PASDACS</span></div>
   </div>
   <main class="form">
     <h2 id="signin">Sign in to D2D Relay</h2>
@@ -68,7 +68,7 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
     <form id="codeform" style="display:grid;gap:10px" hidden>
       <div><label for="code">6-digit code</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required></div>
       <button type="submit" id="codebtn">Sign in</button>
-      <p class="fine"><a href="#" id="again">Send a new code</a> · <a href="#" id="other">Use another address</a></p>
+      <p class="fine"><a href="#" id="again">Send a new code</a> or <a href="#" id="other">use another address</a></p>
     </form>
     <form id="orgform" style="display:grid;gap:10px" hidden>
       <p class="muted" id="orglead"></p>
@@ -91,10 +91,10 @@ const show = (id, text) => { const e = $(id); e.textContent = text || ''; e.hidd
 const ADMIN = !!(window.D2D_PORTAL && D2D_PORTAL.portal === 'admin');
 if (ADMIN) {
   const domains = (D2D_PORTAL.admin_domains || ['pasdacs.com']).map(d => '@' + d).join(' or ');
-  document.title = 'Sign in · D2D Relay admin';
+  document.title = 'Sign in - D2D Relay admin';
   document.querySelector('.hero h1').textContent = 'D2D Relay admin';
   document.querySelector('.hero p').textContent = 'Every organisation, its credits and connectors, and what they ask PASDACS for.';
-  document.querySelector('.powered span').textContent = 'D2D Relay admin · PASDACS only';
+  document.querySelector('.powered span').textContent = 'D2D Relay admin, PASDACS only';
   $('signin').textContent = 'Sign in to D2D Relay admin';
   $('lead').textContent = `PASDACS only: use your ${domains} address. We email you a 6-digit code, no password needed.`;
   $('email').placeholder = 'name' + (D2D_PORTAL.admin_domains ? '@' + D2D_PORTAL.admin_domains[0] : '@pasdacs.com');

@@ -1,8 +1,8 @@
-"""Programme & delivery (registry id `delivery`) — the live Programme view, as a consulting engagement.
+"""Programme & delivery (registry id `delivery`) - the live Programme view, as a consulting engagement.
 
-Engagement  Scope → Status → Plan → RAID → Report. A programme tracks records the platform already holds: work items
+Engagement  Scope -> Status -> Plan -> RAID -> Report. A programme tracks records the platform already holds: work items
             of every module (the workbench), Migrate BI programmes, AI SDLC change requests, studio deliverables and RFP
-            responses — only those its owner may see. Status reads each one live (journey, open decisions and how long
+            responses - only those its owner may see. Status reads each one live (journey, open decisions and how long
             they have waited, steps needing attention, proof results) with Team & agents' figures for the week; Plan
             is the waves and their milestones (owner and due date set by a person); RAID is derived from the records
             (issues: work needing attention, decisions waiting too long; risks: waves due with work still open, work
@@ -35,7 +35,7 @@ RAID_KEY = {"Risk": "risks", "Assumption": "assumptions", "Issue": "issues", "De
 class RecordsPlatform(wb.Platform):
     label = "Relay's own records"
     reads = ("work items of every module, their checkpoints and evidence, Team & agents, Migrate BI programmes, AI SDLC change requests, "
-             "studio deliverables and RFP responses — only what the programme's owner may see; nothing is written")
+             "studio deliverables and RFP responses - only what the programme's owner may see; nothing is written")
     simulator = "the platform's own records, made in the tests through the modules' APIs"
 
 
@@ -63,7 +63,7 @@ def scope(ctx: wb.Ctx) -> dict:
     n_in = sum(1 for r in rows if r.get("include"))
     if not rows:
         raise wb.StepFailed("There is nothing to track yet: no work items, migrations, change requests, deliverables or RFP responses that you may see.")
-    return {"summary": f"{n_in} of {len(rows)} record(s) you may see are in scope — untick what the programme does not cover and name each one's wave.",
+    return {"summary": f"{n_in} of {len(rows)} record(s) you may see are in scope - untick what the programme does not cover and name each one's wave.",
             "counts": {"records": len(rows), "in scope": n_in, "modules": len({r['module'] for r in rows if r.get('include')})}, "records": rows,
             "items": [f"{r['module']}: {r['title']} ({r['status']})" for r in rows if r.get("include")][:8],
             "data": {"columns": ["In scope", "Wave", "Kind", "Module", "Title", "Owner", "Status"],
@@ -88,10 +88,10 @@ def _text_problems(recs: list[dict], keys: tuple) -> list[str]:
             t = str(r.get(k) or "")
             m = PLACEHOLDER_RE.search(t)
             if m:
-                out.append(f"Row {i}: “{m.group(0)}” is placeholder text — write what is known, or leave it empty.")
+                out.append(f"Row {i}: \"{m.group(0)}\" is placeholder text - write what is known, or leave it empty.")
             for w in re.findall(r"[A-Za-z]+", t):
                 if w.lower() in BRITISH:
-                    out.append(f"Row {i}: “{w}” — the house style spells it “{BRITISH[w.lower()]}”.")
+                    out.append(f"Row {i}: \"{w}\" - the house style spells it \"{BRITISH[w.lower()]}\".")
                     break
     return out
 
@@ -136,8 +136,8 @@ def status(ctx: wb.Ctx) -> dict:
                        "waiting_days": age, "waiting_for": r.get("waiting_for") or [], "sent_back": r.get("sent_back") or 0, "owner": r["owner"],
                        "steps_done": r.get("steps_done"), "steps": r.get("steps"), "parent": r.get("parent"), "link": r["link"],
                        "proof_pass": r.get("proof_pass") or 0, "proof_fail": r.get("proof_fail") or 0})
-        gates.append({"name": r["ref"], "label": f"{r['module_name']} · {r['title']}", "status": STATUS_RAG[rag], "measured": r["status_label"], "expected": "",
-                      "detail": why + (f" · steps {r['steps_done']} of {r['steps']}" if r.get("steps") else "")})
+        gates.append({"name": r["ref"], "label": f"{r['module_name']} - {r['title']}", "status": STATUS_RAG[rag], "measured": r["status_label"], "expected": "",
+                      "detail": why + (f" - steps {r['steps_done']} of {r['steps']}" if r.get("steps") else "")})
     waves: dict = {}
     for x in detail:
         w = waves.setdefault(x["wave"], {"wave": x["wave"], "records": 0, "done": 0, "open": 0, "waiting": 0, "attention": 0, "red": 0})
@@ -197,10 +197,10 @@ def plan(ctx: wb.Ctx) -> dict:
         if w:
             r.update(records=w["records"], done=w["done"], open=w["open"])
     nxt = [[x["wave"], x["module"], x["title"], x["status"] if x["done"] else (x["why"])] for x in prog.get("detail") or [] if not x["done"]]
-    return {"summary": f"{len(recs)} wave(s): give each one its owner and due date — the plan the weekly report tracks." + (f" {changed} new since the last plan." if changed and ctx.records(ctx.step_id) else ""),
+    return {"summary": f"{len(recs)} wave(s): give each one its owner and due date - the plan the weekly report tracks." + (f" {changed} new since the last plan." if changed and ctx.records(ctx.step_id) else ""),
             "counts": {"waves": len(recs), "changed": changed}, "records": recs,
             "items": [f"{r['wave']}: {r['done']} of {r['records']} done, due {r.get('due') or 'not set'}" for r in recs],
-            "data": {"columns": ["Wave", "Records", "Done", "Open", "Owner", "Due"], "rows": [[r["wave"], r["records"], r["done"], r["open"], r.get("owner"), r.get("due") or "—"] for r in recs]
+            "data": {"columns": ["Wave", "Records", "Done", "Open", "Owner", "Due"], "rows": [[r["wave"], r["records"], r["done"], r["open"], r.get("owner"), r.get("due") or "-"] for r in recs]
                      + [["(next)", "", "", "", m[1], f"{m[2]}: {m[3]}"] for m in nxt[:6]]}}
 
 
@@ -233,7 +233,7 @@ def raid(ctx: wb.Ctx) -> dict:
     for i, x in enumerate(detail):
         src = f"record:programme#detail.{i}"
         if x["attention"]:
-            found.append({"id": f"issue-attention-{cx.slug(x['ref'], 60)}", "type": "Issue", "title": f"{x['module']} · {x['title']} needs attention", "source": src})
+            found.append({"id": f"issue-attention-{cx.slug(x['ref'], 60)}", "type": "Issue", "title": f"{x['module']} - {x['title']} needs attention", "source": src})
         if x.get("waiting_days") is not None and x["waiting_days"] > wd:
             found.append({"id": f"issue-waiting-{cx.slug(x['ref'], 60)}", "type": "Issue", "source": src,
                           "title": f"A decision on {x['title']} has waited {cx.num(x['waiting_days'], 1)} days" + (f" for {', '.join(x['waiting_for'])}" if x.get("waiting_for") else "")})
@@ -262,7 +262,7 @@ def raid(ctx: wb.Ctx) -> dict:
             recs.append({**r, "status": "closed", "mitigation": (r.get("mitigation") or "") or f"No longer seen on {cx.iso_day(now)}."})
     counts = {t: sum(1 for r in recs if r["type"] == t and r.get("status") != "closed") for t, _ in RAID_TYPES}
     return {"summary": f"{counts['Issue']} issue(s), {counts['Risk']} risk(s), {counts['Dependency']} dependenc{'y' if counts['Dependency'] == 1 else 'ies'} from the records"
-                       + (f", {counts['Assumption']} assumption(s)" if counts["Assumption"] else "") + " — add what the records cannot know, give each an owner and a mitigation.",
+                       + (f", {counts['Assumption']} assumption(s)" if counts["Assumption"] else "") + " - add what the records cannot know, give each an owner and a mitigation.",
             "counts": {**{RAID_KEY[k]: v for k, v in counts.items()}, "changed": changed}, "records": recs,
             "items": [f"{r['type']}: {r['title']}" for r in recs if r.get("status") != "closed"][:8],
             "data": {"columns": ["Type", "What", "Owner", "Status", "Mitigation", "Source"], "rows": [[r["type"], r["title"], r.get("owner"), r.get("status"), r.get("mitigation") or "", r.get("source") or "added by a person"] for r in recs]}}
@@ -298,7 +298,7 @@ def _records_for_report(ctx: wb.Ctx) -> tuple[dict, dict, dict]:
     items = [r for r in ctx.records("raid")]
     open_ = [r for r in items if r.get("status") != "closed"]
     raid_rec = {"counts": {RAID_KEY[t]: sum(1 for r in open_ if r["type"] == t) for t, _ in RAID_TYPES}, "open": len(open_), "closed": len(items) - len(open_),
-                "rows": [[r["type"], r["title"], r.get("owner") or "—", r.get("status"), r.get("mitigation") or "—"] for r in open_]}
+                "rows": [[r["type"], r["title"], r.get("owner") or "-", r.get("status"), r.get("mitigation") or "-"] for r in open_]}
     cx.put(ctx, "raid", raid_rec)
     return prog, plan_rec, raid_rec
 
@@ -323,11 +323,11 @@ def report_specs(ctx: wb.Ctx) -> tuple[dict, dict, list[dict]]:
         doc_blocks.append({"kind": "paragraph", "text": ag, "figures": f4})
     doc_blocks += nv.blocks(ctx, "This week in short")
     sections = [{"title": "Where the programme stands", "blocks": doc_blocks},
-                {"title": "Waves and milestones", "blocks": [{"kind": "table", "table": cx.table(["Wave", "Records", "Done", "Open", "Owner", "Due"], plan_rec["rows"] or [["—"] * 6],
+                {"title": "Waves and milestones", "blocks": [{"kind": "table", "table": cx.table(["Wave", "Records", "Done", "Open", "Owner", "Due"], plan_rec["rows"] or [["-"] * 6],
                                                                                               "record:plan#rows", "The plan as confirmed, with today's counts")}]},
-                {"title": "Status by record", "blocks": [{"kind": "table", "table": cx.table(["Wave", "Module", "Record", "Status", "RAG", "Why"], ch or [["—"] * 6], f"{P}#rows",
+                {"title": "Status by record", "blocks": [{"kind": "table", "table": cx.table(["Wave", "Module", "Record", "Status", "RAG", "Why"], ch or [["-"] * 6], f"{P}#rows",
                                                                                           f"Read from Relay's records on {day}")} for ch in cx.chunks(prog.get("rows") or [])]},
-                {"title": "Risks, assumptions, issues and dependencies", "blocks": [{"kind": "table", "table": cx.table(["Type", "What", "Owner", "Status", "Mitigation"], ch or [["—"] * 5],
+                {"title": "Risks, assumptions, issues and dependencies", "blocks": [{"kind": "table", "table": cx.table(["Type", "What", "Owner", "Status", "Mitigation"], ch or [["-"] * 5],
                                                                                                                         "record:raid#rows", "Open items of the RAID log")} for ch in cx.chunks(raid_rec["rows"])]},
                 {"title": "How this report was made", "blocks": [{"kind": "paragraph", "text": f"Every figure in this report comes from Relay's own records, read on {day}: work items, "
                                                                                              "their checkpoints and evidence, Team & agents and the plan and RAID log a named person confirmed. "
@@ -337,7 +337,7 @@ def report_specs(ctx: wb.Ctx) -> tuple[dict, dict, list[dict]]:
                     pc=(t.get("done_pct") or 0, f"{P}#totals.done_pct", "%"))
     kw, k2 = cx.say("{w} waiting for a person, {a} needing attention", w=(t.get("waiting", 0), f"{P}#totals.waiting"), a=(t.get("attention", 0), f"{P}#totals.attention"))
     kr, k3 = cx.say("RAID log: open issues {i}, open risks {r}", i=(raid_rec["counts"]["issues"], "record:raid#counts.issues"), r=(raid_rec["counts"]["risks"], "record:raid#counts.risks"))
-    slides = [{"layout": "title", "title": ctx.title[:70], "subtitle": f"Steering pack · week of {day}"},
+    slides = [{"layout": "title", "title": ctx.title[:70], "subtitle": f"Steering pack - week of {day}"},
               {"layout": "bullets", "title": "Where we are", "bullets": [kp, kw, kr], "figures": k1 + k2 + k3,
                "notes": "Read live from Relay's records; the plan and the RAID log were confirmed by a named person."}]
     if plan_rec["rows"]:
@@ -364,7 +364,7 @@ def report(ctx: wb.Ctx) -> dict:
     gates = [a["gate"], b["gate"], ctx.proof("sourced", label="Every figure of the report resolves to its record", figures=figs)]
     ok = a["ok"] and b["ok"] and gates[-1]["status"] == "pass"
     ctx.put("last_report", time.time())
-    return {"summary": ("The weekly status report (Word) and the steering pack (PowerPoint) are built and pass every check — confirm them before they are shared."
+    return {"summary": ("The weekly status report (Word) and the steering pack (PowerPoint) are built and pass every check - confirm them before they are shared."
                         if ok else "The report did not pass its checks: " + "; ".join((a["problems"] + b["problems"])[:3])),
             "ok": ok, "counts": {"documents": 2, "problems": len(a["problems"]) + len(b["problems"])}, "data": {"checks": gates},
             "items": [f"{g['label']}: {g['status']}" for g in gates]}
@@ -394,7 +394,7 @@ def live_view(u: dict) -> dict:
         except (KeyError, FileNotFoundError, ValueError):
             continue
         progs.append({"id": r["id"], "title": r["title"], "status": wb.STATUS_LABEL.get(r["status"], r["status"]), "records": s.get("records"), "done": s.get("done"),
-                      "waiting": s.get("waiting"), "attention": s.get("attention"), "read": cx.when(s.get("when"), "%d %b %H:%M") if s.get("when") else "—", "route": f"#/m/{MODULE}/i/{r['id']}"})
+                      "waiting": s.get("waiting"), "attention": s.get("attention"), "read": cx.when(s.get("when"), "%d %b %H:%M") if s.get("when") else "-", "route": f"#/m/{MODULE}/i/{r['id']}"})
     return {"modules": sorted(mods.values(), key=lambda m: (-m["attention"], -m["waiting"], -m["open"], m["name"])), "programmes": progs,
             "totals": {"records": len(recs), "open": sum(0 if r["done"] else 1 for r in recs), "waiting": sum(1 for r in recs if r.get("waiting")),
                        "attention": sum(1 for r in recs if r.get("attention"))}}
@@ -420,7 +420,7 @@ def api_programme():
     return live_view(u)
 
 
-GUIDE = """# Programme & delivery — the work item
+GUIDE = """# Programme & delivery - the work item
 
 This folder is one programme of Relay's Programme & delivery module. It tracks records the platform already holds;
 nothing here is estimated.
@@ -429,7 +429,7 @@ nothing here is estimated.
   Team & agents' figures for the week.
 - `sources/plan.json`, `sources/raid.json`: the plan and the RAID log a person confirmed.
 - `status-report.yaml`, `steering-pack.yaml`: what the docs engine built (the same as `genbi doc|deck build`).
-- `narrative.yaml`: what you write when asked — a few paragraphs, every number declared with its `record:` source.
+- `narrative.yaml`: what you write when asked - a few paragraphs, every number declared with its `record:` source.
 
 Never write a number the records do not hold."""
 
@@ -440,25 +440,25 @@ wb.register(wb.Pack(
     platforms={"relay": RECORDS},
     schemas={"scope": SCOPE_EDIT.columns, "wave": PLAN_EDIT.columns, "raid": RAID_EDIT.columns},
     work={"engage": wb.Work(
-        title="Track a programme across modules — waves, milestones, RAID and a weekly status report",
+        title="Track a programme across modules - waves, milestones, RAID and a weekly status report",
         needs_source=False, sources=False, schedule_from="Status",
         journey=["Scope", "Status", "Plan", "RAID", "Report"],
         steps={
             "Scope": wb.Step(kind="deterministic", run=scope, agent="Programme reader", edit=SCOPE_EDIT,
-                             confirm="what the programme covers — record by record, each with its wave",
+                             confirm="what the programme covers - record by record, each with its wave",
                              text="Every work item, BI migration, change request, deliverable and RFP response you may see; you keep what the programme covers and name each one's wave"),
             "Status": wb.Step(kind="proof", run=status, view="gates", agent="Status reader", confirm=False,
-                              text="Each record read live — its journey, open decisions and how long they have waited, what needs attention — with Team & agents' figures for the week"),
+                              text="Each record read live - its journey, open decisions and how long they have waited, what needs attention - with Team & agents' figures for the week"),
             "Plan": wb.Step(kind="deterministic", run=plan, agent="Planner", edit=PLAN_EDIT, confirm_if=lambda ctx, out: bool(ctx.who) or out["counts"].get("changed", 0) > 0,
                             text="The waves with today's counts; you give each one its owner and due date (a weekly round asks again only when a wave is new)"),
-            "RAID": wb.Step(kind="deterministic", run=raid, agent="RAID keeper", edit=RAID_EDIT, confirm="the RAID log — every risk, assumption, issue and dependency, with its source",
+            "RAID": wb.Step(kind="deterministic", run=raid, agent="RAID keeper", edit=RAID_EDIT, confirm="the RAID log - every risk, assumption, issue and dependency, with its source",
                             confirm_if=lambda ctx, out: bool(ctx.who) or out["counts"].get("changed", 0) > 0,
                             text="Issues and risks derived from the records (work needing attention, decisions waiting too long, waves due with work open, repeated send-backs) and dependencies between work items; you add what the records cannot know"),
             "Report": wb.Step(kind="deterministic", run=report, view="gates", agent="Report writer", back_to="raid",
                               confirm="the weekly status report and the steering pack before they are shared", confirm_if=lambda ctx, out: out["ok"],
                               actions={"wording": nv.action(("programme", "plan", "raid"), "Summarise the week for the steering group: progress, what waits for a person, the main risks.",
                                                             agent="Report writer", rebuild=lambda ctx: report(ctx))},
-                              text="The weekly status report (Word) and the steering pack (PowerPoint) through the docs engine — every figure from the records, checked like `genbi doc|deck check`")},
+                              text="The weekly status report (Word) and the steering pack (PowerPoint) through the docs engine - every figure from the records, checked like `genbi doc|deck check`")},
         fields=[wb.Field("scope_mode", "Which records", "select", options=(("all", "Everything I can see"), ("mine", "Only work I own")), default="all"),
                 wb.Field("match", "Only records whose name or module contains", "longtext", help="One word or phrase per line; blank: no filter. You can still change the scope at the first step."),
                 wb.Field("waiting_days", "A decision waiting longer than this many days is an issue", "number", default=2),

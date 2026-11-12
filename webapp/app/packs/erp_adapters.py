@@ -1,6 +1,6 @@
 """ERP adapters (W3, registry id `erp`): SAP S/4HANA, Oracle Fusion Cloud ERP, Oracle Retail MFCS, Dynamics 365
-Finance & Operations, Oracle NetSuite and Odoo behind the Connector SDK, each speaking its vendor's own API — sign-in,
-paging, errors and writes — and reading the same canonical records (customers, suppliers, products, sales orders,
+Finance & Operations, Oracle NetSuite and Odoo behind the Connector SDK, each speaking its vendor's own API - sign-in,
+paging, errors and writes - and reading the same canonical records (customers, suppliers, products, sales orders,
 invoices) plus each platform's scheduled-job history. Oracle Retail MFCS is read-only (its MerchIntegrations publish
 services) and its objects can also be pulled into dashboards. SAP ECC and Oracle E-Business Suite come in as exports
 (table downloads, CSV), read by the pack. Every write carries X-Relay-Approval (the accepted checkpoint's id).
@@ -39,7 +39,7 @@ class SapS4(SysAdapter):
     docs = "https://api.sap.com/api/API_BUSINESS_PARTNER/overview"
     signin = ["password"]
     fields = [("base_url", "Host (https://my-s4.example.com)", True), ("user", "Communication user", True), ("client", "SAP client (e.g. 100)", False),
-              ("grouping_customer", "Business partner grouping for new customers (e.g. BP02)", False), ("grouping_supplier", "… and for new suppliers (e.g. BP03)", False)]
+              ("grouping_customer", "Business partner grouping for new customers (e.g. BP02)", False), ("grouping_supplier", "... and for new suppliers (e.g. BP03)", False)]
     secrets = {"password": ["password"]}
     ENTITIES = {"customer": ("A_BusinessPartner", "Business partners in the customer role"), "supplier": ("A_Supplier", "Business partners in the supplier role"),
                 "product": ("A_Product", "Products"), "order": ("A_SalesOrder", "Sales orders")}
@@ -297,16 +297,16 @@ class OracleRetailMFCS(SysAdapter):
     """Oracle Retail Merchandising Foundation Cloud Service through its MerchIntegrations ReST publish services, signed in
     with an OAuth client of the retailer's identity domain (client credentials, scope rgbu:merch:MFCS-<ENV>; basic
     authentication is no longer accepted since 22.1). Read-only: the publish services download; nothing is written to
-    MFCS through Relay. Items and supplier sites are the ERP module's canonical products and suppliers; every object —
-    purchase-order and transfer lines included — can be pulled whole into a dashboard."""
+    MFCS through Relay. Items and supplier sites are the ERP module's canonical products and suppliers; every object -
+    purchase-order and transfer lines included - can be pulled whole into a dashboard."""
     kind, label, category = "oracle_mfcs", "Oracle Retail MFCS", "erp"
     simulator = "oracle_mfcs"
     docs = "https://docs.oracle.com/en/industries/retail/retail-merchandising-foundation-cloud/23.1.201.0/rmsob/restful-web-services.htm"
     signin = ["service_account"]
-    fields = [("base_url", "Merchandising URL up to …-mfcs (https://<host>/<customer environment>-mfcs)", True),
-              ("token_url", "Identity domain token URL (https://idcs-….identity.oraclecloud.com/oauth2/v1/token)", True),
+    fields = [("base_url", "Merchandising URL up to ...-mfcs (https://<host>/<customer environment>-mfcs)", True),
+              ("token_url", "Identity domain token URL (https://idcs-....identity.oraclecloud.com/oauth2/v1/token)", True),
               ("client_id", "OAuth client id (made in Retail Home)", True),
-              ("scope", "Scope (rgbu:merch:MFCS-PRD; …-STG, …-UAT for other environments)", True)]
+              ("scope", "Scope (rgbu:merch:MFCS-PRD; ...-STG, ...-UAT for other environments)", True)]
     secrets = {"service_account": ["client_secret"]}
     can_write = False
     extract = True
@@ -323,7 +323,7 @@ class OracleRetailMFCS(SysAdapter):
     def sign_in(self, api):
         token_url = str(api.cfg.get("token_url") or "").strip()
         if not token_url.startswith(("http://", "https://")):
-            raise connectors.ConnectorError("The identity domain token URL must start with https:// (…/oauth2/v1/token).")
+            raise connectors.ConnectorError("The identity domain token URL must start with https:// (.../oauth2/v1/token).")
         basic = base64.b64encode(f"{api.cfg.get('client_id') or ''}:{api.secret('client_secret')}".encode()).decode()
         r = api.raw("POST", token_url, data={"grant_type": "client_credentials", "scope": str(api.cfg.get("scope") or "").strip()},
                     headers={"Authorization": "Basic " + basic, "Accept": "application/json"})

@@ -1,5 +1,5 @@
-"""Azure Data Factory — the ARM REST API (api-version 2018-06-01): pipelines with their activities' input / output
-datasets, datasets → linked services (the systems), triggers (schedules), queryPipelineRuns (runs). Linked-service
+"""Azure Data Factory - the ARM REST API (api-version 2018-06-01): pipelines with their activities' input / output
+datasets, datasets -> linked services (the systems), triggers (schedules), queryPipelineRuns (runs). Linked-service
 annotations may carry "system:<name>" and "expires:<date>" (ADF does not expose a credential's expiry itself);
 pipeline annotations may carry "owner:<team>"."""
 from __future__ import annotations

@@ -1,7 +1,7 @@
-"""Review gates: the checks a report passes before it moves on — to the user's review, then into Power BI.
+"""Review gates: the checks a report passes before it moves on - to the user's review, then into Power BI.
 
 Every gate is {"id", "name", "standard", "status", "summary", "items": [{"level", "text"}]}. Its status is the worst
-item level: fail (blocks — Claude fixes it in the fix rounds; Approve and publishing wait for it), warn (advice) or
+item level: fail (blocks - Claude fixes it in the fix rounds; Approve and publishing wait for it), warn (advice) or
 pass; skip says why a gate could not run. The file gates read the report's files exactly as they are written:
 
   power_query   each table's Power Query steps replayed on its CSV header: every column a step uses exists and no
@@ -23,9 +23,11 @@ import tempfile
 import time
 from pathlib import Path
 
+from . import plaintext
+
 SCHEMAS = Path(__file__).resolve().parent / "schemas"
 LEVEL = {"fail": 3, "warn": 2, "info": 1}
-GATES = {   # id: (name, what it checks) — in the order a report passes them
+GATES = {   # id: (name, what it checks) - in the order a report passes them
     "kpis": ("Plan confirmed", "you confirmed the KPIs and their formulas"),
     "definition": ("Report definition", "model, DAX references, visuals and fields (genbi validate)"),
     "prototype": ("Prototype", "every visual's query runs on your data"),
@@ -72,7 +74,7 @@ def gate(gid: str, items=(), ok: str = "", skip: str | None = None) -> dict:
     summary = ", ".join(p for p in (_n(n["fail"], "problem") if n["fail"] else "",
                                     _n(n["warn"], "warning") if n["warn"] else "") if p)
     if not summary:
-        summary = ok + (f" · {_n(n['info'], 'note')}" if n["info"] else "")
+        summary = ok + (f" - {_n(n['info'], 'note')}" if n["info"] else "")
     return {"id": gid, "name": name, "standard": standard, "status": status, "summary": summary, "items": items}
 
 
@@ -103,12 +105,12 @@ MARK = {"pass": "PASS", "warn": "WARN", "fail": "FAIL", "skip": "SKIP"}
 def text_report(gates: list[dict], title: str, when: float | None = None) -> str:
     """Review gates.txt: every gate, its result and what it found."""
     counts = {s: sum(g["status"] == s for g in gates) for s in MARK}
-    lines = [f"{title} — review gates",
+    lines = [f"{title} - review gates",
              time.strftime("Checked %Y-%m-%d %H:%M %Z", time.localtime(when or time.time()))
-             + f" · {counts['pass']} passed, {counts['warn']} with warnings, {counts['fail']} failed"
+             + f" - {counts['pass']} passed, {counts['warn']} with warnings, {counts['fail']} failed"
              + (f", {counts['skip']} skipped" if counts["skip"] else ""), ""]
     for g in gates:
-        lines.append(f"[{MARK[g['status']]}] {g['name']} — {g['summary']}  ({g.get('standard', '')})")
+        lines.append(f"[{MARK[g['status']]}] {g['name']} - {g['summary']}  ({g.get('standard', '')})")
         for i in g["items"]:
             lines.append(f"         {i['level']}: {i['text']}")
     return "\n".join(lines) + "\n"
@@ -217,7 +219,7 @@ def replay(query: str, data_dir: Path, table: str) -> dict:
     {"unknown": why} for a query it cannot follow (custom M)."""
     parsed = _let(query)
     if parsed is None:
-        return {"unknown": "not a let … in query"}
+        return {"unknown": "not a let ... in query"}
     steps, result = parsed
     env: dict = {}
     out: dict = {"problems": [], "file": None, "header": None, "delimiter": ","}
@@ -234,8 +236,8 @@ def replay(query: str, data_dir: Path, table: str) -> dict:
 
     def need(t: dict, col: str, step: str):
         if col not in t["cols"]:
-            have = ", ".join(f'"{c}"' for c in t["cols"][:12]) + (" …" if len(t["cols"]) > 12 else "")
-            stop(f'{step} uses column "{col}", which is not there (columns at that step: {have}) — the refresh stops '
+            have = ", ".join(f'"{c}"' for c in t["cols"][:12]) + (" ..." if len(t["cols"]) > 12 else "")
+            stop(f'{step} uses column "{col}", which is not there (columns at that step: {have}) - the refresh stops '
                  f'with "The column \'{col}\' of the table wasn\'t found"')
 
     def evaluate(expr: str):
@@ -251,7 +253,7 @@ def replay(query: str, data_dir: Path, table: str) -> dict:
             name = m.group(1).replace('""', '"')
             path = data_dir / name
             if not path.is_file():
-                stop(f'{name} is not in the data folder — the refresh stops ("could not find file")')
+                stop(f'{name} is not in the data folder - the refresh stops ("could not find file")')
             with open(path, encoding="utf-8-sig", newline="") as f:
                 header = next(csv.reader(f, delimiter=delim), [])
             if "Columns" in opts and opts["Columns"].isdigit():
@@ -275,7 +277,7 @@ def replay(query: str, data_dir: Path, table: str) -> dict:
                     k = 1
                     while f"{nm}_{k}" in names:
                         k += 1
-                    out["problems"].append(warn(f'{table}: {out["file"]} has two columns named "{nm}" — Power Query '
+                    out["problems"].append(warn(f'{table}: {out["file"]} has two columns named "{nm}" - Power Query '
                                                 f'renames the second one to "{nm}_{k}"'))
                     nm = f"{nm}_{k}"
                 names.append(nm)
@@ -288,7 +290,7 @@ def replay(query: str, data_dir: Path, table: str) -> dict:
             if fn == "Table.SelectColumns":
                 dup = sorted({c for c in cols if cols.count(c) > 1})
                 if dup:
-                    stop(f'Table.SelectColumns lists "{dup[0]}" twice — "The field \'{dup[0]}\' already exists in the record"')
+                    stop(f'Table.SelectColumns lists "{dup[0]}" twice - "The field \'{dup[0]}\' already exists in the record"')
                 t["cols"] = cols if "MissingField.UseNull" in "".join(args[2:]) else [c for c in cols if c in t["cols"]]
             elif fn == "Table.RemoveColumns":
                 t["cols"] = [c for c in t["cols"] if c not in cols]
@@ -304,7 +306,7 @@ def replay(query: str, data_dir: Path, table: str) -> dict:
             for c in new:
                 if new.count(c) > 1:
                     src = next((a for a, b in renames.items() if b == c), c)
-                    stop(f'renaming "{src}" to "{c}" clashes with another column named "{c}" — the refresh stops with '
+                    stop(f'renaming "{src}" to "{c}" clashes with another column named "{c}" - the refresh stops with '
                          f'"The field \'{c}\' already exists in the record"')
             t["origin"] = {renames.get(c, c): t["origin"].get(c) for c in t["cols"]}
             t["types"] = {renames.get(c, c): v for c, v in t["types"].items()}
@@ -319,7 +321,7 @@ def replay(query: str, data_dir: Path, table: str) -> dict:
             if new is None:
                 raise _Stop(f"{fn} with a computed name")
             if new in t["cols"]:
-                stop(f'{fn} adds "{new}", but that column already exists — "The field \'{new}\' already exists in the record"')
+                stop(f'{fn} adds "{new}", but that column already exists - "The field \'{new}\' already exists in the record"')
             t["cols"].append(new)
             t["origin"][new] = t["origin"].get(src) if src else None
             typ = args[3].strip() if fn == "Table.AddColumn" and len(args) > 3 else None
@@ -338,7 +340,7 @@ def replay(query: str, data_dir: Path, table: str) -> dict:
                     raise _Stop("a typed column with a computed name")
                 need(t, c, fn)
                 if c in seen:
-                    stop(f'Table.TransformColumnTypes types "{c}" twice — "The field \'{c}\' already exists in the record"')
+                    stop(f'Table.TransformColumnTypes types "{c}" twice - "The field \'{c}\' already exists in the record"')
                 seen.add(c)
                 t["types"][c] = MTYPES.get(typ, "any")
             out["culture"] = _text(args[2]) if len(args) > 2 else None
@@ -378,11 +380,11 @@ def power_query(sdir: Path, data_dir: Path) -> tuple[dict, dict]:
         native = re.search(r"\b(Snowflake\.Databases|GoogleBigQuery\.Database|Sql\.Database|AmazonRedshift\.Database|"
                            r"AmazonAthena\.Databases|Parquet\.Document)\b", _expr(src))
         if native:
-            items.append(info(f"{t['name']}: warehouse table ({native.group(1)}) — Power BI refreshes it from the "
+            items.append(info(f"{t['name']}: warehouse table ({native.group(1)}) - Power BI refreshes it from the "
                               f"warehouse; its keys and values are checked on the extract"))
             continue
         if r.get("unknown"):
-            items.append(info(f"{t['name']}: custom Power Query — not replayed ({r['unknown']})"))
+            items.append(info(f"{t['name']}: custom Power Query - not replayed ({r['unknown']})"))
             continue
         items += r["problems"]
         if r["columns"] is None:
@@ -393,14 +395,14 @@ def power_query(sdir: Path, data_dir: Path) -> tuple[dict, dict]:
                 continue
             col = c.get("sourceColumn") or c["name"]
             if col not in r["columns"]:
-                items.append(fail(f"{t['name']}[{c['name']}]: the query has no column \"{col}\" — the refresh stops with "
+                items.append(fail(f"{t['name']}[{c['name']}]: the query has no column \"{col}\" - the refresh stops with "
                                   f"\"The column '{col}' of the table wasn't found\""))
                 continue
             mt = r["types"].get(col)
             if mt and mt != "any" and c.get("dataType") in MODEL_M and mt not in MODEL_M[c["dataType"]]:
                 items.append(warn(f"{t['name']}[{c['name']}]: Power Query types it as {mt}, the model as {c['dataType']}"))
     n = len(tables)
-    return gate("power_query", items, ok=f"{_n(n, 'table')} replayed on their CSVs — every step finds its columns"), tables
+    return gate("power_query", items, ok=f"{_n(n, 'table')} replayed on their CSVs - every step finds its columns"), tables
 
 
 # ---------------------------------------------------------------- data
@@ -468,10 +470,10 @@ def data(tables: dict, data_dir: Path, sdir: Path, con=None) -> dict:
                 continue
             if mt == "round":
                 items.append(warn(f"{tname}[{col}]: {_n(n, 'value')} in {r['file']} have decimals ({_examples(ex)}) but the "
-                                  f"column is a whole number — Power BI rounds them"))
+                                  f"column is a whole number - Power BI rounds them"))
             else:
                 items.append(warn(f"{tname}[{col}]: {_n(n, 'value')} in {r['file']} are not {TYPE_WORD[mt]} "
-                                  f"({_examples(ex)}) — Power BI loads them as errors, shown as blanks"))
+                                  f"({_examples(ex)}) - Power BI loads them as errors, shown as blanks"))
     rels = _model(sdir).get("relationships") or []
     if con is not None:
         for rel in rels:
@@ -488,13 +490,13 @@ def data(tables: dict, data_dir: Path, sdir: Path, con=None) -> dict:
                 continue
             if dup:
                 items.append(fail(f"{tt}[{tc}] is the one side of the relationship from {ft}[{fc}] but has {_n(dup, 'duplicate value')} "
-                                  f"({_examples(dup_ex)}) — the refresh stops: \"contains a duplicate value … not allowed for "
+                                  f"({_examples(dup_ex)}) - the refresh stops: \"contains a duplicate value ... not allowed for "
                                   f"columns on the one side of a many-to-one relationship\""))
             if blank:
-                items.append(warn(f"{tt}[{tc}] (one side of the relationship from {ft}[{fc}]) has {_n(blank, 'blank key')} — "
+                items.append(warn(f"{tt}[{tc}] (one side of the relationship from {ft}[{fc}]) has {_n(blank, 'blank key')} - "
                                   f"Power BI may refuse the refresh (\"contains blank values\")"))
             if orphan:
-                items.append(warn(f"{_n(orphan, 'value')} of {ft}[{fc}] are not in {tt}[{tc}] ({_examples(orphan_ex)}) — those "
+                items.append(warn(f"{_n(orphan, 'value')} of {ft}[{fc}] are not in {tt}[{tc}] ({_examples(orphan_ex)}) - those "
                                   f"rows show as (Blank) in visuals that use {tt}"))
     return gate("data", items, ok=f"{_n(checked, 'CSV')} scanned: every value converts; {_n(len(rels), 'relationship')} "
                                   f"with unique, matching keys")
@@ -718,7 +720,7 @@ MONTHS = {m.lower() for m in ("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec J
 
 
 def dax_code(expr: str) -> str:
-    """DAX without string literals, comments, quoted table names and [names] — for operator and function rules."""
+    """DAX without string literals, comments, quoted table names and [names] - for operator and function rules."""
     s = re.sub(r'"(?:[^"]|"")*"', '""', expr)
     s = re.sub(r"/\*.*?\*/", " ", s, flags=re.S)
     s = re.sub(r"(//|--)[^\n]*", " ", s)
@@ -727,7 +729,7 @@ def dax_code(expr: str) -> str:
 
 
 def _text_measure(expr: str) -> bool:
-    """A measure that returns text: concatenation, FORMAT, … or an IF / SWITCH whose results are string literals
+    """A measure that returns text: concatenation, FORMAT, ... or an IF / SWITCH whose results are string literals
     (status words, or the hex colors of format-by-field-value measures)."""
     if re.search(r'&\s*"|"\s*&|\bFORMAT\s*\(|\bCONCATENATEX\s*\(|\bUNICHAR\s*\(', expr, re.I):
         return True
@@ -760,16 +762,16 @@ def model_rules(sdir: Path, rdir: Path | None = None, con=None, text_measures=()
         if re.search(r"\bINTERSECT\s*\(", code, re.I):
             intersect.append(owner)
     if divide:
-        items.append(warn(f"Use DIVIDE for division: {_list(divide)} divide with '/' — a blank or zero denominator then "
+        items.append(warn(f"Use DIVIDE for division: {_list(divide)} divide with '/' - a blank or zero denominator then "
                           f"shows an error or ∞ instead of a blank (BPA: Use the DIVIDE function for division)"))
     if iferror:
-        items.append(warn(f"Avoid IFERROR / ISERROR: {_list(iferror)} — they slow every query (BPA: Avoid using the IFERROR function)"))
+        items.append(warn(f"Avoid IFERROR / ISERROR: {_list(iferror)} - they slow every query (BPA: Avoid using the IFERROR function)"))
     if intersect:
-        items.append(info(f"{_list(intersect)} use INTERSECT for a virtual relationship — TREATAS is faster (BPA)"))
+        items.append(info(f"{_list(intersect)} use INTERSECT for a virtual relationship - TREATAS is faster (BPA)"))
     unformatted = [f"[{m['name']}]" for _, m in measures if not m.get("formatString") and m["name"] not in text_measures
                    and not _text_measure(_expr(m))]
     if unformatted:
-        items.append(warn(f"Give measures a format string: {_list(unformatted)} — visuals show raw numbers "
+        items.append(warn(f"Give measures a format string: {_list(unformatted)} - visuals show raw numbers "
                           f"(BPA: Provide format string for measures)"))
     seen: dict[str, str] = {}
     for _, m in measures:
@@ -782,19 +784,19 @@ def model_rules(sdir: Path, rdir: Path | None = None, con=None, text_measures=()
         a, b = col_of.get((r["fromTable"], r["fromColumn"])), col_of.get((r["toTable"], r["toColumn"]))
         if a and b and a.get("dataType") != b.get("dataType"):
             items.append(fail(f"relationship {r['fromTable']}[{r['fromColumn']}] ({a.get('dataType')}) -> {r['toTable']}"
-                              f"[{r['toColumn']}] ({b.get('dataType')}) joins different data types — Power BI refuses it"))
+                              f"[{r['toColumn']}] ({b.get('dataType')}) joins different data types - Power BI refuses it"))
         if r.get("crossFilteringBehavior") == "bothDirections":
-            items.append(info(f"relationship {r['fromTable']} -> {r['toTable']} filters both ways — slower and can be "
+            items.append(info(f"relationship {r['fromTable']} -> {r['toTable']} filters both ways - slower and can be "
                               f"ambiguous (BPA: Avoid excessive bi-directional relationships)"))
         if r.get("fromCardinality") == "many" and r.get("toCardinality") == "many":
             items.append(warn(f"relationship {r['fromTable']} -> {r['toTable']} is many-to-many (BPA: Avoid many-to-many relationships)"))
     fks = sorted(f"{t}[{c}]" for t, c in {(r["fromTable"], r["fromColumn"]) for r in rels}
                  if not (col_of.get((t, c)) or {}).get("isHidden"))
     if fks:
-        items.append(info(f"Hide foreign keys: {_list(fks)} — users should filter by the related table (BPA: Hide foreign keys)"))
+        items.append(info(f"Hide foreign keys: {_list(fks)} - users should filter by the related table (BPA: Hide foreign keys)"))
     ann = {a.get("name"): a.get("value") for a in model.get("annotations") or []}
     if ann.get("__PBI_TimeIntelligenceEnabled") != "0":
-        items.append(warn("Auto date/time is on — Power BI adds a hidden date table for every date column "
+        items.append(warn("Auto date/time is on - Power BI adds a hidden date table for every date column "
                           "(BPA: Remove auto-date table)"))
     related = {r["fromTable"] for r in rels} | {r["toTable"] for r in rels}
     date_keys = [r for r in rels if (col_of.get((r["toTable"], r["toColumn"])) or {}).get("dataType") == "dateTime"]
@@ -803,7 +805,7 @@ def model_rules(sdir: Path, rdir: Path | None = None, con=None, text_measures=()
     for t in tables:
         src = ((t.get("partitions") or [{}])[0].get("source") or {})
         if t["name"] not in related and not t.get("measures") and src.get("type") == "m":
-            items.append(warn(f"{t['name']} has no relationship — slicers and the other tables do not filter it "
+            items.append(warn(f"{t['name']} has no relationship - slicers and the other tables do not filter it "
                               f"(BPA: Ensure tables have relationships)"))
         for c in t.get("columns") or []:
             for name in (c["name"],):
@@ -819,15 +821,15 @@ def model_rules(sdir: Path, rdir: Path | None = None, con=None, text_measures=()
                     vals = []
                 if vals and all(v in MONTHS for v in vals):
                     items.append(warn(f"{t['name']}[{c['name']}] holds month or day names but is not sorted by a number "
-                                      f"column — visuals list them alphabetically (BPA: Month (as a string) must be sorted)"))
+                                      f"column - visuals list them alphabetically (BPA: Month (as a string) must be sorted)"))
         calc_filter = [c["name"] for c in t.get("columns") or [] if c.get("type") == "calculated"
                        and re.search(r"\bFILTER\s*\(", dax_code(_expr(c)), re.I)]
         if calc_filter:
-            items.append(info(f"{t['name']}: calculated column(s) {_list(calc_filter)} use FILTER — slow to refresh "
+            items.append(info(f"{t['name']}: calculated column(s) {_list(calc_filter)} use FILTER - slow to refresh "
                               f"(BPA: Reduce usage of calculated columns that use the FILTER function)"))
     floats = [f"{t['name']}[{c['name']}]" for t in tables for c in t.get("columns") or [] if c.get("dataType") == "double"]
     if floats:
-        items.append(info(f"{_n(len(floats), 'column')} use floating point (Decimal number), e.g. {_list(floats, 3)} — "
+        items.append(info(f"{_n(len(floats), 'column')} use floating point (Decimal number), e.g. {_list(floats, 3)} - "
                           f"BPA prefers Fixed decimal for amounts (Do not use floating point data types)"))
     # hidden columns nothing uses: measures, calculated columns, relationships, sorting or the report
     used = {(r["fromTable"], r["fromColumn"]) for r in rels} | {(r["toTable"], r["toColumn"]) for r in rels}
@@ -844,7 +846,7 @@ def model_rules(sdir: Path, rdir: Path | None = None, con=None, text_measures=()
     unused = [f"{t['name']}[{c['name']}]" for t in tables for c in t.get("columns") or []
               if c.get("isHidden") and (t["name"], c["name"]) not in used and not t.get("measures")]
     if unused:
-        items.append(info(f"{_n(len(unused), 'hidden column')} nothing uses, e.g. {_list(unused, 4)} — removing them makes "
+        items.append(info(f"{_n(len(unused), 'hidden column')} nothing uses, e.g. {_list(unused, 4)} - removing them makes "
                           f"the model smaller (BPA: Remove unnecessary columns)"))
     return gate("model_rules", items, ok=f"{_n(len(measures), 'measure')} and {_n(len(tables), 'table')} follow the rules")
 
@@ -886,9 +888,19 @@ def _has_title(v: dict) -> bool:
 DECOR = {"textbox", "pageNavigator", "bookmarkNavigator", "shape", "basicShape", "image", "actionButton"}
 
 
-def report_rules(rdir: Path) -> dict:
-    """Layout, titles, alt text and colour contrast of the report pages."""
+def report_rules(rdir: Path, sdir: Path | None = None) -> dict:
+    """Layout, titles, alt text and colour contrast of the report pages; plain characters in the model's names."""
     items = []
+    if sdir is not None and (sdir / "model.bim").is_file():
+        # D2D Relay: the builder writes titles, text and page names in plain keyboard characters (plaintext.human); a
+        # table, column or measure name is referred to by the rest of the report, so it is named here to be renamed.
+        for t in _model(sdir).get("tables") or []:
+            for kind, objs in (("table", [t]), ("column", t.get("columns") or []), ("measure", t.get("measures") or [])):
+                for o in objs:
+                    what = plaintext.found(o.get("name"))
+                    if what:
+                        items.append(warn(f"The {kind} name {o['name']!r} has {' and '.join(what)} - use plain keyboard "
+                                          f"characters (a hyphen, straight quotes) so it reads as people write"))
     report = json.loads((rdir / "definition" / "report.json").read_text(encoding="utf-8"))
     custom = (report.get("themeCollection") or {}).get("customTheme") or {}
     theme = {}
@@ -903,15 +915,15 @@ def report_rules(rdir: Path) -> dict:
     for what, color in (("Text", _hex(theme.get("foreground"))),
                         ("Label text", _hex(((theme.get("textClasses") or {}).get("label") or {}).get("color")))):
         if color and contrast(color, bg) < 4.5:
-            items.append(warn(f"{what} {color} on {bg} has a contrast of {contrast(color, bg):.1f}:1 — WCAG 2.1 AA asks "
+            items.append(warn(f"{what} {color} on {bg} has a contrast of {contrast(color, bg):.1f}:1 - WCAG 2.1 AA asks "
                               f"for 4.5:1"))
     weak = [c for c in theme.get("dataColors") or [] if _hex(c) and contrast(c, bg) < 3]
     if weak:
-        items.append(info(f"Data colours {', '.join(weak[:5])} have less than 3:1 contrast with the {bg} background — "
+        items.append(info(f"Data colours {', '.join(weak[:5])} have less than 3:1 contrast with the {bg} background - "
                           f"fine for fills next to labels, too light for thin lines (WCAG 2.1 non-text contrast)"))
     for name, tc in (theme.get("textClasses") or {}).items():
         if isinstance(tc, dict) and isinstance(tc.get("fontSize"), (int, float)) and tc["fontSize"] < 9:
-            items.append(warn(f"The theme's {name} text is {tc['fontSize']} pt — 9 pt or more stays readable"))
+            items.append(warn(f"The theme's {name} text is {tc['fontSize']} pt - 9 pt or more stays readable"))
     meta = json.loads((rdir / "definition" / "pages" / "pages.json").read_text(encoding="utf-8"))
     names: dict[str, str] = {}
     n_vis = 0
@@ -923,7 +935,7 @@ def report_rules(rdir: Path) -> dict:
             items.append(warn(f"Two pages are named {pname!r}"))
         names[pname.lower()] = pname
         if re.fullmatch(r"(Page|Seite|Página)\s*\d+", pname, re.I):
-            items.append(warn(f"Page {pname!r} has a default name — name it after what it shows"))
+            items.append(warn(f"Page {pname!r} has a default name - name it after what it shows"))
         boxes = []
         for vdir in sorted((pdir / "visuals").iterdir()) if (pdir / "visuals").is_dir() else []:
             v = json.loads((vdir / "visual.json").read_text(encoding="utf-8"))
@@ -939,7 +951,7 @@ def report_rules(rdir: Path) -> dict:
                 continue
             general = (vis.get("visualContainerObjects") or {}).get("general") or []
             if not any((e.get("properties") or {}).get("altText") for e in general):
-                items.append(warn(f"{pname}: {label} has no alt text — screen readers announce only its type"))
+                items.append(warn(f"{pname}: {label} has no alt text - screen readers announce only its type"))
             if vt not in ("slicer", "cardVisual", "card", "multiRowCard") and not _has_title(vis):   # cards label each value
                 items.append(warn(f"{pname}: a {vt} visual has no title"))
         for i, a in enumerate(boxes):
@@ -949,7 +961,7 @@ def report_rules(rdir: Path) -> dict:
                 if ox > 2 and oy > 2:
                     items.append(warn(f"{pname}: {a[0]} and {b[0]} overlap"))
         if len(boxes) > 20:
-            items.append(warn(f"{pname} has {len(boxes)} visuals — pages with more than 20 load slowly"))
+            items.append(warn(f"{pname} has {len(boxes)} visuals - pages with more than 20 load slowly"))
     return gate("report_rules", items, ok=f"{_n(len(names), 'page')} and {_n(n_vis, 'visual')}: titled, described, "
                                          f"inside the page, readable contrast")
 
@@ -959,7 +971,7 @@ def _visual_label(vis: dict) -> str | None:
     for e in (vis.get("visualContainerObjects") or {}).get("general") or []:
         t = _literal((e.get("properties") or {}).get("altText"))
         if isinstance(t, str) and t:
-            return f'"{t.split(" — ")[0][:60]}"'
+            return f'"{t.split(" - ")[0][:60]}"'
     for obj, prop in (("header", "title"), ("kpi", "label"), ("narrative", "heading")):
         for e in (vis.get("objects") or {}).get(obj) or []:
             t = _literal((e.get("properties") or {}).get(prop))
@@ -980,7 +992,7 @@ def custom_visuals(d: Path, dd: dict) -> dict:
             continue
         n += 1
         if v["stale"]:
-            items.append(fail(f"custom visual {name}: its source changed after the last build — run `genbi visual build "
+            items.append(fail(f"custom visual {name}: its source changed after the last build - run `genbi visual build "
                               f"{name}` and `genbi visual test {name}`"))
         elif not v["tested"]:
             last = "; ".join((v.get("test_problems") or [])[:3])
@@ -1025,7 +1037,7 @@ def file_gates(d: Path, dd: dict, catalog: dict, visuals_dir: Path | None, con=N
         found = [pq]
         for gid, fn in (("data", lambda: data(tables, d / "data", sdir, con)), ("pbir_schema", lambda: pbir_schema(rdir)),
                         ("coherence", lambda: coherence(out, d / "data")),
-                        ("model_rules", lambda: model_rules(sdir, rdir, con, texts)), ("report_rules", lambda: report_rules(rdir))):
+                        ("model_rules", lambda: model_rules(sdir, rdir, con, texts)), ("report_rules", lambda: report_rules(rdir, sdir))):
             try:
                 found.append(fn())
             except Exception as e:  # noqa: BLE001 - one broken check never hides the others

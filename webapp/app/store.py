@@ -1,12 +1,12 @@
 """Project folders on the volume shared with the agent: /data/projects/<id>/
 
-project.json     state (status, versions, output …) — only the web app writes it
+project.json     state (status, versions, output ...) - only the web app writes it
 activity.jsonl   everything that happened, one event per line: agent events + app notes
 request.md       the user's request and every later decision (the agent reads it)
 data/ images/    uploads; CLAUDE.md, reference/ the agent's guide and example
 plan.yaml, definition.yaml, prototype/, versions/vN/, powerbi/   written during the run
 
-P17: each tenant has its own tree — the platform's is the volume itself (nothing moved), any other tenant's is
+P17: each tenant has its own tree - the platform's is the volume itself (nothing moved), any other tenant's is
 /data/projects/.tenants/<tenant>/. ROOT follows the current tenant (db.tenant()) every time it is used.
 """
 import json
@@ -28,7 +28,7 @@ _made: set[str] = set()
 
 def root() -> Path:
     """The project folders of the current tenant (db.tenant()): the shared volume for the platform, its own folder
-    under .tenants/ for any other tenant. Call it (or use ROOT) when the path is needed — never keep a tenant's
+    under .tenants/ for any other tenant. Call it (or use ROOT) when the path is needed - never keep a tenant's
     folder in a module-level variable."""
     t = db.tenant()
     if t == db.PLATFORM:
@@ -54,8 +54,8 @@ def rel(pid: str) -> str:
 
 
 class TenantPath(os.PathLike):
-    """A folder that follows the current tenant, resolved at each use (`X / name`, `X.glob(…)`, `X.mkdir()`,
-    `Path(X)`, `os.fspath(X)` …): store.ROOT and the other per-tenant folders, so modules written for the one
+    """A folder that follows the current tenant, resolved at each use (`X / name`, `X.glob(...)`, `X.mkdir()`,
+    `Path(X)`, `os.fspath(X)` ...): store.ROOT and the other per-tenant folders, so modules written for the one
     shared folder work inside their tenant without a change."""
 
     def __init__(self, resolve):
@@ -121,7 +121,7 @@ def project_dir(pid: str) -> Path:
 
 def read_json(path: Path, tries: int = 6):
     """A project.json read that survives a save racing it: on a Windows bind mount the swap of the new file can make a
-    read fail for a moment (OSError Errno 61, or a half-read file) — try again, briefly, before giving up."""
+    read fail for a moment (OSError Errno 61, or a half-read file) - try again, briefly, before giving up."""
     for i in range(tries):
         try:
             return json.loads(path.read_text(encoding="utf-8"))
@@ -151,8 +151,8 @@ def update(pid: str, **changes) -> dict:
 
 
 def all_projects() -> list[dict]:
-    """Every project folder — dashboards and the module subjects (starts, studio items, RFPs, heal cases, change
-    requests, migrations and their converted reports …) — newest first, each with its `kind`. Callers that mean
+    """Every project folder - dashboards and the module subjects (starts, studio items, RFPs, heal cases, change
+    requests, migrations and their converted reports ...) - newest first, each with its `kind`. Callers that mean
     dashboards only use dashboards(). (The worker's restart recovery, owners, usage and Team & agents need them all.)"""
     out = []
     for f in ROOT.glob("*/project.json"):
@@ -210,7 +210,12 @@ _OLD_WORDS = ((re.compile(r"\bPower BI project \(PBIP\)", re.I), "Power BI file 
               (re.compile(r" See Review gates\.txt\."), ""))          # a file the old download had
 
 
-def plain(text):
+# D2D Relay (the user, 2026-11-12: "humanize it ... ensure all characters look human"): what the AI and the app write is
+# shown with keyboard characters only (genbi_kit.plaintext has the map). What people typed stays as they typed it.
+from genbi_kit.plaintext import human  # noqa: E402
+
+
+def _today_words(text):
     """D2D Relay: people get a Power BI file (.pbix). Notes written before it (and any stray sentence of the agent's)
     said PBIP or Power BI project: shown with today's words."""
     if not isinstance(text, str) or ("pbip" not in text.lower() and "power bi project" not in text.lower()):
@@ -218,6 +223,11 @@ def plain(text):
     for rx, new in _OLD_WORDS:
         text = rx.sub(new, text)
     return text
+
+
+def plain(text):
+    """A note of the app's or the agent's as people see it: today's words, plain keyboard characters."""
+    return human(_today_words(text))
 
 
 def activity(pid: str, after: int = 0, limit: int = 400) -> list[dict]:
@@ -229,10 +239,13 @@ def activity(pid: str, after: int = 0, limit: int = 400) -> list[dict]:
         for i, line in enumerate(f, 1):
             if i > after:
                 e = json.loads(line)
+                fix = _today_words if e.get("kind") == "user" else plain     # people's own words keep their characters
                 if "text" in e:
-                    e["text"] = plain(e["text"])
+                    e["text"] = fix(e["text"])
                 if isinstance(e.get("detail"), list):
-                    e["detail"] = [plain(x) for x in e["detail"]]
+                    e["detail"] = [fix(x) for x in e["detail"]]
+                if isinstance(e.get("items"), list):
+                    e["items"] = [fix(x) for x in e["items"]]
                 out.append(e)
                 if len(out) >= limit:
                     break
@@ -240,6 +253,6 @@ def activity(pid: str, after: int = 0, limit: int = 400) -> list[dict]:
 
 
 def note(pid: str, heading: str, body: str) -> None:
-    """Add a dated section to request.md — the agent's record of what the user decided."""
+    """Add a dated section to request.md - the agent's record of what the user decided."""
     with (ROOT / pid / "request.md").open("a", encoding="utf-8") as f:
         f.write(f"\n\n## {heading} ({time.strftime('%Y-%m-%d %H:%M')})\n\n{body.strip()}\n")

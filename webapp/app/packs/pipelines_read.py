@@ -1,4 +1,4 @@
-"""Data pipelines & ETL — readers: each tool's API or export into one neutral model, so the rules (health, decide,
+"""Data pipelines & ETL - readers: each tool's API or export into one neutral model, so the rules (health, decide,
 diagnose, convert) work the same on every platform.
 
 A job:  {"id", "tool", "tool_label", "kind" (pipeline | package | mapping | DAG | job | task | model | connection),
@@ -173,7 +173,7 @@ def _dbt_api(a, c, since):
     for j in a.jobs(c):
         steps = j.get("execute_steps") or []
         sch = (j.get("schedule") or {}).get("cron") or ""
-        jobs.append(job("dbt", "job", j["name"], description=j.get("description") or " · ".join(steps), schedule=sch or "manual", enabled=bool((j.get("triggers") or {}).get("schedule")) and not j.get("deactivated"),
+        jobs.append(job("dbt", "job", j["name"], description=j.get("description") or " - ".join(steps), schedule=sch or "manual", enabled=bool((j.get("triggers") or {}).get("schedule")) and not j.get("deactivated"),
                         steps=len(steps), fingerprint=fingerprint(" ".join(steps)), native=j["id"]))
     names = {j["native"]: j["name"] for j in jobs}
     runs = [run(names.get(r.get("job_definition_id"), str(r.get("job_definition_id"))), "dbt", r.get("started_at"), r.get("finished_at"),

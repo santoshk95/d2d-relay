@@ -1,19 +1,19 @@
-"""Controls & compliance (registry id `controls`) — internal controls mapped to processes, systems and owners; their
+"""Controls & compliance (registry id `controls`) - internal controls mapped to processes, systems and owners; their
 evidence collected by rules from the data the process leaves behind; tested on a schedule; changed with a named
 approval. SOX / ICFR risk & control matrices come in as an Excel tracker or an AuditBoard / SAP GRC export; statutory
 evidence (GSTR-1 against the sales register, Form 26AS from TRACES against the TDS books, MCA filings) as files.
 
-Assess   Connect → Inventory → Health → Findings → Estimate: the matrix read in its own terms; gaps by rules (a key
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: the matrix read in its own terms; gaps by rules (a key
          control with no owner, not tested within its frequency, failed last time, duplicates, a process nobody
          published); findings kept or ignored; the testing effort a year, and what Relay's evidence rules save.
-Develop  Describe → Shape → Build → Prove → Ship → Run: each control's evidence rule proposed by rules (a tie-out of
-         two files by period, segregation of duties, a threshold, a document that must exist, or manual) — a person
+Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run: each control's evidence rule proposed by rules (a tie-out of
+         two files by period, segregation of duties, a threshold, a document that must exist, or manual) - a person
          corrects it in place (what cannot run is refused); the evidence collected (DuckDB, the engine's totals proof
          for tie-outs); every control's result proven with its evidence; the named approver takes it live; the
          library published and a scheduled Run item.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: one control changed in place, re-run on its data, approved,
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: one control changed in place, re-run on its data, approved,
          kept as a new version.
-Run      Watch → Alert → Fix → Approve → Report: the live controls run on the newest data each period; exceptions per
+Run      Watch -> Alert -> Fix -> Approve -> Report: the live controls run on the newest data each period; exceptions per
          control with their owner; a person routes each (a ticket, or accepted with the reason); the period's report.
 """
 from __future__ import annotations
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS controls_versions (
 FILES = wb.FilesPlatform()
 FILES.label = "Control matrices, trackers and evidence"
 FILES.uploads = UPLOADS
-FILES.reads = ("a risk & control matrix (an Excel tracker, an AuditBoard or SAP GRC export) and the data and documents the evidence comes from — "
+FILES.reads = ("a risk & control matrix (an Excel tracker, an AuditBoard or SAP GRC export) and the data and documents the evidence comes from - "
                "GSTR-1 and the sales register, Form 26AS (TRACES) and the TDS books, approvals and payments extracts, signed reconciliations")
 FILES.simulator = "synthetic fixtures in tests/mocklab/fixtures/controls/ (a 2026 matrix, approvals, payments, GSTR-1, 26AS, a signed bank reconciliation)"
 
@@ -149,11 +149,11 @@ def a_inventory(ctx: wb.Ctx) -> dict:
     ctx.put("matrix", name)
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**r, **{k: have[r["id"]][k] for k in ("owner", "frequency", "key") if r["id"] in have}} for r in recs]
-    return {"summary": f"{len(recs)} control(s) in {name}, in the matrix's own terms — {sum(1 for r in recs if r['key'] == 'yes')} key, "
+    return {"summary": f"{len(recs)} control(s) in {name}, in the matrix's own terms - {sum(1 for r in recs if r['key'] == 'yes')} key, "
             f"{sum(1 for r in recs if r['type'] == 'automated')} automated. Correct what is wrong, then confirm.", "records": recs,
             "counts": {"controls": len(recs), "key": sum(1 for r in recs if r["key"] == "yes")},
             "data": {"columns": ["Control", "Name", "Process", "Owner", "Frequency", "Key", "Last tested", "Result"],
-                     "rows": [[r["id"], r["name"], r["process"], r["owner"] or "—", r["frequency"], r["key"], r["last_tested"], r["result"]] for r in recs]}}
+                     "rows": [[r["id"], r["name"], r["process"], r["owner"] or "-", r["frequency"], r["key"], r["last_tested"], r["result"]] for r in recs]}}
 
 
 def _validate_inventory(recs: list[dict], ctx: wb.Ctx) -> list[str]:
@@ -193,17 +193,17 @@ def _gaps(recs: list[dict], ctx: wb.Ctx) -> list[dict]:
             out.append({"id": f"never-{r['id']}", "control": r["id"], "kind": "never tested", "status": "fail" if r["key"] == "yes" else "warn", "what": f"{r['id']} has no test date"})
         elif now - t > max(days * 1.5, 45) * 86400 and now - t > 365 * 86400:
             out.append({"id": f"stale-{r['id']}", "control": r["id"], "kind": "not tested", "status": "fail" if r["key"] == "yes" else "warn",
-                        "what": f"{r['id']} ({r['frequency']}) was last tested on {r['last_tested']} — more than a year ago"})
+                        "what": f"{r['id']} ({r['frequency']}) was last tested on {r['last_tested']} - more than a year ago"})
         if (r.get("result") or "").lower().startswith(("not", "ineffective", "fail", "deficien")):
             out.append({"id": f"failed-{r['id']}", "control": r["id"], "kind": "failed last test", "status": "warn", "what": f"{r['id']} failed its last test ({r['result']}): is it remediated?"})
         if published and (r.get("process") or "").lower() not in published:
-            out.append({"id": f"proc-{r['id']}", "control": r["id"], "kind": "process not documented", "status": "warn", "what": f"{r['id']}: no published process document for “{r['process']}”"})
+            out.append({"id": f"proc-{r['id']}", "control": r["id"], "kind": "process not documented", "status": "warn", "what": f"{r['id']}: no published process document for \"{r['process']}\""})
     for i, a in enumerate(recs):
         for b in recs[i + 1:]:
             sa, sb = _stem(a["name"]), _stem(b["name"])
             if sa and sb and len(sa & sb) >= 2 and len(sa & sb) / min(len(sa), len(sb)) >= 0.6:
                 out.append({"id": f"dup-{a['id']}-{b['id']}", "control": f"{a['id']} / {b['id']}", "kind": "duplicate", "status": "warn",
-                            "what": f"{a['id']} and {b['id']} test the same thing: “{a['name']}” / “{b['name']}”"})
+                            "what": f"{a['id']} and {b['id']} test the same thing: \"{a['name']}\" / \"{b['name']}\""})
     return out
 
 
@@ -225,7 +225,7 @@ def a_health(ctx: wb.Ctx) -> dict:
 def a_findings(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**g, "decision": (have.get(g["id"]) or {}).get("decision", "keep")} for g in ctx.get("gaps") or []]
-    return {"summary": f"{len(recs)} finding(s) — keep what goes in the report, ignore what is already handled.", "records": recs, "items": [g["what"] for g in recs][:6],
+    return {"summary": f"{len(recs)} finding(s) - keep what goes in the report, ignore what is already handled.", "records": recs, "items": [g["what"] for g in recs][:6],
             "data": {"columns": ["Control", "Kind", "What"], "rows": [[g["control"], g["kind"], g["what"]] for g in recs]}}
 
 
@@ -251,7 +251,7 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     saved = sum(x["hours"] for x in recs if x["relay"] == "yes")
     return {"summary": f"Testing these controls takes about {total:.0f} hours a year; Relay's evidence rules can collect {saved:.0f} of them. The minutes per test are an assumption: set them, then confirm.",
             "records": recs, "counts": {"hours a year": round(total), "automatable": round(saved)},
-            "data": {"items": [{"title": f"{x['id']} {x['name']}", "detail": f"{x['tests']} test(s) a year × {x['minutes']} min — " + ("Relay collects it: " + x["why"] if x["relay"] == "yes" else "manual"),
+            "data": {"items": [{"title": f"{x['id']} {x['name']}", "detail": f"{x['tests']} test(s) a year × {x['minutes']} min - " + ("Relay collects it: " + x["why"] if x["relay"] == "yes" else "manual"),
                                 "effort": f"{x['hours']} h a year"} for x in recs], "total": f"{total:.0f} h a year", "note": f"Assumptions: {MINUTES['manual']} min per manual test, {MINUTES['automated']} per automated one, unless you set them."}}
 
 
@@ -274,7 +274,7 @@ EST_EDIT = wb.Edit(columns=[wb.Column("id", "Control", readonly=True), wb.Column
 # ------------------------------------------------------------------ evidence rules (rules first)
 
 def _propose(r: dict, data: dict, docs: list[str]) -> dict:
-    """An evidence rule for a control from its own words and the files it names — never guessed beyond them."""
+    """An evidence rule for a control from its own words and the files it names - never guessed beyond them."""
     ev = r.get("evidence") or ""
     named = [n for n in data if n.lower() in ev.lower()]
     name = (r.get("name") or "").lower()
@@ -377,7 +377,7 @@ def collect(ctx: wb.Ctx, r: dict, data: dict, docs: list[str], label: str = "") 
         hit = [d for d in docs if fnmatch.fnmatch(d.lower(), r["pattern"].strip().lower())]
         eid = ctx.evidence(f"{r['id']}: documents matching {r['pattern']}", {"rows": [{"document": d} for d in hit]}, kind="proof", ok=bool(hit))
         return {"name": r["id"], "control": r["id"], "label": title, "status": "pass" if hit else "fail", "measured": f"{len(hit)} document(s)", "expected": r["pattern"],
-                "detail": ", ".join(hit) if hit else f"no document matches {r['pattern']} — upload it", "evidence": eid, "exceptions": [] if hit else [{"missing": r["pattern"]}]}
+                "detail": ", ".join(hit) if hit else f"no document matches {r['pattern']} - upload it", "evidence": eid, "exceptions": [] if hit else [{"missing": r["pattern"]}]}
     return {"name": r["id"], "control": r["id"], "label": title, "status": "warn", "measured": "manual", "detail": f"the owner ({r.get('owner') or 'nobody yet'}) attaches the evidence", "exceptions": []}
 
 
@@ -418,7 +418,7 @@ def d_shape(ctx: wb.Ctx) -> dict:
     auto = [r for r in recs if r["kind"] != "manual"]
     return {"summary": f"{len(recs)} control(s): {len(auto)} with an evidence rule Relay can run (from their own words and the files they name), {len(recs) - len(auto)} manual. "
             "Correct the rules and owners in place, then confirm the design.", "records": recs, "counts": {"rules": len(auto), "manual": len(recs) - len(auto)},
-            "data": {"columns": ["Control", "Rule", "Files", "Owner"], "rows": [[r["id"], dict(KINDS)[r["kind"]], r["files"] or r["pattern"] or "—", r["owner"] or "—"] for r in recs]}}
+            "data": {"columns": ["Control", "Rule", "Files", "Owner"], "rows": [[r["id"], dict(KINDS)[r["kind"]], r["files"] or r["pattern"] or "-", r["owner"] or "-"] for r in recs]}}
 
 
 def _validate_design(recs: list[dict], ctx: wb.Ctx) -> list[str]:
@@ -463,7 +463,7 @@ def d_build(ctx: wb.Ctx) -> dict:
             ctx.lineage_edge(ctx.lineage_node("table", "Control evidence", f, label=f, own=False), cn, "feeds", {"rule": r["kind"]})
     bad = [g for g in res if g["status"] == "fail"]
     return {"summary": f"Evidence collected for {len(res)} control(s): {sum(1 for g in res if g['status'] == 'pass')} clean, {len(bad)} with exceptions, "
-            f"{sum(1 for g in res if g['status'] == 'warn')} manual — the tracker is in the outputs.", "counts": {"clean": sum(1 for g in res if g["status"] == "pass"), "exceptions": len(bad)},
+            f"{sum(1 for g in res if g['status'] == 'warn')} manual - the tracker is in the outputs.", "counts": {"clean": sum(1 for g in res if g["status"] == "pass"), "exceptions": len(bad)},
             "data": {"columns": ["Control", "Result", "Detail"], "rows": [[g["control"], g["status"], g["detail"][:200]] for g in res]}}
 
 
@@ -494,7 +494,7 @@ def _tracker(ctx: wb.Ctx, recs: list[dict], res: list[dict]) -> None:
 def d_prove(ctx: wb.Ctx) -> dict:
     res = ctx.get("results") or []
     bad = [g for g in res if g["status"] == "fail"]
-    return {"summary": f"{len(res)} control(s) proven with their evidence: " + (f"{len(bad)} with exceptions ({', '.join(g['control'] for g in bad)}) — confirm with the reason, or send the design back"
+    return {"summary": f"{len(res)} control(s) proven with their evidence: " + (f"{len(bad)} with exceptions ({', '.join(g['control'] for g in bad)}) - confirm with the reason, or send the design back"
                                                                                 if bad else "every automated control is clean") + ".",
             "data": {"checks": [{k: g.get(k) for k in ("name", "label", "status", "measured", "expected", "detail", "evidence")} for g in res]}, "counts": {"exceptions": len(bad)}}
 
@@ -502,7 +502,7 @@ def d_prove(ctx: wb.Ctx) -> dict:
 def d_ship(ctx: wb.Ctx) -> dict:
     recs = ctx.records("shape")
     return {"summary": f"Go live: {len(recs)} controls into the library, their evidence collected {ctx.scope.get('cadence', {}).get('every', 'month')}ly by a Run item.",
-            "data": {"items": [{"title": f"{r['id']} {r['name']}", "detail": f"{dict(KINDS)[r['kind']]} — owner {r.get('owner_name') or r.get('owner') or '—'}"} for r in recs]}}
+            "data": {"items": [{"title": f"{r['id']} {r['name']}", "detail": f"{dict(KINDS)[r['kind']]} - owner {r.get('owner_name') or r.get('owner') or '-'}"} for r in recs]}}
 
 
 def publish(ctx: wb.Ctx, recs: list[dict], note: str = "") -> int:
@@ -564,7 +564,7 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
     checks = [{"name": "rule", "label": f"Its rule: {dict(KINDS).get(c.get('kind'))}", "status": "pass", "detail": ", ".join(f"{k} {c[k]}" for k in ("files", "where", "check", "by", "measures", "pattern") if c.get(k))},
               {"name": "shared", "label": "Other controls reading the same data", "status": "warn" if others else "pass", "detail": ", ".join(others) or "none"},
               {"name": "last", "label": "Its last result", "status": "pass", "detail": c.get("last_result") or "not run yet"}]
-    return {"summary": f"{c.get('id')}: what the change touches — " + (f"{len(others)} other control(s) read the same data" if others else "nothing else reads its data") + ".", "data": {"checks": checks}}
+    return {"summary": f"{c.get('id')}: what the change touches - " + (f"{len(others)} other control(s) read the same data" if others else "nothing else reads its data") + ".", "data": {"checks": checks}}
 
 
 def c_fix(ctx: wb.Ctx) -> dict:
@@ -606,8 +606,8 @@ def c_approve(ctx: wb.Ctx) -> dict:
     rec = (ctx.records("fix") or [{}])[0]
     c = ctx.get("control") or {}
     ch = [k for k in ("kind", "files", "by", "measures", "a", "b", "where", "check", "pattern", "owner") if (rec.get(k) or "") != (c.get(k) or "")]
-    return {"summary": f"Approve {rec.get('id')} version {int(c.get('version') or 1) + 1}: " + (", ".join(f"{k} {c.get(k) or '—'} → {rec.get(k) or '—'}" for k in ch) or "no change"),
-            "data": {"items": [{"title": k, "detail": f"{c.get(k) or '—'} → {rec.get(k) or '—'}"} for k in ch]}}
+    return {"summary": f"Approve {rec.get('id')} version {int(c.get('version') or 1) + 1}: " + (", ".join(f"{k} {c.get(k) or '-'} {rec.get(k) or '-'}" for k in ch) or "no change"),
+            "data": {"items": [{"title": k, "detail": f"{c.get(k) or '-'} {rec.get(k) or '-'}"} for k in ch]}}
 
 
 def c_learn(ctx: wb.Ctx) -> dict:
@@ -654,7 +654,7 @@ def r_alert(ctx: wb.Ctx) -> dict:
     brks = [{"id": f"b-{g['control']}", "control": g["control"], "what": g["detail"][:300], "owner": g.get("owner") or "", "route": "ticket", "note": ""} for g in bad]
     ctx.put("breaks", brks)
     return {"summary": f"{len(brks)} control(s) with exceptions, each for its owner.", "counts": {"breaks": len(brks)}, "items": [f"{b['control']}: {b['what']}" for b in brks],
-            "data": {"columns": ["Control", "Exceptions", "Owner"], "rows": [[b["control"], b["what"], b["owner"] or "—"] for b in brks]}}
+            "data": {"columns": ["Control", "Exceptions", "Owner"], "rows": [[b["control"], b["what"], b["owner"] or "-"] for b in brks]}}
 
 
 def r_fix(ctx: wb.Ctx) -> dict:
@@ -667,7 +667,7 @@ def _validate_routes(recs: list[dict], ctx: wb.Ctx) -> list[str]:
     return [f"{r['control']}: say why the exceptions are accepted" for r in recs if r.get("route") == "accepted" and not (r.get("note") or "").strip()]
 
 
-ROUTE_EDIT = wb.Edit(columns=[wb.Column("control", "Control", readonly=True), wb.Column("what", "Exceptions", readonly=True), wb.Column("route", "Route", "select", options=(("ticket", "A ticket for the owner"), ("accepted", "Accepted — with the reason"))),
+ROUTE_EDIT = wb.Edit(columns=[wb.Column("control", "Control", readonly=True), wb.Column("what", "Exceptions", readonly=True), wb.Column("route", "Route", "select", options=(("ticket", "A ticket for the owner"), ("accepted", "Accepted - with the reason"))),
                               wb.Column("note", "Reason / note", "longtext"), wb.Column("owner", "Owner", readonly=True)], add=False, remove=False, validate=_validate_routes, label="control")
 
 
@@ -675,17 +675,17 @@ def r_approve(ctx: wb.Ctx) -> dict:
     rows = []
     for b in ctx.records("fix"):
         if b["route"] == "ticket":
-            h = ctx.ticket(f"Control exceptions: {b['control']}", f"{b['what']}\n\nOwner: {b['owner'] or '—'}\n{b.get('note') or ''}\nWork item: {wb.route_of(ctx.st)}", priority="P2", about=b["control"])
+            h = ctx.ticket(f"Control exceptions: {b['control']}", f"{b['what']}\n\nOwner: {b['owner'] or '-'}\n{b.get('note') or ''}\nWork item: {wb.route_of(ctx.st)}", priority="P2", about=b["control"])
         else:
-            h = {"status": f"accepted — {b['note']}"}
+            h = {"status": f"accepted - {b['note']}"}
         rows.append([b["control"], b["route"], h.get("status"), h.get("output") or h.get("checkpoint") or ""])
-    return {"summary": f"{sum(1 for r in rows if r[1] == 'ticket')} ticket(s), {sum(1 for r in rows if r[1] == 'accepted')} accepted — as you decided.", "data": {"columns": ["Control", "Route", "Status", "Reference"], "rows": rows}}
+    return {"summary": f"{sum(1 for r in rows if r[1] == 'ticket')} ticket(s), {sum(1 for r in rows if r[1] == 'accepted')} accepted - as you decided.", "data": {"columns": ["Control", "Route", "Status", "Reference"], "rows": rows}}
 
 
 def r_report(ctx: wb.Ctx) -> dict:
     res = ctx.get("results") or []
     period = time.strftime("%B %Y", time.gmtime())
-    text = f"# Controls report — {period}\n\n{ctx.title}\n\n| Control | Result | Detail |\n|---|---|---|\n" + "".join(f"| {g['control']} | {g['status']} | {str(g['detail'])[:160].replace('|', '/')} |\n" for g in res)
+    text = f"# Controls report - {period}\n\n{ctx.title}\n\n| Control | Result | Detail |\n|---|---|---|\n" + "".join(f"| {g['control']} | {g['status']} | {str(g['detail'])[:160].replace('|', '/')} |\n" for g in res)
     ctx.output(f"controls-report-{time.strftime('%Y%m', time.gmtime())}.md", text, label="Controls report (Markdown)")
     lib = {c["id"]: c for c in library(ctx.scope.get("controls"))}
     _tracker(ctx, [lib[g["control"]] for g in res if g["control"] in lib], res)
@@ -698,18 +698,18 @@ def r_report(ctx: wb.Ctx) -> dict:
 def _cards(u: dict) -> list[dict]:
     rows = _w4.visible_items(u, [{**r, "item": r["item"]} for r in db.q("SELECT * FROM controls_library ORDER BY id")])
     return [{"title": "Live controls", "columns": ["Control", "Name", "Owner", "Version", "Last result", "Open"],
-             "rows": [[r["id"], r["name"], r["owner"] or "—", r["version"], r["last_result"] or "not run yet", f"#/m/{MODULE}/i/{r['item']}" if r["item"] else ""] for r in rows],
+             "rows": [[r["id"], r["name"], r["owner"] or "-", r["version"], r["last_result"] or "not run yet", f"#/m/{MODULE}/i/{r['item']}" if r["item"] else ""] for r in rows],
              "empty": "No live control yet: a Develop item's Run step publishes them."}]
 
 
 def _control_options(u: dict) -> list[tuple[str, str]]:
     rows = _w4.visible_items(u, [{**r, "item": r["item"]} for r in db.q("SELECT id, name, version, item FROM controls_library WHERE status = 'live' ORDER BY id")])
-    return [(r["id"], f"{r['id']} {r['name']} · version {r['version']}") for r in rows]
+    return [(r["id"], f"{r['id']} {r['name']} - version {r['version']}") for r in rows]
 
 
 wb.register(wb.Pack(
     module=MODULE,
-    guide="# Controls & compliance — the work item\n\nEvidence is collected by rules from the files in data/; nothing is drafted by an agent. Every result names its evidence.",
+    guide="# Controls & compliance - the work item\n\nEvidence is collected by rules from the files in data/; nothing is drafted by an agent. Every result names its evidence.",
     lineage="each control as a node that covers its process and is fed by the data its evidence comes from",
     platforms={"files": FILES},
     schemas={"control": DESIGN_EDIT.columns},
@@ -717,19 +717,19 @@ wb.register(wb.Pack(
     work={
         "assess": wb.Work(title="Read a control matrix and find the gaps an auditor would ask about", steps={
             "Connect": wb.Step(kind="platform", run=a_connect, agent="Reader", text="The matrix and the evidence files, read-only copies"),
-            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Matrix reader", edit=INV_EDIT, text="Every control in the matrix's own terms — you correct owners and frequencies"),
+            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Matrix reader", edit=INV_EDIT, text="Every control in the matrix's own terms - you correct owners and frequencies"),
             "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Gap finder", text="By rules: no owner, not tested in time, failed last time, duplicates, undocumented processes"),
             "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="Keep or ignore each gap"),
             "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", edit=EST_EDIT, text="The testing effort a year, and what Relay's evidence rules collect")}),
         "develop": wb.Work(title="Map each control to its process, owner and evidence rule; collect the evidence; go live", steps={
             "Describe": wb.Step(kind="platform", run=d_describe, agent="Reader", text="The matrix and the data files the evidence comes from"),
-            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Control mapper", edit=DESIGN_EDIT, text="Each control's evidence rule from its own words and files, its process and owner — you correct them"),
+            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Control mapper", edit=DESIGN_EDIT, text="Each control's evidence rule from its own words and files, its process and owner - you correct them"),
             "Build": wb.Step(kind="deterministic", run=d_build, agent="Evidence collector", text="The evidence collected by rules (DuckDB; tie-outs with the engine's totals proof), the tracker and the exceptions"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Prover", back_to="shape", text="Every control's result with its evidence"),
             "Ship": wb.Step(kind="person", run=d_ship, view="plan", approver=True, text="The named approver takes the controls live"),
             "Run": wb.Step(kind="deterministic", run=d_run, view="link", agent="Publisher", text="The library published; a Run item collects the evidence each period")},
             fields=[wb.Field("cadence", "Once live, collect the evidence", "cadence", default={"every": "week", "at": "06:00", "tz": "Asia/Kolkata", "weekday": 0})]),
-        "change": wb.Work(title="Change a live control — what it touches, changed in place, re-run, approved", needs_source=False, steps={
+        "change": wb.Work(title="Change a live control - what it touches, changed in place, re-run, approved", needs_source=False, steps={
             "Request": wb.Step(kind="deterministic", run=c_request, agent="Intake", text="The control and the change asked for"),
             "Diagnose": wb.Step(kind="proof", run=c_diagnose, view="gates", agent="Impact checker", text="Its rule, the controls that read the same data, its last result"),
             "Fix": wb.Step(kind="person", run=c_fix, edit=FIX_EDIT, text="The control changed in place; the rule checked as you save"),
@@ -740,7 +740,7 @@ wb.register(wb.Pack(
         "run": wb.Work(title="Collect the evidence each period; exceptions go to their owner after a person decides", needs_source=False, steps={
             "Watch": wb.Step(kind="proof", run=r_watch, view="gates", agent="Evidence collector", text="The live controls run on this period's data"),
             "Alert": wb.Step(kind="deterministic", run=r_alert, agent="Triage", text="Exceptions per control, with its owner"),
-            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=ROUTE_EDIT, text="A ticket for the owner, or accepted with the reason — you confirm"),
+            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=ROUTE_EDIT, text="A ticket for the owner, or accepted with the reason - you confirm"),
             "Approve": wb.Step(kind="platform", run=r_approve, agent="Dispatcher", text="The approved hand-offs go out"),
             "Report": wb.Step(kind="deterministic", run=r_report, agent="Reporter", confirm_if=lambda ctx, out: bool(ctx.get("breaks")), text="The period's controls report and tracker")},
             fields=[wb.Field("schedule", "Collect it", "cadence", default={"every": "week", "at": "06:00", "tz": "Asia/Kolkata", "weekday": 0})]),

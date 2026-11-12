@@ -1,7 +1,7 @@
 """Visual Atlas: 13 Power BI custom-visual families (about 50 chart types) from the Visual Atlas project
 (`visual-atlas/` in this repo). The packaged .pbiviz files sit in custom_visuals/atlas/ and everything the toolkit
 needs comes from them: the field wells, data mapping and every Format-pane option (capabilities), and the compiled
-visual code that the HTML prototype runs in a mock Power BI host — so the prototype draws exactly what Power BI will.
+visual code that the HTML prototype runs in a mock Power BI host - so the prototype draws exactly what Power BI will.
 
 Custom visuals built by the visual factory (vfactory.py) sit on the same framework and are handled the same way:
 those in the visual library (library_dir()/<name>/<name>.pbiviz) and the current project's own
@@ -251,7 +251,7 @@ def dataview(entry: dict, fields: dict, rows: list[dict], describe) -> dict:
 
 
 def theme_defaults(entry: dict, look: str) -> dict:
-    """What the report theme sets for every Atlas-framework visual — the look and the theme palette — limited to
+    """What the report theme sets for every Atlas-framework visual - the look and the theme palette - limited to
     the objects this visual has (a custom visual may leave some out)."""
     objs, out = entry.get("objects") or {}, {}
     chart = objs.get("chart") or {}

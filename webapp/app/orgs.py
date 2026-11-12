@@ -283,7 +283,7 @@ def _review_mail(rid: str, tid: str, name: str, domain: str, person: str, email:
         rows = [("Organisation", name), ("Email domain", f"@{domain}"), ("Workspace id", tid), ("Owner", f"{person} <{email}>"),
                 ("Starting credits to approve", f"{START:,}"),
                 ("Signed up", datetime.fromtimestamp(seen.get("at") or time.time(), IST).strftime("%Y-%m-%d %H:%M IST")),
-                ("Network", (seen.get("ip") or "?") + (f" · {seen['country']}" if seen.get("country") else ""))]
+                ("Network", (seen.get("ip") or "?") + (f" - {seen['country']}" if seen.get("country") else ""))]
         rows += _review_signals(tid, domain, seen.get("ip") or "")
         rows.append(("Browser", seen.get("agent") or "?"))
         subject = f"D2D Relay: new organisation {name} (@{domain}), review its starting credits"
@@ -638,7 +638,7 @@ def _invite_mail(email: str, name: str, by: dict, o: dict, role: str) -> bool:
              + (", as one of its owners." if role == "admin" else "."),
              "D2D Relay (D2D: Data to Decision, a Relay Platform product) turns your CSV files into checked Power BI dashboards.",
              f"Sign in at {url} with {email}: we email you a 6-digit code, no password needed.",
-             f"D2D Relay · a Relay Platform product by PASDACS · {CONTACT}"]
+             f"D2D Relay - a Relay Platform product by PASDACS - {CONTACT}"]
     try:
         otp_mail.send(email, f"You were added to {o['name']} on D2D Relay", "".join(f"<p>{html.escape(x)}</p>" for x in lines),
                       reply_to=by.get("email"))
@@ -872,6 +872,49 @@ def connector_request(body: ConnectorRequest):
     return {"sent": sent, "contact": CONTACT}
 
 
+# D2D Relay (2026-11-12): Migration D2D, "Migrate any Dashboard to Dashboard". Not self-service yet: an organisation tells
+# PASDACS which BI tools its dashboards are in and where they should go, and PASDACS switches it on with them. The same
+# ids are listed on the page (39-migration.js).
+BI_TOOLS = {"cognos": "IBM Cognos Analytics", "qlik": "Qlik Sense or QlikView", "looker": "Looker", "powerbi": "Power BI",
+            "tableau": "Tableau", "microstrategy": "MicroStrategy", "businessobjects": "SAP BusinessObjects",
+            "ssrs": "SQL Server Reporting Services", "other": "Another tool"}
+
+
+class MigrationRequest(BaseModel):
+    source: list[str] = []          # BI_TOOLS ids: where the dashboards are now
+    target: list[str] = []          # and where they should go
+    dashboards: int | None = None   # roughly how many
+    message: str = ""
+
+
+@router.post("/api/org/migration-request")
+def migration_request(body: MigrationRequest):
+    """Ask PASDACS about Migration D2D: by email (Reply-To the person), in the platform admins' notifications and on
+    the admin portal's Requests page."""
+    from . import tenancy
+    u, o = _must()
+    pick = lambda ids: [k for k in BI_TOOLS if k in set(ids or [])]          # noqa: E731
+    src, dst = pick(body.source), pick(body.target)
+    if not src or not dst or len(src) != len(set(body.source)) or len(dst) != len(set(body.target)):
+        raise HTTPException(400, "Choose the tools your dashboards are in now and the ones they should move to.")
+    n = body.dashboards if isinstance(body.dashboards, int) and 0 < body.dashboards <= 100000 else None
+    msg = (body.message or "").strip()[:1500]
+    _not_too_many(u, "d2d.migration_request")
+    names = lambda ids: ", ".join(BI_TOOLS[k] for k in ids)                 # noqa: E731
+    rows = [("Organisation", o["name"]), ("Email domain", o["domain"]), ("Workspace id", o["tenant_id"]),
+            ("Requested by", f"{u.get('name') or ''} <{u.get('email') or ''}>"), ("Moving from", names(src)),
+            ("Moving to", names(dst)), ("Dashboards, roughly", f"{n:,}" if n else "not given"), ("Message", msg or "(none)")]
+    sent = _to_pasdacs(f"D2D Relay: {o['name']} asks about Migration D2D ({names(src)} to {names(dst)})",
+                       "A D2D Relay organisation would like to move its dashboards from one BI tool to another with Migration D2D.",
+                       rows, u.get("email"), "Reply to them to agree what moves and when; PASDACS switches Migration D2D on with them.")
+    tenancy.ctl_audit("d2d.migration_request", o["tenant_id"], u["id"], {"source": src, "target": dst, "dashboards": n,
+                                                                          "message": msg[:500], "email": u.get("email"),
+                                                                          "name": u.get("name"), "sent": sent})
+    _tell_platform(f"{o['name']} asks about Migration D2D",
+                   f"{u.get('name')} ({u.get('email')}): {names(src)} to {names(dst)}. {msg[:200]}".strip(), "#/requests")
+    return {"sent": sent, "contact": CONTACT}
+
+
 # ---------------------------------------------------------------- platform admins: every organisation
 
 def _admin() -> dict:
@@ -923,6 +966,7 @@ def all_requests():
     credits = [{**r, "org_name": names.get(r["tenant_id"], (r["tenant_id"], 0))[0], "org_credits": names.get(r["tenant_id"], ("", 0))[1]}
                for r in rows]
     return {"credits": credits, "pending": sum(r["status"] == "pending" for r in rows), "connectors": _asked("d2d.connector_request"),
+            "migrations": _asked("d2d.migration_request"), "bi_tools": BI_TOOLS,
             "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": costs()}
 
 
@@ -932,7 +976,7 @@ def _answer_mail(r: dict, o: dict, subject: str, lines: list[str]) -> bool:
         return False
     from . import otp_mail
     body = "".join(f"<p>{html.escape(x)}</p>" for x in [f"Hello {r.get('user_name') or ''},".replace(" ,", ","), *lines,
-                                                          f"D2D Relay · a Relay Platform product by PASDACS · {CONTACT}"])
+                                                          f"D2D Relay - a Relay Platform product by PASDACS - {CONTACT}"])
     try:
         otp_mail.send(r["email"], subject, body, reply_to=CONTACT)
         return True

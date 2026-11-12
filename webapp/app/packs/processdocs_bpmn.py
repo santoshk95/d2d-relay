@@ -2,9 +2,9 @@
 BPMN 2.0 XML with its diagram (BPMNDI shapes and edges laid out in lanes, so bpmn.io-style tools open it as drawn), the
 checks that XML must pass, the graph rules a map must keep before anything proceeds, and the readers that bring a
 process in from an export: BPMN 2.0 files (Signavio, ARIS, Bizagi, Camunda, Lucidchart all export it) and Visio .vsdx
-(shapes and connectors by their masters — rules first, no AI).
+(shapes and connectors by their masters - rules first, no AI).
 
-A map: {"name", "lanes": [{"id", "name", "kind"}], "steps": [{"id", "name", "type", "lane", "next": [{"to", "when"}], …}]}
+A map: {"name", "lanes": [{"id", "name", "kind"}], "steps": [{"id", "name", "type", "lane", "next": [{"to", "when"}], ...}]}
 with type one of start | end | task | user | service | manual | gateway.
 """
 from __future__ import annotations
@@ -46,7 +46,7 @@ def graph_problems(proc: dict) -> list[str]:
     if not any(s.get("type") == "end" for s in steps):
         out.append("a map needs at least one end")
     for s in steps:
-        where = f"{s.get('id')} “{str(s.get('name') or '')[:40]}”"
+        where = f"{s.get('id')} \"{str(s.get('name') or '')[:40]}\""
         if s.get("type") not in TYPES:
             out.append(f"{where}: the type is one of {', '.join(TYPES)}")
         if not str(s.get("name") or "").strip():
@@ -65,7 +65,7 @@ def graph_problems(proc: dict) -> list[str]:
             if len(nxt) < 2:
                 out.append(f"{where}: a decision has two or more ways out")
             elif any(not str(n.get("when") or "").strip() for n in nxt):
-                out.append(f"{where}: label each way out of the decision (when …)")
+                out.append(f"{where}: label each way out of the decision (when ...)")
     if starts and not out:
         seen, todo = {starts[0]["id"]}, [starts[0]["id"]]
         by = {s["id"]: s for s in steps}

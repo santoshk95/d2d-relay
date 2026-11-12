@@ -1,5 +1,5 @@
 """CRM adapters (W3, registry id `crm`): Salesforce (REST API + SOQL, OAuth 2.0 client credentials) and HubSpot (CRM API
-v3, a private app token) behind the Connector SDK — accounts / companies as canonical customers, contacts,
+v3, a private app token) behind the Connector SDK - accounts / companies as canonical customers, contacts,
 opportunities as deals, and each platform's run history (AsyncApexJob; HubSpot's imports with their row errors). Every
 write carries X-Relay-Approval. Dynamics 365 CE, Zoho CRM and Freshsales come in as exports for now.
 

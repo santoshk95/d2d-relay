@@ -1,4 +1,4 @@
-"""W1 Data & Analytics — the connection kinds the wave's packs read through, and the small kit they share.
+"""W1 Data & Analytics - the connection kinds the wave's packs read through, and the small kit they share.
 
 Every platform is one SDK adapter (connectors_sdk.Adapter) that speaks the vendor's documented API; in the mock lab a
 simulator in tests/mocklab/sims stands in for each (the adapter's `simulator`). The rules every adapter inherits:
@@ -166,7 +166,7 @@ class SqlKind(Kind):
     columns_sql = ""                   # the dictionary query: table, column (in column order)
 
     def dictionary(self, c: dict) -> dict[str, list[str]]:
-        """{"SCHEMA.TABLE": ["COLUMN", …]} from the warehouse's own data dictionary."""
+        """{"SCHEMA.TABLE": ["COLUMN", ...]} from the warehouse's own data dictionary."""
         _, rows = self.execute(c, self.columns_sql)
         out: dict[str, list[str]] = {}
         for r in rows:
@@ -262,7 +262,7 @@ class OracleOrds(SqlKind):
     schema's database user)."""
     kind, label, dialect = "oracle", "Oracle Database (REST-enabled SQL)", "oracle"
     signin = ["password"]
-    fields = [("base_url", "ORDS schema address (…/ords/<schema alias>)", True), ("user", "Database user", True)]
+    fields = [("base_url", "ORDS schema address (.../ords/<schema alias>)", True), ("user", "Database user", True)]
     secrets = {"password": ["password"]}
     simulator = "oracle_dw"
     probe = "SELECT COUNT(*) AS N FROM ALL_TABLES"
@@ -299,8 +299,8 @@ class ADF(Kind):
     app registration (client credentials, scope https://management.azure.com/.default)."""
     kind, label, category = "adf", "Azure Data Factory", "integration"
     signin = ["service_account"]
-    fields = [("base_url", "Management endpoint (https://management.azure.com)", True), ("token_url", "Entra ID token endpoint (…/oauth2/v2.0/token)", True),
-              ("client_id", "App registration (client) id", True), ("factory_path", "Factory (/subscriptions/…/factories/<name>)", True)]
+    fields = [("base_url", "Management endpoint (https://management.azure.com)", True), ("token_url", "Entra ID token endpoint (.../oauth2/v2.0/token)", True),
+              ("client_id", "App registration (client) id", True), ("factory_path", "Factory (/subscriptions/.../factories/<name>)", True)]
     secrets = {"service_account": ["client_secret"]}
     can_write = True
     simulator = "adf"
@@ -428,7 +428,7 @@ class Airflow(Kind):
     """Apache Airflow 2 through its stable REST API v1 (basic auth)."""
     kind, label = "airflow", "Apache Airflow"
     signin = ["password"]
-    fields = [("base_url", "REST API (…/api/v1)", True), ("user", "User name", True)]
+    fields = [("base_url", "REST API (.../api/v1)", True), ("user", "User name", True)]
     secrets = {"password": ["password"]}
     can_write = True
     simulator = "airflow"
@@ -487,7 +487,7 @@ class Airflow(Kind):
 
 
 class IICS(Kind):
-    """Informatica Intelligent Cloud Services — Cloud Data Integration (REST v3 sign-in and objects, v2 mapping tasks and
+    """Informatica Intelligent Cloud Services - Cloud Data Integration (REST v3 sign-in and objects, v2 mapping tasks and
     the activity log)."""
     kind, label = "iics", "Informatica Cloud (IICS)"
     signin = ["password"]
@@ -666,7 +666,7 @@ def kinds_of(*adapters) -> tuple:
 
 def extract_parquet(ctx, rows: list[dict], name: str) -> str:
     """Rows into the work item's data/ as Parquet (a read-only copy the proof checks read with DuckDB); returns the
-    file name for a {"source": "file", "file": …} reference."""
+    file name for a {"source": "file", "file": ...} reference."""
     import pyarrow as pa
     import pyarrow.parquet as pq
     fname = re.sub(r"[^a-z0-9_]+", "_", name.lower()).strip("_")[:80] + ".parquet"

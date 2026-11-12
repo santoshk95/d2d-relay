@@ -1,18 +1,18 @@
-"""Assess & estimate (registry id `assess`) — size an estate from what the platform already read, estimate it with
+"""Assess & estimate (registry id `assess`) - size an estate from what the platform already read, estimate it with
 the tenant's own estimation model and rate cards, and produce the proposal pack (as a consulting engagement).
 
-Engagement  Discover → Size → Estimate → Propose (the registry's journey and confirm points: Size, Estimate).
+Engagement  Discover -> Size -> Estimate -> Propose (the registry's journey and confirm points: Size, Estimate).
 Discover    the estate readers reuse the inventories other modules made, as the owner may see them: Migrate BI's scans
             (every object with its type and complexity, P15), other modules' finished Assess items (their Inventory
             records), Integration analytics' integrations (P13), Data observability's watched assets (P14), and
             inventory exports a person uploads (CSV / Excel with type, name and complexity columns).
-Size        the estate in each tool's own terms — object type × complexity, with counts and where they came from; a
+Size        the estate in each tool's own terms - object type × complexity, with counts and where they came from; a
             person keeps or drops each group and may re-grade its complexity.
 Estimate    the estimation model: hours per object of each type and complexity (from this workspace's saved model,
-            confirmed by a named person, else typed in now — never a default), the rate-card role that does it (RFP &
+            confirmed by a named person, else typed in now - never a default), the rate-card role that does it (RFP &
             bid response's rate cards, P11) and its wave; a contingency the person states in the wizard. Rules first:
             a row without hours, or a role without a rate card, is refused.
-Propose     the estimate (effort per wave with contingency, priced with rfp.compute_price — the RFP module's own
+Propose     the estimate (effort per wave with contingency, priced with rfp.compute_price - the RFP module's own
             pricing) into sources/estimate.json, an Excel workbook, the RFP price body, and the proposal pack through
             the P11 docs engine: the proposal deck and the estimate document, every figure sourced. The confirmed model
             is saved for this workspace (versioned), so the next estimate starts from it.
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS assess_models (
 
 class RecordsPlatform(wb.Platform):
     label = "Relay's own inventories"
-    reads = ("Migrate BI's scans, other modules' Assess results, Integration analytics and Data observability inventories — what the owner may see; "
+    reads = ("Migrate BI's scans, other modules' Assess results, Integration analytics and Data observability inventories - what the owner may see; "
              "nothing is written")
     simulator = "the platform's own records, made in the tests through the modules' APIs (the Migrate BI sample estate model)"
 
@@ -53,7 +53,7 @@ class RecordsPlatform(wb.Platform):
 class ExportsPlatform(wb.FilesPlatform):
     label = "Inventory exports"
     uploads = (".csv", ".xlsx")
-    reads = "an inventory you upload (CSV or Excel) with a type, a name and, when you have it, a complexity column — a copy in this work item's folder"
+    reads = "an inventory you upload (CSV or Excel) with a type, a name and, when you have it, a complexity column - a copy in this work item's folder"
     simulator = "inventory exports the tests write"
 
 
@@ -76,7 +76,7 @@ def _migbi(u: dict) -> list[dict]:
             key = (str(r.get("type") or "object"), str(r.get("complexity") or "standard"))
             groups[key] = groups.get(key, 0) + 1
         for (typ, cplx), n in groups.items():
-            out.append({"source": f"migbi:{m['id']}", "where": f"{m['title']} · {tool} (Migrate BI scan)", "type": f"{tool} {typ.lower()}", "complexity": cplx, "count": n})
+            out.append({"source": f"migbi:{m['id']}", "where": f"{m['title']} - {tool} (Migrate BI scan)", "type": f"{tool} {typ.lower()}", "complexity": cplx, "count": n})
     return out
 
 
@@ -100,7 +100,7 @@ def _workbench(u: dict) -> list[dict]:
             key = str(r.get("complexity") or "standard")
             groups[key] = groups.get(key, 0) + 1
         for cplx, n in groups.items():
-            out.append({"source": f"wb:{it['id']}", "where": f"{it['title']} ({it['module_name']} · Assess)", "type": f"{it['module_name']} {label}", "complexity": cplx, "count": n})
+            out.append({"source": f"wb:{it['id']}", "where": f"{it['title']} ({it['module_name']} - Assess)", "type": f"{it['module_name']} {label}", "complexity": cplx, "count": n})
     return out
 
 
@@ -139,7 +139,7 @@ def _uploads(ctx: wb.Ctx) -> tuple[list[dict], list[str]]:
             continue
         cols = _cols(rows[0])
         if cols["type"] is None:
-            notes.append(f"{f['name']}: no type column (type, object type or kind) — not an inventory")
+            notes.append(f"{f['name']}: no type column (type, object type or kind) - not an inventory")
             continue
         groups: dict = {}
         for r in rows[1:]:
@@ -188,9 +188,9 @@ def size(ctx: wb.Ctx) -> dict:
     fresh = [{**g, "include": True} for g in ctx.get("groups") or []]
     rows = cx.keep_edits(ctx, fresh, ("include", "complexity"))
     n = sum(r["count"] for r in rows if r.get("include"))
-    return {"summary": f"{n} object(s) to size, in each tool's own terms — drop what is out of scope, re-grade a group's complexity if you know better.",
+    return {"summary": f"{n} object(s) to size, in each tool's own terms - drop what is out of scope, re-grade a group's complexity if you know better.",
             "counts": {"objects": n, "groups": sum(1 for r in rows if r.get("include"))}, "records": rows,
-            "items": [f"{r['type']} · {r['complexity']}: {r['count']}" for r in rows if r.get("include")][:8],
+            "items": [f"{r['type']} - {r['complexity']}: {r['count']}" for r in rows if r.get("include")][:8],
             "data": {"columns": ["In scope", "Type", "Complexity", "Objects", "From"], "rows": [["yes" if r.get("include") else "no", r["type"], r["complexity"], r["count"], r["where"]] for r in rows]}}
 
 
@@ -210,7 +210,7 @@ def _cards() -> dict:
 
 
 def _role_options(ctx=None) -> list[tuple[str, str]]:
-    return [(r, f"{r} · {c['rate']:,.2f} {c['currency']} per {c['unit']}") for r, c in _cards().items()]
+    return [(r, f"{r} - {c['rate']:,.2f} {c['currency']} per {c['unit']}") for r, c in _cards().items()]
 
 
 def model_rows() -> dict:
@@ -242,10 +242,10 @@ def estimate(ctx: wb.Ctx) -> dict:
     _compute(recs)
     missing = [r for r in recs if not r.get("hours_each")]
     cards = _cards()
-    return {"summary": (f"{len(recs)} line(s) of the estimation model; {len(missing)} still need their hours — " if missing else f"{len(recs)} line(s), every one from the model — ")
-                       + ("pick the rate-card role for each line" if cards else "no rate cards yet (RFP & bid response › Rate cards), so the estimate is in hours only") + ".",
+    return {"summary": (f"{len(recs)} line(s) of the estimation model; {len(missing)} still need their hours - " if missing else f"{len(recs)} line(s), every one from the model - ")
+                       + ("pick the rate-card role for each line" if cards else "no rate cards yet (RFP & bid response > Rate cards), so the estimate is in hours only") + ".",
             "counts": {"lines": len(recs), "need hours": len(missing), "objects": sum(r["count"] for r in recs)}, "records": recs,
-            "items": [f"{r['type']} · {r['complexity']}: {r['count']} × {r.get('hours_each') or '?'} h" for r in recs][:8],
+            "items": [f"{r['type']} - {r['complexity']}: {r['count']} × {r.get('hours_each') or '?'} h" for r in recs][:8],
             "data": {"columns": ["Type", "Complexity", "Objects", "Hours each", "Role", "Wave", "Hours"], "rows": [[r["type"], r["complexity"], r["count"], r.get("hours_each"), r.get("role"), r.get("wave"), r.get("hours")] for r in recs]}}
 
 
@@ -264,11 +264,11 @@ def _est_validate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
         except (TypeError, ValueError):
             h = None
         if not h or h <= 0:
-            probs.append(f"{r['type']} · {r['complexity']}: hours each is needed — your estimation model; Relay never assumes one.")
+            probs.append(f"{r['type']} - {r['complexity']}: hours each is needed - your estimation model; Relay never assumes one.")
         if cards and r.get("role") not in cards:
-            probs.append(f"{r['type']} · {r['complexity']}: pick the rate-card role that does it.")
+            probs.append(f"{r['type']} - {r['complexity']}: pick the rate-card role that does it.")
         if not str(r.get("wave") or "").strip():
-            probs.append(f"{r['type']} · {r['complexity']}: name its wave.")
+            probs.append(f"{r['type']} - {r['complexity']}: name its wave.")
     try:
         c = float(ctx.scope.get("contingency_pct"))
         if not 0 <= c <= 100:
@@ -280,7 +280,7 @@ def _est_validate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
 
 
 EST_EDIT = wb.Edit(columns=[wb.Column("type", "Type", readonly=True), wb.Column("complexity", "Complexity", readonly=True), wb.Column("count", "Objects", "number", readonly=True),
-                            wb.Column("hours_each", "Hours each", "number", help="Effort per object of this type and complexity — your estimation model."),
+                            wb.Column("hours_each", "Hours each", "number", help="Effort per object of this type and complexity - your estimation model."),
                             wb.Column("role", "Role (rate card)", "select", options=_role_options), wb.Column("wave", "Wave"),
                             wb.Column("hours", "Hours", "number", readonly=True), wb.Column("hours_from", "Where the hours come from", readonly=True)],
                    add=False, remove=False, validate=_est_validate, label="line")
@@ -322,7 +322,7 @@ def compute(ctx: wb.Ctx) -> dict:
     rec = {"currency": cur, "contingency_pct": c, "hours_per_day": HOURS_PER_DAY, "priced": bool(price),
            "lines": [{k: r.get(k) for k in ("type", "complexity", "count", "hours_each", "hours", "role", "wave", "hours_from")} for r in lines],
            "waves": [{k: w.get(k) for k in ("wave", "objects", "hours", "hours_with_contingency", "days", "cost")} for w in ws], "totals": totals,
-           "rows": [[r["type"], r["complexity"], r["count"], cx.num(r["hours_each"]), cx.num(r["hours"]), r.get("role") or "—", r["wave"]] for r in lines],
+           "rows": [[r["type"], r["complexity"], r["count"], cx.num(r["hours_each"]), cx.num(r["hours"]), r.get("role") or "-", r["wave"]] for r in lines],
            "wave_rows": [[w["wave"], w["objects"], cx.num(w["hours"]), cx.num(w["hours_with_contingency"]), cx.num(w["days"]), cx.money(w["cost"], cur) if w.get("cost") is not None else "not priced"] for w in ws],
            "rate_cards": [{"role": r, "rate": x["rate"], "currency": x["currency"], "unit": x["unit"]} for r, x in cards.items()],
            "price": price, "estate": (cx.read(ctx, "estate") or {}).get("totals")}
@@ -395,7 +395,7 @@ def specs(ctx: wb.Ctx, rec: dict) -> tuple[dict, dict, list[dict]]:
         a3, f3 = "Not priced: this workspace has no rate cards yet, so the estimate is in hours only.", []
     asm, asm_f = cx.say("Contingency: {c}, stated by the person who asked for the estimate.", c=(rec["contingency_pct"], f"{E}#contingency_pct", "%"))
     doc_blocks = [{"kind": "paragraph", "text": a1, "figures": f1}, {"kind": "paragraph", "text": a2, "figures": f2}, {"kind": "paragraph", "text": a3, "figures": f3}] + nv.blocks(ctx)
-    sections = [{"title": "What we found", "blocks": doc_blocks + [{"kind": "table", "table": cx.table(["Inventory", "Groups", "Objects"], [[s["where"], s["groups"], s["objects"]] for s in est.get("sources") or []] or [["—"] * 3],
+    sections = [{"title": "What we found", "blocks": doc_blocks + [{"kind": "table", "table": cx.table(["Inventory", "Groups", "Objects"], [[s["where"], s["groups"], s["objects"]] for s in est.get("sources") or []] or [["-"] * 3],
                                                                                                       "record:estate#sources", "Where the objects were read")}]},
                 {"title": "The estimate, line by line", "blocks": [{"kind": "table", "table": cx.table(["Type", "Complexity", "Objects", "Hours each", "Hours", "Role", "Wave"], ch, f"{E}#rows",
                                                                                                     "Objects × hours each, from the estimation model a named person confirmed")} for ch in cx.chunks(rec["rows"])]},
@@ -404,11 +404,11 @@ def specs(ctx: wb.Ctx, rec: dict) -> tuple[dict, dict, list[dict]]:
                                                      "figures": asm_f},
                                                     {"kind": "paragraph", "text": f"Everything here comes from Relay's own records and the inventories you uploaded, read on {day}; "
                                                                                   "the hours per object are this workspace's estimation model, confirmed by a named person."}]}]
-    doc = {"kind": "doc", "title": f"Estimate: {ctx.title}"[:70], "subtitle": f"Assess & estimate · {day}", "audience": ctx.scope.get("audience") or "the client's sponsor", "date": day, "sections": sections}
+    doc = {"kind": "doc", "title": f"Estimate: {ctx.title}"[:70], "subtitle": f"Assess & estimate - {day}", "audience": ctx.scope.get("audience") or "the client's sponsor", "date": day, "sections": sections}
     k1, g1 = cx.say("{o} objects in scope, in {w} waves", o=(t["objects"], f"{E}#totals.objects"), w=(t["waves"], f"{E}#totals.waves"))
     k2, g2 = cx.say("{h} hours with the contingency of {c}", h=(t["hours_with_contingency"], f"{E}#totals.hours_with_contingency"), c=(rec["contingency_pct"], f"{E}#contingency_pct", "%"))
     k3, g3 = (cx.say("{p} from the rate cards", p=(t["cost"], f"{E}#totals.cost", f"money:{cur}")) if rec["priced"] else ("Not priced: no rate cards in this workspace", []))
-    slides = [{"layout": "title", "title": ctx.title[:70], "subtitle": f"Proposal · Assess & estimate · {day}"},
+    slides = [{"layout": "title", "title": ctx.title[:70], "subtitle": f"Proposal - Assess & estimate - {day}"},
               {"layout": "bullets", "title": "The estate and the estimate", "bullets": [k1, k2, k3], "figures": g1 + g2 + g3,
                "notes": "Every figure links to the estimate record; the hours per object are the workspace's confirmed estimation model."},
               {"layout": "chart", "title": "Effort per wave", "chart": {"type": "column", "categories": [w["wave"] for w in rec["waves"]],
@@ -424,7 +424,7 @@ def specs(ctx: wb.Ctx, rec: dict) -> tuple[dict, dict, list[dict]]:
     slides += [{"layout": "bullets", "title": "Next steps", "bullets": ["Agree the waves and the order with your team", "Confirm the scope of the first wave",
                                                                       "Relay runs each wave on the platform, with the proof behind every number"]},
                {"layout": "closing", "title": "Thank you", "bullets": [cx.brand_line()]}]
-    deck = {"kind": "deck", "title": f"Proposal: {ctx.title}"[:70], "subtitle": f"Assess & estimate · {day}", "audience": ctx.scope.get("audience") or "the client's sponsor", "date": day,
+    deck = {"kind": "deck", "title": f"Proposal: {ctx.title}"[:70], "subtitle": f"Assess & estimate - {day}", "audience": ctx.scope.get("audience") or "the client's sponsor", "date": day,
             "sections": [{"title": "Proposal", "slides": slides}]}
     figs = [{"label": f["text"], "value": f["value"], "source": f["source"]} for f in f1 + f2 + f3 + g1 + g2 + g3]
     return doc, deck, figs
@@ -441,14 +441,14 @@ def propose(ctx: wb.Ctx) -> dict:
     t = rec["totals"]
     ctx.put("summary", {"objects": t["objects"], "hours": t["hours_with_contingency"], "cost": t["cost"] if rec["priced"] else None, "currency": rec["currency"], "when": time.time()})
     return {"summary": (f"{t['objects']} object(s), {cx.num(t['hours_with_contingency'])} h with contingency" + (f", {cx.money(t['cost'], rec['currency'])}" if rec["priced"] else ", not priced")
-                        + f" — the proposal deck and the estimate pass every check" + (f"; {saved} line(s) of the estimation model saved for next time" if saved else "") + "."
+                        + f" - the proposal deck and the estimate pass every check" + (f"; {saved} line(s) of the estimation model saved for next time" if saved else "") + "."
                         if ok else "The proposal pack did not pass its checks: " + "; ".join((a["problems"] + b["problems"])[:3])),
             "ok": ok, "counts": {"objects": t["objects"], "hours": t["hours_with_contingency"], "model lines saved": saved}, "data": {"checks": gates}}
 
 
 def _page_cards(u: dict) -> list[dict]:
     who = cx.names()
-    model = [[r["object_type"], r["complexity"], cx.num(r["hours"]), r.get("role") or "—", f"v{r['version']}", who.get(r["confirmed_by"], r["confirmed_by"] or "—"), cx.when(r["confirmed"])]
+    model = [[r["object_type"], r["complexity"], cx.num(r["hours"]), r.get("role") or "-", f"v{r['version']}", who.get(r["confirmed_by"], r["confirmed_by"] or "-"), cx.when(r["confirmed"])]
              for r in sorted(db.q("SELECT * FROM assess_models"), key=lambda r: (r["object_type"].lower(), COMPLEXITY.index(r["complexity"]) if r["complexity"] in COMPLEXITY else 9))]
     rows = db.q("SELECT id, title FROM wb_items WHERE module = ? AND status IN ('done', 'scheduled') ORDER BY updated DESC LIMIT 30", (MODULE,))
     vis = auth.access_map(u, [r["id"] for r in rows]) if u else {}
@@ -463,7 +463,7 @@ def _page_cards(u: dict) -> list[dict]:
             {"title": "Estimates", "columns": ["Estimate", "Objects", "Hours", "Cost", "Open"], "rows": ests, "empty": "No finished estimate yet."}]
 
 
-GUIDE = """# Assess & estimate — the work item
+GUIDE = """# Assess & estimate - the work item
 
 This folder is one estimate of Relay's Assess & estimate module. The sizing comes from inventories the platform
 already holds (Migrate BI scans, other modules' Assess results, Integration analytics, Data observability) and
@@ -473,7 +473,7 @@ price comes from the rate cards.
 - `sources/estate.json`: every group of objects with its count and where it was read.
 - `sources/estimate.json`: the confirmed lines, the waves with the contingency, the price.
 - `estimate.yaml`, `proposal-deck.yaml`: what the docs engine built (the same as `genbi doc|deck build`).
-- `narrative.yaml`: what you write when asked — a few paragraphs, every number declared with its `record:` source.
+- `narrative.yaml`: what you write when asked - a few paragraphs, every number declared with its `record:` source.
 
 Never write a number the records do not hold; never assume hours or rates."""
 
@@ -488,16 +488,16 @@ wb.register(wb.Pack(
         needs_source=False, platforms=("relay", "exports"),
         steps={
             "Discover": wb.Step(kind="platform", run=discover, agent="Estate reader",
-                                text="Migrate BI's scans, other modules' Assess results, Integration analytics and Data observability inventories — and any inventory export you upload"),
+                                text="Migrate BI's scans, other modules' Assess results, Integration analytics and Data observability inventories - and any inventory export you upload"),
             "Size": wb.Step(kind="deterministic", run=size, agent="Sizer", edit=SIZE_EDIT,
-                            text="The estate in each tool's own terms: object type × complexity with counts and where they came from — you keep, drop or re-grade each group"),
+                            text="The estate in each tool's own terms: object type × complexity with counts and where they came from - you keep, drop or re-grade each group"),
             "Estimate": wb.Step(kind="deterministic", run=estimate, agent="Estimator", edit=EST_EDIT,
                                 text="Hours per object from this workspace's estimation model (or typed by you now), the rate-card role and the wave of each line; the contingency you stated"),
             "Propose": wb.Step(kind="deterministic", run=propose, view="gates", agent="Proposal writer", back_to="estimate",
                                confirm="the proposal deck and the estimate before they go out", confirm_if=lambda ctx, out: out["ok"],
                                actions={"wording": nv.action(("estate", "estimate"), "Explain the estimate for the client's sponsor: what was found, how it was sized, the waves and the price.",
                                                              agent="Proposal writer", rebuild=lambda ctx: propose(ctx))},
-                               text="The estimate priced with the RFP module's rate cards, the Excel workbook, and the proposal deck and estimate document through the docs engine — every figure sourced")},
+                               text="The estimate priced with the RFP module's rate cards, the Excel workbook, and the proposal deck and estimate document through the docs engine - every figure sourced")},
         fields=[wb.Field("contingency_pct", "Contingency (per cent)", "number", required=True, help="Stated by you and shown as an assumption in the proposal."),
                 wb.Field("migbi", "Read Migrate BI's scans", "bool", default=True), wb.Field("workbench", "Read other modules' finished Assess items", "bool", default=True),
                 wb.Field("integrations", "Read Integration analytics' inventory", "bool", default=True), wb.Field("observability", "Read Data observability's assets", "bool", default=True),

@@ -1,8 +1,8 @@
-"""Document AI engines of Document processing as Connector SDK adapters — one adapter + one mock-lab simulator each
-(tests/mocklab/sims/docai.py: `azure_di`, `textract`, `google_docai`) — each answering one question: what does this
+"""Document AI engines of Document processing as Connector SDK adapters - one adapter + one mock-lab simulator each
+(tests/mocklab/sims/docai.py: `azure_di`, `textract`, `google_docai`) - each answering one question: what does this
 engine read in this document? The answer is in one neutral shape whatever the engine:
 
-  {"fields": {"InvoiceTotal": {"value": 1234.5, "confidence": 0.97}, …}, "items": [{"Description", "Quantity", …}],
+  {"fields": {"InvoiceTotal": {"value": 1234.5, "confidence": 0.97}, ...}, "items": [{"Description", "Quantity", ...}],
    "pages": 2, "orientation": 0}
 
 with the field names of an invoice (VendorName, VendorTaxId, InvoiceId, InvoiceDate, DueDate, PurchaseOrder, SubTotal,

@@ -1,4 +1,4 @@
-"""Data warehouse & lakehouse (registry id `dwh`) — designed, built, tuned or migrated, with reconciliation.
+"""Data warehouse & lakehouse (registry id `dwh`) - designed, built, tuned or migrated, with reconciliation.
 
 Sources: Oracle DW / Exadata / Autonomous DW (REST-enabled SQL), Teradata (Query Service), IBM Db2 (REST) through their
 APIs, and the exports of every one (SQL Server, Netezza, Greenplum and Hive have no HTTP API: their DDL, code and query
@@ -6,19 +6,19 @@ history are uploaded). Targets: Snowflake (SQL API) and Databricks (Statement Ex
 Synapse and Redshift as converted DDL and SQL (their live load is a pilot item). The mock lab's warehouse simulators
 stand in for each.
 
-Assess   Connect → Inventory → Health → Findings → Estimate: tables, views and procedural code from the dictionary, how
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: tables, views and procedural code from the dictionary, how
          each is used (the query history), what to retire, what fails, what is slow, the waves with their time.
-Develop  Sources → Model → Build → Prove → Ship → Run: a star schema from named tables — facts, dimensions and keys
+Develop  Sources -> Model -> Build -> Prove -> Ship -> Run: a star schema from named tables - facts, dimensions and keys
          proposed by rules from the data, confirmed by a person, built as DDL and dbt models in the target's SQL,
          proven on a copy (row counts, every key found in its dimension, the business totals), approved, then created
          in the target through its write approval.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: a slow table tuned — the columns its queries filter and
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: a slow table tuned - the columns its queries filter and
          group by, from the history; a clustering key proposed in the target's own syntax, proven, approved, written.
-Migrate  Discover → Decide → Convert → Prove → Hand over → Run: the whole warehouse moved — keep / merge / retire from
+Migrate  Discover -> Decide -> Convert -> Prove -> Hand over -> Run: the whole warehouse moved - keep / merge / retire from
          the query history, DDL by rules in the target's types with clustering, views transpiled, the data loaded in
          waves through the target's write approval, procedural code drafted by the agent; proven table by table and
          query by query on both sides; signed off; reconciled every day after by the Data quality module.
-Run      Watch → Alert → Fix → Approve → Report: failed queries and scheduler jobs since the last round, grouped,
+Run      Watch -> Alert -> Fix -> Approve -> Report: failed queries and scheduler jobs since the last round, grouped,
          routed to Self-healing or a ticket after a person approves.
 """
 from __future__ import annotations
@@ -45,7 +45,7 @@ class Legacy(wb.Platform):
     kinds = LEGACY + ("oracle_db", "postgres", "sqlserver")
     uploads = (".zip", ".sql", ".csv", ".txt")
     simulator = "tests/mocklab/sims: oracle_dw, teradata, db2; Oracle Database Free in a throwaway container (oracle_db); the exports of sqlserver, netezza, greenplum, hive"
-    reads = "its data dictionary, views, procedural code and query history — read-only; or the exports (DDL, code, history) you upload"
+    reads = "its data dictionary, views, procedural code and query history - read-only; or the exports (DDL, code, history) you upload"
 
 
 class Cloud(wb.Platform):
@@ -76,7 +76,7 @@ def estate(ctx: wb.Ctx, conn: dict | None = None) -> dict:
     if c:
         a = _adapter(c)
         if not hasattr(a, "execute"):
-            raise wb.StepFailed(f"{c['name']} is read through its driver; Relay reads warehouses over their HTTP APIs here — upload the exports instead.")
+            raise wb.StepFailed(f"{c['name']} is read through its driver; Relay reads warehouses over their HTTP APIs here - upload the exports instead.")
         try:
             return dr.from_api(a, c)
         except connectors.ConnectorError as e:
@@ -102,7 +102,7 @@ def _hours(m: float) -> str:
 def _cost(h: float) -> str:
     b = registry.brand()
     rate, cur = float(b.get("hourly_rate") or 0), b.get("currency") or ""
-    return f" · {cur}{rate * h:,.0f}" if rate else ""
+    return f" - {cur}{rate * h:,.0f}" if rate else ""
 
 
 def _store(ctx: wb.Ctx, est: dict) -> None:
@@ -120,7 +120,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
     good = [r for r in rows if r["ok"]]
     if not good:
         raise wb.StepFailed("None of the sources answered: " + "; ".join(f"{r['source']}: {r['sees']}" for r in rows)[:600])
-    return {"summary": f"{len(good)} of {len(rows)} source(s) answered — read-only.", "counts": {"sources": len(rows), "answered": len(good)},
+    return {"summary": f"{len(good)} of {len(rows)} source(s) answered - read-only.", "counts": {"sources": len(rows), "answered": len(good)},
             "data": {"columns": ["Source", "Kind", "Status", "What Relay sees", "Access"], "rows": [[r["source"], r["kind"], "answered" if r["ok"] else "refused", r["sees"], r["scope"]] for r in rows]}}
 
 
@@ -184,7 +184,7 @@ def a_health(ctx: wb.Ctx) -> dict:
 def a_findings(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records("findings")}
     recs = [{**f, **({"decision": have[f["id"]].get("decision")} if f["id"] in have else {})} for f in ctx.get("findings") or []]
-    return {"summary": f"{len(recs)} finding(s) — keep what matters, ignore what does not.", "counts": {"findings": len(recs)}, "records": recs,
+    return {"summary": f"{len(recs)} finding(s) - keep what matters, ignore what does not.", "counts": {"findings": len(recs)}, "records": recs,
             "items": [f"{r['object']}: {r['issue']}" for r in recs[:6]],
             "data": {"columns": ["Object", "Issue", "Measured", "Severity"], "rows": [[r["object"], r["issue"], r["measured"], r["severity"]] for r in recs]}}
 
@@ -196,7 +196,7 @@ FIND_EDIT = wb.Edit(columns=[wb.Column("decision", "Decision", "select", options
 def _plan(est: dict, dec: list[dict]) -> list[dict]:
     tabs = {t["name"]: t for t in est["tables"]}
     items, total = [], 0.0
-    for w, title in ((1, "Wave 1 — staging and dimensions"), (2, "Wave 2 — facts"), (3, "Wave 3 — marts, views and procedural code")):
+    for w, title in ((1, "Wave 1 - staging and dimensions"), (2, "Wave 2 - facts"), (3, "Wave 3 - marts, views and procedural code")):
         ds = [d for d in dec if d["decision"] == "keep" and d["wave"] == w]
         if not ds:
             continue
@@ -204,7 +204,7 @@ def _plan(est: dict, dec: list[dict]) -> list[dict]:
         gb = sum((tabs.get(d["object"]) or {}).get("bytes") or 0 for d in ds) / 1e9
         m = sum(MINUTES["table"] if d["type"] == "table" else MINUTES["view"] if d["type"] == "view" else 0 for d in ds) + lines * MINUTES["routine line"] + gb * MINUTES["GB to move"]
         total += m
-        items.append({"title": title, "detail": f"{len(ds)} object(s): " + ", ".join(d["object"] for d in ds[:10]) + (" …" if len(ds) > 10 else ""), "effort": _hours(m) + _cost(m / 60)})
+        items.append({"title": title, "detail": f"{len(ds)} object(s): " + ", ".join(d["object"] for d in ds[:10]) + (" ..." if len(ds) > 10 else ""), "effort": _hours(m) + _cost(m / 60)})
     retire = [d for d in dec if d["decision"] in ("retire", "merge")]
     if retire:
         m = len(retire) * MINUTES["retire"]
@@ -221,7 +221,7 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     ctx.output("assessment.md", f"# Warehouse assessment: {ctx.title}\n\n" + "\n".join(f"## {i['title']}\n\n{i['detail']}\n\nEffort: {i['effort']}\n" for i in items) + f"\n{note}\n",
                label="Assessment (Markdown)")
     return {"summary": f"{len(items)} wave(s), about {_hours(total)}" + _cost(total / 60) + ".", "counts": {"waves": len(items), "hours": round(total / 60, 1)},
-            "data": {"items": items, "total": _hours(total), "note": note + ("" if registry.brand().get("hourly_rate") else " Set an hourly rate under Admin › Branding to see the cost.")}}
+            "data": {"items": items, "total": _hours(total), "note": note + ("" if registry.brand().get("hourly_rate") else " Set an hourly rate under Admin > Branding to see the cost.")}}
 
 
 # ================================================================== Migrate
@@ -241,8 +241,8 @@ def m_decide(ctx: wb.Ctx) -> dict:
     recs = [{**d, **({k: have[d["id"]][k] for k in ("decision", "into", "wave") if k in have[d["id"]]} if d["id"] in have else {})} for d in dr.decide(est, found, use)]
     items, total = _plan(est, recs)
     n = {k: sum(1 for r in recs if r["decision"] == k) for k in ("keep", "merge", "retire")}
-    return {"summary": f"Keep {n['keep']}, merge {n['merge']}, retire {n['retire']} — from how each is used; {len(items)} wave(s), about {_hours(total)}{_cost(total / 60)}.",
-            "counts": n, "records": recs, "items": [f"{r['object']}: {r['decision']} — {r['why']}" for r in recs if r["decision"] != "keep"][:6],
+    return {"summary": f"Keep {n['keep']}, merge {n['merge']}, retire {n['retire']} - from how each is used; {len(items)} wave(s), about {_hours(total)}{_cost(total / 60)}.",
+            "counts": n, "records": recs, "items": [f"{r['object']}: {r['decision']} - {r['why']}" for r in recs if r["decision"] != "keep"][:6],
             "data": {"columns": ["Object", "Type", "Decision", "Why", "Wave", "Rows", "Used by"], "rows": [[r["object"], r["type"], r["decision"], r["why"], r["wave"], r["rows"], r["users"]] for r in recs]}}
 
 
@@ -290,7 +290,7 @@ def m_convert(ctx: wb.Ctx) -> dict:
             r = next((x for x in est["routines"] if x["name"] == name), None)
             if not r:
                 continue
-            recs.append({"id": name, "object": name, "type": r["type"].lower(), "how": "agent", "status": "drafted by Relay — check it" if prev.get("sql") else "needs Relay's agent",
+            recs.append({"id": name, "object": name, "type": r["type"].lower(), "how": "agent", "status": "drafted by Relay - check it" if prev.get("sql") else "needs Relay's agent",
                          "wave": d.get("wave"), "sql": prev.get("sql") or "", "problems": "" if prev.get("sql") else f"{r['lines']} line(s) of {r['type'].lower()}: no rule converts procedural code",
                          "origin": prev.get("origin") or ""})
     for r in recs:
@@ -343,9 +343,9 @@ def _request_load(ctx: wb.Ctx, recs: list[dict], est: dict) -> dict | None:
 
 
 CODE_WORDS = """Read WORK.md, then code.json in this folder: the procedural code of a warehouse being moved (PL/SQL packages,
-procedures, BTEQ scripts, macros…), each with its name, type, text, the target platform (`target`) and the tables of
+procedures, BTEQ scripts, macros...), each with its name, type, text, the target platform (`target`) and the tables of
 the estate with their columns (`tables`). For each item write code/<name>.sql: the same logic as SQL statements in the
-target's dialect — set-based INSERT … SELECT, MERGE or CREATE OR REPLACE VIEW statements, separated by semicolons; only
+target's dialect - set-based INSERT ... SELECT, MERGE or CREATE OR REPLACE VIEW statements, separated by semicolons; only
 the tables listed; no loops, no dynamic SQL. Then write code_notes.yaml: `notes: {<name>: "what you assumed"}`."""
 
 
@@ -391,9 +391,9 @@ def _code_after(ctx: wb.Ctx, res: dict) -> dict:
     names = {it["name"] for it in spec["items"]}
     for r in recs:
         if r["object"] in names:
-            r.update(sql=(ctx.dir / "code" / f"{r['object']}.sql").read_text(encoding="utf-8").strip(), origin="agent", status="drafted by Relay — check it", problems="")
+            r.update(sql=(ctx.dir / "code" / f"{r['object']}.sql").read_text(encoding="utf-8").strip(), origin="agent", status="drafted by Relay - check it", problems="")
     ctx.evidence("Procedural code drafted by Relay", {"items": sorted(names), "summary": res.get("text") or ""}, kind="agent", ok=True)
-    return {"summary": f"Relay drafted {len(names)} piece(s) of code as {spec['target']} SQL — read them before you confirm.", "records": recs,
+    return {"summary": f"Relay drafted {len(names)} piece(s) of code as {spec['target']} SQL - read them before you confirm.", "records": recs,
             "data": {"columns": ["Object", "Type", "How", "Status", "Wave", "Problems"], "rows": [[r["object"], r["type"], r["how"], r["status"], r["wave"], r["problems"]] for r in recs]}}
 
 
@@ -407,7 +407,7 @@ def _load_done(ctx: wb.Ctx) -> None:
         from .. import checkpoints
         cp = checkpoints.get(ld["checkpoint"]) or {}
         if cp.get("status") != "accepted":
-            raise wb.StepFailed(f"The load into {ld['connection']} waits for its write approval in the Validation queue ({ld['checkpoint']}) — approve it, then Run again.")
+            raise wb.StepFailed(f"The load into {ld['connection']} waits for its write approval in the Validation queue ({ld['checkpoint']}) - approve it, then Run again.")
 
 
 def _pair_rows(ctx: wb.Ctx, cid: str, kind: str, table: str) -> list[dict]:
@@ -431,7 +431,7 @@ def m_prove(ctx: wb.Ctx) -> dict:
             if r.get("origin") == "agent":
                 checks.append({"name": name, "label": name, "status": "skip", "detail": f"drafted by Relay; it reaches {tgt['name']} with the next approved load, and is proven then"})
             else:
-                checks.append({"name": name, "label": name, "status": "fail", "detail": f"not in {tgt['name']} — the load did not create it"})
+                checks.append({"name": name, "label": name, "status": "fail", "detail": f"not in {tgt['name']} - the load did not create it"})
             continue
         try:
             a_rows, b_rows = _pair_rows(ctx, src["id"], src["kind"], name), _pair_rows(ctx, tgt["id"], tgt["kind"], name)
@@ -439,7 +439,7 @@ def m_prove(ctx: wb.Ctx) -> dict:
             checks.append({"name": name, "label": name, "status": "error", "detail": str(e)[:300]})
             continue
         if a_rows and not b_rows:
-            checks.append({"name": name, "label": f"{name} ({r['type']})", "status": "fail", "detail": f"{len(a_rows)} row(s) in the source, nothing in {tgt['name']} — the load or the converted SQL did not produce them"})
+            checks.append({"name": name, "label": f"{name} ({r['type']})", "status": "fail", "detail": f"{len(a_rows)} row(s) in the source, nothing in {tgt['name']} - the load or the converted SQL did not produce them"})
             continue
         cols = [c for c in (a_rows[0] if a_rows else {}) if c in (b_rows[0] if b_rows else {})] if a_rows and b_rows else []
         f_a = _w1.extract_parquet(ctx, a_rows, f"x_{_w1.slug(name)}_source")
@@ -494,7 +494,7 @@ def m_prove(ctx: wb.Ctx) -> dict:
 def _key_of(rows: list[dict], cols: list[str]) -> list[str]:
     """A table's key from its rows when the dictionary has none: the first id-like column that is unique, else the
     first pair or triple of columns that is, else every column that is not a measure. Only columns that read the same
-    on every engine (whole numbers, codes and dates — not decimals or empty values) are candidates, so the daily
+    on every engine (whole numbers, codes and dates - not decimals or empty values) are candidates, so the daily
     reconciliation finds the same rows on both sides."""
     def unique(cs):
         return len({tuple(r.get(c) for c in cs) for r in rows}) == len(rows)
@@ -548,8 +548,8 @@ def m_run(ctx: wb.Ctx) -> dict:
         ctx.lineage_edge(job, b, "writes")
         if not (src and tgt):
             continue
-        ds_a = qr.dataset({"source": "connection", "connection": src["id"], "object": n}, f"{n}@source", f"{n} · {src['name']}", src["name"])
-        ds_b = qr.dataset({"source": "connection", "connection": tgt["id"], "object": n}, f"{n}@target", f"{n} · {tgt['name']}", tgt["name"])
+        ds_a = qr.dataset({"source": "connection", "connection": src["id"], "object": n}, f"{n}@source", f"{n} - {src['name']}", src["name"])
+        ds_b = qr.dataset({"source": "connection", "connection": tgt["id"], "object": n}, f"{n}@target", f"{n} - {tgt['name']}", tgt["name"])
         dsets += [ds_a, ds_b]
         t = tabs.get(n) or {"columns": [], "keys": []}
         key = (ctx.get("proof_keys") or {}).get(n) or t.get("keys") or [c["name"] for c in t["columns"][:1]]
@@ -568,7 +568,7 @@ def m_run(ctx: wb.Ctx) -> dict:
                          team_id=(db.project(ctx.id) or {}).get("team_id"), parent=ctx.id)
         run_id = item["id"]
         db.run("UPDATE quality_rulesets SET run_item = ? WHERE id = ?", (run_id, rs["id"]))
-    return {"summary": f"{len(rules)} table(s) reconciled {_w1.lc(wb.schedule_text(cad))} by Data quality (rule set “{rs['name']}” v{rs['version']}) until the old warehouse is retired.",
+    return {"summary": f"{len(rules)} table(s) reconciled {_w1.lc(wb.schedule_text(cad))} by Data quality (rule set \"{rs['name']}\" v{rs['version']}) until the old warehouse is retired.",
             "counts": {"reconciled": len(rules)}, "data": {"href": f"#/m/quality/i/{run_id}", "label": "Open the reconciliation", "text": wb.schedule_text(cad)}}
 
 
@@ -602,9 +602,9 @@ def d_sources(ctx: wb.Ctx) -> dict:
         finally:
             wb._close(r)
         s["profile"] = {"rows": p["rows"], "columns": [{k: c2.get(k) for k in ("name", "kind", "unique", "nulls", "distinct")} for c2 in p["columns"]]}
-        rows.append([s["name"], p["rows"], len(p["columns"]), ", ".join(c2["name"] for c2 in p["columns"] if c2.get("unique"))[:120] or "—"])
+        rows.append([s["name"], p["rows"], len(p["columns"]), ", ".join(c2["name"] for c2 in p["columns"] if c2.get("unique"))[:120] or "-"])
     ctx.put("sources", srcs)
-    return {"summary": f"{len(srcs)} table(s) profiled — their unique columns are the candidate keys.", "counts": {"tables": len(srcs)},
+    return {"summary": f"{len(srcs)} table(s) profiled - their unique columns are the candidate keys.", "counts": {"tables": len(srcs)},
             "data": {"columns": ["Table", "Rows", "Columns", "Unique (candidate keys)"], "rows": rows}}
 
 
@@ -622,12 +622,12 @@ def d_model(ctx: wb.Ctx) -> dict:
         recs = []
         for s in srcs:
             cols = {c["name"]: c for c in s["profile"]["columns"]}
-            fks = [f"{c} → {t}.{k}" for c in cols for t, k in keys.items() if t != s["name"] and c.lower() == k.lower()]
+            fks = [f"{c} {t}.{k}" for c in cols for t, k in keys.items() if t != s["name"] and c.lower() == k.lower()]
             measures = [c for c, v in cols.items() if v["kind"] in ("int", "decimal") and not re.search(r"(?i)(_id|_key|_no|_code)$", c)]
             role = "fact" if fks and measures else "dimension"
             recs.append({"id": s["name"], "table": s["name"], "role": role, "key": keys.get(s["name"], ""), "measures": ", ".join(measures) if role == "fact" else "",
                          "relationships": "; ".join(fks), "name": ("fct_" if role == "fact" else "dim_") + re.sub(r"^(stg_|dim_|fact_|fct_)", "", s["name"].split(".")[-1].lower())})
-    return {"summary": f"{sum(1 for r in recs if r['role'] == 'fact')} fact(s) and {sum(1 for r in recs if r['role'] == 'dimension')} dimension(s) proposed from the keys and measures — change roles, keys and names, then confirm.",
+    return {"summary": f"{sum(1 for r in recs if r['role'] == 'fact')} fact(s) and {sum(1 for r in recs if r['role'] == 'dimension')} dimension(s) proposed from the keys and measures - change roles, keys and names, then confirm.",
             "records": recs, "counts": {"facts": sum(1 for r in recs if r["role"] == "fact"), "dimensions": sum(1 for r in recs if r["role"] == "dimension")},
             "data": {"columns": ["Table", "Role", "Key", "Measures", "Relationships", "Model"], "rows": [[r["table"], r["role"], r["key"], r["measures"], r["relationships"], r["name"]] for r in recs]}}
 
@@ -666,7 +666,7 @@ def _model_sql(ctx: wb.Ctx) -> list[dict]:
         if r["role"] == "dimension":
             sql = f"SELECT {', '.join(cols)} FROM {r['table']}"
         else:
-            fk = [x.split(" → ") for x in (r.get("relationships") or "").split("; ") if " → " in x]
+            fk = [x.split(" ") for x in (r.get("relationships") or "").split("; ") if " " in x]
             sql = f"SELECT {', '.join('f.' + c for c in cols)} FROM {r['table']} f"
             for col, ref in fk:
                 t, k = ref.rsplit(".", 1)
@@ -714,8 +714,8 @@ def d_prove(ctx: wb.Ctx) -> dict:
             ms = [m.strip() for m in (mdl.get("measures") or "").split(",") if m.strip()]
             if ms:
                 checks.append(ctx.proof("totals", label=f"{mdl['name']}: business totals as in the source", source={"source": "file", "file": f_src}, target={"source": "file", "file": f_new}, measures=ms, tolerance_pct=0.0))
-            for rel in [x for x in (mdl.get("relationships") or "").split("; ") if " → " in x]:
-                col, ref = rel.split(" → ")
+            for rel in [x for x in (mdl.get("relationships") or "").split("; ") if " " in x]:
+                col, ref = rel.split(" ")
                 t, k = ref.rsplit(".", 1)
                 dim = next((s for s in srcs if s["name"] == t), None)
                 if not dim:
@@ -771,7 +771,7 @@ def c_request(ctx: wb.Ctx) -> dict:
     _store(ctx, est)
     t = next((x for x in est["tables"] if x["name"] == name or x["name"].endswith("." + name)), None)
     if not t:
-        raise wb.StepFailed(f"Name the table to tune — {name or 'nothing'} is not in {c['name'] if c else 'the source'}.")
+        raise wb.StepFailed(f"Name the table to tune - {name or 'nothing'} is not in {c['name'] if c else 'the source'}.")
     ctx.put("table", t["name"])
     qs = [q for q in est["history"] if t["name"].split(".")[-1].lower() in (q.get("text") or "").lower()]
     ctx.put("queries", qs[-200:])
@@ -926,7 +926,7 @@ def r_fix(ctx: wb.Ctx) -> dict:
             "data": {"columns": ["What fails", "Proposed route"], "rows": [[r["what"], r["route"]] for r in recs]}}
 
 
-RFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("heal", "Self-healing"), ("ticket", "Raise a ticket"), ("expected", "Expected — no action"))),
+RFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("heal", "Self-healing"), ("ticket", "Raise a ticket"), ("expected", "Expected - no action"))),
                              wb.Column("note", "Note", "longtext"), wb.Column("what", "What fails", readonly=True)], add=False, remove=False, label="failure")
 
 
@@ -938,14 +938,14 @@ def r_approve(ctx: wb.Ctx) -> dict:
         elif b["route"] == "ticket":
             h = ctx.ticket(b["what"][:120], b["what"] + (f"\n\nNote: {b['note']}" if b.get("note") else ""), priority="P3", about=b["what"])
         else:
-            h = {"kind": "expected", "status": "expected — recorded"}
+            h = {"kind": "expected", "status": "expected - recorded"}
         rows.append([b["what"][:160], b["route"], h.get("status"), h.get("case") or h.get("checkpoint") or h.get("output") or ""])
     return {"summary": f"{len(rows)} hand-off(s), as you approved.", "data": {"columns": ["What fails", "Route", "Status", "Reference"], "rows": rows}}
 
 
 def r_report(ctx: wb.Ctx) -> dict:
     n = len(ctx.get("breaks") or [])
-    ctx.output(f"warehouse-report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", f"# Warehouse run report: {ctx.title}\n\n" + "".join(f"- {b['what']} → {b.get('route')}\n" for b in ctx.records("fix")),
+    ctx.output(f"warehouse-report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", f"# Warehouse run report: {ctx.title}\n\n" + "".join(f"- {b['what']} {b.get('route')}\n" for b in ctx.records("fix")),
                label="Run report (Markdown)")
     return {"summary": f"{n} group(s) of failures this round.", "counts": {"groups": n}, "data": {"columns": ["Round", "Groups"], "rows": [[time.strftime("%d %b %H:%M", time.gmtime()), n]]}}
 
@@ -957,12 +957,12 @@ def _cards(u: dict) -> list[dict]:
             continue
         st = wb._load(r["id"])
         proof = (st.get("data") or {}).get("proof") or {}
-        rows.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), f"{sum(1 for v in proof.values() if v == 'pass')} of {len(proof)}" if proof else "—", f"#/m/{MODULE}/i/{r['id']}"])
+        rows.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), f"{sum(1 for v in proof.values() if v == 'pass')} of {len(proof)}" if proof else "-", f"#/m/{MODULE}/i/{r['id']}"])
     return [{"title": "Migrations and their proofs", "columns": ["Migration", "Status", "Proofs agree", "Work item"], "rows": rows,
              "empty": "No migration yet: a Migrate item proves every table and real queries on both sides."}]
 
 
-GUIDE = """# Data warehouse & lakehouse — the work item
+GUIDE = """# Data warehouse & lakehouse - the work item
 
 This folder is one work item of Relay's Data warehouse & lakehouse module. Relay reads the warehouse's dictionary and
 history and converts tables and views by rules; you are asked only for procedural code (PL/SQL packages, BTEQ
@@ -970,7 +970,7 @@ scripts, macros, stored procedures) no rule converts.
 
 - `code.json` (written by the app before your run): the target platform, the code to convert and the estate's tables
   with their columns.
-- `code/<name>.sql`: what you write — set-based SQL statements in the target's dialect, separated by semicolons.
+- `code/<name>.sql`: what you write - set-based SQL statements in the target's dialect, separated by semicolons.
 - `code_notes.yaml`: one sentence per item on what you assumed.
 
 Never invent a table or a column; no loops or dynamic SQL; say what you assumed."""
@@ -978,20 +978,20 @@ Never invent a table or a column; no loops or dynamic SQL; say what you assumed.
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE,
-    lineage="every table of the source and its copy in the target, joined by the migration as a job (system “Relay warehouse”); star schemas as jobs reading their source tables",
+    lineage="every table of the source and its copy in the target, joined by the migration as a job (system \"Relay warehouse\"); star schemas as jobs reading their source tables",
     platforms={"legacy": SRC, "cloud": TGT},
     schemas={"object": DECIDE_EDIT.columns, "finding": FIND_EDIT.columns, "converted": CONVERT_EDIT.columns, "model": MODEL_EDIT.columns},
     cards=_cards,
     work={
         "assess": wb.Work(title="See what the warehouse holds, how it is used and what to move, merge or retire", steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="The warehouse answers through its API with your sign-in — or its exports are opened"),
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="The warehouse answers through its API with your sign-in - or its exports are opened"),
             "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Dictionary reader", text="Every table, view and piece of procedural code, with rows, size and who queries it"),
-            "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Usage analyst", text="Never queried, copies and backups, failing and slow queries, procedural code — from the dictionary and the history"),
-            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="What needs attention — you keep or ignore each finding"),
-            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Waves — staging and dimensions, facts, marts and code — with the time and cost")}),
+            "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Usage analyst", text="Never queried, copies and backups, failing and slow queries, procedural code - from the dictionary and the history"),
+            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="What needs attention - you keep or ignore each finding"),
+            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Waves - staging and dimensions, facts, marts and code - with the time and cost")}),
         "develop": wb.Work(title="A star schema from named tables: proposed by rules, proven on a copy, created with approval", steps={
             "Sources": wb.Step(kind="platform", run=d_sources, agent="Profiler", text="The tables you name are profiled: rows, columns and the unique ones that can be keys"),
-            "Model": wb.Step(kind="deterministic", run=d_model, agent="Modeller", edit=MODEL_EDIT, text="Facts, dimensions, keys and relationships proposed from the data — you change and confirm them"),
+            "Model": wb.Step(kind="deterministic", run=d_model, agent="Modeller", edit=MODEL_EDIT, text="Facts, dimensions, keys and relationships proposed from the data - you change and confirm them"),
             "Build": wb.Step(kind="deterministic", run=d_build, view="text", agent="Model builder", text="DDL and dbt models in the target warehouse's SQL"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Prover", back_to="model", text="Built on a copy: every source row once, business totals equal, every key found in its dimension"),
             "Ship": wb.Step(kind="person", run=d_ship, view="plan", approver=True, text="The named approver confirms go-live"),
@@ -1000,20 +1000,20 @@ wb.register(wb.Pack(
         "change": wb.Work(title="Tune a slow table: the columns its queries use, a clustering key proven and approved", steps={
             "Request": wb.Step(kind="platform", run=c_request, view="text", agent="Dictionary reader", text="The table you name and the queries in the history that read it"),
             "Diagnose": wb.Step(kind="deterministic", run=c_diagnose, view="gates", agent="Tuner", text="The columns the queries filter, join and group on, weighted by their time"),
-            "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Tuner", edit=TUNE_EDIT, text="A clustering key in the target's own syntax — you confirm or change it"),
+            "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Tuner", edit=TUNE_EDIT, text="A clustering key in the target's own syntax - you confirm or change it"),
             "Prove": wb.Step(kind="proof", run=c_prove, view="gates", agent="Prover", back_to="fix", text="The statement parses, every column exists, no row changes"),
             "Approve": wb.Step(kind="person", run=c_approve, view="plan", approver=True, text="The named approver releases it"),
             "Learn": wb.Step(kind="platform", run=c_learn, view="link", agent="Publisher", text="Written through the warehouse's own write approval")},
             fields=[wb.Field("table", "Table to tune", required=True, help="e.g. DW.FACT_SALES"), wb.Field("target_dialect", "Warehouse SQL", "select", options=dr.TARGETS, default="snowflake")]),
-        "migrate": wb.Work(title="Move a legacy warehouse to the cloud — decided from its use, converted by rules, proven on both sides", steps={
+        "migrate": wb.Work(title="Move a legacy warehouse to the cloud - decided from its use, converted by rules, proven on both sides", steps={
             "Discover": wb.Step(kind="platform", run=m_discover, agent="Dictionary reader", text="The source warehouse read through its API or its exports: tables, views, code, history and jobs"),
             "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Rationaliser", edit=DECIDE_EDIT, text="Keep, merge or retire each object from how it is used, in waves with their time"),
-            "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Converter", edit=CONVERT_EDIT, confirm="the converted objects — and the load into the target, which waits for its own write approval",
+            "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Converter", edit=CONVERT_EDIT, confirm="the converted objects - and the load into the target, which waits for its own write approval",
                                text="Tables by rules in the target's types with clustering, views transpiled, the rows loaded in one approved write; procedural code drafted by Relay's agent",
                                actions={"code": wb.Action(label="Ask Relay to convert the procedural code", kind="agent", prompt=_code_prompt, check=_code_check, after=_code_after, agent="Code converter (AI)",
                                                           help="The agent writes set-based SQL in the target's dialect for each package, script or macro; each is checked against the estate's tables.")}),
             "Prove": wb.Step(kind="proof", run=m_prove, view="gates", agent="Reconciler", back_to="convert",
-                             text="Every table on both sides — row counts, column fingerprints, business totals, sampled rows — and real queries from the history asked of both"),
+                             text="Every table on both sides - row counts, column fingerprints, business totals, sampled rows - and real queries from the history asked of both"),
             "Hand over": wb.Step(kind="person", run=m_handover, view="plan", approver=True, text="Cut over report by report; the owner signs off the evidence pack"),
             "Run": wb.Step(kind="deterministic", run=m_run, view="link", agent="Publisher", text="Lineage recorded; the Data quality module reconciles both warehouses every day until the old one is retired")},
             fields=[wb.Field("target_dialect", "Target warehouse", "select", options=dr.TARGETS, default="snowflake"),

@@ -1,8 +1,8 @@
 """Diagrams from Mermaid text. The flowchart grammar the studio uses is parsed here (graph / flowchart LR TD TB RL;
 nodes A[box] B(rounded) C{decision} D((circle)); edges --> --- -.-> ==> with |labels|; chains; subgraphs are read and
 ignored) and laid out in layers, so the same model draws an SVG for the HTML twin, native shapes in the deck and a
-PNG — rendered in headless Chromium through Playwright where it is installed (the agent image), or through a
-renderer callback the web app points at the agent's /render. Other Mermaid kinds (sequence, gantt …) are reported
+PNG - rendered in headless Chromium through Playwright where it is installed (the agent image), or through a
+renderer callback the web app points at the agent's /render. Other Mermaid kinds (sequence, gantt ...) are reported
 as unsupported: the check warns and the slide shows the text."""
 from __future__ import annotations
 

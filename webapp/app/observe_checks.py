@@ -1,10 +1,10 @@
-"""Data observability (build-plan v2, P14) — the checks themselves: read-only readers over the places data lives,
+"""Data observability (build-plan v2, P14) - the checks themselves: read-only readers over the places data lives,
 the maths of every check against a learned baseline, and the readers of other tools' results.
 
 Readers (all read-only; a connection's scope and enabled flag are honoured by the connector layer they call):
   DuckReader   a dashboard's extracts and uploads (DuckDB over output/projects/<id>/data/*.csv|*.parquet)
   SqlReader    a warehouse table through the Connector SDK's warehouse adapters (the guarded SELECT of phase 3:
-               one statement, no DML / DDL, a row limit) — Snowflake, BigQuery, Fabric, Redshift, Athena, Oracle, and the
+               one statement, no DML / DDL, a row limit) - Snowflake, BigQuery, Fabric, Redshift, Athena, Oracle, and the
                Postgres / SQL Server adapters registered below for the lab engines
   SdkReader    an object of an SDK platform (the mock, any REST API) read with `read_object`; stats done here
 Checks: freshness, volume, schema change, distribution, nulls, duplicates, reconciliation to source, lineage break
@@ -26,7 +26,7 @@ from pathlib import Path
 CHECKS = ("freshness", "volume", "schema", "distribution", "nulls", "duplicates", "reconcile", "lineage", "quality")
 CHECK_LABEL = {"freshness": "Freshness", "volume": "Volume", "schema": "Schema change", "distribution": "Distribution", "nulls": "Nulls",
                "duplicates": "Duplicate keys", "reconcile": "Reconciliation", "lineage": "Lineage break", "quality": "Quality test"}
-# Tunable thresholds — the defaults; Admin › Checks & thresholds overrides per check, an asset overrides per asset.
+# Tunable thresholds - the defaults; Admin > Checks & thresholds overrides per check, an asset overrides per asset.
 DEFAULTS = {
     "freshness": {"cadence_h": None, "grace": 1.5, "date_column": None, "min_history": 3},
     "volume": {"drop_pct": 20, "rise_pct": 80, "sigma": 3.5, "min_history": 5, "window_days": 42, "weekday_min": 3},
@@ -42,7 +42,7 @@ THRESHOLD_HELP = {
     "freshness": {"cadence_h": "Expected hours between loads (blank: learned from history or the schedule)", "grace": "Late when older than cadence × grace", "date_column": "Date column whose maximum is the last load (blank: file time)"},
     "volume": {"drop_pct": "Rows fewer than usual by this % count as a drop", "rise_pct": "Rows more than usual by this % count as a surge", "sigma": "How unusual against the learned spread (robust z)", "min_history": "Observations needed before the check fires", "window_days": "Days of history in the baseline", "weekday_min": "Samples of the same weekday needed to use the weekday baseline"},
     "schema": {"removed": "Severity when a column disappears", "added": "Severity when a column appears", "changed": "Severity when a column changes type"},
-    "distribution": {"sigma": "How unusual a mean must be against the learned spread", "mean_shift_pct": "Mean moved by at least this % of its usual value", "topk": "Categories compared for text columns", "topk_shift": "Share of rows that changed category (0–1)", "min_history": "Observations needed before the check fires", "window_days": "Days of history in the baseline", "max_columns": "Columns profiled per table"},
+    "distribution": {"sigma": "How unusual a mean must be against the learned spread", "mean_shift_pct": "Mean moved by at least this % of its usual value", "topk": "Categories compared for text columns", "topk_shift": "Share of rows that changed category (0-1)", "min_history": "Observations needed before the check fires", "window_days": "Days of history in the baseline", "max_columns": "Columns profiled per table"},
     "nulls": {"null_jump_pp": "Null share up by this many percentage points", "key_null_max": "Nulls allowed in a key column", "min_history": "Observations needed before the check fires"},
     "duplicates": {"keys": "Key columns (comma-separated; blank: unique columns learned from history)", "max_dupes": "Duplicate rows allowed"},
     "reconcile": {"tolerance_pct": "Allowed difference between target and source totals, in %", "columns": "Numeric columns to compare (blank: every column both sides share)"},
@@ -288,7 +288,7 @@ class SqlReader(Reader):
         self._cols: list[dict] | None = None
 
     def run(self, sql_duck: str, lower: bool = True) -> list[dict]:
-        """`lower`: the aliases are ours (n_rows, c0_mean, …) and some warehouses upper-case unquoted aliases."""
+        """`lower`: the aliases are ours (n_rows, c0_mean, ...) and some warehouses upper-case unquoted aliases."""
         import sqlglot
 
         from . import connectors
@@ -468,7 +468,7 @@ def weekday(ts: float) -> int:
 
 def baseline(history: list[tuple[float, float]], now: float, window_days: int, weekday_min: int) -> dict:
     """Median and spread of a measure from (ts, value) history: by weekday when that weekday has enough samples
-    (seasonality), else over every day of the window. Values are the history only — never the value under test."""
+    (seasonality), else over every day of the window. Values are the history only - never the value under test."""
     hist = [(t, v) for t, v in history if v is not None and t >= now - window_days * 86400]
     same = [v for t, v in hist if weekday(t) == weekday(now)]
     if len(same) >= weekday_min:
@@ -479,11 +479,11 @@ def baseline(history: list[tuple[float, float]], now: float, window_days: int, w
     return {"median": med, "mad": _mad(xs, med), "n": len(xs), "basis": basis, "min": min(xs) if xs else None, "max": max(xs) if xs else None}
 
 
-# ------------------------------------------------------------------ the checks (pure functions → a finding or None)
+# ------------------------------------------------------------------ the checks (pure functions -> a finding or None)
 
 def _fmt(v) -> str:
     if v is None:
-        return "—"
+        return "-"
     if isinstance(v, float):
         return f"{v:,.2f}".rstrip("0").rstrip(".") if abs(v) < 1e6 else f"{v:,.0f}"
     if isinstance(v, int):
@@ -492,7 +492,7 @@ def _fmt(v) -> str:
 
 
 def _when(t: float | None) -> str:
-    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%d %b %H:%M") if t else "—"
+    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%d %b %H:%M") if t else "-"
 
 
 def _age(seconds: float) -> str:
@@ -605,7 +605,7 @@ def check_distribution(stats_now: dict, history: list[tuple[float, dict]], cfg: 
                 out.append(finding("distribution", "medium", f"{col} in {label} moved: mean {_fmt(s['mean'])} vs {_fmt(med)} usual", f"{shift:.0f} % shift of the mean ({len(means)} earlier observations)",
                                    {"mean": s["mean"], "sd": s.get("sd"), "shift_pct": round(shift, 1), "z": None if z is None else round(z, 1)}, {"mean_median": med, "mad": mad, "n": len(means)},
                                    [[f"Mean of {col}", _fmt(s["mean"]), _fmt(med)], [f"Spread of {col}", _fmt(s.get("sd")), _fmt(_median([p.get("sd") or 0 for _, p in past]))], [f"Min / max", f"{_fmt(s.get('min'))} / {_fmt(s.get('max'))}", f"{_fmt(min(p.get('min') for _, p in past if p.get('min') is not None) if any(p.get('min') is not None for _, p in past) else None)} / {_fmt(max(p.get('max') for _, p in past if p.get('max') is not None) if any(p.get('max') is not None for _, p in past) else None)}"]],
-                                   column=col, cause="The values themselves changed — a unit or scale mix-up, a different population, or a source posting differently."))
+                                   column=col, cause="The values themselves changed - a unit or scale mix-up, a different population, or a source posting differently."))
         elif s["kind"] == "string" and s.get("top"):
             tops = [p.get("top") for _, p in past if p.get("top")]
             if len(tops) < min_hist:
@@ -619,7 +619,7 @@ def check_distribution(stats_now: dict, history: list[tuple[float, dict]], cfg: 
                 out.append(finding("distribution", "medium", f"Mix of {col} in {label} changed ({d * 100:.0f} % of rows moved category)", f"top categories: {', '.join(k for k, _ in s['top'][:4])}",
                                    {"top": s["top"][:8], "shift": round(d, 3)}, {"top": base_top[:8], "n": len(tops)},
                                    [[k, _fmt(v), _fmt(dict((str(a), b) for a, b in base_top).get(str(k), 0))] for k, v in s["top"][:8]], column=col,
-                                   cause="The category mix moved — a new code, a renamed value, or one group missing from the load."))
+                                   cause="The category mix moved - a new code, a renamed value, or one group missing from the load."))
     return out
 
 
@@ -702,7 +702,7 @@ def learned_keys(history_stats: list[dict], cols_now: list[dict]) -> list[str]:
     return out[:3]
 
 
-# ------------------------------------------------------------------ results of other tools → incidents of the same shape
+# ------------------------------------------------------------------ results of other tools -> incidents of the same shape
 
 TOOLS = {"openlineage": "OpenLineage", "dbt": "dbt tests", "ge": "Great Expectations", "soda": "Soda", "webhook": "Webhook",
          "montecarlo": "Monte Carlo", "bigeye": "Bigeye", "acceldata": "Acceldata", "metaplane": "Metaplane", "elementary": "Elementary", "datadog": "Datadog"}

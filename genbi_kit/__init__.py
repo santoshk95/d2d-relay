@@ -1,5 +1,5 @@
 """Gen BI toolkit: everything the Claude agent (and the web app) needs to turn CSVs into a Power BI
-project — data profiling, a DuckDB SQL view of the data, report-definition validation, the HTML
+project - data profiling, a DuckDB SQL view of the data, report-definition validation, the HTML
 prototype renderer, the PBIP builder and the visual factory. The `genbi` command line wraps it (see cli.py)."""
 import json
 import os

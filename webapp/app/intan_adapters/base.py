@@ -10,7 +10,7 @@ An adapter is one module with:
 Record shapes (everything optional except the ids and names):
   integration  {ext_id, name, kind, via, from_system, to_system, schedule, owner, properties, depends_on: [ext_id],
                 reads: ["<warehouse>:<object>"], writes: ["<warehouse>:<object>"], feeds: ["report name"]}
-               kind: Flow · Pipeline · Integration · Bot · Package · API · API pull · API push · File · Webhook · Connector · Refresh
+               kind: Flow - Pipeline - Integration - Bot - Package - API - API pull - API push - File - Webhook - Connector - Refresh
   run          {integration: ext_id, ext_id, started, ended, status: success|failed|skipped|running, duration_s, volume, error}
   credential   {name, kind, integration: ext_id | None, expires: epoch | None, status}
   signal       {kind: usage|schema_change|screen_change|licence, integration: ext_id | None, text, value, limit, due: epoch | None}
@@ -137,7 +137,7 @@ def ts(value) -> float | None:
 
 
 def arrow(text: str) -> tuple[str | None, str | None]:
-    """'SAP → Salesforce' or 'SAP -> Salesforce' in a name or description -> (from, to)."""
+    """'SAP -> Salesforce' or 'SAP -> Salesforce' in a name or description -> (from, to)."""
     m = re.search(r"([A-Za-z0-9 ./&+-]+?)(?:\s*(?:→|->|=>)\s*|\s+to\s+)([A-Za-z0-9 ./&+-]+)", text or "")
     if not m:
         return None, None

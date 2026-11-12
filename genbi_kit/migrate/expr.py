@@ -1,8 +1,8 @@
 """The Cognos report expression language, parsed into a small AST shared by the rules (-> DAX and SQL) and the source
 simulator (-> values). Covers what report authors write: [Package].[Query subject].[Item] and [Data item] references,
 numbers, strings, ?prompt? tokens, #macro# blocks, arithmetic, || (concatenation), comparisons, and / or / not,
-in (...), is null / is missing, between, like, if (…) then (…) else (…), case … when … then … else … end, function
-calls — aggregates with `for` clauses (`total([Revenue] for [Region])`, `for report`) and `distinct`
+in (...), is null / is missing, between, like, if (...) then (...) else (...), case ... when ... then ... else ... end, function
+calls - aggregates with `for` clauses (`total([Revenue] for [Region])`, `for report`) and `distinct`
 (`count(distinct [Customer])`), running / moving aggregates with `auto reset at`.
 
 AST nodes are dicts with a "t" key:
@@ -326,7 +326,7 @@ def to_text(node) -> str:
 
 
 def normalise(text: str) -> tuple[str, list[str]]:
-    """The expression with every [reference] replaced by a numbered placeholder — the pattern a learned rule keys on.
+    """The expression with every [reference] replaced by a numbered placeholder - the pattern a learned rule keys on.
     Returns (pattern, references in order)."""
     try:
         node = parse(text)

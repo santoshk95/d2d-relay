@@ -26,7 +26,7 @@ class Workday(SysAdapter):
     docs = "https://community.workday.com/sites/default/files/file-hosting/restapi/index.html"
     signin = ["service_account"]
     fields = [("base_url", "Workday REST host (https://wd2-impl-services1.workday.com)", True), ("tenant", "Tenant name", True), ("client_id", "API client id", True),
-              ("isu_username", "Integration system user for reports (ISU_…@tenant)", True), ("raas_owner", "Report owner (the ISU's account name)", True)]
+              ("isu_username", "Integration system user for reports (ISU_...@tenant)", True), ("raas_owner", "Report owner (the ISU's account name)", True)]
     secrets = {"service_account": ["client_secret", "refresh_token", "isu_password"]}
     ENTITIES = {"worker": (WD_RAAS_WORKERS, "Workers (Reports-as-a-Service, with leavers)")}
     JOBS = "Integration events"
@@ -47,14 +47,14 @@ class Workday(SysAdapter):
             return super().error_text(r)
 
     def _raas(self, api, report: str, params: dict | None = None) -> list[dict]:
-        """A Workday custom report as JSON — RaaS takes the integration system user's basic auth, not the API token."""
+        """A Workday custom report as JSON - RaaS takes the integration system user's basic auth, not the API token."""
         isu = f"{api.cfg.get('isu_username')}:{api.secret('isu_password')}"
         b = api.get(f"/ccx/service/customreport2/{api.cfg.get('tenant')}/{api.cfg.get('raas_owner')}/{report}", {"format": "json", **(params or {})},
                     headers={"Authorization": "Basic " + base64.b64encode(isu.encode()).decode()})
         return b.get("Report_Entry") or []
 
     def active_workers(self, api) -> list[dict]:
-        """The REST API's workers (active only), paged with limit (at most 100) / offset — what the API client sees."""
+        """The REST API's workers (active only), paged with limit (at most 100) / offset - what the API client sees."""
         out, off = [], 0
         for _ in range(1000):
             b = api.get(f"/ccx/api/v1/{api.cfg.get('tenant')}/workers", {"limit": 100, "offset": off})

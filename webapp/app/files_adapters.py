@@ -1,11 +1,11 @@
 """Filing adapters (consolidation of P11: "SharePoint / OneDrive / Drive filing adapters, one adapter + one mock each",
 and "Google formats"): where the studio files an accepted final. Microsoft Graph for a SharePoint document library and
 for a person's OneDrive; Google Drive v3 for a folder in Drive, optionally converted to Google Slides / Docs / Sheets.
-They sign in as an app — Entra ID client credentials (tenant, client id, client secret) or a Google service account
-(its JSON key) — with the secret by name in the secrets store, never returned.
+They sign in as an app - Entra ID client credentials (tenant, client id, client secret) or a Google service account
+(its JSON key) - with the secret by name in the secrets store, never returned.
 
 Read-only by default like every connection (Connector SDK): an upload happens only through connectors.request_write,
-after a named person accepted exactly that file — the payload carries its SHA-256, and the adapter reads the file from
+after a named person accepted exactly that file - the payload carries its SHA-256, and the adapter reads the file from
 the deliverable's folder again and refuses when it changed. Endpoints are overridable per connection (a national
 cloud, a private endpoint), which is also how the mock lab's simulator stands in for the clouds (tests/mocklab/files_sim.py).
 """
@@ -190,7 +190,7 @@ class GoogleDrive(Adapter):
     def test(self, c: dict) -> dict:
         h = {"Authorization": f"Bearer {self._token(c)}"}
         f = _check(httpx.get(f"{self._base(c)}/drive/v3/files/{c['config'].get('folder_id')}", params={"fields": "id,name", "supportsAllDrives": "true"}, headers=h, timeout=TIMEOUT), "Google Drive")
-        return {"ok": True, "sees": f"the folder “{f.get('name')}”"}
+        return {"ok": True, "sees": f"the folder \"{f.get('name')}\""}
 
     def list_objects(self, c: dict, search: str = "") -> list[dict]:
         h = {"Authorization": f"Bearer {self._token(c)}"}

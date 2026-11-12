@@ -2,7 +2,7 @@
 same app-registration sign-in as Entra ID: client credentials, scope https://graph.microsoft.com/.default) behind the
 Connector SDK. Sites are the canonical `site`; the files and folders in their document libraries the canonical `item`,
 each with its sharing (an anonymous link, an organisation-wide link, or members only). Writes carry X-Relay-Approval:
-an anonymous link removed (DELETE …/permissions/{id}) or a folder created (POST …/children). Google Workspace and
+an anonymous link removed (DELETE .../permissions/{id}) or a folder created (POST .../children). Google Workspace and
 Confluence content comes in as exports for now.
 
 Mock lab stand-in: tests/mocklab/sims/msgraph.py (msgraph: sites, drives, items, permissions).
@@ -23,7 +23,7 @@ class M365Content(EntraID):
     CREATES = ("item",)
     WRITABLE = {"item": {"sharing": "sharing"}}
     DEACTIVATE: dict = {}
-    JOBS = "—"
+    JOBS = "-"
 
     def _sites(self, api) -> list[dict]:
         if "sites" not in api.state:
@@ -77,7 +77,7 @@ class M365Content(EntraID):
             if not rec.get("name"):
                 out.append("a folder needs a name")
             elif any(ch in str(rec["name"]) for ch in '"*:<>?/\\|'):
-                out.append(f"“{rec['name']}” has a character SharePoint does not allow in a name")
+                out.append(f"\"{rec['name']}\" has a character SharePoint does not allow in a name")
         return out
 
     def op_create(self, api, entity, rec, approval):

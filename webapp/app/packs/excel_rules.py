@@ -1,4 +1,4 @@
-"""Excel & spreadsheet models — the rules (no agent): reading workbooks (formulas with their cached values, names,
+"""Excel & spreadsheet models - the rules (no agent): reading workbooks (formulas with their cached values, names,
 external links, hidden sheets), VBA modules and Power Query M; the findings; a formula parser that evaluates a
 workbook again (so a fix is proven before it is kept) and translates a sheet's column formulas into SQL (so a model
 leaves Excel and is proven against the workbook's own numbers). The mock lab's workbooks stand in
@@ -18,7 +18,7 @@ PERSONAL_PATH = re.compile(r"(?i)([A-Z]:\\{1,2}Users\\{1,2}[^\\\"]+|\\\\[A-Za-z0
 
 
 class XlError(Exception):
-    """An Excel error value (#REF!, #N/A …) travelling through an evaluation."""
+    """An Excel error value (#REF!, #N/A ...) travelling through an evaluation."""
 
 
 class External(Exception):
@@ -127,7 +127,7 @@ def tokens(text: str) -> list[tuple[str, str]]:
     while i < len(s):
         m = TOK.match(s, i)
         if not m:
-            raise ValueError(f"cannot read the formula at “{s[i:i + 12]}”")
+            raise ValueError(f"cannot read the formula at \"{s[i:i + 12]}\"")
         i = m.end()
         if m.lastgroup != "ws":
             out.append((m.lastgroup, m.group(m.lastgroup)))
@@ -507,7 +507,7 @@ def _named_values(book: dict) -> dict[str, float]:
 
 
 def findings(src: dict) -> list[dict]:
-    """[{id, kind, book, where, issue, route, minutes, fix?}] — every finding of the workbooks, VBA and Power Query."""
+    """[{id, kind, book, where, issue, route, minutes, fix?}] - every finding of the workbooks, VBA and Power Query."""
     out = []
 
     def add(kind, book, where, issue, route, minutes, **kw):

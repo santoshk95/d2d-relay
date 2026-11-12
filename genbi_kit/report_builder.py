@@ -19,6 +19,7 @@ from pathlib import Path
 
 from . import stock
 from .dax import quote_tables, refers_to, uses_whole_table
+from .plaintext import human
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 BASE_THEME = "CY24SU10"            # Power BI's own base theme, shipped inside the report
@@ -130,7 +131,7 @@ class Model:
                     if uses_whole_table(expr, t["name"]) or refers_to(expr, t["name"], c["name"]):
                         errors.append(f"{t['name']}[{c['name']}] is sorted by {t['name']}[{c['sortBy']}], whose DAX depends on "
                                       f"{t['name']}[{c['name']}] (it reads it, uses the whole {t['name']} table, or CALCULATE) "
-                                      f"— Power BI reports a circular dependency. Compute {c['sortBy']} from the columns it needs "
+                                      f"- Power BI reports a circular dependency. Compute {c['sortBy']} from the columns it needs "
                                       f"only, e.g. ALL ( {t['name']}[col1], {t['name']}[col2] ) instead of ALL ( {t['name']} ), or "
                                       f"sort by a column from the CSV")
                 if c["name"].lower() in names:          # Power BI column names ignore case
@@ -151,7 +152,7 @@ def _csv_m(table: dict, parameter: str) -> list[str]:
     the CSV columns the model uses are kept, a CSV column used by several model columns is duplicated for each
     extra use, the first use is renamed, and each column is typed once under its final name (M rejects a column
     listed twice, or a new name that is already taken). Empty cells of text columns become blank (null), as in
-    the prototype and the DAX check — Csv.Document reads them as "" and ISBLANK ( "" ) is FALSE in DAX
+    the prototype and the DAX check - Csv.Document reads them as "" and ISBLANK ( "" ) is FALSE in DAX
     (`blanks_to_null: false` on a table keeps them as empty text)."""
     lines = ["let",
              f'    Source = Csv.Document(File.Contents({parameter} & {_m(table["csv"])}), [Delimiter = ",", '
@@ -284,7 +285,7 @@ def _model_bim(defn: dict, model: Model) -> dict:
                 col["isHidden"] = True
             if c.get("sortBy"):
                 col["sortByColumn"] = c["sortBy"]
-            if c.get("category"):         # data category: maps geocode City / Country / …, tables show links and images
+            if c.get("category"):         # data category: maps geocode City / Country / ..., tables show links and images
                 cat = DATA_CATEGORIES.get(str(c["category"]).replace(" ", "").lower())
                 if not cat:
                     raise DefinitionError(f"{t['name']}[{c['name']}]: category must be one of {', '.join(sorted(set(DATA_CATEGORIES.values())))}")
@@ -311,7 +312,7 @@ def _model_bim(defn: dict, model: Model) -> dict:
         table = {"name": t["name"], "columns": cols,
                  "partitions": [{"name": t["name"], "mode": "import", "source": source}]}
         if t.get("description"):
-            table["description"] = t["description"]
+            table["description"] = human(t["description"])
         if t.get("date_table"):
             table["dataCategory"] = "Time"
         if t["name"] == defn["measures_table"]:
@@ -321,9 +322,9 @@ def _model_bim(defn: dict, model: Model) -> dict:
                 if m.get("format"):
                     mj["formatString"] = m["format"]
                 if m.get("folder"):
-                    mj["displayFolder"] = m["folder"]
+                    mj["displayFolder"] = human(m["folder"])
                 if m.get("description"):
-                    mj["description"] = m["description"]
+                    mj["description"] = human(m["description"])
                 table["measures"].append(mj)
         tables.append(table)
     rels = []
@@ -373,6 +374,26 @@ def _projection(model: Model, ref: str, **extra) -> dict:
     return {"field": field, "queryRef": qref, **extra}
 
 
+TEXT_PROPS = {"title", "subtitle", "subTitle", "label", "heading", "text", "altText", "caption"}
+
+
+def _plain_visual(v: dict) -> dict:
+    """The visual with the words people read in plain keyboard characters (plaintext.human): its title (unless a
+    measure gives it), subtitle, label, text box runs and the Format pane's text. Fields, filters, sorts and values
+    are data and stay exactly as they are."""
+    out = dict(v)
+    for k in ("title", "subtitle", "label"):
+        if isinstance(out.get(k), str) and not MEASURE_REF.match(out[k].strip()):
+            out[k] = human(out[k])
+    if isinstance(out.get("paragraphs"), list):
+        out["paragraphs"] = [[{**r, "text": human(r["text"])} if isinstance(r, dict) and "text" in r else r for r in runs]
+                             if isinstance(runs, list) else runs for runs in out["paragraphs"]]
+    if isinstance(out.get("format"), dict):
+        out["format"] = {obj: {p: human(x) if p in TEXT_PROPS else x for p, x in props.items()}
+                         if isinstance(props, dict) else props for obj, props in out["format"].items()}
+    return out
+
+
 def _visual_name(vid: str) -> str:
     return vid.replace("_", "")[:20] + uuid.uuid5(uuid.NAMESPACE_URL, vid).hex[:8]
 
@@ -391,7 +412,7 @@ def _alt_text(v: dict) -> str | None:
                                for m in [re.match(r"^\s*(?:\[([^\]]+)\]|'?[^'\[]+'?\[([^\]]+)\])\s*$", str(r))] if m))
     if v["type"] == "slicer":
         return f"Filter by {name or (shown[0] if shown else 'a field')}"
-    text = " — ".join(str(x) for x in (name, part("header", "subtitle") or v.get("subtitle")) if x)
+    text = " - ".join(str(x) for x in (name, part("header", "subtitle") or v.get("subtitle")) if x)
     if shown:
         text += (". " if text else "") + "Shows " + ", ".join(shown[:6])
     return text[:250] or None
@@ -462,10 +483,10 @@ def _custom_visual(v: dict, model: Model, catalog: dict) -> dict:
         from . import project_dir
         proj = project_dir()
         if proj is not None and (proj / "visuals" / str(v["type"]) / "pbiviz.json").exists():
-            raise DefinitionError(f"{v['id']}: custom visual {v['type']} is not built yet — run "
+            raise DefinitionError(f"{v['id']}: custom visual {v['type']} is not built yet - run "
                                   f"`genbi visual build {v['type']}`")
         if str(v["type"]).startswith(stock.PREFIX):
-            raise DefinitionError(f"{v['id']}: {v['type']} is not one of the Power BI visuals Relay places — "
+            raise DefinitionError(f"{v['id']}: {v['type']} is not one of the Power BI visuals Relay places - "
                                   f"`genbi catalog pbi` lists them")
         raise DefinitionError(f"{v['id']}: unknown visual type {v['type']}")
     atlas = entry.get("family") == "atlas"
@@ -497,7 +518,7 @@ def _custom_visual(v: dict, model: Model, catalog: dict) -> dict:
                 if SCALED_FORMAT.search(re.sub(r'"[^"]*"|\\.', "x", fmt_.split(";")[0])):
                     raise DefinitionError(f"{v['id']}: [{mm.group(1)}] has a pre-scaled format ({fmt_}); {v['type']} adds "
                                           f"display units (K, M) itself, so labels would read like $0MM. Bind a measure "
-                                          f"with a plain format (e.g. \\$#,0 or 0.0%) — a copy of [{mm.group(1)}] if other "
+                                          f"with a plain format (e.g. \\$#,0 or 0.0%) - a copy of [{mm.group(1)}] if other "
                                           f"visuals need the scaled one")
     fmt = {k: dict(p or {}) for k, p in (v.get("format") or {}).items()}
     if v.get("chart"):
@@ -795,10 +816,11 @@ def _report_files(defn: dict, model: Model, catalog: dict, packages: dict) -> tu
         pid = "ReportSection" + uuid.uuid5(uuid.NAMESPACE_URL, page["name"]).hex[:12]
         page_ids.append(pid)
         files[f"definition/pages/{pid}/page.json"] = {
-            "$schema": f"{SCHEMA}/page/2.1.0/schema.json", "name": pid, "displayName": page["name"],
+            "$schema": f"{SCHEMA}/page/2.1.0/schema.json", "name": pid, "displayName": human(page["name"]),
             "displayOption": page.get("displayOption", "FitToWidth"), "height": page["height"], "width": 1280}
         names = set()
         for z, v in enumerate(page["visuals"]):
+            v = _plain_visual(v)
             if v["type"] == "slicer":
                 visual = _slicer(v, model, defn["theme"])
             elif v["type"] == "textbox":

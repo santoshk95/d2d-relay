@@ -1,7 +1,7 @@
 """Who is asking, and may they? Every request passes `middleware` (platform plan, phases 0-1).
 
 Modes (D2D_AUTH):
-  single  (default) one local user: every request is the bootstrap admin — the app works as before sign-in existed
+  single  (default) one local user: every request is the bootstrap admin - the app works as before sign-in existed
   sso     sign-in required: SSO (OpenID Connect) for everyone, a local password for the bootstrap admin only
   header  tests only: the X-D2D-User header names the user
   otp     D2D Relay: a code by email for business addresses, each person in their organisation's workspace (otp.py)

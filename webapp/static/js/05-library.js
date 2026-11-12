@@ -20,12 +20,12 @@ async function renderLibrary() {
       h('div', {class: 'row', style: 'gap:6px'}, h('b', {}, v.title), h('span', {class: 'faint small mono'}, v.name), h('span', {class: 'spacer'}), h('span', {class: 'tag'}, 'v' + v.version)),
       v.description ? h('div', {class: 'small'}, v.description) : null,
       h('div', {class: 'muted small'}, 'Fields: ' + fields(v)),
-      h('div', {class: 'muted small'}, 'Made for ', v.project ? h('a', {href: '#/p/' + v.project}, v.project_name || v.project) : 'an earlier report', ' · updated ', ago(v.updated)),
+      h('div', {class: 'muted small'}, 'Made for ', v.project ? h('a', {href: '#/p/' + v.project}, v.project_name || v.project) : 'an earlier report', ' - updated ', ago(v.updated)),
       h('div', {class: 'row', style: 'margin-top:4px'}, h('a', {class: 'btn sm', href: `/api/library/${v.name}/download`}, icon('download'), '.pbiviz'), rm));
   };
   main.replaceChildren(h('div', {class: 'page'},
     h('h1', {}, 'Visual library'),
-    h('div', {class: 'muted', style: 'margin:4px 0 16px;max-width:820px'}, 'Custom Power BI visuals Relay built for earlier dashboards. Every new dashboard can use them — they take its colors and look — and Relay can adapt one for a new request. Each is a normal .pbiviz you can also import into any report by hand.'),
+    h('div', {class: 'muted', style: 'margin:4px 0 16px;max-width:820px'}, 'Custom Power BI visuals Relay built for earlier dashboards. Every new dashboard can use them - they take its colors and look - and Relay can adapt one for a new request. Each is a normal .pbiviz you can also import into any report by hand.'),
     lib.folder ? h('div', {class: 'path', style: 'max-width:820px;margin-bottom:16px'}, h('code', {}, lib.folder), copyBtn(lib.folder)) : null,
     lib.visuals.length ? h('div', {class: 'lib'}, lib.visuals.map(card))
       : h('div', {class: 'card empty'}, h('h3', {}, 'No custom visuals yet'), 'When a dashboard needs a chart nothing available draws, Relay proposes one in the plan; once built and tested it appears here.')));

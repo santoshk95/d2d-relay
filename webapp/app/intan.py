@@ -3,12 +3,12 @@ before it breaks.
 
 Discover (read-only): one source per platform (Oracle Integration Cloud, SSIS catalog, Azure Data Factory, Airflow,
 SAP CPI / PI-PO, MuleSoft, Boomi, Logic Apps, AWS Glue, n8n, Power Automate, UiPath / Blue Prism / Automation
-Anywhere, API gateways, SFTP and mail drops, system logs — and the Sample estate), each read by its adapter in
+Anywhere, API gateways, SFTP and mail drops, system logs - and the Sample estate), each read by its adapter in
 app/intan_adapters/ as the registered job kind `intan_scan` (not an LLM run), on request and on a schedule. What
 it finds goes into the lineage & asset graph (nodes + edges) and a runs history here.
 
-Watch: health rules with learned baselines — failing, slow (duration ×3 vs the baseline), slowing (×2), unstable
-(retries), volume drop (−15 % or more), credentials expiring or expired, message-pack / licence usage, announced
+Watch: health rules with learned baselines - failing, slow (duration ×3 vs the baseline), slowing (×2), unstable
+(retries), volume drop (-15 % or more), credentials expiring or expired, message-pack / licence usage, announced
 schema changes, screen changes for bots, dependencies, and integrations nobody owns (owners from the RACI table
 when the tool does not expose one). Every risk carries its reason and evidence rows.
 
@@ -111,7 +111,7 @@ def _subject() -> str:
     if not (d / "project.json").exists():
         d.mkdir(parents=True, exist_ok=True)
         (d / "data").mkdir(exist_ok=True)
-        store.save({"id": SUBJECT, "name": MODULE, "kind": "intan", "prompt": "Discovery scans of the integration sources — not a dashboard.", "status": "idle",
+        store.save({"id": SUBJECT, "name": MODULE, "kind": "intan", "prompt": "Discovery scans of the integration sources - not a dashboard.", "status": "idle",
                     "created": time.time(), "versions": [], "runs": [], "job": None, "error": None})
     return SUBJECT
 
@@ -156,7 +156,7 @@ async def _scan_job(pid: str, args: dict) -> None:
             src = db.one("SELECT * FROM intan_sources WHERE id = ?", (sid,))
             if not src or src["status"] == "paused":
                 continue
-            worker.app_note(pid, "intan_scan", f"Scanning {src['name']} ({src['kind']})…")
+            worker.app_note(pid, "intan_scan", f"Scanning {src['name']} ({src['kind']})...")
             r = await asyncio.to_thread(scan_source, sid)
             worker.app_note(pid, "intan_scan", f"{src['name']}: {r.get('found', 0)} integrations, {r.get('runs', 0)} runs, {r.get('risks', 0)} risks" if r.get("ok") else f"{src['name']}: {r.get('error')}",
                             "info" if r.get("ok") else "warn")
@@ -210,7 +210,7 @@ def public_source(s: dict) -> dict:
     out["label"] = adapters.get(s["kind"]).LABEL if s["kind"] in adapters.ADAPTERS else s["kind"]
     out["secrets"] = {n: secrets_store.get("org", f"intan:{s['id']}:{n}") is not None for n in _secret_names(s["kind"])} if s["kind"] in adapters.ADAPTERS else {}
     out["integrations"] = db.one("SELECT COUNT(*) AS n FROM intan_integrations WHERE source_id = ? AND active = 1", (s["id"],))["n"]
-    # for the Connections hub (read-only there): who added it, and the screen that manages it — never a credential
+    # for the Connections hub (read-only there): who added it, and the screen that manages it - never a credential
     out["owner"] = (db.one("SELECT name FROM users WHERE id = ?", (s["owner_id"],)) or {}).get("name") if s.get("owner_id") else None
     out.update(module=MODULE, link="#/integrations", category="integration", scope="read")
     return out
@@ -408,20 +408,20 @@ def scan_source(sid: str, now: float | None = None) -> dict:
 
 def _fmt_dur(s: float | None) -> str:
     if s is None:
-        return "—"
+        return "-"
     return f"{s:.1f} s" if s < 10 else f"{round(s)} s" if s < 90 else f"{round(s / 60)} min" if s < 5400 else f"{s / 3600:.1f} h"
 
 
 def _fmt_vol(v: float | None, kind: str) -> str:
     if v is None:
-        return "—"
+        return "-"
     if kind == "File":
         return f"{v / 1048576:.1f} MB" if v >= 1048576 else f"{v / 1024:.0f} KB" if v >= 1024 else f"{v:.0f} B"
     return f"{v:,.0f}"
 
 
 def _when(t: float | None) -> str:
-    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%d %b %H:%M") if t else "—"
+    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%d %b %H:%M") if t else "-"
 
 
 def _run_rows(runs: list[dict]) -> list[dict]:
@@ -440,12 +440,12 @@ def assess(iid: str, now: float | None = None) -> list[dict]:
     fails_week = [r for r in week if r["status"] == "failed"]
     last = runs[-1] if runs else None
     code = i["kind"] in CODE_KINDS
-    # failing / screen change / credential expired / dependency — from the newest runs
+    # failing / screen change / credential expired / dependency - from the newest runs
     if last and last["status"] == "failed" and sum(1 for r in runs[-3:] if r["status"] == "failed") >= 2:
         err = last["error"] or ""
         if i["kind"] == "Bot" and SCREEN_RE.search(err):
             found.append({"kind": "screen_change", "reason": f"{len(fails_week)} failures this week: the screen changed ({err[:90]})", "route": "sdlc",
-                          "cause": f"The bot fails at a screen step — {err[:160]}. A code fix replaces the screen steps with the system's API where one exists.", "evidence": _run_rows(runs[-6:])})
+                          "cause": f"The bot fails at a screen step - {err[:160]}. A code fix replaces the screen steps with the system's API where one exists.", "evidence": _run_rows(runs[-6:])})
         elif CRED_RE.search(err):
             found.append({"kind": "credential_expired", "reason": f"{len(fails_week)} failures this week: the sign-in no longer works ({err[:80]})", "route": "heal",
                           "cause": f"The credential this integration uses is refused: {err[:160]}. Renewing it is a configuration fix.", "evidence": _run_rows(runs[-6:])})
@@ -471,7 +471,7 @@ def assess(iid: str, now: float | None = None) -> list[dict]:
             since = next((r for r in ok if r["duration_s"] >= RULES["slowing_factor"] * base and r["started"] >= now - 14 * 86400), recent[0])
             kind = "slow" if ratio >= RULES["slow_factor"] else "slowing"
             found.append({"kind": kind, "reason": f"Duration up {ratio:.1f}× since {_when(since['started'])[:6]} ({_fmt_dur(cur)} vs {_fmt_dur(base)} usual)" if kind == "slow" else f"Runs {ratio:.1f}× longer than usual ({_fmt_dur(cur)} vs {_fmt_dur(base)})",
-                          "route": "sdlc" if code else "heal", "cause": f"Runs take {_fmt_dur(cur)} against a learned baseline of {_fmt_dur(base)} (median of {len(old)} earlier runs); nothing has failed yet." if kind == "slowing" else f"Runs take {_fmt_dur(cur)} against a learned baseline of {_fmt_dur(base)} — {ratio:.1f}× — since {_when(since['started'])}.",
+                          "route": "sdlc" if code else "heal", "cause": f"Runs take {_fmt_dur(cur)} against a learned baseline of {_fmt_dur(base)} (median of {len(old)} earlier runs); nothing has failed yet." if kind == "slowing" else f"Runs take {_fmt_dur(cur)} against a learned baseline of {_fmt_dur(base)} - {ratio:.1f}× - since {_when(since['started'])}.",
                           "evidence": _run_rows(recent) + [{"when": "baseline", "status": f"median of {len(old)} runs", "duration": _fmt_dur(base), "volume": None, "error": ""}]})
         db.run("UPDATE intan_integrations SET usual_s = ? WHERE id = ?", (round(base, 1), iid))
     # volume drop: the newest run against the learned volume baseline
@@ -483,7 +483,7 @@ def assess(iid: str, now: float | None = None) -> list[dict]:
             pct = round(100 * (1 - lastv / base_v))
             what = "File" if i["kind"] == "File" else "Volume"
             found.append({"kind": "volume_drop", "reason": f"{what} {pct} % smaller than usual ({_fmt_vol(lastv, i['kind'])} vs {_fmt_vol(base_v, i['kind'])})", "route": "heal",
-                          "cause": f"The newest run moved {_fmt_vol(lastv, i['kind'])} against a learned baseline of {_fmt_vol(base_v, i['kind'])} (median of {len(vol) - 1} runs). Nothing has failed yet — check the source before the next run.", "evidence": _run_rows(vol[-5:])})
+                          "cause": f"The newest run moved {_fmt_vol(lastv, i['kind'])} against a learned baseline of {_fmt_vol(base_v, i['kind'])} (median of {len(vol) - 1} runs). Nothing has failed yet - check the source before the next run.", "evidence": _run_rows(vol[-5:])})
     # credentials by name and expiry
     for c in db.q("SELECT * FROM intan_credentials WHERE integration_id = ?", (iid,)):
         if c["expires"] is None:
@@ -501,18 +501,18 @@ def assess(iid: str, now: float | None = None) -> list[dict]:
     # usage, announced changes
     for s in db.q("SELECT * FROM intan_signals WHERE integration_id = ?", (iid,)):
         if s["kind"] in ("usage", "licence") and s["limit_value"] and s["value"] is not None and 100 * s["value"] / s["limit_value"] >= RULES["usage_pct"]:
-            found.append({"kind": "usage", "reason": s["text"], "route": "heal", "cause": f"{s['text']} — at this rate the pack runs out before the period ends; raising the pack or throttling is a configuration change.",
+            found.append({"kind": "usage", "reason": s["text"], "route": "heal", "cause": f"{s['text']} - at this rate the pack runs out before the period ends; raising the pack or throttling is a configuration change.",
                           "evidence": [{"when": _when(s["seen"]), "status": f"{round(100 * s['value'] / s['limit_value'])} %", "duration": "", "volume": s["value"], "error": s["text"]}]})
         elif s["kind"] == "schema_change":
             found.append({"kind": "schema_change", "reason": s["text"], "route": "sdlc" if code or i["kind"].startswith("API") else "heal",
-                          "cause": f"{s['text']}" + (f" (due {_when(s['due'])})" if s["due"] else "") + " — the mapping must change before the portal does; nothing has failed yet.",
+                          "cause": f"{s['text']}" + (f" (due {_when(s['due'])})" if s["due"] else "") + " - the mapping must change before the portal does; nothing has failed yet.",
                           "evidence": [{"when": _when(s["due"]) if s["due"] else _when(s["seen"]), "status": "announced", "duration": "", "volume": None, "error": s["text"]}]})
     # owners
     if not i["owner"]:
         props = _j(i["properties"], {})
         found.append({"kind": "no_owner", "reason": (f"Found in {props['found_in']}; not in any inventory" if props.get("found_in") else "Running, but nobody has claimed it"), "route": "owner",
                       "cause": "No team owns this integration: the tool does not name one and the RACI table has no match. Assign an owner so failures reach someone.",
-                      "evidence": [{"when": _when(last["started"]) if last else "—", "status": f"{len(runs)} runs in {RULES['window_days']} days", "duration": _fmt_dur(last["duration_s"]) if last else "", "volume": None, "error": props.get("found_in") or ""}]})
+                      "evidence": [{"when": _when(last["started"]) if last else "-", "status": f"{len(runs)} runs in {RULES['window_days']} days", "duration": _fmt_dur(last["duration_s"]) if last else "", "volume": None, "error": props.get("found_in") or ""}]})
     # store: reopen / update / resolve
     kinds = {f["kind"] for f in found}
     for f in found:
@@ -556,11 +556,11 @@ def proposal(risk: dict, i: dict, route: str | None = None) -> dict:
     pr = "P1" if risk["health"] == "Failing" else "P2" if risk["health"] in ("Degraded", "At risk") else "P3"
     steps = {"ticket": f"A ticket goes to {ROUTE_TARGET['ticket']} with the summary, cause, evidence and priority {pr}. Owner: {i['owner'] or 'to be assigned'}.",
              "heal": "Self-healing prepares a configuration fix (renew the credential, restore the setting, re-run), tests it on a copy and waits for your approval.",
-             "sdlc": "A change request is opened from the ticket; agents plan the change" + (" (replace screen steps with the system's API)" if risk["kind"] == "screen_change" else "") + ", develop and test it on a branch and run UAT on synthetic data — your tech lead approves the plan and the release.",
+             "sdlc": "A change request is opened from the ticket; agents plan the change" + (" (replace screen steps with the system's API)" if risk["kind"] == "screen_change" else "") + ", develop and test it on a branch and run UAT on synthetic data - your tech lead approves the plan and the release.",
              "owner": "The owner you name is recorded for this integration and the RACI table; failures and tickets then reach them."}
     return {"route": route, "label": ROUTE_LABEL[route], "target": ROUTE_TARGET[route], "priority": pr, "summary": f"{i['name']}: {risk['reason']}", "cause": risk["cause"],
             "evidence": risk["evidence"], "owner": i["owner"], "integration": {"id": i["id"], "name": i["name"], "kind": i["kind"], "via": i["via"], "from": i["from_system"], "to": i["to_system"]},
-            "next": steps[route], "then": "ticket → AI SDLC" if risk["route"] == "sdlc" else "assign an owner" if risk["route"] == "owner" else "ticket → Self-healing"}
+            "next": steps[route], "then": "ticket -> AI SDLC" if risk["route"] == "sdlc" else "assign an owner" if risk["route"] == "owner" else "ticket -> Self-healing"}
 
 
 def act(rid: str, u: dict, route: str | None = None, owner: str | None = None) -> dict:
@@ -576,7 +576,7 @@ def act(rid: str, u: dict, route: str | None = None, owner: str | None = None) -
         raise HTTPException(400, "Name the owner to assign.")
     if owner:
         p["owner"] = owner.strip()[:120]
-    ev = {"summary": p["summary"], "items": [f"{e.get('when')} · {e.get('status')}" + (f" · {e['duration']}" if e.get("duration") else "") + (f" · {e['error']}" if e.get("error") else "") for e in p["evidence"][:6]],
+    ev = {"summary": p["summary"], "items": [f"{e.get('when')} - {e.get('status')}" + (f" - {e['duration']}" if e.get("duration") else "") + (f" - {e['error']}" if e.get("error") else "") for e in p["evidence"][:6]],
           "counts": {"priority": p["priority"], "route": p["label"]}, "columns": ["when", "status", "duration", "volume", "error"], "rows": p["evidence"], "proposal": p, "risk": {"id": rid, "kind": risk["kind"], "label": RISK_LABEL.get(risk["kind"], risk["kind"]), "health": risk["health"]}}
     c = checkpoints.open("intan.action", rid, MODULE, f"{p['label']}: {i['name']}", "table", ev, link=f"#/integrations?open={i['id']}", opened_by=u["id"], agent="Relay")
     db.run("UPDATE intan_risks SET status = 'proposed', checkpoint_id = ?, route = ?, updated = ? WHERE id = ?", (c["id"], p["route"], time.time(), rid))
@@ -621,8 +621,8 @@ def _raise_ticket(wid: str, p: dict, who: str) -> None:
         if not s:
             return
         i = p.get("integration") or {}
-        lines = [p.get("cause") or "", f"Integration: {i.get('kind') or ''} {i.get('name') or ''} on {i.get('via') or 'its platform'} ({i.get('from') or '—'} → {i.get('to') or '—'})",
-                 f"Owner: {p['owner']}" if p.get("owner") else "", "\n".join(" · ".join(str(e.get(k)) for k in ("when", "status", "duration", "error") if e.get(k)) for e in (p.get("evidence") or [])[:6]),
+        lines = [p.get("cause") or "", f"Integration: {i.get('kind') or ''} {i.get('name') or ''} on {i.get('via') or 'its platform'} ({i.get('from') or '-'} {i.get('to') or '-'})",
+                 f"Owner: {p['owner']}" if p.get("owner") else "", "\n".join(" - ".join(str(e.get(k)) for k in ("when", "status", "duration", "error") if e.get(k)) for e in (p.get("evidence") or [])[:6]),
                  "Found by Relay's Integration analytics."]
         itsm.request_write(s["id"], "create", {"title": p.get("summary") or "Integration at risk", "description": "\n\n".join(x for x in lines if x.strip()), "priority": p.get("priority") or "P3",
                                                "labels": ["integration-analytics"]}, who=who, module=MODULE, origin=f"intan_work:{wid}", link=f"#/integrations?open={i.get('id') or ''}",
@@ -701,7 +701,7 @@ def risks(status: str = "open") -> list[dict]:
     for r in rows:
         r["evidence"] = _j(r["evidence"], [])
         r["label"] = RISK_LABEL.get(r["kind"], r["kind"])
-        r["then"] = "ticket → AI SDLC" if r["route"] == "sdlc" else "assign an owner" if r["route"] == "owner" else "ticket → Self-healing"
+        r["then"] = "ticket -> AI SDLC" if r["route"] == "sdlc" else "assign an owner" if r["route"] == "owner" else "ticket -> Self-healing"
         out.append(r)
     out.sort(key=lambda r: (HEALTH_ORDER.index(r["health"]), -r["updated"]))
     return out
@@ -739,7 +739,7 @@ TOOL_NAMES = {"n8n", "Azure Data Factory", "Oracle Integration Cloud", "UiPath",
 
 
 def map_data() -> dict:
-    """Systems as nodes in columns (sources → tools → targets → consumers) and integrations as edges coloured by health."""
+    """Systems as nodes in columns (sources -> tools -> targets -> consumers) and integrations as edges coloured by health."""
     rows = [r for r in db.q("SELECT * FROM intan_integrations WHERE active = 1") if r["from_system"] and r["to_system"]]
     tools = TOOL_NAMES | {adapters.get(s["kind"]).LABEL for s in db.q("SELECT kind FROM intan_sources") if s["kind"] in adapters.ADAPTERS}
     systems: dict[str, dict] = {}

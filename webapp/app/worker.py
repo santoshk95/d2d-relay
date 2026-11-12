@@ -3,7 +3,7 @@
 plan -> (user confirms KPIs) -> build -> (user reviews) -> revise ... -> (user approves) -> pbi
 
 After every agent run the app runs the review gates (genbi_kit/gates.py). If a gate fails, the same Claude session
-is resumed with the problems (up to FIX_ROUNDS times) — still one agent, in turn. A version whose gates fail cannot
+is resumed with the problems (up to FIX_ROUNDS times) - still one agent, in turn. A version whose gates fail cannot
 be approved; publishing writes the project to a staging folder, runs the gates on those exact files and only then
 moves it into powerbi/. Custom visuals Claude built for a version (built, tested, in use) go to the visual library.
 """
@@ -89,7 +89,7 @@ ZIP_DATA_LIMIT = 100 * 1024 * 1024     # CSVs go into the download only up to th
 LANE = "build"                          # this worker's lane; Ask D (phase 5) gets its own 'chat' lane
 class _Current(dict):
     """The job running now (pid, kind, task, started, job, owner, tenant) as the rest of the app sees it: only a
-    request or pass in the job's own tenant sees which job it is — everyone else sees an idle mapping (P17: the
+    request or pass in the job's own tenant sees which job it is - everyone else sees an idle mapping (P17: the
     agent is shared by every tenant; what it works on is not)."""
 
     def _mine(self) -> bool:
@@ -287,7 +287,7 @@ def _finish(jid: str, pid: str) -> None:
         except ValueError:
             pass
     if state != "stopped" and row.get("owner_id"):
-        from . import agents                   # every kind of folder opens its own screen (a start, a change request …), not #/p/
+        from . import agents                   # every kind of folder opens its own screen (a start, a change request ...), not #/p/
         here = agents.place(pid, st)
         name = st.get("name") or here["module"]
         if state == "done":
@@ -397,7 +397,7 @@ async def _run(pid: str, kind: str, args: dict) -> None:
 
 def refresh_guide(d: Path) -> None:
     """The guide (CLAUDE.md, loaded by Claude Code automatically; AGENTS.md / GEMINI.md for the other CLIs) belongs to
-    the app, not the project: every run gets the current one — the guide for this kind of folder (app/guides.py: a
+    the app, not the project: every run gets the current one - the guide for this kind of folder (app/guides.py: a
     dashboard gets GENBI.md, its worked example and the team's metrics; a start, a studio item, an RFP, a case, a
     change request, a converted report each get their own)."""
     from . import guides
@@ -407,9 +407,9 @@ def refresh_guide(d: Path) -> None:
 async def agent(pid: str, stage: str, prompt: str, turns: int, target: str, resume: str | None = None,
                 extra_s: int = 0, system: str | None = None, env: dict | None = None) -> dict:
     """One Claude Code run in the project folder; every event goes to the activity log as it happens.
-    `target` is what the run works towards ("plan", "v1", "v2" …), so its tokens and cost add up per version.
+    `target` is what the run works towards ("plan", "v1", "v2" ...), so its tokens and cost add up per version.
     `system` replaces the dashboard system prompt for phase modules whose subject is not a dashboard (P10+);
-    `env` adds per-run variables for the toolkit (P16: the repository credential `genbi repo` uses) — never logged."""
+    `env` adds per-run variables for the toolkit (P16: the repository credential `genbi repo` uses) - never logged."""
     refresh_guide(store.project_dir(pid))
     model = (store.load(pid).get("job") or {}).get("model") or DEFAULT_MODEL
     owner = _owner(pid)
@@ -564,21 +564,21 @@ def _check_data(d: Path) -> tuple[list[str], dict | None]:
     """Generate the recipe again (the same seed gives the same files, so this is what the report will use) and
     profile it. Returns (problems, summary)."""
     if not (d / "datagen.yaml").exists():
-        return ["datagen.yaml was not written — write the recipe (CLAUDE.md, Demo data) and run `genbi datagen`"], None
+        return ["datagen.yaml was not written - write the recipe (CLAUDE.md, Demo data) and run `genbi datagen`"], None
     try:
         summary = datagen.run(d)
     except (datagen.RecipeError, ValueError, OSError) as e:
         return [f"datagen.yaml: {str(e)[:1500]}"], None
     problems = [f"{t['table']}: no rows were generated" for t in summary["tables"] if not t["rows"]]
     if not summary["story"]:
-        problems.append("datagen.yaml has no `story` — list the 3-5 things the data was made to show")
+        problems.append("datagen.yaml has no `story` - list the 3-5 things the data was made to show")
     profile(d)
     return problems, summary
 
 
 async def _extract(pid: str) -> None:
     """EXTRACT: pull the warehouse tables the person picked into data/*.parquet with their own login, profile them,
-    then plan — the same path as uploaded CSVs from there on."""
+    then plan - the same path as uploaded CSVs from there on."""
     d = store.project_dir(pid)
     st = store.load(pid)
     spec = st.get("warehouse") or {}
@@ -597,7 +597,7 @@ async def _extract(pid: str) -> None:
         except connectors.ConnectorError as e:
             raise RuntimeError(str(e)) from e
         done.append(info)
-        app_note(pid, "extract", f"{t['object']}: {info['rows']:,} rows → data/{info['file']} ({info['seconds']}s)", "ok")
+        app_note(pid, "extract", f"{t['object']}: {info['rows']:,} rows -> data/{info['file']} ({info['seconds']}s)", "ok")
     await asyncio.to_thread(profile, d)
     refresh_files(pid)
     label = (connectors.KINDS.get(c["kind"]) or {}).get("label") or c["kind"]
@@ -605,7 +605,7 @@ async def _extract(pid: str) -> None:
                "login. In definition.yaml use `extract: <file>` for these tables (CLAUDE.md, Warehouse tables); the app "
                + ("writes the native Power BI connector.\n" if c["kind"] in report_builder.NATIVE_KINDS else
                   f"refreshes these files ({label} has no Power BI connector, so the Power BI file reads them).\n")
-               + "\n".join(f"- data/{i['file']} ← {i['object']} ({i['rows']:,} rows)" for i in done))
+               + "\n".join(f"- data/{i['file']} <- {i['object']} ({i['rows']:,} rows)" for i in done))
     app_note(pid, "extract", f"Data ready: {len(done)} table(s), {sum(i['rows'] for i in done):,} rows.", "ok")
     if not store.load(pid).get("plan_rounds"):
         enqueue(pid, "plan", **_carry(pid))
@@ -637,7 +637,7 @@ async def _data(pid: str, feedback: str | None = None) -> None:
             break
         if attempt == FIX_ROUNDS:
             raise RuntimeError(f"The demo data recipe still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-        app_note(pid, "data", f"The check found {len(problems)} problem(s) in datagen.yaml — D2D is fixing them.",
+        app_note(pid, "data", f"The check found {len(problems)} problem(s) in datagen.yaml - D2D is fixing them.",
                  "warn", problems)
         res = await agent(pid, "data", prompts.fix(problems, "data"), TURNS["fix"], "data", resume=res.get("session_id"))
     refresh_files(pid)
@@ -672,7 +672,7 @@ async def _plan(pid: str, feedback: str | None, attachments: list[dict] | None =
             break
         if attempt == FIX_ROUNDS:
             raise RuntimeError(f"plan.yaml still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-        app_note(pid, "plan", f"The check found {len(problems)} problem(s) in plan.yaml — D2D is fixing them.", "warn", problems)
+        app_note(pid, "plan", f"The check found {len(problems)} problem(s) in plan.yaml - D2D is fixing them.", "warn", problems)
         res = await agent(pid, "plan", prompts.fix(problems, "plan"), TURNS["fix"], "plan", resume=res.get("session_id"))
     plan = definition.load(d / "plan.yaml")
     refresh_files(pid)                  # the plan stage may have changed generated demo data
@@ -700,7 +700,7 @@ def _check_definition(d: Path, pid: str, rel: str = "definition.yaml",
         return [msg], None, [gates.gate("definition", [msg])]
     errors, dd = checks.definition_errors(raw, d, check_sql=False)
     if not errors and not dd["pages"]:
-        errors = [f"{rel} has no pages yet — add the pages of the plan"]
+        errors = [f"{rel} has no pages yet - add the pages of the plan"]
     if errors:
         return errors, None, [gates.gate("definition", errors)]
     con = data_mod.connect(d, dd)
@@ -714,7 +714,7 @@ def _check_definition(d: Path, pid: str, rel: str = "definition.yaml",
     found += gates.file_gates(d, dd, catalog(), visuals_dir(), con, dax=dax)
     found.append(_display(pid, proto))
     found = gates.ordered(found)
-    problems = gates.problems(found) + [f"Power BI's DAX disagrees with the prototype SQL (make them agree — fix "
+    problems = gates.problems(found) + [f"Power BI's DAX disagrees with the prototype SQL (make them agree - fix "
                                         f"whichever is wrong): {x}" for x in dax.get("differences") or []]
     return problems, {"report": dd["name"], "pages": [p["name"] for p in dd["pages"]], "visuals": n,
                       "measures": len(dd["measures"]), "tables": len(dd["tables"]),
@@ -750,7 +750,7 @@ def _custom_used(dd: dict) -> list[dict]:
 
 
 def _promote(pid: str, d: Path, info: dict, problems: list[str]) -> list[str]:
-    """Add the custom visuals this version uses — built, tested, without open problems — to the visual library."""
+    """Add the custom visuals this version uses - built, tested, without open problems - to the visual library."""
     st, notes = store.load(pid), []
     state = {v["name"]: v for v in vfactory.status(d)}
     for cv in info.get("custom_visuals") or []:
@@ -779,18 +779,18 @@ async def _version(pid: str, stage: str, prompt: str, feedback: str | None, atta
              else "Applying your changes.")
     if visuals:
         app_note(pid, stage, f"This run may build {visuals} new custom visual{'s' if visuals > 1 else ''} "
-                 "(code, compile, browser test) — it takes longer.")
+                 "(code, compile, browser test) - it takes longer.")
     res = await agent(pid, stage, prompt, TURNS[stage] + VISUAL_TURNS * visuals, target, extra_s=VISUAL_S * visuals)
     for attempt in range(FIX_ROUNDS + 1):
         app_note(pid, stage, "Running the review gates: definition, prototype, Power Query, data, DAX in Power BI's "
-                             "engine, report files, consistency, best practices, accessibility, display…")
+                             "engine, report files, consistency, best practices, accessibility, display...")
         drift = await asyncio.to_thread(_sync_data, d)
         problems, info, found = await asyncio.to_thread(_check_definition, d, pid)
         problems = drift + problems
         if not problems or attempt == FIX_ROUNDS:
             break
         names = ", ".join(g["name"] for g in gates.failed(found)) or "Values match the prototype"
-        app_note(pid, stage, f"Review gates not passed ({names}): {len(problems)} problem(s) — D2D is fixing them.",
+        app_note(pid, stage, f"Review gates not passed ({names}): {len(problems)} problem(s) - D2D is fixing them.",
                  "warn", problems)
         res = await agent(pid, stage, prompts.fix(problems, "definition"), TURNS["fix"], target, resume=res.get("session_id"))
     if info is None:
@@ -814,18 +814,18 @@ async def _version(pid: str, stage: str, prompt: str, feedback: str | None, atta
     store.save(st)
     added = await asyncio.to_thread(_promote, pid, d, info, problems)
     if added:
-        app_note(pid, stage, "Visual library: " + "; ".join(added) + " — later reports can use it.", "ok")
+        app_note(pid, stage, "Visual library: " + "; ".join(added) + " - later reports can use it.", "ok")
     bad, passed = gates.failed(found), sum(g["status"] in ("pass", "warn") for g in found)
     if bad:
         app_note(pid, stage, f"Prototype v{v} is ready, but {len(bad)} review gate(s) still fail "
-                 f"({', '.join(g['name'] for g in bad)}) — it can be approved once they pass: ask Relay to fix them.",
+                 f"({', '.join(g['name'] for g in bad)}) - it can be approved once they pass: ask Relay to fix them.",
                  "warn", gates.problems(found))
     elif problems:
         app_note(pid, stage, f"Prototype v{v} is ready and passed its review gates; {len(problems)} value(s) in Power BI "
-                 "differ from the prototype — look at them before approving.", "warn", problems)
+                 "differ from the prototype - look at them before approving.", "warn", problems)
     else:
         app_note(pid, stage, f"Prototype v{v} is ready: {len(info['pages'])} pages, {info['visuals']} visuals, "
-                 f"{info['measures']} measures — {passed} review gates passed. Review it, then approve or ask for "
+                 f"{info['measures']} measures - {passed} review gates passed. Review it, then approve or ask for "
                  "changes.", "ok")
 
 
@@ -1034,9 +1034,9 @@ def _make_pbix(d: Path, report: str) -> dict:
 
 async def _pbi(pid: str, v: int) -> None:
     d = store.project_dir(pid)
-    app_note(pid, "pbi", f"Checking prototype v{v} in Power BI's engine and running the review gates…")
+    app_note(pid, "pbi", f"Checking prototype v{v} in Power BI's engine and running the review gates...")
     out = await asyncio.to_thread(_build_pbip, d, pid, v)
-    app_note(pid, "pbi", "Every check passed. Power BI Desktop is making the .pbix file…")
+    app_note(pid, "pbi", "Every check passed. Power BI Desktop is making the .pbix file...")
     out.update(await asyncio.to_thread(_make_pbix, d, out["report"]))
     st = store.load(pid)
     st.update(status="done", job=None, approved=v, output=out, finished=time.time())
@@ -1063,7 +1063,7 @@ async def _pbix_job(pid: str, args: dict) -> None:
     d = store.project_dir(pid)
     st = store.load(pid)
     report = _published_report(d, st)
-    app_note(pid, "pbi", "Power BI Desktop is making the .pbix file…")
+    app_note(pid, "pbi", "Power BI Desktop is making the .pbix file...")
     made = await asyncio.to_thread(_make_pbix, d, report)
     st = store.load(pid)
     out = {k: v for k, v in (st.get("output") or {}).items() if k not in OLD_OUTPUT_KEYS}

@@ -1,8 +1,8 @@
-"""SSIS catalog (SSISDB) — read with SQL: catalog.executions (package runs with status and times),
+"""SSIS catalog (SSISDB) - read with SQL: catalog.executions (package runs with status and times),
 catalog.execution_data_statistics (rows moved between source and destination components), catalog.operation_messages
 (errors), catalog.packages / projects / folders. The same queries run on SQL Server (pyodbc) and, for the mock lab, on
 a SQLite copy of the catalog where each view is a table named catalog_<view>. The package description may carry
-"schedule: …" and "owner: …" (SQL Agent schedules are not in SSISDB)."""
+"schedule: ..." and "owner: ..." (SQL Agent schedules are not in SSISDB)."""
 from __future__ import annotations
 
 import time

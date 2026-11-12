@@ -1,10 +1,10 @@
 """Qlik readers: inventory and the neutral model from app exports.
 
 Qlik Sense: an app exported with `qlik app unbuild` (or a folder holding several of them), i.e.
-    app-properties.json        qTitle, qLastReloadTime, owner …
+    app-properties.json        qTitle, qLastReloadTime, owner ...
     script.qvs                 the load script
     sheets/<id>.json           qInfo, qMetaDef.title, cells[] naming the objects on the sheet
-    objects/<id>.json          qInfo.qType (barchart, linechart, piechart, kpi, table, pivot-table, combochart, gauge, map …),
+    objects/<id>.json          qInfo.qType (barchart, linechart, piechart, kpi, table, pivot-table, combochart, gauge, map ...),
                                title, qHyperCubeDef with qDimensions / qMeasures (inline qDef or qLibraryId)
     measures/<id>.json         master measures (qMeasure.qDef, qLabel);  dimensions/<id>.json  master dimensions
     variables/<id>.json        variables
@@ -16,7 +16,7 @@ Expressions/Definition + Label). Section Access in the script is flagged as a fe
 
 Qlik expressions (Sum(Sales), Count(distinct Customer), set analysis {$<Year={2024}>}) are kept as written: there are no
 conversion rules for them in P15, so every calculation counts as "no rule yet" and the converter asks the agent.
-The load script gives the datasets: LOAD … FROM [lib://…/file.qvd] and SQL SELECT … FROM table statements.
+The load script gives the datasets: LOAD ... FROM [lib://.../file.qvd] and SQL SELECT ... FROM table statements.
 """
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ class ReadError(Exception):
 
 
 def parse_load_script(text: str) -> dict:
-    """Tables, fields and sources from a load script: LOAD a, b, c FROM [lib://x/y.qvd] (qvd); SQL SELECT … FROM t;"""
+    """Tables, fields and sources from a load script: LOAD a, b, c FROM [lib://x/y.qvd] (qvd); SQL SELECT ... FROM t;"""
     tables, connections, features = [], [], []
     cleaned = re.sub(r"(?<![:\w])//[^\n]*", "", text)      # comments, but not the // in lib://
     cleaned = re.sub(r"/\*.*?\*/", "", cleaned, flags=re.S)
@@ -155,7 +155,7 @@ class QlikSenseUnbuild:
                     self._app(app, est, usage, as_of)
                 except (ReadError, OSError, ValueError) as e:
                     est["problems"].append(f"{app.name}: {e}")
-            progress({"phase": "apps", "page": p + 1, "pages": pages, "pct": round(90 * (p + 1) / pages), "text": f"reading apps — page {p + 1} of {pages}",
+            progress({"phase": "apps", "page": p + 1, "pages": pages, "pct": round(90 * (p + 1) / pages), "text": f"reading apps - page {p + 1} of {pages}",
                       "found": {"Apps": len(est["reports"]), "Data connections": len(est["datasets"])}})
             if not pause():
                 from .cognos import Stopped
@@ -164,7 +164,7 @@ class QlikSenseUnbuild:
         est["read_seconds"] = round(time.time() - t0, 1)
         model.finish(est)
         est["problems"] = list(dict.fromkeys(est["problems"] + model.validate(est)))
-        progress({"phase": "done", "page": 1, "pages": 1, "pct": 100, "text": f"scan complete — {len(est['reports'])} apps in {est['read_seconds']} s"})
+        progress({"phase": "done", "page": 1, "pages": 1, "pct": 100, "text": f"scan complete - {len(est['reports'])} apps in {est['read_seconds']} s"})
         return est
 
     def _app(self, app: Path, est: dict, usage: dict, as_of: dt.date) -> None:
@@ -277,7 +277,7 @@ class QlikViewProject:
                     self._doc(doc, est, usage, as_of)
                 except (ReadError, OSError, ValueError, ET.ParseError) as e:
                     est["problems"].append(f"{doc.name}: {e}")
-            progress({"phase": "documents", "page": p + 1, "pages": pages, "pct": round(90 * (p + 1) / pages), "text": f"reading documents — page {p + 1} of {pages}",
+            progress({"phase": "documents", "page": p + 1, "pages": pages, "pct": round(90 * (p + 1) / pages), "text": f"reading documents - page {p + 1} of {pages}",
                       "found": {"Documents": len(est["reports"]), "QVD files": sum(len(d['tables']) for d in est['datasets'])}})
             if not pause():
                 from .cognos import Stopped
@@ -286,7 +286,7 @@ class QlikViewProject:
         est["read_seconds"] = round(time.time() - t0, 1)
         model.finish(est)
         est["problems"] = list(dict.fromkeys(est["problems"] + model.validate(est)))
-        progress({"phase": "done", "page": 1, "pages": 1, "pct": 100, "text": f"scan complete — {len(est['reports'])} documents in {est['read_seconds']} s"})
+        progress({"phase": "done", "page": 1, "pages": 1, "pct": 100, "text": f"scan complete - {len(est['reports'])} documents in {est['read_seconds']} s"})
         return est
 
     def _doc(self, doc: Path, est: dict, usage: dict, as_of: dt.date) -> None:

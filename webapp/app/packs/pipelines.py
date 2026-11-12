@@ -1,26 +1,26 @@
-"""Data pipelines & ETL (registry id `pipelines`) — pipelines written, fixed and moved between tools, rules first.
+"""Data pipelines & ETL (registry id `pipelines`) - pipelines written, fixed and moved between tools, rules first.
 
-Platforms: the ETL tools' own APIs (Azure Data Factory, dbt Cloud, Airflow, Informatica Cloud, Talend Cloud, Fivetran —
+Platforms: the ETL tools' own APIs (Azure Data Factory, dbt Cloud, Airflow, Informatica Cloud, Talend Cloud, Fivetran -
 `_w1` adapters, the mock-lab simulators stand in for each) and their exports (SSIS, Informatica PowerCenter, DataStage,
 Talend, ODI, ADF, dbt, Airflow, AWS Glue, Fivetran), read into one neutral model (`pipelines_read`); the warehouse the
 jobs load (Oracle REST-enabled SQL and the other W1 SQL kinds) for the data dictionary and the proofs.
 
-Assess   Connect → Inventory → Health → Findings → Estimate: every job in the tool's own terms, its run history, health
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: every job in the tool's own terms, its run history, health
          by rules (failing since, flaky, slower, a password in the definition, retire and merge candidates, no owner),
          findings a person keeps or ignores, waves with the time they take.
-Develop  Describe → Shape → Build → Prove → Ship → Run: a new pipeline as a dbt model from named source tables — the
+Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run: a new pipeline as a dbt model from named source tables - the
          mapping shaped by rules and confirmed by a person, built as dbt files, proven in DuckDB on a copy of the
          sources (row counts, keys unique and not null), a named approval, then the dbt Cloud job created through an
          approved write.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: a failing job's cause from its error and the warehouse's
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: a failing job's cause from its error and the warehouse's
          dictionary (a renamed column, a late file, a transient outage, an expired sign-in), the change proposed by
          rules, proven against the dictionary, approved, written back to the tool through its own write approval and
          kept as a rule.
-Migrate  Discover → Decide → Convert → Prove → Hand over → Run: an estate exported or read from the tool, Keep / Merge /
+Migrate  Discover -> Decide -> Convert -> Prove -> Hand over -> Run: an estate exported or read from the tool, Keep / Merge /
          Retire with reasons, Informatica PowerCenter mappings and ADF data flows converted to dbt models by rules
          (the agent drafts what no rule fits), every converted job proven against the table the legacy job loads, a
          named owner's sign-off on the evidence pack, then a Run item that watches the estate.
-Run      Watch → Alert → Fix → Approve → Report: run history read on a schedule, failures grouped by job and cause, a
+Run      Watch -> Alert -> Fix -> Approve -> Report: run history read on a schedule, failures grouped by job and cause, a
          person chooses Self-healing, a ticket or "expected" for each, and only then do the hand-offs go out.
 """
 from __future__ import annotations
@@ -54,14 +54,14 @@ class EtlApi(wb.Platform):
     label = "Your ETL tool, read through its API"
     kinds = API_KINDS
     simulator = "tests/mocklab/sims: adf, dbt, airflow, informatica_iics, talend, fivetran"
-    reads = "pipelines, jobs, DAGs, mapping tasks, connections and their run history — read-only; a change only through its own write approval"
+    reads = "pipelines, jobs, DAGs, mapping tasks, connections and their run history - read-only; a change only through its own write approval"
 
 
 class EtlExports(wb.Platform):
     label = "Exports of your ETL tool"
     uploads = (".zip", ".xml", ".json", ".csv", ".txt", ".sql", ".yml", ".yaml")
     simulator = "tests/mocklab/fixtures: SSIS, Informatica PowerCenter, DataStage, Talend, ODI, ADF, dbt, Airflow, Glue, Fivetran"
-    reads = ("the export as the tool writes it — a .zip of the SSIS project or .ispac with the SSISDB extracts, PowerCenter repository XML and parameter "
+    reads = ("the export as the tool writes it - a .zip of the SSIS project or .ispac with the SSISDB extracts, PowerCenter repository XML and parameter "
              "files, a DataStage .dsx, Talend items, an ODI Smart Export, the ADF ARM template, dbt's target/ folder, Airflow DAG files, Glue scripts")
 
 
@@ -140,7 +140,7 @@ def _hours(m: float) -> str:
 def _cost(h: float) -> str:
     b = registry.brand()
     rate, cur = float(b.get("hourly_rate") or 0), b.get("currency") or ""
-    return f" · {cur}{rate * h:,.0f}" if rate else ""
+    return f" - {cur}{rate * h:,.0f}" if rate else ""
 
 
 def record_lineage(ctx: wb.Ctx, jobs: list[dict]) -> int:
@@ -167,11 +167,11 @@ def a_connect(ctx: wb.Ctx) -> dict:
     for p in (API, WH, EXPORTS):
         rows += p.test(ctx)
     if not rows:
-        raise wb.StepFailed("Nothing to read: pick your ETL tool's connection or upload its export (a .zip of the project, the repository XML, the ARM template…).")
+        raise wb.StepFailed("Nothing to read: pick your ETL tool's connection or upload its export (a .zip of the project, the repository XML, the ARM template...).")
     good = [r for r in rows if r["ok"]]
     if not good:
         raise wb.StepFailed("None of the sources answered: " + "; ".join(f"{r['source']}: {r['sees']}" for r in rows)[:600])
-    return {"summary": f"{len(good)} of {len(rows)} source(s) answered — read-only.", "counts": {"sources": len(rows), "answered": len(good)},
+    return {"summary": f"{len(good)} of {len(rows)} source(s) answered - read-only.", "counts": {"sources": len(rows), "answered": len(good)},
             "data": {"columns": ["Source", "Kind", "Status", "What Relay sees", "Access"], "rows": [[r["source"], r["kind"], "answered" if r["ok"] else "refused", r["sees"], r["scope"]] for r in rows]}}
 
 
@@ -195,7 +195,7 @@ def a_inventory(ctx: wb.Ctx) -> dict:
                  kind="inventory", ok=True)
     tools = sorted({j["tool_label"] for j in e["jobs"]})
     return {"summary": f"{len(e['jobs'])} job(s) in {', '.join(tools)} with {len(e['runs'])} run(s) in the last 30 days" + (f"; {len(e['unread'])} file(s) not read" if e["unread"] else "")
-            + " — untick what is out of scope.", "counts": {"jobs": len(e["jobs"]), "runs": len(e["runs"])}, "records": recs,
+            + " - untick what is out of scope.", "counts": {"jobs": len(e["jobs"]), "runs": len(e["runs"])}, "records": recs,
             "items": [f"{s['source']} ({s['kind']}): {s['jobs']} job(s), {s['runs']} run(s)" for s in e["seen"]] + ([f"Not read: {', '.join(e['unread'][:5])}"] if e["unread"] else []),
             "data": {"columns": ["Tool", "Kind", "Job", "Folder", "Schedule", "Owner", "Reads", "Loads", "Runs (30 days)"],
                      "rows": [[r["tool"], r["kind"], r["job"], r["folder"], r["schedule"], r["owner"], r["reads"], r["loads"], r["runs"]] for r in recs]}}
@@ -236,7 +236,7 @@ def a_health(ctx: wb.Ctx) -> dict:
     ctx.put("decide", n)
     record_lineage(ctx, jobs)
     hi = sum(1 for f in found if f["severity"] == "high")
-    return {"summary": f"{len(jobs)} job(s) checked: {len(found)} finding(s), {hi} high" + (" — and every table checked against the warehouse's dictionary" if dic else "") + ".",
+    return {"summary": f"{len(jobs)} job(s) checked: {len(found)} finding(s), {hi} high" + (" - and every table checked against the warehouse's dictionary" if dic else "") + ".",
             "counts": {"jobs": len(jobs), "findings": len(found), "high": hi}, "data": {"checks": checks}}
 
 
@@ -244,7 +244,7 @@ def a_findings(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records("findings")}
     recs = [{**f, **({"decision": have[f["id"]].get("decision"), "severity": have[f["id"]].get("severity")} if f["id"] in have else {})} for f in ctx.get("findings") or []]
     hi = sum(1 for r in recs if r["severity"] == "high")
-    return {"summary": (f"{len(recs)} finding(s), {hi} high — keep what matters, ignore what does not." if recs else "No issues: every job runs on time and is used."),
+    return {"summary": (f"{len(recs)} finding(s), {hi} high - keep what matters, ignore what does not." if recs else "No issues: every job runs on time and is used."),
             "counts": {"findings": len(recs), "high": hi}, "records": recs, "items": [f"{r['job']}: {r['issue']}" for r in recs[:6]],
             "data": {"columns": ["Job", "Tool", "Issue", "Measured", "Severity"], "rows": [[r["job"], r["tool"], r["issue"], r["measured"], r["severity"]] for r in recs]}}
 
@@ -258,9 +258,9 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     kept = [f for f in ctx.records("findings") if f.get("decision") != "ignore"]
     dec = ctx.get("decide") or []
     fail = {f["job"] for f in kept if f["issue_kind"] in ("failing", "secret")}
-    waves = [("Wave 1 — fix what fails or exposes a password", [d for d in dec if d["job"] in fail and d["decision"] == "keep"], "fix a failing job"),
-             ("Wave 2 — convert by rules", [d for d in dec if d["decision"] == "keep" and d["route_kind"] == "rules" and d["job"] not in fail], "review a rules conversion"),
-             ("Wave 3 — convert with Relay's agent", [d for d in dec if d["decision"] == "keep" and d["route_kind"] == "agent" and d["job"] not in fail], "review an agent conversion"),
+    waves = [("Wave 1 - fix what fails or exposes a password", [d for d in dec if d["job"] in fail and d["decision"] == "keep"], "fix a failing job"),
+             ("Wave 2 - convert by rules", [d for d in dec if d["decision"] == "keep" and d["route_kind"] == "rules" and d["job"] not in fail], "review a rules conversion"),
+             ("Wave 3 - convert with Relay's agent", [d for d in dec if d["decision"] == "keep" and d["route_kind"] == "agent" and d["job"] not in fail], "review an agent conversion"),
              ("Retire or merge", [d for d in dec if d["decision"] in ("retire", "merge")], "retire or merge a job")]
     items, total = [], 0.0
     for title, ds, what in waves:
@@ -274,7 +274,7 @@ def a_estimate(ctx: wb.Ctx) -> dict:
                + f"\nAssumptions: {assumptions}.\n", label="Assessment (Markdown)")
     ctx.output("decisions.json", json.dumps(dec, indent=1), label="Keep / merge / retire, with the reasons (JSON)")
     return {"summary": f"{len(items)} wave(s), about {_hours(total)} of a person's time" + _cost(total / 60) + ".", "counts": {"waves": len(items), "hours": round(total / 60, 1)},
-            "data": {"items": items, "total": _hours(total), "note": f"Assumptions: {assumptions}." + ("" if registry.brand().get("hourly_rate") else " Set an hourly rate under Admin › Branding to see the cost.")}}
+            "data": {"items": items, "total": _hours(total), "note": f"Assumptions: {assumptions}." + ("" if registry.brand().get("hourly_rate") else " Set an hourly rate under Admin > Branding to see the cost.")}}
 
 
 # ================================================================== Develop: a new pipeline as a dbt model
@@ -381,7 +381,7 @@ def _validate_mapping(recs: list[dict], ctx: wb.Ctx) -> list[str]:
 
 
 MAP_EDIT = wb.Edit(columns=[wb.Column("include", "Include", "bool"), wb.Column("from", "From", readonly=True), wb.Column("to", "To (target column)"),
-                            wb.Column("expression", "Expression (SQL, optional)", help="e.g. ROUND(QTY * UNIT_PRICE, 2) — only the sources' columns"),
+                            wb.Column("expression", "Expression (SQL, optional)", help="e.g. ROUND(QTY * UNIT_PRICE, 2) - only the sources' columns"),
                             wb.Column("key", "Key", "bool"), wb.Column("source", "Source", readonly=True)], add=True, remove=True, validate=_validate_mapping, label="column")
 
 
@@ -496,7 +496,7 @@ def d_ship(ctx: wb.Ctx) -> dict:
     dbt = next((c for c in ctx.connections() if c["kind"] == "dbt_cloud"), None)
     cad = ctx.scope.get("cadence") or {"every": "day", "at": "05:00", "tz": "UTC"}
     approver = db.user(ctx.st.get("approver") or "") or {}
-    return {"summary": f"Go live: model {m.get('name')} — {'a dbt Cloud job created on ' + dbt['name'] if dbt else 'the dbt files handed over for your repository'}, {_w1.lc(wb.schedule_text(cad))}.",
+    return {"summary": f"Go live: model {m.get('name')} - {'a dbt Cloud job created on ' + dbt['name'] if dbt else 'the dbt files handed over for your repository'}, {_w1.lc(wb.schedule_text(cad))}.",
             "data": {"items": [{"title": "The model", "detail": f"{m.get('path')} ({m.get('dialect')}), tested unique and not null on {', '.join(m.get('keys') or [])}"},
                                {"title": "Where it runs", "detail": f"dbt Cloud job on {dbt['name']} (a write that waits for its own approval)" if dbt else "no dbt Cloud connection: the files are in the outputs"},
                                {"title": "Named approval", "detail": approver.get("name") or "the owner of this work item"}]}}
@@ -521,8 +521,8 @@ def d_run(ctx: wb.Ctx) -> dict:
                                                                              "account_id": _w1.cfg(dbt, "account_id"), "project_id": ctx.scope.get("project_id") or None}},
                                f"Create the dbt Cloud job for {m.get('name')}")
         return {"summary": f"The dbt Cloud job waits for its write approval in the Validation queue ({cp['id']}); nothing is created until a person accepts it.",
-                "data": {"href": "#/validate", "label": "Open the Validation queue", "text": f"Write: create the job “Relay: {m.get('name')}”"}}
-    return {"summary": "No dbt Cloud connection: the model, its tests and its sources are in the outputs — commit them to your dbt repository (AI SDLC can open the pull request).",
+                "data": {"href": "#/validate", "label": "Open the Validation queue", "text": f"Write: create the job \"Relay: {m.get('name')}\""}}
+    return {"summary": "No dbt Cloud connection: the model, its tests and its sources are in the outputs - commit them to your dbt repository (AI SDLC can open the pull request).",
             "data": {"href": f"#/m/{MODULE}/i/{ctx.id}", "label": "The outputs", "text": m.get("path") or ""}}
 
 
@@ -541,7 +541,7 @@ def c_request(ctx: wb.Ctx) -> dict:
     rs = [r for r in e["runs"] if r["job"].upper() == j["name"].upper()]
     return {"summary": f"{j['name']} ({j['tool_label']} {j['kind']}): {len(rs)} run(s) in 14 days, {sum(1 for r in rs if r['status'] == 'failed')} failed.",
             "counts": {"runs": len(rs), "failed": sum(1 for r in rs if r["status"] == "failed")},
-            "data": {"text": (ctx.brief or "(no request text)") + f"\n\nReads: {', '.join(j['sources']) or '—'}\nLoads: {j.get('target') or '—'}\nSchedule: {j.get('schedule') or '—'}"}}
+            "data": {"text": (ctx.brief or "(no request text)") + f"\n\nReads: {', '.join(j['sources']) or '-'}\nLoads: {j.get('target') or '-'}\nSchedule: {j.get('schedule') or '-'}"}}
 
 
 def c_diagnose(ctx: wb.Ctx) -> dict:
@@ -549,13 +549,13 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
     rs = [r for r in ctx.get("runs") or [] if r["job"].upper() == j["name"].upper()]
     last = next((r for r in reversed(rs) if r["status"] == "failed"), None)
     if not last:
-        return {"summary": f"{j['name']} has not failed in 14 days: nothing to diagnose — close the item or describe the change in the brief.", "ok": False,
+        return {"summary": f"{j['name']} has not failed in 14 days: nothing to diagnose - close the item or describe the change in the brief.", "ok": False,
                 "data": {"checks": [{"name": "runs", "label": "Recent runs", "status": "pass", "detail": f"{len(rs)} run(s), none failed"}]}}
     dic = dictionary(ctx)
     learned = db.one("SELECT * FROM pipelines_fixes WHERE tool = ? AND old = ? ORDER BY created DESC LIMIT 1", (j["tool"], (rules.diagnose(last["error"])).get("column") or "")) if last.get("error") else None
     d = rules.diagnose(last.get("error") or "", dic, j["sources"])
     if d["cause"] == "schema" and not d.get("replacement") and learned:
-        d.update(replacement=learned["new"], why=f"the same rename was fixed before ({learned['job']}): {learned['old']} → {learned['new']}")
+        d.update(replacement=learned["new"], why=f"the same rename was fixed before ({learned['job']}): {learned['old']} {learned['new']}")
     ctx.put("diagnosis", d)
     checks = [{"name": "cause", "label": f"Cause: {d['cause'].replace('_', ' ')}", "status": "fail", "measured": d.get("column") or "", "expected": d.get("replacement") or "",
                "detail": d["why"], "evidence": ctx.evidence("The failing run", {"run": last, "diagnosis": d}, kind="diagnosis", ok=False)}]
@@ -600,7 +600,7 @@ def c_fix(ctx: wb.Ctx) -> dict:
         if r.get("change") == "rename" and r.get("old") and r.get("new") and defn.get("text"):
             preview, n = rules.patch_text(defn["text"], r["old"], r["new"])
             r["hits"] = n
-    return {"summary": ("Proposed by rules: " + "; ".join(f"{r['change']} {r.get('old') or ''} → {r.get('new') or ''}".strip() for r in recs) + ". Change it if needed, then confirm."),
+    return {"summary": ("Proposed by rules: " + "; ".join(f"{r['change']} {r.get('old') or ''} {r.get('new') or ''}".strip() for r in recs) + ". Change it if needed, then confirm."),
             "records": recs, "data": {"columns": ["Change", "Old", "New", "Where", "Why"], "rows": [[r["change"], r.get("old"), r.get("new"), r.get("where"), r.get("note")] for r in recs]},
             "items": [preview[:300]] if preview else []}
 
@@ -652,7 +652,7 @@ def c_prove(ctx: wb.Ctx) -> dict:
 def c_approve(ctx: wb.Ctx) -> dict:
     j = _job(ctx, ctx.get("job"))
     defn = ctx.get("definition") or {}
-    return {"summary": f"Release the change to {j['name']}: " + "; ".join(f"{r['change']} {r.get('old') or ''} → {r.get('new') or ''}".strip() for r in ctx.records("fix")) + ".",
+    return {"summary": f"Release the change to {j['name']}: " + "; ".join(f"{r['change']} {r.get('old') or ''} {r.get('new') or ''}".strip() for r in ctx.records("fix")) + ".",
             "data": {"items": [{"title": "Where it is written", "detail": {"adf_dataflow": f"the ADF data flow {defn.get('name')} (its own write approval)", "iics_task": "the IICS mapping task's source query (its own write approval)"}.get(defn.get("kind"), "in the tool, by a person")},
                                {"title": "Then", "detail": "the next run uses it; Run & support watches the job"}]}}
 
@@ -685,7 +685,7 @@ def c_learn(ctx: wb.Ctx) -> dict:
 
 def m_discover(ctx: wb.Ctx) -> dict:
     out = a_inventory(ctx)
-    out["summary"] = out["summary"].replace(" — untick what is out of scope.", ".")
+    out["summary"] = out["summary"].replace(" - untick what is out of scope.", ".")
     out.pop("records", None)
     return out
 
@@ -697,9 +697,9 @@ def m_decide(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**d, **({k: have[d["id"]][k] for k in ("decision", "into") if k in have[d["id"]]} if d["id"] in have else {})} for d in rules.decide(jobs, found)]
     n = {k: sum(1 for r in recs if r["decision"] == k) for k in ("keep", "merge", "retire")}
-    return {"summary": f"Keep {n['keep']}, merge {n['merge']}, retire {n['retire']} — each with its reason; {sum(1 for r in recs if r['route_kind'] == 'rules' and r['decision'] == 'keep')} ready to convert by rules.",
-            "counts": n, "records": recs, "items": [f"{r['job']}: {r['decision']} — {r['why']}" for r in recs if r["decision"] != "keep"][:6],
-            "data": {"columns": ["Job", "Tool", "Decision", "Why", "Conversion"], "rows": [[r["job"], r["tool"], r["decision"], r["why"], r["route"] if r["decision"] == "keep" else "—"] for r in recs]}}
+    return {"summary": f"Keep {n['keep']}, merge {n['merge']}, retire {n['retire']} - each with its reason; {sum(1 for r in recs if r['route_kind'] == 'rules' and r['decision'] == 'keep')} ready to convert by rules.",
+            "counts": n, "records": recs, "items": [f"{r['job']}: {r['decision']} - {r['why']}" for r in recs if r["decision"] != "keep"][:6],
+            "data": {"columns": ["Job", "Tool", "Decision", "Why", "Conversion"], "rows": [[r["job"], r["tool"], r["decision"], r["why"], r["route"] if r["decision"] == "keep" else "-"] for r in recs]}}
 
 
 DECIDE_EDIT = wb.Edit(columns=[wb.Column("decision", "Decision", "select", options=(("keep", "Keep"), ("merge", "Merge"), ("retire", "Retire"))),
@@ -792,7 +792,7 @@ def _write_project(ctx: wb.Ctx, jobs: list[dict], recs: list[dict]) -> None:
 
 CONVERT_WORDS = """Read WORK.md, then convert.json in this folder: the ETL jobs no rule could convert, each with its tool, name,
 the tables it reads and loads, the warehouse columns of those tables (`dictionary`) and its definition as the export holds
-it. For each job write models/<model>.sql — ONE SELECT in DuckDB's SQL that produces the rows the job loads into its
+it. For each job write models/<model>.sql - ONE SELECT in DuckDB's SQL that produces the rows the job loads into its
 target: the target's columns, in order, named as the target names them; read only the tables listed for the job, with
 schema-qualified names (STAGE.STG_ORDERS); no INSERT, MERGE, CREATE or DELETE; no columns that are not in `dictionary`.
 A Type 2 history (a conditional split or router on a row hash) becomes the current-state SELECT; say so in the first
@@ -857,13 +857,13 @@ def _convert_after(ctx: wb.Ctx, res: dict) -> dict:
             continue
         sql = (ctx.dir / "models" / f"{r['model']}.sql").read_text(encoding="utf-8").strip().rstrip(";")
         tree = sqlglot.parse_one(sql, read="duckdb")
-        r.update(sql=sql, origin="agent", route="agent", status="drafted by Relay — prove it", inputs=sorted({(f"{tb.db}.{tb.name}" if tb.db else tb.name).upper() for tb in tree.find_all(exp.Table)}),
+        r.update(sql=sql, origin="agent", route="agent", status="drafted by Relay - prove it", inputs=sorted({(f"{tb.db}.{tb.name}" if tb.db else tb.name).upper() for tb in tree.find_all(exp.Table)}),
                  columns=[e.alias_or_name.upper() for e in tree.expressions] if isinstance(tree, exp.Select) else [], problems="")
         n += 1
     ctx.evidence("Conversions drafted by Relay", {"models": list(todo), "summary": res.get("text") or ""}, kind="agent", ok=True)
     jobs = [j for j in _jobs(ctx) if j["id"] in {r["id"] for r in recs}]
     _write_project(ctx, jobs, recs)
-    return {"summary": f"Relay drafted {n} model(s) — the proof runs them against the tables the legacy jobs load before anyone relies on them.", "records": recs,
+    return {"summary": f"Relay drafted {n} model(s) - the proof runs them against the tables the legacy jobs load before anyone relies on them.", "records": recs,
             "data": {"columns": ["Job", "Tool", "dbt model", "How", "Status", "Problems"], "rows": [[r["job"], r["tool"], r["model"], r["route"], r["status"], r["problems"]] for r in recs]}}
 
 
@@ -892,8 +892,8 @@ def m_prove(ctx: wb.Ctx) -> dict:
         tgt = (r.get("target") or "").upper()
         missing = [t for t in r["inputs"] if t not in known and t.split(".")[-1] not in uploads]
         if missing:
-            checks.append({"name": r["id"], "label": f"{r['job']} → {r['model']}", "status": "skip",
-                           "detail": f"not compared: {', '.join(missing)} is not in {wh['name']} — upload an extract of it (CSV or Parquet named after the table) to prove this job"})
+            checks.append({"name": r["id"], "label": f"{r['job']} {r['model']}", "status": "skip",
+                           "detail": f"not compared: {', '.join(missing)} is not in {wh['name']} - upload an extract of it (CSV or Parquet named after the table) to prove this job"})
             continue
         try:
             con = _duck(ctx, {t: (rows(t) if t in known else _rows_of(ctx, {"ref": {"source": "file", "item": ctx.id, "file": uploads[t.split('.')[-1]]["table"]}})) for t in r["inputs"]})
@@ -903,14 +903,14 @@ def m_prove(ctx: wb.Ctx) -> dict:
             finally:
                 con.close()
         except wb.StepFailed as e:
-            checks.append({"name": r["id"], "label": f"{r['job']} → {r['model']}", "status": "error", "detail": str(e)[:300]})
+            checks.append({"name": r["id"], "label": f"{r['job']} {r['model']}", "status": "error", "detail": str(e)[:300]})
             continue
         except Exception as e:  # noqa: BLE001 - DuckDB's message, for the person
-            checks.append({"name": r["id"], "label": f"{r['job']} → {r['model']}", "status": "fail", "detail": f"the model does not run: {str(e).splitlines()[0][:300]}",
+            checks.append({"name": r["id"], "label": f"{r['job']} {r['model']}", "status": "fail", "detail": f"the model does not run: {str(e).splitlines()[0][:300]}",
                            "evidence": ctx.evidence(f"{r['model']} does not run", {"sql": r["sql"], "error": str(e)}, kind="proof", ok=False)})
             continue
         if not tgt or tgt not in known:
-            checks.append({"name": r["id"], "label": f"{r['job']} → {r['model']}", "status": "skip", "detail": f"ran: {len(out)} row(s); the legacy target {tgt or '—'} is not in {wh['name']} to compare with"})
+            checks.append({"name": r["id"], "label": f"{r['job']} {r['model']}", "status": "skip", "detail": f"ran: {len(out)} row(s); the legacy target {tgt or '-'} is not in {wh['name']} to compare with"})
             continue
         legacy = [{k.upper(): v for k, v in x.items()} for x in rows(tgt)]
         common = [c for c in r["columns"] if c in (legacy[0] if legacy else {}) and c not in rules.TECH]
@@ -921,7 +921,7 @@ def m_prove(ctx: wb.Ctx) -> dict:
         parts = [ctx.proof("row_count", source=src, target=new), ctx.proof("checksum", source=src, target=new, columns=common, tolerance_pct=0.001),
                  ctx.proof("sample_diff", source=src, target=new, keys=keys, n=50, columns=common)]
         bad = [p for p in parts if p["status"] == "fail"]
-        checks.append({"name": r["id"], "label": f"{r['job']} → {r['model']}", "status": "fail" if bad else "pass", "measured": f"{len(parts) - len(bad)} of {len(parts)} agree",
+        checks.append({"name": r["id"], "label": f"{r['job']} {r['model']}", "status": "fail" if bad else "pass", "measured": f"{len(parts) - len(bad)} of {len(parts)} agree",
                        "expected": "all agree", "detail": "; ".join(f"{p['label']}: {p['detail']}" for p in parts)[:700], "severity": "high",
                        "parts": [{k: p.get(k) for k in ("label", "status", "detail", "evidence")} for p in parts]})
     ok = sum(1 for c in checks if c["status"] == "pass")
@@ -936,10 +936,10 @@ def m_handover(ctx: wb.Ctx) -> dict:
     recs = ctx.records("convert")
     dec = ctx.records("decide")
     return {"summary": f"Hand-over: {sum(1 for v in proof.values() if v == 'pass')} proven model(s), {sum(1 for d in dec if d.get('decision') == 'retire')} job(s) to retire, "
-                       f"{sum(1 for d in dec if d.get('decision') == 'merge')} to merge — the evidence pack holds every proof.",
+                       f"{sum(1 for d in dec if d.get('decision') == 'merge')} to merge - the evidence pack holds every proof.",
             "data": {"items": [{"title": "dbt project", "detail": f"{sum(1 for r in recs if r.get('sql'))} model(s) with tests and sources, in the outputs"},
-                               {"title": "Proven", "detail": ", ".join(r["model"] for r in recs if proof.get(r["id"]) == "pass") or "—"},
-                               {"title": "Differences accepted", "detail": ", ".join(r["model"] for r in recs if proof.get(r["id"]) == "fail") or "—"},
+                               {"title": "Proven", "detail": ", ".join(r["model"] for r in recs if proof.get(r["id"]) == "pass") or "-"},
+                               {"title": "Differences accepted", "detail": ", ".join(r["model"] for r in recs if proof.get(r["id"]) == "fail") or "-"},
                                {"title": "Owner sign-off", "detail": (db.user(ctx.st.get("approver") or "") or {}).get("name") or "the owner of this work item"}]}}
 
 
@@ -1001,12 +1001,12 @@ def r_alert(ctx: wb.Ctx) -> dict:
 def r_fix(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**b, **({k: have[b["id"]][k] for k in ("route", "note") if k in have[b["id"]]} if b["id"] in have else {})} for b in ctx.get("breaks") or []]
-    return {"summary": f"{len(recs)} failing job(s): choose who fixes each — Self-healing, a ticket, or expected. Nothing goes out until you confirm.", "records": recs,
+    return {"summary": f"{len(recs)} failing job(s): choose who fixes each - Self-healing, a ticket, or expected. Nothing goes out until you confirm.", "records": recs,
             "counts": {"self-healing": sum(1 for r in recs if r["route"] == "heal"), "tickets": sum(1 for r in recs if r["route"] == "ticket")},
             "data": {"columns": ["Job", "Likely cause", "Proposed route"], "rows": [[r["job"], r["why"], r["route"]] for r in recs]}}
 
 
-RUNFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("heal", "Self-healing"), ("ticket", "Raise a ticket"), ("expected", "Expected — no action"), ("ignore", "Ignore this time"))),
+RUNFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("heal", "Self-healing"), ("ticket", "Raise a ticket"), ("expected", "Expected - no action"), ("ignore", "Ignore this time"))),
                                wb.Column("note", "Note for whoever fixes it", "longtext"), wb.Column("job", "Job", readonly=True), wb.Column("why", "Likely cause", readonly=True)],
                       add=False, remove=False, label="failing job")
 
@@ -1021,11 +1021,11 @@ def r_approve(ctx: wb.Ctx) -> dict:
         elif b["route"] == "ticket":
             h = ctx.ticket(title, body, priority="P2" if b["cause"] in ("signin", "schema") else "P3", about=b["job"])
         else:
-            h = {"kind": b["route"], "label": title, "status": "expected — recorded" if b["route"] == "expected" else "ignored this time"}
+            h = {"kind": b["route"], "label": title, "status": "expected - recorded" if b["route"] == "expected" else "ignored this time"}
         done.append(h)
         rows.append([b["job"], {"heal": "Self-healing", "ticket": "Ticket", "expected": "Expected", "ignore": "Ignored"}[b["route"]], h.get("status"), h.get("case") or h.get("checkpoint") or h.get("output") or ""])
     return {"summary": f"{sum(1 for h in done if h['kind'] == 'heal')} to Self-healing, {sum(1 for h in done if h['kind'] == 'ticket')} ticket(s), "
-                       f"{sum(1 for h in done if h['kind'] in ('expected', 'ignore'))} without action — as you approved.", "counts": {"hand-offs": len(done)},
+                       f"{sum(1 for h in done if h['kind'] in ('expected', 'ignore'))} without action - as you approved.", "counts": {"hand-offs": len(done)},
             "data": {"columns": ["Job", "Route", "Status", "Reference"], "rows": rows}}
 
 
@@ -1035,29 +1035,29 @@ def r_report(ctx: wb.Ctx) -> dict:
     rate = round(100 * ok / len(runs), 1) if runs else None
     hist = [[time.strftime("%d %b %H:%M", time.gmtime(r["ended"])), (next((s for s in r["steps"] if s["id"] == "watch"), {}).get("counts") or {}).get("failing")] for r in (ctx.st.get("rounds") or [])[-11:]]
     hist.append([time.strftime("%d %b %H:%M", time.gmtime()), len(ctx.get("breaks") or [])])
-    ctx.output(f"run-report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", f"# Pipelines run report: {ctx.title}\n\nRuns: {len(runs)} · succeeded: {ok}" + (f" ({rate} %)" if rate is not None else "")
-               + "\n\n" + "".join(f"- {b['job']}: {b['why']} → {b.get('route')}\n" for b in ctx.records("fix")), label="Run report (Markdown)")
+    ctx.output(f"run-report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", f"# Pipelines run report: {ctx.title}\n\nRuns: {len(runs)} - succeeded: {ok}" + (f" ({rate} %)" if rate is not None else "")
+               + "\n\n" + "".join(f"- {b['job']}: {b['why']} {b.get('route')}\n" for b in ctx.records("fix")), label="Run report (Markdown)")
     return {"summary": f"{ok} of {len(runs)} run(s) succeeded" + (f" ({rate} %)" if rate is not None else "") + f"; {len(ctx.get('breaks') or [])} failing job(s) this round.",
             "counts": {"succeeded %": rate or 0, "failing": len(ctx.get("breaks") or [])}, "data": {"columns": ["Round", "Failing jobs"], "rows": hist}}
 
 
 def _cards(u: dict) -> list[dict]:
-    rows = [[r["job"], r["tool"], f"{r['old']} → {r['new']}", time.strftime("%d %b %Y", time.gmtime(r["created"])), f"#/m/{MODULE}/i/{r['item']}" if r.get("item") else ""]
+    rows = [[r["job"], r["tool"], f"{r['old']} {r['new']}", time.strftime("%d %b %Y", time.gmtime(r["created"])), f"#/m/{MODULE}/i/{r['item']}" if r.get("item") else ""]
             for r in db.q("SELECT * FROM pipelines_fixes ORDER BY created DESC LIMIT 20")
             if not r.get("item") or auth.can_project(u, "view", db.project(r["item"]))]
     return [{"title": "Fixes kept as rules", "columns": ["Job", "Tool", "Change", "When", "Work item"], "rows": rows,
              "empty": "No fix yet: a Fix / change item's Learn step keeps each one, so the next failure like it is diagnosed at once."}]
 
 
-GUIDE = """# Data pipelines & ETL — the work item
+GUIDE = """# Data pipelines & ETL - the work item
 
 This folder is one work item of Relay's Data pipelines & ETL module. Relay reads the ETL tools' APIs and exports into
 one neutral model and applies its rules (health, keep / merge / retire, diagnosis, conversion). You are asked only for
-what no rule fits — today, converting an ETL job into one dbt model.
+what no rule fits - today, converting an ETL job into one dbt model.
 
-- `convert.json` (written by the app before your run): the jobs to convert — tool, name, the tables each reads and loads,
+- `convert.json` (written by the app before your run): the jobs to convert - tool, name, the tables each reads and loads,
   the warehouse's columns of those tables (`dictionary`) and the definition as the export holds it.
-- `models/<model>.sql`: what you write — ONE SELECT in DuckDB's SQL producing the rows the job loads.
+- `models/<model>.sql`: what you write - ONE SELECT in DuckDB's SQL producing the rows the job loads.
 - `convert_notes.yaml`: one sentence per model on what you assumed.
 - `data/`: the uploads and the read-only copies the proofs use; `evidence/`: what the steps measured.
 
@@ -1066,22 +1066,22 @@ Never invent a table or a column; never write INSERT, MERGE, CREATE or DELETE; s
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE,
-    lineage="each job as a node of its tool reading its source tables and writing its target; converted dbt models (system “Relay pipelines”) writing the same targets",
+    lineage="each job as a node of its tool reading its source tables and writing its target; converted dbt models (system \"Relay pipelines\") writing the same targets",
     platforms={"api": API, "exports": EXPORTS, "warehouse": WH},
     schemas={"job": INV_EDIT.columns, "finding": FINDINGS_EDIT.columns, "decision": DECIDE_EDIT.columns, "model": CONVERT_EDIT.columns, "failing job": RUNFIX_EDIT.columns},
     cards=_cards,
     work={
         "assess": wb.Work(title="See every job, how healthy it is and what to fix, merge or retire first", steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Each ETL tool's API is tested with its own sign-in and each export opened — read-only"),
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Each ETL tool's API is tested with its own sign-in and each export opened - read-only"),
             "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", edit=INV_EDIT,
                                  text="Every pipeline, package, mapping, DAG, task and connection in the tool's own terms, with its schedule, owner, what it reads and loads and its runs"),
             "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Health checker",
                               text="Rules over the run history and the definitions: failing since, flaky, slower than usual, a password in the definition, retire and merge candidates, no owner"),
-            "Findings": wb.Step(kind="person", run=a_findings, edit=FINDINGS_EDIT, text="What needs attention, with its evidence — you keep or ignore each finding"),
-            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Waves — fix, convert by rules, convert with the agent, retire — with the time a person needs")}),
+            "Findings": wb.Step(kind="person", run=a_findings, edit=FINDINGS_EDIT, text="What needs attention, with its evidence - you keep or ignore each finding"),
+            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Waves - fix, convert by rules, convert with the agent, retire - with the time a person needs")}),
         "develop": wb.Work(title="A new pipeline as a dbt model: mapped by rules, proven on a copy, then scheduled", steps={
-            "Describe": wb.Step(kind="platform", run=d_describe, agent="Connector", text="The source tables you name (or upload) are read — their columns and rows"),
-            "Shape": wb.Step(kind="deterministic", run=d_shape, view="mapping", agent="Mapper", edit=MAP_EDIT, confirm="the column mapping — what is copied, renamed, derived and the key",
+            "Describe": wb.Step(kind="platform", run=d_describe, agent="Connector", text="The source tables you name (or upload) are read - their columns and rows"),
+            "Shape": wb.Step(kind="deterministic", run=d_shape, view="mapping", agent="Mapper", edit=MAP_EDIT, confirm="the column mapping - what is copied, renamed, derived and the key",
                              text="Rules map every source column to the target, join on the shared keys and mark the key; you rename, drop or derive columns"),
             "Build": wb.Step(kind="deterministic", run=d_build, view="text", agent="Model builder", text="The mapping becomes a dbt model in your warehouse's SQL, with its tests and sources"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Prover", back_to="shape", text="The model runs on a copy of the sources: keys unique and not null, one row out per row in, every column real"),
@@ -1093,8 +1093,8 @@ wb.register(wb.Pack(
         "change": wb.Work(title="Fix a failing job: the cause from its error, the change proven, then written back with approval", needs_source=True, steps={
             "Request": wb.Step(kind="platform", run=c_request, view="text", agent="Connector", text="The job you name and its recent runs, read from the tool"),
             "Diagnose": wb.Step(kind="deterministic", run=c_diagnose, view="gates", agent="Diagnostician",
-                                text="The failure's cause from its error and the warehouse's dictionary — a renamed column, a late file, a transient outage, an expired sign-in"),
-            "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Fixer", edit=FIX_EDIT, text="Rules propose the change (rename the column the source renamed) — you confirm or change it"),
+                                text="The failure's cause from its error and the warehouse's dictionary - a renamed column, a late file, a transient outage, an expired sign-in"),
+            "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Fixer", edit=FIX_EDIT, text="Rules propose the change (rename the column the source renamed) - you confirm or change it"),
             "Prove": wb.Step(kind="proof", run=c_prove, view="gates", agent="Prover", back_to="fix", text="The changed definition no longer reads the old column, and every column it reads exists"),
             "Approve": wb.Step(kind="person", run=c_approve, view="plan", approver=True, text="The named approver releases the change"),
             "Learn": wb.Step(kind="platform", run=c_learn, view="link", agent="Publisher", text="The change is written to the tool through its own write approval and kept as a rule for next time")},
@@ -1102,8 +1102,8 @@ wb.register(wb.Pack(
         "migrate": wb.Work(title="Move an ETL estate to dbt: decide, convert by rules, prove against the legacy tables", steps={
             "Discover": wb.Step(kind="platform", run=m_discover, agent="Scanner", text="Every job of the estate, from the tool's API or its export, with its run history"),
             "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Rationaliser", edit=DECIDE_EDIT,
-                              text="Keep, merge or retire each job — with the reason from its runs and definition — and whether rules or the agent convert it"),
-            "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Converter", edit=CONVERT_EDIT, confirm="the models no rule converted — ask Relay to draft them first, or go on without them",
+                              text="Keep, merge or retire each job - with the reason from its runs and definition - and whether rules or the agent convert it"),
+            "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Converter", edit=CONVERT_EDIT, confirm="the models no rule converted - ask Relay to draft them first, or go on without them",
                                confirm_if=lambda ctx, out: bool((out.get("counts") or {}).get("agent")),
                                text="Informatica PowerCenter mappings and ADF data flows become dbt models by rules; a column the source renamed is caught on the way; Relay's agent drafts what no rule fits",
                                actions={"agent": wb.Action(label="Ask Relay to convert the rest", kind="agent", prompt=_convert_prompt, check=_convert_check, after=_convert_after, agent="Converter (AI)",

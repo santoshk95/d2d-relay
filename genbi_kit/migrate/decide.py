@@ -1,9 +1,9 @@
 """Decide what to keep: the user's rules with the system defaults beside them, a live preview, a reason per object,
 decisions signed by name.
 
-  Retire   not run for N days · never run and older than N days · personal folders (retire unless shared) ·
-           never when owned by …
-  Merge    at least N % the same (weights: dataset, attributes, metrics, filters) · keep the most used / most recent
+  Retire   not run for N days - never run and older than N days - personal folders (retire unless shared) -
+           never when owned by ...
+  Merge    at least N % the same (weights: dataset, attributes, metrics, filters) - keep the most used / most recent
   Review   failed in the last N days, or used but not convertible, or its package is missing
 
 Similarity is computed once per estate (pairs within the same package / data module that share items) and cached;
@@ -63,7 +63,7 @@ def decide_one(r: dict, rules: dict, prediction: dict | None, as_of: dt.date) ->
         if r.get("personal") and not r.get("shared") and rules["personal"] == "retire unless shared":
             return "retire", "personal folder, not shared"
     if r.get("missing_dataset"):
-        return "review", f"its package “{r['missing_dataset']}” no longer exists"
+        return "review", f"its package \"{r['missing_dataset']}\" no longer exists"
     fd = u.get("failed_days")
     if fd is not None and fd <= rules["review_days"]:
         return "review", f"failed {fd} days ago (rule: {rules['review_days']})"
@@ -151,7 +151,7 @@ def score(pair: list, rules: dict) -> float:
 
 def preview(estate: dict, rules: dict | None, pairs: list[list], predictions: dict | None = None, overrides: dict | None = None, as_of: dt.date | None = None) -> dict:
     """Every object's decision and reason under these rules, the tiles, "before N -> after M", merge groups.
-    overrides: {id: {"decision": "keep" | "retire" | "review", "by": name, "at": ts, "note": ...}} — a person's call wins."""
+    overrides: {id: {"decision": "keep" | "retire" | "review", "by": name, "at": ts, "note": ...}} - a person's call wins."""
     rules = clean_rules(rules)
     predictions = predictions or {}
     overrides = overrides or {}
@@ -199,7 +199,7 @@ def preview(estate: dict, rules: dict | None, pairs: list[list], predictions: di
             if sim is None:
                 sim = max((s for (a, b), s in best.items() if other in (a, b)), default=rules["sim_pct"])
             decisions[other].update(decision="merge", merged_into=keep, similarity=round(sim),
-                                    reason=f"{round(sim)} % the same as “{by_id[keep]['name']}” — keeping the {rules['keep']}")
+                                    reason=f"{round(sim)} % the same as \"{by_id[keep]['name']}\" - keeping the {rules['keep']}")
     for rid, o in overrides.items():
         if rid in decisions and o.get("decision") in ("keep", "retire", "review"):
             decisions[rid].update(decision=o["decision"], merged_into=None, reason=f"your decision ({o.get('by') or 'unsigned'}): {o.get('note') or LABELS[o['decision']].lower()}")

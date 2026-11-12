@@ -4,7 +4,7 @@ function planTab(st) {
   if (!plan) return [h('div', {class: 'card empty'}, h('h3', {}, 'No plan yet'), 'Relay writes the plan first: data model, KPIs with their formulas, and the pages.')];
   const kpis = plan.kpis || [], proposals = (st.visuals && st.visuals.proposals) || [];
   return [
-    st.status === 'awaiting_kpis' ? h('div', {class: 'note'}, 'This is the plan waiting for you. ', h('a', {href: `#/p/${st.id}/overview`}, 'Edit and confirm it in Overview →')) : null,
+    st.status === 'awaiting_kpis' ? h('div', {class: 'note'}, 'This is the plan waiting for you. ', h('a', {href: `#/p/${st.id}/overview`}, 'Edit and confirm it in Overview')) : null,
     h('div', {class: 'card'}, h('h3', {}, 'Summary'), st.plan_summary ? notes(st.plan_summary) : null, plan.summary ? h('p', {class: 'muted'}, plan.summary) : null),
     dataCard(st),
     planModel(plan),
@@ -28,14 +28,14 @@ function versionsTab(st) {
       h('div', {class: 'l1'}, h('span', {class: 'vn'}, 'v' + x.v), x.label ? h('span', {class: 'lab'}, x.label) : null, h('span', {class: 'spacer'}),
         latest ? h('span', {class: 'tag'}, 'Latest') : null, pubs.length ? h('span', {class: 'tag ok'}, icon('check'), 'Published') : null),
       h('div', {class: 'l2'}, when(x.created)),
-      h('div', {class: 'l3'}, x.feedback ? '“' + x.feedback.replace(/^\(Start from[^)]*\)\s*/, '') + '”' : 'First build from the confirmed plan'));
+      h('div', {class: 'l3'}, x.feedback ? '"' + x.feedback.replace(/^\(Start from[^)]*\)\s*/, '') + '"' : 'First build from the confirmed plan'));
   }));
   return [h('div', {class: 'vwrap'}, list, versionDetail(st, sel))];
 }
 function versionDetail(st, v) {
   const vs = st.versions, prev = vs.filter(x => x.v < v.v).pop(), pubs = published(st, v.v);
   const canAct = !RUN.has(st.status);
-  const changes = h('div', {class: 'chg'}, h('div', {class: 'muted small'}, 'Loading changes…'));
+  const changes = h('div', {class: 'chg'}, h('div', {class: 'muted small'}, 'Loading changes...'));
   loadChanges(st, v.v).then(ch => changes.replaceChildren(changesView(ch))).catch(e => changes.replaceChildren(h('div', {class: 'note err'}, e.message)));
   const labelInput = h('input', {type: 'text', value: v.label || '', placeholder: 'Name this version, e.g. "Sent to CFO"', maxlength: 60});
   const saveLabel = async () => {
@@ -69,10 +69,10 @@ function versionDetail(st, v) {
         (v.gates || []).length ? null : [
           h('dt', {}, 'Prototype'), h('dd', {}, v.problems && v.problems.length ? h('span', {style: 'color:var(--warn)'}, `${v.problems.length} item(s) flagged`) : h('span', {style: 'color:var(--ok)'}, '✓ every visual rendered')),
           h('dt', {}, 'Power BI engine'), h('dd', {}, v.dax ? daxLine(st, v.v, v.dax) : h('span', {class: 'muted'}, 'not recorded for this version'))],
-        h('dt', {}, 'Contents'), h('dd', {}, `${v.pages.length} pages (${v.pages.join(', ')}) · ${v.visuals} visuals · ${v.measures} measures · ${v.tables} tables`),
+        h('dt', {}, 'Contents'), h('dd', {}, `${v.pages.length} pages (${v.pages.join(', ')}) - ${v.visuals} visuals - ${v.measures} measures - ${v.tables} tables`),
         (v.custom_visuals || []).length ? [h('dt', {}, 'Custom visuals'), h('dd', {}, v.custom_visuals.map(c => `${c.title} (${c.origin === 'project' ? 'new' : 'library'})`).join(', '))] : null,
-        usage ? [h('dt', {}, 'Relay'), h('dd', {}, `${spendModel(usage)} · ${dur(usage.duration_ms)}`)] : null,
-        pubs.length ? [h('dt', {}, 'Published'), h('dd', {}, pubs.map(p => h('div', {}, `${when(p.when)}${p.pbix ? ' · ' + p.pbix : ''}` + (p.dax ? ' · DAX checked' : ''))))] : null),
+        usage ? [h('dt', {}, 'Relay'), h('dd', {}, `${spendModel(usage)} - ${dur(usage.duration_ms)}`)] : null,
+        pubs.length ? [h('dt', {}, 'Published'), h('dd', {}, pubs.map(p => h('div', {}, `${when(p.when)}${p.pbix ? ' - ' + p.pbix : ''}` + (p.dax ? ' - DAX checked' : ''))))] : null),
       !(v.gates || []).length && v.problems && v.problems.length ? h('details', {class: 'more'}, h('summary', {}, 'Show flagged items'), h('ul', {class: 'small'}, v.problems.map(p => h('li', {}, p)))) : null),
     v.summary ? h('div', {class: 'card'}, h('h3', {}, "Relay's notes"), notes(v.summary)) : null);
 }
@@ -83,7 +83,7 @@ async function loadChanges(st, v, against) {
 }
 function changesView(ch) {
   const sections = ch.sections || [];
-  const mark = {added: '+', removed: '−', changed: '~'};
+  const mark = {added: '+', removed: '-', changed: '~'};
   return h('div', {},
     h('div', {class: 'chips'}, (ch.summary || []).map(s => h('span', {class: 'tag acc'}, s))),
     sections.map(sec => {
@@ -91,7 +91,7 @@ function changesView(ch) {
         i.before || i.after ? h('details', {}, h('summary', {class: 'small', style: 'cursor:pointer;color:var(--accent)'}, i.before && i.after ? 'Show before / after' : 'Show formula'),
           h('div', {class: 'ba'}, i.before ? [h('span', {class: 'b'}, 'before'), h('span', {}, i.before)] : null, i.after ? [h('span', {class: 'a'}, 'after'), h('span', {}, i.after)] : null)) : null));
       const head = sec.items.slice(0, 10), rest = sec.items.slice(10);
-      return h('div', {}, h('h4', {}, sec.title, h('span', {class: 'muted', style: 'font-weight:400'}, ` · ${sec.items.length}`)),
+      return h('div', {}, h('h4', {}, sec.title, h('span', {class: 'muted', style: 'font-weight:400'}, ` - ${sec.items.length}`)),
         h('ul', {}, head.map(item)), rest.length ? h('details', {class: 'more'}, h('summary', {}, `Show ${rest.length} more`), h('ul', {}, rest.map(item))) : null);
     }));
 }
@@ -103,7 +103,7 @@ function compareModal(st, a, b) {
   const draw = () => {
     let x = +pickA.value, y = +pickB.value;
     if (x > y) [x, y] = [y, x];
-    const chg = h('div', {class: 'chg'}, h('div', {class: 'muted small'}, 'Loading changes…'));
+    const chg = h('div', {class: 'chg'}, h('div', {class: 'muted small'}, 'Loading changes...'));
     loadChanges(st, y, x !== y ? x : undefined).then(c => chg.replaceChildren(x === y ? h('div', {class: 'muted'}, 'Same version.') : changesView(c)))
       .catch(e => chg.replaceChildren(h('div', {class: 'note err'}, e.message)));
     body.replaceChildren(h('div', {class: 'row', style: 'margin-bottom:12px'}, h('b', {}, 'Compare'), pickA, h('span', {class: 'muted'}, 'with'), pickB),
@@ -113,7 +113,7 @@ function compareModal(st, a, b) {
   };
   pickA.onchange = pickB.onchange = draw;
   draw();
-  modal(`Compare versions · ${st.name}`, body, true);
+  modal(`Compare versions - ${st.name}`, body, true);
 }
 
 /* ---------------- activity log ---------------- */
@@ -131,7 +131,7 @@ function friendly(e) {
     return 'Ran a command';
   }
   const f = fileLabel(d);
-  // Claude Code's tool names, and the other runners' (Codex, Gemini, Antigravity), in words; anything else as "Used …"
+  // Claude Code's tool names, and the other runners' (Codex, Gemini, Antigravity), in words; anything else as "Used ..."
   const said = {Read: 'Read ' + f, Write: 'Wrote ' + f, Edit: 'Edited ' + f, MultiEdit: 'Edited ' + f, Glob: 'Searched for files', Grep: 'Searched in files',
     TodoWrite: 'Updated its task list', TaskCreate: 'Updated its task list', TaskUpdate: 'Updated its task list',
     TaskList: 'Looked at its task list', TaskGet: 'Looked at its task list', WebFetch: 'Read a web page', WebSearch: 'Searched the web', run_command: 'Ran a command', shell: 'Ran a command',
@@ -147,7 +147,7 @@ function fileLabel(path) {
   const base = String(path || '').split(/[\\/]/).pop();
   return FILE_WORDS[base.toLowerCase()] || base || 'a file';
 }
-/* Older activity lines name the model's maker ("Claude is reading your data…"); the app speaks as Relay, or the partner's
+/* Older activity lines name the model's maker ("Claude is reading your data..."); the app speaks as Relay, or the partner's
    brand. Display only: the saved log is unchanged. */
 const brandSay = t => typeof t === 'string' ? t.replace(/\bClaude Code\b/g, 'the agent').replace(/\bClaude\b/g, typeof brandName === 'function' ? brandName() : 'Relay') : t;
 /* the live "Now:" line says what Relay is doing, not what it did */
@@ -167,9 +167,9 @@ function eventRow(e) {
     return row(lvl, icon(lvl === 'ok' ? 'check' : lvl === 'neutral' ? 'info' : 'alert'), h('div', {}, h('div', {class: 'hd'}, h('b', {}, 'Relay'), t),
       h('div', {class: 'bd'}, brandSay(e.text), e.items ? h('ul', {}, e.items.slice(0, 15).map(i => h('li', {}, brandSay(i)))) : null)));
   }
-  if (e.kind === 'start') return row('neutral', icon('play'), h('div', {class: 'bd'}, 'Relay started working', e.model && modelName(e.model) ? ` · ${modelName(e.model)}` : '', ' ', t), 'quiet');
+  if (e.kind === 'start') return row('neutral', icon('play'), h('div', {class: 'bd'}, 'Relay started working', e.model && modelName(e.model) ? ` - ${modelName(e.model)}` : '', ' ', t), 'quiet');
   if (e.kind === 'done') return row(e.ok ? 'ok' : 'warn', icon(e.ok ? 'check' : 'alert'), h('div', {class: 'bd'}, e.ok ? 'Relay finished' : `Relay stopped (${e.subtype || 'error'})`,
-    e.turns ? ` · ${e.turns} steps` : '', e.duration_ms ? ` · ${dur(e.duration_ms)}` : '', ' ', t), 'quiet');     // D2D Relay: no tokens or AI cost
+    e.turns ? ` - ${e.turns} steps` : '', e.duration_ms ? ` - ${dur(e.duration_ms)}` : '', ' ', t), 'quiet');     // D2D Relay: no tokens or AI cost
   if (e.kind === 'error') return row('err', icon('alert'), h('div', {}, h('div', {class: 'hd'}, h('b', {}, 'Error'), t), h('div', {class: 'bd', style: 'color:var(--err)'}, e.text)));
   return null;
 }
@@ -190,7 +190,7 @@ function buildTimeline(container, events, mode, query) {
     if (!group) return;
     const g = group;
     const det = h('details', {class: 'steps-group'}, h('summary', {}, icon('gear'), `${g.length} step${g.length === 1 ? '' : 's'} by Relay`,
-      h('span', {class: 'faint'}, ' — ' + friendly(g[g.length - 1])), h('span', {class: 'spacer'}), h('span', {class: 'faint'}, clock(g[0].ts))));
+      h('span', {class: 'faint'}, ' - ' + friendly(g[g.length - 1])), h('span', {class: 'spacer'}), h('span', {class: 'faint'}, clock(g[0].ts))));
     det.addEventListener('toggle', () => { if (det.open && det.children.length === 1) det.append(...g.map(e => stepRow(e, results))); });
     out.push(det); group = null;
   };
@@ -212,7 +212,7 @@ function buildTimeline(container, events, mode, query) {
 function activityTab(st) {
   const list = h('div', {class: 'tl', id: 'actlist'});
   const modeBtn = (m, label) => h('button', {class: S.actMode === m ? 'on' : '', onclick: () => { S.actMode = m; S.key = null; render(); }}, label);
-  const search = h('input', {type: 'text', placeholder: 'Search the log…', value: S.actQuery});
+  const search = h('input', {type: 'text', placeholder: 'Search the log...', value: S.actQuery});
   let t = null;
   search.oninput = () => { clearTimeout(t); t = setTimeout(() => { S.actQuery = search.value; buildTimeline(list, S.events, S.actMode, S.actQuery); }, 250); };
   const tz = new Date().getTimezoneOffset();
@@ -233,13 +233,13 @@ function renderLive() {
   const lastTool = [...S.events].reverse().find(e => e.kind === 'tool');
   const lastSay = [...S.events].reverse().find(e => e.kind === 'say' || e.kind === 'app');
   if (now) now.replaceChildren(h('div', {class: 'spin', style: 'width:12px;height:12px;border-width:2px'}),
-    lastTool && (!lastSay || lastTool.seq > lastSay.seq) ? `Now ${doing(lastTool)}…` : 'Working…');
+    lastTool && (!lastSay || lastTool.seq > lastSay.seq) ? `Now ${doing(lastTool)}...` : 'Working...');
 }
 
 /* ---------------- details tab ---------------- */
 function creditsCard(st) {
   const c = st.credits || {}, items = c.items || [];
-  const what = r => (r.kind === 'refund' ? 'Given back: ' : '') + (r.what === 'dashboard' ? 'new dashboard' : 'change') + (r.note && r.kind === 'charge' ? ` · ${r.note}` : '');
+  const what = r => (r.kind === 'refund' ? 'Given back: ' : '') + (r.what === 'dashboard' ? 'new dashboard' : 'change') + (r.note && r.kind === 'charge' ? ` - ${r.note}` : '');
   return h('div', {class: 'card'}, h('h3', {}, 'Credits'),
     h('div', {class: 'muted small', style: 'margin:-6px 0 8px'}, `This dashboard has used ${credits(c.used || 0)}. A new dashboard uses ${(c.costs || {}).dashboard || 0}, `
       + `a change ${(c.costs || {}).change || 0}; when a run fails or is stopped, its credits come back.`),
@@ -257,7 +257,7 @@ function visualsSetting(st) {
     Object.entries(VISUALS_LABEL).map(([v, t]) => h('option', {value: v, selected: v === mode}, t)));
   sel.onchange = async () => {
     sel.disabled = true;
-    try { S.project = await api(`/api/projects/${st.id}/visuals`, {json: {mode: sel.value}}); notify(`Visuals: ${VISUALS_LABEL[sel.value]} — for the next versions`, 'ok'); S.key = null; render(); }
+    try { S.project = await api(`/api/projects/${st.id}/visuals`, {json: {mode: sel.value}}); notify(`Visuals: ${VISUALS_LABEL[sel.value]} - for the next versions`, 'ok'); S.key = null; render(); }
     catch (e) { notify(e.message, 'err'); sel.value = mode; sel.disabled = false; }
   };
   return [sel, h('div', {class: 'muted small'}, 'Applies from the next plan, build or change.')];
@@ -274,16 +274,16 @@ function detailsTab(st) {
         h('dt', {}, 'Custom visuals'), h('dd', {}, {ask: 'Ask me in the plan', auto: 'Build when they fit better', never: 'Only available visuals'}[st.custom_visuals] || st.custom_visuals),
         h('dt', {}, 'Visual style'), h('dd', {}, [style.look ? `look ${style.look}` : null, style.brand_name ? `brand palette ${style.brand_name}` : style.accent ? `brand ${style.accent} (${style.palette})` : null, style.dark ? 'dark' : null].filter(Boolean).join(', ') || 'Relay decides'))),
       o.pbix ? h('div', {class: 'card'}, h('h3', {}, 'Power BI file'), h('dl', {class: 'kv'},
-        h('dt', {}, 'File'), h('dd', {}, `${o.pbix}${o.pbix_mb ? ` · ${o.pbix_mb} MB` : ''}`),
+        h('dt', {}, 'File'), h('dd', {}, `${o.pbix}${o.pbix_mb ? ` - ${o.pbix_mb} MB` : ''}`),
         o.data_folder ? [h('dt', {}, 'Refreshes from'), h('dd', {}, h('div', {class: 'path', style: 'margin:0'}, h('code', {}, o.data_folder), copyBtn(o.data_folder)))] : null)) : null),
     h('div', {},
       st.warehouse || (st.files || []).some(f => f.warehouse) ? warehouseCard(st) : null,
-      h('div', {class: 'card'}, h('h3', {}, 'Files'), h('div', {class: 'muted small', style: 'margin:-6px 0 6px'}, 'What Relay and you wrote along the way — the request log, the plan and the report definition.'),
+      h('div', {class: 'card'}, h('h3', {}, 'Files'), h('div', {class: 'muted small', style: 'margin:-6px 0 6px'}, 'What Relay and you wrote along the way - the request log, the plan and the report definition.'),
         h('div', {class: 'files'}, (st.files_available || []).map(n => h('button', {onclick: () => viewFile(n)}, icon('file'), h('span', {}, FILES[n] || n), h('span', {class: 'faint mono'}, n))))),
       creditsCard(st)))];
 }
 async function viewFile(name) {
   const text = await api(`/api/projects/${S.pid}/files/${encodeURIComponent(name)}`).catch(e => 'Could not load: ' + e.message);
-  modal(`${FILES[name] || name} · ${name}`, h('pre', {}, text));
+  modal(`${FILES[name] || name} - ${name}`, h('pre', {}, text));
 }
 

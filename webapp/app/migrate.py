@@ -4,8 +4,8 @@ A migration programme is a folder under output/projects/<id>/ (project.json with
 exports, the downloaded content store or the sample estate; estate.json is the neutral model; predictions.json the
 "Ready to convert" calls; similarity.json the merge candidates; decisions.json the signed decisions; waves.json the
 waves. Every converted report is its own dashboard-style sub-project (<id>-<slug>/, kind "migbi_report") built
-through the existing path — definition.yaml -> review gates (worker._check_definition) -> DAX checker -> PBIP
-builder — never a second builder.
+through the existing path - definition.yaml -> review gates (worker._check_definition) -> DAX checker -> PBIP
+builder - never a second builder.
 
 Jobs in the one sequential lane: migbi_scan (reads the estate page by page, pause / resume / stop, resumes from a
 cursor after a restart), migbi_convert (rules first, the agent only for the gaps, gates with fix rounds, the
@@ -51,7 +51,7 @@ SCAN_PACE_S = float(os.environ.get("MIGBI_SCAN_PACE_S", "0.12"))        # a shor
 PAGE_SIZE = int(os.environ.get("MIGBI_PAGE_SIZE", "100"))
 COST_PER_CALL = 0.03                                                   # the estimate before anything runs; real cost comes from the runs
 MINUTES = {"simple": 2, "medium": 5, "complex": 11, "very complex": 19}
-TARGETS = {"powerbi": {"label": "Power BI", "versions": ["Power BI Service (PBIP)", "Power BI Report Server – January 2025 (PBIX)"]},
+TARGETS = {"powerbi": {"label": "Power BI", "versions": ["Power BI Service (PBIP)", "Power BI Report Server - January 2025 (PBIX)"]},
            "fabric": {"label": "Microsoft Fabric", "versions": ["Fabric workspace"], "next": True},
            "databricks": {"label": "Databricks AI/BI", "versions": ["Dashboards"], "next": True}}
 MODES = {"rules_first": "Rules first (recommended)", "ai_led": "AI-led", "rules_only": "Rules only"}
@@ -183,9 +183,9 @@ def create(body: dict, who: str | None) -> dict:
     db.add_project(mid, who or db.ADMIN_ID, visibility="org")        # a programme is the team's work: everyone may read it, BI Devs act
     db.run("INSERT INTO migbi_projects (id, name, source, source_version, target, target_version, read_from, mode, calls, status, created, created_by, updated, tenant) "
            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?)", (mid, name, source, body.get("source_version") or "", target, body.get("target_version") or "", read_from, mode, calls, now, who, now, _tenant()))
-    (d / "request.md").write_text(f"# {name}\n\nMigrate BI programme: {READERS[source]['label']} → {TARGETS[target]['label']}, read from {read_from}, mode {MODES[mode]}.\n", encoding="utf-8")
+    (d / "request.md").write_text(f"# {name}\n\nMigrate BI programme: {READERS[source]['label']} {TARGETS[target]['label']}, read from {read_from}, mode {MODES[mode]}.\n", encoding="utf-8")
     db.audit("migbi.create", mid, {"name": name, "source": source, "target": target, "read_from": read_from, "mode": mode}, who)
-    _note(mid, "discover", f"Programme created: {READERS[source]['label']} → {TARGETS[target]['label']}, {MODES[mode].lower()}, read from "
+    _note(mid, "discover", f"Programme created: {READERS[source]['label']} {TARGETS[target]['label']}, {MODES[mode].lower()}, read from "
           f"{'the sample estate' if read_from == 'sample' else 'exports' if read_from == 'exports' else 'a live server'}.")
     return get(mid)
 
@@ -215,10 +215,10 @@ def _step_state(mid: str, st: dict, row: dict, est: dict | None, reports: list[d
     proven = [r for r in reports if r["proven"]]
     handed = [w for w in waves if (w.get("handover") or {}).get("accepted")]
     scan = st.get("scan") or {}
-    sub = {"discover": (f"{counts['objects']:,} objects found" if counts else f"scanning · {scan.get('pct', 0)} %" if scan.get("state") == "running" else "paused" if scan.get("state") == "paused"
+    sub = {"discover": (f"{counts['objects']:,} objects found" if counts else f"scanning - {scan.get('pct', 0)} %" if scan.get("state") == "running" else "paused" if scan.get("state") == "paused"
                         else "connected" if st.get("connection", {}).get("ok") or st["migbi"]["read_from"] == "sample" else "where the estate lives"),
-           "decide": (f"{decisions['counts']['keep']:,} to keep · {decisions['counts']['retire']:,} to retire" if decisions and decisions.get("applied") else "set your rules" if est else ""),
-           "convert": (f"wave {waves[-1]['n']} · {len(waves[-1]['reports'])} selected" if waves else "pick a wave" if decisions and decisions.get("applied") else ""),
+           "decide": (f"{decisions['counts']['keep']:,} to keep - {decisions['counts']['retire']:,} to retire" if decisions and decisions.get("applied") else "set your rules" if est else ""),
+           "convert": (f"wave {waves[-1]['n']} - {len(waves[-1]['reports'])} selected" if waves else "pick a wave" if decisions and decisions.get("applied") else ""),
            "prove": f"{len(proven)} of {len(reports)} proven" if reports else "", "handover": "pack sent" if handed else "pack and sign-off" if conv_done else "",
            "run": f"{len(db.q('SELECT id FROM migbi_schedules WHERE project = ? AND active = 1', (mid,)))} nightly checks" if handed else "after go-live"}
     done = {"discover": bool(est), "decide": bool(decisions and decisions.get("applied")), "convert": bool(waves) and all(r["status"] not in ("queued", "converting") for r in reports) and bool(reports),
@@ -283,7 +283,7 @@ def report_rows(mid: str) -> list[dict]:
     return out
 
 
-REPORT_STATUS = {"queued": "Queued", "converting": "Converting", "converted": "Converted", "proven": "Proven", "accepted": "Proven · accepted", "sent_back": "Sent back", "error": "Needs attention",
+REPORT_STATUS = {"queued": "Queued", "converting": "Converting", "converted": "Converted", "proven": "Proven", "accepted": "Proven - accepted", "sent_back": "Sent back", "error": "Needs attention",
                  "gates_failed": "Gates failed", "open_items": "Open items"}
 
 
@@ -372,7 +372,7 @@ def test(mid: str, who: str | None) -> dict:
         _status(mid, "connected")
     db.audit("migbi.test", mid, {"ok": True, "objects": out.get("objects")}, who)
     _note(mid, "discover", f"Connection test passed: {out.get('product', '')} {out.get('version', '')}, {out.get('objects') or '?'} objects, "
-          f"{'usage ' + str(out.get('usage_days')) + ' days' if out.get('usage_days') else 'no usage source'} · {out.get('permissions', '')}".strip(), "ok")
+          f"{'usage ' + str(out.get('usage_days')) + ' days' if out.get('usage_days') else 'no usage source'} - {out.get('permissions', '')}".strip(), "ok")
     return {"ok": True, **out}
 
 
@@ -452,13 +452,13 @@ async def _job_scan(mid: str, args: dict) -> None:
             if s.get("state") != "paused":
                 flush(state="paused")
                 _status(mid, "scan_paused")
-                _note(mid, "discover", "Paused — the scan resumes from the same page, even after a restart.", "warn")
+                _note(mid, "discover", "Paused - the scan resumes from the same page, even after a restart.", "warn")
             time.sleep(0.5)
 
     try:
         if row["read_from"] == "sample":
             if not (src / "content.csv").exists():
-                _note(mid, "discover", "Writing the sample estate (a made-up IBM Cognos Analytics estate: 1,842 objects, 2.5 years of usage, the data behind five packages)…")
+                _note(mid, "discover", "Writing the sample estate (a made-up IBM Cognos Analytics estate: 1,842 objects, 2.5 years of usage, the data behind five packages)...")
                 summary = await asyncio.to_thread(sample_estate.generate, src, 42, 1842)
                 _note(mid, "discover", f"Sample estate ready: {summary['objects']:,} objects, {summary['datasets']} packages and data modules, {summary['runs']:,} audit runs.", "ok")
             reader = cognos.CognosExports(src, page_size=PAGE_SIZE)
@@ -483,7 +483,7 @@ async def _job_scan(mid: str, args: dict) -> None:
         flush(state="stopped", cursor=e.cursor)
         _status(mid, "scan_stopped")
         store.update(mid, status="error", error=f"Stopped: {e}. Press Resume to carry on from the same page, or start the scan again.", job=None)
-        _note(mid, "discover", f"Stopped — {e}. Objects read so far are kept.", "warn")
+        _note(mid, "discover", f"Stopped - {e}. Objects read so far are kept.", "warn")
         return
     except (MigError, cognos.ReadError) as e:
         flush(state="error")
@@ -500,8 +500,8 @@ async def _job_scan(mid: str, args: dict) -> None:
     flush(state="done", pct=100, finished=time.time(), seconds=round(time.time() - scan["started"], 1))
     db.run("UPDATE migbi_projects SET objects = ?, status = 'discovered', updated = ? WHERE id = ?", (c["objects"], time.time(), mid))
     store.update(mid, status="discovered", job=None, error=None)
-    _note(mid, "discover", f"What we found: {c['objects']:,} objects · {c['used_90']:,} used in 90 days · {auto:,} ready to convert ({round(100 * auto / max(1, c['objects']))} %) · "
-          f"{c['shared_objects']} shared objects · {c['missing_dataset']} point to missing packages.", "ok")
+    _note(mid, "discover", f"What we found: {c['objects']:,} objects - {c['used_90']:,} used in 90 days - {auto:,} ready to convert ({round(100 * auto / max(1, c['objects']))} %) - "
+          f"{c['shared_objects']} shared objects - {c['missing_dataset']} point to missing packages.", "ok")
     db.audit("migbi.scan", mid, {"objects": c["objects"], "seconds": round(time.time() - scan["started"], 1), "auto": auto}, None)
 
 
@@ -655,18 +655,18 @@ def override(mid: str, rid: str, decision: str, note: str | None, who: str) -> d
 
 def _decide_evidence(pv: dict, rules_: dict, est: dict, who: str) -> dict:
     c = pv["counts"]
-    return {"summary": f"Rules applied by {who}: keep {c['keep']:,} · merge {c['merge']:,} into {pv['kept_groups']} · retire {c['retire']:,} · needs a decision {c['review']:,}; "
-                       f"{pv['before']:,} objects today → {pv['after']:,} to look after (−{pv['reduction_pct']} %)",
+    return {"summary": f"Rules applied by {who}: keep {c['keep']:,} - merge {c['merge']:,} into {pv['kept_groups']} - retire {c['retire']:,} - needs a decision {c['review']:,}; "
+                       f"{pv['before']:,} objects today {pv['after']:,} to look after (-{pv['reduction_pct']} %)",
             "columns": ["Rule", "Value", "Default"], "rows": [[k, str(rules_[k]), str(dec.DEFAULTS[k])] for k in dec.DEFAULTS],
             "items": [f"Retire: not run for {rules_['retire_days']} days; never run and older than {rules_['never_age']} days; personal folders: {rules_['personal']}" + (f"; never when owned by {rules_['protect']}" if rules_['protect'] else ""),
-                      f"Merge: at least {rules_['sim_pct']} % the same (dataset {rules_['w_dataset']} · attributes {rules_['w_attr']} · metrics {rules_['w_metric']} · filters {rules_['w_filter']}), keep the {rules_['keep']}",
+                      f"Merge: at least {rules_['sim_pct']} % the same (dataset {rules_['w_dataset']} - attributes {rules_['w_attr']} - metrics {rules_['w_metric']} - filters {rules_['w_filter']}), keep the {rules_['keep']}",
                       f"Needs a decision: failed in the last {rules_['review_days']} days, or used but not convertible, or its package is missing"],
             "counts": {"keep": c["keep"], "merge": c["merge"], "retire": c["retire"], "needs a decision": c["review"]}, "before": pv["before"], "after": pv["after"]}
 
 
 def apply_rules(mid: str, rules_: dict | None, who: str, ask_queue: bool = False) -> dict:
-    """Save the decisions and sign them: a checkpoint of kind migbi.decide is opened and — unless the person asks the
-    queue to look — accepted in the same signed step."""
+    """Save the decisions and sign them: a checkpoint of kind migbi.decide is opened and - unless the person asks the
+    queue to look - accepted in the same signed step."""
     d = _dir(mid)
     est = _estate(d)
     if not est:
@@ -676,7 +676,7 @@ def apply_rules(mid: str, rules_: dict | None, who: str, ask_queue: bool = False
     result = pv.pop("_decisions")
     saved.update(rules=pv["rules"], counts=pv["counts"], before=pv["before"], after=pv["after"], kept_groups=pv["kept_groups"], reduction_pct=pv["reduction_pct"], result=result,
                  proposed={"by": _user_name(who), "by_id": who, "at": time.time()})
-    name = f"Decide what to keep: {pv['counts']['keep']:,} keep · {pv['counts']['merge']:,} merge · {pv['counts']['retire']:,} retire · {pv['counts']['review']:,} need a decision"
+    name = f"Decide what to keep: {pv['counts']['keep']:,} keep - {pv['counts']['merge']:,} merge - {pv['counts']['retire']:,} retire - {pv['counts']['review']:,} need a decision"
     checkpoints.withdraw(KIND_DECIDE, mid, who=who)
     c = checkpoints.open(KIND_DECIDE, mid, MODULE, name, "table", _decide_evidence(pv, pv["rules"], est, _user_name(who)), link=f"{ROUTE}/{mid}/decide", agent="Decide", opened_by=who)
     saved["checkpoint"] = c["id"]
@@ -798,7 +798,7 @@ def create_wave(mid: str, name: str | None, report_ids: list[str], who: str | No
     for r in picked:
         _queue_convert(mid, r, n, who, None)
     db.audit("migbi.wave", mid, {"wave": n, "reports": len(picked), "estimate": {k: e[k] for k in ("minutes", "ai_calls", "ai_cost_usd")}}, who)
-    _note(mid, "convert", f"{wave['name']}: {len(picked)} report(s) queued — about {e['minutes']} min, {e['ai_calls']} AI call(s) (≈ {e['ai_cost_usd']:.2f} USD) before anything runs.", "ok")
+    _note(mid, "convert", f"{wave['name']}: {len(picked)} report(s) queued - about {e['minutes']} min, {e['ai_calls']} AI call(s) (≈ {e['ai_cost_usd']:.2f} USD) before anything runs.", "ok")
     return get(mid)
 
 
@@ -839,8 +839,8 @@ def _stage(sid: str, mid: str, rid: str, stage: str, text: str) -> None:
 
 
 async def _job_convert(sid: str, args: dict) -> None:
-    """One report: Understand (rules) · Build (definition + the agent for the gaps) · Prove (gates with fix rounds,
-    numbers vs source) · Package (PBIP). Runs in the sub-project folder so the agent, the gates and the DAX checker
+    """One report: Understand (rules) - Build (definition + the agent for the gaps) - Prove (gates with fix rounds,
+    numbers vs source) - Package (PBIP). Runs in the sub-project folder so the agent, the gates and the DAX checker
     work exactly as they do for a dashboard."""
     mid, rid, wave = args["migration"], args["report"], args.get("wave")
     comment = args.get("comment")
@@ -856,7 +856,7 @@ async def _job_convert(sid: str, args: dict) -> None:
     t0 = time.time()
     pack = rule_pack(row["tenant"])
     # ---- Understand
-    _stage(sid, mid, rid, "understand", f"Understand: reading “{report['name']}” — {len(report.get('queries') or [])} quer{'y' if len(report.get('queries') or []) == 1 else 'ies'}, "
+    _stage(sid, mid, rid, "understand", f"Understand: reading \"{report['name']}\" - {len(report.get('queries') or [])} quer{'y' if len(report.get('queries') or []) == 1 else 'ies'}, "
            f"{sum(len(p.get('visuals') or []) for p in report.get('pages') or [])} visuals on {len(report.get('pages') or [])} page(s), {report['calculations']} calculations.")
     try:
         defn, plan = conv.build(est, report, pack, md / "source" / "data", mode=row["mode"], comment=comment,
@@ -872,7 +872,7 @@ async def _job_convert(sid: str, args: dict) -> None:
                     "ok", [f"{d}" for d in plan["decisions"][:40]])
     _record_lineage(mid, rid, plan)
     # ---- Build
-    _stage(sid, mid, rid, "build", "Build: " + ("asking the agent for the calculations without a rule…" if plan["ai"] and row["mode"] != "rules_only" else "the rules wrote definition.yaml; no AI needed."))
+    _stage(sid, mid, rid, "build", "Build: " + ("asking the agent for the calculations without a rule..." if plan["ai"] and row["mode"] != "rules_only" else "the rules wrote definition.yaml; no AI needed."))
     res, session = {}, None
     ai_gaps = [g for g in plan["gaps"] if g.get("kind") == "measure"] + [g for g in plan["gaps"] if g.get("kind") == "filter"]
     if row["mode"] != "rules_only" and (plan["ai"] or row["mode"] == "ai_led"):
@@ -882,14 +882,14 @@ async def _job_convert(sid: str, args: dict) -> None:
         session = res.get("session_id")
         _add_ai(mid, rid, res)
     # ---- Prove: the review gates (fix rounds), then numbers vs source
-    _stage(sid, mid, rid, "prove", "Prove: running the review gates (definition, prototype, Power Query, data, DAX in Power BI's engine, report files, consistency, best practices, accessibility, display)…")
+    _stage(sid, mid, rid, "prove", "Prove: running the review gates (definition, prototype, Power Query, data, DAX in Power BI's engine, report files, consistency, best practices, accessibility, display)...")
     found, info, problems = [], None, []
     for attempt in range(worker.FIX_ROUNDS + 1):
         problems, info, found = await asyncio.to_thread(worker._check_definition, sd, sid)
         if not problems or attempt == worker.FIX_ROUNDS or row["mode"] == "rules_only":
             break
         names = ", ".join(g["name"] for g in gates_mod.failed(found)) or "Values match the prototype"
-        worker.app_note(sid, "convert", f"Review gates not passed ({names}): {len(problems)} problem(s) — the agent is fixing them.", "warn", problems)
+        worker.app_note(sid, "convert", f"Review gates not passed ({names}): {len(problems)} problem(s) - the agent is fixing them.", "warn", problems)
         _budget_check(mid, row, 1)
         res = await worker.agent(sid, "convert", prompts.fix(problems, "definition"), worker.TURNS["fix"], "v1", resume=session)
         session = res.get("session_id") or session
@@ -915,12 +915,12 @@ async def _job_convert(sid: str, args: dict) -> None:
     pr = await asyncio.to_thread(proof_mod.prove, sd, est, report, plan, md / "source")
     _save_json(sd, "proof.json", pr)
     _save_json(sd, "plan.json", plan)
-    dax_note = "DAX checked in Power BI's engine" if dax.get("checked") else f"DAX not checked ({dax.get('reason') or 'checker off'}) — the DAX gate is skipped, never passed"
+    dax_note = "DAX checked in Power BI's engine" if dax.get("checked") else f"DAX not checked ({dax.get('reason') or 'checker off'}) - the DAX gate is skipped, never passed"
     worker.app_note(sid, "convert", f"Numbers vs source: {pr['matched']:,} of {pr['compared']:,} numbers match across {len(pr['visuals'])} visuals"
                     + (f"; {pr['differences']} differ" if pr["differences"] else "") + (f"; {len(pr['open'])} measure(s) still open: {', '.join(pr['open'][:4])}" if pr["open"] else "") + f". {dax_note}.",
                     "warn" if pr["differences"] or pr["open"] or bad else "ok")
     # ---- Package
-    _stage(sid, mid, rid, "package", "Package: writing the Power BI project (PBIP) and the proof pack…")
+    _stage(sid, mid, rid, "package", "Package: writing the Power BI project (PBIP) and the proof pack...")
     packaged = None
     if not bad:
         try:
@@ -936,7 +936,7 @@ async def _job_convert(sid: str, args: dict) -> None:
     worker.app_note(sid, "convert", {"gates_failed": f"Converted, but {len(bad)} review gate(s) fail ({', '.join(g['name'] for g in bad)}): a person decides what next.",
                                      "open_items": f"Converted with {len(pr['open'])} open calculation(s) (no rule and no agent answer yet).",
                                      "proven": f"Proven: {pr['matched']:,} numbers match the source. Waiting for a person to accept the proof.",
-                                     "converted": f"Converted; {pr['differences']} number(s) differ from the source — look at them before accepting."}[status], "ok" if status == "proven" else "warn",
+                                     "converted": f"Converted; {pr['differences']} number(s) differ from the source - look at them before accepting."}[status], "ok" if status == "proven" else "warn",
                     gates_mod.problems(found) or None)
     _open_prove_checkpoint(mid, rid, report, pr, found, sid, plan)
     _update_wave_status(mid)
@@ -976,7 +976,7 @@ def _package(sd: Path, sid: str, found: list[dict], dax: dict, pr: dict) -> dict
     (stage / "Numbers vs source.txt").write_text(proof_text(pr, pbip.stem), encoding="utf-8")
     if (sd / "versions" / "v1" / "prototype.html").exists():
         shutil.copy2(sd / "versions" / "v1" / "prototype.html", stage / "Prototype.html")
-    (stage / "README.txt").write_text(f"{pbip.stem} — converted by Relay (Migrate BI)\n\nOpen \"{pbip.name}\" in Power BI Desktop, then press Refresh. The model reads the CSVs "
+    (stage / "README.txt").write_text(f"{pbip.stem} - converted by Relay (Migrate BI)\n\nOpen \"{pbip.name}\" in Power BI Desktop, then press Refresh. The model reads the CSVs "
                                       f"from the DataFolder parameter ({dd['data']['folder']}).\nReview gates.txt lists every check; Numbers vs source.txt the comparison with the source report"
                                       f"{'; the DAX was checked in Power BI own engine' if dax.get('checked') else '; the DAX check in Power BI engine was skipped (checker not running)'}.\n", encoding="utf-8")
     worker._move(stage, out)
@@ -994,13 +994,13 @@ def _package(sd: Path, sid: str, found: list[dict], dax: dict, pr: dict) -> dict
 
 
 def proof_text(pr: dict, name: str) -> str:
-    lines = [f"{name} — numbers vs source", f"{pr.get('matched', 0):,} of {pr.get('compared', 0):,} numbers match; {pr.get('differences', 0)} differ; "
+    lines = [f"{name} - numbers vs source", f"{pr.get('matched', 0):,} of {pr.get('compared', 0):,} numbers match; {pr.get('differences', 0)} differ; "
              f"{len(pr.get('open') or [])} measure(s) open" + (": " + ", ".join(pr["open"]) if pr.get("open") else ""), ""]
     for v in pr.get("visuals") or []:
-        lines.append(f"[{'MATCH' if v.get('compared') and not v.get('differences') else 'SKIP' if v.get('skipped') else 'DIFF'}] {v['title']} ({v.get('kind')} → {v.get('type')}): "
-                     f"{v.get('matched', 0)} of {v.get('compared', 0)} numbers" + (f" — {v['skipped']}" if v.get("skipped") else ""))
+        lines.append(f"[{'MATCH' if v.get('compared') and not v.get('differences') else 'SKIP' if v.get('skipped') else 'DIFF'}] {v['title']} ({v.get('kind')} {v.get('type')}): "
+                     f"{v.get('matched', 0)} of {v.get('compared', 0)} numbers" + (f" - {v['skipped']}" if v.get("skipped") else ""))
         for dfx in v.get("differences") or []:
-            lines.append(f"         {dfx['key']} · {dfx['measure']}: source {dfx['source']} vs Power BI {dfx['target']}")
+            lines.append(f"         {dfx['key']} - {dfx['measure']}: source {dfx['source']} vs Power BI {dfx['target']}")
     return "\n".join(lines) + "\n"
 
 
@@ -1072,7 +1072,7 @@ def _open_prove_checkpoint(mid: str, rid: str, report: dict, pr: dict, found: li
     ev["gates"] = gates_mod.compact(found)
     ev["items"] = ev["items"] + ([f"{len(bad)} review gate(s) fail: " + ", ".join(g["name"] for g in bad)] if bad else ["every review gate passed" + (" (DAX gate skipped: checker not running)" if any(g["id"] == "dax" and g["status"] == "skip" for g in found) else "")])
     ev["items"].append(f"{plan['ai']} calculation(s) by the agent, {plan['summary']['measures'] - plan['ai']} by rules")
-    name = f"Prove: {report['name']} — {pr['matched']:,} of {pr['compared']:,} numbers match" + (f", {pr['differences']} differ" if pr["differences"] else "") + (f", {len(pr['open'])} open" if pr["open"] else "")
+    name = f"Prove: {report['name']} - {pr['matched']:,} of {pr['compared']:,} numbers match" + (f", {pr['differences']} differ" if pr["differences"] else "") + (f", {len(pr['open'])} open" if pr["open"] else "")
     c = checkpoints.open(KIND_PROVE, f"{mid}:{rid}", MODULE, name, "table", ev, link=f"{ROUTE}/{mid}/prove?report={rid}", agent="Checker")
     _set_report(mid, rid, checkpoint=c["id"])
     return c
@@ -1087,7 +1087,7 @@ def _on_prove(c: dict, decision: str, comment: str | None, who: str) -> None:
         _set_report(mid, rid, status="accepted", accepted_by=who, accepted=time.time(), note=(comment or "")[:500] or None)
         learned = _learn(mid, rid, row, who)
         try:
-            worker.app_note(row["sub"], "prove", f"Proof accepted by {_user_name(who)}" + (f" — {learned} rule(s) learned for the next reports." if learned else "."), "ok")
+            worker.app_note(row["sub"], "prove", f"Proof accepted by {_user_name(who)}" + (f" - {learned} rule(s) learned for the next reports." if learned else "."), "ok")
         except Exception:  # noqa: BLE001
             pass
     else:
@@ -1176,7 +1176,7 @@ def convert_again(mid: str, rid: str, comment: str | None, who: str | None) -> d
         raise HTTPException(409, "This report is converting now.")
     wave = row["wave"] if row else (len(_json(d, "waves.json", [])) or 1)
     _queue_convert(mid, report, wave, who, comment)
-    _note(mid, "convert", f"“{report['name']}” queued to convert again" + (f" with the comment: {comment}" if comment else "") + ".", "ok")
+    _note(mid, "convert", f"\"{report['name']}\" queued to convert again" + (f" with the comment: {comment}" if comment else "") + ".", "ok")
     db.audit("migbi.convert.again", f"{mid}:{rid}", {"comment": (comment or "")[:200]}, who)
     return report_detail(mid, rid)
 
@@ -1303,7 +1303,7 @@ def handover_pack(mid: str, n: int, who: str | None) -> dict:
                                                                                             "Map the source tool's groups to Power BI roles (row-level security)", "Publish to the target workspace or report server folder",
                                                                                             "Ask the report owner to sign off with the numbers pack"]}
     (out / "pack.json").write_text(json.dumps(pack_json, indent=1, ensure_ascii=False), encoding="utf-8")
-    (out / "README.txt").write_text(f"Hand-over pack — {pack_json['programme']} — {wave['name']}\n\ninventory.csv: what we found, in the source tool's own terms, with usage and the "
+    (out / "README.txt").write_text(f"Hand-over pack - {pack_json['programme']} - {wave['name']}\n\ninventory.csv: what we found, in the source tool's own terms, with usage and the "
                                     f"conversion prediction.\ndecisions.csv + rules.json: every decision with its reason, who signed it and the rules used.\nwaves.json: the waves.\n"
                                     f"reports/<name>/: the Power BI project (zip), Review gates.txt, Numbers vs source.txt, the conversion plan and the definition.\n"
                                     f"{len(manifest)} report(s); {len(manifest) - len(not_proven)} proven" + (f"; not proven: {', '.join(not_proven)}" if not_proven else "") + "\n", encoding="utf-8")
@@ -1314,7 +1314,7 @@ def handover_pack(mid: str, n: int, who: str | None) -> dict:
                 z.write(f, f"handover-wave{n}/{f.relative_to(out).as_posix()}")
     os.replace(zpath.with_suffix(".zip.tmp"), zpath)
     ev = {"summary": f"{wave['name']}: {len(manifest)} report(s), {len(manifest) - len(not_proven)} proven; pack built by {_user_name(who)}",
-          "columns": ["Report", "Status", "Numbers matched", "Accepted by", "Package"], "rows": [[m["name"], m["status"], f"{m['matched']} of {m['compared']}", m["accepted_by"] or "—", m["pbip"] or "—"] for m in manifest],
+          "columns": ["Report", "Status", "Numbers matched", "Accepted by", "Package"], "rows": [[m["name"], m["status"], f"{m['matched']} of {m['compared']}", m["accepted_by"] or "-", m["pbip"] or "-"] for m in manifest],
           "items": ["Inventory, decisions with reasons and signatures, waves, proof per report, PBIP packages"] + ([f"Not proven: {', '.join(not_proven[:5])}"] if not_proven else []),
           "counts": {"reports": len(manifest), "proven": len(manifest) - len(not_proven), "open": len(not_proven)}, "wave": n}
     checkpoints.withdraw(KIND_HANDOVER, f"{mid}:wave{n}", who=who)
@@ -1445,7 +1445,7 @@ async def run_due_drift(now: float | None = None) -> int:
             worker.enqueue(row["sub"], "migbi_drift", migration=s["project"], report=s["report"], schedule=s["id"])
             n += 1
         except KeyError:                       # the converted report (or its folder) is gone: say so, never block the others
-            db.run("UPDATE migbi_schedules SET last_result = ? WHERE id = ?", ("Not run: the converted report is missing — convert it again", s["id"]))
+            db.run("UPDATE migbi_schedules SET last_result = ? WHERE id = ?", ("Not run: the converted report is missing - convert it again", s["id"]))
         except Exception as e:  # noqa: BLE001 - one bad check never stops the other checks
             db.run("UPDATE migbi_schedules SET last_result = ? WHERE id = ?", (f"Not run: {str(e)[:160]}", s["id"]))
         db.run("UPDATE migbi_schedules SET next_run = ? WHERE id = ?", (now + 86400, s["id"]))

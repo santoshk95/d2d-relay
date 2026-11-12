@@ -31,7 +31,7 @@ def _check(name: str, fails: list[str], warns: list[str] | None = None, ok: str 
 
 
 def _where(u: dict, kind: str) -> str:
-    return f"{'slide' if kind == 'deck' else 'block'} {u['n']}" + (f" “{u['title'][:40]}”" if u["title"] else "")
+    return f"{'slide' if kind == 'deck' else 'block'} {u['n']}" + (f" \"{u['title'][:40]}\"" if u["title"] else "")
 
 
 def run(model: dict, template: Template, resolver: Resolver, shape_errs: list[str] | None = None) -> dict:
@@ -52,7 +52,7 @@ def run(model: dict, template: Template, resolver: Resolver, shape_errs: list[st
             n_refs += 1
             r = resolver.resolve(f["source"])
             if not r["ok"]:
-                (tenant_fail if "tenant" in r["why"] else src_fail).append(f"{where}: figure {f['text'] or f['value']!r} — {f['source']}: {r['why']}")
+                (tenant_fail if "tenant" in r["why"] else src_fail).append(f"{where}: figure {f['text'] or f['value']!r} - {f['source']}: {r['why']}")
             elif r.get("value") is not None:
                 want = f["value"] if f["value"] is not None else spec.norm_number(f["text"])
                 try:
@@ -66,7 +66,7 @@ def run(model: dict, template: Template, resolver: Resolver, shape_errs: list[st
         for t in spec.figure_texts(u):
             for tok in spec.figure_tokens(t):
                 if spec.norm_number(tok) not in covered:
-                    src_fail.append(f"{where}: the number {tok!r} in “{t[:60]}” is not a declared figure with a source (add it under figures, or take it out)")
+                    src_fail.append(f"{where}: the number {tok!r} in \"{t[:60]}\" is not a declared figure with a source (add it under figures, or take it out)")
         for part, label in ((u["table"], "table"), (u["chart"], "chart"), (u["quote"], "quote")):
             if not part:
                 continue
@@ -94,10 +94,10 @@ def run(model: dict, template: Template, resolver: Resolver, shape_errs: list[st
         for t in spec.reader_texts(u) + ([u["notes"]] if u["notes"] else []):
             m = PLACEHOLDER_RE.search(t)
             if m:
-                ph.append(f"{_where(u, kind)}: placeholder text {m.group(0)!r} in “{t[:60]}”")
+                ph.append(f"{_where(u, kind)}: placeholder text {m.group(0)!r} in \"{t[:60]}\"")
     for t in (model["title"], model["subtitle"]):
         if t and PLACEHOLDER_RE.search(t):
-            ph.append(f"title: placeholder text in “{t[:60]}”")
+            ph.append(f"title: placeholder text in \"{t[:60]}\"")
     checks.append(_check("placeholders", ph, ok="no lorem, TODO or xxx"))
 
     # ---- limits
@@ -116,7 +116,7 @@ def run(model: dict, template: Template, resolver: Resolver, shape_errs: list[st
             lf.append(f"{where}: {len(u['bullets'])} bullets; at most {lim['max_bullets']} per slide")
         for b in bullets:
             if len(b) > lim["max_bullet_chars"]:
-                lw.append(f"{where}: a bullet is {len(b)} characters long (keep under {lim['max_bullet_chars']}): “{b[:50]}…”")
+                lw.append(f"{where}: a bullet is {len(b)} characters long (keep under {lim['max_bullet_chars']}): \"{b[:50]}...\"")
         if u["table"]:
             if len(u["table"]["rows"]) > lim["max_table_rows"]:
                 (lf if kind == "deck" else lw).append(f"{where}: table has {len(u['table']['rows'])} rows; at most {lim['max_table_rows']} on a slide")
@@ -158,7 +158,7 @@ def run(model: dict, template: Template, resolver: Resolver, shape_errs: list[st
             for w in WORD_RE.findall(PRODUCT_RE.sub(" ", t)):        # a product's own name keeps its spelling
                 lw_ = w.lower()
                 if lw_ in BRITISH:
-                    hf.append(f"{where}: “{w}” — the house style spells it “{BRITISH[lw_]}”")
+                    hf.append(f"{where}: \"{w}\" - the house style spells it \"{BRITISH[lw_]}\"")
                     break
     if template.notes:
         hw.extend(template.notes)
@@ -188,9 +188,9 @@ def problems(report: dict) -> list[str]:
 
 def text_report(report: dict, name: str = "") -> str:
     mark = {"pass": "OK ", "warn": "WRN", "fail": "ERR"}
-    lines = [f"Checks for {name or report.get('kind', 'the deliverable')} — {'passed' if report['ok'] else 'FAILED'} ({report['counts']['fails']} problems, {report['counts']['warnings']} warnings)"]
+    lines = [f"Checks for {name or report.get('kind', 'the deliverable')} - {'passed' if report['ok'] else 'FAILED'} ({report['counts']['fails']} problems, {report['counts']['warnings']} warnings)"]
     for c in report["checks"]:
-        lines.append(f"[{mark[c['status']]}] {c['label']} — {c['summary']}")
+        lines.append(f"[{mark[c['status']]}] {c['label']} - {c['summary']}")
         for i in c["items"]:
             lines.append(f"      {i['level']}: {i['text']}")
     return "\n".join(lines)

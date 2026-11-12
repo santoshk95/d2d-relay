@@ -32,7 +32,7 @@ async function adminPeople() {
     h('td', {}, h('b', {}, u.name), h('div', {class: 'muted small'}, u.email)),
     h('td', {}, u.org_role === 'admin' ? h('span', {class: 'tag acc'}, 'Admin') : h('span', {class: 'muted small'}, 'Member'),
       u.local ? h('span', {class: 'tag', title: 'Has the local (bootstrap) password', style: 'margin-left:4px'}, 'local') : null),
-    h('td', {}, u.teams.length ? h('div', {class: 'chips'}, u.teams.map(t => h('span', {class: 'tag'}, `${t.name} · ${ROLE[t.role]}`))) : h('span', {class: 'faint small'}, 'No team')),
+    h('td', {}, u.teams.length ? h('div', {class: 'chips'}, u.teams.map(t => h('span', {class: 'tag'}, `${t.name} - ${ROLE[t.role]}`))) : h('span', {class: 'faint small'}, 'No team')),
     h('td', {class: 'n'}, u.projects),
     h('td', {class: 'small'}, u.active ? (u.last_login ? ago(u.last_login) : 'Never signed in') : h('span', {class: 'tag err'}, 'Deactivated')),
     h('td', {style: 'white-space:nowrap;text-align:right'}, u.active
@@ -40,7 +40,7 @@ async function adminPeople() {
          S.me && u.id !== S.me.id ? h('button', {class: 'btn sm danger', onclick: () => offboardDialog(u, d.users)}, 'Deactivate') : null]
       : h('button', {class: 'btn sm', onclick: async () => { await api(`/api/admin/users/${u.id}/reactivate`, {method: 'POST'}); notify('Reactivated', 'ok'); reAdmin(); }}, 'Reactivate'))));
   return h('div', {}, h('div', {class: 'row', style: 'margin-bottom:12px'},
-      h('div', {class: 'muted small'}, `${d.users.filter(u => u.active).length} active people · roles are held per team: BI Dev / Analyst builds and publishes, Viewer opens what is shared.`),
+      h('div', {class: 'muted small'}, `${d.users.filter(u => u.active).length} active people - roles are held per team: BI Dev / Analyst builds and publishes, Viewer opens what is shared.`),
       h('span', {class: 'spacer'}), add),
     h('div', {class: 'card flat', style: 'padding:0;overflow:auto'}, h('table', {class: 'utable'},
       h('tr', {}, ['Person', 'Organisation', 'Teams and roles', 'Dashboards', 'Last sign-in', ''].map((t, i) => h('th', {class: i === 3 ? '' : 'l'}, t))), rows)));
@@ -65,7 +65,7 @@ function personDialog(u, teams) {
       const body = {name: name.value, org_role: org.value, teams: ms};
       if (u) await api(`/api/admin/users/${u.id}`, {method: 'PATCH', json: body});
       else await api('/api/admin/users', {json: {...body, email: email.value}});
-      notify(u ? 'Saved' : 'Added — they can sign in with SSO', 'ok'); m.remove(); reAdmin();
+      notify(u ? 'Saved' : 'Added - they can sign in with SSO', 'ok'); m.remove(); reAdmin();
     } catch (e) { notify(e.message, 'err'); }
   }}, u ? 'Save' : 'Add person');
   const m = modal(u ? `Edit ${u.name}` : 'Add a person', h('div', {class: 'mbody'},
@@ -83,7 +83,7 @@ function offboardDialog(u, users) {
     try {
       const r = await api(`/api/admin/users/${u.id}/deactivate`, {json: {transfer_to: to.value}});
       const s = r.summary;
-      notify(`${u.name} deactivated · ${s.dashboards_transferred} dashboards and ${s.visuals_transferred} visuals transferred`, 'ok'); m.remove(); reAdmin();
+      notify(`${u.name} deactivated - ${s.dashboards_transferred} dashboards and ${s.visuals_transferred} visuals transferred`, 'ok'); m.remove(); reAdmin();
     } catch (e) { notify(e.message, 'err'); }
   }}, 'Deactivate');
   const m = modal(`Deactivate ${u.name}`, h('div', {class: 'mbody'},
@@ -125,11 +125,11 @@ async function adminSignin() {
     const inp = (k, ph, type) => { const el = h('input', {type: type || 'text', value: p[k] || '', placeholder: ph || ''}); el.oninput = () => { p[k] = el.value; }; return el; };
     const chk = (k, label) => { const el = h('input', {type: 'checkbox', checked: !!p[k]}); el.onchange = () => { p[k] = el.checked; }; return h('label', {class: 'chk'}, el, label); };
     return h('div', {class: 'card flat', style: 'margin:0'},
-      h('div', {class: 'row'}, h('b', {}, `${PRESETS[p.kind] ? PRESETS[p.kind][0] : 'SSO'} · ${p.id || 'new'}`), h('span', {class: 'spacer'}),
+      h('div', {class: 'row'}, h('b', {}, `${PRESETS[p.kind] ? PRESETS[p.kind][0] : 'SSO'} - ${p.id || 'new'}`), h('span', {class: 'spacer'}),
         h('button', {class: 'btn sm ghost', onclick: () => { items.splice(i, 1); draw(); }}, icon('x'), 'Remove')),
       h('div', {class: 'opts', style: 'margin-top:8px'}, f('Id (in the redirect URL)', inp('id', 'entra')), f('Button label', inp('label', 'Microsoft')),
         f('Issuer URL', inp('issuer'), 'From your provider: the OpenID Connect issuer.'), f('Client id', inp('client_id')),
-        f('Client secret', inp('secret', p.has_secret ? 'Stored — leave empty to keep' : 'Paste once; stored encrypted', 'password')),
+        f('Client secret', inp('secret', p.has_secret ? 'Stored - leave empty to keep' : 'Paste once; stored encrypted', 'password')),
         f('Allowed email domains', inp('domains', 'contoso.com, contoso.co.uk'), 'Empty = any domain the provider vouches for.')),
       h('div', {class: 'row', style: 'margin-top:8px'}, chk('auto_provision', 'Create people on first sign-in (they get no team until an Admin adds one)'), chk('enabled', 'Enabled')));
   }));
@@ -175,7 +175,7 @@ async function adminAI() {
         h('div', {}, h('small', {class: 'muted'}, 'Data may be processed in'), sel('residency', Object.entries(d.residency))),
         h('div', {}, h('small', {class: 'muted'}, 'Default provider'), sel('default', allowed)),
         h('div', {}, h('small', {class: 'muted'}, 'Backup provider (used when the default fails)'), sel('backup', allowed, true)))),
-      h('div', {class: 'note small'}, icon('info'), ' Each person picks one of the allowed providers under Settings › My AI provider; Bedrock, Azure AI Foundry and Vertex go through the LLM gateway routes.'),
+      h('div', {class: 'note small'}, icon('info'), ' Each person picks one of the allowed providers under Settings > My AI provider; Bedrock, Azure AI Foundry and Vertex go through the LLM gateway routes.'),
       h('div', {class: 'row', style: 'justify-content:flex-end'}, h('button', {class: 'btn primary', onclick: async () => {
         try { await api('/api/admin/ai-policy', {method: 'PUT', json: pol}); notify('AI provider policy saved', 'ok'); } catch (e) { notify(e.message, 'err'); } }}, 'Save')));
   };
@@ -189,13 +189,13 @@ async function adminAudit() {
   const names = Object.fromEntries(people.users.map(u => [u.id, u.name]));
   const actions = [...new Set(log.map(a => a.action))].sort();
   const pick = h('select', {class: 'sel', style: 'max-width:220px', 'aria-label': 'Event type'}, h('option', {value: ''}, 'All events'), actions.map(a => h('option', {value: a}, a)));
-  const q = h('input', {type: 'text', placeholder: 'Search…', style: 'max-width:240px'});
+  const q = h('input', {type: 'text', placeholder: 'Search...', style: 'max-width:240px'});
   const table = h('table', {class: 'utable'});
   const draw = () => {
     const rows = log.filter(a => (!pick.value || a.action === pick.value) && (!q.value || JSON.stringify(a).toLowerCase().includes(q.value.toLowerCase())));
     table.replaceChildren(h('tr', {}, ['When', 'Who', 'Event', 'Object', 'Detail'].map(t => h('th', {class: 'l'}, t))),
       ...rows.slice(0, 500).map(a => h('tr', {}, h('td', {class: 'small', style: 'white-space:nowrap'}, when(a.ts)),
-        h('td', {}, names[a.who] || a.who || '—'), h('td', {}, h('span', {class: 'tag'}, a.action)), h('td', {class: 'mono'}, a.object || ''),
+        h('td', {}, names[a.who] || a.who || '-'), h('td', {}, h('span', {class: 'tag'}, a.action)), h('td', {class: 'mono'}, a.object || ''),
         h('td', {class: 'mono', style: 'max-width:420px;overflow-wrap:anywhere;font-size:11.5px'}, a.detail ? JSON.stringify(a.detail) : ''))));
   };
   pick.onchange = draw; q.oninput = draw; draw();
@@ -211,19 +211,19 @@ async function adminInstances() {
   const [d, b, ws] = await Promise.all([api('/api/admin/instances'), api('/api/admin/backups'), workspacesSection()]);
   const ag = d.agent || {};
   const tile = (t, v, s) => h('div', {class: 'stat'}, h('b', {}, v), h('span', {}, t), s ? h('div', {class: 'faint small'}, s) : null);
-  const backupBtn = h('button', {class: 'btn', onclick: async e => { e.target.disabled = true; notify('Backing up…');
+  const backupBtn = h('button', {class: 'btn', onclick: async e => { e.target.disabled = true; notify('Backing up...');
     try { const m = await api('/api/admin/backups', {method: 'POST'}); notify(`Backup ${m.name}: ${m.files} files, ${m.mb} MB`, 'ok'); reAdmin(); }
     catch (err) { notify(err.message, 'err'); e.target.disabled = false; } }}, icon('download'), 'Back up now');
   return h('div', {},
     h('div', {class: 'stats'}, tile('instance', d.instance, `sign-in: ${d.auth}`), tile('agent', ag.ok ? 'online' : 'offline', ag.runners ? 'runner: ' + ag.runners.join(', ') : ''),
-      tile('build lane', ag.lanes ? (ag.lanes.build ? 'busy' : 'free') : '—', d.running && d.running.pid ? d.running.pid : ''),
-      tile('chat lane', ag.lanes ? (ag.lanes.chat ? 'busy' : 'free') : '—', 'Ask D (phase 5)'), tile('waiting', d.waiting, 'jobs in the queue'),
+      tile('build lane', ag.lanes ? (ag.lanes.build ? 'busy' : 'free') : '-', d.running && d.running.pid ? d.running.pid : ''),
+      tile('chat lane', ag.lanes ? (ag.lanes.chat ? 'busy' : 'free') : '-', 'Ask D (phase 5)'), tile('waiting', d.waiting, 'jobs in the queue'),
       tile('DAX checker', d.daxcheck ? 'on' : 'off', 'Windows PC'), tile('signed in', d.sessions.people, `${d.sessions.n} sessions`)),
     h('div', {class: 'card flat'}, h('h3', {}, 'Jobs'), h('div', {class: 'chips'}, Object.entries(d.jobs).map(([k, v]) => h('span', {class: 'tag'}, `${k}: ${v}`)))),
     h('div', {class: 'card flat'}, h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Backups'), h('span', {class: 'spacer'}), backupBtn),
       h('div', {class: 'hint'}, `Nightly at ${b.hour_utc}:00 UTC to ${b.folder} (output/backups on this PC); the last ${b.keep} are kept; files over ${b.max_file_mb} MB are listed, not copied; extract caches unused for ${b.cache_days} days are removed.`),
       b.backups.length ? h('table', {class: 'utable', style: 'margin-top:8px'}, h('tr', {}, ['Backup', 'Files', 'MB', 'Large files left out'].map((t, i) => h('th', {class: i ? '' : 'l'}, t))),
-        b.backups.map(x => h('tr', {}, h('td', {class: 'mono'}, x.name), h('td', {class: 'n'}, x.files ?? '—'), h('td', {class: 'n'}, x.mb ?? '—'),
-          h('td', {class: 'n'}, x.skipped_large_files ? x.skipped_large_files.length : '—')))) : h('div', {class: 'muted small', style: 'margin-top:8px'}, 'No backup yet.')),
+        b.backups.map(x => h('tr', {}, h('td', {class: 'mono'}, x.name), h('td', {class: 'n'}, x.files ?? '-'), h('td', {class: 'n'}, x.mb ?? '-'),
+          h('td', {class: 'n'}, x.skipped_large_files ? x.skipped_large_files.length : '-')))) : h('div', {class: 'muted small', style: 'margin-top:8px'}, 'No backup yet.')),
     ws);
 }

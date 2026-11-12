@@ -313,7 +313,7 @@ def page(inv: dict, extra: list[tuple[str, str]] | None = None) -> str:
             f"<div class=lbl>Billed to</div><b>{e(b['name'])}</b><br>{lines(b['address'])}<br>{buyer_place}"
             f"{'<br>GSTIN ' + e(b['gstin']) if b.get('gstin') else ''}"
             "<table><tr><th>Description</th><th>SAC</th><th class=r>Quantity</th><th class=r>Rate</th><th class=r>Taxable value</th></tr>"
-            f"<tr><td>{e(inv['description'])}</td><td>{e(inv['sac'] or '—')}</td><td class=r>{inv['quantity']:,}</td>"
+            f"<tr><td>{e(inv['description'])}</td><td>{e(inv['sac'] or '-')}</td><td class=r>{inv['quantity']:,}</td>"
             f"<td class=r>{money(_share(inv['taxable'], 1, max(inv['quantity'], 1)), cur)}</td><td class=r>{money(inv['taxable'], cur)}</td></tr>"
             f"{tax_rows}<tr class=tot><td colspan=4 class=r>Total ({e(cur)})</td><td class=r>{money(inv['total'], cur)}</td></tr></table>"
             f"{inr_row}{export}"

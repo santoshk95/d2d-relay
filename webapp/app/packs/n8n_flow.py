@@ -4,7 +4,7 @@ rules every workflow must pass before it is tested or deployed (the format n8n's
 typeVersion / position / parameters / credentials by name, `connections` keyed by node name).
 
 A design: [{"id", "name", "type", "role" (trigger | action | decision | person), "system", "api", "credential",
-"detail", "next" ("Name A; Name B" — a decision's first is its true branch), "origin"}].
+"detail", "next" ("Name A; Name B" - a decision's first is its true branch), "origin"}].
 """
 from __future__ import annotations
 
@@ -108,7 +108,7 @@ def design_from_map(proc: dict) -> tuple[list[dict], list[str]]:
         elif sysname in SYSTEM_URL or sysname in _w2.API_SYSTEMS:
             typ, role, detail = "n8n-nodes-base.httpRequest", "action", f"{sysname} API" + (f": {', '.join(s.get('fields') or [])}" if s.get("fields") else "")
         elif sysname:
-            typ, role, detail = "n8n-nodes-base.httpRequest", "action", f"{sysname}: no API Relay knows — the person names the endpoint, or this step stays a bot (RPA)"
+            typ, role, detail = "n8n-nodes-base.httpRequest", "action", f"{sysname}: no API Relay knows - the person names the endpoint, or this step stays a bot (RPA)"
             notes.append(f"{s.get('name')}: {sysname} has no API Relay knows; the endpoint is to be named")
         else:
             typ, role, detail = "n8n-nodes-base.code", "action", s.get("rule") or s.get("name") or "a step"
@@ -177,19 +177,19 @@ def design_problems(design: list[dict]) -> list[str]:
         out.append(f"node names must be unique: {', '.join(dup)}")
     trig = [d for d in design if d.get("type") in TRIGGERS]
     if len(trig) != 1:
-        out.append(f"a workflow starts with exactly one trigger (an e-mail, a schedule, a webhook or a form) — this design has {len(trig)}")
+        out.append(f"a workflow starts with exactly one trigger (an e-mail, a schedule, a webhook or a form) - this design has {len(trig)}")
     for d in design:
         if d.get("type") not in NODES:
             out.append(f"{d.get('name')}: {d.get('type')!r} is not a node type Relay writes")
         for n in names(d.get("next")):
             if n not in nm:
-                out.append(f"{d.get('name')}: its next node “{n}” is not in the design")
+                out.append(f"{d.get('name')}: its next node \"{n}\" is not in the design")
         if d.get("type") == "n8n-nodes-base.if" and len(names(d.get("next"))) not in (1, 2):
             out.append(f"{d.get('name')}: a decision leads to one or two nodes (true, then false)")
         if d.get("credential") and _w2.SECRET_INLINE.search(f"password={d['credential']}") and re.search(r"[:=]|\s", str(d["credential"])) is None and len(str(d["credential"])) > 40:
             out.append(f"{d.get('name')}: a credential is named, never pasted")
         if re.search(r"(?i)pass(word)?\s*[:=]|secret\s*[:=]|bearer\s+\S{12,}", str(d.get("credential") or "") + " " + str(d.get("detail") or "")):
-            out.append(f"{d.get('name')}: credentials are referred to by name only — remove the secret from the design")
+            out.append(f"{d.get('name')}: credentials are referred to by name only - remove the secret from the design")
     reach, seen = [t["name"] for t in trig[:1]], set()
     while reach:
         n = reach.pop()
@@ -306,7 +306,7 @@ def from_auto(a: dict, *, fixes: dict | None = None) -> tuple[dict, list[dict]]:
 # ------------------------------------------------------------------ the rules every workflow passes
 
 def check(wf, design: list[dict] | None = None) -> list[dict]:
-    """Each rule as a gate row (status pass | fail | warn): what n8n's API refuses, and what Relay refuses on top —
+    """Each rule as a gate row (status pass | fail | warn): what n8n's API refuses, and what Relay refuses on top -
     secrets in clear, nodes the design does not have, TODOs left, unbalanced expressions."""
     rows = []
 
@@ -335,7 +335,7 @@ def check(wf, design: list[dict] | None = None) -> list[dict]:
         for branch in (outs or {}).get("main") or []:
             for cn in branch or []:
                 if not isinstance(cn, dict) or cn.get("node") not in nm:
-                    broken.append(f"{src} → {(cn or {}).get('node')}")
+                    broken.append(f"{src} {(cn or {}).get('node')}")
     r("connections", "Every connection joins two nodes that exist", not broken, "broken: " + "; ".join(broken[:5]) if broken else f"{sum(len(b or []) for o in conns.values() for b in (o or {}).get('main') or [])} link(s)")
     reach, seen = [t["name"] for t in trig[:1]], set()
     while reach:
@@ -354,7 +354,7 @@ def check(wf, design: list[dict] | None = None) -> list[dict]:
     bad_http = [n["name"] for n in http if not (n.get("parameters") or {}).get("url") or not (n.get("parameters") or {}).get("method")]
     r("http", "Every API call names its method and URL", not bad_http, "to fix: " + ", ".join(bad_http) if bad_http else f"{len(http)} API call(s)")
     sec = _w2.secrets_in(wf)
-    r("secrets", "No credential is kept in clear — credentials by name only", not sec, "; ".join(s["where"] for s in sec[:4]) if sec else "credentials by name")
+    r("secrets", "No credential is kept in clear - credentials by name only", not sec, "; ".join(s["where"] for s in sec[:4]) if sec else "credentials by name")
     cred_bad = [n["name"] for n in nodes if isinstance(n, dict) and isinstance(n.get("credentials"), dict) and any(not isinstance(v, dict) or not v.get("name") for v in n["credentials"].values())]
     r("credentials", "Every credential is referred to by its name", not cred_bad, "unnamed: " + ", ".join(cred_bad) if cred_bad else "named")
     text = json.dumps(wf)
@@ -362,11 +362,11 @@ def check(wf, design: list[dict] | None = None) -> list[dict]:
     r("todo", "Nothing is left to fill in (no TODO)", not todo, "still TODO: " + ", ".join(todo[:6]) if todo else "complete")
     exprs = re.findall(r'"=([^"\\]*(?:\\.[^"\\]*)*)"', text)
     unbal = [e[:40] for e in exprs if e.count("{{") != e.count("}}")]
-    r("expressions", "Every expression is balanced ({{ … }})", not unbal, "unbalanced: " + "; ".join(unbal[:3]) if unbal else f"{len(exprs)} expression(s)")
+    r("expressions", "Every expression is balanced ({{ ... }})", not unbal, "unbalanced: " + "; ".join(unbal[:3]) if unbal else f"{len(exprs)} expression(s)")
     if design:
         want = {d["name"] for d in design}
         extra, missing = sorted(set(nm) - want), sorted(want - set(nm))
-        r("design", "The nodes are the ones the person confirmed — nothing invented, nothing left out", not extra and not missing,
+        r("design", "The nodes are the ones the person confirmed - nothing invented, nothing left out", not extra and not missing,
           ("not in the design: " + ", ".join(map(str, extra)) if extra else "") + ("; " if extra and missing else "") + ("left out: " + ", ".join(missing) if missing else "") or "as designed")
         links = {(d["name"], n) for d in design for n in names(d.get("next"))}
         have = {(src, cn.get("node")) for src, outs in conns.items() for b in (outs or {}).get("main") or [] for cn in b or [] if isinstance(cn, dict)}

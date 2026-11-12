@@ -1,10 +1,10 @@
 """The module workbench: one engine that makes the catalogue's modules real (docs/workbench.md is the guide).
 
-A **work item** is one piece of work of one module and one work type — Assess, Develop, Fix / change, Migrate, Run &
+A **work item** is one piece of work of one module and one work type - Assess, Develop, Fix / change, Migrate, Run &
 support, or an engagement for the consulting modules. It is a subject folder under store.root() with kind `work`
 (project.json through store; activity.jsonl; request.md; data/ for uploads; evidence/; outputs/), a row in `wb_items`
 (the index: module, work type, status, current step, schedule) and a row in `projects` (owner, team, visibility: the
-same permission model as dashboards — Viewers never change anything, private items are their owner's).
+same permission model as dashboards - Viewers never change anything, private items are their owner's).
 
 Its journey comes from the module registry (registry.plan_for: the names and texts of the steps; registry.confirm_for:
 where a person confirms) unless the module's pack overrides it. Every step has a handler kind:
@@ -15,7 +15,7 @@ where a person confirms) unless the module's pack overrides it. Every step has a
   person         a checkpoint (checkpoints.open) with the view that fits; the person confirms or corrects in place
   platform       an adapter call through a connection: test, read / scan inventory, read run logs; a write only through
                  connectors.request_write (its own per-change approval)
-  proof          pluggable checks — counts, checksums, business totals, sample diffs, tests run, references real —
+  proof          pluggable checks - counts, checksums, business totals, sample diffs, tests run, references real -
                  whose results are stored as evidence
 A step whose journey name is one of the registry's confirm points pauses for a person after it runs (kind
 `wb.<module>` in the Validation queue); accept moves on, send back runs the step again with the comment.
@@ -26,7 +26,7 @@ document built by the P11 docs engine) downloads as one zip. Run & support hooks
 (one pass per tenant that has the module switched on: db.each_tenant(module)), a break can raise a ticket or go to
 Self-healing after a person approves.
 
-Packs live in app/packs/<module>.py and call `register(Pack(...))`; their APIs sit under /api/m/<module>/… and the
+Packs live in app/packs/<module>.py and call `register(Pack(...))`; their APIs sit under /api/m/<module>/... and the
 module's registry line names that prefix (`api=["/api/m/<id>"]`): P17 answers 403 under it where the module is switched
 off, and the engine itself holds the work there (no step starts, no round runs, Home leaves it out, the packs list
 marks it off).
@@ -68,7 +68,7 @@ DEFAULT_AGENT = {"deterministic": "Rule checker", "agent": "Relay agent", "perso
 VIEWS = checkpoints.VIEWS
 WORK_NAME = dict(registry.WORK) | {"engage": "Engagement"}
 STATUS_LABEL = {"new": "New", "queued": "Queued", "working": "Working", "agent_working": "Relay is working", "waiting": "Waiting for a person",
-                "attention": "Needs attention", "error": "Needs attention", "done": "Done", "scheduled": "Live · scheduled", "closed": "Closed"}
+                "attention": "Needs attention", "error": "Needs attention", "done": "Done", "scheduled": "Live - scheduled", "closed": "Closed"}
 STEP_LABEL = {"pending": "To do", "queued": "Queued", "running": "Working", "waiting": "Waiting for a person", "done": "Done", "sent_back": "Sent back",
               "error": "Needs attention", "skipped": "Skipped"}
 OPEN = ("new", "queued", "working", "agent_working", "waiting", "attention", "error", "scheduled")
@@ -104,7 +104,7 @@ class StepFailed(Exception):
 
 @dataclass
 class Column:
-    """One column of the records a person edits in place (rules, mappings, decisions…)."""
+    """One column of the records a person edits in place (rules, mappings, decisions...)."""
     key: str
     label: str
     type: str = "text"              # text | longtext | number | select | bool
@@ -194,7 +194,7 @@ class Work:
 
 
 class Platform:
-    """How a pack reaches one platform — read-only by default; a write only through connectors.request_write.
+    """How a pack reaches one platform - read-only by default; a write only through connectors.request_write.
     Subclass and override what the platform needs; the defaults work for any connection kind and for uploads."""
     id = "files"
     label = "Upload files"
@@ -355,7 +355,7 @@ def register(pack: Pack) -> Pack:
             raise ValueError(f"{pack.module}: every route of a pack sits under /api/m/{pack.module}/ (P17 switches a module off by prefix): {bad}")
     prefix = f"/api/m/{pack.module}"
     if prefix not in (m.get("api") or []):
-        raise ValueError(f'{pack.module}: its registry line needs api=["{prefix}"] — P17 answers 403 under that prefix where the module is switched off')
+        raise ValueError(f'{pack.module}: its registry line needs api=["{prefix}"] - P17 answers 403 under that prefix where the module is switched off')
     if pack.router is not None:
         router.include_router(pack.router)
     PACKS[pack.module] = pack
@@ -395,7 +395,7 @@ def pack_of(mid: str) -> Pack | None:
 
 def module_state(mid: str) -> str | None:
     """The module's state in the current workspace, as the registry shows it: 'locked' (not in its edition), 'off'
-    (switched off for it, P17), else the registry's own (available, partly …)."""
+    (switched off for it, P17), else the registry's own (available, partly ...)."""
     m = registry.BY_ID.get(mid)
     if not m:
         return None
@@ -419,7 +419,7 @@ def _off(mid: str) -> HTTPException:
 # ================================================================== small helpers
 
 def lab_now() -> float:
-    """The clock an estate is read against (how far back "the last 30 days" reaches): the real one — except in the test
+    """The clock an estate is read against (how far back "the last 30 days" reaches): the real one - except in the test
     lab (D2D_TEST_HOOKS=1), where D2D_LAB_SHIFT seconds move it to the simulators' fixed "now", so a look-back window
     keeps covering the lab's dated runs however long after that date the suite runs."""
     t = time.time()
@@ -440,7 +440,7 @@ def _size(n: int) -> str:
 
 
 def _when(t: float | None) -> str:
-    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%d %b %Y %H:%M UTC") if t else "—"
+    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%d %b %Y %H:%M UTC") if t else "-"
 
 
 def _lock(pid: str) -> threading.RLock:
@@ -669,7 +669,7 @@ class Ctx:
 
     def request_write(self, connection_id: str, obj: str, payload: dict, what: str) -> dict:
         """The only way a step writes to a connected system: a checkpoint for a named person (connection.write); the
-        adapter writes when — and only when — it is accepted."""
+        adapter writes when - and only when - it is accepted."""
         c = self.connection(connection_id)
         try:
             cp = connectors.request_write(c, obj, payload, self.who or self.owner, module=self.module_name, what=what)
@@ -736,7 +736,7 @@ def _qc(name: str) -> str:
 
 
 def checksum_exprs(cols: list[dict]) -> list[tuple[str, str]]:
-    """Engine-independent column fingerprints (count, sum, min, max, distinct, total length) — the same on every engine,
+    """Engine-independent column fingerprints (count, sum, min, max, distinct, total length) - the same on every engine,
     unlike hash functions, so a source in one database reconciles with a target in another."""
     out = [("n_rows", "COUNT(*)")]
     for i, c in enumerate(cols):
@@ -792,7 +792,7 @@ def _p_rows(ctx: Ctx, source: dict, target: dict, tolerance_pct: float = 0.0, **
     diff = abs(na - nb)
     ok = diff <= (max(na, nb) * tolerance_pct / 100.0)
     return {"status": "pass" if ok else "fail", "measured": nb, "expected": na,
-            "detail": f"{na:,} rows in the source, {nb:,} in the target" + ("" if ok else f" — {diff:,} {'missing' if nb < na else 'extra'}")}
+            "detail": f"{na:,} rows in the source, {nb:,} in the target" + ("" if ok else f" - {diff:,} {'missing' if nb < na else 'extra'}")}
 
 
 @proof("checksum", "Checksums per column: count, sum, min, max, distinct, length")
@@ -881,7 +881,7 @@ def _p_sample(ctx: Ctx, source: dict, target: dict, keys: list[str], n: int = 20
             if isinstance(r, oc.SdkReader):
                 return [{k.lower(): v for k, v in row.items()} for row in r._read().get("rows") or []]
             names = [ca[k]["name"] if r is a else cb[k]["name"] for k in ks]
-            if isinstance(a, FileReader) and isinstance(b, FileReader):   # snapshot files: DuckDB may read "0000099001" as text in one file and 99001 in the other —
+            if isinstance(a, FileReader) and isinstance(b, FileReader):   # snapshot files: DuckDB may read "0000099001" as text in one file and 99001 in the other -
                 kexpr = " || '|' || ".join(                # compare digit-only keys without their leading zeros on both sides
                     f"(CASE WHEN regexp_full_match(CAST({_qc(x)} AS VARCHAR), '[0-9]+') THEN ltrim(CAST({_qc(x)} AS VARCHAR), '0') ELSE CAST({_qc(x)} AS VARCHAR) END)" for x in names)
             else:
@@ -940,7 +940,7 @@ def handoff_heal(ctx: Ctx, title: str, what: str, *, place: str = "", signature:
     from . import heal
     sig = signature or f"{ctx.module}:{_sid(title)[:40]}"
     cand = {"signature": sig, "kind": "generic", "source": "workbench", "source_id": f"{ctx.id}:{sig}", "title": f"{title}"[:200], "what": what[:1000],
-            "place": place or f"{ctx.module_name} · {ctx.title}", "since": _now(), "route": "config", "owner_id": ctx.owner,
+            "place": place or f"{ctx.module_name} - {ctx.title}", "since": _now(), "route": "config", "owner_id": ctx.owner,
             "subject": {"work_item": ctx.id, "module": ctx.module, **(subject or {})}, "work": {"module": "workbench", "table": "wb_items", "id": ctx.id}}
     case = heal.open_case(cand, ctx.who)
     if case is None:
@@ -1002,7 +1002,7 @@ def check_schedule(s: dict) -> dict:
     if out["every"] == "month":
         day = str(s.get("day") if s.get("day") is not None else 1).strip().lower()
         if day != "last" and not (day.isdigit() and 1 <= int(day) <= 28):
-            raise HTTPException(400, "The day of the month is 1 to 28, or “last” (the last day of each month).")
+            raise HTTPException(400, "The day of the month is 1 to 28, or \"last\" (the last day of each month).")
         out["day"] = day if day == "last" else int(day)
     return out
 
@@ -1239,7 +1239,7 @@ def create(module: str, work: str, title: str, *, who: str, brief: str = "", pla
         db.run("INSERT OR IGNORE INTO shares (project_id, principal_type, principal_id, permission, expires, created, created_by) VALUES (?, 'user', ?, 'view', NULL, ?, ?)",
                (pid, approver, now, who))
     index(st)
-    (d / "request.md").write_text(f"# {title}\n\n{registry.BY_ID[module]['name']} · {WORK_NAME.get(work, work)}\n\n## The brief ({time.strftime('%Y-%m-%d %H:%M')})\n\n"
+    (d / "request.md").write_text(f"# {title}\n\n{registry.BY_ID[module]['name']} - {WORK_NAME.get(work, work)}\n\n## The brief ({time.strftime('%Y-%m-%d %H:%M')})\n\n"
                                   f"{brief.strip() or '(no brief: the scope below is the whole request)'}\n\n## Scope\n\n"
                                   + "\n".join(f"- {k}: {v}" for k, v in scope.items() if not k.startswith("_")) + "\n", encoding="utf-8")
     if pack.guide:
@@ -1271,10 +1271,10 @@ def start(pid: str, sid: str | None = None, *, who: str | None = None, comment: 
     st = _load(pid)
     if st.get("closed"):
         raise HTTPException(409, "This work item is closed.")
-    if not module_on(st["module"]):                     # P17: switched off here — the work waits until it is back on
+    if not module_on(st["module"]):                     # P17: switched off here - the work waits until it is back on
         raise _off(st["module"])
     if not _internal and st["status"] in RUNNING and (worker.current.get("pid") == pid or st["status"] == "queued"):
-        raise HTTPException(409, "Relay is already working on this item — wait for it, or stop it first.")
+        raise HTTPException(409, "Relay is already working on this item - wait for it, or stop it first.")
     step = _step(st, sid) if sid else current_step(st)
     if step is None:
         raise HTTPException(409, "Every step of this work item is done.")
@@ -1551,13 +1551,13 @@ def _on_decision(c: dict, decision: str, comment: str | None, who: str) -> None:
         probs = record_problems(pid, sid)               # accepted in the queue, but the rows cannot run: ask again
         db.audit("wb.step.reopened", pid, {"step": sid, "checkpoint": c["id"], "problems": probs[:5]}, who)
         ctx = Ctx(pid, sid, who=who)
-        _open_confirm(ctx, spec, _step(_load(pid), sid), _normalise({"summary": "Accepted in the queue, but the rows have problems — correct them and confirm again.", "items": probs[:6]}))
+        _open_confirm(ctx, spec, _step(_load(pid), sid), _normalise({"summary": "Accepted in the queue, but the rows have problems - correct them and confirm again.", "items": probs[:6]}))
         return
     if decision == "accept":
         def f(s):
             _step(s, sid).update(status="done", decided_by=who, decided=_now(), comment=(comment or None))
         _mutate(pid, f)
-        store.log(pid, {"kind": "user", "text": f"Confirmed: {step['name']}" + (f" — {comment}" if comment else "")})
+        store.log(pid, {"kind": "user", "text": f"Confirmed: {step['name']}" + (f" - {comment}" if comment else "")})
         db.audit("wb.step.accepted", pid, {"step": sid, "checkpoint": c["id"], "comment": (comment or "")[:200]}, who)
         try:
             advance(pid, sid, jump=step.get("next"), who=who)
@@ -1570,7 +1570,7 @@ def _on_decision(c: dict, decision: str, comment: str | None, who: str) -> None:
     def g(s):
         _step(s, sid).update(status="sent_back", decided_by=who, decided=_now(), comment=comment)
     _mutate(pid, g)
-    store.log(pid, {"kind": "user", "text": f"Sent back: {step['name']} — {comment}"})
+    store.log(pid, {"kind": "user", "text": f"Sent back: {step['name']} - {comment}"})
     db.audit("wb.step.sent_back", pid, {"step": sid, "back_to": back, "checkpoint": c["id"], "comment": (comment or "")[:300]}, who)
     try:
         start(pid, back, who=who, comment=comment)
@@ -1738,7 +1738,7 @@ async def _job_agent(pid: str, args: dict) -> None:
                 break
             if attempt == worker.FIX_ROUNDS:
                 raise StepFailed(f"What Relay wrote still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-            worker.app_note(pid, stage, f"The check found {len(problems)} problem(s) — Relay is fixing them.", "warn", problems)
+            worker.app_note(pid, stage, f"The check found {len(problems)} problem(s) - Relay is fixing them.", "warn", problems)
             res = await worker.agent(pid, stage, wp.fix(problems), worker.TURNS["fix"], ctx.step_id, resume=res.get("session_id"), system=wp.system(ctx.module_name))
         ctx.st = _load(pid)
         out = await asyncio.to_thread(a.after, ctx, res) if a.after else {"summary": res.get("text") or ""}
@@ -1815,7 +1815,7 @@ async def _loop() -> None:
 
 
 def ensure_scheduler() -> bool:
-    """Start the scheduled rounds once — from any request: on the running loop, or (a sync endpoint, in the thread
+    """Start the scheduled rounds once - from any request: on the running loop, or (a sync endpoint, in the thread
     pool) on the worker's event loop. The task gets a clean context: each pass sets its tenant itself."""
     global _sched_task
     import contextvars
@@ -1926,7 +1926,7 @@ def _lineage_of(st: dict) -> list[dict]:
 
 
 def _observe_overlap(st: dict) -> list[dict]:
-    """Assets Data observability also watches (the same lineage table), with any open incident — one link each."""
+    """Assets Data observability also watches (the same lineage table), with any open incident - one link each."""
     ids = (st.get("data") or {}).get("_lineage") or []
     if not ids or "observe_assets" not in db.tables():
         return []
@@ -2007,24 +2007,24 @@ def evidence_pack(pid: str) -> bytes:
     d = folder(pid)
     names = _names()
     cps = [checkpoints._public(r) for r in db.q("SELECT * FROM checkpoints WHERE subject = ? ORDER BY created", (pid,))]
-    lines = [f"# {st['title']}", "", f"{registry.BY_ID[st['module']]['name']} · {WORK_NAME.get(st['work'], st['work'])} · work item {pid}", "",
-             f"Owner: {names.get((db.project(pid) or {}).get('owner_id'), '—')}", f"Created: {_when(st.get('created'))}", f"Status: {STATUS_LABEL.get(st['status'], st['status'])}", "",
+    lines = [f"# {st['title']}", "", f"{registry.BY_ID[st['module']]['name']} - {WORK_NAME.get(st['work'], st['work'])} - work item {pid}", "",
+             f"Owner: {names.get((db.project(pid) or {}).get('owner_id'), '-')}", f"Created: {_when(st.get('created'))}", f"Status: {STATUS_LABEL.get(st['status'], st['status'])}", "",
              "## The brief", "", st.get("brief") or "(none)", "", "## Steps", ""]
     for i, s in enumerate(st["steps"], 1):
-        lines += [f"### {i}. {s['name']} — {STEP_LABEL.get(s['status'], s['status'])} ({KIND_LABEL.get(s['kind'], s['kind'])}{', ' + s['agent'] if s.get('agent') else ''})", "",
+        lines += [f"### {i}. {s['name']} - {STEP_LABEL.get(s['status'], s['status'])} ({KIND_LABEL.get(s['kind'], s['kind'])}{', ' + s['agent'] if s.get('agent') else ''})", "",
                   s.get("summary") or "", ""]
         if s.get("decided_by"):
-            lines += [f"Confirmed by {names.get(s['decided_by'], s['decided_by'])} on {_when(s.get('decided'))}" + (f": “{s['comment']}”" if s.get("comment") else ""), ""]
+            lines += [f"Confirmed by {names.get(s['decided_by'], s['decided_by'])} on {_when(s.get('decided'))}" + (f": \"{s['comment']}\"" if s.get("comment") else ""), ""]
         for eid in s.get("evidence") or []:
             e = next((x for x in st.get("evidence") or [] if x["id"] == eid), None)
             if e:
-                lines.append(f"- evidence: {e['label']} → {e['file']}")
+                lines.append(f"- evidence: {e['label']} {e['file']}")
         lines.append("")
-    lines += ["## Decisions", ""] + [f"- {c['name']}: {c['status'].replace('_', ' ')} by {names.get(c.get('decided_by'), c.get('decided_by') or '—')} {_when(c.get('decided'))}"
-                                     + (f" — “{c['comment']}”" if c.get("comment") else "") for c in cps] + [""]
+    lines += ["## Decisions", ""] + [f"- {c['name']}: {c['status'].replace('_', ' ')} by {names.get(c.get('decided_by'), c.get('decided_by') or '-')} {_when(c.get('decided'))}"
+                                     + (f" - \"{c['comment']}\"" if c.get("comment") else "") for c in cps] + [""]
     hs = (st.get("data") or {}).get("_handoffs") or []
     if hs:
-        lines += ["## Hand-offs", ""] + [f"- {h['kind']}: {h['label']} — {h.get('status')}" for h in hs] + [""]
+        lines += ["## Hand-offs", ""] + [f"- {h['kind']}: {h['label']} - {h.get('status')}" for h in hs] + [""]
     summary = "\n".join(lines)
     doc = None
     try:
@@ -2059,16 +2059,16 @@ def handover_document(st: dict, cps: list[dict], names: dict) -> str | None:
     (d / "sources").mkdir(exist_ok=True)
     hd.mkdir(exist_ok=True)
     studio.write_brand(d, "relay")
-    steps = [[s["name"], KIND_LABEL.get(s["kind"], s["kind"]), STEP_LABEL.get(s["status"], s["status"]), names.get(s.get("decided_by"), "") or "—", (s.get("summary") or "")[:160]] for s in st["steps"]]
-    decided = [[c["name"][:80], c["status"].replace("_", " "), names.get(c.get("decided_by"), c.get("decided_by") or "—"), _when(c.get("decided")), (c.get("comment") or "")[:120]] for c in cps]
+    steps = [[s["name"], KIND_LABEL.get(s["kind"], s["kind"]), STEP_LABEL.get(s["status"], s["status"]), names.get(s.get("decided_by"), "") or "-", (s.get("summary") or "")[:160]] for s in st["steps"]]
+    decided = [[c["name"][:80], c["status"].replace("_", " "), names.get(c.get("decided_by"), c.get("decided_by") or "-"), _when(c.get("decided")), (c.get("comment") or "")[:120]] for c in cps]
     ev = [[e["label"][:90], e["step"], e["file"]] for e in st.get("evidence") or []][:120]
     (d / "sources" / "handover.json").write_text(_dumps({"steps": steps, "decisions": decided, "evidence": ev}), encoding="utf-8")
-    spec = {"kind": "doc", "title": f"Hand-over: {st['title']}", "subtitle": f"{registry.BY_ID[st['module']]['name']} · {WORK_NAME.get(st['work'], st['work'])}",
+    spec = {"kind": "doc", "title": f"Hand-over: {st['title']}", "subtitle": f"{registry.BY_ID[st['module']]['name']} - {WORK_NAME.get(st['work'], st['work'])}",
             "audience": "the owner and the people who run it next", "sections": [
                 {"title": "What was done", "blocks": [{"kind": "paragraph", "text": "Every step below ran in Relay and was confirmed by the person named next to it. The evidence files are in the evidence pack, one per check."},
                                                       {"kind": "table", "table": {"columns": ["Step", "Done by", "Status", "Confirmed by", "Result"], "rows": steps, "source": "record:handover#steps", "caption": "The journey, step by step"}}]},
-                {"title": "Decisions", "blocks": [{"kind": "table", "table": {"columns": ["Decision", "Outcome", "By", "When", "Comment"], "rows": decided or [["—", "—", "—", "—", "—"]], "source": "record:handover#decisions", "caption": "Every checkpoint, signed and timed"}}]},
-                {"title": "Evidence", "blocks": [{"kind": "table", "table": {"columns": ["Evidence", "Step", "File"], "rows": ev or [["—", "—", "—"]], "source": "record:handover#evidence", "caption": "Where each piece of evidence is"}}]}]}
+                {"title": "Decisions", "blocks": [{"kind": "table", "table": {"columns": ["Decision", "Outcome", "By", "When", "Comment"], "rows": decided or [["-", "-", "-", "-", "-"]], "source": "record:handover#decisions", "caption": "Every checkpoint, signed and timed"}}]},
+                {"title": "Evidence", "blocks": [{"kind": "table", "table": {"columns": ["Evidence", "Step", "File"], "rows": ev or [["-", "-", "-"]], "source": "record:handover#evidence", "caption": "Where each piece of evidence is"}}]}]}
     import yaml
     (hd / "doc.yaml").write_text(yaml.safe_dump(spec, sort_keys=False, allow_unicode=True), encoding="utf-8")
     info = docs_build.build(hd / "doc.yaml", hd, workspace=store.root(), name="handover")
@@ -2276,7 +2276,7 @@ def api_records(mid: str, iid: str, sid: str, body: Records):
 
 @router.post("/api/m/{mid}/items/{iid}/steps/{sid}/decide")
 def api_decide(mid: str, iid: str, sid: str, body: Decide):
-    """Confirm in place: anyone who can open the item and whom the checkpoint is for (the queue's own rule) — the
+    """Confirm in place: anyone who can open the item and whom the checkpoint is for (the queue's own rule) - the
     named approver included, even with view access only."""
     u = _u()
     _item(mid, iid, u)
@@ -2399,7 +2399,7 @@ def api_close(mid: str, iid: str, body: Comment):
 
 @router.post("/api/m/{mid}/items/{iid}/steps/{sid}/hook")
 def api_hook(mid: str, iid: str, sid: str, body: Hook):
-    """Tests only (D2D_TEST_HOOKS=1): stands in for an agent run — writes the files the agent would have written, then
+    """Tests only (D2D_TEST_HOOKS=1): stands in for an agent run - writes the files the agent would have written, then
     the step's own check and after run as they would after a real run."""
     if not TEST_HOOKS:
         raise HTTPException(404, "Not found")

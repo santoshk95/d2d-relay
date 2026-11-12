@@ -68,12 +68,12 @@ def _send(tid: str, uid: str, kind: str, seen: dict) -> None:
             subject = f"D2D Relay sign-in: {email} ({org})"
         when = datetime.fromtimestamp(seen["at"], IST).strftime("%Y-%m-%d %H:%M:%S IST")
         rows = [("Who", f"{u.get('name') or ''} <{email}>"),
-                ("Organisation", f"{org} (@{o.get('domain') or '?'})" + (" · the platform's own" if tid == db.PLATFORM else "")),
+                ("Organisation", f"{org} (@{o.get('domain') or '?'})" + (" - the platform's own" if tid == db.PLATFORM else "")),
                 ("What", KINDS.get(kind, kind)),
                 ("Role", "owner" if u.get("org_role") == "admin" else "member"),
                 ("First sign-in", "yes" if sessions <= 1 else f"no ({sessions} sessions on record)"),
                 ("When", when), ("Where", seen["site"]),
-                ("Network", f"{seen['ip'] or '?'}" + (f" · {seen['country']}" if seen["country"] else "")),
+                ("Network", f"{seen['ip'] or '?'}" + (f" - {seen['country']}" if seen["country"] else "")),
                 ("Codes asked from this network in the last hour", str(codes)),
                 ("Browser", seen["agent"] or "?"),
                 ("Credits left", f"{o.get('credits', '?')}")]

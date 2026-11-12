@@ -26,17 +26,21 @@ function applyBrand() {
     const src = (dark && b.logo_dark) || b.logo_light;
     logo.replaceChildren(src ? h('img', {src, alt: ''}) : partnerMark(b), h('span', {class: 'lbl bname'}, h('b', {}, b.full), h('small', {}, b.tagline || '')));
   } else logo.replaceChildren(svgEl(RELAY_LOGO, 'relaylogo'), svgEl(RELAY_MARK, 'railmark'));
-  logo.setAttribute('aria-label', `${b.full} — Home`);
-  $('#mlogo').replaceChildren(...(b.partner ? [partnerMark(b), h('b', {}, b.name)] : [markEl(), h('b', {}, 'RELAY')]));   // spread: an array is printed as "[object …]"
+  logo.setAttribute('aria-label', `${b.full} - Home`);
+  $('#mlogo').replaceChildren(...(b.partner ? [partnerMark(b), h('b', {}, b.name)] : [markEl(), h('b', {}, 'RELAY')]));   // spread: an array is printed as "[object ...]"
   $('#powered').replaceChildren(...(b.partner ? [markEl(), h('span', {}, 'Powered by ', h('b', {}, 'PASDACS Relay'))]
-    : [isAdminPortal() ? h('span', {class: 'faint'}, 'D2D Relay admin · PASDACS only')
+    : [isAdminPortal() ? h('span', {class: 'faint'}, 'D2D Relay admin - PASDACS only')
       : h('span', {class: 'faint', style: 'line-height:1.35', title: 'D2D Relay: D2D means Data to Decision, a product of the Relay Platform by PASDACS'},
-        h('b', {}, 'D2D'), ' · Data to Decision', h('br'), 'a Relay Platform product · PASDACS')]));
+        h('b', {}, 'D2D'), ' - Data to Decision', h('br'), 'a Relay Platform product - PASDACS')]));
 }
+/* the look: 'light', 'dark' or 'system' (the device's setting, followed when it changes); keep: show it, don't save it */
+const darkDevice = () => { try { return matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { return false; } };
+const themeChoice = () => { const t = pref('theme'); return t === 'dark' || t === 'light' ? t : 'system'; };
 function setTheme(t, keep) {
   const root = document.documentElement;
-  if (t === 'dark') root.dataset.theme = 'dark'; else delete root.dataset.theme;
+  if (t === 'dark' || (t === 'system' && darkDevice())) root.dataset.theme = 'dark'; else delete root.dataset.theme;
   if (!keep) pref('theme', t);
+  t = root.dataset.theme === 'dark' ? 'dark' : 'light';
   const b = $('#themebtn');
   b.replaceChildren(icon(t === 'dark' ? 'sun' : 'moon'));
   b.setAttribute('aria-label', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
@@ -62,6 +66,7 @@ function navGroups(route) {          // D2D Relay: dashboards, Ask Relay, brandi
   const top = {id: 'top', label: '', items: [['#/d2d', 'chart', 'Dashboards', routeOn('#/') || on('#/d2d') || !!S.pid]]};
   if (me.builder !== false) top.items.push(['#/new', 'plus', 'New dashboard', on('#/new')]);
   top.items.push(['#/askd', 'spark', 'Ask Relay', on('#/askd')]);
+  top.items.push(['#/migration', 'swap', 'Migration D2D', route === '#/migration']);   // moving dashboards between BI tools (39-migration.js)
   const setup = [['#/org', 'building', 'Organisation', route === '#/org'],       // D2D Relay: owner, people, credits (36-org.js)
     ['#/branding', 'palette', 'Branding', on('#/branding')],
     ['#/connections', 'plug', 'Connections', on('#/connections')],
@@ -146,7 +151,8 @@ function renderShell() {
 }
 (function shellControls() {
   setRail(pref('rail') ?? window.innerWidth < 1200);
-  setTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light', true);
+  setTheme(themeChoice(), true);
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (themeChoice() === 'system') setTheme('system', true); }); } catch (e) { /* an old browser keeps the look it opened with */ }
   $('#railbtn').onclick = () => setRail(!$('.app').classList.contains('rail'));
   $('#menubtn').onclick = () => setDrawer(!$('.app').classList.contains('drawer'));
   $('#scrim').onclick = () => setDrawer(false);
@@ -180,12 +186,12 @@ async function refreshSys() {
   try {
     const r = S.health = await api('/api/health'), ag = r.agent || {};
     a.className = 'health ' + (!ag.ok ? 'down' : ag.busy ? 'busy' : 'ok');
-    $('span', a).textContent = !ag.ok ? 'Agent offline' : ag.busy ? 'Agent running' + (r.running_model && modelName(r.running_model) ? ` · ${modelName(r.running_model)}` : '')
-      + (r.queue ? ` · ${r.queue} waiting` : '') : 'Agents ready';
+    $('span', a).textContent = !ag.ok ? 'Agent offline' : ag.busy ? 'Agent running' + (r.running_model && modelName(r.running_model) ? ` - ${modelName(r.running_model)}` : '')
+      + (r.queue ? ` - ${r.queue} waiting` : '') : 'Agents ready';
     d.className = 'health ' + (!r.daxcheck ? 'down' : r.daxcheck.state === 'checking' ? 'busy' : 'ok');
-    $('span', d).textContent = !r.daxcheck ? 'DAX checker off' : r.daxcheck.state === 'checking' ? 'Checking DAX…' : 'DAX checker on';
+    $('span', d).textContent = !r.daxcheck ? 'DAX checker off' : r.daxcheck.state === 'checking' ? 'Checking DAX...' : 'DAX checker on';
     d.title = r.daxcheck ? "Power BI's own engine checks every measure and visual before a report is published"
-      : 'Start daxcheck\\start-daxcheck.cmd on this PC — publishing to Power BI needs it';
+      : 'Start daxcheck\\start-daxcheck.cmd on this PC - publishing to Power BI needs it';
     a.title = a.dataset.tip = $('span', a).textContent; d.dataset.tip = $('span', d).textContent;
   } catch (e) { a.className = 'health down'; $('span', a).textContent = 'App offline'; }
   if (S.me && S.me.builder !== false) {
@@ -213,10 +219,11 @@ function route() {
   }
   if (!pid) document.title = 'D2D Relay';
   // D2D Relay: only these screens exist; anything else (old links, bookmarks) opens the dashboards list
-  const D2D_ROUTES = ['#/new', '#/d2d', '#/askd', '#/branding', '#/notifications', '#/connections', '#/p/', '#/org', '#/setup'];
+  const D2D_ROUTES = ['#/new', '#/d2d', '#/askd', '#/branding', '#/notifications', '#/connections', '#/p/', '#/org', '#/setup', '#/welcome', '#/migration'];
   if (location.hash.startsWith('#/branding')) return renderBranding();
   if (location.hash === '#/org') return renderOrg();                               // D2D Relay: organisations and credits (36-org.js)
-  if (location.hash === '#/setup') return renderSetup();
+  if (location.hash === '#/welcome' || location.hash === '#/setup') return renderTour();   // the first-time tour (38-tour.js)
+  if (location.hash === '#/migration') return renderMigration();                   // Migration D2D (39-migration.js)
   if (!pid && !D2D_ROUTES.some(r => location.hash === r || location.hash.startsWith(r.endsWith('/') ? r : r + '/'))) {
     if (location.hash && location.hash !== '#/' && location.hash !== '#') { history.replaceState(null, '', '#/d2d'); }
     return renderDashboards();
@@ -267,11 +274,11 @@ async function loadMe() {
     $('#me').replaceChildren(h('button', {class: 'mebtn', type: 'button', 'aria-haspopup': 'dialog', 'aria-label': `Your profile: ${me.name || me.email}`,
         'data-tip': me.name || me.email, onclick: e => profileMenu(e.currentTarget)},
       h('span', {class: 'av'}, initials),
-      h('span', {class: 'who'}, h('b', {}, me.name || me.email), h('small', {}, role + (me.auth === 'single' ? ' · single-user mode' : ''))),
+      h('span', {class: 'who'}, h('b', {}, me.name || me.email), h('small', {}, role + (me.auth === 'single' ? ' - single-user mode' : ''))),
       icon('chevr', 'mechev')));
     renderShell();
     if (typeof renderWorkspace === 'function') renderWorkspace();                  // P17: the workspace chip and band
     if (typeof orgAfterMe === 'function' && !isAdminPortal()) orgAfterMe(me);     // D2D Relay: the organisation chip, first-time setup
-    $('#me').title = `${me.email} · instance ${me.instance}`;
+    $('#me').title = `${me.email} - instance ${me.instance}`;
   } catch (e) {}
 }

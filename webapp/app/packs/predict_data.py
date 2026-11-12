@@ -1,12 +1,12 @@
 """Where the AI wave's packs read their numbers (Predictive analytics first; Anomaly & risk detection and
 Suggestions & recommendations reuse it): the work item's uploads (DuckDB), its warehouse connections (the guarded,
-read-only live query, written once in DuckDB's dialect and transpiled by sqlglot) and **a dashboard's data** — DuckDB
+read-only live query, written once in DuckDB's dialect and transpiled by sqlglot) and **a dashboard's data** - DuckDB
 over the dashboard's data folder with Ask D's guard (one read-only SELECT over that dashboard's own views, a row limit),
 opened only when the work item's owner may open the dashboard.
 
 A dataset is {"key", "name", "label", "where", "ref"}; ref is {"source": "file", "item", "file"} |
 {"source": "connection", "connection", "object"} | {"source": "dashboard", "project", "table"}. `series()` turns one
-into a time series (periods and values) by a grain — day, week, month or quarter — with one SQL aggregate."""
+into a time series (periods and values) by a grain - day, week, month or quarter - with one SQL aggregate."""
 from __future__ import annotations
 
 import json
@@ -36,7 +36,7 @@ def slug(s: str, n: int = 40) -> str:
 
 def fmt(v, d: int = 2) -> str:
     if v is None:
-        return "—"
+        return "-"
     try:
         f = float(v)
     except (TypeError, ValueError):
@@ -95,7 +95,7 @@ def dashboards_for(u: dict) -> list[tuple[str, str]]:
 class DashboardPlatform(wb.Platform):
     id, label = "dashboards", "A dashboard's data"
     simulator = "a dashboard folder the tests write (data/*.csv), read by Ask D's DuckDB engine"
-    reads = "the data of a dashboard you can open — DuckDB over its data folder, one guarded read-only SELECT at a time, as Ask D reads it"
+    reads = "the data of a dashboard you can open - DuckDB over its data folder, one guarded read-only SELECT at a time, as Ask D reads it"
 
     def test(self, ctx: wb.Ctx) -> list[dict]:
         pid = (ctx.scope.get("dashboard") or "").strip()
@@ -140,7 +140,7 @@ def datasets(ctx: wb.Ctx, cap: int = 25, warehouse_kinds: tuple = wb.WarehousePl
             raise wb.StepFailed(f"{c['name']} could not be read: {e}") from e
         pick = [o for o in objs if not want or any(o.lower() == w or o.lower().endswith("." + w) for w in want)][:cap]
         for o in pick:
-            out.append(_dataset({"source": "connection", "connection": c["id"], "object": o}, o.split(".")[-1].lower(), f"{o} · {c['name']}", c["name"]))
+            out.append(_dataset({"source": "connection", "connection": c["id"], "object": o}, o.split(".")[-1].lower(), f"{o} - {c['name']}", c["name"]))
     pid = (ctx.scope.get("dashboard") or "").strip()
     if pid:
         p = db.project(pid)
@@ -154,7 +154,7 @@ def datasets(ctx: wb.Ctx, cap: int = 25, warehouse_kinds: tuple = wb.WarehousePl
             raise wb.StepFailed("That dashboard has no data to read.") from e
         nm = store.load(pid).get("name") or pid
         for t in sorted(tables)[:cap]:
-            out.append(_dataset({"source": "dashboard", "project": pid, "table": t}, t, f"{t} · dashboard {nm}", f"dashboard {nm}"))
+            out.append(_dataset({"source": "dashboard", "project": pid, "table": t}, t, f"{t} - dashboard {nm}", f"dashboard {nm}"))
     seen: dict[str, int] = {}
     for d in out:
         seen[d["name"]] = seen.get(d["name"], 0) + 1
@@ -272,7 +272,7 @@ def distinct(ctx: wb.Ctx, ref: dict, column: str, cap: int = 13) -> list[str]:
 
 
 def rows_of(ctx: wb.Ctx, ref: dict, limit: int = 5000) -> tuple[list[dict], list[dict]]:
-    """(columns, up to `limit` rows) of a dataset — for row-level rules that compare each row."""
+    """(columns, up to `limit` rows) of a dataset - for row-level rules that compare each row."""
     r = reader(ctx, ref)
     try:
         cols = r.columns()

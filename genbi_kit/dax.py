@@ -26,7 +26,7 @@ def _next_char(expr: str, i: int) -> str:
 def quote_tables(expr: str, tables) -> str:
     """Put every bare table name in single quotes: Batch[Yield] -> 'Batch'[Yield], COUNTROWS ( Batch ) ->
     COUNTROWS ( 'Batch' ). Power BI rejects a bare table name that is a reserved word or a function name (Batch,
-    Date, Product …) and accepts quotes on every name. A word is a table reference when it names a table, is
+    Date, Product ...) and accepts quotes on every name. A word is a table reference when it names a table, is
     followed by [ ) , or the end, is not a variable and not part of a dotted name (STDEV.S)."""
     names = {t.lower() for t in tables}
     text = str(expr)
@@ -51,7 +51,7 @@ def _mask(expr: str) -> str:
 
 def uses_whole_table(expr: str, table: str) -> bool:
     """Does a calculated column on `table` depend on every column of it? A bare or quoted reference to the table
-    that is not a column qualifier (ALL ( Batch ), FILTER ( 'Batch', … ), COUNTROWS ( Batch )), or CALCULATE /
+    that is not a column qualifier (ALL ( Batch ), FILTER ( 'Batch', ... ), COUNTROWS ( Batch )), or CALCULATE /
     CALCULATETABLE (context transition) do."""
     text, low = str(expr), table.lower()
     for m in TOKEN.finditer(text):

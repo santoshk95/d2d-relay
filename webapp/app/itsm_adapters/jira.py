@@ -1,6 +1,6 @@
 """Jira Cloud REST API v3 (Jira Service Management and Jira Software): search by JQL with page tokens, issue, comments
-(Atlassian Document Format), transitions and field edits; and (consolidation) creating an issue — through the
-platform API, or as a customer request of a request type through the Jira Service Management API — and an internal
+(Atlassian Document Format), transitions and field edits; and (consolidation) creating an issue - through the
+platform API, or as a customer request of a request type through the Jira Service Management API - and an internal
 comment. Sign-in: the service account's e-mail + API token (Basic), or a bearer token for a Jira Data Center personal
 access token. Every write is reached only through itsm.py, after a person's approval."""
 from __future__ import annotations
@@ -124,8 +124,8 @@ class Jira(Client):
 
     def create_issue(self, project: str, title: str, description: str, *, issue_type: str = "Task", priority: str | None = None,
                      labels: list[str] | None = None, service_desk: str | None = None, request_type: str | None = None, **_) -> dict:
-        """A new issue in a project (platform API), or — when the source names a Jira Service Management service desk and
-        request type — a customer request of that type (it shows in the portal and its SLAs start). Returns key + URL."""
+        """A new issue in a project (platform API), or - when the source names a Jira Service Management service desk and
+        request type - a customer request of that type (it shows in the portal and its SLAs start). Returns key + URL."""
         if not (title or "").strip():
             raise AdapterError("A ticket needs a title.")
         if service_desk and request_type:

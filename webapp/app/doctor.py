@@ -7,9 +7,9 @@ the thing that is broken:
                 new jobs are held, the bugs this process has seen (errors.recent) and the commit it was built from.
 - state.json    written by the Doctor on every pass: its heartbeat, mode, incidents with their steps, recent actions.
 - hold.json     written by the Doctor: while it exists (and the Doctor's heartbeat is fresh) the worker starts no new
-                job — queued work waits, nothing is lost. The Doctor holds while it restarts the app, and while its own
+                job - queued work waits, nothing is lost. The Doctor holds while it restarts the app, and while its own
                 AI fix runs (one AI run at a time).
-- control.json  written by the app when an Admin acts on Admin › Operations › Relay Doctor: pause / resume, the mode
+- control.json  written by the app when an Admin acts on Admin > Operations > Relay Doctor: pause / resume, the mode
                 (auto: fix and deploy by itself; approve: deploy after one click; watch: report only), approve a fix
                 that is ready, retry, mute or close an incident.
 
@@ -116,7 +116,7 @@ def _notify_changes(s: dict) -> int:
         seen[iid] = st
         if not title:
             continue
-        body = f"{inc.get('title') or 'A crash in Relay'} — {inc.get('step') or st}"
+        body = f"{inc.get('title') or 'A crash in Relay'} - {inc.get('step') or st}"
         notify.add_many(monitor._admins(), "ops", f"{title}: {(inc.get('title') or '')[:90]}", body, "#/admin/doctor")   # noqa: SLF001
         monitor._webhook(f"Relay ({db.INSTANCE}) {title}: {body}")                                                     # noqa: SLF001
         sent += 1
@@ -155,19 +155,19 @@ def rules(now: float) -> dict[str, dict]:
     waiting = [i for i in s.get("incidents") or [] if i.get("status") in ("needs_person", "rolled_back")]
     if waiting:
         found["doctor_needs_person"] = {"severity": "warning", "text": f"{len(waiting)} problem(s) Relay Doctor could not fix by itself need a person "
-                                        "(Admin › Operations › Relay Doctor)."}
+                                        "(Admin > Operations > Relay Doctor)."}
     return found
 
 
 def brief() -> dict:
-    """For Admin › Monitoring's tile."""
+    """For Admin > Monitoring's tile."""
     s = state()
     inc = s.get("incidents") or []
     return {"installed": bool(s.get("time")), "online": s["online"], "mode": s.get("mode"), "paused": bool(s.get("paused")),
             "open": sum(i.get("status") in OPEN for i in inc), "needs_person": sum(i.get("status") in ("needs_person", "rolled_back") for i in inc)}
 
 
-# ---------------------------------------------------------------- Admin › Operations › Relay Doctor
+# ---------------------------------------------------------------- Admin > Operations > Relay Doctor
 
 class Control(BaseModel):
     action: str

@@ -14,7 +14,7 @@ const PAY_METHODS = {card: 'Card', upi: 'UPI', netbanking: 'Netbanking', wallet:
 const GST_STATES = [['01', 'Jammu and Kashmir'], ['02', 'Himachal Pradesh'], ['03', 'Punjab'], ['04', 'Chandigarh'], ['05', 'Uttarakhand'], ['06', 'Haryana'], ['07', 'Delhi'], ['08', 'Rajasthan'], ['09', 'Uttar Pradesh'], ['10', 'Bihar'], ['11', 'Sikkim'], ['12', 'Arunachal Pradesh'], ['13', 'Nagaland'], ['14', 'Manipur'], ['15', 'Mizoram'], ['16', 'Tripura'], ['17', 'Meghalaya'], ['18', 'Assam'], ['19', 'West Bengal'], ['20', 'Jharkhand'], ['21', 'Odisha'], ['22', 'Chhattisgarh'], ['23', 'Madhya Pradesh'], ['24', 'Gujarat'], ['26', 'Dadra and Nagar Haveli and Daman and Diu'], ['27', 'Maharashtra'], ['29', 'Karnataka'], ['30', 'Goa'], ['31', 'Lakshadweep'], ['32', 'Kerala'], ['33', 'Tamil Nadu'], ['34', 'Puducherry'], ['35', 'Andaman and Nicobar Islands'], ['36', 'Telangana'], ['37', 'Andhra Pradesh'], ['38', 'Ladakh'], ['97', 'Other Territory']];
 const stateName = c => (GST_STATES.find(x => x[0] === c) || [])[1] || c;
 /* where the billing address is, in words */
-const billedTo = b => !b || !b.name ? '' : `${b.name}, ${b.country === 'India' ? stateName(b.state) : b.country}${b.gstin ? ` · GSTIN ${b.gstin}` : ''}`;
+const billedTo = b => !b || !b.name ? '' : `${b.name}, ${b.country === 'India' ? stateName(b.state) : b.country}${b.gstin ? ` - GSTIN ${b.gstin}` : ''}`;
 
 /* the organisation's billing details, for its GST invoices (item 25, app/invoices.py): done(the new /api/payments) */
 function billingForm(b, done) {
@@ -100,7 +100,7 @@ async function buyDialog(reason) {
   if (d.billing_needed) {                           // asked once: they go on every GST invoice
     const bm = modal('Buy credits', h('div', {class: 'mbody'},
       reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
-      h('p', {style: reason ? null : 'margin-top:0'}, h('b', {}, 'First, your organisation’s billing details. '),
+      h('p', {style: reason ? null : 'margin-top:0'}, h('b', {}, 'First, your organisation\'s billing details. '),
         'They go on its GST invoices. You give them once; owners can change them on the Organisation page.'),
       d.may_edit_billing ? billingForm(d.billing, () => { bm.remove(); buyDialog(reason); })
         : h('div', {class: 'note'}, 'An owner of your organisation adds them on the Organisation page. Ask one of them, or ask PASDACS (Request credits).')));
@@ -128,7 +128,7 @@ async function buyDialog(reason) {
   payLabel();
   const done = h('button', {class: 'btn primary', type: 'button', onclick: () => m.remove()}, icon('check'), 'Done');
   const paid = async (resp, ord) => {                 // Razorpay says paid: the server checks it, then adds the credits
-    out.replaceChildren(h('div', {class: 'note'}, 'Paid. Checking the payment with Razorpay…'));
+    out.replaceChildren(h('div', {class: 'note'}, 'Paid. Checking the payment with Razorpay...'));
     for (let i = 0; i < 5; i++) {
       const r = await payPost('/api/payments/verify', resp).catch(e => ({status: 0, error: e.message}));
       if (r.status === 200) {
@@ -150,7 +150,7 @@ async function buyDialog(reason) {
   };
   payBtn.onclick = async () => {
     payBtn.disabled = true;
-    out.replaceChildren(h('div', {class: 'note'}, 'Opening Razorpay…'));
+    out.replaceChildren(h('div', {class: 'note'}, 'Opening Razorpay...'));
     try { await loadCheckout(); } catch (e) {
       payBtn.disabled = false;
       return out.replaceChildren(h('div', {class: 'note err'}, "Razorpay's payment window could not load. Check your internet connection; if an ad or script blocker is on, allow checkout.razorpay.com. Then try again."));
@@ -185,11 +185,11 @@ async function buyDialog(reason) {
   const m = modal('Buy credits', h('div', {class: 'mbody'},
     reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
     d.test ? h('div', {class: 'note warn', style: reason ? null : 'margin-top:0'}, h('b', {}, 'Test mode: no money moves. '),
-      'Pay with one of the test cards in Razorpay’s documentation (an international one for US dollars).') : null,
+      'Pay with one of the test cards in Razorpay\'s documentation (an international one for US dollars).') : null,
     bal,
     d.can ? null : h('div', {class: 'note'}, d.why),
     d.billing && d.billing.name ? h('div', {class: 'small muted', style: 'margin:-4px 0 6px'}, 'Invoices to: ', h('b', {}, billedTo(d.billing)),
-      d.may_edit_billing ? [' · ', h('a', {href: '#', onclick: e => { e.preventDefault(); m.remove(); billingDialog(d.billing, () => buyDialog(reason)); }}, 'Change')] : null) : null,
+      d.may_edit_billing ? [' - ', h('a', {href: '#', onclick: e => { e.preventDefault(); m.remove(); billingDialog(d.billing, () => buyDialog(reason)); }}, 'Change')] : null) : null,
     cards,
     words ? h('div', {class: 'hint'}, words) : null,
     h('div', {class: 'small muted', style: 'margin-top:6px'}, d.no_refunds || 'Credits are not refundable.'),
@@ -202,7 +202,7 @@ async function buyDialog(reason) {
 
 /* a payment's state, in words */
 function payState(p) {
-  if (p.status === 'paid') return p.refunded ? h('span', {class: 'tag warn'}, `Paid · ${money(p.refunded, p.currency, true)} refunded`) : h('span', {class: 'tag ok'}, 'Paid');
+  if (p.status === 'paid') return p.refunded ? h('span', {class: 'tag warn'}, `Paid - ${money(p.refunded, p.currency, true)} refunded`) : h('span', {class: 'tag ok'}, 'Paid');
   if (p.status === 'refunded') return h('span', {class: 'tag'}, 'Refunded');
   if (p.status === 'failed') return h('span', {class: 'tag err', title: p.error || ''}, 'Failed');
   return Date.now() / 1000 - p.created < 1800 ? h('span', {class: 'tag warn'}, 'Waiting') : h('span', {class: 'small muted'}, 'Not completed');
@@ -211,7 +211,7 @@ function payState(p) {
 /* the billing details in a dialog of their own (the Organisation page, Change in Buy credits); then() after saving */
 function billingDialog(b, then) {
   const m = modal('Billing details', h('div', {class: 'mbody'},
-    h('p', {class: 'small muted', style: 'margin-top:0'}, 'They go on your organisation’s GST invoices from now on (invoices already issued keep theirs).'),
+    h('p', {class: 'small muted', style: 'margin-top:0'}, 'They go on your organisation\'s GST invoices from now on (invoices already issued keep theirs).'),
     billingForm(b, () => { m.remove(); notify('Billing details saved', 'ok'); if (then) then(); })));
 }
 
@@ -236,7 +236,7 @@ async function fillPayments(box, billBox) {
     d.payments.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Who', 'Credits', 'Amount', 'Status', ''], 2),
       h('tbody', {}, d.payments.map(p => h('tr', {},
         h('td', {}, when(p.paid || p.created), p.live ? null : h('span', {class: 'tag', style: 'margin-left:6px'}, 'Test')),
-        h('td', {}, p.user_name || '—'), h('td', {class: 'n'}, '+' + Number(p.credits).toLocaleString('en-IN')),
+        h('td', {}, p.user_name || '-'), h('td', {class: 'n'}, '+' + Number(p.credits).toLocaleString('en-IN')),
         h('td', {class: 'n'}, money(p.amount, p.currency, true)), h('td', {}, payState(p), p.method ? h('span', {class: 'small muted'}, ` ${PAY_METHODS[p.method] || p.method}`) : null),
         h('td', {class: 'n'}, p.status === 'paid' || p.status === 'refunded'
           ? h('a', {href: `/api/payments/${encodeURIComponent(p.id)}/receipt`, target: '_blank', rel: 'noopener'}, p.invoice_no ? `Invoice ${p.invoice_no}` : 'Receipt') : null))))))
@@ -247,7 +247,7 @@ async function fillPayments(box, billBox) {
 async function renderPayments() {
   const page = h('div', {class: 'page wide'});
   $('#main').replaceChildren(page);
-  document.title = 'Payments · D2D Relay admin';
+  document.title = 'Payments - D2D Relay admin';
   let d;
   try { d = await api('/api/admin/payments'); } catch (e) { return page.append(h('div', {class: 'note err'}, e.message)); }
   if (location.hash !== '#/payments') return;
@@ -264,10 +264,10 @@ async function renderPayments() {
       h('dt', {}, 'Webhook URL'), h('dd', {}, h('code', {}, d.webhook_url), ' ', copyBtn(d.webhook_url)),
       h('dt', {}, 'Webhook events'), h('dd', {}, d.events.join(', '))),
     h('p', {class: 'small muted'}, d.mode === 'test'
-      ? `Test keys move no money, so ${d.test_for === 'all' ? 'every organisation can buy (a test install)' : 'only PASDACS’s own workspace can buy: sign in to the public site as info@pasdacs.com to try it end to end'}. Live keys open selling to everyone once it is switched on below.`
+      ? `Test keys move no money, so ${d.test_for === 'all' ? 'every organisation can buy (a test install)' : 'only PASDACS\'s own workspace can buy: sign in to the public site as info@pasdacs.com to try it end to end'}. Live keys open selling to everyone once it is switched on below.`
       : d.mode === 'live' ? 'Live keys: real payments. Organisations can buy once selling is switched on below.'
       : 'The keys go in .env (RELAY_RAZORPAY_KEY_ID, RELAY_RAZORPAY_KEY_SECRET, RELAY_RAZORPAY_WEBHOOK_SECRET); a restart picks them up.'),
-    h('p', {class: 'small muted'}, 'In the Razorpay Dashboard, add a webhook (Account & Settings › Webhooks) with the URL above, the same secret and these events. '
+    h('p', {class: 'small muted'}, 'In the Razorpay Dashboard, add a webhook (Account & Settings > Webhooks) with the URL above, the same secret and these events. '
       + 'Refunds are made there too; they show up here, and the credits are taken back by hand on Organisations if that is the rule.'));
 
   // what is on sale
@@ -325,8 +325,8 @@ async function renderPayments() {
   const invCard = h('div', {class: 'card'}, h('h3', {}, 'Tax invoices'),
     (d.missing || []).length ? h('div', {class: 'note warn', style: 'margin-top:0'}, 'Still needed before selling with live keys: ' + d.missing.join(', ') + '.')
       : h('div', {class: 'note ok', style: 'margin-top:0'}, 'Ready: every payment gets a numbered GST invoice.'),
-    h('p', {class: 'small muted'}, 'PASDACS’s details, printed on every invoice. Invoices are numbered PREFIX/YY-YY/00001 in each financial year '
-      + '(test payments: TEST/…). Buyers in your state pay CGST and SGST; elsewhere in India, IGST; dollar sales abroad are exports: with an LUT '
+    h('p', {class: 'small muted'}, 'PASDACS\'s details, printed on every invoice. Invoices are numbered PREFIX/YY-YY/00001 in each financial year '
+      + '(test payments: TEST/...). Buyers in your state pay CGST and SGST; elsewhere in India, IGST; dollar sales abroad are exports: with an LUT '
       + 'without IGST, without one IGST is included in the dollar price. Have your accountant confirm the SAC code and rate.'),
     h('label', {class: 'f'}, 'Legal name'), seller.name, h('label', {class: 'f'}, 'Address'), seller.address,
     h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, h('div', {style: 'flex:2;min-width:200px'}, h('label', {class: 'f'}, 'State'), seller.state),
@@ -337,17 +337,17 @@ async function renderPayments() {
       h('div', {style: 'flex:2;min-width:200px'}, h('label', {class: 'f'}, 'LUT ARN ', h('small', {}, 'Letter of Undertaking, this financial year')), seller.lut)),
     h('label', {class: 'f'}, 'Description on invoices'), seller.description,
     err2, h('div', {class: 'row', style: 'justify-content:space-between;margin-top:12px;gap:10px;flex-wrap:wrap;align-items:center'},
-      h('span', {class: 'small'}, 'Download for GST returns: ', years.map((fy, i) => [i ? ' · ' : '',
+      h('span', {class: 'small'}, 'Download for GST returns: ', years.map((fy, i) => [i ? ' - ' : '',
         h('a', {href: `/api/admin/payments/invoices.csv?fy=${encodeURIComponent(fy)}`, download: ''}, `invoices 20${fy} (CSV)`)]),
-        ' · ', h('a', {href: `/api/admin/payments/invoices.csv?fy=${encodeURIComponent(d.fy)}&test=1`, download: ''}, 'with test invoices')), save2));
+        ' - ', h('a', {href: `/api/admin/payments/invoices.csv?fy=${encodeURIComponent(d.fy)}&test=1`, download: ''}, 'with test invoices')), save2));
   const selling = h('div', {class: 'card'}, h('h3', {}, 'What is on sale'),
     h('label', {class: 'chk'}, on, h('span', {}, h('b', {}, 'Sell credits online'), d.mode === 'live' ? '' : ' (with live keys; test keys let only PASDACS buy)')),
     h('label', {class: 'f'}, 'Who can buy'), whoSeg,
-    h('div', {class: 'hint'}, 'Owners: each organisation’s owners; members ask them, or ask PASDACS. Everyone: anyone in the organisation.'),
+    h('div', {class: 'hint'}, 'Owners: each organisation\'s owners; members ask them, or ask PASDACS. Everyone: anyone in the organisation.'),
     h('label', {class: 'f'}, 'Packs ', h('small', {}, 'up to 6; prices in whole rupees and, if wanted, whole US dollars')), rows,
     h('div', {class: 'hint'}, 'Where the buyer is decides: rupees only in India, US dollars everywhere else, also where Cloudflare '
       + 'cannot tell the country. A pack without a dollar price is not sold outside India; with no dollar prices at all, everyone pays '
-      + 'in rupees. With live keys, dollars need Razorpay’s international payments switched on.'),
+      + 'in rupees. With live keys, dollars need Razorpay\'s international payments switched on.'),
     h('button', {class: 'btn sm', type: 'button', style: 'margin-top:8px', onclick: () => { if (rows.children.length < 6) addRow(); }}, icon('plus'), 'Add a pack'),
     h('label', {class: 'f'}, 'GST on rupee prices ', h('small', {}, 'per cent (18 for these services); dollar sales abroad follow the export rules')), gst,
     h('label', {class: 'chk', style: 'margin-top:6px'}, included, h('span', {}, 'Rupee prices include GST ', h('small', {class: 'muted'}, '(otherwise it is added on top)'))),
@@ -369,13 +369,13 @@ async function renderPayments() {
     d.payments.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Organisation', 'Who', 'Credits', 'Amount', 'Status', 'Invoice', 'Razorpay', ''], 3),
       h('tbody', {}, d.payments.map(p => h('tr', {},
         h('td', {}, when(p.paid || p.created), p.live ? null : h('span', {class: 'tag', style: 'margin-left:6px'}, 'Test')),
-        h('td', {}, h('b', {}, p.org_name || p.tenant_id)), h('td', {}, p.user_name || '—', h('div', {class: 'small muted'}, p.email || '')),
+        h('td', {}, h('b', {}, p.org_name || p.tenant_id)), h('td', {}, p.user_name || '-', h('div', {class: 'small muted'}, p.email || '')),
         h('td', {class: 'n'}, '+' + Number(p.credits).toLocaleString('en-IN')),
         h('td', {class: 'n'}, money(p.amount, p.currency, true), p.gst ? h('div', {class: 'small muted'}, `incl. ${money(p.gst, p.currency, true)} GST`) : null),
         h('td', {}, payState(p), p.method ? h('div', {class: 'small muted'}, PAY_METHODS[p.method] || p.method) : null,
           p.error ? h('div', {class: 'small muted'}, p.error) : null),
         h('td', {class: 'small'}, p.invoice_no ? h('a', {href: `/api/admin/payments/${encodeURIComponent(p.id)}/invoice`, target: '_blank', rel: 'noopener'},
-          p.invoice_no) : '—'),
+          p.invoice_no) : '-'),
         h('td', {class: 'small'}, p.payment_id || '', h('div', {class: 'muted'}, p.order_id || '')),
         h('td', {class: 'n'}, p.status === 'created' || p.status === 'failed' ? (() => { const b = h('button', {class: 'btn sm', type: 'button',
           title: 'Ask Razorpay whether it was paid'}, 'Check'); b.onclick = () => check(p, b); return b; })() : null))))))

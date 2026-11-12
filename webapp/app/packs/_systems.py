@@ -1,13 +1,13 @@
-"""W3 Systems — the kit every Systems pack shares (ERP, finance & accounting, CRM, HR & payroll, identity & access,
+"""W3 Systems - the kit every Systems pack shares (ERP, finance & accounting, CRM, HR & payroll, identity & access,
 integration & APIs, collaboration & content, PLM, cloud & CI/CD, apps & products). Not a pack itself (the leading
 underscore keeps app/packs/__init__.py from importing it as one); each W3 pack imports it.
 
 What it gives a pack:
   Api          one signed-in session to a platform for one connection: the vendor's sign-in (by the adapter), signed in
                again once when the token expired, backs off on throttles (Retry-After, else exponential), and every
-               write carries X-Relay-Approval — the id of the checkpoint a named person accepted.
+               write carries X-Relay-Approval - the id of the checkpoint a named person accepted.
   SysAdapter   a Connector SDK adapter (one per platform) that reads canonical records (customer, supplier, product,
-               order, invoice, account, worker, user, part …) out of the vendor's own objects, lists its job runs, and
+               order, invoice, account, worker, user, part ...) out of the vendor's own objects, lists its job runs, and
                writes only through connectors.request_write (scope + a per-change approval).
   register()   the adapter joins the SDK registry and the Connections hub (connectors.KINDS) at import.
   Spec + the five journeys (assess / develop / change / migrate / run): rules first, a person confirms every step
@@ -181,7 +181,7 @@ def label(entity: str) -> str:
 
 
 def norm_name(s) -> str:
-    """A name as a duplicate check sees it: lower case, no legal suffix (Ltd, Pvt, Inc …), no punctuation."""
+    """A name as a duplicate check sees it: lower case, no legal suffix (Ltd, Pvt, Inc ...), no punctuation."""
     s = LEGAL.sub(" ", str(s or "").lower())
     return re.sub(r"[^a-z0-9]+", " ", s).strip()
 
@@ -236,7 +236,7 @@ def when(v) -> float | None:
 
 
 def stamp(t: float | None) -> str:
-    return datetime.fromtimestamp(t, timezone.utc).strftime("%d %b %Y %H:%M") if t else "—"
+    return datetime.fromtimestamp(t, timezone.utc).strftime("%d %b %Y %H:%M") if t else "-"
 
 
 def slug(s) -> str:
@@ -244,7 +244,7 @@ def slug(s) -> str:
 
 
 def flat(row: dict) -> dict:
-    """A vendor record as one row of scalars (nested values as JSON) — what read() shows in the tool's own terms."""
+    """A vendor record as one row of scalars (nested values as JSON) - what read() shows in the tool's own terms."""
     out = {}
     for k, v in row.items():
         if k.startswith(("__", "@", "_")) or k == "links":
@@ -313,7 +313,7 @@ class SysAdapter(sdk.Adapter):
         if r.status_code == 401 or self.expired(r):
             raise connectors.Reconsent(f"{self.label} refused the sign-in ({r.status_code}): {self.error_text(r)}")
         if r.status_code not in ok:
-            raise connectors.ConnectorError(f"{self.label} · {what}: {r.status_code} {self.error_text(r)}")
+            raise connectors.ConnectorError(f"{self.label} - {what}: {r.status_code} {self.error_text(r)}")
         if not r.content:
             return {}
         try:
@@ -458,7 +458,7 @@ class SysAdapter(sdk.Adapter):
 
 
 def register(adapter: SysAdapter) -> SysAdapter:
-    """The adapter joins the Connector SDK and the Connections hub's catalogue (connectors.KINDS) — no shared edit."""
+    """The adapter joins the Connector SDK and the Connections hub's catalogue (connectors.KINDS) - no shared edit."""
     sdk.register(adapter)
     d = adapter.describe()
     connectors.KINDS[adapter.kind] = {"label": d["label"], "dialect": None, "auth": list(d["auth"]), "fields": [(f["key"], f["label"], f["required"]) for f in d["fields"]],
@@ -563,7 +563,7 @@ def systems(ctx, kinds: tuple | None = None) -> list[tuple[dict, SysAdapter]]:
 # ================================================================== files in the item's folder (snapshots the proofs read)
 
 def snap(ctx, name: str, rows: list[dict], cols: list[str] | None = None) -> str:
-    """Rows to data/<name>.csv (LF, plain values) — the proofs read them with DuckDB; returns the file name."""
+    """Rows to data/<name>.csv (LF, plain values) - the proofs read them with DuckDB; returns the file name."""
     name = re.sub(r"[^\w.\-]+", "_", name)[:80] + ".csv"
     cols = cols or []
     for r in rows:
@@ -678,7 +678,7 @@ def suggest_mapping(cols: list[str], fields: list[str], rows: list[dict] | None 
     return out
 
 
-TRANSFORMS = (("", "As is"), ("trim", "Trim spaces"), ("upper", "Upper case"), ("lower", "Lower case"), ("iso2", "Country to ISO 2 (GBR, India → GB, IN)"),
+TRANSFORMS = (("", "As is"), ("trim", "Trim spaces"), ("upper", "Upper case"), ("lower", "Lower case"), ("iso2", "Country to ISO 2 (GBR, India -> GB, IN)"),
               ("number", "Number"), ("date", "Date (YYYY-MM-DD)"), ("active", "Active / blocked from a flag"))
 
 
@@ -732,7 +732,7 @@ def value_problems(entity: str, rec: dict) -> list[str]:
 
 
 def dupes(rows: list[dict], fieldname: str = "name") -> list[list[dict]]:
-    """Clusters of records whose names are the same once legal suffixes and punctuation are gone (Hilltop Grocers ↔ Hilltop Grocers Ltd)."""
+    """Clusters of records whose names are the same once legal suffixes and punctuation are gone (Hilltop Grocers <-> Hilltop Grocers Ltd)."""
     by: dict[str, list] = {}
     for r in rows:
         n = norm_name(r.get(fieldname))
@@ -760,7 +760,7 @@ def request_write(ctx, c: dict, obj: str, ops: list[dict], what: str, items: lis
 def pending(cp: dict, c: dict, n: int) -> dict:
     """The gate row of a write that waits for its approval (replaced by the read-back once it is written)."""
     return {"name": f"write:{cp['id']}", "label": f"Write to {c['name']}: {n} change(s)", "status": "skip", "measured": "awaiting approval", "expected": "approved, then read back",
-            "detail": f"Waiting in the Validation queue ({cp['id']}) — nothing is written until a named person accepts it."}
+            "detail": f"Waiting in the Validation queue ({cp['id']}) - nothing is written until a named person accepts it."}
 
 
 def writes(ctx, step: str | None = None) -> list[dict]:
@@ -808,7 +808,7 @@ def hook(module: str) -> None:
     connectors.register_write_hook(module, _on_write)
 
 
-# ================================================================== learned fixes (Change › Learn): the next diagnosis is faster
+# ================================================================== learned fixes (Change > Learn): the next diagnosis is faster
 
 def learned(module: str) -> list[dict]:
     return [{**r, "ops": json.loads(r["ops"] or "[]")} for r in db.q("SELECT * FROM w3_rules WHERE module = ? ORDER BY updated DESC", (module,))]
@@ -832,7 +832,7 @@ def learn(module: str, signature: str, cause: str, fix: str, ops: list, item: st
 @dataclass
 class Signature:
     """A vendor error Relay recognises: its likely cause, the fix in plain words, and (optionally) the changes it
-    proposes — fn(ctx, c, a, api, run) -> [change rows] — so Change can prepare them for a person."""
+    proposes - fn(ctx, c, a, api, run) -> [change rows] - so Change can prepare them for a person."""
     pattern: str
     cause: str
     fix: str
@@ -847,13 +847,13 @@ class Signature:
 @dataclass
 class Spec:
     module: str
-    noun: str                                # "ERP", "CRM" … (in sentences)
+    noun: str                                # "ERP", "CRM" ... (in sentences)
     system: str                              # the lineage system of the module's own nodes ("Relay ERP")
     entities: tuple                          # canonical entities it reads, most important first
     rules: list = field(default_factory=list)          # health rules: fn(ctx, inv) -> [finding]
     signatures: list = field(default_factory=list)     # Signature list (job errors Relay recognises)
     minutes: dict = field(default_factory=dict)        # estimate: minutes per finding kind, "per_100" per 100 records moved
-    monitors: list = field(default_factory=list)       # Run › Watch extras: fn(ctx, inv) -> [gate row with "break" details]
+    monitors: list = field(default_factory=list)       # Run > Watch extras: fn(ctx, inv) -> [gate row with "break" details]
     upload_entities: dict = field(default_factory=dict)   # file-name word -> entity (for exports), e.g. {"kna1": "customer"}
     inventory_extra: Callable | None = None  # fn(ctx, seen) -> extra inventory rows (custom code, configuration)
     creates: tuple = ()                      # entities Develop brings into the system (an inbound interface)
@@ -911,7 +911,7 @@ def rule_failing_jobs(ctx, inv: Inv, spec: "Spec | None" = None) -> list[dict]:
                 err = streak[0].get("error") or ""
                 sig = next((s for s in (spec.signatures if spec else []) if s.match(err)), None)
                 kind = "failing_job" if streak[0]["status"] == "failed" else "warning_job"
-                out.append(finding(kind, system, "jobs", job, f"{streak[0].get('label') or job}: the last {len(streak)} run(s) {'failed' if kind == 'failing_job' else 'ended in a warning'} — {err[:200]}",
+                out.append(finding(kind, system, "jobs", job, f"{streak[0].get('label') or job}: the last {len(streak)} run(s) {'failed' if kind == 'failing_job' else 'ended in a warning'} - {err[:200]}",
                                    "high" if kind == "failing_job" else "medium", measured=f"{len(streak)} of the last {min(len(rs), 14)} runs since {stamp(float(streak[-1].get('started') or 0))}",
                                    fix=(sig.fix if sig else "Read the job log and fix the cause, then run it again."), work="change", cause=(sig.cause if sig else "")))
     return out
@@ -924,7 +924,7 @@ def rule_duplicates(entity: str) -> Callable:
             for group in dupes(rows):
                 names = sorted({str(r.get("name")) for r in group})
                 keep = sorted(group, key=lambda r: str(r.get("created") or ""))[0]
-                out.append(finding("duplicate", system, entity, " / ".join(names), f"{len(group)} {label(entity)} are the same once “Ltd” and punctuation go: {', '.join(names)}",
+                out.append(finding("duplicate", system, entity, " / ".join(names), f"{len(group)} {label(entity)} are the same once \"Ltd\" and punctuation go: {', '.join(names)}",
                                    "medium", measured=", ".join(str(r.get("key")) for r in group), fix=f"Keep {keep.get('name')} ({keep.get('key')}); block the other and point its documents to it.",
                                    work="change", keys=[str(r.get("key")) for r in group]))
         return out
@@ -958,7 +958,7 @@ def rule_blocked(entity: str) -> Callable:
             bl = [r for r in rows if str(r.get("status") or "").lower() in ("blocked", "inactive", "terminated", "disabled")]
             if bl:
                 out.append(finding("blocked", system, entity, f"{len(bl)} {label(entity)}", f"{len(bl)} {label(entity)} are blocked or inactive: retire candidates for a move, or a clean-up",
-                                   "low", measured=", ".join(str(r.get("key")) for r in bl[:8]), fix="Leave them behind in a migration (Decide › retire).", work="migrate",
+                                   "low", measured=", ".join(str(r.get("key")) for r in bl[:8]), fix="Leave them behind in a migration (Decide > retire).", work="migrate",
                                    keys=[str(r.get("key")) for r in bl]))
         return out
     rule.__name__ = f"blocked_{entity}"
@@ -986,7 +986,7 @@ def guess_entity(spec: Spec, filename: str) -> str | None:
 
 
 def from_upload(ctx, spec: Spec, f: dict) -> tuple[str | None, list[dict], dict]:
-    """An export as canonical rows (columns mapped by name, synonym or value — rules first)."""
+    """An export as canonical rows (columns mapped by name, synonym or value - rules first)."""
     ent = guess_entity(spec, f["name"])
     if not ent or ent not in ENTITY:
         return None, [], {}
@@ -1019,7 +1019,7 @@ def assess_work(spec: Spec, title: str) -> wb.Work:
         good = [r for r in rows if r[2] == "answered"]
         if not good:
             raise wb.StepFailed("None of the sources answered: " + "; ".join(f"{r[0]}: {r[3]}" for r in rows)[:600])
-        return {"summary": f"{len(good)} of {len(rows)} source(s) answered — read-only, with the connection's own sign-in.", "counts": {"sources": len(rows), "answered": len(good)},
+        return {"summary": f"{len(good)} of {len(rows)} source(s) answered - read-only, with the connection's own sign-in.", "counts": {"sources": len(rows), "answered": len(good)},
                 "data": {"columns": ["Source", "Platform", "Status", "What Relay sees", "Access"], "rows": rows}}
 
     @stepfn
@@ -1053,7 +1053,7 @@ def assess_work(spec: Spec, title: str) -> wb.Work:
                 continue
             fn = snap(ctx, f"inv-{slug(f['name'])}-{ent}", recs, ENTITY[ent][1])
             items.append({"id": f"file:{f['name']}", "include": True, "system": f["name"], "platform": "Export (upload)", "object": f["name"], "what": label(ent).capitalize(),
-                          "records": len(recs), "usage": "columns: " + ", ".join(f"{k} ← {v}" for k, v in list(mapped.items())[:6]), "file": fn, "entity": ent})
+                          "records": len(recs), "usage": "columns: " + ", ".join(f"{k} <- {v}" for k, v in list(mapped.items())[:6]), "file": fn, "entity": ent})
         if spec.inventory_extra:
             items += spec.inventory_extra(ctx, ctx.seen) or []
         for it in items:
@@ -1066,9 +1066,9 @@ def assess_work(spec: Spec, title: str) -> wb.Work:
             if it.get("conn"):
                 sysn = ctx.lineage_node("system", it["platform"], it["system"], label=f"{it['system']} ({it['platform']})", own=False)
                 if it.get("entity") not in (None, "jobs"):
-                    en = ctx.lineage_node("entity", it["platform"], f"{it['system']}:{it['object']}", label=f"{it['object']} · {it['system']}", own=False)
+                    en = ctx.lineage_node("entity", it["platform"], f"{it['system']}:{it['object']}", label=f"{it['object']} - {it['system']}", own=False)
                     ctx.lineage_edge(sysn, en, "contains")
-        return {"summary": f"{len(items)} object(s) on {len({i['system'] for i in items})} source(s): " + ", ".join(f"{i['records']} {i['what'].lower()}" for i in items[:5]) + ("…" if len(items) > 5 else "") + ".",
+        return {"summary": f"{len(items)} object(s) on {len({i['system'] for i in items})} source(s): " + ", ".join(f"{i['records']} {i['what'].lower()}" for i in items[:5]) + ("..." if len(items) > 5 else "") + ".",
                 "counts": {"objects": len(items), "records": sum(i["records"] for i in items)}, "records": items,
                 "data": {"columns": ["Include", "Source", "Object (its own name)", "What", "Records", "Usage"],
                          "rows": [["yes" if i["include"] else "no", i["system"], i["object"], i["what"], i["records"], i["usage"]] for i in items]}}
@@ -1102,7 +1102,7 @@ def assess_work(spec: Spec, title: str) -> wb.Work:
         have = {r["id"]: r for r in ctx.records(ctx.step_id)}
         recs = [{**f, **({k: have[f["id"]][k] for k in ("decision", "severity") if k in have[f["id"]]} if f["id"] in have else {})} for f in ctx.get("findings") or []]
         high = sum(1 for r in recs if r["severity"] == "high")
-        return {"summary": (f"{len(recs)} finding(s), {high} high — keep what matters, ignore what does not." if recs else f"No issues found: every rule passes on these {spec.noun} sources."),
+        return {"summary": (f"{len(recs)} finding(s), {high} high - keep what matters, ignore what does not." if recs else f"No issues found: every rule passes on these {spec.noun} sources."),
                 "counts": {"findings": len(recs), "high": high}, "records": recs, "items": [f"{r['system']}: {r['what']}"[:240] for r in recs[:6]],
                 "data": {"columns": ["Source", "What", "Severity", "Measured", "Fix with"], "rows": [[r["system"], r["what"], r["severity"], r["measured"], f"{wb.WORK_NAME.get(r['work'], r['work'])}: {r['fix']}"] for r in recs]}}
 
@@ -1112,37 +1112,37 @@ def assess_work(spec: Spec, title: str) -> wb.Work:
         mins = {**MINUTES, **spec.minutes}
         kept = [f for f in ctx.records("findings") if f.get("decision") != "ignore"]
         items, total = [], 0.0
-        for name, fs in (("Wave 1 — fix what fails today (high)", [f for f in kept if f["severity"] == "high"]), ("Wave 2 — clean the data (medium and low)", [f for f in kept if f["severity"] != "high"])):
+        for name, fs in (("Wave 1 - fix what fails today (high)", [f for f in kept if f["severity"] == "high"]), ("Wave 2 - clean the data (medium and low)", [f for f in kept if f["severity"] != "high"])):
             if not fs:
                 continue
             h = sum(mins.get(f["kind"], 30) * (max(1, len(f.get("keys") or [])) if f["kind"] == "blocked" else 1) for f in fs) / 60
             total += h
             items.append({"title": name, "detail": "; ".join(f"{f['system']}: {f['kind'].replace('_', ' ')}" for f in fs[:6]) + (f" and {len(fs) - 6} more" if len(fs) > 6 else ""),
-                          "effort": f"{h:.1f} h" + (f" · {cur}{rate * h:,.0f}" if rate else "")})
+                          "effort": f"{h:.1f} h" + (f" - {cur}{rate * h:,.0f}" if rate else "")})
         moved = sum(i["records"] for i in ctx.records("inventory") if i.get("include") and i.get("entity") not in (None, "jobs"))
         if moved:
             h = moved / 100 * mins["per_100"] / 60
             total += h
-            items.append({"title": "If you move it — the records in scope", "detail": f"{moved} record(s): mapping agreed, record-by-record reconciliation, cut-over", "effort": f"{h:.1f} h" + (f" · {cur}{rate * h:,.0f}" if rate else "")})
+            items.append({"title": "If you move it - the records in scope", "detail": f"{moved} record(s): mapping agreed, record-by-record reconciliation, cut-over", "effort": f"{h:.1f} h" + (f" - {cur}{rate * h:,.0f}" if rate else "")})
         assumptions = "; ".join(f"{v} min per {k.replace('_', ' ')}" for k, v in mins.items())
         ctx.output("assessment.md", f"# Assessment: {ctx.title}\n\n" + "\n".join(f"## {i['title']}\n\n{i['detail']}\n\nEffort: {i['effort']}\n" for i in items)
-                   + f"\nAssumptions: {assumptions}.\n" + ("" if rate else "No hourly rate is set (Admin › Branding), so no cost is shown.\n"), label="Assessment (Markdown)")
+                   + f"\nAssumptions: {assumptions}.\n" + ("" if rate else "No hourly rate is set (Admin > Branding), so no cost is shown.\n"), label="Assessment (Markdown)")
         ctx.output("findings.csv", _csv([{k: f.get(k) for k in ("system", "entity", "record", "what", "severity", "measured", "fix", "decision")} for f in ctx.records("findings")]), label="Findings (CSV)")
         ctx.output("inventory.csv", _csv([{k: i.get(k) for k in ("system", "platform", "object", "what", "records", "usage", "include")} for i in ctx.records("inventory")]), label="Inventory (CSV)")
         return {"summary": f"{len(items)} wave(s), about {total:.1f} h" + (f" ({cur}{rate * total:,.0f} at the hourly rate)" if rate else "") + ".", "counts": {"waves": len(items), "hours": round(total, 1)},
-                "data": {"items": items, "total": f"{total:.1f} h", "note": f"Assumptions: {assumptions}." + ("" if rate else " Set an hourly rate under Admin › Branding to see the cost.")}}
+                "data": {"items": items, "total": f"{total:.1f} h", "note": f"Assumptions: {assumptions}." + ("" if rate else " Set an hourly rate under Admin > Branding to see the cost.")}}
 
     return wb.Work(title=title, steps={
-        "Connect": wb.Step(kind="platform", run=connect, agent="Connector", text=f"Each connection is tested with its own sign-in and each export opened — read-only"),
-        "Inventory": wb.Step(kind="platform", run=inventory, agent="Scanner", text=f"Every object the {spec.noun} holds, in its own terms, with record counts, usage and its scheduled jobs — you untick what is out of scope",
+        "Connect": wb.Step(kind="platform", run=connect, agent="Connector", text=f"Each connection is tested with its own sign-in and each export opened - read-only"),
+        "Inventory": wb.Step(kind="platform", run=inventory, agent="Scanner", text=f"Every object the {spec.noun} holds, in its own terms, with record counts, usage and its scheduled jobs - you untick what is out of scope",
                              edit=wb.Edit(columns=[wb.Column("include", "Include", "bool"), wb.Column("system", "Source", readonly=True), wb.Column("object", "Object", readonly=True),
                                                    wb.Column("records", "Records", "number", readonly=True)], add=False, remove=False, label="object")),
-        "Health": wb.Step(kind="proof", run=health, view="gates", agent="Health checker", text="Rules over every record and run — failing jobs, duplicates, missing or malformed tax ids, blocked masters — each with its evidence"),
+        "Health": wb.Step(kind="proof", run=health, view="gates", agent="Health checker", text="Rules over every record and run - failing jobs, duplicates, missing or malformed tax ids, blocked masters - each with its evidence"),
         "Findings": wb.Step(kind="person", run=findings_step, edit=wb.Edit(columns=[wb.Column("decision", "Decision", "select", options=(("keep", "Keep"), ("ignore", "Ignore"))),
                                                                                   wb.Column("severity", "Severity", "select", options=("high", "medium", "low")), wb.Column("system", "Source", readonly=True),
                                                                                   wb.Column("what", "What", readonly=True)], add=False, remove=False, label="finding"),
-                            text="What fails today and what to clean, each with the fix and the work type that does it — you keep or ignore each"),
-        "Estimate": wb.Step(kind="deterministic", run=estimate, view="plan", agent="Estimator", text="Waves by risk, with a person's time per fix and per hundred records moved — and the cost at your hourly rate"),
+                            text="What fails today and what to clean, each with the fix and the work type that does it - you keep or ignore each"),
+        "Estimate": wb.Step(kind="deterministic", run=estimate, view="plan", agent="Estimator", text="Waves by risk, with a person's time per fix and per hundred records moved - and the cost at your hourly rate"),
     })
 
 
@@ -1196,7 +1196,7 @@ def _target(ctx, entity: str, creates: bool = True) -> tuple[dict, SysAdapter]:
     for c, a in systems(ctx):
         if (entity in a.CREATES) if creates else (entity in a.ENTITIES):
             return c, a
-    raise wb.StepFailed(f"Pick a connection to a system that takes {label(entity)} (its scope must be ‘Read & write — with approval’ for the write at the end).")
+    raise wb.StepFailed(f"Pick a connection to a system that takes {label(entity)} (its scope must be 'Read & write - with approval' for the write at the end).")
 
 
 def _match(planned: list[dict], landed: list[dict], results: list[dict] | None = None) -> dict:
@@ -1241,7 +1241,7 @@ def _compare_fields(recs: list[dict], target_rows: list[dict], mapped: list[str]
 
 
 def verify_fn(spec: Spec) -> Callable:
-    """The `verify` action of a step that wrote (Develop › Run, Migrate › Run): read the system back, reconcile."""
+    """The `verify` action of a step that wrote (Develop > Run, Migrate > Run): read the system back, reconcile."""
     @stepfn
     def verify(ctx):
         hs = writes(ctx, ctx.step_id)
@@ -1249,7 +1249,7 @@ def verify_fn(spec: Spec) -> Callable:
             raise wb.StepFailed("Nothing was written from this step yet.")
         h = hs[-1]
         if h.get("status") != "written":
-            return {"summary": f"The change is {h.get('status')} — nothing to read back yet." + (" Approve it in the Validation queue first." if h.get("status") == "awaiting approval" else ""),
+            return {"summary": f"The change is {h.get('status')} - nothing to read back yet." + (" Approve it in the Validation queue first." if h.get("status") == "awaiting approval" else ""),
                     "data": {"checks": [{"name": "write", "label": "The approved write", "status": "skip", "detail": h.get("status") or ""}]}}
         load = kept(ctx, f"load-{ctx.step_id}") or {}
         c = ctx.connection(load["conn"])
@@ -1264,7 +1264,7 @@ def verify_fn(spec: Spec) -> Callable:
             checks += reconcile(ctx, ent, planned, landed, results, ctx.step_id, compare)
             flow = ctx.get("flow_node")
             if flow:
-                tgt = ctx.lineage_node("entity", a.label, f"{c['name']}:{a.ENTITIES[ent][0]}", label=f"{a.ENTITIES[ent][0]} · {c['name']}", own=False)
+                tgt = ctx.lineage_node("entity", a.label, f"{c['name']}:{a.ENTITIES[ent][0]}", label=f"{a.ENTITIES[ent][0]} - {c['name']}", own=False)
                 ctx.lineage_edge(flow, tgt, "writes", {"records": len(planned), "approval": h.get("checkpoint")})
         failed = [r for r in results if not r.get("ok")]
         if failed:
@@ -1273,7 +1273,7 @@ def verify_fn(spec: Spec) -> Callable:
         good = all(x["status"] == "pass" for x in checks)
         n = sum(len(v) for v in (load.get("entities") or {}).values())
         return {"summary": (f"Read back from {c['name']}: all {len(ok_refs) or n} record(s) are there and agree field by field." if good else
-                            f"Read back from {c['name']}: {sum(1 for x in checks if x['status'] != 'pass')} check(s) disagree — see the evidence."),
+                            f"Read back from {c['name']}: {sum(1 for x in checks if x['status'] != 'pass')} check(s) disagree - see the evidence."),
                 "data": {"checks": checks}, "counts": {"written": len(ok_refs), "refused": len(failed)}}
     return verify
 
@@ -1304,7 +1304,7 @@ def develop_work(spec: Spec, title: str, journey_names: tuple = ("Describe", "Sh
                 "data": {"columns": ["Column", "First values"], "rows": [[k, ", ".join(str(r.get(k) or "") for r in rows[:3])] for k in cols]}}
 
     def columns(ctx):
-        return [("", "— not mapped —")] + [(c, c) for c in (ctx.get("develop") or {}).get("columns") or []]
+        return [("", "- not mapped -")] + [(c, c) for c in (ctx.get("develop") or {}).get("columns") or []]
 
     def shape(ctx):
         dv = ctx.get("develop") or {}
@@ -1319,12 +1319,12 @@ def develop_work(spec: Spec, title: str, journey_names: tuple = ("Describe", "Sh
             base = {"id": f, "field": f, "required": f in REQUIRED.get(ent, ()), "source": s, "constant": "", "rule": rule if s else "", "why": f"{why}: {s}" if s else ("needed" if f in REQUIRED.get(ent, ()) else "")}
             recs.append({**base, **{k: have[f][k] for k in ("source", "constant", "rule") if f in have}})
         missing = [r["field"] for r in recs if r["required"] and not (r["source"] or r["constant"])]
-        return {"summary": f"{sum(1 for r in recs if r['source'] or r['constant'])} of {len(recs)} field(s) mapped from {dv['file']} — rules first: the column's own name, a known name for it, or what its values look like."
+        return {"summary": f"{sum(1 for r in recs if r['source'] or r['constant'])} of {len(recs)} field(s) mapped from {dv['file']} - rules first: the column's own name, a known name for it, or what its values look like."
                            + (f" Still needed: {', '.join(missing)}." if missing else " Correct anything, then confirm the design."),
                 "records": recs, "counts": {"mapped": sum(1 for r in recs if r["source"] or r["constant"]), "fields": len(recs)},
-                "data": {"pairs": [{"from": r["source"] or (f"= {r['constant']}" if r["constant"] else "—"), "to": r["field"], "rule": dict(TRANSFORMS).get(r["rule"] or "", r["rule"]),
+                "data": {"pairs": [{"from": r["source"] or (f"= {r['constant']}" if r["constant"] else "-"), "to": r["field"], "rule": dict(TRANSFORMS).get(r["rule"] or "", r["rule"]),
                                     "status": "mapped" if r["source"] else "constant" if r["constant"] else ("missing" if r["required"] else "not mapped")} for r in recs]},
-                "items": [f"{r['field']} ← {r['source'] or r['constant'] or '—'}" for r in recs[:8]]}
+                "items": [f"{r['field']} <- {r['source'] or r['constant'] or '-'}" for r in recs[:8]]}
 
     def validate_map(recs, ctx):
         cols = set((ctx.get("develop") or {}).get("columns") or [])
@@ -1376,7 +1376,7 @@ def develop_work(spec: Spec, title: str, journey_names: tuple = ("Describe", "Sh
             probs = value_problems(ent, r) + [f"{f} is empty" for f in REQUIRED.get(ent, ()) if r.get(f) in (None, "")] + ta.problems(tc, ent, r)
             hit = names.get(norm_name(r.get("name"))) or (emails.get(str(r.get("email") or "").lower()) if r.get("email") else None)
             if hit:
-                probs.append(f"already in the system as {hit.get('name')} ({hit.get('key')}) — it would be a duplicate")
+                probs.append(f"already in the system as {hit.get('name')} ({hit.get('key')}) - it would be a duplicate")
             elif str(r.get("number") or "").strip().lower() in numbers:
                 other = numbers[str(r.get("number")).strip().lower()]
                 probs.append(f"the number {r.get('number')} is already used by {other.get('name')} ({other.get('key')})")
@@ -1392,7 +1392,7 @@ def develop_work(spec: Spec, title: str, journey_names: tuple = ("Describe", "Sh
                  "measured": sum(1 for t in tests if "duplicate" in t["detail"]), "expected": 0, "detail": "; ".join(f"{t['label']}: {t['detail']}" for t in tests if "duplicate" in t["detail"])[:400] or "no matches by name or e-mail"},
                 ctx.proof("references_real", label="The target object exists on the system", refs=[adapter_of(ctx.connection(dv["conn"])).ENTITIES[ent][0]],
                           known=[o["object"] for o in adapter_of(ctx.connection(dv["conn"])).list_objects(ctx.connection(dv["conn"]))])]
-        return {"summary": f"{len(ok_refs)} of {len(tests)} record(s) pass the dry run; {len(tests) - len(ok_refs)} would be refused or duplicate — only the passing ones go to the write.",
+        return {"summary": f"{len(ok_refs)} of {len(tests)} record(s) pass the dry run; {len(tests) - len(ok_refs)} would be refused or duplicate - only the passing ones go to the write.",
                 "counts": {"pass": len(ok_refs), "fail": len(tests) - len(ok_refs)}, "data": {"checks": rows},
                 "items": [f"{t['label']}: {t['detail']}" for t in tests if t["status"] == "fail"][:6]}
 
@@ -1420,21 +1420,21 @@ def develop_work(spec: Spec, title: str, journey_names: tuple = ("Describe", "Sh
         mapped = [m["field"] for m in ctx.records(s_.lower()) if m.get("source") or m.get("constant")]
         keep(ctx, f"load-{ctx.step_id}", {"conn": c["id"], "entities": {ent: recs}, "compare": {ent: [f for f in mapped if f not in COMPARE_SKIP]}})
         cp = request_write(ctx, c, a.ENTITIES[ent][0], [{"op": "create", "entity": ent, "ref": r["ref"], "data": a.payload(ent, r)} for r in recs],
-                           f"Create {len(recs)} {label(ent)} in {c['name']}", [f"{r['ref']}: {r.get('name') or r.get('number')}" for r in recs[:10]] + ([f"… and {len(recs) - 10} more"] if len(recs) > 10 else []))
+                           f"Create {len(recs)} {label(ent)} in {c['name']}", [f"{r['ref']}: {r.get('name') or r.get('number')}" for r in recs[:10]] + ([f"... and {len(recs) - 10} more"] if len(recs) > 10 else []))
         return {"summary": f"{len(recs)} {label(ent)} wait for the write approval in the Validation queue; once written, Relay reads {c['name']} back and reconciles every record.",
                 "counts": {"to write": len(recs)}, "data": {"checks": [pending(cp, c, len(recs))]}}
 
     return wb.Work(title=title, needs_source=True, fields=[wb.Field("entity", "What to bring in", "select", options=[(e, label(e).capitalize()) for e in spec.creates], default=(spec.creates or ("",))[0],
                                                                        help="The records in your upload, created in the system you pick (its scope must allow writes with approval).")],
                    steps={
-        d_: wb.Step(kind="platform", run=describe, agent="Reader", text=f"The upload is read and the {spec.noun} it goes into shows what it already holds — read-only"),
+        d_: wb.Step(kind="platform", run=describe, agent="Reader", text=f"The upload is read and the {spec.noun} it goes into shows what it already holds - read-only"),
         s_: wb.Step(kind="deterministic", run=shape, view="mapping", agent="Mapper", confirm="the field mapping, side by side with the upload's columns",
                     edit=wb.Edit(columns=[wb.Column("field", "Field", readonly=True), wb.Column("source", "From column", "select", options=columns), wb.Column("constant", "Or a constant"),
                                           wb.Column("rule", "Rule", "select", options=TRANSFORMS), wb.Column("why", "Why Relay suggests it", readonly=True)],
                                  add=False, remove=False, validate=validate_map, label="field"),
-                    text="Each field of the target suggested from the upload — the column's own name, a known name, or its values — you correct it in place"),
+                    text="Each field of the target suggested from the upload - the column's own name, a known name, or its values - you correct it in place"),
         b_: wb.Step(kind="deterministic", run=build, agent="Interface builder", text="The mapping applied to every record: the bodies the system's API takes, the mapping and the specification"),
-        p_: wb.Step(kind="proof", run=prove, view="gates", agent="Prover", back_to=s_.lower(), text="A dry run: every record against the system's own rules and what it already holds — nothing is written"),
+        p_: wb.Step(kind="proof", run=prove, view="gates", agent="Prover", back_to=s_.lower(), text="A dry run: every record against the system's own rules and what it already holds - nothing is written"),
         sh_: wb.Step(kind="person", run=ship, view="plan", approver=True, back_to=s_.lower(), text="The named approver confirms what goes in (a send back returns to the mapping)"),
         r_: wb.Step(kind="platform", run=run, view="gates", agent="Loader", text="One write the approver accepts in the Validation queue; then Relay reads the system back and reconciles record by record",
                     actions={"verify": wb.Action(label="Read back and reconcile", kind="platform", run=verify_fn(spec), agent="Reconciler",
@@ -1449,7 +1449,7 @@ def _brief_words(ctx) -> set[str]:
 
 
 EXPLAIN = """Read WORK.md, then diagnose.json in this folder: the jobs whose last runs failed with an error no rule of Relay
-recognises — each with its run history and the vendor's own log lines. Write diagnosis.yaml:
+recognises - each with its run history and the vendor's own log lines. Write diagnosis.yaml:
 
 jobs:
   <job id>:
@@ -1502,7 +1502,7 @@ def _explain_after(ctx, res) -> dict:
         if job in jobs:
             c["detail"] = f"Relay's reading of the log (check it): {jobs[job]['cause']} Fix: {jobs[job]['fix']}"
     ctx.evidence("Relay's reading of the logs", {"diagnosis": jobs, "summary": res.get("text") or ""}, kind="agent", ok=True)
-    return {"summary": f"Relay read {len(jobs)} log(s) no rule recognised and drafted a cause and a fix for each — check them before you confirm.", "data": {"checks": checks}}
+    return {"summary": f"Relay read {len(jobs)} log(s) no rule recognised and drafted a cause and a fix for each - check them before you confirm.", "data": {"checks": checks}}
 
 
 def change_work(spec: Spec, title: str) -> wb.Work:
@@ -1510,7 +1510,7 @@ def change_work(spec: Spec, title: str) -> wb.Work:
         rows = db.q("SELECT id, title FROM wb_items WHERE module = ? AND work = 'assess' AND status = 'done' ORDER BY updated DESC LIMIT 50", (spec.module,))
         from .. import auth
         vis = auth.access_map(u, [r["id"] for r in rows])
-        return [("", "No — from the request")] + [(r["id"], r["title"]) for r in rows if r["id"] in vis]
+        return [("", "No - from the request")] + [(r["id"], r["title"]) for r in rows if r["id"] in vis]
 
     @stepfn
     def request(ctx):
@@ -1576,7 +1576,7 @@ def change_work(spec: Spec, title: str) -> wb.Work:
                 sig = next((s for s in spec.signatures if s.match(text)), None)
                 eid = ctx.evidence(f"Run history and log of {job}", {"runs": runs[:14], "log": log}, kind="runs", ok=bool(last and last["status"] == "succeeded"))
                 if not last or last["status"] == "succeeded":
-                    checks.append({"name": f"job:{job}", "label": f"{t['label']} on {c['name']}", "status": "pass", "detail": "the last run succeeded — nothing to fix", "evidence": eid})
+                    checks.append({"name": f"job:{job}", "label": f"{t['label']} on {c['name']}", "status": "pass", "detail": "the last run succeeded - nothing to fix", "evidence": eid})
                     continue
                 cause = (rule or {}).get("cause") or (sig.cause if sig else "")
                 fix = (rule or {}).get("fix") or (sig.fix if sig else "Read the log; fix the cause; run the job again.")
@@ -1584,7 +1584,7 @@ def change_work(spec: Spec, title: str) -> wb.Work:
                     unknown.append({"job": job, "label": t["label"], "system": c["name"], "runs": [{k: r.get(k) for k in ("id", "started", "status", "error")} for r in runs[:6]], "log": log[:40]})
                 checks.append({"name": f"job:{job}", "label": f"{t['label']} on {c['name']}", "status": "fail" if cause else "warn", "severity": "high",
                                "measured": f"{sum(1 for r in runs[:5] if r['status'] != 'succeeded')} of the last {min(5, len(runs))} runs failed", "expected": "succeeded",
-                               "detail": (f"Cause: {cause} Fix: {fix}" if cause else f"No known cause for “{(last.get('error') or '')[:160]}” — a person diagnoses it.") + (" (a rule Relay learned)" if rule else ""),
+                               "detail": (f"Cause: {cause} Fix: {fix}" if cause else f"No known cause for \"{(last.get('error') or '')[:160]}\" - a person diagnoses it.") + (" (a rule Relay learned)" if rule else ""),
                                "evidence": eid})
                 proposed = []
                 if rule:
@@ -1644,12 +1644,12 @@ def change_work(spec: Spec, title: str) -> wb.Work:
                 for k in t["data"].get("keys") or []:
                     props.append({"id": f"tax-{slug(k)}", "include": True, "system": c["name"], "conn": c["id"], "action": "update", "entity": ent, "key": k, "label": t["data"]["record"],
                                   "field": "tax_id", "value": "", "before": "", "why": t["data"]["what"], "signature": t["data"]["kind"], "cause": t["data"]["what"], "fix": t["data"]["fix"]})
-                checks.append({"name": f"tax:{t['label']}", "label": t["label"], "status": "warn", "detail": "the right GSTIN comes from the customer — a person types it in Fix"})
+                checks.append({"name": f"tax:{t['label']}", "label": t["label"], "status": "warn", "detail": "the right GSTIN comes from the customer - a person types it in Fix"})
         ctx.put("proposals", props)
         ctx.put("unknown", unknown)
         if not checks:
             raise wb.StepFailed("Nothing to diagnose.")
-        return {"summary": f"{sum(1 for c in checks if c['status'] != 'pass')} problem(s) diagnosed; {len(props)} change(s) proposed for a person to confirm — nothing has changed yet.",
+        return {"summary": f"{sum(1 for c in checks if c['status'] != 'pass')} problem(s) diagnosed; {len(props)} change(s) proposed for a person to confirm - nothing has changed yet.",
                 "counts": {"problems": sum(1 for c in checks if c["status"] != "pass"), "changes": len(props)}, "data": {"checks": checks},
                 "items": [c["detail"][:200] for c in checks if c["status"] != "pass"][:6]}
 
@@ -1701,25 +1701,25 @@ def change_work(spec: Spec, title: str) -> wb.Work:
                 before.append({"record": r.get("label"), "key": r["key"], "field": r["field"], "now": was, "after": r["value"]})
                 probs = value_problems(r["entity"], {**(cur or {}), r["field"]: r["value"]}) if cur and r["field"] in ("email", "country", "currency", "tax_id", "credit_limit") else []
                 probs += a.field_problems(r["entity"], r["field"], r["value"]) if cur else []
-                checks.append({"name": r["id"], "label": f"{r.get('label')}: {r['field']} → {r['value']}", "status": "fail" if not cur or probs else "pass",
+                checks.append({"name": r["id"], "label": f"{r.get('label')}: {r['field']} {r['value']}", "status": "fail" if not cur or probs else "pass",
                                "detail": ("the record is not on the system any more" if not cur else "; ".join(probs) or f"the record exists; {r['field']} is {was!r} now"), "measured": was, "expected": r["value"]})
             elif r["action"] == "create":
                 have = {str(x.get("key")).lower() for x in ctx.seen.records(c, a, r["entity"])} | {str(x.get("name") or "").lower() for x in ctx.seen.records(c, a, r["entity"])}
                 there = str(r["key"]).lower() in have
                 checks.append({"name": r["id"], "label": f"Create {label(r['entity'])[:-1]} {r['key']}" + (f" ({r['field']}: {r['value']})" if r.get("field") else ""), "status": "fail" if there else "pass",
-                               "detail": "it is already there — nothing to create" if there else f"{c['name']} does not hold it yet", "measured": "present" if there else "absent", "expected": "absent"})
+                               "detail": "it is already there - nothing to create" if there else f"{c['name']} does not hold it yet", "measured": "present" if there else "absent", "expected": "absent"})
             elif r["action"] == "rerun":
                 runs = [x for x in ctx.seen.runs(c, a) if x["job"] == r["job"]]
                 checks.append({"name": r["id"], "label": f"Run {r.get('label') or r['job']} again", "status": "pass" if runs and runs[0]["status"] != "succeeded" else "warn",
                                "detail": "its last run failed: a run after the fix shows whether it holds" if runs and runs[0]["status"] != "succeeded" else "its last run did not fail"})
             else:
-                checks.append({"name": r["id"], "label": f"A person does: {r.get('why')}"[:200], "status": "warn", "detail": "outside what Relay changes through the API — done by a person before the release"})
+                checks.append({"name": r["id"], "label": f"A person does: {r.get('why')}"[:200], "status": "warn", "detail": "outside what Relay changes through the API - done by a person before the release"})
         eid = ctx.evidence("Before and after", before, kind="diff", ok=True) if before else None
         if eid:
             for x in checks:
                 x.setdefault("evidence", eid)
         return {"summary": f"Dry run of {len(recs)} change(s): {sum(1 for x in checks if x['status'] == 'pass')} ready, {sum(1 for x in checks if x['status'] == 'warn')} need a person, "
-                           f"{sum(1 for x in checks if x['status'] == 'fail')} cannot apply — nothing was changed.", "data": {"checks": checks},
+                           f"{sum(1 for x in checks if x['status'] == 'fail')} cannot apply - nothing was changed.", "data": {"checks": checks},
                 "counts": {"ready": sum(1 for x in checks if x["status"] == "pass"), "fail": sum(1 for x in checks if x["status"] == "fail")}}
 
     def approve(ctx):
@@ -1728,7 +1728,7 @@ def change_work(spec: Spec, title: str) -> wb.Work:
         for r in recs:
             by.setdefault(r["system"], []).append(r)
         return {"summary": f"Release {sum(1 for r in recs if r['action'] != 'manual')} change(s) on {len(by)} system(s)" + (f"; {sum(1 for r in recs if r['action'] == 'manual')} step(s) for a person first." if any(r["action"] == "manual" for r in recs) else "."),
-                "data": {"items": [{"title": s, "detail": "; ".join(f"{r['action']} {r.get('label') or r.get('key')}" + (f" · {r['field']} = {r['value']}" if r.get("field") else "") for r in rs)} for s, rs in by.items()]
+                "data": {"items": [{"title": s, "detail": "; ".join(f"{r['action']} {r.get('label') or r.get('key')}" + (f" - {r['field']} = {r['value']}" if r.get("field") else "") for r in rs)} for s, rs in by.items()]
                          + [{"title": "Then", "detail": "Each system's changes are one write in the Validation queue; Relay checks them on the system afterwards and keeps the fix as a rule."}]}}
 
     def learn_step(ctx):
@@ -1748,7 +1748,7 @@ def change_work(spec: Spec, title: str) -> wb.Work:
                     ops.append({"op": "create", "entity": r["entity"], "ref": r["id"], "data": a.payload(r["entity"], {"key": r["key"], "name": r["key"], **({r["field"]: r["value"]} if r.get("field") else {})})})
                 else:
                     ops.append({"op": r["action"], "entity": r["entity"], "key": r["key"], "data": {r["field"]: r["value"]}, "ref": r["id"]})
-            cps.append(request_write(ctx, c, "change", ops, f"Release {len(ops)} change(s) on {c['name']}", [f"{r['action']}: {r.get('label') or r.get('key')}" + (f" · {r['field']} = {r['value']}" if r.get("field") else "") for r in rs]))
+            cps.append(request_write(ctx, c, "change", ops, f"Release {len(ops)} change(s) on {c['name']}", [f"{r['action']}: {r.get('label') or r.get('key')}" + (f" - {r['field']} = {r['value']}" if r.get("field") else "") for r in rs]))
         keep(ctx, f"change-{ctx.step_id}", {"changes": recs})
         if not cps:
             return {"summary": "Nothing to write: the changes are steps a person does.", "data": {"checks": [{"name": "write", "label": "No write was requested", "status": "skip", "detail": "every change is a step for a person"}]}}
@@ -1760,7 +1760,7 @@ def change_work(spec: Spec, title: str) -> wb.Work:
         st = kept(ctx, f"change-{ctx.step_id}") or {}
         hs = writes(ctx, ctx.step_id)
         if not hs or not any(h.get("status") == "written" for h in hs):
-            return {"summary": "Nothing has been written yet — approve the change in the Validation queue first.", "data": {"checks": []}}
+            return {"summary": "Nothing has been written yet - approve the change in the Validation queue first.", "data": {"checks": []}}
         checks, worked = [], {}
         for r in st.get("changes") or []:
             c = ctx.connection(r["conn"])
@@ -1806,19 +1806,19 @@ def change_work(spec: Spec, title: str) -> wb.Work:
                 ops = [{k: r.get(k) for k in ("action", "entity", "field", "value", "job", "why") if r.get(k) not in (None, "")} for r in rs if r["action"] != "deactivate"]
                 learned_ids.append(learn(spec.module, sig, rs[0].get("cause") or "", rs[0].get("fix") or "", ops, ctx.id, ctx.who))
         good = all(x["status"] == "pass" for x in checks if x["status"] != "skip")
-        return {"summary": ("Checked on the system: every change holds." if good else "Checked on the system: some changes do not hold — see the checks.") + (f" {len(learned_ids)} fix(es) kept as rules for next time." if learned_ids else ""),
+        return {"summary": ("Checked on the system: every change holds." if good else "Checked on the system: some changes do not hold - see the checks.") + (f" {len(learned_ids)} fix(es) kept as rules for next time." if learned_ids else ""),
                 "data": {"checks": checks}, "counts": {"rules learned": len(learned_ids)}}
 
     return wb.Work(title=title, needs_source=True, fields=[wb.Field("from_item", "Start from an assessment", "select", options=assess_items, help="Its kept findings become what to change.")], steps={
         "Request": wb.Step(kind="platform", run=request, view="text", agent="Request reader", text="The request in plain words (or an assessment's findings): Relay finds the jobs and records it names on the connected systems"),
-        "Diagnose": wb.Step(kind="platform", run=diagnose, view="gates", agent="Diagnoser", text="Run history and logs read; the vendor's error matched to a known cause (and to the fixes Relay learned) — you confirm the diagnosis",
+        "Diagnose": wb.Step(kind="platform", run=diagnose, view="gates", agent="Diagnoser", text="Run history and logs read; the vendor's error matched to a known cause (and to the fixes Relay learned) - you confirm the diagnosis",
                             actions={"explain": wb.Action(label="Ask Relay to read the unknown errors", kind="agent", prompt=_explain_prompt, check=_explain_check, after=_explain_after,
                                                           agent="Log reader", help="Only for failures no rule recognises: the agent reads their logs and drafts a cause and a fix for you to check.")}),
         "Fix": wb.Step(kind="person", run=fix, edit=wb.Edit(columns=[wb.Column("include", "Do it", "bool"), wb.Column("system", "System", readonly=True), wb.Column("action", "Change", readonly=True),
                                                                    wb.Column("label", "Record", readonly=True), wb.Column("field", "Field"), wb.Column("value", "New value"), wb.Column("why", "Why", readonly=True)],
                                                            add=False, remove=False, validate=validate_fix, label="change"),
-                       confirm="the changes with their values", text="The proposed changes — a field on a record, a job run again, a step for a person — you correct and confirm them"),
-        "Prove": wb.Step(kind="proof", run=prove, view="gates", agent="Prover", back_to="fix", confirm="the dry run found something the system would refuse — send it back to Fix",
+                       confirm="the changes with their values", text="The proposed changes - a field on a record, a job run again, a step for a person - you correct and confirm them"),
+        "Prove": wb.Step(kind="proof", run=prove, view="gates", agent="Prover", back_to="fix", confirm="the dry run found something the system would refuse - send it back to Fix",
                          confirm_if=lambda ctx, out: any(x.get("status") == "fail" for x in (out.get("data") or {}).get("checks") or []),
                          text="A dry run against the system now: the records exist, the values pass its rules, the before and after side by side"),
         "Approve": wb.Step(kind="person", run=approve, view="plan", approver=True, back_to="fix", text="The named approver releases the change (a send back returns to Fix)"),
@@ -1835,7 +1835,7 @@ def _target_options(spec_kinds: Callable) -> Callable:
         for c in connectors.mine(u["id"]):
             a = adapter_of({"kind": c["kind"]})
             if a and c["kind"] in spec_kinds():
-                out.append((c["id"], f"{c['name']} · {c['label']}"))
+                out.append((c["id"], f"{c['name']} - {c['label']}"))
         return out
     return opts
 
@@ -1893,12 +1893,12 @@ def migrate_work(spec: Spec, title: str, kinds: Callable) -> wb.Work:
             rows_out.append([label(ent).capitalize(), len(rows), sum(1 for r in rows if norm_name(r.get("name")) in names), len(there)])
             src_node = None
             for s in {r["_source"] for r in rows}:
-                src_node = ctx.lineage_node("entity", "source", f"{s}:{ent}", label=f"{label(ent).capitalize()} · {s}", own=False)
-                tgt_node = ctx.lineage_node("entity", ta.label, f"{tc['name']}:{ta.ENTITIES[ent][0]}", label=f"{ta.ENTITIES[ent][0]} · {tc['name']}", own=False)
+                src_node = ctx.lineage_node("entity", "source", f"{s}:{ent}", label=f"{label(ent).capitalize()} - {s}", own=False)
+                tgt_node = ctx.lineage_node("entity", ta.label, f"{tc['name']}:{ta.ENTITIES[ent][0]}", label=f"{ta.ENTITIES[ent][0]} - {tc['name']}", own=False)
                 ctx.lineage_edge(src_node, tgt_node, "feeds", {"migration": ctx.id, "records": len(rows)})
         keep(ctx, "found", found)
         ctx.put("migrate", {"target": tc["id"], "entities": list(found), "sources": [list(s) for s in srcs]})
-        return {"summary": f"{sum(plan.values())} record(s) to consider from {len(srcs)} source(s) into {tc['name']} ({ta.label}) — read-only.",
+        return {"summary": f"{sum(plan.values())} record(s) to consider from {len(srcs)} source(s) into {tc['name']} ({ta.label}) - read-only.",
                 "counts": {"records": sum(plan.values()), "entities": len(plan)},
                 "data": {"columns": ["What", "In the sources", "Already in the target by name", f"In {tc['name']} now"], "rows": rows_out}}
 
@@ -1932,8 +1932,8 @@ def migrate_work(spec: Spec, title: str, kinds: Callable) -> wb.Work:
             recs.append({"id": f"rest:{ent}", "entity": ent, "record": f"The other {len(rest)} {label(ent)}", "decision": "keep", "into": "", "reason": "active, no duplicate, not in the target yet", "count": len(rest)})
         recs = [{**r, **({k: have[r["id"]][k] for k in ("decision",) if k in have[r["id"]]} if r["id"] in have else {})} for r in recs]
         n = {d: sum(r.get("count", 1) for r in recs if r["decision"] == d) for d in ("keep", "merge", "retire")}
-        return {"summary": f"Keep {n['keep']}, merge {n['merge']}, retire {n['retire']} — rules first: duplicates merge into the older record, blocked records retire, what the target already holds is not loaded again.",
-                "records": recs, "counts": n, "items": [f"{r['record']}: {r['decision']} — {r['reason']}" for r in recs if not r["id"].startswith("rest:")][:8],
+        return {"summary": f"Keep {n['keep']}, merge {n['merge']}, retire {n['retire']} - rules first: duplicates merge into the older record, blocked records retire, what the target already holds is not loaded again.",
+                "records": recs, "counts": n, "items": [f"{r['record']}: {r['decision']} - {r['reason']}" for r in recs if not r["id"].startswith("rest:")][:8],
                 "data": {"columns": ["What", "Record", "Decision", "Into", "Why"], "rows": [[label(r["entity"]), r["record"], r["decision"], r.get("into") or "", r["reason"]] for r in recs]}}
 
     def convert(ctx):
@@ -1988,7 +1988,7 @@ def migrate_work(spec: Spec, title: str, kinds: Callable) -> wb.Work:
             cols = [k for k in ENTITY[ent][1] if k not in COMPARE_SKIP and k not in conv and any(r.get(k) not in (None, "") for r in recs)]
             if conv:
                 checks.append({"name": f"converted:{ent}", "label": f"{label(ent).capitalize()}: converted by the target's rules", "status": "pass",
-                               "detail": "; ".join(f"{k} → {v} (the connection's setting for {ta.label})" for k, v in conv.items()), "measured": len(conv), "expected": "listed, not compared"})
+                               "detail": "; ".join(f"{k} {v} (the connection's setting for {ta.label})" for k, v in conv.items()), "measured": len(conv), "expected": "listed, not compared"})
             checks.append(ctx.proof("row_count", label=f"{label(ent).capitalize()}: kept in the source vs in the load", source=K, target=L))
             checks.append(ctx.proof("checksum", label=f"{label(ent).capitalize()}: fingerprints of {', '.join(cols[:5])}", source=K, target=L, columns=cols))
             m = spec.measures.get(ent)
@@ -2014,7 +2014,7 @@ def migrate_work(spec: Spec, title: str, kinds: Callable) -> wb.Work:
         approver = db.user(ctx.st.get("approver") or "") or {}
         return {"summary": f"Sign-off: load {sum(len(v) for v in load.values())} record(s) into {tc['name']}, with the crosswalk and the proofs as the evidence pack.",
                 "data": {"items": [{"title": f"{label(e).capitalize()}", "detail": f"{len(v)} record(s) into {adapter_of(tc).ENTITIES[e][0]}"} for e, v in load.items()]
-                         + [{"title": "Evidence", "detail": "crosswalk.csv, the load files and every proof — in the evidence pack"},
+                         + [{"title": "Evidence", "detail": "crosswalk.csv, the load files and every proof - in the evidence pack"},
                             {"title": "Then", "detail": "The load is one write a named person approves in the Validation queue; Relay reads the target back and reconciles every record."},
                             {"title": "Owner sign-off", "detail": approver.get("name") or "the owner of this work item"}]}}
 
@@ -2033,12 +2033,12 @@ def migrate_work(spec: Spec, title: str, kinds: Callable) -> wb.Work:
 
     return wb.Work(title=title, needs_source=True, fields=[
         wb.Field("target", "Move into", "select", options=_target_options(kinds), required=True, help="A connection whose scope allows writes with approval; the item's own connections are the sources."),
-        wb.Field("entities", "What to move", "text", help=f"Blank: everything both sides hold ({', '.join(label(e) for e in spec.entities[:4])} …).")], steps={
-        "Discover": wb.Step(kind="platform", run=discover, agent="Scanner", text="Every record in the sources and what the target already holds — read-only"),
+        wb.Field("entities", "What to move", "text", help=f"Blank: everything both sides hold ({', '.join(label(e) for e in spec.entities[:4])} ...).")], steps={
+        "Discover": wb.Step(kind="platform", run=discover, agent="Scanner", text="Every record in the sources and what the target already holds - read-only"),
         "Decide": wb.Step(kind="deterministic", run=decide, agent="Decider", edit=wb.Edit(columns=[wb.Column("decision", "Decision", "select", options=(("keep", "Keep"), ("merge", "Merge"), ("retire", "Retire"))),
                                                                                       wb.Column("record", "Record", readonly=True), wb.Column("reason", "Why", readonly=True)], add=False, remove=False, label="decision"),
-                          text="Keep, merge or retire with the reason — duplicates merge into the older record, blocked ones retire, what the target holds is not loaded twice"),
-        "Convert": wb.Step(kind="deterministic", run=convert, agent="Converter", text="The kept records as the target's own bodies, and a crosswalk for every source record — rules first"),
+                          text="Keep, merge or retire with the reason - duplicates merge into the older record, blocked ones retire, what the target holds is not loaded twice"),
+        "Convert": wb.Step(kind="deterministic", run=convert, agent="Converter", text="The kept records as the target's own bodies, and a crosswalk for every source record - rules first"),
         "Prove": wb.Step(kind="proof", run=prove, view="gates", agent="Prover", back_to="decide", text="Old and new side by side: counts, fingerprints, control totals and every record field by field, and a dry run against the target's rules"),
         "Hand over": wb.Step(kind="person", run=handover, view="plan", approver=True, back_to="decide", text="The owner signs off the load and its evidence pack (a send back returns to Decide)"),
         "Run": wb.Step(kind="platform", run=run, view="gates", agent="Loader", text="The load is one write a named person approves; then Relay reads the target back and reconciles record by record",
@@ -2067,7 +2067,7 @@ def run_work(spec: Spec, title: str) -> wb.Work:
                     else:
                         break
                 st = "pass" if last["status"] in ("succeeded", "running", "queued") else "fail" if last["status"] == "failed" else "warn"
-                checks.append({"name": f"{c['id']}:{job}", "label": f"{last.get('label') or job} · {c['name']}", "status": st, "measured": last["status"], "expected": "succeeded",
+                checks.append({"name": f"{c['id']}:{job}", "label": f"{last.get('label') or job} - {c['name']}", "status": st, "measured": last["status"], "expected": "succeeded",
                                "detail": f"last run {stamp(last.get('started'))}" + (f"; failing {streak} run(s) in a row: {(last.get('error') or '')[:200]}" if streak else "")})
                 if st != "pass":
                     breaks.append({"conn": c["id"], "system": c["name"], "job": job, "label": last.get("label") or job, "status": last["status"], "streak": streak, "error": last.get("error") or "",
@@ -2092,12 +2092,12 @@ def run_work(spec: Spec, title: str) -> wb.Work:
         for b in brks:
             rule = next((r for r in rules if re.search(r["signature"], b.get("error") or "", re.I)), None)
             sig = next((s for s in spec.signatures if s.match(b.get("error") or "")), None)
-            b["cause"] = (rule or {}).get("cause") or (sig.cause if sig else b.get("cause") or "not a known error — a person diagnoses it")
+            b["cause"] = (rule or {}).get("cause") or (sig.cause if sig else b.get("cause") or "not a known error - a person diagnoses it")
             b["fix"] = (rule or {}).get("fix") or (sig.fix if sig else b.get("fix") or "")
             b["route"] = b.get("route") or ("change" if rule else sig.route if sig else "ticket")
             b["id"] = f"b-{slug(b['system'])}-{slug(b['job'])}"
         ctx.put("breaks", brks)
-        return {"summary": f"{len(brks)} break(s), one alert each with its likely cause — not one per failed run.", "counts": {"breaks": len(brks)},
+        return {"summary": f"{len(brks)} break(s), one alert each with its likely cause - not one per failed run.", "counts": {"breaks": len(brks)},
                 "items": [f"{b['label']} ({b['system']}): {b['cause']}"[:240] for b in brks[:6]],
                 "data": {"columns": ["System", "What", "Failing runs", "Since", "Likely cause"], "rows": [[b["system"], b["label"], b.get("streak") or 1, stamp(b.get("since")), b["cause"]] for b in brks]}}
 
@@ -2106,7 +2106,7 @@ def run_work(spec: Spec, title: str) -> wb.Work:
         recs = [{**b, **({k: have[b["id"]][k] for k in ("route", "note") if k in have[b["id"]]} if b["id"] in have else {})} for b in ctx.get("breaks") or []]
         for r in recs:
             r.setdefault("note", "")
-        return {"summary": f"{len(recs)} break(s): choose who fixes each — a Change work item here, Self-healing, a ticket, or expected. Nothing goes out until you confirm.",
+        return {"summary": f"{len(recs)} break(s): choose who fixes each - a Change work item here, Self-healing, a ticket, or expected. Nothing goes out until you confirm.",
                 "records": recs, "counts": {"changes": sum(1 for r in recs if r["route"] == "change"), "tickets": sum(1 for r in recs if r["route"] == "ticket")},
                 "data": {"columns": ["System", "What", "Proposed route", "Likely cause"], "rows": [[r["system"], r["label"], r["route"], r["cause"]] for r in recs]}}
 
@@ -2114,7 +2114,7 @@ def run_work(spec: Spec, title: str) -> wb.Work:
         rows, done = [], []
         for b in ctx.records("fix"):
             title = f"{b['label']} fails on {b['system']}"
-            body = f"{b.get('error') or b.get('what') or ''}\n\nLikely cause: {b['cause']}\nFix: {b.get('fix') or '—'}\n" + (f"Note: {b['note']}\n" if b.get("note") else "") + f"Work item: {wb.route_of(ctx.st)}"
+            body = f"{b.get('error') or b.get('what') or ''}\n\nLikely cause: {b['cause']}\nFix: {b.get('fix') or '-'}\n" + (f"Note: {b['note']}\n" if b.get("note") else "") + f"Work item: {wb.route_of(ctx.st)}"
             if b["route"] == "change":
                 it = wb.create(spec.module, "change", f"Fix: {b['label']}"[:150], who=ctx.owner, brief=f"{b['job']} fails on {b['system']}: {b.get('error') or ''}\n\n{b.get('note') or ''}",
                                connections=[b["conn"]] if b.get("conn") else [], scope={}, approver=ctx.st.get("approver"),
@@ -2125,11 +2125,11 @@ def run_work(spec: Spec, title: str) -> wb.Work:
             elif b["route"] == "ticket":
                 h = ctx.ticket(title, body, priority="P2" if (b.get("streak") or 0) >= 2 else "P3", about=b["label"])
             else:
-                h = {"kind": b["route"], "label": title, "status": "expected — recorded" if b["route"] == "expected" else "ignored this time"}
+                h = {"kind": b["route"], "label": title, "status": "expected - recorded" if b["route"] == "expected" else "ignored this time"}
             done.append(h)
             rows.append([b["system"], b["label"], {"change": "Change", "heal": "Self-healing", "ticket": "Ticket", "expected": "Expected", "ignore": "Ignored"}[b["route"]], h.get("status"),
                          h.get("item") or h.get("case") or h.get("checkpoint") or h.get("output") or ""])
-        return {"summary": f"{sum(1 for h in done if h['kind'] == 'change')} Change item(s), {sum(1 for h in done if h['kind'] == 'heal')} to Self-healing, {sum(1 for h in done if h['kind'] == 'ticket')} ticket(s) — as you approved.",
+        return {"summary": f"{sum(1 for h in done if h['kind'] == 'change')} Change item(s), {sum(1 for h in done if h['kind'] == 'heal')} to Self-healing, {sum(1 for h in done if h['kind'] == 'ticket')} ticket(s) - as you approved.",
                 "data": {"columns": ["System", "What", "Route", "Status", "Reference"], "rows": rows}, "counts": {"hand-offs": len(done)}}
 
     def report(ctx):
@@ -2141,20 +2141,20 @@ def run_work(spec: Spec, title: str) -> wb.Work:
             hist.append([time.strftime("%d %b %H:%M", time.gmtime(r["ended"])), c.get("watched"), c.get("breaks")])
         brks = ctx.get("breaks") or []
         hist.append([time.strftime("%d %b %H:%M", time.gmtime()), len((ctx.result("watch") or {}).get("data", {}).get("checks") or []), len(brks)])
-        text = f"# {spec.noun} run report: {ctx.title}\n\n{time.strftime('%d %B %Y %H:%M UTC', time.gmtime())}\n\n" + "".join(f"- {b['system']} · {b['label']}: {b['cause']} → {b.get('route')}\n" for b in ctx.records("fix") or brks) \
+        text = f"# {spec.noun} run report: {ctx.title}\n\n{time.strftime('%d %B %Y %H:%M UTC', time.gmtime())}\n\n" + "".join(f"- {b['system']} - {b['label']}: {b['cause']} {b.get('route')}\n" for b in ctx.records("fix") or brks) \
                + "\n## Recent rounds\n\n" + "".join(f"- {h[0]}: {h[1]} watched, {h[2]} break(s)\n" for h in hist)
         ctx.output(f"report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", text, label="Run report (Markdown)")
         return {"summary": f"{len(brks)} break(s) this round" + (", each routed as you approved." if brks else "; everything ran."), "counts": {"breaks": len(brks)},
                 "data": {"columns": ["Round", "Watched", "Breaks"], "rows": hist}}
 
     return wb.Work(title=title, needs_source=True, schedule_from="Watch", fields=[wb.Field("schedule", "Watch it", "cadence", default={"every": "day", "at": "06:00", "tz": "UTC"})], steps={
-        "Watch": wb.Step(kind="proof", run=watch, view="gates", agent="Watcher", text=f"Every scheduled job, script and integration on the {spec.noun} — its last runs and the vendor's own error text, read-only"),
-        "Alert": wb.Step(kind="deterministic", run=alert, agent="Triage", text="One alert per broken job with its likely cause — from the vendor's error text and the fixes Relay learned"),
+        "Watch": wb.Step(kind="proof", run=watch, view="gates", agent="Watcher", text=f"Every scheduled job, script and integration on the {spec.noun} - its last runs and the vendor's own error text, read-only"),
+        "Alert": wb.Step(kind="deterministic", run=alert, agent="Triage", text="One alert per broken job with its likely cause - from the vendor's error text and the fixes Relay learned"),
         "Fix": wb.Step(kind="deterministic", run=fix, agent="Triage", edit=wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("change", "Open a Change work item"), ("heal", "Self-healing"), ("ticket", "Raise a ticket"),
-                                                                                                                                         ("expected", "Expected — no action"), ("ignore", "Ignore this time"))),
+                                                                                                                                         ("expected", "Expected - no action"), ("ignore", "Ignore this time"))),
                                                                                       wb.Column("note", "Note for whoever fixes it", "longtext"), wb.Column("system", "System", readonly=True), wb.Column("label", "What", readonly=True)],
                                                                              add=False, remove=False, label="break"),
                        text="Relay proposes who fixes each break and you confirm or change it"),
-        "Approve": wb.Step(kind="platform", run=approve, agent="Dispatcher", text="The approved hand-offs go out: a Change work item (diagnosis → fix → approval), Self-healing, or a ticket through the service desk's own approval"),
+        "Approve": wb.Step(kind="platform", run=approve, agent="Dispatcher", text="The approved hand-offs go out: a Change work item (diagnosis -> fix -> approval), Self-healing, or a ticket through the service desk's own approval"),
         "Report": wb.Step(kind="deterministic", run=report, agent="Reporter", confirm_if=lambda ctx, out: bool(ctx.get("breaks")), text="A service report of the round against the last ones; you confirm it when there were breaks"),
     })

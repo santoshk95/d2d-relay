@@ -1,4 +1,4 @@
-"""Azure Logic Apps (Consumption) — the ARM REST API (api-version 2016-06-01): workflows with their trigger and
+"""Azure Logic Apps (Consumption) - the ARM REST API (api-version 2016-06-01): workflows with their trigger and
 action connections (the systems), workflow runs, and API connections with their status (an "Error" status is an
 expired or broken sign-in). Tags may carry owner."""
 from __future__ import annotations

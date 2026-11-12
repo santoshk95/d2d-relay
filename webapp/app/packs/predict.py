@@ -1,21 +1,21 @@
-"""Predictive analytics & forecasting (registry id `predict`) — forecasts on the tenant's own data, with their accuracy
+"""Predictive analytics & forecasting (registry id `predict`) - forecasts on the tenant's own data, with their accuracy
 shown before anyone relies on them.
 
 Data      uploads (CSV, Parquet, Excel) read with DuckDB, warehouse connections through the guarded read-only query,
-          and a dashboard's data through Ask D's engine and guard — each opened with the work item owner's access.
+          and a dashboard's data through Ask D's engine and guard - each opened with the work item owner's access.
 Methods   simple and explainable only (predict_stats): seasonal naive (the baseline), exponential smoothing
           (Holt-Winters) and a linear trend with seasonality. Each is back-tested on the latest periods it never saw;
           accuracy is MAPE and WAPE against those actuals. A person chooses the model at Prove.
-Assess    Connect → Inventory → Health → Findings → Estimate: which series can be forecast, and how well.
-Develop   Question → Data → Model → Prove → Share → Watch: the data confirmed, the models compared, the back-test
+Assess    Connect -> Inventory -> Health -> Findings -> Estimate: which series can be forecast, and how well.
+Develop   Question -> Data -> Model -> Prove -> Share -> Watch: the data confirmed, the models compared, the back-test
           confirmed in plain words, a named approval before the forecast reaches a dashboard, a team metric draft
           (four-eyes review in Formulas & metrics), a model registry (a write request each) and a scheduled refresh.
-Change    Request → Diagnose → Fix → Prove → Approve → Learn: a live forecast's settings changed, proven first.
-Migrate   Discover → Decide → Convert → Prove → Hand over → Run: a legacy forecast (an upload) compared side by side
+Change    Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: a live forecast's settings changed, proven first.
+Migrate   Discover -> Decide -> Convert -> Prove -> Hand over -> Run: a legacy forecast (an upload) compared side by side
           with Relay's on the same periods, then moved.
-Run       Watch → Alert → Fix → Approve → Report: the scheduled refresh; accuracy against the actuals that arrived;
+Run       Watch -> Alert -> Fix -> Approve -> Report: the scheduled refresh; accuracy against the actuals that arrived;
           a drift waits for a person before a model is switched, a ticket raised or Self-healing asked.
-Forecasts are versioned in `predict_forecasts` / `predict_forecast_versions`; lineage: dataset → forecast job →
+Forecasts are versioned in `predict_forecasts` / `predict_forecast_versions`; lineage: dataset -> forecast job ->
 the forecast table on the dashboard."""
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ def forecasts(u: dict) -> list[dict]:
 
 
 def forecast_options(u: dict) -> list[tuple[str, str]]:
-    return [(f["id"], f"{f['name']} · version {f['version']} · {len(f['spec'])} series") for f in forecasts(u)]
+    return [(f["id"], f"{f['name']} - version {f['version']} - {len(f['spec'])} series") for f in forecasts(u)]
 
 
 def publish(ctx: wb.Ctx, rows: list[dict], dsets: list[dict], methods: dict, metrics: dict, output: list[dict], fid: str | None = None,
@@ -113,7 +113,7 @@ def label(r: dict, dmap: dict | None = None) -> str:
     ds = (dmap or {}).get(r.get("dataset")) or {}
     base = f"{r.get('value') if r.get('agg') != 'count' else 'rows'} by {r.get('grain')}"
     if r.get("where_col") and r.get("where_val") not in (None, ""):
-        base += f" · {r['where_col']} = {r['where_val']}"
+        base += f" - {r['where_col']} = {r['where_val']}"
     return base + (f" ({ds['name']})" if ds.get("name") else "")
 
 
@@ -131,7 +131,7 @@ def is_forecast_table(cols: list[dict]) -> bool:
 
 
 def _suggest(ctx: wb.Ctx, dsets: list[dict]) -> list[dict]:
-    """One series per dataset that has a date and a number — the wizard's choices first, else Relay's guess — and one
+    """One series per dataset that has a date and a number - the wizard's choices first, else Relay's guess - and one
     per value of the split-by column when the person named one (up to 12)."""
     sc = ctx.scope
     out = []
@@ -198,7 +198,7 @@ def _validate_series(recs: list[dict], ctx: wb.Ctx) -> list[str]:
 
 SERIES_COLUMNS = [wb.Column("include", "Use", "bool"), wb.Column("dataset", "Dataset", "select", options=_ds_options), wb.Column("date", "Date column"),
                   wb.Column("value", "What to forecast"), wb.Column("agg", "How", "select", options=pdat.AGGS), wb.Column("grain", "By", "select", options=pdat.GRAINS),
-                  wb.Column("where_col", "Only rows where (column)"), wb.Column("where_val", "… equals"), wb.Column("horizon", "Periods ahead", "number"),
+                  wb.Column("where_col", "Only rows where (column)"), wb.Column("where_val", "... equals"), wb.Column("horizon", "Periods ahead", "number"),
                   wb.Column("summary", "What Relay read", readonly=True)]
 SERIES_EDIT = wb.Edit(columns=SERIES_COLUMNS, validate=_validate_series, label="series")
 
@@ -221,7 +221,7 @@ def _read_rows(ctx: wb.Ctx, recs: list[dict], dmap: dict) -> list[dict]:
             continue
         g = ps.gaps(p, r.get("grain") or "month")
         r.update(periods=len(p), **{"from": p[0] if p else None, "to": p[-1] if p else None}, gaps=g, total=round(sum(y), 2),
-                 summary=f"{len(p)} {r.get('grain')}s, {p[0] if p else '—'} to {p[-1] if p else '—'}" + (f", {g} missing" if g else ""))
+                 summary=f"{len(p)} {r.get('grain')}s, {p[0] if p else '-'} to {p[-1] if p else '-'}" + (f", {g} missing" if g else ""))
         ctx.evidence(f"Series: {r['label']}", {"series": r["label"], "rows": [{"period": a, "value": b} for a, b in zip(p, y)]}, kind="series", ok=bool(p))
     return recs
 
@@ -237,13 +237,13 @@ def d_question(ctx: wb.Ctx) -> dict:
     for d in dsets:
         cols = pdat.columns(ctx, d["ref"])
         dates, nums, text = pdat.kind_cols(cols)
-        rows.append([d["name"], d["where"], ", ".join(dates) or "—", ", ".join(nums[:8]) or "—", ", ".join(text[:6]) or "—"])
+        rows.append([d["name"], d["where"], ", ".join(dates) or "-", ", ".join(nums[:8]) or "-", ", ".join(text[:6]) or "-"])
     sug = _suggest(ctx, dsets)
     ctx.put("suggested", sug)
     if not sug:
         raise wb.StepFailed("None of the data has both a date column and a number to forecast.")
     q = (ctx.brief or "").strip() or f"Forecast {sug[0]['value']} by {sug[0]['grain']}"
-    return {"summary": f"The question: {q[:200]}. {len(dsets)} dataset(s) read; Relay suggests {len(sug)} series — you confirm the data next.",
+    return {"summary": f"The question: {q[:200]}. {len(dsets)} dataset(s) read; Relay suggests {len(sug)} series - you confirm the data next.",
             "counts": {"datasets": len(dsets), "series suggested": len(sug)},
             "data": {"columns": ["Dataset", "Where", "Date columns", "Numbers", "Text"], "rows": rows}}
 
@@ -258,7 +258,7 @@ def d_data(ctx: wb.Ctx) -> dict:
     for r in short:
         r["problem"] = (r.get("problem") or f"only {r.get('periods') or 0} periods: a back-test needs at least 8")
     return {"summary": f"{len(on)} series to forecast from {len({r['dataset'] for r in on})} dataset(s)" + (f"; {len(short)} with too little history" if short else "")
-            + ". Check what the model will use — change a column, the grain, the horizon or a filter — then confirm.",
+            + ". Check what the model will use - change a column, the grain, the horizon or a filter - then confirm.",
             "counts": {"series": len(on), "short": len(short)}, "records": recs, "data": _series_table(recs, dmap),
             "items": [f"{r['label']}: {r.get('summary') or ''}" for r in on[:6]]}
 
@@ -268,7 +268,7 @@ def _backtests(ctx: wb.Ctx, rows: list[dict], dmap: dict, holdout: dict | None =
     for r in rows:
         p, y = load_series(ctx, r, dmap)
         if len(p) < 8:
-            raise wb.StepFailed(f"{r['label']}: only {len(p)} periods — a back-test needs at least 8.")
+            raise wb.StepFailed(f"{r['label']}: only {len(p)} periods - a back-test needs at least 8.")
         m = ps.season_for(r.get("grain") or "month", len(p))
         bt = ps.backtest(p, y, ps.SEASON.get(r.get("grain") or "month", 1) if m > 1 else 1, int(r.get("horizon") or 6), (holdout or {}).get(r["id"]))
         bt["series"], bt["n"], bt["last"] = r["label"], len(p), p[-1]
@@ -296,7 +296,7 @@ def d_model(ctx: wb.Ctx) -> dict:
     ctx.put("backtests", bts)
     beat = sum(1 for bt in bts.values() if bt["recommended"] != "seasonal_naive")
     recs = _choice_records(ctx, bts, ctx.step_id)                # a person's choice survives a re-run
-    return {"summary": f"Three methods back-tested on {len(bts)} series — each trained on the history before the holdout and scored on periods it never saw. "
+    return {"summary": f"Three methods back-tested on {len(bts)} series - each trained on the history before the holdout and scored on periods it never saw. "
                        f"For {beat} of {len(bts)} series a method beats the seasonal-naive baseline. Choose the model per series (Relay's pick is preselected: "
                        "the simplest one that is accurate enough), then confirm.",
             "counts": {"series": len(bts), "methods": 3, "beat the baseline": beat}, "records": recs,
@@ -321,18 +321,18 @@ def _gates(ctx: wb.Ctx, bts: dict, chosen: dict, target: float) -> list[dict]:
         ev = ctx.evidence(f"Prove: {bt['series']}", {"series": bt["series"], "method": meth, "plain": _plain(bt, meth), "accuracy": x, "baseline": base,
                                                       "rows": [{"period": p, "actual": a, "forecast": f} for p, a, f in zip(bt["periods"], bt["actual"], x["forecast"])]}, kind="proof", ok=True)
         beats = meth == "seasonal_naive" or (x["wape"] is not None and base["wape"] is not None and x["wape"] < base["wape"])
-        checks.append({"name": f"{sid}:baseline", "label": f"{bt['series']} — beats the seasonal-naive baseline", "status": "pass" if beats and meth != "seasonal_naive" else "warn" if meth == "seasonal_naive" else "fail",
+        checks.append({"name": f"{sid}:baseline", "label": f"{bt['series']} - beats the seasonal-naive baseline", "status": "pass" if beats and meth != "seasonal_naive" else "warn" if meth == "seasonal_naive" else "fail",
                        "measured": f"WAPE {pdat.fmt(x['wape'], 1)} %", "expected": f"below {pdat.fmt(base['wape'], 1)} %",
                        "detail": "the baseline itself is chosen: nothing simple beats it" if meth == "seasonal_naive" else ("more accurate than repeating last cycle" if beats else "less accurate than repeating last cycle"), "evidence": ev})
         ok = x["wape"] is not None and x["wape"] <= target
-        checks.append({"name": f"{sid}:target", "label": f"{bt['series']} — within the accuracy target", "status": "pass" if ok else "warn",
+        checks.append({"name": f"{sid}:target", "label": f"{bt['series']} - within the accuracy target", "status": "pass" if ok else "warn",
                        "measured": f"WAPE {pdat.fmt(x['wape'], 1)} %", "expected": f"at most {pdat.fmt(target, 1)} %",
                        "detail": _plain(bt, meth), "evidence": ev})
-        checks.append({"name": f"{sid}:holdout", "label": f"{bt['series']} — tested on periods the model never saw", "status": "pass",
+        checks.append({"name": f"{sid}:holdout", "label": f"{bt['series']} - tested on periods the model never saw", "status": "pass",
                        "measured": f"{bt['holdout']} period(s): {bt['test_from']} to {bt['test_to']}", "expected": f"after the training data (to {bt['train_to']})",
                        "detail": "trained before the holdout, scored on it", "evidence": ev})
         enough = bt["season"] > 1
-        checks.append({"name": f"{sid}:history", "label": f"{bt['series']} — enough history for the seasonal shape", "status": "pass" if enough else "warn",
+        checks.append({"name": f"{sid}:history", "label": f"{bt['series']} - enough history for the seasonal shape", "status": "pass" if enough else "warn",
                        "measured": f"{bt['n']} periods", "expected": "two full cycles", "detail": "seasonal methods used" if enough else "fewer than two cycles: the season is not modelled", "evidence": ev})
     return checks
 
@@ -391,15 +391,15 @@ def d_share(ctx: wb.Ctx) -> dict:
     dname = (store.load(dash).get("name") if dash and db.project(dash) else None) if dash else None
     cad = ctx.scope.get("cadence") or {"every": "week", "at": "06:00", "weekday": 0, "tz": "UTC"}
     regs = [c for c in ctx.connections() if c["kind"] in preg.KINDS]
-    items = [{"title": bts[sid]["series"], "detail": f"{ps.METHODS[m]} — back-tested WAPE {pdat.fmt(bts[sid]['models'][m]['wape'], 1)} %, {bts[sid]['holdout']} period(s) held back"} for sid, m in chosen.items() if sid in bts]
-    items.append({"title": "Where it goes", "detail": (f"the dashboard “{dname}” gets the forecast table forecast_{pdat.slug(ctx.title, 30)}.csv" if dname else "the forecast table stays in this work item's outputs (no dashboard chosen)")
+    items = [{"title": bts[sid]["series"], "detail": f"{ps.METHODS[m]} - back-tested WAPE {pdat.fmt(bts[sid]['models'][m]['wape'], 1)} %, {bts[sid]['holdout']} period(s) held back"} for sid, m in chosen.items() if sid in bts]
+    items.append({"title": "Where it goes", "detail": (f"the dashboard \"{dname}\" gets the forecast table forecast_{pdat.slug(ctx.title, 30)}.csv" if dname else "the forecast table stays in this work item's outputs (no dashboard chosen)")
                   + "; a team metric draft for Formulas & metrics (four-eyes review before it is certified)"})
     if regs:
-        items.append({"title": "Model registry", "detail": ", ".join(f"{c['name']} ({preg.LABEL[c['kind']]})" for c in regs) + ": a registration request each — read-only until that write is approved too"})
+        items.append({"title": "Model registry", "detail": ", ".join(f"{c['name']} ({preg.LABEL[c['kind']]})" for c in regs) + ": a registration request each - read-only until that write is approved too"})
     items.append({"title": "Then", "detail": f"a Run item refreshes the forecast {wb.schedule_text(wb.check_schedule(cad)).lower()} and watches its accuracy; a drift waits for a person"})
     approver = db.user(ctx.st.get("approver") or "") or {}
     items.append({"title": "Named approval", "detail": approver.get("name") or "the owner of this work item"})
-    return {"summary": f"Share {len(chosen)} forecast(s)" + (f" to “{dname}”" if dname else "") + " — nothing reaches a report before this approval.", "data": {"items": items}}
+    return {"summary": f"Share {len(chosen)} forecast(s)" + (f" to \"{dname}\"" if dname else "") + " - nothing reaches a report before this approval.", "data": {"items": items}}
 
 
 def forecast_rows(ctx: wb.Ctx, rows: list[dict], dmap: dict, methods: dict, bts: dict | None = None) -> tuple[list[dict], dict]:
@@ -432,7 +432,7 @@ def _csv(rows: list[dict]) -> str:
 
 
 def to_dashboard(ctx: wb.Ctx, pid: str, name: str, text: str) -> dict:
-    """The approved forecast table into a dashboard's data folder — only a dashboard the owner may change."""
+    """The approved forecast table into a dashboard's data folder - only a dashboard the owner may change."""
     p = db.project(pid)
     owner = db.user(ctx.owner or "") or {}
     if not (p and auth.can_project(owner, "edit", p)):
@@ -455,7 +455,7 @@ def metric_draft(ctx: wb.Ctx, table: str, fc_name: str) -> dict:
                                                                        "description": f"Relay forecast from work item {ctx.id}; the 80 % range is in lower_80 / upper_80.", "folder": "Forecasts"}, u, source=f"wb:{ctx.id}")
     except semantic.SemanticError as e:
         return {"ok": False, "status": f"no draft: {e}"}
-    return {"ok": True, "status": f"metric draft “{m['name']}” (version {m['versions'][-1]['version']}) waits for review", "metric": m["id"]}
+    return {"ok": True, "status": f"metric draft \"{m['name']}\" (version {m['versions'][-1]['version']}) waits for review", "metric": m["id"]}
 
 
 def _record_lineage(ctx: wb.Ctx, fc: dict, dash: str | None, file: str | None) -> None:
@@ -472,7 +472,7 @@ def _run_item(ctx: wb.Ctx, fc: dict, cad: dict) -> str:
     if rid and db.one("SELECT 1 FROM wb_items WHERE id = ? AND closed IS NULL", (rid,)):
         return rid
     p = db.project(ctx.id) or {}
-    item = wb.create(MODULE, "run", f"Run: {ctx.title}"[:160], who=ctx.owner, brief=f"Scheduled refresh and accuracy watch of the forecast “{fc['name']}”, published from {ctx.id}.",
+    item = wb.create(MODULE, "run", f"Run: {ctx.title}"[:160], who=ctx.owner, brief=f"Scheduled refresh and accuracy watch of the forecast \"{fc['name']}\", published from {ctx.id}.",
                      connections=[c for c in ctx.st.get("connections") or []], scope={"forecast": fc["id"], "schedule": cad}, approver=ctx.st.get("approver"),
                      visibility=p.get("visibility") or "private", team_id=p.get("team_id"), parent=ctx.id)
     db.run("UPDATE predict_forecasts SET run_item = ? WHERE id = ?", (item["id"], fc["id"]))
@@ -510,11 +510,11 @@ def d_watch(ctx: wb.Ctx) -> dict:
     ctx.put("forecast", fc["id"])
     cad = wb.check_schedule(ctx.scope.get("cadence") or {"every": "week", "at": "06:00", "weekday": 0, "tz": "UTC"})
     rid = _run_item(ctx, fc, cad)
-    rows_out.append(["Scheduled refresh", f"{wb.schedule_text(cad)} — Run item {rid}"])
+    rows_out.append(["Scheduled refresh", f"{wb.schedule_text(cad)} - Run item {rid}"])
     ctx.evidence("Shared", {"rows": [{"where": a, "what": b} for a, b in rows_out]}, kind="share", ok=True)
-    return {"summary": f"Forecast “{fc['name']}” version {fc['version']} is live: {len(fc['output'])} forecast rows for {len(fc['spec'])} series; refreshed {wb.schedule_text(cad).lower()}.",
+    return {"summary": f"Forecast \"{fc['name']}\" version {fc['version']} is live: {len(fc['output'])} forecast rows for {len(fc['spec'])} series; refreshed {wb.schedule_text(cad).lower()}.",
             "counts": {"version": fc["version"], "series": len(fc["spec"]), "rows": len(fc["output"])},
-            "data": {"href": f"#/m/{MODULE}/i/{rid}", "label": "Open the Run item", "text": " · ".join(f"{a}: {b}" for a, b in rows_out)}}
+            "data": {"href": f"#/m/{MODULE}/i/{rid}", "label": "Open the Run item", "text": " - ".join(f"{a}: {b}" for a, b in rows_out)}}
 
 
 # ------------------------------------------------------------------ Assess
@@ -528,7 +528,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
     good = [r for r in rows if r["ok"]]
     if not good:
         raise wb.StepFailed("None of the sources answered: " + "; ".join(f"{r['source']}: {r['sees']}" for r in rows)[:600])
-    return {"summary": f"{len(good)} of {len(rows)} source(s) answered — read-only.", "counts": {"sources": len(rows), "answered": len(good)},
+    return {"summary": f"{len(good)} of {len(rows)} source(s) answered - read-only.", "counts": {"sources": len(rows), "answered": len(good)},
             "data": {"columns": ["Source", "Kind", "Status", "What Relay sees", "Access"], "rows": [[r["source"], r["kind"], "answered" if r["ok"] else "refused", r["sees"], r["scope"]] for r in rows]}}
 
 
@@ -551,10 +551,10 @@ def a_inventory(ctx: wb.Ctx) -> dict:
     if not recs and not models:
         raise wb.StepFailed("No date-and-number pairs in the data and no models in the registries: nothing to forecast yet.")
     return {"summary": f"{len(recs)} candidate series in {len(dsets)} dataset(s)" + (f" and {len(models)} model(s) already in the registries" if models else "")
-            + " — the likeliest series per dataset is ticked; untick or tick what matters.",
+            + " - the likeliest series per dataset is ticked; untick or tick what matters.",
             "counts": {"candidates": len(recs), "included": sum(1 for r in recs if r["include"]), "registry models": len(models)}, "records": recs,
             "data": {"columns": ["Use", "Dataset", "Date", "Value"], "rows": [["yes" if r["include"] else "no", r["dataset_name"], r["date"], r["value"]] for r in recs]
-                     + [["(registry)", m["registry"], m["name"], f"version {m.get('version') or '—'} · {m.get('stage') or ''}"] for m in models]}}
+                     + [["(registry)", m["registry"], m["name"], f"version {m.get('version') or '-'} - {m.get('stage') or ''}"] for m in models]}}
 
 
 def a_health(ctx: wb.Ctx) -> dict:
@@ -590,7 +590,7 @@ def a_health(ctx: wb.Ctx) -> dict:
         for i, (txt, sev) in enumerate(issues):
             findings.append({"id": f"{r['id']}-{i}", "series": r["label"], "issue": txt, "severity": sev, "decision": "keep", "evidence": ev})
         checks.append({"name": r["id"], "label": f"Forecastability of {r['label']}", "status": "pass" if grade == "good" and not issues else "warn" if grade != "poor" else "fail",
-                       "measured": f"{len(p)} periods · best WAPE {pdat.fmt(best, 1)} %", "expected": "", "evidence": ev,
+                       "measured": f"{len(p)} periods - best WAPE {pdat.fmt(best, 1)} %", "expected": "", "evidence": ev,
                        "detail": f"{grade}: " + (f"seasonality strength {st}" if st is not None else "no full cycles yet") + (f"; {len(issues)} issue(s)" if issues else "")})
     ctx.put("findings", findings)
     ctx.put("graded", [dict(r, grade=next((c["detail"].split(":")[0] for c in checks if c["name"] == r["id"]), "poor")) for r in rows])
@@ -606,7 +606,7 @@ FINDINGS_EDIT = wb.Edit(columns=[wb.Column("decision", "Decision", "select", opt
 def a_findings(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**f, **({k: have[f["id"]][k] for k in ("decision", "severity")} if f["id"] in have else {})} for f in ctx.get("findings") or []]
-    return {"summary": f"{len(recs)} finding(s) — keep what matters, ignore what does not." if recs else "No issues: every included series can be forecast as it is.",
+    return {"summary": f"{len(recs)} finding(s) - keep what matters, ignore what does not." if recs else "No issues: every included series can be forecast as it is.",
             "counts": {"findings": len(recs), "high": sum(1 for r in recs if r["severity"] == "high")}, "records": recs,
             "items": [f"{r['series']}: {r['issue']}" for r in recs[:6]],
             "data": {"columns": ["Series", "Issue", "Severity"], "rows": [[r["series"], r["issue"], r["severity"]] for r in recs]}}
@@ -616,7 +616,7 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     graded = ctx.get("graded") or []
     kept = [f for f in ctx.records("findings") if f.get("decision") != "ignore" and f.get("severity") == "high"]
     hot = {f["series"] for f in kept}
-    waves = [("Wave 1 — ready to forecast", [g for g in graded if g["label"] not in hot]), ("Wave 2 — needs data work first", [g for g in graded if g["label"] in hot])]
+    waves = [("Wave 1 - ready to forecast", [g for g in graded if g["label"] not in hot]), ("Wave 2 - needs data work first", [g for g in graded if g["label"] in hot])]
     b = registry.brand()
     rate, cur = float(b.get("hourly_rate") or 0), b.get("currency") or ""
     per = sum(MINUTES.values()) / 60
@@ -626,8 +626,8 @@ def a_estimate(ctx: wb.Ctx) -> dict:
             continue
         h = len(gs) * per + (len(gs) * 0.5 if name.startswith("Wave 2") else 0)
         total += h
-        items.append({"title": name, "detail": ", ".join(f"{g['label']} ({g.get('grade')})" for g in gs), "effort": f"{h:.1f} h" + (f" · {cur}{rate * h:,.0f}" if rate else "")})
-    note = "Assumptions: " + "; ".join(f"{v} min to {k}" for k, v in MINUTES.items()) + "; half an hour of data work per series in wave 2." + ("" if rate else " Set an hourly rate under Admin › Branding to see the cost.")
+        items.append({"title": name, "detail": ", ".join(f"{g['label']} ({g.get('grade')})" for g in gs), "effort": f"{h:.1f} h" + (f" - {cur}{rate * h:,.0f}" if rate else "")})
+    note = "Assumptions: " + "; ".join(f"{v} min to {k}" for k, v in MINUTES.items()) + "; half an hour of data work per series in wave 2." + ("" if rate else " Set an hourly rate under Admin > Branding to see the cost.")
     ctx.output("assessment.md", f"# Forecasting assessment: {ctx.title}\n\n" + "\n".join(f"## {i['title']}\n\n{i['detail']}\n\nEffort: {i['effort']}\n" for i in items) + f"\n{note}\n", label="Assessment (Markdown)")
     return {"summary": f"{len(items)} wave(s), about {total:.1f} h of a person's time to confirm, choose and approve the forecasts.", "counts": {"waves": len(items), "hours": round(total, 1)},
             "data": {"items": items, "total": f"{total:.1f} h", "note": note}}
@@ -653,7 +653,7 @@ def _load_fc(ctx: wb.Ctx, fc: dict) -> None:
 def c_request(ctx: wb.Ctx) -> dict:
     fc = _fc_or_fail(ctx)
     _load_fc(ctx, fc)
-    return {"summary": f"Change to “{fc['name']}” (version {fc['version']}, {len(fc['spec'])} series).", "counts": {"series": len(fc["spec"]), "version": fc["version"]},
+    return {"summary": f"Change to \"{fc['name']}\" (version {fc['version']}, {len(fc['spec'])} series).", "counts": {"series": len(fc["spec"]), "version": fc["version"]},
             "data": {"text": ctx.brief or "(no request text)"}}
 
 
@@ -666,7 +666,7 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
     for sid, bt in bts.items():
         cur = methods.get(sid) or "seasonal_naive"
         x, best = bt["models"][cur], bt["models"][bt["recommended"]]
-        checks.append({"name": sid, "label": f"{bt['series']} — today's model ({ps.METHODS[cur]})", "status": "pass" if cur == bt["recommended"] else "warn",
+        checks.append({"name": sid, "label": f"{bt['series']} - today's model ({ps.METHODS[cur]})", "status": "pass" if cur == bt["recommended"] else "warn",
                        "measured": f"WAPE {pdat.fmt(x['wape'], 1)} %", "expected": f"best now: {ps.METHODS[bt['recommended']]} at {pdat.fmt(best['wape'], 1)} %", "detail": _plain(bt, cur)})
     return {"summary": f"Today's models back-tested on today's data: {sum(1 for c in checks if c['status'] == 'pass')} of {len(checks)} are still the best simple choice.",
             "counts": {"series": len(checks)}, "data": {"checks": checks}}
@@ -711,7 +711,7 @@ def c_prove(ctx: wb.Ctx) -> dict:
         o = (before.get(sid) or {}).get("models", {}).get(old.get(sid) or "seasonal_naive", {})
         n = bt["models"][new.get(sid) or "seasonal_naive"]
         worse = n["wape"] is not None and o.get("wape") is not None and n["wape"] > o["wape"]
-        checks.append({"name": f"{sid}:vs", "label": f"{bt['series']} — the change against today's model", "status": "warn" if worse else "pass",
+        checks.append({"name": f"{sid}:vs", "label": f"{bt['series']} - the change against today's model", "status": "warn" if worse else "pass",
                        "measured": f"WAPE {pdat.fmt(n['wape'], 1)} %", "expected": f"today {pdat.fmt(o.get('wape'), 1)} %", "detail": "less accurate than today's model" if worse else "as accurate or better"})
     ctx.put("series", rows)
     ctx.put("backtests", bts)
@@ -725,14 +725,14 @@ def c_approve(ctx: wb.Ctx) -> dict:
     new, old = ctx.get("new_methods") or {}, ctx.get("methods") or {}
     changed = [sid for sid in new if new[sid] != old.get(sid)]
     return {"summary": f"Release version {(ctx.get('version') or 0) + 1}: {len(changed)} series change model.",
-            "data": {"items": [{"title": sid, "detail": f"{ps.METHODS.get(old.get(sid), old.get(sid))} → {ps.METHODS[new[sid]]}"} for sid in changed] or [{"title": "Models", "detail": "unchanged; the settings change"}]}}
+            "data": {"items": [{"title": sid, "detail": f"{ps.METHODS.get(old.get(sid), old.get(sid))} {ps.METHODS[new[sid]]}"} for sid in changed] or [{"title": "Models", "detail": "unchanged; the settings change"}]}}
 
 
 def c_learn(ctx: wb.Ctx) -> dict:
     fc, rows_out = share_out(ctx, ctx.get("series") or [], _dmap(ctx), ctx.get("new_methods") or {}, ctx.get("backtests"), ctx.get("forecast"), (ctx.brief or "")[:300])
-    return {"summary": f"Version {fc['version']} of “{fc['name']}” is live; the Run item refreshes it from its next round.", "counts": {"version": fc["version"]},
+    return {"summary": f"Version {fc['version']} of \"{fc['name']}\" is live; the Run item refreshes it from its next round.", "counts": {"version": fc["version"]},
             "data": {"href": f"#/m/{MODULE}/i/{fc['run_item']}" if fc.get("run_item") else f"#/m/{MODULE}/run", "label": "Open the Run item" if fc.get("run_item") else "Run & support",
-                     "text": " · ".join(f"{a}: {b}" for a, b in rows_out)}}
+                     "text": " - ".join(f"{a}: {b}" for a, b in rows_out)}}
 
 
 # ------------------------------------------------------------------ Migrate (a legacy forecast moved, side by side first)
@@ -795,12 +795,12 @@ def m_decide(ctx: wb.Ctx) -> dict:
                      "decision": (have.get(rid) or {}).get("decision") or ("keep" if both else "retire"),
                      "reason": (have.get(rid) or {}).get("reason") or ("compare with Relay's methods" if both else "no actuals to compare it with")})
     ctx.put("decided", recs)
-    return {"summary": f"{len(recs)} legacy series: keep (move to Relay) or retire each — with the legacy forecast's accuracy where actuals exist.",
+    return {"summary": f"{len(recs)} legacy series: keep (move to Relay) or retire each - with the legacy forecast's accuracy where actuals exist.",
             "counts": {"series": len(recs), "keep": sum(1 for r in recs if r["decision"] == "keep")}, "records": recs,
             "data": {"columns": ["Legacy series", "Periods with actuals", "Legacy WAPE %", "Decision"], "rows": [[r["legacy"], r["periods"], r["legacy_wape"], r["decision"]] for r in recs]}}
 
 
-DECIDE_EDIT = wb.Edit(columns=[wb.Column("decision", "Decision", "select", options=(("keep", "Keep — move to Relay"), ("retire", "Retire"))), wb.Column("reason", "Why", "longtext"),
+DECIDE_EDIT = wb.Edit(columns=[wb.Column("decision", "Decision", "select", options=(("keep", "Keep - move to Relay"), ("retire", "Retire"))), wb.Column("reason", "Why", "longtext"),
                                wb.Column("legacy", "Legacy series", readonly=True), wb.Column("legacy_wape", "Legacy WAPE %", "number", readonly=True)], add=False, remove=False, label="series")
 
 
@@ -843,7 +843,7 @@ def m_prove(ctx: wb.Ctx) -> dict:
         ev = ctx.evidence(f"Side by side: {bt['series']}", {"rows": [{"period": p, "actual": a, "legacy": lf, "relay": f} for p, a, lf, f in zip(bt["periods"], bt["actual"], leg["forecast"], x["forecast"])],
                                                            "relay": x, "legacy": {k: leg[k] for k in ("mape", "wape", "bias")}}, kind="proof", ok=True)
         better = x["wape"] is not None and leg["wape"] is not None and x["wape"] <= leg["wape"]
-        checks.append({"name": sid, "label": f"{bt['series']} — Relay ({ps.METHODS[meth]}) against the legacy forecast", "status": "pass" if better else "warn",
+        checks.append({"name": sid, "label": f"{bt['series']} - Relay ({ps.METHODS[meth]}) against the legacy forecast", "status": "pass" if better else "warn",
                        "measured": f"Relay WAPE {pdat.fmt(x['wape'], 1)} %", "expected": f"legacy {pdat.fmt(leg['wape'], 1)} %", "evidence": ev,
                        "detail": "as accurate or better on the same periods" if better else "the legacy forecast was more accurate on these periods: keep it, or move and watch"})
     ctx.put("chosen", chosen)
@@ -855,7 +855,7 @@ def m_prove(ctx: wb.Ctx) -> dict:
 def m_handover(ctx: wb.Ctx) -> dict:
     bts = ctx.get("backtests") or {}
     return {"summary": f"Sign off the move of {len(bts)} series to Relay: the evidence pack holds the side-by-side back-tests.",
-            "data": {"items": [{"title": bt["series"], "detail": f"{ps.METHODS[(ctx.get('chosen') or {}).get(sid, 'seasonal_naive')]} · Relay WAPE {pdat.fmt(bt['models'][(ctx.get('chosen') or {}).get(sid, 'seasonal_naive')]['wape'], 1)} % vs legacy {pdat.fmt(bt['legacy']['wape'], 1)} %"} for sid, bt in bts.items()]}}
+            "data": {"items": [{"title": bt["series"], "detail": f"{ps.METHODS[(ctx.get('chosen') or {}).get(sid, 'seasonal_naive')]} - Relay WAPE {pdat.fmt(bt['models'][(ctx.get('chosen') or {}).get(sid, 'seasonal_naive')]['wape'], 1)} % vs legacy {pdat.fmt(bt['legacy']['wape'], 1)} %"} for sid, bt in bts.items()]}}
 
 
 def m_run(ctx: wb.Ctx) -> dict:
@@ -887,7 +887,7 @@ def r_watch(ctx: wb.Ctx) -> dict:
             acc = ps.accuracy([act[per] for per, _ in due], [f for _, f in due])
             ok = acc["wape"] is not None and acc["wape"] <= target
             ev = ctx.evidence(f"Accuracy since publishing: {r.get('label')}", {"rows": [{"period": per, "actual": act[per], "forecast": f} for per, f in due], **acc}, kind="proof", ok=ok)
-            checks.append({"name": f"{r['id']}:recent", "label": f"{r.get('label')} — the forecast against the actuals that arrived", "status": "pass" if ok else "fail",
+            checks.append({"name": f"{r['id']}:recent", "label": f"{r.get('label')} - the forecast against the actuals that arrived", "status": "pass" if ok else "fail",
                            "measured": f"WAPE {pdat.fmt(acc['wape'], 1)} % over {len(due)} period(s)", "expected": f"at most {pdat.fmt(target, 1)} %", "evidence": ev,
                            "detail": "within the target" if ok else "the forecast is drifting from what happened"})
             if not ok:
@@ -898,9 +898,9 @@ def r_watch(ctx: wb.Ctx) -> dict:
                                "cause": "the level or the pattern changed after the model was fitted", "method": meth, "best": bt["recommended"], "evidence": ev})
         age = (time.time() - float(fc.get("published") or time.time())) / 86400
         due_new = age > PERIOD_DAYS.get(r.get("grain") or "month", 31)          # a period should have closed since publishing
-        checks.append({"name": f"{r['id']}:fresh", "label": f"{r.get('label')} — new data since the last refresh", "status": "pass" if new or not due_new else "warn",
+        checks.append({"name": f"{r['id']}:fresh", "label": f"{r.get('label')} - new data since the last refresh", "status": "pass" if new or not due_new else "warn",
                        "measured": f"{len(new)} new period(s)", "expected": "at least one" if due_new else "none yet (published recently)",
-                       "detail": f"latest period {p[-1] if p else '—'}" if new else ("no new periods: the source has not refreshed" if due_new else f"published {age:.1f} day(s) ago: no new {r.get('grain') or 'month'} has closed yet")})
+                       "detail": f"latest period {p[-1] if p else '-'}" if new else ("no new periods: the source has not refreshed" if due_new else f"published {age:.1f} day(s) ago: no new {r.get('grain') or 'month'} has closed yet")})
         if not new and due_new:
             issues.append({"id": f"s-{r['id']}", "series_id": r["id"], "series": r.get("label"), "what": "no new periods since the last refresh", "cause": "the source did not refresh (a load, a schedule or a sign-in)",
                            "method": meth, "best": meth})
@@ -932,13 +932,13 @@ def r_fix(ctx: wb.Ctx) -> dict:
         default = ("switch" if i["best"] != i["method"] else "refit") if i["id"].startswith("i-") else "ticket"
         recs.append({**i, "action": (have.get(i["id"]) or {}).get("action") or default, "note": (have.get(i["id"]) or {}).get("note") or "",
                      "proposal": f"switch to {ps.METHODS[i['best']]}" if i["best"] != i["method"] else f"refit {ps.METHODS[i['method']]} on the new data"})
-    return {"summary": f"{len(recs)} issue(s): Relay proposes a fix for each — nothing changes until you confirm.", "records": recs,
+    return {"summary": f"{len(recs)} issue(s): Relay proposes a fix for each - nothing changes until you confirm.", "records": recs,
             "counts": {"switch": sum(1 for r in recs if r["action"] == "switch"), "tickets": sum(1 for r in recs if r["action"] == "ticket")},
             "data": {"columns": ["Series", "What", "Proposal", "Action"], "rows": [[r["series"], r["what"], r["proposal"], r["action"]] for r in recs]}}
 
 
 FIX_EDIT = wb.Edit(columns=[wb.Column("action", "Action", "select", options=(("switch", "Switch to the better model"), ("refit", "Keep the model (it refits on new data)"),
-                                                                          ("ticket", "Raise a ticket"), ("heal", "Self-healing"), ("expected", "Expected — no action"))),
+                                                                          ("ticket", "Raise a ticket"), ("heal", "Self-healing"), ("expected", "Expected - no action"))),
                             wb.Column("note", "Note", "longtext"), wb.Column("series", "Series", readonly=True), wb.Column("what", "What", readonly=True),
                             wb.Column("proposal", "Relay proposes", readonly=True)], add=False, remove=False, label="issue")
 
@@ -952,19 +952,19 @@ def r_approve(ctx: wb.Ctx) -> dict:
         if r["action"] == "switch":
             methods[r["series_id"]] = r["best"]
             switched += 1
-            rows.append([r["series"], "Switch", f"{ps.METHODS[r['method']]} → {ps.METHODS[r['best']]}"])
+            rows.append([r["series"], "Switch", f"{ps.METHODS[r['method']]} {ps.METHODS[r['best']]}"])
         elif r["action"] == "ticket":
             h = ctx.ticket(f"Forecast {r['series']}: {r['what']}", f"{r['what']}\n\nLikely cause: {r['cause']}\n{('Note: ' + r['note']) if r.get('note') else ''}\nWork item: {wb.route_of(ctx.st)}", priority="P3", about=r["series"])
             rows.append([r["series"], "Ticket", h.get("status")])
         elif r["action"] == "heal":
-            h = ctx.heal(f"Forecast source stale: {r['series']}", f"{r['what']} — {r['cause']}", signature=f"predict:{r['series_id']}", subject={"series": r["series"]})
+            h = ctx.heal(f"Forecast source stale: {r['series']}", f"{r['what']} - {r['cause']}", signature=f"predict:{r['series_id']}", subject={"series": r["series"]})
             rows.append([r["series"], "Self-healing", h.get("status")])
         else:
-            rows.append([r["series"], "Recorded", {"refit": "the model refits on the new data", "expected": "expected — no action"}.get(r["action"], r["action"])])
+            rows.append([r["series"], "Recorded", {"refit": "the model refits on the new data", "expected": "expected - no action"}.get(r["action"], r["action"])])
     if switched and fc:
         nfc, _ = share_out(ctx, fc["spec"], {d["key"]: d for d in fc["datasets"]}, methods, None, fc["id"], f"model switched in Run ({switched} series)")
         rows.append(["Forecast", "New version", f"version {nfc['version']}"])
-    return {"summary": f"{switched} model switch(es), {sum(1 for r in recs if r['action'] == 'ticket')} ticket(s), {sum(1 for r in recs if r['action'] == 'heal')} to Self-healing — as you approved.",
+    return {"summary": f"{switched} model switch(es), {sum(1 for r in recs if r['action'] == 'ticket')} ticket(s), {sum(1 for r in recs if r['action'] == 'heal')} to Self-healing - as you approved.",
             "data": {"columns": ["Series", "Done", "Detail"], "rows": rows}, "counts": {"switched": switched}}
 
 
@@ -988,13 +988,13 @@ def _cards(u: dict) -> list[dict]:
     rows = []
     for f in forecasts(u):
         w = [m.get("wape") for m in (f["metrics"] or {}).values() if isinstance(m, dict) and m.get("wape") is not None]
-        rows.append([f["name"], f"v{f['version']}", len(f["spec"]), f"{min(w):.1f}–{max(w):.1f} %" if w else "—", (db.user(f.get("published_by") or "") or {}).get("name") or "—",
-                     time.strftime("%d %b %Y", time.gmtime(f["published"])) if f.get("published") else "—", f"#/m/{MODULE}/i/{f['run_item']}" if f.get("run_item") else ""])
+        rows.append([f["name"], f"v{f['version']}", len(f["spec"]), f"{min(w):.1f}-{max(w):.1f} %" if w else "-", (db.user(f.get("published_by") or "") or {}).get("name") or "-",
+                     time.strftime("%d %b %Y", time.gmtime(f["published"])) if f.get("published") else "-", f"#/m/{MODULE}/i/{f['run_item']}" if f.get("run_item") else ""])
     return [{"title": "Live forecasts", "columns": ["Forecast", "Version", "Series", "Back-tested WAPE", "Published by", "When", "Run item"], "rows": rows,
              "empty": "No forecast is live yet: a Develop item's Watch step publishes one after its Share approval."}]
 
 
-GUIDE = """# Predictive analytics & forecasting — the work item
+GUIDE = """# Predictive analytics & forecasting - the work item
 
 This folder is one work item of Relay's forecasting module. Forecasts are made by the app's own explainable methods
 (seasonal naive, exponential smoothing, a linear trend with seasonality), back-tested on periods the model never saw
@@ -1016,24 +1016,24 @@ DEV_FIELDS = [wb.Field("dashboard", "A dashboard's data to use", "select", optio
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE,
-    lineage="each dataset a forecast reads, the forecast as a job (system “Relay forecasts”), and the forecast table it writes to a dashboard",
+    lineage="each dataset a forecast reads, the forecast as a job (system \"Relay forecasts\"), and the forecast table it writes to a dashboard",
     platforms=PLATFORMS,
     schemas={"series": SERIES_COLUMNS, "choice": CHOICE_EDIT.columns, "finding": FINDINGS_EDIT.columns, "issue": FIX_EDIT.columns},
     cards=_cards,
     work={
         "assess": wb.Work(title="Find what can be forecast, and how well", needs_source=False, platforms=("files", "warehouse", "dashboards", "registry"), steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Each source is tested — uploads, warehouses, a dashboard's data and model registries — read-only, with the owner's own access"),
-            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", text="Every date-and-number pair that could be a series, and the models already in your registries — you tick what matters",
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="Each source is tested - uploads, warehouses, a dashboard's data and model registries - read-only, with the owner's own access"),
+            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", text="Every date-and-number pair that could be a series, and the models already in your registries - you tick what matters",
                                  edit=wb.Edit(columns=[wb.Column("include", "Use", "bool"), wb.Column("dataset_name", "Dataset", readonly=True), wb.Column("date", "Date", readonly=True),
                                                        wb.Column("value", "Value", readonly=True), wb.Column("grain", "By", "select", options=pdat.GRAINS)], add=False, remove=False, label="series")),
-            "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Profiler", text="History, gaps, seasonality and a quick back-test of each series — how forecastable it is, measured, not guessed"),
-            "Findings": wb.Step(kind="person", run=a_findings, edit=FINDINGS_EDIT, text="What stands in the way of a good forecast — you keep or ignore each finding"),
+            "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Profiler", text="History, gaps, seasonality and a quick back-test of each series - how forecastable it is, measured, not guessed"),
+            "Findings": wb.Step(kind="person", run=a_findings, edit=FINDINGS_EDIT, text="What stands in the way of a good forecast - you keep or ignore each finding"),
             "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="Waves by readiness and the time a person needs to confirm, choose and approve")},
             fields=[DEV_FIELDS[0], DEV_FIELDS[1], wb.Field("grain", "By", "select", options=pdat.GRAINS, default="month"), wb.Field("horizon", "Periods ahead", "number", default=6)]),
         "develop": wb.Work(title="Forecast from your data, back-tested before anyone relies on it", needs_source=False, platforms=("files", "warehouse", "dashboards", "registry"), steps={
             "Question": wb.Step(kind="deterministic", run=d_question, agent="Analyst"),
             "Data": wb.Step(kind="deterministic", run=d_data, agent="Data steward", edit=SERIES_EDIT),
-            "Model": wb.Step(kind="deterministic", run=d_model, agent="Forecaster", edit=CHOICE_EDIT, confirm="the model for each series — Relay preselects the simplest one that is accurate enough"),
+            "Model": wb.Step(kind="deterministic", run=d_model, agent="Forecaster", edit=CHOICE_EDIT, confirm="the model for each series - Relay preselects the simplest one that is accurate enough"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Prover", back_to="model"),
             "Share": wb.Step(kind="person", run=d_share, view="plan", approver=True),
             "Watch": wb.Step(kind="deterministic", run=d_watch, view="link", agent="Publisher")},
@@ -1047,9 +1047,9 @@ wb.register(wb.Pack(
             "Learn": wb.Step(kind="deterministic", run=c_learn, view="link", agent="Publisher", text="The new version is published and kept; the Run item refreshes it from its next round")},
             fields=[wb.Field("forecast", "Forecast to change", "select", options=forecast_options, required=True), wb.Field("target", "Accuracy target (WAPE %)", "number", default=20)]),
         "migrate": wb.Work(title="Move a legacy forecast to Relay, side by side first", needs_source=False, platforms=("files", "warehouse", "dashboards", "registry"), steps={
-            "Discover": wb.Step(kind="platform", run=m_discover, agent="Scanner", text="The legacy forecast (an upload) and the actuals it should have predicted — read-only"),
+            "Discover": wb.Step(kind="platform", run=m_discover, agent="Scanner", text="The legacy forecast (an upload) and the actuals it should have predicted - read-only"),
             "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Analyst", edit=DECIDE_EDIT, text="Keep or retire each legacy series, with how accurate it was where actuals exist"),
-            "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Forecaster", text="Relay's methods fitted on the actuals before the legacy forecast's periods — rules only, no AI"),
+            "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Forecaster", text="Relay's methods fitted on the actuals before the legacy forecast's periods - rules only, no AI"),
             "Prove": wb.Step(kind="proof", run=m_prove, view="gates", agent="Prover", text="Old and new side by side on the same periods, with the evidence"),
             "Hand over": wb.Step(kind="person", run=m_handover, view="plan", approver=True, text="The named approver signs off the move with the evidence pack"),
             "Run": wb.Step(kind="deterministic", run=m_run, view="link", agent="Publisher", text="The forecasts go live in Relay and a Run item refreshes and watches them")},
@@ -1057,7 +1057,7 @@ wb.register(wb.Pack(
         "run": wb.Work(title="Refresh a live forecast on a schedule and watch its accuracy", needs_source=False, sources=False, platforms=("files", "warehouse", "dashboards", "registry"), steps={
             "Watch": wb.Step(kind="proof", run=r_watch, view="gates", agent="Watcher", text="The forecast refreshed with the approved model, and checked against the actuals that arrived since it was published"),
             "Alert": wb.Step(kind="deterministic", run=r_alert, agent="Triage", text="Drift and stale data grouped by series, each with its likely cause"),
-            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=FIX_EDIT, text="Relay proposes a fix per issue — switch the model, keep it, a ticket or Self-healing — and you confirm or change it"),
+            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=FIX_EDIT, text="Relay proposes a fix per issue - switch the model, keep it, a ticket or Self-healing - and you confirm or change it"),
             "Approve": wb.Step(kind="platform", run=r_approve, agent="Dispatcher", text="What you approved goes out: a new forecast version, a ticket through the service desk's own approval, or a Self-healing case"),
             "Report": wb.Step(kind="deterministic", run=r_report, agent="Reporter", confirm_if=lambda ctx, out: bool(ctx.get("issues")),
                               text="A run report against the last runs; you confirm it when there were issues")},

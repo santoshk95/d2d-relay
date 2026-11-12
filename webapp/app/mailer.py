@@ -79,7 +79,7 @@ def add_gmail(uid: str, address: str, app_password: str) -> dict:
     if not EMAIL_RE.match(address):
         raise EmailError("Enter the Gmail address.")
     if len(pw) < 12:
-        raise EmailError("Paste the 16-letter app password from your Google account (Security › App passwords).")
+        raise EmailError("Paste the 16-letter app password from your Google account (Security > App passwords).")
     try:
         with _smtp() as s:
             s.login(address, pw)
@@ -144,7 +144,7 @@ def _redirect(base_url: str) -> str:
 def ms_start(uid: str, base_url: str) -> str:
     app = ms_app()
     if not app.get("client_id"):
-        raise EmailError("Your administrator has not set up Microsoft email yet (Admin › Scheduling).")
+        raise EmailError("Your administrator has not set up Microsoft email yet (Admin > Scheduling).")
     state = secrets.token_urlsafe(24)
     db.run("INSERT INTO auth_flows (state, provider, verifier, nonce, return_to, created) VALUES (?, 'msmail', '', ?, '#/settings', ?)",
            (state, uid, time.time()))

@@ -2,21 +2,21 @@
 
 deck.yaml
   kind: deck                         # deck | doc
-  title: …   subtitle: …   audience: …   author: …   date: 2026-11-05   template: relay | tenant
+  title: ...   subtitle: ...   audience: ...   author: ...   date: 2026-11-05   template: relay | tenant
   sections:
     - title: Where we are
       slides:
         - layout: title | bullets | two-column | table | chart | diagram | quote | closing | image
-          title: …   subtitle: …   bullets: [...]   notes: speaker notes
-          left: {heading: …, bullets: [...]}   right: {…}                         # two-column
-          table: {columns: [...], rows: [[...]], source: record:assess#tables, caption: …}
-          chart: {type: column|bar|line|pie, categories: [...], series: [{name: …, values: [...]}], unit: …, source: …, alt: …}
-          diagram: {mermaid: "graph LR; A[Source] --> B[Warehouse]", alt: …}
-          quote: {text: …, who: …, source: …}
-          image: {file: sources/photo.png, alt: …}
+          title: ...   subtitle: ...   bullets: [...]   notes: speaker notes
+          left: {heading: ..., bullets: [...]}   right: {...}                         # two-column
+          table: {columns: [...], rows: [[...]], source: record:assess#tables, caption: ...}
+          chart: {type: column|bar|line|pie, categories: [...], series: [{name: ..., values: [...]}], unit: ..., source: ..., alt: ...}
+          diagram: {mermaid: "graph LR; A[Source] --> B[Warehouse]", alt: ...}
+          quote: {text: ..., who: ..., source: ...}
+          image: {file: sources/photo.png, alt: ...}
           figures: [{text: "1,842", value: 1842, source: "dashboard:atlas-1a2b/Reports"}]   # every number in the text
 doc.yaml
-  kind: doc … sections: [{title, blocks: [{kind: paragraph|heading|bullets|table|chart|diagram|quote|image, …}]}]
+  kind: doc ... sections: [{title, blocks: [{kind: paragraph|heading|bullets|table|chart|diagram|quote|image, ...}]}]
 
 Every number a reader sees (bullets, titles, quotes, paragraphs) must be declared under `figures` with a `source`;
 tables, charts and quotes carry their own `source`. Sources are references (sources.py): dashboard:<id>/<measure>,
@@ -35,7 +35,7 @@ KINDS = ("deck", "doc")
 # A number a reader takes as a fact: currency, percentage, thousands with separators, decimals, 4+ digits (years excluded).
 FIGURE_RE = re.compile(r"(?<![\w./#-])(?:[₹$€£]\s?\d[\d,]*(?:\.\d+)?|\d[\d,]*(?:\.\d+)?\s?(?:%|per cent|percent)|\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+\.\d+|\d{4,})(?![\w/-])")
 YEAR_RE = re.compile(r"^(19|20)\d\d$")
-# …and a count with its unit ("48 stores", "12 waves") — small plain integers on their own are not figures.
+# ...and a count with its unit ("48 stores", "12 waves") - small plain integers on their own are not figures.
 COUNT_RE = re.compile(r"(?<![\w./#-])(\d{2,3})\s+(?:stores?|reports?|users?|days?|hours?|people|persons?|clients?|dashboards?|tickets?|rows?|tables?|months?|weeks?|years?|"
                       r"modules?|systems?|sites?|FTEs?|licen[cs]es?|sources?|pipelines?|bots?|flows?|integrations?|pages?|visuals?|measures?|requirements?|waves?|teams?|countries|regions?)\b", re.I)
 
@@ -132,7 +132,7 @@ def normalise(raw: dict) -> dict:
 
 
 def shape_errors(raw: dict) -> list[str]:
-    """What is wrong with the YAML's shape (empty = fine) — the agent fixes these in a resumed session."""
+    """What is wrong with the YAML's shape (empty = fine) - the agent fixes these in a resumed session."""
     errs = []
     kind = _s(raw.get("kind") or "deck").lower()
     if kind not in KINDS:
@@ -141,7 +141,7 @@ def shape_errors(raw: dict) -> list[str]:
         errs.append("title is missing")
     secs = _list(raw.get("sections"))
     if not secs:
-        errs.append("sections is empty — list the sections with their slides (deck) or blocks (doc)")
+        errs.append("sections is empty - list the sections with their slides (deck) or blocks (doc)")
     key = "slides" if kind == "deck" else "blocks"
     n = 0
     for i, sec in enumerate(secs, 1):
@@ -152,7 +152,7 @@ def shape_errors(raw: dict) -> list[str]:
             errs.append(f"sections[{i}] needs a title")
         units = _list(sec.get(key))
         if not units:
-            errs.append(f"section “{_s(sec.get('title')) or i}” has no {key}")
+            errs.append(f"section \"{_s(sec.get('title')) or i}\" has no {key}")
         for u in units:
             n += 1
             if not isinstance(u, dict):
@@ -219,7 +219,7 @@ def shape_errors(raw: dict) -> list[str]:
 # ---------------------------------------------------------------- what a unit says (for the checks and the twin)
 
 def reader_texts(u: dict) -> list[str]:
-    """Every text a reader sees on this unit (titles, bullets, cells, captions, quotes) — notes are the speaker's."""
+    """Every text a reader sees on this unit (titles, bullets, cells, captions, quotes) - notes are the speaker's."""
     out = [u["title"], u["subtitle"], u["text"], *u["bullets"], u["left"]["heading"], *u["left"]["bullets"], u["right"]["heading"], *u["right"]["bullets"]]
     if u["table"]:
         out += [u["table"]["caption"], *u["table"]["columns"], *[c for r in u["table"]["rows"] for c in r]]
@@ -240,7 +240,7 @@ def figure_texts(u: dict) -> list[str]:
 
 
 def figure_spans(text: str) -> list[tuple[int, int, str]]:
-    """(start, end, token) of every figure in a text, in order — figures with units / grouping / decimals and counts with a unit noun."""
+    """(start, end, token) of every figure in a text, in order - figures with units / grouping / decimals and counts with a unit noun."""
     out = []
     for m in FIGURE_RE.finditer(text):
         t = m.group(0).strip()

@@ -1,6 +1,6 @@
 """The sample estate: a synthetic IBM Cognos Analytics estate (seeded, about 1,800 objects) written as real export
-files so the Cognos reader is exercised end to end — content listing, report specifications (XML), dashboards and
-stories (JSON), packages and data modules (JSON), the Audit database export (CSV) — plus the data behind the five
+files so the Cognos reader is exercised end to end - content listing, report specifications (XML), dashboards and
+stories (JSON), packages and data modules (JSON), the Audit database export (CSV) - plus the data behind the five
 packages / data modules the reports use, as CSVs, so conversions can be proven against it.
 
 Everything is made up (DemoData style): names, folders, usage, complexity mix, shared objects, nine reports pointing
@@ -94,11 +94,11 @@ OWNERS = {"Team content/Finance": "Finance", "Team content/Finance/Month end": "
           "Team content/Operations": "Operations", "Team content/Operations/Stores": "Operations", "Team content/HR": "HR", "My content": None, "Executive": "Finance"}
 SUBJECTS = ["Sales", "Revenue", "Inventory", "Claims", "Customers", "Churn", "Margin", "Returns", "Pipeline", "Orders", "Budget", "Headcount", "Forecast", "Shipments",
             "Store", "Pricing", "Promotions", "Suppliers", "Payroll", "Cash"]
-QUALIFIERS = ["by Month", "by Region", "Weekly", "– APAC", "– EMEA", "vs Target", "Detail", "Summary", "Daily", "YTD", "– Team", "Trend", "by Customer", "Exceptions", "by Product", "Scorecard"]
+QUALIFIERS = ["by Month", "by Region", "Weekly", "- APAC", "- EMEA", "vs Target", "Detail", "Summary", "Daily", "YTD", "- Team", "Trend", "by Customer", "Exceptions", "by Product", "Scorecard"]
 PEOPLE = ["a.patel", "b.okafor", "c.novak", "d.rossi", "e.schmidt", "f.tanaka", "g.silva", "h.murphy", "i.kowalski", "j.andersen", "k.mehta", "l.dubois", "m.garcia", "n.ivanova",
           "o.nguyen", "p.cohen", "q.ali", "r.berg", "s.lee", "t.fischer", "u.rao", "v.costa", "w.chen", "x.moreau", "y.park", "z.haas"]
 # the twelve showcase reports in the Executive folder: rich, used every day, every one convertible
-SHOWCASE = ["Board Pack – Monthly Sales", "Margin Deep Dive", "Region vs Plan", "Customer Loyalty Segments", "Returns & Quality", "Cash Position Daily",
+SHOWCASE = ["Board Pack - Monthly Sales", "Margin Deep Dive", "Region vs Plan", "Customer Loyalty Segments", "Returns & Quality", "Cash Position Daily",
             "Working Capital", "Supplier Scorecard", "Inventory Health", "OTIF by Carrier", "Store Benchmarks", "Time Comparison Workbench"]
 SHOWCASE_DS = ["pkg-sales", "pkg-sales", "pkg-finance", "pkg-sales", "dm-retail", "pkg-finance", "pkg-finance", "dm-supply", "dm-retail", "dm-supply", "pkg-sales", "pkg-sales"]
 

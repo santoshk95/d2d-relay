@@ -1,4 +1,4 @@
-"""Cloud & CI/CD (registry id `ship`) on the workbench — CI/CD pipelines on Azure DevOps, GitHub Actions and GitLab CI,
+"""Cloud & CI/CD (registry id `ship`) on the workbench - CI/CD pipelines on Azure DevOps, GitHub Actions and GitLab CI,
 and what is deployed on Azure (Resource Manager), AWS (CloudFormation) and Google Cloud (Cloud Run), through their APIs.
 
 Assess   the pipelines and deployments in each platform's own terms, and the pipeline runs; rules: pipelines that keep
@@ -7,7 +7,7 @@ Assess   the pipelines and deployments in each platform's own terms, and the pip
          capacity in the region, a bucket name already taken, a container that does not listen on its port).
 Change   a failing pipeline diagnosed from its own runs and logs: the step for a person (release the lock, fix the
          model) and the pipeline run again with approval; a Cloud Run service whose new revision cannot start rolled
-         back to the image of its last ready revision with approval — read back on the platform.
+         back to the image of its last ready revision with approval - read back on the platform.
 Run      pipelines and deployments watched on a schedule; breaks go to a Change item, Self-healing or a ticket after
          approval.
 (Develop and Migrate are not offered yet: writing a pipeline or moving one between platforms means committing to the
@@ -23,7 +23,7 @@ MODULE = "ship"
 
 
 def propose_rollback(ctx, c, a, api, run) -> list[dict]:
-    """A Cloud Run service whose new revision cannot start: roll it back to the image of its last ready revision — the
+    """A Cloud Run service whose new revision cannot start: roll it back to the image of its last ready revision - the
     service found by its name in the error (never a guess)."""
     if c.get("kind") != "gcp_cloud_run":
         return []
@@ -41,12 +41,12 @@ def rollback(d: dict) -> dict:
 
 
 SIGNATURES = [
-    w3.Signature(r"Compilation Error in model|invalid identifier", "a dbt model refers to a column the warehouse does not have — the model needs changing, not the pipeline",
-                 "Fix the model in the dbt project (Data pipelines › Change), then run the build again.", route="ticket"),
+    w3.Signature(r"Compilation Error in model|invalid identifier", "a dbt model refers to a column the warehouse does not have - the model needs changing, not the pipeline",
+                 "Fix the model in the dbt project (Data pipelines > Change), then run the build again.", route="ticket"),
     w3.Signature(r"Error acquiring the state lock", "a Terraform state lock is still held by an earlier run that did not finish",
                  "Check that no plan or apply is still running, release the lock (terraform force-unlock with the lock id), then run the plan again.", route="change"),
     w3.Signature(r"airflow\.contrib", "a DAG still imports from airflow.contrib, which Airflow 2 removed",
-                 "Change the import to airflow.providers (Data pipelines › Migrate does it for the DAG), then run the pipeline again.", route="ticket"),
+                 "Change the import to airflow.providers (Data pipelines > Migrate does it for the DAG), then run the pipeline again.", route="ticket"),
     w3.Signature(r"SkuNotAvailable", "the VM size the template asks for has no capacity in that region",
                  "Pick a size the region offers (az vm list-skus) or another region in the template, then deploy again through the pipeline.", route="ticket", kinds=("azure_arm",)),
     w3.Signature(r"already exists", "the stack creates a resource (an S3 bucket) whose name is already taken, so the update rolled back",
@@ -72,7 +72,7 @@ def rule_failed_deployments(ctx, inv, spec=None) -> list[dict]:
             props = [rollback(r)] if r.get("rollback_image") else [{"action": "manual", "entity": "deployment", "key": str(r["key"]), "label": str(r["name"]), "field": "", "value": "", "before": "",
                                                                  "why": sig.fix if sig else "read the deployment's error and fix the template"}]
             out.append(w3.finding("failed_deployment", system, "deployment", str(r["name"]), f"{r.get('kind') or 'Deployment'} {r['name']} {'was rolled back' if r['status'] == 'rolled back' else 'failed'}"
-                                  f" ({r.get('environment') or 'no environment'}): {(r.get('error') or '')[:220]}", "high", measured=f"{r.get('state') or r['status']} since {r.get('when') or '—'}",
+                                  f" ({r.get('environment') or 'no environment'}): {(r.get('error') or '')[:220]}", "high", measured=f"{r.get('state') or r['status']} since {r.get('when') or '-'}",
                                   fix=sig.fix if sig else "Read the deployment's error, fix the template or the image, then deploy again.", work="change", cause=sig.cause if sig else "",
                                   keys=[str(r["key"])], proposals=props))
     return out
@@ -82,13 +82,13 @@ rule_failed_deployments.label = "Deployments that failed or were rolled back"
 
 
 def watch_deployments(ctx, seen) -> list[dict]:
-    """Run › Watch: every deployment's state, read-only; a failed or rolled-back one is a break."""
+    """Run > Watch: every deployment's state, read-only; a failed or rolled-back one is a break."""
     out = []
     for c, a in w3.systems(ctx, sa.CLOUD_KINDS):
         for d in seen.records(c, a, "deployment"):
             bad = d["status"] in ("failed", "rolled back")
             sig = _sig(d.get("error") or "")
-            row = {"name": f"{c['id']}:deploy:{d['key']}", "label": f"{d['name']} ({d.get('kind')}) · {c['name']}", "status": "fail" if bad else "pass", "measured": d["status"], "expected": "succeeded",
+            row = {"name": f"{c['id']}:deploy:{d['key']}", "label": f"{d['name']} ({d.get('kind')}) - {c['name']}", "status": "fail" if bad else "pass", "measured": d["status"], "expected": "succeeded",
                    "detail": (d.get("error") or "")[:220] if bad else f"deployed {d.get('when') or ''}".strip()}
             if bad:
                 row["break"] = {"conn": c["id"], "system": c["name"], "job": str(d["name"]), "label": f"{d['name']} ({d.get('kind')})", "status": "failed", "streak": 1, "error": d.get("error") or "",
@@ -119,7 +119,7 @@ PLATFORMS = {
                               "pipelines and deployments you upload as a list (CSV, Excel)", uploads=(".csv", ".xlsx", ".json")),
 }
 
-GUIDE = """# Cloud & CI/CD — the work item
+GUIDE = """# Cloud & CI/CD - the work item
 
 Relay's cloud and CI/CD module reads the pipelines with their runs and logs, and what is deployed in each cloud, and
 runs a pipeline again or rolls a service back only after a named person approves that very change. A fix in code or
@@ -129,7 +129,7 @@ w3.hook(MODULE)
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE, platforms=PLATFORMS,
-    lineage="each pipeline platform and cloud and what it runs (system → entity), a rerun or a rollback as a write into the platform",
+    lineage="each pipeline platform and cloud and what it runs (system -> entity), a rerun or a rollback as a write into the platform",
     schemas={"inventory": ["include", "system", "object", "records"], "finding": ["decision", "severity", "system", "what"]},
     work={
         "assess": w3.assess_work(SPEC, "See which pipelines keep failing and which deployments failed, with their causes"),

@@ -1,13 +1,13 @@
-"""Integration & APIs (registry id `apis`) on the workbench — Boomi and MuleSoft through their platform APIs; OIC, SAP
+"""Integration & APIs (registry id `apis`) on the workbench - Boomi and MuleSoft through their platform APIs; OIC, SAP
 CPI, Azure Logic Apps / API Management, Kafka and Service Bus through their exports.
 
 Assess   the integrations (processes, deployments) and published APIs in each platform's own terms, and their runs;
          rules: integrations that keep failing (the GST return upload: the portal no longer takes GSTR-1 v1), a secret
          kept in clear text in an integration's configuration, integrations that are stopped.
 Change   a failing integration diagnosed from its own runs: the fix proposed from the platform's configuration (the
-         schema version the portal now takes), released with approval — the configuration changed, the integration run
+         schema version the portal now takes), released with approval - the configuration changed, the integration run
          again, checked on the platform. A secret in clear text is a step for a person (moved to the platform's secure
-         properties) — Relay never handles the secret itself.
+         properties) - Relay never handles the secret itself.
 Run      the integrations watched on a schedule; breaks go to a Change item, Self-healing or a ticket after approval.
 (Develop and Migrate of integrations are not offered yet: building a new flow or moving one between platforms needs
 the platforms' deployment pipelines, which this module does not drive.)
@@ -24,7 +24,7 @@ MODULE = "apis"
 
 
 def propose_schema(ctx, c, a, api, run) -> list[dict]:
-    """The GST portal takes GSTR-1 v2 only: the integration whose runs fail is switched to it, then run again — the
+    """The GST portal takes GSTR-1 v2 only: the integration whose runs fail is switched to it, then run again - the
     integration found by its name on the platform (never a guess)."""
     job = str(run.get("job") or "")
     recs = a.records(api, "integration")
@@ -41,11 +41,11 @@ def rule_clear_secret(ctx, inv, spec=None) -> list[dict]:
         bad = [r for r in rows if str(r.get("clear_secret") or "").strip()]
         if bad:
             out.append(w3.finding("clear_secret", system, "integration", ", ".join(str(r.get("name")) for r in bad[:6]),
-                                  "; ".join(f"{r.get('name')} keeps “{r.get('clear_secret')}” in clear text in its configuration" for r in bad[:4]), "high",
+                                  "; ".join(f"{r.get('name')} keeps \"{r.get('clear_secret')}\" in clear text in its configuration" for r in bad[:4]), "high",
                                   measured=", ".join(str(r.get("name")) for r in bad[:6]), fix="Move the value to the platform's encrypted / secure properties and rotate it; Relay never handles the secret itself.",
                                   work="change", keys=[r["key"] for r in bad],
                                   proposals=[{"action": "manual", "entity": "integration", "key": str(r["key"]), "label": str(r.get("name")), "field": "", "value": "", "before": "",
-                                              "why": f"move {r.get('clear_secret')} to secure properties and rotate it — a person does it"} for r in bad]))
+                                              "why": f"move {r.get('clear_secret')} to secure properties and rotate it - a person does it"} for r in bad]))
     return out
 
 
@@ -88,7 +88,7 @@ PLATFORMS = {
                               "integrations and APIs you upload as a list (CSV, Excel)", uploads=(".csv", ".xlsx", ".json")),
 }
 
-GUIDE = """# Integration & APIs — the work item
+GUIDE = """# Integration & APIs - the work item
 
 Relay's integration module reads the integrations and APIs on each platform with their runs and configuration, and
 changes a configuration or runs an integration again only after a named person approves that very change. It reads the
@@ -98,7 +98,7 @@ w3.hook(MODULE)
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE, platforms=PLATFORMS,
-    lineage="each integration platform and what it runs (system → entity), a configuration change as a write into the platform",
+    lineage="each integration platform and what it runs (system -> entity), a configuration change as a write into the platform",
     schemas={"inventory": ["include", "system", "object", "records"], "finding": ["decision", "severity", "system", "what"]},
     work={
         "assess": w3.assess_work(SPEC, "See which integrations fail, keep secrets in clear text or are stopped"),

@@ -1,4 +1,4 @@
-"""Data quality & reconciliation — the rules, rules first: profiles, suggestions from what the data shows, the rule
+"""Data quality & reconciliation - the rules, rules first: profiles, suggestions from what the data shows, the rule
 kinds and their checks, the Excel tie-out reader and the exports to dbt tests, Soda checks and Great Expectations.
 
 A rule is a record a person can read and edit:
@@ -6,7 +6,7 @@ A rule is a record a person can read and edit:
    low), "active", "description", "why", "origin" (profile | tie-out | person | agent | ruleset)}
 `check` per kind:
   not_null        blank, or "allow 5" (that many blanks are fine)
-  unique          blank — `column` may name several columns, comma-separated
+  unique          blank - `column` may name several columns, comma-separated
   range           "0..1000", ">= 0", "<= 100", or "in Open, Closed" (accepted values)
   referential     "in customers.customer_id" (every value exists in that dataset's column)
   freshness       "48 h" or "2 days" (the newest value is at most that old)
@@ -30,8 +30,8 @@ from .. import workbench as wb
 KINDS = {"not_null": "Not null", "unique": "Unique", "range": "Range or accepted values", "referential": "Exists in (referential)",
          "freshness": "Freshness", "business_total": "Business total", "reconcile": "Reconciliation"}
 SEVERITIES = ("high", "medium", "low")
-CHECK_HELP = ("not null: blank or “allow 5” · unique: blank (several columns comma-separated) · range: “0..1000”, “>= 0” or “in Open, Closed” · "
-              "exists in: “in customers.customer_id” · freshness: “48 h” · total: “sum = 1250000 ± 0.5%” · reconcile: “with SALES.ORDERS on order_id; totals amount”")
+CHECK_HELP = ("not null: blank or \"allow 5\" - unique: blank (several columns comma-separated) - range: \"0..1000\", \">= 0\" or \"in Open, Closed\" - "
+              "exists in: \"in customers.customer_id\" - freshness: \"48 h\" - total: \"sum = 1250000 ± 0.5%\" - reconcile: \"with SALES.ORDERS on order_id; totals amount\"")
 MONEY = re.compile(r"(amount|price|total|value|revenue|sales|cost|qty|quantity|net|gross|balance|tax|spend|fee)", re.I)
 KEYISH = re.compile(r"(^id$|_id$|^key$|_key$|_code$|^code$|_no$|_num$|_number$|_ref$)", re.I)
 DATEISH = re.compile(r"(date|_at$|_on$|^ts$|timestamp|updated|loaded|created|_day$)", re.I)
@@ -111,7 +111,7 @@ def profile(r, max_columns: int = 40) -> dict:
 
 def _fmt(v) -> str:
     if v is None:
-        return "—"
+        return "-"
     if isinstance(v, float):
         return f"{v:,.2f}".rstrip("0").rstrip(".") if abs(v) < 1e15 else f"{v:.3g}"
     if isinstance(v, int):
@@ -142,7 +142,7 @@ def _parse_time(v) -> dt.datetime | None:
 
 
 def suggest(ds: dict, prof: dict, all_ds: list[tuple[dict, dict]], now: float) -> list[dict]:
-    """Rules from what the data shows today, each with the reason (rules first: no AI, nothing invented — a business
+    """Rules from what the data shows today, each with the reason (rules first: no AI, nothing invented - a business
     total waits for the person's figure)."""
     out, n = [], prof["rows"]
     name = ds["name"]
@@ -159,14 +159,14 @@ def suggest(ds: dict, prof: dict, all_ds: list[tuple[dict, dict]], now: float) -
         if not c.get("nulls"):
             rule("not_null", col, "", "high" if keyish or dateish else "medium", f"no blanks in {n:,} rows today")
         elif keyish:
-            rule("not_null", col, "", "high", f"{c['nulls']:,} blank(s) in a key column ({c.get('null_pct')} %) — the rule fails until they are filled")
+            rule("not_null", col, "", "high", f"{c['nulls']:,} blank(s) in a key column ({c.get('null_pct')} %) - the rule fails until they are filled")
         elif (c.get("null_pct") if c.get("null_pct") is not None else 100) < 5:
-            rule("not_null", col, "", "medium", f"{c['nulls']:,} blank(s) in {n:,} rows ({c.get('null_pct')} %) — few enough to be a mistake; the rule fails until they are filled")
+            rule("not_null", col, "", "medium", f"{c['nulls']:,} blank(s) in {n:,} rows ({c.get('null_pct')} %) - few enough to be a mistake; the rule fails until they are filled")
         if keyish and c.get("distinct") is not None and nn > 1:
             if c["distinct"] == nn:
                 rule("unique", col, "", "high", f"every one of the {nn:,} values is different")
             elif not _refers(col, ds, all_ds):
-                rule("unique", col, "", "high", f"{nn - c['distinct']:,} repeated value(s) in a key column — the rule fails until they are fixed")
+                rule("unique", col, "", "high", f"{nn - c['distinct']:,} repeated value(s) in a key column - the rule fails until they are fixed")
         if kind in ("int", "decimal") and c.get("min") is not None and not keyish:
             lo, hi = _num(c["min"]), _num(c["max"])
             if money:
@@ -184,9 +184,9 @@ def suggest(ds: dict, prof: dict, all_ds: list[tuple[dict, dict]], now: float) -
                 if age_h <= 24 * 7:
                     rule("freshness", col, f"{max(48, int(math.ceil(age_h * 2 / 24)) * 24)} h", "medium", f"the newest value is {_age(age_h)} old")
                 else:
-                    rule("freshness", col, "48 h", "medium", f"the newest value is {_age(age_h)} old — stale for a daily load, or a history table (switch it off)", active=False)
+                    rule("freshness", col, "48 h", "medium", f"the newest value is {_age(age_h)} old - stale for a daily load, or a history table (switch it off)", active=False)
         if money and kind in ("int", "decimal"):
-            rule("business_total", col, "sum = ? ± 0.5%", "high", "a total to tie out against the finance figure — enter it (or upload an Excel tie-out)", active=False)
+            rule("business_total", col, "sum = ? ± 0.5%", "high", "a total to tie out against the finance figure - enter it (or upload an Excel tie-out)", active=False)
     for c in prof["columns"]:                                    # referential: a key column that is another dataset's unique key
         if not KEYISH.search(c["name"]) or c.get("unique"):
             continue
@@ -249,7 +249,7 @@ def reconcile_suggestions(dsets: list[dict], profiles: dict) -> list[dict]:
 def parse(rule: dict, dsets: dict[str, dict]) -> tuple[dict, list[str]]:
     """{params}, [problems] for one rule against the item's datasets (key -> dataset)."""
     k, chk, col = rule.get("kind"), str(rule.get("check") or "").strip(), str(rule.get("column") or "").strip()
-    where = f"{KINDS.get(k, k)} on {col or '—'}"
+    where = f"{KINDS.get(k, k)} on {col or '-'}"
     probs: list[str] = []
     if k not in KINDS:
         return {}, [f"unknown kind {k!r}"]
@@ -263,12 +263,12 @@ def parse(rule: dict, dsets: dict[str, dict]) -> tuple[dict, list[str]]:
     if k == "not_null":
         m = re.fullmatch(r"(?:allow\s+(\d+))?", chk, re.I)
         if not m:
-            probs.append(f"{where}: write nothing, or “allow 5”")
+            probs.append(f"{where}: write nothing, or \"allow 5\"")
         else:
             p["allow"] = int(m.group(1) or 0)
     elif k == "unique":
         if chk:
-            probs.append(f"{where}: leave the check blank — list several columns in Column, comma-separated")
+            probs.append(f"{where}: leave the check blank - list several columns in Column, comma-separated")
     elif k == "range":
         m = re.fullmatch(r"(-?[\d.,]+)\s*\.\.\s*(-?[\d.,]+)", chk)
         if m:
@@ -282,13 +282,13 @@ def parse(rule: dict, dsets: dict[str, dict]) -> tuple[dict, list[str]]:
         elif chk.lower().startswith("in "):
             p["values"] = [v.strip() for v in chk[3:].split(",") if v.strip()]
             if not p["values"]:
-                probs.append(f"{where}: list the accepted values after “in”")
+                probs.append(f"{where}: list the accepted values after \"in\"")
         else:
-            probs.append(f"{where}: write “0..1000”, “>= 0”, “<= 100” or “in A, B, C”")
+            probs.append(f"{where}: write \"0..1000\", \">= 0\", \"<= 100\" or \"in A, B, C\"")
     elif k == "referential":
         m = re.fullmatch(r"in\s+(.+)\.([^.\s]+)", chk, re.I)
         if not m:
-            probs.append(f"{where}: write “in <dataset>.<column>”")
+            probs.append(f"{where}: write \"in <dataset>.<column>\"")
         else:
             other = names.get(m.group(1).strip().lower())
             if not other:
@@ -298,13 +298,13 @@ def parse(rule: dict, dsets: dict[str, dict]) -> tuple[dict, list[str]]:
     elif k == "freshness":
         m = re.fullmatch(r"(\d+(?:\.\d+)?)\s*(h|hours?|d|days?)", chk, re.I)
         if not m:
-            probs.append(f"{where}: write “48 h” or “2 days”")
+            probs.append(f"{where}: write \"48 h\" or \"2 days\"")
         else:
             p["max_age_h"] = float(m.group(1)) * (24 if m.group(2).lower().startswith("d") else 1)
     elif k == "business_total":
         m = re.fullmatch(r"(sum|count|avg|min|max)\s*=\s*(-?[\d.,]+|\?)\s*(?:±\s*([\d.]+)\s*%)?(?:\s+where\s+(\S+)\s*=\s*(.+))?", chk, re.I)
         if not m:
-            probs.append(f"{where}: write “sum = 1250000 ± 0.5%”, optionally “where region = North”")
+            probs.append(f"{where}: write \"sum = 1250000 ± 0.5%\", optionally \"where region = North\"")
         elif m.group(2) == "?":
             if rule.get("active"):
                 probs.append(f"{where}: enter the expected figure (from your tie-out) before switching it on")
@@ -316,7 +316,7 @@ def parse(rule: dict, dsets: dict[str, dict]) -> tuple[dict, list[str]]:
         parts = [x.strip() for x in chk.split(";") if x.strip()]
         m = re.fullmatch(r"with\s+(.+?)\s+on\s+(.+)", parts[0] if parts else "", re.I)
         if not m:
-            probs.append(f"{where}: write “with <target dataset> on <key>[; totals <columns>][; by <column>]”")
+            probs.append(f"{where}: write \"with <target dataset> on <key>[; totals <columns>][; by <column>]\"")
         else:
             tgt = names.get(m.group(1).strip().lower())
             if not tgt:
@@ -334,9 +334,9 @@ def parse(rule: dict, dsets: dict[str, dict]) -> tuple[dict, list[str]]:
                         try:
                             p["sample"] = max(1, min(200, int(part[7:].strip())))
                         except ValueError:
-                            probs.append("Reconciliation: “sample 20” takes a number")
+                            probs.append("Reconciliation: \"sample 20\" takes a number")
                     else:
-                        probs.append(f"Reconciliation: “{part}” is not “totals …”, “by …” or “sample …”")
+                        probs.append(f"Reconciliation: \"{part}\" is not \"totals ...\", \"by ...\" or \"sample ...\"")
     if rule.get("severity") not in SEVERITIES:
         probs.append(f"{where}: severity is high, medium or low")
     return p, probs
@@ -479,7 +479,7 @@ def evaluate(ctx, rule: dict, params: dict, rd: Readers, now: float) -> dict:
                 missing = sorted(va - vb)
                 n, bad = len(va), len(missing)
                 out["sample"] = [{"missing": m} for m in missing[:5]]
-                note = " (compared as distinct values: the two datasets live in different places)" + (" — the first 10,000 distinct values were compared" if max(len(va), len(vb)) >= 10000 else "")
+                note = " (compared as distinct values: the two datasets live in different places)" + (" - the first 10,000 distinct values were compared" if max(len(va), len(vb)) >= 10000 else "")
             out.update(status="pass" if not bad else "fail", measured=f"{bad:,} not found", expected="0", bad=bad,
                        detail=f"{bad:,} {'row' if same else 'value'}(s) of {cols[0]} have no match in {rd.dsets[params['ref_dataset']]['name']}.{c2}" + note)
         elif k == "freshness":
@@ -495,7 +495,7 @@ def evaluate(ctx, rule: dict, params: dict, rd: Readers, now: float) -> dict:
                 age = max(0.0, (now - ts.timestamp()) / 3600)
                 ok = age <= params["max_age_h"]
                 out.update(status="pass" if ok else "fail", measured=_age(age), expected=f"at most {_age(params['max_age_h'])}", bad=0 if ok else 1,
-                           detail=f"the newest {cols[0]} is {wb._norm(m)} — {_age(age)} old")
+                           detail=f"the newest {cols[0]} is {wb._norm(m)} - {_age(age)} old")
         elif k == "business_total":
             if params.get("expected") is None:
                 out.update(status="skip", detail="no expected figure yet")
@@ -514,7 +514,7 @@ def evaluate(ctx, rule: dict, params: dict, rd: Readers, now: float) -> dict:
             ok = abs(v - exp) <= max(0.005, abs(exp) * tol / 100.0)
             out.update(status="pass" if ok else "fail", measured=_fmt(round(v, 2)), expected=f"{_fmt(exp)} ± {tol:g} %", bad=0 if ok else 1,
                        detail=f"{agg} of {cols[0]}" + (f" where {wcol} = {params['where_value']}" if wcol else "") + f" is {_fmt(round(v, 2))}; the figure to tie out to is {_fmt(exp)}"
-                       + ("" if ok else f" — off by {_fmt(round(v - exp, 2))}"))
+                       + ("" if ok else f" - off by {_fmt(round(v - exp, 2))}"))
         elif k == "reconcile":
             src, tgt = rd.dsets[rule["dataset"]]["ref"], rd.dsets[params["target"]]["ref"]
             checks = [ctx.proof("row_count", source=src, target=tgt), ctx.proof("checksum", source=src, target=tgt)]
@@ -545,7 +545,7 @@ def run_rules(ctx, rules: list[dict], dsets: dict[str, dict], now: float, label:
             else:
                 res = evaluate(ctx, r, params, rd, now)
             ds = dsets.get(r.get("dataset") or "", {})
-            gate = {"name": r["id"], "label": f"{KINDS[r['kind']]} · {ds.get('name', '?')}" + (f".{r['column']}" if r.get("column") else ""), "status": res["status"],
+            gate = {"name": r["id"], "label": f"{KINDS[r['kind']]} - {ds.get('name', '?')}" + (f".{r['column']}" if r.get("column") else ""), "status": res["status"],
                     "measured": res.get("measured"), "expected": res.get("expected"), "detail": res.get("detail") or "", "severity": r.get("severity"), "kind": r["kind"],
                     "dataset": r.get("dataset"), "column": r.get("column"), "parts": [{k: p.get(k) for k in ("label", "status", "detail", "evidence")} for p in res.get("parts") or []]}
             gate["evidence"] = ctx.evidence(f"{label}: {gate['label']}", {"rule": r, "params": params, "result": {k: v for k, v in res.items() if k != "parts"}, "sample": res.get("sample") or []},

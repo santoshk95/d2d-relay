@@ -79,7 +79,7 @@ const dur = ms => { const s = Math.round(ms / 1000); return s < 60 ? s + 's' : s
 const tok = n => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e5 ? Math.round(n / 1e3) + 'K' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n || 0);
 const usd = x => '$' + (x || 0).toFixed(2);
 const runTokens = u => (u.input || 0) + (u.cache_write || 0) + (u.cache_read || 0) + (u.output || 0);
-const spend = g => g && g.runs ? `${g.complete ? '' : '≥ '}${tok(g.tokens)} tokens · ${usd(g.cost_usd)}` : '';
+const spend = g => g && g.runs ? `${g.complete ? '' : '≥ '}${tok(g.tokens)} tokens - ${usd(g.cost_usd)}` : '';
 let CATALOG = {default: 'sonnet', models: []};
 const catalogEntry = id => CATALOG.models.find(m => m.id === id);
 // Only admins see which AI models run behind Relay. Everyone else sees a model only when it is one they can pick
@@ -105,11 +105,11 @@ function modelOptions(selected) {
   const known = catalogEntry(selected);
   return [known || !selected ? null : h('option', {value: selected, selected: true}, modelName(selected) ? `${modelName(selected)} (not in the list any more)` : 'Set by an admin'),
     ...groups.filter(g => g[1].length).map(([label, ms]) => h('optgroup', {label}, ms.map(m => h('option', {value: m.id, selected: m.id === selected},
-      m.label + (m.latest && m.version ? ` · now ${m.version}` : '') + (m.relative_cost != null ? ` · ${m.relative_cost}× price` : '')))))];
+      m.label + (m.latest && m.version ? ` - now ${m.version}` : '') + (m.relative_cost != null ? ` - ${m.relative_cost}× price` : '')))))];
 }
 async function loadModels() { try { CATALOG = await api('/api/models'); } catch (e) { console.error(e); } }
 const modelsText = list => (list || []).map(modelName).filter(Boolean).join(' + ');
-const spendModel = g => [spend(g), g && g.runs ? modelsText(g.models) : ''].filter(Boolean).join(' · ');
+const spendModel = g => [spend(g), g && g.runs ? modelsText(g.models) : ''].filter(Boolean).join(' - ');
 function ago(t) { if (!t) return ''; const s = Date.now() / 1000 - t; return s < 60 ? 'just now' : s < 3600 ? Math.floor(s / 60) + ' min ago' : s < 86400 ? Math.floor(s / 3600) + ' h ago' : when(t); }
 const when = t => t ? new Date(t * 1000).toLocaleString(undefined, {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : '';
 const clock = t => t ? new Date(t * 1000).toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '';
@@ -131,7 +131,7 @@ function attacher() {
   let picked = [];
   const input = h('input', {type: 'file', multiple: true, accept: '.csv,text/csv,image/*', style: 'display:none'});
   const list = h('div', {class: 'flist attached'});
-  const show = () => list.replaceChildren(...picked.map((f, i) => h('span', {}, icon(isImage(f) ? 'image' : 'table'), ' ' + f.name + ' · ' + size(f.size),
+  const show = () => list.replaceChildren(...picked.map((f, i) => h('span', {}, icon(isImage(f) ? 'image' : 'table'), ' ' + f.name + ' - ' + size(f.size),
     h('button', {type: 'button', title: 'Remove', onclick: () => { picked.splice(i, 1); show(); }}, '×'))));
   const add = files => { picked.push(...[...files].filter(f => /\.csv$/i.test(f.name) || isImage(f))); show(); };
   input.onchange = () => { add(input.files); input.value = ''; };
@@ -157,7 +157,7 @@ function upload(url, fd, onProgress) {
         reject(new Error(msg));
       }
     };
-    xhr.onerror = () => reject(new Error('Upload failed — is the app running?'));
+    xhr.onerror = () => reject(new Error('Upload failed - is the app running?'));
     xhr.open('POST', url); xhr.send(fd);
   });
 }
@@ -201,7 +201,7 @@ function askText(title, {label = '', value = '', placeholder = '', hint = '', re
 /* What the one agent is doing, in words (Self-healing, AI SDLC): {running, kind, waiting} from the server */
 function agentNow(w) {
   w = w || {};
-  const more = w.waiting ? ` · ${w.waiting} more waiting` : '';
+  const more = w.waiting ? ` - ${w.waiting} more waiting` : '';
   return w.running ? 'The agent is busy right now' + more : w.waiting ? `${w.waiting} waiting for the agent` : 'The agent is free';
 }
 

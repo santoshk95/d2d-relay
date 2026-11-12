@@ -1,6 +1,6 @@
-"""Numbers vs source: every visual of the converted report is computed twice — by the source simulator (the source
+"""Numbers vs source: every visual of the converted report is computed twice - by the source simulator (the source
 report's query on the source data, Cognos semantics) and by the converted definition's prototype SQL (the same
-numbers Power BI's DAX is then checked against by the values gate) — and compared number by number. "Proven" is the
+numbers Power BI's DAX is then checked against by the values gate) - and compared number by number. "Proven" is the
 count of numbers matched, with every difference listed, never a tick.
 """
 from __future__ import annotations
@@ -103,7 +103,7 @@ def prove(project_dir: Path, estate: dict, report: dict, plan: dict, source_dir:
             if sr is None:
                 for m in meas:
                     rec["compared"] += 1
-                    rec["differences"].append({"key": " · ".join(_show(tr.get(c)) for c in cat_cols) or "(total)", "measure": m["measure"], "source": "no such row", "target": _show(tr.get(m["measure"]))})
+                    rec["differences"].append({"key": " - ".join(_show(tr.get(c)) for c in cat_cols) or "(total)", "measure": m["measure"], "source": "no such row", "target": _show(tr.get(m["measure"]))})
                 continue
             for m in meas:
                 if m["measure"] in blank:
@@ -113,7 +113,7 @@ def prove(project_dir: Path, estate: dict, report: dict, plan: dict, source_dir:
                 if _same(a, b):
                     rec["matched"] += 1
                 else:
-                    rec["differences"].append({"key": " · ".join(_show(tr.get(c)) for c in cat_cols) or "(total)", "measure": m["measure"], "source": _show(a), "target": _show(b)})
+                    rec["differences"].append({"key": " - ".join(_show(tr.get(c)) for c in cat_cols) or "(total)", "measure": m["measure"], "source": _show(a), "target": _show(b)})
         if not meas or all(m["measure"] in blank for m in meas):
             rec["skipped"] = "every measure of this visual is still for the agent"
             out["skipped"] += 1
@@ -134,7 +134,7 @@ def evidence(proof: dict, report_name: str) -> dict:
         if v.get("compared") and not v.get("differences"):
             rows.append([v["title"], f"{v['rows_target']} rows", "all measures", f"{v['compared']} numbers", "the same", "yes"])
         elif v.get("skipped"):
-            rows.append([v["title"], "—", "—", v["skipped"], "", "skipped"])
+            rows.append([v["title"], "-", "-", v["skipped"], "", "skipped"])
     items = [f"{proof.get('matched', 0):,} of {proof.get('compared', 0):,} numbers match the source" + (f"; {proof['differences']} differ" if proof.get("differences") else "")]
     if proof.get("open"):
         items.append(f"{len(proof['open'])} measure(s) still for the agent: " + ", ".join(proof["open"][:5]))

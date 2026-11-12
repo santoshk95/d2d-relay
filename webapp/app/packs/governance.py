@@ -1,22 +1,22 @@
-"""Data governance & catalogue (registry id `governance`) — who owns what, where it comes from and whether it can be
+"""Data governance & catalogue (registry id `governance`) - who owns what, where it comes from and whether it can be
 trusted, synced with your catalogue: Microsoft Purview, Collibra, Alation, Atlan and Unity Catalog through their APIs
 (or a catalogue export), the mock lab's simulators standing in for each. Builds on what Relay already keeps: its
 lineage graph (the catalogue's lineage joins it), its certified metrics (they become glossary terms) and its gates.
 
-Assess   Connect → Inventory → Health → Findings → Estimate: every governed asset with its owner, certificate and
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: every governed asset with its owner, certificate and
          classification; rules find what has no owner, personal data left unclassified, duplicate terms and terms without a definition,
          failing scans, deprecated assets still in use; the fixes estimated.
-Develop  Describe → Shape → Build → Prove → Ship → Run: a business glossary from Relay's certified metrics and the
-         catalogue's terms — duplicates merged by rules, linked to the tables they come from, proven, approved, then
+Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run: a business glossary from Relay's certified metrics and the
+         catalogue's terms - duplicates merged by rules, linked to the tables they come from, proven, approved, then
          written to the catalogue through its write approval.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: the catalogue's findings fixed — owners, classifications,
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: the catalogue's findings fixed - owners, classifications,
          definitions, descriptions; rules propose each value (Relay's agent drafts what no rule can), a person
          confirms, the approver releases, the catalogue is written only through its own approval; fixes are kept as
          rules for next time.
-Migrate  Discover → Decide → Convert → Prove → Hand over → Run: one catalogue's curation (owners, descriptions,
-         classifications, certificates, terms) carried to another — matched asset by asset, proven, signed off,
+Migrate  Discover -> Decide -> Convert -> Prove -> Hand over -> Run: one catalogue's curation (owners, descriptions,
+         classifications, certificates, terms) carried to another - matched asset by asset, proven, signed off,
          written with approval, then watched.
-Run      Watch → Alert → Fix → Approve → Report: each round, failing scans and new gaps; a person routes each to
+Run      Watch -> Alert -> Fix -> Approve -> Report: each round, failing scans and new gaps; a person routes each to
          Self-healing, a ticket or a Change item.
 """
 from __future__ import annotations
@@ -44,7 +44,7 @@ class Catalogue(wb.Platform):
     kinds = _w1_cat.CATALOG_KINDS
     uploads = (".json", ".csv", ".zip")
     simulator = "tests/mocklab/sims: purview, collibra, alation, atlan (catalogs.py); Unity Catalog in databricks_sql"
-    reads = "assets, owners, classifications, certificates, lineage, the glossary and scan runs — read-only; it writes only through its own approval per change"
+    reads = "assets, owners, classifications, certificates, lineage, the glossary and scan runs - read-only; it writes only through its own approval per change"
 
 
 CAT = Catalogue()
@@ -79,7 +79,7 @@ def read(ctx: wb.Ctx, c: dict | None = None) -> dict:
 
 
 def _who(v) -> str:
-    return str(v or "—")
+    return str(v or "-")
 
 
 def _hours(m: float) -> str:
@@ -89,7 +89,7 @@ def _hours(m: float) -> str:
 def _cost(h: float) -> str:
     b = registry.brand()
     rate, cur = float(b.get("hourly_rate") or 0), b.get("currency") or ""
-    return f" · {cur}{rate * h:,.0f}" if rate else ""
+    return f" - {cur}{rate * h:,.0f}" if rate else ""
 
 
 def _learned() -> list[dict]:
@@ -115,7 +115,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
     good = [r for r in rows if r["ok"]]
     if not good:
         raise wb.StepFailed("No catalogue answered: " + "; ".join(f"{r['source']}: {r['sees']}" for r in rows)[:600])
-    return {"summary": f"{len(good)} of {len(rows)} source(s) answered — read-only.", "counts": {"sources": len(rows), "answered": len(good)},
+    return {"summary": f"{len(good)} of {len(rows)} source(s) answered - read-only.", "counts": {"sources": len(rows), "answered": len(good)},
             "data": {"columns": ["Source", "Kind", "Status", "What Relay sees", "Access"], "rows": [[r["source"], r["kind"], "answered" if r["ok"] else "refused", r["sees"], r["scope"]] for r in rows]}}
 
 
@@ -146,7 +146,7 @@ def a_inventory(ctx: wb.Ctx) -> dict:
                        f"{len(cat['edges'])} lineage link(s) and {len(cat['scans'])} scan run(s) in {cat['where']}.",
             "counts": {**{k + "s": v for k, v in n.items()}, "terms": len(cat["terms"])}, "records": recs,
             "data": {"columns": ["Asset", "Kind", "Platform", "Owner", "Certificate", "Columns", "Classified", "Described"],
-                     "rows": [[r["object"], r["kind"], r["platform"], r["owner"] or "—", r["certified"] or "—", r["columns"], r["classified"], r["described"]] for r in recs]}}
+                     "rows": [[r["object"], r["kind"], r["platform"], r["owner"] or "-", r["certified"] or "-", r["columns"], r["classified"], r["described"]] for r in recs]}}
 
 
 HIGH = ("owner", "personal", "scan", "deprecated", "duplicate")
@@ -196,7 +196,7 @@ def a_findings(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records("findings")}
     recs = [{"id": f["id"], "kind": f["kind"], "object": f["name"], "issue": f["issue"], "route": f["route"], "decision": (have.get(f["id"]) or {}).get("decision", "keep")}
             for f in ctx.get("findings") or []]
-    return {"summary": f"{len(recs)} finding(s) — keep what matters, ignore what does not.", "counts": {"findings": len(recs)}, "records": recs,
+    return {"summary": f"{len(recs)} finding(s) - keep what matters, ignore what does not.", "counts": {"findings": len(recs)}, "records": recs,
             "items": [f"{r['object']}: {r['issue']}" for r in recs[:6]],
             "data": {"columns": ["What", "Object", "Issue", "Who fixes it"], "rows": [[gr.LABEL[r["kind"]], r["object"], r["issue"], r["route"]] for r in recs]}}
 
@@ -219,12 +219,12 @@ def a_estimate(ctx: wb.Ctx) -> dict:
         m = sum(f["minutes"] for f in xs)
         total += m
         kinds = sorted({gr.LABEL[f["kind"]].lower() for f in xs})
-        items.append({"title": title, "detail": f"{len(xs)} finding(s) — {', '.join(kinds)}; {how}.", "effort": _hours(m) + _cost(m / 60)})
+        items.append({"title": title, "detail": f"{len(xs)} finding(s) - {', '.join(kinds)}; {how}.", "effort": _hours(m) + _cost(m / 60)})
     note = "Assumptions: " + "; ".join(f"{v} min per {gr.LABEL[k].lower()}" for k, v in gr.MINUTES.items()) + "."
     ctx.output("governance-assessment.md", f"# Catalogue assessment: {ctx.title}\n\n" + "\n".join(f"## {i['title']}\n\n{i['detail']}\n\nEffort: {i['effort']}\n" for i in items) + f"\n{note}\n",
                label="Assessment (Markdown)")
     return {"summary": f"{len(items)} group(s) of fixes, about {_hours(total)}{_cost(total / 60)}.", "counts": {"groups": len(items), "hours": round(total / 60, 1)},
-            "data": {"items": items, "total": _hours(total), "note": note + ("" if registry.brand().get("hourly_rate") else " Set an hourly rate under Admin › Branding to see the cost.")}}
+            "data": {"items": items, "total": _hours(total), "note": note + ("" if registry.brand().get("hourly_rate") else " Set an hourly rate under Admin > Branding to see the cost.")}}
 
 
 # ================================================================== Fix / change
@@ -263,7 +263,7 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
     for k, ps in by.items():
         known = [p for p in ps if p["value"] or p["change"] in ("rescan",)]
         checks.append({"name": k, "label": gr.LABEL[k], "status": "pass" if len(known) == len(ps) else "warn", "measured": f"{len(known)} of {len(ps)} proposed by rules",
-                       "expected": "a value for each", "detail": "; ".join(f"{p['name']}: {p['change']} → {p['value'] or '(a person or Relay’s agent says)'} — {p['why']}" for p in ps[:5])[:600]})
+                       "expected": "a value for each", "detail": "; ".join(f"{p['name']}: {p['change']} {p['value'] or '(a person or Relay\'s agent says)'} - {p['why']}" for p in ps[:5])[:600]})
     return {"summary": f"{sum(1 for p in props if p['value'])} of {len(props)} fix(es) proposed by rules"
                        + (f" ({sum(1 for p in props if 'kept as a rule' in p['why'])} from fixes approved before)" if any("kept as a rule" in p["why"] for p in props) else "")
                        + "; the rest wait for a person or Relay's agent.", "counts": {"proposed": sum(1 for p in props if p["value"]), "open": sum(1 for p in props if not p["value"])},
@@ -279,9 +279,9 @@ def c_fix(ctx: wb.Ctx) -> dict:
             r.update({k: have[p["id"]][k] for k in ("value", "change", "origin") if k in have[p["id"]]})
         recs.append(r)
     opn = [r for r in recs if not r["value"] and r["change"] not in ("rescan",)]
-    return {"summary": f"{len(recs)} change(s); {len(opn)} without a value yet — fill them in, or ask Relay to draft the definitions and descriptions.",
+    return {"summary": f"{len(recs)} change(s); {len(opn)} without a value yet - fill them in, or ask Relay to draft the definitions and descriptions.",
             "counts": {"changes": len(recs), "open": len(opn)}, "records": recs,
-            "data": {"columns": ["Object", "Change", "Value", "Why"], "rows": [[r["name"], r["change"], r["value"] or "—", r["why"]] for r in recs]}}
+            "data": {"columns": ["Object", "Change", "Value", "Why"], "rows": [[r["name"], r["change"], r["value"] or "-", r["why"]] for r in recs]}}
 
 
 def _validate_fix(recs: list[dict], ctx: wb.Ctx | None = None) -> list[str]:
@@ -344,11 +344,11 @@ def _draft_after(ctx: wb.Ctx, res: dict) -> dict:
     n = 0
     for r in recs:
         if r["id"] in got and not r.get("value"):
-            r.update(value=str(got[r["id"]]).strip(), origin="agent", why=r["why"] + " — drafted by Relay, check it")
+            r.update(value=str(got[r["id"]]).strip(), origin="agent", why=r["why"] + " - drafted by Relay, check it")
             n += 1
     ctx.evidence("Definitions drafted by Relay", {"drafts": got, "summary": res.get("text") or ""}, kind="agent", ok=True)
-    return {"summary": f"Relay drafted {n} definition(s) and description(s) — read them before you confirm.", "records": recs,
-            "data": {"columns": ["Object", "Change", "Value", "Why"], "rows": [[r["name"], r["change"], r["value"] or "—", r["why"]] for r in recs]}}
+    return {"summary": f"Relay drafted {n} definition(s) and description(s) - read them before you confirm.", "records": recs,
+            "data": {"columns": ["Object", "Change", "Value", "Why"], "rows": [[r["name"], r["change"], r["value"] or "-", r["why"]] for r in recs]}}
 
 
 def _changes(ctx: wb.Ctx) -> list[dict]:
@@ -382,12 +382,12 @@ def c_prove(ctx: wb.Ctx) -> dict:
     checks.append({"name": "conflicts", "label": "No object is changed twice the same way", "status": "fail" if dup else "pass", "detail": ", ".join(dup)[:400] or "none"})
     open_ = [r["name"] for r in ctx.records("fix") if not str(r.get("value") or "").strip() and r["change"] not in ("rescan",)]
     checks.append({"name": "open", "label": "Every change has its value", "status": "warn" if open_ else "pass", "measured": f"{len(open_)} without a value",
-                   "detail": (", ".join(open_[:10]) + " — left out of this change") if open_ else "all filled in"})
+                   "detail": (", ".join(open_[:10]) + " - left out of this change") if open_ else "all filled in"})
     if c:
         can = SUPPORTED.get(c["kind"], set())
         no = sorted({x["change"] for x in chs if x["change"] not in can})
         checks.append({"name": "writable", "label": f"{c['name']} accepts these changes through its API", "status": "fail" if no else "pass",
-                       "detail": (f"{', '.join(no)}: not written by Relay to {connectors.KINDS.get(c['kind'], {}).get('label', c['kind'])} yet (a pilot item) — remove them or make them by hand")
+                       "detail": (f"{', '.join(no)}: not written by Relay to {connectors.KINDS.get(c['kind'], {}).get('label', c['kind'])} yet (a pilot item) - remove them or make them by hand")
                        if no else "every change is one the catalogue's API takes"})
         ops = _w1_cat.ops(c, [x for x in chs if x["change"] in can], cat)
         ctx.put("ops", ops)
@@ -481,7 +481,7 @@ def d_catalogue(ctx: wb.Ctx) -> dict:
     return {"summary": f"{len(dom)} table(s) and view(s) in the domain, with {sum(len(v) for v in cols.values())} column(s); {len(cat['terms'])} glossary term(s) in {cat['where']} "
                        f"and {len(ms)} certified metric(s) in Relay.", "counts": {"assets": len(dom), "columns": sum(len(v) for v in cols.values()), "certified metrics": len(ms)},
             "data": {"columns": ["Asset", "Kind", "Platform", "Owner", "Columns", "Described"],
-                     "rows": [[a["key"].split(":", 1)[-1], a["kind"], a["platform"], a.get("owner") or "—", len(cols.get(a["key"], [])), "yes" if a.get("description") else "no"] for a in dom]}}
+                     "rows": [[a["key"].split(":", 1)[-1], a["kind"], a["platform"], a.get("owner") or "-", len(cols.get(a["key"], [])), "yes" if a.get("description") else "no"] for a in dom]}}
 
 
 def d_own(ctx: wb.Ctx) -> dict:
@@ -498,9 +498,9 @@ def d_own(ctx: wb.Ctx) -> dict:
             r.update({x: have[k][x] for x in ("owner", "steward") if x in have[k]})
         recs.append(r)
     new = sum(1 for r in recs if r["owner"] and not r["was"])
-    return {"summary": f"{len(recs)} asset(s): {sum(1 for r in recs if r['was'])} owned in the catalogue, {new} owner(s) proposed by rules — name the stewards and confirm.",
+    return {"summary": f"{len(recs)} asset(s): {sum(1 for r in recs if r['was'])} owned in the catalogue, {new} owner(s) proposed by rules - name the stewards and confirm.",
             "counts": {"assets": len(recs), "proposed": new}, "records": recs,
-            "data": {"columns": ["Asset", "Platform", "Owner", "Steward", "Why"], "rows": [[r["asset"], r["platform"], r["owner"] or "—", r["steward"] or "—", r["why"]] for r in recs]}}
+            "data": {"columns": ["Asset", "Platform", "Owner", "Steward", "Why"], "rows": [[r["asset"], r["platform"], r["owner"] or "-", r["steward"] or "-", r["why"]] for r in recs]}}
 
 
 def _validate_own(recs: list[dict], ctx: wb.Ctx | None = None) -> list[str]:
@@ -518,7 +518,7 @@ def d_lineage(ctx: wb.Ctx) -> dict:
     joined = _join_lineage(ctx, {**cat, "edges": edges})
     lin = {k: {"up": sorted({e["from"].split(":", 1)[-1] for e in edges if e["to"] == k}), "down": sorted({e["to"].split(":", 1)[-1] for e in edges if e["from"] == k})} for k in keys}
     ctx.put("lineage", lin)
-    rows = [[k.split(":", 1)[-1], ", ".join(v["up"])[:120] or "—", ", ".join(v["down"])[:120] or "—"] for k, v in sorted(lin.items())]
+    rows = [[k.split(":", 1)[-1], ", ".join(v["up"])[:120] or "-", ", ".join(v["down"])[:120] or "-"] for k, v in sorted(lin.items())]
     return {"summary": f"{len(edges)} lineage link(s) for the domain, joined to Relay's lineage graph ({joined}).", "counts": {"links": len(edges)},
             "data": {"columns": ["Asset", "Comes from", "Feeds"], "rows": rows}}
 
@@ -538,7 +538,7 @@ def d_quality(ctx: wb.Ctx) -> dict:
         if when:
             recs.append({"id": f"{k}|fresh", "asset": name, "check": f"{when} is at most 2 days old", "rule": f"freshness({when}) <= 48h"})
     ctx.put("checks", recs)
-    ctx.output("quality-rules.yaml", "# Quality rules for the domain — for Relay's Data quality module\n" + "".join(f"- asset: {r['asset']}\n  rule: \"{r['rule']}\"\n" for r in recs),
+    ctx.output("quality-rules.yaml", "# Quality rules for the domain - for Relay's Data quality module\n" + "".join(f"- asset: {r['asset']}\n  rule: \"{r['rule']}\"\n" for r in recs),
                label="Quality rules (YAML, for Data quality)")
     return {"summary": f"{len(recs)} quality check(s) proposed by rules for the domain's assets.", "counts": {"checks": len(recs)},
             "data": {"columns": ["Asset", "Check", "Rule"], "rows": [[r["asset"], r["check"], r["rule"]] for r in recs]}}
@@ -585,14 +585,14 @@ def d_policy(ctx: wb.Ctx) -> dict:
         keep = by_canon.get(cn)
         dup = keep is not None and keep is not t
         recs.append({"id": f"term:{t['name']}", "kind": "term", "what": t["name"], "action": "retire" if dup else "keep" if (t.get("definition") or "").strip() else "define",
-                     "value": t.get("definition") or "", "steward": t.get("steward") or "", "why": f"duplicates “{keep['name']}”" if dup else "in the catalogue's glossary"})
+                     "value": t.get("definition") or "", "steward": t.get("steward") or "", "why": f"duplicates \"{keep['name']}\"" if dup else "in the catalogue's glossary"})
         seen.add(cn)
     for r in recs:
         if r["id"] in have:
             r.update({x: have[r["id"]][x] for x in ("action", "value", "steward") if x in have[r["id"]]})
     n = {k: sum(1 for r in recs if r["action"] == k) for k in ("classify", "add", "define", "retire")}
-    return {"summary": f"Classify {n['classify']} column(s); glossary: add {n['add']}, define {n['define']}, retire {n['retire']} — change what you need and confirm.", "counts": n, "records": recs,
-            "data": {"columns": ["Kind", "What", "Action", "Value", "Why"], "rows": [[r["kind"], r["what"], r["action"], r["value"] or "—", r["why"]] for r in recs]}}
+    return {"summary": f"Classify {n['classify']} column(s); glossary: add {n['add']}, define {n['define']}, retire {n['retire']} - change what you need and confirm.", "counts": n, "records": recs,
+            "data": {"columns": ["Kind", "What", "Action", "Value", "Why"], "rows": [[r["kind"], r["what"], r["action"], r["value"] or "-", r["why"]] for r in recs]}}
 
 
 def _validate_policy(recs: list[dict], ctx: wb.Ctx | None = None) -> list[str]:
@@ -606,7 +606,7 @@ def _validate_policy(recs: list[dict], ctx: wb.Ctx | None = None) -> list[str]:
         if r.get("kind") == "term" and r.get("action") in ("add", "define") and len(str(r.get("value") or "").split()) < 5:
             out.append(f"{r.get('what')}: a term to {r.get('action')} needs a definition of five words or more")
     names = [gr.canon(r.get("what") or "") for r in recs if r.get("kind") == "term" and r.get("action") != "retire"]
-    out += [f"two terms mean the same ({n}) — retire one" for n in sorted({n for n in names if names.count(n) > 1})]
+    out += [f"two terms mean the same ({n}) - retire one" for n in sorted({n for n in names if names.count(n) > 1})]
     return out
 
 
@@ -647,7 +647,7 @@ def d_prove(ctx: wb.Ctx) -> dict:
     ctx.output("governed-domain.json", json.dumps({"assets": keys, "owners": own, "policy": pol, "quality": chk, "lineage": lin}, indent=1, default=str), label="The governed domain (JSON)")
     failed = [g for g in checks if g["status"] == "fail"]
     if failed or not c:
-        return {"summary": f"{len(checks) - len(failed)} of {len(checks)} gate(s) pass" + (" — fix the failing ones before anything is written." if failed else "; no catalogue connection, so the files are the hand-over."),
+        return {"summary": f"{len(checks) - len(failed)} of {len(checks)} gate(s) pass" + (" - fix the failing ones before anything is written." if failed else "; no catalogue connection, so the files are the hand-over."),
                 "data": {"checks": checks}}
     can = SUPPORTED.get(c["kind"], set())
     ops = _w1_cat.ops(c, [x for x in chs if x["change"] in can], cat)
@@ -690,7 +690,7 @@ def m_discover(ctx: wb.Ctx) -> dict:
     hit = sum(1 for a in gov if a["key"] in m)
     return {"summary": f"{len(gov)} governed asset(s) and {len(src['terms'])} term(s) in {src['where']}; {hit} of the assets are already scanned in {dst['where']}.",
             "counts": {"assets": len(gov), "matched": hit, "terms": len(src["terms"])},
-            "data": {"columns": ["Asset", "Kind", "Owner", "Certificate", "In the target"], "rows": [[a["name"], a["kind"], _who(a.get("owner")), a.get("certified") or "—", "yes" if a["key"] in m else "not yet"] for a in gov]}}
+            "data": {"columns": ["Asset", "Kind", "Owner", "Certificate", "In the target"], "rows": [[a["name"], a["kind"], _who(a.get("owner")), a.get("certified") or "-", "yes" if a["key"] in m else "not yet"] for a in gov]}}
 
 
 def m_decide(ctx: wb.Ctx) -> dict:
@@ -704,7 +704,7 @@ def m_decide(ctx: wb.Ctx) -> dict:
         if a.get("certified") == "Deprecated":
             d, why = "retire", "certified Deprecated in the old catalogue"
         elif a["key"] not in m:
-            d, why = "skip", "not scanned in the target yet — scan it there, then run this again"
+            d, why = "skip", "not scanned in the target yet - scan it there, then run this again"
         else:
             d, why = "carry", "matched in the target"
         r = {"id": a["key"], "object": a["name"], "kind": a["kind"], "decision": d, "why": why, "owner": a.get("owner") or "", "certified": a.get("certified") or ""}
@@ -716,15 +716,15 @@ def m_decide(ctx: wb.Ctx) -> dict:
         if t.get("status") == "Obsolete":
             continue
         defined = bool((t.get("definition") or "").strip())
-        d, why = ("retire", f"duplicates “{dups[t['name']]}”") if t["name"] in dups else ("carry", "a defined term") if defined else ("skip", "no definition to carry")
+        d, why = ("retire", f"duplicates \"{dups[t['name']]}\"") if t["name"] in dups else ("carry", "a defined term") if defined else ("skip", "no definition to carry")
         r = {"id": f"term:{t['name']}", "object": t["name"], "kind": "term", "decision": d, "why": why, "owner": t.get("steward") or "", "certified": t.get("status") or ""}
         if r["id"] in have:
             r["decision"] = have[r["id"]].get("decision", r["decision"])
         recs.append(r)
     n = {k: sum(1 for r in recs if r["decision"] == k) for k in ("carry", "retire", "skip")}
-    return {"summary": f"Carry {n['carry']}, retire {n['retire']}, skip {n['skip']} — change what you need.", "counts": n, "records": recs,
-            "items": [f"{r['object']}: {r['decision']} — {r['why']}" for r in recs if r["decision"] != "carry"][:6],
-            "data": {"columns": ["Object", "Kind", "Decision", "Why", "Owner"], "rows": [[r["object"], r["kind"], r["decision"], r["why"], r["owner"] or "—"] for r in recs]}}
+    return {"summary": f"Carry {n['carry']}, retire {n['retire']}, skip {n['skip']} - change what you need.", "counts": n, "records": recs,
+            "items": [f"{r['object']}: {r['decision']} - {r['why']}" for r in recs if r["decision"] != "carry"][:6],
+            "data": {"columns": ["Object", "Kind", "Decision", "Why", "Owner"], "rows": [[r["object"], r["kind"], r["decision"], r["why"], r["owner"] or "-"] for r in recs]}}
 
 
 DECIDE_EDIT = wb.Edit(columns=[wb.Column("decision", "Decision", "select", options=(("carry", "Carry"), ("retire", "Retire"), ("skip", "Skip"))), wb.Column("object", "Object", readonly=True),
@@ -775,7 +775,7 @@ def m_convert(ctx: wb.Ctx) -> dict:
     no = sorted({x["change"] for x in chs if x["change"] not in can})
     recs = [{"id": f"{x['object']}|{x['change']}", "object": x["name"], "change": x["change"], "value": x["value"], "status": "carried" if x["change"] in can else "by hand (pilot item)"} for x in chs]
     return {"summary": f"{len(chs)} change(s) for {tc['name']}: {n['owner']} owner(s), {n['describe']} description(s), {n['classify']} classification(s), {n['certify']} certificate(s), "
-                       f"{n['define']} term(s) — {len(ops)} API call(s)" + (f"; {', '.join(no)} not written by Relay to this catalogue yet" if no else "") + ".",
+                       f"{n['define']} term(s) - {len(ops)} API call(s)" + (f"; {', '.join(no)} not written by Relay to this catalogue yet" if no else "") + ".",
             "counts": {**n, "calls": len(ops)}, "records": recs,
             "data": {"columns": ["Object", "Change", "Value", "Status"], "rows": [[r["object"], r["change"], r["value"], r["status"]] for r in recs[:500]]}}
 
@@ -886,7 +886,7 @@ def r_fix(ctx: wb.Ctx) -> dict:
 
 
 RFIX_EDIT = wb.Edit(columns=[wb.Column("route", "Route", "select", options=(("heal", "Self-healing"), ("change", "A Change item (fix in the catalogue)"), ("ticket", "Raise a ticket"),
-                                                                            ("expected", "Expected — no action"))),
+                                                                            ("expected", "Expected - no action"))),
                              wb.Column("note", "Note", "longtext"), wb.Column("what", "What", readonly=True)], add=False, remove=False, label="group")
 
 
@@ -905,14 +905,14 @@ def r_approve(ctx: wb.Ctx) -> dict:
                              visibility=(db.project(ctx.id) or {}).get("visibility") or "private", team_id=(db.project(ctx.id) or {}).get("team_id"), parent=ctx.id)
             h = ctx._handoff({"kind": "change", "label": b["what"][:120], "status": "Change item started", "link": f"#/m/{MODULE}/i/{item['id']}", "output": item["id"]})
         else:
-            h = {"kind": "expected", "status": "expected — recorded"}
+            h = {"kind": "expected", "status": "expected - recorded"}
         rows.append([b["what"][:160], b["route"], h.get("status"), h.get("case") or h.get("checkpoint") or h.get("output") or ""])
     return {"summary": f"{len(rows)} hand-off(s), as you approved.", "data": {"columns": ["What", "Route", "Status", "Reference"], "rows": rows}}
 
 
 def r_report(ctx: wb.Ctx) -> dict:
     n = len(ctx.get("breaks") or [])
-    ctx.output(f"governance-report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", f"# Catalogue run report: {ctx.title}\n\n" + "".join(f"- {b['what']} → {b.get('route')}\n" for b in ctx.records("fix")),
+    ctx.output(f"governance-report-{time.strftime('%Y%m%d-%H%M', time.gmtime())}.md", f"# Catalogue run report: {ctx.title}\n\n" + "".join(f"- {b['what']} {b.get('route')}\n" for b in ctx.records("fix")),
                label="Run report (Markdown)")
     return {"summary": f"{n} group(s) this round.", "counts": {"groups": n}, "data": {"columns": ["Round", "Groups"], "rows": [[time.strftime("%d %b %H:%M", time.gmtime()), n]]}}
 
@@ -923,7 +923,7 @@ def _cards(u: dict) -> list[dict]:
              "empty": "None yet: a Change item that is approved keeps its classifications and owners as rules for the next catalogue round."}]
 
 
-GUIDE = """# Data governance & catalogue — the work item
+GUIDE = """# Data governance & catalogue - the work item
 
 This folder is one work item of Relay's Data governance & catalogue module. Relay reads the catalogue's assets, owners,
 classifications, lineage, glossary and scans, and proposes every fix by rules; you are asked only for what no rule can
@@ -931,7 +931,7 @@ say: a definition for a business term, or a description for a table.
 
 - `drafts.json` (written by the app before your run): the terms and tables to describe, the catalogue's glossary,
   Relay's certified metrics and each table's columns.
-- `drafts_out.json`: what you write — {"<id>": "one or two sentences"} for every item.
+- `drafts_out.json`: what you write - {"<id>": "one or two sentences"} for every item.
 
 Plain British English; say only what the context supports; never invent a column, a table or a number."""
 
@@ -945,28 +945,28 @@ wb.register(wb.Pack(
     cards=_cards,
     work={
         "assess": wb.Work(title="See who owns what, what is classified and certified, and what the catalogue is missing", steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="The catalogue answers through its API with your sign-in — or its export is opened"),
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Connector", text="The catalogue answers through its API with your sign-in - or its export is opened"),
             "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Cataloguer", text="Every table, view, report and process with its owner, certificate and classified columns; the glossary and the scans"),
             "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Steward",
                               text="Rules: no owner, personal data not classified, duplicate terms and terms without a definition, failing scans, deprecated but still used; the catalogue's lineage joins Relay's"),
-            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="What needs attention — you keep or ignore each finding"),
-            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="The fixes grouped — in the catalogue, scans to repair, decisions for the data owner — with the time")}),
-        "develop": wb.Work(title="Govern a data domain: catalogued, owned, traced, checked and classified — proven, then written with approval", steps={
+            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="What needs attention - you keep or ignore each finding"),
+            "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="The fixes grouped - in the catalogue, scans to repair, decisions for the data owner - with the time")}),
+        "develop": wb.Work(title="Govern a data domain: catalogued, owned, traced, checked and classified - proven, then written with approval", steps={
             "Catalogue": wb.Step(kind="platform", run=d_catalogue, agent="Cataloguer", text="The domain's tables and views from the catalogue, with their columns; Relay's certified metrics and terms"),
-            "Own": wb.Step(kind="deterministic", run=d_own, agent="Steward", edit=OWN_EDIT, text="An owner and a steward for every asset — the catalogue's, or proposed by rules; you confirm"),
+            "Own": wb.Step(kind="deterministic", run=d_own, agent="Steward", edit=OWN_EDIT, text="An owner and a steward for every asset - the catalogue's, or proposed by rules; you confirm"),
             "Lineage": wb.Step(kind="deterministic", run=d_lineage, agent="Cataloguer", text="Where each asset comes from and what it feeds, joined to Relay's lineage graph"),
             "Quality": wb.Step(kind="deterministic", run=d_quality, agent="Steward", text="Quality checks per asset by rules (rows, a unique key, freshness), for the Data quality module"),
             "Policy": wb.Step(kind="deterministic", run=d_policy, agent="Steward", edit=POLICY_EDIT,
-                              text="Personal data classified (by rules and fixes kept before) and the glossary from Relay's certified metrics — duplicates retired; you confirm"),
+                              text="Personal data classified (by rules and fixes kept before) and the glossary from Relay's certified metrics - duplicates retired; you confirm"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Prover", back_to="policy",
-                             text="Every asset owned, traced and checked, every personal column classified, each term once and defined — then the catalogue is written through its write approval")},
+                             text="Every asset owned, traced and checked, every personal column classified, each term once and defined - then the catalogue is written through its write approval")},
             fields=[wb.Field("objects", "The domain's tables and views", "longtext", help="One per line, e.g. DW.FACT_SALES, or a schema such as MART. (empty: every DW and MART table)")]),
         "change": wb.Work(title="Fix the catalogue's findings: owners, classifications, definitions and descriptions, written back with approval", needs_source=True, steps={
             "Request": wb.Step(kind="platform", run=c_request, view="text", agent="Cataloguer", text="The findings you name, read from the catalogue as it is now"),
             "Diagnose": wb.Step(kind="deterministic", run=c_diagnose, view="gates", agent="Steward",
                                 text="Rules propose each value: the schema's owner, the classification of the column of the same name, a fix approved before"),
             "Fix": wb.Step(kind="deterministic", run=c_fix, agent="Steward", edit=FIX_EDIT, confirm_if=lambda ctx, out: True,
-                           text="The changes with their values — you confirm or change each; Relay's agent drafts the definitions and descriptions no rule can",
+                           text="The changes with their values - you confirm or change each; Relay's agent drafts the definitions and descriptions no rule can",
                            actions={"agent": wb.Action(label="Ask Relay to draft the definitions", kind="agent", prompt=_draft_prompt, check=_draft_check, after=_draft_after, agent="Definition writer (AI)",
                                                        help="The agent drafts one or two sentences per term or table from the glossary, the certified metrics and the columns; you read each before you confirm.")}),
             "Prove": wb.Step(kind="proof", run=c_prove, view="gates", agent="Prover", back_to="fix", text="Every object still in the catalogue, every value valid, no conflicts, every change one the catalogue's API takes"),
@@ -974,8 +974,8 @@ wb.register(wb.Pack(
             "Learn": wb.Step(kind="platform", run=c_learn, view="link", agent="Publisher", text="The changes go to the catalogue through its own write approval; classifications and owners are kept as rules")},
             fields=[wb.Field("what", "What to fix", "select", options=WHAT, default="all"), wb.Field("objects", "Only these objects", "longtext", help="Optional, one per line, e.g. STG_CUSTOMERS.EMAIL")]),
         "migrate": wb.Work(title="Move to another catalogue: owners, descriptions, classifications, certificates and terms carried, proven and written with approval", steps={
-            "Discover": wb.Step(kind="platform", run=m_discover, agent="Cataloguer", text="Both catalogues read — the one you leave (its API or its export) and the one you move to"),
-            "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Rationaliser", edit=DECIDE_EDIT, text="Carry, retire or skip each asset and term — deprecated ones retire, ones the target has not scanned wait"),
+            "Discover": wb.Step(kind="platform", run=m_discover, agent="Cataloguer", text="Both catalogues read - the one you leave (its API or its export) and the one you move to"),
+            "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Rationaliser", edit=DECIDE_EDIT, text="Carry, retire or skip each asset and term - deprecated ones retire, ones the target has not scanned wait"),
             "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Mapper", text="Each carried owner, description, classification, certificate and term as the target's own API calls"),
             "Prove": wb.Step(kind="proof", run=m_prove, view="gates", agent="Reconciler", back_to="decide", text="Every object in the target, every owner carried, sampled values identical, nothing deprecated carried"),
             "Hand over": wb.Step(kind="person", run=m_handover, view="plan", approver=True, text="The named owner signs off"),

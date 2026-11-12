@@ -1,6 +1,6 @@
-"""The RPA platforms as Connector SDK adapters — one adapter + one mock-lab simulator each (tests/mocklab/sims/uipath.py:
+"""The RPA platforms as Connector SDK adapters - one adapter + one mock-lab simulator each (tests/mocklab/sims/uipath.py:
 `uipath`; blueprism.py: `blue_prism`; automationanywhere.py: `automation_anywhere`; powerautomate.py:
-`power_automate_desktop`) — and the readers of their files (UiPath Main.xaml / .nupkg, Blue Prism .bprelease, Automation
+`power_automate_desktop`) - and the readers of their files (UiPath Main.xaml / .nupkg, Blue Prism .bprelease, Automation
 Anywhere task-bot JSON, Power Automate Desktop Robin scripts), all into the W2 neutral shape (_w2.auto / _w2.run).
 
   UiPath           Orchestrator OData: client credentials at the identity server (OR.* scopes), the folder header,
@@ -228,7 +228,7 @@ def bprelease(text: str) -> list[dict]:
 class BluePrismApi(_w2.Adapter):
     kind, label, vendor, platform = "blueprism_api", "Blue Prism", "Blue Prism", "Blue Prism"
     simulator = "tests/mocklab/sims/blueprism.py: blue_prism (API v7)"
-    fields = [("base_url", "API URL (https://<server>/api/v7)", True), ("token_url", "Authentication Server token URL (…/connect/token)", True), ("client_id", "Client id", True)]
+    fields = [("base_url", "API URL (https://<server>/api/v7)", True), ("token_url", "Authentication Server token URL (.../connect/token)", True), ("client_id", "Client id", True)]
     secrets = {"api_key": ["client_secret"]}
 
     def signin_headers(self, c):

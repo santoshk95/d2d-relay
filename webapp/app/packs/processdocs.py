@@ -1,20 +1,20 @@
-"""Business process documents (registry id `processdocs`) — interviews, a screen recording or system logs in; a BPMN 2.0
+"""Business process documents (registry id `processdocs`) - interviews, a screen recording or system logs in; a BPMN 2.0
 map that opens in bpmn.io-style tools and a step-by-step SOP out, corrected by the process owner before anything
 proceeds, published, kept current; and a migrate mode for Visio, Word and slide-based documents.
 
-Develop  Capture → Map → Correct → Publish → Automate → Keep current. Capture reads the interviews and transcripts into
+Develop  Capture -> Map -> Correct -> Publish -> Automate -> Keep current. Capture reads the interviews and transcripts into
          passages, notes the recordings for the agent (frames through ffmpeg in the agent image) and mines any event log
-         (rules first: the activities, their frequent order and decisions). Map is the agent's process.yaml — steps,
-         lanes, decisions, screens, fields and rules, each citing its passage or the recording's moment — checked
+         (rules first: the activities, their frequent order and decisions). Map is the agent's process.yaml - steps,
+         lanes, decisions, screens, fields and rules, each citing its passage or the recording's moment - checked
          strictly (one start, an end, every link real, decisions labelled, every frequent logged activity on the map);
          the BPMN 2.0 XML with its diagram is built from it and validated. The person corrects the map in place (the
          graph rules refuse a broken one), then the SOP next to where each line came from; Publish keeps the version
          (BPMN + Word SOP in the tenant's template); Automate files it to Confluence after its own approval and proposes
          the steps worth automating (Workflows, RPA, AI SDLC); Keep current links the process to its systems and roles
          in the lineage graph and, on a schedule, flags the document when one of them changes.
-Assess   Connect → Inventory → Health → Findings → Estimate over existing BPMN, Visio, Word, PDF and slide documents.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn on a published process (a dry run against a new log).
-Migrate  Collect → Convert → Check → Publish: Visio and BPMN exports converted by rules, Word and slides by the agent
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate over existing BPMN, Visio, Word, PDF and slide documents.
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn on a published process (a dry run against a new log).
+Migrate  Collect -> Convert -> Check -> Publish: Visio and BPMN exports converted by rules, Word and slides by the agent
          when asked; checked against how the work is really done (conformance with an event log).
 Published processes are kept in `processdocs_processes` / `processdocs_versions`; RACI & operating model reads them.
 """
@@ -53,7 +53,7 @@ FILES = wb.FilesPlatform()
 FILES.label = "Interviews, recordings, system logs and process exports"
 FILES.uploads = UPLOADS
 FILES.reads = ("interviews and transcripts (Word, PDF, .vtt), screen recordings (the agent reads their frames), system or event logs (CSV, Excel, XES) and "
-               "process exports (BPMN 2.0 from Signavio, ARIS, Bizagi or Lucidchart; Visio .vsdx) — a copy in this work item's folder")
+               "process exports (BPMN 2.0 from Signavio, ARIS, Bizagi or Lucidchart; Visio .vsdx) - a copy in this work item's folder")
 FILES.simulator = "synthetic fixtures in tests/mocklab/fixtures/processdocs/ (interview, recording + transcript, event log, Visio, BPMN, Word SOP)"
 
 
@@ -85,7 +85,7 @@ def processes(u: dict) -> list[dict]:
 
 
 def process_options(u: dict) -> list[tuple[str, str]]:
-    return [(p["id"], f"{p['name']} · version {p['version']} · {sum(1 for s in p['map'].get('steps') or [] if s['type'] not in ('start', 'end'))} steps") for p in processes(u)]
+    return [(p["id"], f"{p['name']} - version {p['version']} - {sum(1 for s in p['map'].get('steps') or [] if s['type'] not in ('start', 'end'))} steps") for p in processes(u)]
 
 
 def publish(ctx: wb.Ctx, proc: dict, xml: str, pid: str | None, note: str = "") -> dict:
@@ -147,7 +147,7 @@ def from_records(recs: list[dict], lanes: list[dict], name: str) -> dict:
 
 
 def _validate_map(recs: list[dict], ctx: wb.Ctx) -> list[str]:
-    """Rules first: a map that cannot be drawn or followed is refused — one start, an end, real links, labelled
+    """Rules first: a map that cannot be drawn or followed is refused - one start, an end, real links, labelled
     decisions, a lane for every step, instructions for every task."""
     have = {r.get("step") for r in recs if r.get("step")}
     n = max([int(x[1:]) for x in have if re.fullmatch(r"S\d+", str(x or ""))] + [0])
@@ -157,13 +157,13 @@ def _validate_map(recs: list[dict], ctx: wb.Ctx) -> list[str]:
             r["step"] = f"S{n}"
     proc = from_records(recs, ctx.get("lanes") or [], ctx.get("name") or ctx.title)
     out = bp.graph_problems(proc)
-    out += [f"{s['id']} “{s['name'][:40]}”: write what the person (or agent) does — the SOP line" for s in proc["steps"] if s["type"] in ("task", "user", "manual", "service") and not s["instructions"].strip()]
+    out += [f"{s['id']} \"{s['name'][:40]}\": write what the person (or agent) does - the SOP line" for s in proc["steps"] if s["type"] in ("task", "user", "manual", "service") and not s["instructions"].strip()]
     return out
 
 
 MAP_COLUMNS = [wb.Column("step", "Id", readonly=True), wb.Column("name", "Step"), wb.Column("type", "Kind", "select", options=STEP_TYPES),
                wb.Column("lane", "Lane (who)", "select", options=_lanes_opts),
-               wb.Column("next", "Goes on to", help="the next step ids, e.g. “S4” — a decision: “S5 if it matches; S6 if it does not”"),
+               wb.Column("next", "Goes on to", help="the next step ids, e.g. \"S4\" - a decision: \"S5 if it matches; S6 if it does not\""),
                wb.Column("instructions", "What to do (the SOP line)", "longtext"), wb.Column("system", "System"), wb.Column("screen", "Screen"),
                wb.Column("rule", "Rule"), wb.Column("where", "From", readonly=True)]
 MAP_EDIT = wb.Edit(columns=MAP_COLUMNS, validate=_validate_map, label="step")
@@ -172,7 +172,7 @@ MAP_EDIT = wb.Edit(columns=MAP_COLUMNS, validate=_validate_map, label="step")
 def _process_view(proc: dict) -> dict:
     lane = {l["id"]: l["name"] for l in proc.get("lanes") or []}
     by = {s["id"]: s for s in proc["steps"]}
-    return {"steps": [{"label": f"{s['id']} · {s['name']}" + (" (decision)" if s["type"] == "gateway" else ""), "actor": lane.get(s.get("lane"), s.get("lane") or ""),
+    return {"steps": [{"label": f"{s['id']} - {s['name']}" + (" (decision)" if s["type"] == "gateway" else ""), "actor": lane.get(s.get("lane"), s.get("lane") or ""),
                        "next": [f"{(by.get(n['to']) or {}).get('name', n['to'])}" + (f" ({n['when']})" if n.get("when") else "") for n in s.get("next") or []]} for s in proc["steps"]]}
 
 
@@ -215,10 +215,10 @@ def d_capture(ctx: wb.Ctx) -> dict:
 
 
 MAP = """Read WORK.md, then sources/segments.json (every passage of the interviews and transcripts, with its id) and, when it
-exists, sources/mined.json (the process an event log shows: activities, how often, and their order — rules, not
+exists, sources/mined.json (the process an event log shows: activities, how often, and their order - rules, not
 guesses). Look at the screen recordings in data/ yourself: `genbi read data/<file>` gives a video's key frames.
 
-FILE process.yaml — the process map and its SOP lines:
+FILE process.yaml - the process map and its SOP lines:
 
 process: {name: <name>, owner: <role>, trigger: <what starts it>, outcome: <what ends it>}
 lanes: [{id: L1, name: AP clerk, kind: person | agent | system}]
@@ -230,7 +230,7 @@ steps:
     system: Outlook                  # where it happens (optional)
     screen: Inbox                    # the screen in the recording (optional)
     fields: [invoice number]         # optional
-    rule: "…"                        # optional, from the sources
+    rule: "..."                        # optional, from the sources
     instructions: "Open the e-mail and save the PDF."     # the SOP line (every task)
     next: [{to: S2}]                 # a decision: [{to: S5, when: "it matches"}, {to: S6, when: "it does not"}]
     sources: [{ref: <passage id>, quote: "<its words>"}]   # a recording's moment: {ref: <video>#media} and at: "00:01:20"
@@ -248,7 +248,7 @@ def check_process(y: dict, segs: dict, mined: dict | None = None) -> list[str]:
     out = []
     lanes = y.get("lanes") if isinstance(y.get("lanes"), list) else []
     if not lanes:
-        out.append("lanes is empty — who does the steps (people, agents, systems)")
+        out.append("lanes is empty - who does the steps (people, agents, systems)")
     for i, l in enumerate(lanes, 1):
         if not isinstance(l, dict) or not l.get("id") or not l.get("name"):
             out.append(f"lane {i}: give it an id and a name")
@@ -261,7 +261,7 @@ def check_process(y: dict, segs: dict, mined: dict | None = None) -> list[str]:
             "steps": [{**s, "next": [n for n in (s.get("next") or []) if isinstance(n, dict)]} for s in steps if isinstance(s, dict)]}
     out += bp.graph_problems(proc)
     for s in proc["steps"]:
-        where = f"{s.get('id')} “{str(s.get('name') or '')[:40]}”"
+        where = f"{s.get('id')} \"{str(s.get('name') or '')[:40]}\""
         if s.get("type") in ("task", "user", "manual", "service"):
             if not str(s.get("instructions") or "").strip():
                 out.append(f"{where}: write the SOP line (instructions)")
@@ -274,7 +274,7 @@ def check_process(y: dict, segs: dict, mined: dict | None = None) -> list[str]:
         names = {_w4.name_key(s.get("name")) for s in proc["steps"]}
         for a, n in sorted(mined.get("activities", {}).items(), key=lambda kv: -kv[1]):
             if n / max(1, mined.get("cases") or 1) >= 0.05 and _w4.name_key(a) not in names:
-                out.append(f"the log shows “{a}” in {n} case(s) but the map has no step of that name")
+                out.append(f"the log shows \"{a}\" in {n} case(s) but the map has no step of that name")
     return out
 
 
@@ -322,8 +322,8 @@ def _sop_records(ctx: wb.Ctx, proc: dict) -> list[dict]:
         if s["type"] in ("start", "end"):
             continue
         refs = _w4.parse_refs(s.get("sources"))
-        rec = {"id": s["id"], "step": s["id"], "name": s["name"], "who": lane.get(s["lane"], s["lane"]), "instructions": s.get("instructions") or ("Decide: " + "; ".join(f"{n['when']} → {n['to']}" for n in s["next"]) if s["type"] == "gateway" else ""),
-               "where": (s.get("system") or "") + (f" › {s['screen']}" if s.get("screen") else ""), "rule": s.get("rule") or "",
+        rec = {"id": s["id"], "step": s["id"], "name": s["name"], "who": lane.get(s["lane"], s["lane"]), "instructions": s.get("instructions") or ("Decide: " + "; ".join(f"{n['when']} {n['to']}" for n in s["next"]) if s["type"] == "gateway" else ""),
+               "where": (s.get("system") or "") + (f" > {s['screen']}" if s.get("screen") else ""), "rule": s.get("rule") or "",
                "from": _w4.where_text(refs, segs) + (f" at {s['at']}" if s.get("at") else "")}
         out.append({**rec, **({"instructions": have[s["id"]]["instructions"]} if s["id"] in have else {})})
     return out
@@ -339,7 +339,7 @@ def _sop_doc(ctx: wb.Ctx, proc: dict, sop: list[dict], name: str, version: int, 
             {"title": "Procedure", "blocks": [_w4.table(["Step", "Who", "What to do", "Where", "Rule", "From"], [[f"{r['step']} {r['name']}", r["who"], r["instructions"], r["where"], r["rule"], r["from"]] for r in sop],
                                                         f"record:{name}#sop", "Step by step, each line with where it came from")]},
             {"title": "The process map", "blocks": [_w4.para(f"The BPMN 2.0 map ({name}.bpmn) opens in bpmn.io, Camunda Modeler, Signavio and other BPMN tools.", f"record:{name}#head")]}]
-    return _w4.build_doc(ctx, name, f"Standard operating procedure: {proc['name']}", f"Version {version} · {status}", secs, {name: rec}, label=f"SOP version {version} ({status})",
+    return _w4.build_doc(ctx, name, f"Standard operating procedure: {proc['name']}", f"Version {version} - {status}", secs, {name: rec}, label=f"SOP version {version} ({status})",
                          audience="the people who do the work and its owner")
 
 
@@ -356,7 +356,7 @@ def d_correct(ctx: wb.Ctx) -> dict:
 
 
 def _validate_sop(recs: list[dict], ctx: wb.Ctx) -> list[str]:
-    return [f"{r['step']} “{r['name'][:40]}”: the SOP line is empty" for r in recs if not str(r.get("instructions") or "").strip()]
+    return [f"{r['step']} \"{r['name'][:40]}\": the SOP line is empty" for r in recs if not str(r.get("instructions") or "").strip()]
 
 
 SOP_EDIT = wb.Edit(columns=[wb.Column("step", "Step", readonly=True), wb.Column("name", "Name", readonly=True), wb.Column("who", "Who", readonly=True),
@@ -388,10 +388,10 @@ def d_publish(ctx: wb.Ctx, proc: dict | None = None, note: str = "") -> dict:
     ctx.put("version", p["version"])
     _lineage(ctx, p)
     dp = _w4.doc_problems(info)
-    return {"summary": f"“{p['name']}” version {p['version']} is published: the BPMN 2.0 map and the Word SOP (with an HTML preview) in your template"
+    return {"summary": f"\"{p['name']}\" version {p['version']} is published: the BPMN 2.0 map and the Word SOP (with an HTML preview) in your template"
             + (f"; the document check found {len(dp)} problem(s): {dp[0]}" if dp else "") + ". Confirm before it is filed to Confluence or SharePoint.",
             "counts": {"version": p["version"], "steps": len(proc["steps"])},
-            "data": {"items": [{"title": f"process-v{v}.bpmn", "detail": "BPMN 2.0 with its diagram — opens in bpmn.io, Camunda Modeler, Signavio"},
+            "data": {"items": [{"title": f"process-v{v}.bpmn", "detail": "BPMN 2.0 with its diagram - opens in bpmn.io, Camunda Modeler, Signavio"},
                                {"title": f"sop-v{v}.docx", "detail": f"{len(sop)} step(s), each with where it came from"},
                                {"title": "Kept", "detail": f"version {p['version']} in the process library; every earlier version kept"}]}}
 
@@ -441,12 +441,12 @@ def d_automate(ctx: wb.Ctx) -> dict:
     p = _w4.push_of(ctx.id, "automate")
     if filing and not p:
         if not connectors.may_write(filing):
-            raise wb.StepFailed(f"{filing['name']} is read-only: change its scope to “Read & write — with approval” to file the process, or remove it to download the files.")
+            raise wb.StepFailed(f"{filing['name']} is read-only: change its scope to \"Read & write - with approval\" to file the process, or remove it to download the files.")
         v = proc.get("version")
         body = "<h2>Procedure</h2><table><tbody><tr><th>Step</th><th>Who</th><th>What to do</th></tr>" + "".join(
             f"<tr><td>{_w4.esc(r['step'] + ' ' + r['name'])}</td><td>{_w4.esc(r['who'])}</td><td>{_w4.esc(r['instructions'])}</td></tr>" for r in ctx.records("correct")) + "</tbody></table>"
         _w4.request_push(ctx, filing["id"], "page", {"title": f"{proc['name']} (version {v})", "body": body, "files": [f"process-v{v}.bpmn", f"sop-v{v}.docx"], "version": v},
-                         f"File “{proc['name']}” version {v} to {filing['name']}", step="automate")
+                         f"File \"{proc['name']}\" version {v} to {filing['name']}", step="automate")
     return _automate_view(ctx, recs)
 
 
@@ -454,9 +454,9 @@ def _automate_view(ctx: wb.Ctx, recs: list[dict] | None = None) -> dict:
     recs = recs if recs is not None else ctx.records("automate")
     p = _w4.push_of(ctx.id, "automate")
     filed = ("filed: " + ", ".join(c.get("url") or c["key"] for c in (p["result"].get("created") or [])) if p and p["status"] == "written" else
-             "waiting for its own approval in the Validation queue" if p and p["status"] == "awaiting" else "failed — see the activity" if p and p["status"] == "failed"
+             "waiting for its own approval in the Validation queue" if p and p["status"] == "awaiting" else "failed - see the activity" if p and p["status"] == "failed"
              else "not filed (no Confluence connected): the files are in the outputs")
-    return {"summary": f"{len(recs)} step(s) worth automating, each with where it would go — pick or change the route; the published version is {filed}.",
+    return {"summary": f"{len(recs)} step(s) worth automating, each with where it would go - pick or change the route; the published version is {filed}.",
             "records": recs, "counts": {"candidates": len(recs)}, "data": {"columns": ["Step", "Route", "Why"], "rows": [[f"{r['step']} {r['name']}", dict(AUTOMATE_ROUTES).get(r["route"], r["route"]), r["why"]] for r in recs]}}
 
 
@@ -473,7 +473,7 @@ AUTO_EDIT = wb.Edit(columns=[wb.Column("step", "Step", readonly=True), wb.Column
 
 def _handoff(ctx: wb.Ctx, r: dict, proc: dict) -> dict:
     title = f"{r['name']} ({proc['name']})"[:150]
-    brief = f"From the published process “{proc['name']}” version {proc.get('version')}, step {r['step']} {r['name']}: {r['why']}. Process map: {wb.route_of(ctx.st)}"
+    brief = f"From the published process \"{proc['name']}\" version {proc.get('version')}, step {r['step']} {r['name']}: {r['why']}. Process map: {wb.route_of(ctx.st)}"
     if r["route"] == "sdlc":
         try:
             from .. import sdlc
@@ -532,7 +532,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
     read = _w4.read_uploads(ctx, UPLOADS)
     if not read["files"]:
         raise wb.StepFailed("Upload the process documents to assess: BPMN or Visio exports, Word, PDF or slide procedures.")
-    return {"summary": f"{len(read['files'])} document(s) opened — read-only copies.", "counts": {"documents": len(read["files"])}, "data": _w4.files_table(read)}
+    return {"summary": f"{len(read['files'])} document(s) opened - read-only copies.", "counts": {"documents": len(read["files"])}, "data": _w4.files_table(read)}
 
 
 def _doc_meta(path: Path) -> dict:
@@ -572,9 +572,9 @@ def a_inventory(ctx: wb.Ctx) -> dict:
             rec["note"] = f"could not be read: {str(e)[:120]}"
         recs.append({**rec, **({"include": have[f["name"]]["include"]} if f["name"] in have else {})})
     (ctx.dir / "sources" / "maps.json").write_text(json.dumps(maps, indent=1), encoding="utf-8")
-    return {"summary": f"{len(recs)} document(s): {sum(1 for r in recs if r['format'] in ('BPMN', 'VSDX'))} map(s) and {sum(1 for r in recs if r.get('sop'))} written procedure(s) — untick what is out of scope.",
+    return {"summary": f"{len(recs)} document(s): {sum(1 for r in recs if r['format'] in ('BPMN', 'VSDX'))} map(s) and {sum(1 for r in recs if r.get('sop'))} written procedure(s) - untick what is out of scope.",
             "records": recs, "counts": {"documents": len(recs)}, "data": {"columns": ["Include", "Document", "Format", "Process", "Steps", "Owner", "Last changed"],
-                                                                          "rows": [["yes" if r["include"] else "no", r["file"], r["format"], r["process"], r["steps"], r["owner"] or "—", r["modified"] or "—"] for r in recs]}}
+                                                                          "rows": [["yes" if r["include"] else "no", r["file"], r["format"], r["process"], r["steps"], r["owner"] or "-", r["modified"] or "-"] for r in recs]}}
 
 
 INV_EDIT = wb.Edit(columns=[wb.Column("include", "Include", "bool"), wb.Column("file", "Document", readonly=True), wb.Column("format", "Format", readonly=True),
@@ -611,7 +611,7 @@ def a_health(ctx: wb.Ctx) -> dict:
             findings.append({"id": f"f-{_w4.slug(r['file'])}-owner", "document": r["file"], "issue": "no owner recorded", "severity": "low", "decision": "keep"})
     for k, fs in names.items():
         if len(fs) > 1:
-            findings.append({"id": f"f-dup-{_w4.slug(k)}", "document": ", ".join(fs), "issue": f"the same process in {len(fs)} documents — they may disagree", "severity": "medium", "decision": "keep"})
+            findings.append({"id": f"f-dup-{_w4.slug(k)}", "document": ", ".join(fs), "issue": f"the same process in {len(fs)} documents - they may disagree", "severity": "medium", "decision": "keep"})
     sops = [r for r in inv if r.get("sop")]
     for r in sops:
         if not any(_w4.name_key(m["name"]) == _w4.name_key(r["process"]) for m in maps.values()):
@@ -625,7 +625,7 @@ def a_health(ctx: wb.Ctx) -> dict:
 def a_findings(ctx: wb.Ctx) -> dict:
     have = {r["id"]: r for r in ctx.records(ctx.step_id)}
     recs = [{**f, **({"decision": have[f["id"]]["decision"]} if f["id"] in have else {})} for f in ctx.get("findings") or []]
-    return {"summary": f"{len(recs)} finding(s) — keep what matters, ignore what does not.", "records": recs, "counts": {"findings": len(recs)},
+    return {"summary": f"{len(recs)} finding(s) - keep what matters, ignore what does not.", "records": recs, "counts": {"findings": len(recs)},
             "data": {"columns": ["Document", "Issue", "Severity"], "rows": [[r["document"], r["issue"], r["severity"]] for r in recs]}}
 
 
@@ -648,7 +648,7 @@ def a_estimate(ctx: wb.Ctx) -> dict:
                       "effort": f"{mins / 60:.1f} h"})
     b = registry.brand()
     rate, cur = float(b.get("hourly_rate") or 0), b.get("currency") or ""
-    note = "Assumptions: " + "; ".join(f"{v} min to {k}" for k, v in MINUTES.items()) + "." + ("" if rate else " Set an hourly rate under Admin › Branding to see the cost.")
+    note = "Assumptions: " + "; ".join(f"{v} min to {k}" for k, v in MINUTES.items()) + "." + ("" if rate else " Set an hourly rate under Admin > Branding to see the cost.")
     ctx.output("assessment.md", "# Process documents: assessment\n\n" + "\n".join(f"- {i['title']}: {i['detail']} ({i['effort']})" for i in items) + f"\n\n{note}\n", label="Assessment (Markdown)")
     return {"summary": f"About {total:.1f} h of a person's time to bring {len(items)} process document(s) to the standard (BPMN + SOP)" + (f" ({cur}{rate * total:,.0f})" if rate else "") + ".",
             "counts": {"documents": len(items), "hours": round(total, 1)}, "data": {"items": items, "total": f"{total:.1f} h", "note": note}}
@@ -676,7 +676,7 @@ def c_request(ctx: wb.Ctx) -> dict:
             wb._mutate(ctx.id, lambda s: s.update(approver=acc[0]))
             _w4._share(ctx.id, acc[0], ctx.owner)
             ctx.note(f"The approver is {_w4.user_name(acc[0])}: Accountable for this process in its published RACI.", "ok")
-    return {"summary": f"Change to “{p['name']}” version {p['version']} ({sum(1 for s in p['map']['steps'] if s['type'] not in ('start', 'end'))} steps)" + (f"; flagged: {p['flagged']}" if p.get("flagged") else "") + ".",
+    return {"summary": f"Change to \"{p['name']}\" version {p['version']} ({sum(1 for s in p['map']['steps'] if s['type'] not in ('start', 'end'))} steps)" + (f"; flagged: {p['flagged']}" if p.get("flagged") else "") + ".",
             "data": {"text": ctx.brief or "(no request text)"}, "counts": {"version": p["version"]}}
 
 
@@ -699,7 +699,7 @@ def c_diagnose(ctx: wb.Ctx) -> dict:
 
 def c_fix(ctx: wb.Ctx) -> dict:
     recs = ctx.records(ctx.step_id) or to_records(ctx.get("published") or {"steps": []}, _w4.segments(ctx))
-    return {"summary": "Change the map in place — rename, add or remove steps, re-route a decision. The graph rules refuse a broken map; Relay proves it next.", "records": recs,
+    return {"summary": "Change the map in place - rename, add or remove steps, re-route a decision. The graph rules refuse a broken map; Relay proves it next.", "records": recs,
             "data": _process_view(from_records(recs, ctx.get("lanes") or [], ctx.get("name") or ctx.title)), "counts": {"steps": len(recs)}}
 
 
@@ -716,7 +716,7 @@ def c_prove(ctx: wb.Ctx) -> dict:
     for lg in _w4.eventlogs(ctx):
         conf = _w4.conformance(proc, lg)
         rows.append({"name": "conformance", "label": f"The changed map against {lg['file']}", "status": "pass" if conf["fitness"] >= 0.9 else "warn" if conf["fitness"] >= 0.7 else "fail",
-                     "measured": f"{conf['fitness']:.0%}", "expected": "90 % or more", "detail": ", ".join(f"{x['from']} → {x['to']} ({x['times']})" for x in conf["not_allowed"][:3]) or "every move allowed",
+                     "measured": f"{conf['fitness']:.0%}", "expected": "90 % or more", "detail": ", ".join(f"{x['from']} {x['to']} ({x['times']})" for x in conf["not_allowed"][:3]) or "every move allowed",
                      "evidence": ctx.evidence(f"Conformance of the change with {lg['file']}", conf, kind="proof", ok=conf["fitness"] >= 0.7)})
     ctx.put("map", proc)
     ctx.put("diff", diff)
@@ -727,7 +727,7 @@ def c_prove(ctx: wb.Ctx) -> dict:
 def c_approve(ctx: wb.Ctx) -> dict:
     d = ctx.get("diff") or {}
     return {"summary": f"Release the next version: {len(d.get('added') or [])} added, {len(d.get('changed') or [])} changed, {len(d.get('removed') or [])} removed step(s).",
-            "data": {"items": [{"title": k.title(), "detail": ", ".join(v) or "—"} for k, v in d.items()]}}
+            "data": {"items": [{"title": k.title(), "detail": ", ".join(v) or "-"} for k, v in d.items()]}}
 
 
 def c_learn(ctx: wb.Ctx) -> dict:
@@ -772,7 +772,7 @@ def _convert_after(ctx: wb.Ctx, res: dict) -> dict:
 
 
 def _validate_convert(recs: list[dict], ctx: wb.Ctx) -> list[str]:
-    return ["the map is empty — ask Relay to draft it, or add the steps"] if not recs else _validate_map(recs, ctx)
+    return ["the map is empty - ask Relay to draft it, or add the steps"] if not recs else _validate_map(recs, ctx)
 
 
 CONVERT_EDIT = wb.Edit(columns=MAP_COLUMNS, validate=_validate_convert, label="step")
@@ -795,7 +795,7 @@ def m_check(ctx: wb.Ctx) -> dict:
         rows.append({"name": "conformance", "label": "Against how the work is really done", "status": "skip", "detail": "no event log or recording to check against: the process owner checks it"})
     ctx.put("map", proc)
     bad = sum(1 for r in rows if r["status"] == "fail")
-    return {"summary": f"{len(rows)} check(s): " + (f"{bad} fail — send it back to Convert, or accept with the reasons" if bad else "the converted map holds up") + ".", "data": {"checks": rows}, "counts": {"failing": bad}}
+    return {"summary": f"{len(rows)} check(s): " + (f"{bad} fail - send it back to Convert, or accept with the reasons" if bad else "the converted map holds up") + ".", "data": {"checks": rows}, "counts": {"failing": bad}}
 
 
 def m_publish(ctx: wb.Ctx) -> dict:
@@ -807,24 +807,24 @@ def m_publish(ctx: wb.Ctx) -> dict:
 # ------------------------------------------------------------------ the module page
 
 def _cards(u: dict) -> list[dict]:
-    rows = [[p["name"], f"v{p['version']}", sum(1 for s in p["map"].get("steps") or [] if s["type"] not in ("start", "end")), len(p["map"].get("lanes") or []), ", ".join(p["systems"]) or "—",
+    rows = [[p["name"], f"v{p['version']}", sum(1 for s in p["map"].get("steps") or [] if s["type"] not in ("start", "end")), len(p["map"].get("lanes") or []), ", ".join(p["systems"]) or "-",
              "flagged for review" if p.get("flagged") else "current", f"#/m/{MODULE}/i/{p['item']}" if p.get("item") else ""] for p in processes(u)]
     return [{"title": "Published processes", "columns": ["Process", "Version", "Steps", "Lanes", "Systems", "State", "Work item"], "rows": rows,
              "empty": "No process is published yet: a Develop or Migrate item's Publish step records one."}]
 
 
-GUIDE = """# Business process documents — the work item
+GUIDE = """# Business process documents - the work item
 
 This folder is one work item of Relay's Business process documents module. The agent drafts the map; the process
 owner corrects it before anything proceeds; the app writes the BPMN 2.0 and the SOP from what the person confirmed.
 
 - `data/`: interviews, transcripts (.vtt), screen recordings (read their frames with `genbi read data/<file>`), event
   logs (CSV, Excel, XES), Visio and BPMN exports, Word or slide procedures.
-- `sources/segments.json`: every passage with its id — the things a step may cite; a recording is `<file>#media`
+- `sources/segments.json`: every passage with its id - the things a step may cite; a recording is `<file>#media`
   (say the moment with `at: 00:01:20`).
-- `sources/mined.json` (when a log was uploaded): the activities, how often and in what order — every frequent one
+- `sources/mined.json` (when a log was uploaded): the activities, how often and in what order - every frequent one
   must be a step on the map, under the log's own name.
-- `process.yaml`: what you write — process, lanes, steps (id, name, type, lane, system, screen, fields, rule,
+- `process.yaml`: what you write - process, lanes, steps (id, name, type, lane, system, screen, fields, rule,
   instructions, next, sources).
 
 Never invent a screen, a field, a rule or a step; say what you assumed."""
@@ -838,24 +838,24 @@ wb.register(wb.Pack(
     cards=_cards,
     work={
         "assess": wb.Work(title="See which process documents you have and what it takes to bring them to the standard", steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Reader", text="Each document is opened — BPMN and Visio exports, Word, PDF and slide procedures — read-only"),
-            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", edit=INV_EDIT, text="Every process found, in each tool's own terms — steps, lanes, owner, last changed; you untick what is out of scope"),
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Reader", text="Each document is opened - BPMN and Visio exports, Word, PDF and slide procedures - read-only"),
+            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", edit=INV_EDIT, text="Every process found, in each tool's own terms - steps, lanes, owner, last changed; you untick what is out of scope"),
             "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Checker", text="Each map validated (BPMN 2.0, connected, decisions labelled), stale and ownerless documents, duplicates, procedures with no map"),
-            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="The findings — you keep or ignore each one"),
+            "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="The findings - you keep or ignore each one"),
             "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="The time to bring each document to the standard (BPMN + SOP), with the assumptions")}),
         "develop": wb.Work(title="From interviews, a screen recording or system logs to a BPMN map and a step-by-step SOP", platforms=("files", "filing"), schedule_from="Keep current", steps={
-            "Capture": wb.Step(kind="platform", run=d_capture, agent="Reader", text="Interviews, a screen recording of someone doing the task, or system logs — passages read, recordings noted for the agent, logs mined (rules first)"),
+            "Capture": wb.Step(kind="platform", run=d_capture, agent="Reader", text="Interviews, a screen recording of someone doing the task, or system logs - passages read, recordings noted for the agent, logs mined (rules first)"),
             "Map": wb.Step(kind="agent", prompt=_map_prompt, check=_map_check, after=_map_after, view="process", agent="Process mapper", edit=MAP_EDIT, turns=60,
-                           text="The agent maps it — steps, lanes, decisions, screens, fields and rules, each citing its passage or the moment of the recording; BPMN 2.0 built from it"),
-            "Correct": wb.Step(kind="deterministic", run=d_correct, agent="SOP writer", edit=SOP_EDIT, text="The step-by-step SOP from the corrected map, each line next to the recording or passage it came from — the process owner corrects it"),
-            "Publish": wb.Step(kind="deterministic", run=d_publish, view="plan", agent="Publisher", text="The final version — BPMN 2.0 and the Word SOP in your house style — kept with every earlier version"),
+                           text="The agent maps it - steps, lanes, decisions, screens, fields and rules, each citing its passage or the moment of the recording; BPMN 2.0 built from it"),
+            "Correct": wb.Step(kind="deterministic", run=d_correct, agent="SOP writer", edit=SOP_EDIT, text="The step-by-step SOP from the corrected map, each line next to the recording or passage it came from - the process owner corrects it"),
+            "Publish": wb.Step(kind="deterministic", run=d_publish, view="plan", agent="Publisher", text="The final version - BPMN 2.0 and the Word SOP in your house style - kept with every earlier version"),
             "Automate": wb.Step(kind="deterministic", run=d_automate, agent="Automation scout", edit=AUTO_EDIT, confirm="the steps worth automating, and where the version is filed",
                                 confirm_if=lambda ctx, out: bool(out.get("records")) or bool(_w4.push_of(ctx.id, "automate")),
                                 text="Filed to Confluence after its own approval; the steps worth automating go to Workflows, RPA or AI SDLC in one click"),
             "Keep current": wb.Step(kind="deterministic", run=d_keep, agent="Watcher", confirm="the document, flagged because something it describes changed",
                                     confirm_if=lambda ctx, out: bool(ctx.get("flags")), text="When a system, bot or role it describes changes, the document is flagged for review")},
             fields=[wb.Field("schedule", "Check it is still current", "cadence", help="How often Relay checks the systems and roles the process describes (optional).")]),
-        "change": wb.Work(title="Change a published process — what it touches, the map changed in place, proven, released", needs_source=False, steps={
+        "change": wb.Work(title="Change a published process - what it touches, the map changed in place, proven, released", needs_source=False, steps={
             "Request": wb.Step(kind="deterministic", run=c_request, view="text", agent="Reader", text="The change in plain words, the published process, any new recording or log"),
             "Diagnose": wb.Step(kind="proof", run=c_diagnose, view="gates", agent="Checker", text="The steps the request touches, and today's map against a new log"),
             "Fix": wb.Step(kind="person", run=c_fix, view="process", edit=MAP_EDIT, text="You change the map in place; the graph rules refuse a broken one"),
@@ -866,7 +866,7 @@ wb.register(wb.Pack(
         "migrate": wb.Work(title="Visio, Word or slide-based process documents to BPMN and the standard SOP", platforms=("files", "filing"), steps={
             "Collect": wb.Step(kind="platform", run=d_capture, agent="Reader", text="Bring Visio, Word or slide-based process documents (and a log or recording to check against)"),
             "Convert": wb.Step(kind="deterministic", run=m_convert, view="process", agent="Converter", edit=CONVERT_EDIT, confirm="the BPMN map converted from the old document, step by step",
-                               text="Visio and BPMN exports converted by rules; Word and slides drafted by the agent when you ask — you correct the map",
+                               text="Visio and BPMN exports converted by rules; Word and slides drafted by the agent when you ask - you correct the map",
                                actions={"draft": wb.Action(label="Ask Relay to draft the map from the documents", kind="agent", prompt=_map_prompt, check=_map_check, after=_convert_after,
                                                            agent="Process mapper", turns=60, help="The agent reads the Word or slide procedure and writes the map, each step citing its passage.")}),
             "Check": wb.Step(kind="proof", run=m_check, view="gates", agent="Checker", back_to="convert", confirm="the converted map against how the work is really done",

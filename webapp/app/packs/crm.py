@@ -1,4 +1,4 @@
-"""CRM & sales (registry id `crm`) on the workbench — Salesforce and HubSpot through their APIs; Dynamics 365 CE, Zoho CRM
+"""CRM & sales (registry id `crm`) on the workbench - Salesforce and HubSpot through their APIs; Dynamics 365 CE, Zoho CRM
 and Freshsales through their exports.
 
 Assess   accounts / companies, contacts and opportunities in each CRM's own terms, the batch jobs and imports with
@@ -9,8 +9,8 @@ Develop  new accounts from an upload into the CRM: mapping suggested and correct
          rules and duplicates (Salesforce's duplicate rule would refuse them anyway), a named approver, one approved
          write, read back and reconciled.
 Change   a failing job diagnosed from its own log, a duplicate merged (a step for a person in the CRM's duplicate
-         management — Relay has no merge API to call) or an account corrected, released with approval.
-Migrate  accounts between CRMs (HubSpot → Salesforce …): keep / merge / retire, crosswalk, counts, fingerprints and every
+         management - Relay has no merge API to call) or an account corrected, released with approval.
+Migrate  accounts between CRMs (HubSpot -> Salesforce ...): keep / merge / retire, crosswalk, counts, fingerprints and every
          record compared before and after the approved load.
 Run      the batch jobs and imports on a schedule; breaks go to a Change item, Self-healing or a ticket after approval.
 """
@@ -56,7 +56,7 @@ SIGNATURES = [
     w3.Signature(r"UNABLE_TO_LOCK_ROW", "the ERP sync batch updates the same accounts as another job at the same time, so Salesforce cannot lock the rows",
                  "Move the sync to a slot nothing else locks the accounts in, or lower its batch scope and order the records by parent account; then let it run again.", route="change"),
     w3.Signature(r"INVALID_EMAIL", "the ERP sends customer e-mails HubSpot refuses (a double dot in the domain)",
-                 "Correct the e-mails in the ERP's customer master — the import takes them the next night.", route="ticket"),
+                 "Correct the e-mails in the ERP's customer master - the import takes them the next night.", route="ticket"),
     w3.Signature(r"DUPLICATES_DETECTED", "the account already exists: Salesforce's duplicate rule refuses a second one", "Use the existing account, or merge the two first.", route="change"),
     w3.Signature(r"REQUEST_LIMIT_EXCEEDED", "the org has used its daily API calls", "Spread the integration's calls over the day or raise the limit with Salesforce.", route="ticket"),
 ]
@@ -79,21 +79,21 @@ def _kinds() -> set:
     return {k for p in PLATFORMS.values() for k in p.kinds}
 
 
-GUIDE = """# CRM & sales — the work item
+GUIDE = """# CRM & sales - the work item
 
 Relay's CRM module reads accounts, contacts, opportunities and the CRM's job history, and moves records between CRMs
 with a record-by-record reconciliation. Rules do the reading, mapping and checks; the agent is asked only to read a job
-log no rule recognises (diagnose.json → diagnosis.yaml, as WORK.md of the ERP module describes). Never invent a record,
+log no rule recognises (diagnose.json -> diagnosis.yaml, as WORK.md of the ERP module describes). Never invent a record,
 a field or a number."""
 
 w3.hook(MODULE)
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE, platforms=PLATFORMS,
-    lineage="each CRM and object read (system → entity), an interface as a flow that writes into the CRM, a migration as feeds edges from the source CRM's objects to the target's",
+    lineage="each CRM and object read (system -> entity), an interface as a flow that writes into the CRM, a migration as feeds edges from the source CRM's objects to the target's",
     schemas={"inventory": ["include", "system", "object", "records"], "finding": ["decision", "severity", "system", "what"]},
     work={
-        "assess": w3.assess_work(SPEC, "See what the CRM holds — duplicates, stale pipeline, failing syncs"),
+        "assess": w3.assess_work(SPEC, "See what the CRM holds - duplicates, stale pipeline, failing syncs"),
         "develop": w3.develop_work(SPEC, "Bring accounts into the CRM: mapping agreed, a dry run, one approved write, read back"),
         "change": w3.change_work(SPEC, "Fix a failing sync or a duplicate account, diagnosed from the CRM's own log, released with approval"),
         "migrate": w3.migrate_work(SPEC, "Move accounts between CRMs, reconciled record by record", _kinds),

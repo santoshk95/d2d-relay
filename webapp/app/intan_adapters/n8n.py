@@ -1,4 +1,4 @@
-"""n8n — the public API (…/api/v1, X-N8N-API-KEY): workflows with their nodes (the trigger gives the schedule, the
+"""n8n - the public API (.../api/v1, X-N8N-API-KEY): workflows with their nodes (the trigger gives the schedule, the
 first data node the source system, the last node the target), executions (runs), credentials by name from the
 nodes that use them. Tags may carry "owner:<team>"."""
 from __future__ import annotations

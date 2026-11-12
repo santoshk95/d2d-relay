@@ -13,7 +13,7 @@ VAR_NAME = re.compile(r"\bVAR\s+([A-Za-z_][A-Za-z0-9_]*)\s*=", re.I)
 
 
 def reserved_vars(expr: str) -> list[str]:
-    """Variables named like a DAX function or keyword (ignoring case) — Power BI rejects the measure."""
+    """Variables named like a DAX function or keyword (ignoring case) - Power BI rejects the measure."""
     body = DAX_ATOMS.sub(" ", str(expr))
     return sorted({m.group(1) for m in VAR_NAME.finditer(body) if m.group(1).upper() in RESERVED})
 # strings, 'quoted names', [references] and comments: removed before checking the DAX structure
@@ -45,7 +45,7 @@ def dax_lint(expr: str) -> list[str]:
         out.append("ends with an operator or comma")
     for name in reserved_vars(expr):
         out.append(f"variable '{name}' has the name of a DAX function or keyword ({name.upper()}); Power BI rejects "
-                   f"the measure and every measure that uses it — rename the variable (e.g. '{name}Value' is fine)")
+                   f"the measure and every measure that uses it - rename the variable (e.g. '{name}Value' is fine)")
     return out
 
 
@@ -96,7 +96,7 @@ def custom_visual_errors(items) -> list[str]:
         existing = cat.get(name.lower())
         if existing and existing.get("origin") != "project":
             where = "in the visual library" if existing.get("origin") == "library" else "in the catalog"
-            errors.append(f"custom_visuals[{i}]: {name} already exists {where} — use it instead of proposing it")
+            errors.append(f"custom_visuals[{i}]: {name} already exists {where} - use it instead of proposing it")
         if name.lower() in seen:
             errors.append(f"custom_visuals: {name} is proposed twice")
         seen.add(name.lower())
@@ -107,7 +107,7 @@ def custom_visual_errors(items) -> list[str]:
 
 
 def _unquoted(value) -> str:
-    return (f"format must be a quoted string — YAML read {value!r} as a number, which loses the format "
+    return (f"format must be a quoted string - YAML read {value!r} as a number, which loses the format "
             f"(write it in quotes, e.g. format: \"0.0\")")
 
 
@@ -154,7 +154,7 @@ def visuals_mode_errors(d: dict, mode: str) -> list[str]:
             if t in NATIVE or stock.is_stock(t):
                 continue
             out.append(f"{page['name']} / {v['id']}: {t} is a custom visual, but this report uses Power BI's built-in visuals only "
-                       f"(request.md, Visuals) — use {BUILTIN_FOR.get(t, 'a pbi.<visual> type')} (`genbi catalog pbi`)")
+                       f"(request.md, Visuals) - use {BUILTIN_FOR.get(t, 'a pbi.<visual> type')} (`genbi catalog pbi`)")
     return out
 
 

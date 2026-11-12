@@ -1,5 +1,5 @@
 """Shared helpers of the consulting packs (wave W6: delivery, assess, strategy, selection, managed, finops, enable,
-architecture) — not a pack itself (the loader skips files starting with "_"; the packs import it).
+architecture) - not a pack itself (the loader skips files starting with "_"; the packs import it).
 
 Nothing invented (build-plan §2 rule 7): every number a consulting deliverable shows comes from a record the platform
 holds (work items, checkpoints, Team & agents, Migrate BI, AI SDLC, the service desk, usage, the audit log, rate cards,
@@ -36,7 +36,7 @@ DAY = 86400.0
 def num(v, dp: int | None = None) -> str:
     """A number as a reader sees it (thousands separated, Western grouping so the docs checks read it back)."""
     if v is None:
-        return "—"
+        return "-"
     v = float(v)
     if dp is None:
         dp = 0 if abs(v - round(v)) < 1e-9 else 1 if abs(v * 10 - round(v * 10)) < 1e-9 else 2
@@ -60,7 +60,7 @@ def plural(n, word: str, many: str | None = None) -> str:
 
 
 def when(t: float | None, fmt: str = "%d %b %Y") -> str:
-    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime(fmt) if t else "—"
+    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime(fmt) if t else "-"
 
 
 def iso_day(t: float | None) -> str:
@@ -165,9 +165,9 @@ def work_items(u: dict, exclude: str | None = None, limit: int = 2000) -> list[d
                     "work": r["work"], "work_name": wb.WORK_NAME.get(r["work"], r["work"]), "title": r["title"], "status": status,
                     "status_label": wb.STATUS_LABEL.get(status, status), "done": status in ("done", "scheduled", "closed"),
                     "attention": status in ("error", "attention"), "waiting": len(waits), "waiting_since": min((c["created"] for c in waits), default=None),
-                    "waiting_for": sorted({who.get(c["assignee_id"], "—") for c in waits if c.get("assignee_id")}),
+                    "waiting_for": sorted({who.get(c["assignee_id"], "-") for c in waits if c.get("assignee_id")}),
                     "steps_done": sum(1 for s in steps if s["status"] in ("done", "skipped")), "steps": len(steps),
-                    "step": (cur or {}).get("name"), "sent_back": sent_back, "owner": who.get(r["owner_id"], "—"), "owner_id": r["owner_id"],
+                    "step": (cur or {}).get("name"), "sent_back": sent_back, "owner": who.get(r["owner_id"], "-"), "owner_id": r["owner_id"],
                     "parent": r.get("parent"), "created": r["created"], "updated": r["updated"],
                     "proof_pass": sum(1 for g in gates if g.get("status") == "pass"), "proof_fail": sum(1 for g in gates if g.get("status") in ("fail", "error")),
                     "link": f"#/m/{r['module']}/i/{r['id']}"})
@@ -192,7 +192,7 @@ def migrations(u: dict) -> list[dict]:
                     "status": r["status"], "status_label": r["status"], "done": r["status"] in MIGBI_DONE, "attention": r["status"] == "error",
                     "objects": r.get("objects") or 0, "reports": len(reps), "proven": sum(1 for x in reps if x["proven"]),
                     "waves": len({x["wave"] for x in reps if x["wave"] is not None}), "waiting": len(waits),
-                    "waiting_since": min((c["created"] for c in waits), default=None), "owner": who.get(r.get("created_by"), "—"),
+                    "waiting_since": min((c["created"] for c in waits), default=None), "owner": who.get(r.get("created_by"), "-"),
                     "created": r["created"], "updated": r.get("updated") or r["created"], "link": f"#/migrate-bi/{r['id']}"})
     return out
 
@@ -211,7 +211,7 @@ def change_requests(u: dict) -> list[dict]:
         out.append({"ref": f"sdlc:{r['id']}", "id": r["id"], "kind": "Change request", "module": "sdlc", "module_name": "AI SDLC", "title": r["title"],
                     "status": r["status"], "status_label": r["status"].replace("_", " "), "done": r["status"] in SDLC_DONE or bool(r.get("closed")),
                     "attention": r["status"] in ("error", "blocked"), "stage": r.get("stage"), "waiting": len(waits),
-                    "waiting_since": min((c["created"] for c in waits), default=None), "owner": who.get(r.get("owner_id"), "—"),
+                    "waiting_since": min((c["created"] for c in waits), default=None), "owner": who.get(r.get("owner_id"), "-"),
                     "created": r["created"], "updated": r["updated"], "link": f"#/sdlc/{r['id']}"})
     return out
 
@@ -233,7 +233,7 @@ def studio_items(u: dict) -> list[dict]:
                     "title": st.get("name") or p["id"], "status": st.get("status"), "status_label": str(st.get("status") or "").replace("_", " "),
                     "done": st.get("status") == "final", "attention": st.get("status") == "error",
                     "waiting": 1 if st.get("status") in ("awaiting_outline", "awaiting_review") else 0, "waiting_since": st.get("updated") if st.get("status") in ("awaiting_outline", "awaiting_review") else None,
-                    "owner": names().get((db.project(p["id"]) or {}).get("owner_id"), "—"), "created": st.get("created"), "updated": st.get("updated"), "link": f"#/studio/{p['id']}"})
+                    "owner": names().get((db.project(p["id"]) or {}).get("owner_id"), "-"), "created": st.get("created"), "updated": st.get("updated"), "link": f"#/studio/{p['id']}"})
     return out
 
 
@@ -248,7 +248,7 @@ def rfp_items(u: dict) -> list[dict]:
         out.append({"ref": f"rfp:{p['id']}", "id": p["id"], "kind": "RFP response", "module": "rfp", "module_name": _module_name("rfp"), "title": st.get("name") or p["id"],
                     "status": s, "status_label": str(s or "").replace("_", " "), "done": s in ("submitted", "won", "lost", "withdrawn", "no_go"),
                     "attention": s == "error", "waiting": 1 if str(s or "").startswith("awaiting") else 0, "waiting_since": st.get("updated") if str(s or "").startswith("awaiting") else None,
-                    "owner": names().get((db.project(p["id"]) or {}).get("owner_id"), "—"), "created": st.get("created"), "updated": st.get("updated"), "link": f"#/rfp/{p['id']}"})
+                    "owner": names().get((db.project(p["id"]) or {}).get("owner_id"), "-"), "created": st.get("created"), "updated": st.get("updated"), "link": f"#/rfp/{p['id']}"})
     return out
 
 
@@ -291,7 +291,7 @@ def team_value(u: dict, period: str = "7d") -> dict:
 # ------------------------------------------------------------------ sources/: the records a deliverable quotes
 
 def put(ctx: wb.Ctx, name: str, data) -> str:
-    """Write sources/<name>.json in the item's folder (what `record:<name>#…` resolves to); returns the reference."""
+    """Write sources/<name>.json in the item's folder (what `record:<name>#...` resolves to); returns the reference."""
     d = ctx.dir / "sources"
     d.mkdir(parents=True, exist_ok=True)
     (d / f"{name}.json").write_text(json.dumps(data, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
@@ -313,7 +313,7 @@ def resolver(ctx: wb.Ctx):
 
 @wb.proof("sourced", "Every number has a source")
 def _p_sourced(ctx: wb.Ctx, figures: list[dict], **_):
-    """figures: [{"label", "value", "source"}] — each source must resolve inside the item's folder and, when it names a
+    """figures: [{"label", "value", "source"}] - each source must resolve inside the item's folder and, when it names a
     number, agree with the value (half a unit or 0.5 %, the docs engine's tolerance)."""
     res = resolver(ctx)
     rows, bad = [], 0
@@ -342,13 +342,13 @@ def template_options(u=None) -> list[tuple[str, str]]:
     tpl = registry.templates()
     out = [("relay", "The RELAY template")]
     if tpl.get("pptx") or tpl.get("docx"):
-        out.append(("tenant", "This workspace's template (Admin › Branding)"))
+        out.append(("tenant", "This workspace's template (Admin > Branding)"))
     return out
 
 
 def deliver(ctx: wb.Ctx, name: str, spec: dict, label: str) -> dict:
     """Build a deck or a document from `spec` (deck.yaml / doc.yaml as a dict, every figure sourced) with the P11
-    engine — the build and checks of `genbi deck|doc build|check` — into deliverables/<name>/. The .pptx / .docx, the
+    engine - the build and checks of `genbi deck|doc build|check` - into deliverables/<name>/. The .pptx / .docx, the
     HTML twin and a PDF (when the agent's Chromium can draw it) go to the outputs; the check report is evidence."""
     import yaml
     from genbi_kit.docs import build as docs_build
@@ -381,7 +381,7 @@ def deliver(ctx: wb.Ctx, name: str, spec: dict, label: str) -> dict:
     made = info.get("deck") or info.get("doc") or {}
     gate = {"name": f"docs:{name}", "label": f"{label}: the document engine's checks", "status": "pass" if rep["ok"] else "fail",
             "measured": f"{rep['counts']['fails']} problem(s), {rep['counts']['warnings']} warning(s)", "expected": "no problems",
-            "detail": ("; ".join(probs[:4]) if probs else f"{rep['counts']['figures']} figure(s), {rep['counts']['refs']} source reference(s) — sources resolve, numbers agree, "
+            "detail": ("; ".join(probs[:4]) if probs else f"{rep['counts']['figures']} figure(s), {rep['counts']['refs']} source reference(s) - sources resolve, numbers agree, "
                        "no placeholder text, alt text, contrast, house style, nothing from outside this workspace's folder"),
             "evidence": ev, "parts": [{"label": c["label"], "status": c["status"], "detail": c["summary"]} for c in rep["checks"]]}
     return {"ok": rep["ok"], "gate": gate, "files": files, "report": rep, "kind": rep.get("kind"),
@@ -395,7 +395,7 @@ def check_spec(ctx: wb.Ctx, name: str) -> dict:
 
 
 def table(columns: list[str], rows: list[list], source: str, caption: str) -> dict:
-    return {"columns": columns, "rows": [[("—" if c is None or c == "" else str(c)) for c in r] for r in rows], "source": source, "caption": caption}
+    return {"columns": columns, "rows": [[("-" if c is None or c == "" else str(c)) for c in r] for r in rows], "source": source, "caption": caption}
 
 
 def chunks(rows: list, n: int = 14) -> list[list]:
@@ -404,7 +404,7 @@ def chunks(rows: list, n: int = 14) -> list[list]:
 
 def brand_line() -> str:
     b = registry.brand()
-    return b["full"] + (f" · {b['powered']}" if b.get("partner") else "")
+    return b["full"] + (f" - {b['powered']}" if b.get("partner") else "")
 
 
 # ------------------------------------------------------------------ records a person keeps between steps

@@ -1,4 +1,4 @@
-"""Master data — the rules (no agent): the Reltio adapter, reading masters (Reltio entities, spreadsheet and CSV masters)
+"""Master data - the rules (no agent): the Reltio adapter, reading masters (Reltio entities, spreadsheet and CSV masters)
 into one neutral record, the match rules with the false-friend guard, survivorship, and the gaps a golden record must
 not have. The mock lab's Reltio simulator and the supplier master workbook stand in (tests/mocklab/sims/mdm.py, excel.py).
 
@@ -41,7 +41,7 @@ def norm(name: str) -> str:
 
 
 def similar(a: str, b: str) -> float:
-    """How alike two names are (0 … 1); names that differ in a number (Store 13, Store 14) are two organisations."""
+    """How alike two names are (0 ... 1); names that differ in a number (Store 13, Store 14) are two organisations."""
     if set(re.findall(r"\d+", a or "")) != set(re.findall(r"\d+", b or "")):
         return 0.0
     return difflib.SequenceMatcher(None, norm(a), norm(b)).ratio()
@@ -54,7 +54,7 @@ def domain(email: str | None) -> str:
 # ================================================================== Reltio
 
 class Reltio(Kind):
-    """Reltio Connected Data Platform — the tenant REST API: entities (filter, select, max / offset), potential matches,
+    """Reltio Connected Data Platform - the tenant REST API: entities (filter, select, max / offset), potential matches,
     merge (_sameAs), not a match (_notMatch), create, the activity log; OAuth 2.0 client credentials."""
     kind, label, category = "reltio", "Reltio", "mdm"
     signin = ["service_account"]
@@ -169,7 +169,7 @@ def _rows_to_records(name: str, sheet: str, rows: list[list], kind: str) -> list
         rec = {f: (str(r[i]).strip() if i < len(r) and r[i] not in (None, "") else None) for i, f in m.items()}
         if not rec.get("name"):
             continue
-        rec.update(id=f"{name}!{sheet}!{n}", source=f"{name} › {sheet}", type=kind, sources=[f"{Path(name).stem}:{rec.get('code') or n}"], entity=None, row=n)
+        rec.update(id=f"{name}!{sheet}!{n}", source=f"{name} > {sheet}", type=kind, sources=[f"{Path(name).stem}:{rec.get('code') or n}"], entity=None, row=n)
         out.append(rec)
     return out
 
@@ -245,7 +245,7 @@ def false_friend(a: dict, b: dict) -> bool:
 
 
 def pairs(records: list[dict], rules: list[dict] | None = None, refused: set | None = None) -> list[dict]:
-    """Candidate duplicates: [{a, b, rule, score, action, why}] — blocking on tax id, normalised name and the name's
+    """Candidate duplicates: [{a, b, rule, score, action, why}] - blocking on tax id, normalised name and the name's
     first word with the country; the first enabled rule that holds wins; false friends become 'not a match'."""
     rules = [r for r in (rules or DEFAULT_RULES) if r.get("enabled", True)]
     refused = refused or set()

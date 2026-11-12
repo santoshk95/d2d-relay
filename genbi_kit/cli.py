@@ -1,4 +1,4 @@
-"""`genbi` — the command line the Claude agent uses inside a project folder.
+"""`genbi` - the command line the Claude agent uses inside a project folder.
 
     genbi profile                      profile data/*.csv -> profile.md (tables, keys, relationships)
     genbi datagen [--check]            demo data: the tables of datagen.yaml -> data/*.csv (datagen.py)
@@ -88,9 +88,9 @@ def cmd_validate(args):
             print(f"  {i}. {e}")
         sys.exit(1)
     if d is not None and not d["pages"]:
-        print(f"{summary}\nModel OK — no pages yet; add the pages of the plan next")
+        print(f"{summary}\nModel OK - no pages yet; add the pages of the plan next")
         return
-    print(f"{summary}\nOK — no problems found")
+    print(f"{summary}\nOK - no problems found")
 
 
 def cmd_prototype(args):
@@ -145,18 +145,18 @@ def cmd_daxcheck(args):
         shown = v["error"] or (v["text"] if v.get("text") not in (None, "") else v["value"])
         print(f"  [{v['name']}] = {shown}")
     if len(s["values"]) > args.show:
-        print(f"  … {len(s['values']) - args.show} more measures (--show N to list more)")
+        print(f"  ... {len(s['values']) - args.show} more measures (--show N to list more)")
     if s["problems"]:
-        print(f"{len(s['problems'])} problem(s) — Power BI would show these as broken fields or visuals:")
+        print(f"{len(s['problems'])} problem(s) - Power BI would show these as broken fields or visuals:")
         for p in s["problems"]:
             print(f"  - {p}")
     if s["differences"]:
-        print(f"{len(s['differences'])} difference(s) between Power BI's DAX and the prototype SQL — make them agree:")
+        print(f"{len(s['differences'])} difference(s) between Power BI's DAX and the prototype SQL - make them agree:")
         for p in s["differences"]:
             print(f"  - {p}")
     if s["problems"] or s["differences"]:
         sys.exit(1)
-    print("OK — Power BI's engine accepts every measure and visual query"
+    print("OK - Power BI's engine accepts every measure and visual query"
           + (", and every visual's values and title match the prototype" if s["compared"] else ""))
 
 
@@ -165,7 +165,7 @@ def cmd_datagen(args):
     from . import datagen
     path = CWD / args.file
     if not path.exists():
-        sys.exit(f"{args.file} not found — write the recipe first (CLAUDE.md, Demo data)")
+        sys.exit(f"{args.file} not found - write the recipe first (CLAUDE.md, Demo data)")
     try:
         recipe = datagen.load(path)
         problems, plan = datagen.check(recipe, CWD / "data")
@@ -183,7 +183,7 @@ def cmd_datagen(args):
     print(f"wrote {len(s['tables'])} tables, {s['rows']:,} rows in {s['seconds']} s "
           f"(seed {s['seed']}, period {s['period'][0]} to {s['period'][1]}):")
     for t in s["tables"]:
-        print(f"  data/{t['file']}: {t['rows']:,} rows · {', '.join(t['columns'])}" + ("" if t["generated"] else " (uploaded)"))
+        print(f"  data/{t['file']}: {t['rows']:,} rows - {', '.join(t['columns'])}" + ("" if t["generated"] else " (uploaded)"))
     for w in s["warnings"]:
         print(f"  warning: {w}")
     profile(CWD)
@@ -197,7 +197,7 @@ def cmd_gates(args):
     raw = _load(args.file)
     errors, d = checks.definition_errors(raw, CWD, check_sql=False)
     if not errors and not d["pages"]:
-        errors = ["no pages yet — add the pages of the plan"]
+        errors = ["no pages yet - add the pages of the plan"]
     found = [gates.gate("definition", errors, ok="valid")]
     if not errors:
         con = data_mod.connect(CWD, d)
@@ -220,16 +220,16 @@ def cmd_gates(args):
                      else display.check(CWD / "prototype" / "index.html"))
     found = gates.ordered(found)
     for g in found:
-        print(f"[{gates.MARK[g['status']]}] {g['name']} — {g['summary']}")
+        print(f"[{gates.MARK[g['status']]}] {g['name']} - {g['summary']}")
         for i in g["items"]:
             if i["level"] != "info" or args.all:
                 print(f"    {i['level']}: {i['text']}")
     bad = gates.failed(found)
     if bad:
-        sys.exit(f"\n{len(bad)} gate(s) failed: {', '.join(g['name'] for g in bad)} — fix every 'fail' item; the app "
+        sys.exit(f"\n{len(bad)} gate(s) failed: {', '.join(g['name'] for g in bad)} - fix every 'fail' item; the app "
                  f"blocks approval and publishing until they pass")
     warns = sum(g["status"] == "warn" for g in found)
-    print("\nOK — every gate passes" + (f" ({warns} with warnings: fix those that matter to the user)" if warns else ""))
+    print("\nOK - every gate passes" + (f" ({warns} with warnings: fix those that matter to the user)" if warns else ""))
 
 
 def _kind(t) -> str:
@@ -250,16 +250,16 @@ def cmd_catalog(args):
             print(f"  {group}:")
             for name, v in items:
                 wells = ", ".join(f"{r}{'*' if any(r in g for g in v['required']) else ''} ({i['displayName']})" for r, i in v["role_info"].items())
-                print(f"    {name}: {v['displayName']} — {wells}")
+                print(f"    {name}: {v['displayName']} - {wells}")
         print("\n(* = needed by at least one field combination; wells also take the aliases `genbi catalog pbi.<visual>` lists)")
         return
     if not args.types:
         print("Relay visuals (draw their own card; insight titles via a `title` well):")
         for name, v in cat.items():
             if v.get("family") not in ("atlas", "powerbi"):
-                print(f"  {name}: {v['displayName']} — fields: {', '.join(v['roles'])}")
+                print(f"  {name}: {v['displayName']} - fields: {', '.join(v['roles'])}")
         print("\nPower BI's own visuals: `genbi catalog pbi` lists them (pbi.cardVisual, pbi.clusteredColumnChart, pbi.lineChart, "
-              "pbi.donutChart, pbi.pivotTable, … — 31 types)")
+              "pbi.donutChart, pbi.pivotTable, ... - 31 types)")
         fields = lambda v: ", ".join(f"{r}{'*' if any(r in g for g in v['required']) else ''}" for r in v["roles"])
         print("\nVisual Atlas visuals (type + chart; Power BI container with title/subtitle; see `genbi catalog <type>`):")
         for name, v in cat.items():
@@ -271,7 +271,7 @@ def cmd_catalog(args):
             if own:
                 print(f"\n{head}")
                 for name, v in own.items():
-                    print(f"  {name}: {v['displayName']} — {v['description']}\n      fields: {fields(v)}"
+                    print(f"  {name}: {v['displayName']} - {v['description']}\n      fields: {fields(v)}"
                           + (f"; chart = {' | '.join(v['chart_types'])}" if v["chart_types"] else ""))
         print("\n(* = needed by at least one field combination)")
         return
@@ -282,7 +282,7 @@ def cmd_catalog(args):
         if v.get("family") == "powerbi":
             print("\n".join(stock.describe(v)))
             continue
-        print(f"{name}: {v['displayName']}" + (f" — {v['description']}" if v.get("description") else ""))
+        print(f"{name}: {v['displayName']}" + (f" - {v['description']}" if v.get("description") else ""))
         if v.get("chart_types"):
             print(f"  chart: {' | '.join(v['chart_types'])}")
         print("  fields:")
@@ -345,7 +345,7 @@ def _v_build(vf, args):
 def _v_test(vf, args):
     res = vf.test(CWD, args.name)
     print(f"tested {args.name} v{res['version']} in headless Chromium: {len(res['cases'])} case(s): {', '.join(res['cases'])}")
-    print(f"screenshot: {res['screenshot']} — Read it and check the design: labels readable and not overlapping, "
+    print(f"screenshot: {res['screenshot']} - Read it and check the design: labels readable and not overlapping, "
           "nothing cut off, colors from the palette, legend and axes right")
     for n in res["notes"]:
         print(f"  note: {n}")
@@ -354,7 +354,7 @@ def _v_test(vf, args):
         for p in res["problems"]:
             print(f"  - {p}")
         sys.exit(1)
-    print("OK — no problems found")
+    print("OK - no problems found")
 
 
 def _v_list(vf, args):
@@ -363,12 +363,12 @@ def _v_list(vf, args):
     for v in mine:
         state = ("not built" if not v["built"] else "changed since the last build: rebuild" if v["stale"]
                  else "tested OK" if v["tested"] else "built, not tested on this build")
-        print(f"  {v['name']}: {v['title']} v{v['version']} — {state}")
+        print(f"  {v['name']}: {v['title']} v{v['version']} - {state}")
     lib = vf.library()
     print("\nVisual library (use these by type like any visual; `genbi visual edit <name>` to change one):" if lib
           else "\nThe visual library is empty.")
     for r in lib:
-        print(f"  {r['name']}: {r['title']} v{r['version']} — {r.get('description', '')}\n      fields: "
+        print(f"  {r['name']}: {r['title']} v{r['version']} - {r.get('description', '')}\n      fields: "
               + ", ".join(f"{k} ({'column' if t == 'Grouping' else 'measure'})" for k, t in r.get("roles", {}).items()))
     print("\nTemplates for `genbi visual new --like`: starter, " + ", ".join(vf.families())
           + (", " + ", ".join(r["name"] for r in lib) if lib else ""))
@@ -412,7 +412,7 @@ def cmd_read(args):
 
 
 def cmd_docs(args):
-    """P11: `genbi deck|doc build|check` — a deliverable from deck.yaml / doc.yaml (docs/build.py). `check` prints every
+    """P11: `genbi deck|doc build|check` - a deliverable from deck.yaml / doc.yaml (docs/build.py). `check` prints every
     check and exits 1 on a failure; `build` also writes the .pptx / .docx, the HTML twin and check.json to --out."""
     from .docs import build as docs_build
     from .docs import checks as docs_checks
@@ -432,8 +432,8 @@ def cmd_docs(args):
         sys.exit(f"{spec_path.name}: {e}")
     print(docs_checks.text_report(report, spec_path.name))
     if not report["ok"]:
-        sys.exit(f"\n{report['counts']['fails']} problem(s) — fix every 'fail' item in {spec_path.name}; the app will not send a deliverable that fails its checks")
-    print("\nOK — every check passes" + (f" ({report['counts']['warnings']} warnings: look at them)" if report["counts"]["warnings"] else ""))
+        sys.exit(f"\n{report['counts']['fails']} problem(s) - fix every 'fail' item in {spec_path.name}; the app will not send a deliverable that fails its checks")
+    print("\nOK - every check passes" + (f" ({report['counts']['warnings']} warnings: look at them)" if report["counts"]["warnings"] else ""))
 
 
 def main(argv=None):
@@ -536,12 +536,12 @@ def _inside_project(args) -> None:
             p = Path(str(v)).expanduser()
             p = (p if p.is_absolute() else CWD / p).resolve()
             if p != root and root not in p.parents:
-                sys.exit(f"{v}: outside this project folder — name files inside it (relative paths such as "
+                sys.exit(f"{v}: outside this project folder - name files inside it (relative paths such as "
                          f"data/sales.csv or prototype/index.html)")
 
 
 if __name__ == "__main__":
     try:
         main()
-    except BrokenPipeError:            # `genbi … | head` stopped reading: not an error
+    except BrokenPipeError:            # `genbi ... | head` stopped reading: not an error
         os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())

@@ -5,7 +5,7 @@ themselves never change here; the rules decide those. Output is one JSON file th
 REFINE = """Stage: SERVICE DESK TRIAGE REFINEMENT.
 The file triage_input.json lists groups of service-desk tickets a rules engine has already formed (duplicates and
 same-cause tickets of a data & analytics team), each with its tickets (title, description, reporter, team, SLA), the
-rules' summary, priority (P1 critical … P4 low) and the reason.
+rules' summary, priority (P1 critical ... P4 low) and the reason.
 
 For every group write a better two-line plain-English summary a team lead can act on (what is broken or asked, for
 whom, since when, with what error) and, only where the tickets clearly show the rules got the impact wrong, a new

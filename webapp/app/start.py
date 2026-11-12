@@ -1,9 +1,9 @@
 """Start from an idea or a plan (build-plan v2, P10).
 
-A person writes what they want, attaches anything — screen recordings, images, Word / PDF / slides, spreadsheets,
-audio, links — and picks the connections the modules may read. The agent reads every attachment (`genbi read`,
+A person writes what they want, attaches anything - screen recordings, images, Word / PDF / slides, spreadsheets,
+audio, links - and picks the connections the modules may read. The agent reads every attachment (`genbi read`,
 its own Read tool for images, frames and PDFs) and writes analysis.yaml: three views a person confirms before
-anything is built — the process map, the fields & rules, and the plan (which modules build what, in order, with the
+anything is built - the process map, the fields & rules, and the plan (which modules build what, in order, with the
 checkpoints each will open). Each view is a checkpoint in the Validation queue (kind `start.view`); "Correct
 something" sends it back with a comment, the agent re-reads with the correction and the views reopen. When all three
 are confirmed the start is `planned`: plan.yaml is final and every checkpoint the plan promises is pre-registered
@@ -175,7 +175,7 @@ def check_analysis(d: Path) -> list[str]:
     proc = raw.get("process")
     steps = (proc or {}).get("steps") if isinstance(proc, dict) else None
     if not isinstance(steps, list) or not steps:
-        problems.append("process.steps is empty — list the steps as the attachments show them")
+        problems.append("process.steps is empty - list the steps as the attachments show them")
     else:
         ids: set[str] = set()
         for i, s in enumerate(steps, 1):
@@ -202,7 +202,7 @@ def check_analysis(d: Path) -> list[str]:
                     problems.append(f"process.handoffs[{i}].{k} ({hnd.get(k)}) is not a step id")
     fields = raw.get("fields")
     if not isinstance(fields, list) or not fields:
-        problems.append("fields is empty — list every field, value and rule found")
+        problems.append("fields is empty - list every field, value and rule found")
     else:
         for i, f in enumerate(fields, 1):
             if not isinstance(f, dict) or not str(f.get("field") or "").strip():
@@ -214,7 +214,7 @@ def check_analysis(d: Path) -> list[str]:
     plan = raw.get("plan")
     mods = (plan or {}).get("modules") if isinstance(plan, dict) else None
     if not isinstance(mods, list) or not mods:
-        problems.append("plan.modules is empty — list the modules that build this, in order")
+        problems.append("plan.modules is empty - list the modules that build this, in order")
     else:
         for i, m in enumerate(mods, 1):
             if not isinstance(m, dict):
@@ -276,16 +276,16 @@ def evidence(view: str, v: dict) -> dict:
     if view == "process":
         p = v["process"]
         return {"summary": f"{p['counts']['steps']} steps, {p['counts']['decisions']} decision(s), {p['counts']['handoffs']} hand-off(s); {p['counts']['agent_steps']} step(s) for an agent",
-                "counts": p["counts"], "items": [f"{s['id']} · {s['actor']}: {s['action']}" + (f" — {s['decision']}" if s["decision"] else "") for s in p["steps"][:8]],
+                "counts": p["counts"], "items": [f"{s['id']} - {s['actor']}: {s['action']}" + (f" - {s['decision']}" if s["decision"] else "") for s in p["steps"][:8]],
                 "rows": p["steps"][:60]}
     if view == "fields":
         f = v["fields"]
         return {"summary": f"{f['counts']['fields']} fields and values, {f['counts']['rules']} rule(s); {f['counts']['low_confidence']} below 80 % confidence",
-                "counts": f["counts"], "items": [f"{r['field']}: {r['example'] or '—'}" + (f" ({round(r['confidence'] * 100)} %)" if r["confidence"] is not None else "") for r in f["rows"][:8]],
+                "counts": f["counts"], "items": [f"{r['field']}: {r['example'] or '-'}" + (f" ({round(r['confidence'] * 100)} %)" if r["confidence"] is not None else "") for r in f["rows"][:8]],
                 "rows": f["rows"][:80]}
     p = v["plan"]
     return {"summary": f"{p['counts']['modules']} module(s), {p['counts']['checkpoints']} checkpoint(s)" + (f"; estimate {p['estimate']}" if p["estimate"] else ""),
-            "counts": p["counts"], "items": [f"{m['position']}. {m['name']}: {m['builds']} — you confirm {', '.join(m['checkpoints'])}" for m in p["modules"][:8]],
+            "counts": p["counts"], "items": [f"{m['position']}. {m['name']}: {m['builds']} - you confirm {', '.join(m['checkpoints'])}" for m in p["modules"][:8]],
             "rows": p["modules"]}
 
 
@@ -350,13 +350,13 @@ async def _read(pid: str, args: dict) -> None:
             break
         if attempt == worker.FIX_ROUNDS:
             raise RuntimeError(f"analysis.yaml still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-        worker.app_note(pid, "start_read", f"The check found {len(problems)} problem(s) in analysis.yaml — Relay is fixing them.", "warn", problems)
+        worker.app_note(pid, "start_read", f"The check found {len(problems)} problem(s) in analysis.yaml - Relay is fixing them.", "warn", problems)
         res = await worker.agent(pid, "start_read", start_prompts.fix(problems), worker.TURNS["fix"], "analysis", resume=res.get("session_id"),
                                  system=start_prompts.SYSTEM)
     analysed(pid, res.get("text") or "")
 
 
-worker.register_job("start_read", _read, status=STATUS_READING, done="Relay read your start — confirm the three views", llm=True, turns=80, timeout_s=2400)
+worker.register_job("start_read", _read, status=STATUS_READING, done="Relay read your start - confirm the three views", llm=True, turns=80, timeout_s=2400)
 
 
 # ---------------------------------------------------------------- decisions: confirm, correct, planned
@@ -440,7 +440,7 @@ def finalise(pid: str, who: str) -> dict:
     store.save(st)
     store.note(pid, "Plan confirmed", "All three views were confirmed; plan.yaml is final:\n"
                + "\n".join(f"- {m['position']}. {m['name']}: {m['builds']} (you confirm {', '.join(m['checkpoints'])})" for m in v["plan"]["modules"]))
-    worker.app_note(pid, "start", f"Planned: {len(v['plan']['modules'])} module(s), {len(rows)} checkpoint(s) promised — each appears in your validation "
+    worker.app_note(pid, "start", f"Planned: {len(v['plan']['modules'])} module(s), {len(rows)} checkpoint(s) promised - each appears in your validation "
                     "queue when its module opens it.", "ok")
     db.audit("start.planned", pid, {"modules": [m["id"] for m in v["plan"]["modules"]], "checkpoints": len(rows)}, who)
     owner = _owner(pid)
@@ -460,7 +460,7 @@ def _on_decision(c: dict, decision: str, comment: str | None, who: str) -> None:
     if decision == "accept":
         st.setdefault("confirmed", {})[view] = {"by": who, "when": time.time(), "checkpoint": c["id"]}
         store.save(st)
-        store.log(pid, {"kind": "user", "stage": "start", "text": f"Confirmed the {VIEW_LABEL.get(view, view).lower()}" + (f" — {comment}" if comment else "")})
+        store.log(pid, {"kind": "user", "stage": "start", "text": f"Confirmed the {VIEW_LABEL.get(view, view).lower()}" + (f" - {comment}" if comment else "")})
         db.audit("start.confirm", pid, {"view": view, "checkpoint": c["id"]}, who)
         if st["status"] == "awaiting_confirmation" and all(v in st["confirmed"] for v, _ in VIEWS):
             finalise(pid, who)
@@ -520,7 +520,7 @@ async def start_dashboard(pid: str, who: str) -> dict:
     if not item:
         raise HTTPException(409, "The plan has no BI & dashboards item.")
     sheets = _sheet_csvs(d, st)
-    prompt = (f"{st.get('prompt', '').strip()}\n\nThis dashboard comes from the start “{st.get('name')}” (#/start/{pid}); the confirmed plan says: "
+    prompt = (f"{st.get('prompt', '').strip()}\n\nThis dashboard comes from the start \"{st.get('name')}\" (#/start/{pid}); the confirmed plan says: "
               f"{item['builds']}. Process steps and fields the person confirmed are in that start's analysis.")
     handles = []
     try:
@@ -687,7 +687,7 @@ async def create_start(brief: str = Form(...), name: str = Form(""), links: str 
     db.add_project(pid, u["id"])
     db.audit("start.create", pid, {"name": title, "attachments": [a["name"] for a in attachments], "connections": [c["id"] for c in conns],
                                    "links": len(link_list), "delete_recordings": delete_after}, u["id"])
-    store.log(pid, {"kind": "user", "stage": "start", "text": f"Started “{title}” with {len(attachments)} attachment(s)"})
+    store.log(pid, {"kind": "user", "stage": "start", "text": f"Started \"{title}\" with {len(attachments)} attachment(s)"})
     await asyncio.to_thread(_preread, d, [a["name"] for a in attachments])
     for a in attachments:
         a["read"] = reader.cached(d / "attachments" / a["name"]) is not None
@@ -786,7 +786,7 @@ async def start_dashboard_api(pid: str):
 def delete_start(pid: str):
     u, st = _get(pid, "edit")
     if st["status"] in RUNNING and worker.current.get("pid") == pid:
-        raise HTTPException(409, "Relay is reading it — stop it first.")
+        raise HTTPException(409, "Relay is reading it - stop it first.")
     checkpoints.withdraw(KIND, pid, who=u["id"])
     db.run("DELETE FROM start_plan_checkpoints WHERE start_id = ?", (pid,))
     db.skip_queued(pid)

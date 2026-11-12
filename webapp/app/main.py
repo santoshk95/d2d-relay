@@ -205,7 +205,7 @@ def _check_uploads(files: list[UploadFile], images: list[UploadFile]) -> tuple[l
 
 
 def _csv_problem(path: Path) -> str | None:
-    """Why DuckDB cannot read this CSV, or None — checked before a file joins a project."""
+    """Why DuckDB cannot read this CSV, or None - checked before a file joins a project."""
     try:
         duckdb.connect().execute(f"SELECT * FROM read_csv_auto({_lit(path)}, header = true) LIMIT 100").fetchall()
         return None
@@ -236,7 +236,7 @@ async def _stage(folder: Path, upload: UploadFile, default: str, replace: bool, 
 
 
 async def _store_uploads(d: Path, files: list[UploadFile], images: list[UploadFile], replace_data: bool) -> list[dict]:
-    """CSVs into data/, images into images/ — all checked first, so a bad file adds nothing."""
+    """CSVs into data/, images into images/ - all checked first, so a bad file adds nothing."""
     staged, taken = [], set()
     try:
         for f in files:
@@ -349,7 +349,7 @@ from genbi_kit.validate import VISUALS_MODES  # noqa: E402 - relay | builtin | m
 
 
 def _visuals_line(mode: str) -> str:
-    return f"- Visuals: {mode} — {VISUALS_MODES[mode]} (CLAUDE.md, Power BI's own visuals)"
+    return f"- Visuals: {mode} - {VISUALS_MODES[mode]} (CLAUDE.md, Power BI's own visuals)"
 PALETTES = ("spectrum", "analogous", "mono")
 
 
@@ -430,7 +430,7 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
     if generate and (data_size not in DATA_SIZES or not 3 <= data_months <= 60):
         raise HTTPException(400, "Data size must be small, medium or large, and the period 3 to 60 months.")
     if not files and not generate and not warehouse:
-        raise HTTPException(400, "Upload at least one CSV file — or connect a warehouse, or generate demo data.")
+        raise HTTPException(400, "Upload at least one CSV file - or connect a warehouse, or generate demo data.")
     orgs.require("dashboard")                   # D2D Relay: before anything is saved
 
     title = name.strip() or (" ".join(data_brief.split()[:5]).rstrip(".,;:").title() if generate
@@ -454,16 +454,16 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
         start, end = datagen.default_period(data_months)
         data = {"mode": "generate", "brief": data_brief.strip(), "size": data_size, "months": data_months,
                 "start": start.isoformat(), "end": end.isoformat()}
-        lines += ["## Data — generate demo data", "", "The user has no data yet: design a realistic demo dataset "
+        lines += ["## Data - generate demo data", "", "The user has no data yet: design a realistic demo dataset "
                   "(datagen.yaml) and generate it with `genbi datagen`.", "",
-                  f"- Business and data: {data['brief']}", f"- Size: {data_size} — {DATA_SIZES[data_size]}",
+                  f"- Business and data: {data['brief']}", f"- Size: {data_size} - {DATA_SIZES[data_size]}",
                   f"- Period: {data['start']} to {data['end']} ({data_months} months)"]
         lines += ([f"- Use these uploaded files as they are and generate the rest around them: "
                    + ", ".join(f["name"] for f in saved)] if saved else []) + [""]
     if warehouse:
-        lines += [f"## Data — warehouse tables ({connectors.KINDS[conn['kind']]['label']}: {conn['name']})", "",
+        lines += [f"## Data - warehouse tables ({connectors.KINDS[conn['kind']]['label']}: {conn['name']})", "",
                   "The app pulls these into data/ as Parquet before planning (see the Warehouse tables section that "
-                  "follows, and CLAUDE.md):", ""] + [f"- {t['object']} → data/{t['alias']}.parquet" for t in picked] + [""]
+                  "follows, and CLAUDE.md):", ""] + [f"- {t['object']} -> data/{t['alias']}.parquet" for t in picked] + [""]
     lines += ["## Data (in data/)", ""] + ([f"- {f['name']} ({_size(f['bytes'])})" for f in saved]
                                          or ["- (extracted from the warehouse first)" if warehouse else "- (generated in the data stage)"])
     if pics:
@@ -474,7 +474,7 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
         lines += [f"- accent: \"{style['accent']}\" (the brand color), palette: {style['palette']}"] if style.get("accent") else []
         lines += [f"- colors: [{', '.join(chr(34) + c + chr(34) for c in style['colors'])}] (the brand palette \"{style.get('brand_name', '')}\", in this order)"] if style.get("colors") else []
         lines += ["- dark: true (dark report background)"] if style.get("dark") else []
-    lines += ["", "## Custom visuals", "", f"- Custom visuals: {custom_visuals} — {POLICIES[custom_visuals]}"]
+    lines += ["", "## Custom visuals", "", f"- Custom visuals: {custom_visuals} - {POLICIES[custom_visuals]}"]
     lines += ["", "## Visuals", "", _visuals_line(visuals_mode)]
     (d / "request.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -521,7 +521,7 @@ def me():
     return {**{k: u[k] for k in ("id", "email", "name", "org_role")}, "teams": u["teams"],
             "admin": auth.is_admin(u), "builder": auth.is_dev(u) and not portal.ADMIN, "auth": auth.MODE, "instance": db.INSTANCE,
             "tz": u.get("tz"), "guest": bool(u.get("home_tenant")), "tenant": tenancy.me_info(u), "org": orgs.me_info(u),
-            "portal": portal.NAME}
+            "portal": portal.NAME, "tour": not portal.ADMIN and not u.get("home_tenant") and platform.tour_due(u)}
 
 
 def _today_names(gs):
@@ -668,7 +668,7 @@ def _kpi_changes(before: list[dict], after: list[dict]) -> list[str]:
         if n in old:
             for field in ("label", "description", "dax", "format"):
                 if str(k.get(field, "")).strip() != str(old[n].get(field, "")).strip():
-                    out.append(f"- **{n}** {field}: `{old[n].get(field, '')}` → `{k.get(field, '')}`")
+                    out.append(f"- **{n}** {field}: `{old[n].get(field, '')}` -> `{k.get(field, '')}`")
     return out
 
 
@@ -687,7 +687,7 @@ async def review_kpis(pid: str, payload: str = Form(...), files: list[UploadFile
         raise HTTPException(400, "Unknown action")
     files, images = _check_uploads(files, images)
     if body.action == "confirm" and (files or images):
-        raise HTTPException(400, "New files change the plan: use “Ask Relay to revise the plan” so you can review the KPIs again.")
+        raise HTTPException(400, "New files change the plan: use \"Ask Relay to revise the plan\" so you can review the KPIs again.")
     feedback = body.feedback.strip()
     if body.action == "revise" and not feedback and not files and not images:
         raise HTTPException(400, "Tell Relay what to change in the plan, or attach files.")
@@ -726,7 +726,7 @@ async def review_kpis(pid: str, payload: str = Form(...), files: list[UploadFile
                    + ("\n\nCustom visuals, as the user chose:\n" + "\n".join(chosen) if chosen else "")
                    + (f"\n\nComment: {feedback}" if feedback else ""))
         store.log(pid, {"kind": "user", "stage": "plan", "text": f"Confirmed {len(kpis)} KPIs"
-                        + (f" ({len(changes)} edit(s))" if changes else "") + (f" — {feedback}" if feedback else "")})
+                        + (f" ({len(changes)} edit(s))" if changes else "") + (f" - {feedback}" if feedback else "")})
         # D2D Relay: building the first prototype is part of the new dashboard (no charge); it carries that charge,
         # so a failed build gives it back
         carry = st.get("credit_charge") if not st.get("versions") and not orgs.refunded(st.get("credit_charge")) else None
@@ -780,7 +780,7 @@ async def feedback(pid: str, text: str = Form(""), version: int | None = Form(No
     request = text or "Use the attached files where they improve the report."
     if base != latest:
         shutil.copy2(src, d / "definition.yaml")
-        request = f"(Start from prototype v{base} — the user went back to it; definition.yaml has been restored to v{base}.)\n\n{request}"
+        request = f"(Start from prototype v{base} - the user went back to it; definition.yaml has been restored to v{base}.)\n\n{request}"
     store.note(pid, f"Change request on prototype v{base}", request + _attachment_note(added))
     store.log(pid, {"kind": "user", "stage": "revise", "text": text or "(attached files)",
                     "attachments": [a["path"] for a in added]})
@@ -864,7 +864,7 @@ def version_label(pid: str, v: int, body: VersionLabel):
     label = " ".join(body.label.split())[:60]
     entry["label"] = label or None
     store.save(st)
-    store.log(pid, {"kind": "user", "text": f"Named v{v} “{label}”" if label else f"Removed the name of v{v}"})
+    store.log(pid, {"kind": "user", "text": f"Named v{v} \"{label}\"" if label else f"Removed the name of v{v}"})
     return get_project(pid)
 
 
@@ -926,8 +926,8 @@ def activity_export(pid: str, fmt: str = "md", detail: str = "summary", tz: int 
                         e.get("kind"), _event_text(e)])
         return Response(buf.getvalue(), media_type="text/csv; charset=utf-8",
                         headers={"Content-Disposition": f'attachment; filename="{stem} activity.csv"'})
-    lines = [f"# Activity log — {st['name']}", "",
-             f"Exported {time.strftime('%Y-%m-%d %H:%M', time.gmtime(time.time() - tz * 60))} · {len(events)} events · "
+    lines = [f"# Activity log - {st['name']}", "",
+             f"Exported {time.strftime('%Y-%m-%d %H:%M', time.gmtime(time.time() - tz * 60))} - {len(events)} events - "
              + ("every step the agent took" if detail == "all" else "summary (the agent's individual tool steps left out)"), ""]
     stage = None
     for e in events:
@@ -935,7 +935,7 @@ def activity_export(pid: str, fmt: str = "md", detail: str = "summary", tz: int 
             stage = e["stage"]
             lines += ["", f"## {STAGE_NAMES.get(stage, stage)}", ""]
         text = _event_text(e).replace("\n", "\n  ")
-        lines.append(f"- **{when(e)[11:]} · {WHO.get(e.get('kind'), '')}** — {text}")
+        lines.append(f"- **{when(e)[11:]} - {WHO.get(e.get('kind'), '')}** - {text}")
     return Response("\n".join(lines) + "\n", media_type="text/markdown; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="{stem} activity.md"'})
 
@@ -983,7 +983,7 @@ async def run_version_gates(pid: str, v: int):
     if not any(x["v"] == v for x in st["versions"]):
         raise HTTPException(404, "Unknown version")
     if st["status"] in worker.RUNNING or pid in GATING:
-        raise HTTPException(409, "This dashboard is busy — run the gates when the current step has finished.")
+        raise HTTPException(409, "This dashboard is busy - run the gates when the current step has finished.")
     GATING.add(pid)
     try:
         await asyncio.to_thread(worker.check_version, pid, v)
@@ -1065,7 +1065,7 @@ def approve(pid: str, body: Approve):
     bad = [g["name"] for g in ver.get("gates") or [] if g.get("status") == "fail"]
     if bad:
         raise HTTPException(409, f"v{body.version} has not passed its review gates ({', '.join(bad)}). Ask Relay to fix "
-                                 f"them with a change request — or run the gates again — before approving.")
+                                 f"them with a change request - or run the gates again - before approving.")
     try:
         publishing.check_publish(pid, body.version, auth.current.get())     # review policy (phase 6)
     except publishing.PublishError as e:
@@ -1137,7 +1137,7 @@ def set_visuals_mode(pid: str, body: VisualsChoice):
             line = _visuals_line(mode)
             text = re.sub(r"(?m)^- Visuals: .*$", line, text) if re.search(r"(?m)^- Visuals: ", text) else text.rstrip("\n") + f"\n\n## Visuals\n\n{line}\n"
             if mode == "builtin":
-                text = re.sub(r"(?m)^- Custom visuals: .*$", f"- Custom visuals: never — {POLICIES['never']}", text)
+                text = re.sub(r"(?m)^- Custom visuals: .*$", f"- Custom visuals: never - {POLICIES['never']}", text)
             req.write_text(text, encoding="utf-8")
         db.audit("project.visuals", pid, {"mode": mode}, auth.who())
         store.log(pid, {"kind": "user", "text": f"Visuals for the next versions: {VISUALS_MODES[mode]}"})
@@ -1155,7 +1155,7 @@ def stop(pid: str):
 @app.get("/api/projects/{pid}/download")
 def download(pid: str):
     """The Power BI file: <Report>.zip with <Report>.pbix and its data. A dashboard published before the .pbix existed
-    has no download until its Power BI file is made (POST …/pbix)."""
+    has no download until its Power BI file is made (POST .../pbix)."""
     st = _get(pid)
     out = st.get("output") or {}
     path = store.project_dir(pid) / out.get("zip", "-")

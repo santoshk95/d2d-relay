@@ -1,4 +1,4 @@
-"""HR & payroll (registry id `hr`) on the workbench — Workday and SAP SuccessFactors through their APIs; Oracle Fusion HCM,
+"""HR & payroll (registry id `hr`) on the workbench - Workday and SAP SuccessFactors through their APIs; Oracle Fusion HCM,
 Zoho People, Darwinbox and Keka through their exports. Personal data is read only as far as the work needs (name, work
 e-mail, department, status, dates) and never leaves the work item's folder.
 
@@ -10,7 +10,7 @@ Develop  joiners from an upload into SuccessFactors: mapping suggested and corre
          id, work e-mail, no one hired twice), a named approver, one approved write, read back and reconciled.
 Change   a failing integration diagnosed from its own run history, the worker's record corrected or the run started
          again after approval.
-Migrate  workers between HR systems (Workday → SuccessFactors …): keep / merge / retire, crosswalk, proven record by record.
+Migrate  workers between HR systems (Workday -> SuccessFactors ...): keep / merge / retire, crosswalk, proven record by record.
 Run      the integrations on a schedule; breaks go to a Change item, Self-healing or a ticket after approval.
 """
 from __future__ import annotations
@@ -26,7 +26,7 @@ LEAVER_DAYS = 90
 
 
 def rule_leavers(ctx, inv, spec=None) -> list[dict]:
-    """Leavers in the last 90 days: their accounts must be switched off — a finding per system for Identity & access."""
+    """Leavers in the last 90 days: their accounts must be switched off - a finding per system for Identity & access."""
     out = []
     cut = time.strftime("%Y-%m-%d", time.gmtime(time.time() - LEAVER_DAYS * 86400))
     for system, rows in inv.rows("worker"):
@@ -51,7 +51,7 @@ def rule_incomplete(ctx, inv, spec=None) -> list[dict]:
         if bad:
             out.append(w3.finding("incomplete_worker", system, "worker", f"{len(bad)} workers", f"{len(bad)} active worker(s) without a work e-mail or a department: "
                                   "joiner flows and access requests cannot route them", "medium", measured=", ".join(str(r.get("name")) for r in bad[:6]),
-                                  fix="Complete the records in the HR system — the source of truth for people data.", work="change", keys=[r["key"] for r in bad]))
+                                  fix="Complete the records in the HR system - the source of truth for people data.", work="change", keys=[r["key"] for r in bad]))
     return out
 
 
@@ -84,21 +84,21 @@ def _kinds() -> set:
     return {k for p in PLATFORMS.values() for k in p.kinds}
 
 
-GUIDE = """# HR & payroll — the work item
+GUIDE = """# HR & payroll - the work item
 
-Relay's HR module reads workers (name, work e-mail, department, status and dates — no more personal data than the work
+Relay's HR module reads workers (name, work e-mail, department, status and dates - no more personal data than the work
 needs) and each HR system's integration runs, and brings joiners in or moves workers between HR systems with a
 record-by-record reconciliation. Rules do the reading, mapping and checks; the agent is asked only to read a run log no
-rule recognises (diagnose.json → diagnosis.yaml). Never invent a person, a field or a number."""
+rule recognises (diagnose.json -> diagnosis.yaml). Never invent a person, a field or a number."""
 
 w3.hook(MODULE)
 
 wb.register(wb.Pack(
     module=MODULE, guide=GUIDE, platforms=PLATFORMS,
-    lineage="each HR system and object read (system → entity), an inbound interface as a flow that writes into the HR system, a migration as feeds edges between systems",
+    lineage="each HR system and object read (system -> entity), an inbound interface as a flow that writes into the HR system, a migration as feeds edges between systems",
     schemas={"inventory": ["include", "system", "object", "records"], "finding": ["decision", "severity", "system", "what"]},
     work={
-        "assess": w3.assess_work(SPEC, "See what the HR systems hold — failing payroll runs, leavers, incomplete records"),
+        "assess": w3.assess_work(SPEC, "See what the HR systems hold - failing payroll runs, leavers, incomplete records"),
         "develop": w3.develop_work(SPEC, "Bring joiners into the HR system: mapping agreed, a dry run, one approved write, read back"),
         "change": w3.change_work(SPEC, "Fix a failing payroll or HR integration, diagnosed from its own runs, released with approval"),
         "migrate": w3.migrate_work(SPEC, "Move workers between HR systems, reconciled record by record", _kinds),

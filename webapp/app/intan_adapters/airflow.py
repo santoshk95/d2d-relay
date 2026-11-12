@@ -1,4 +1,4 @@
-"""Apache Airflow — the stable REST API (…/api/v1): DAGs (owners, schedule, tags), DAG runs, connections by name.
+"""Apache Airflow - the stable REST API (.../api/v1): DAGs (owners, schedule, tags), DAG runs, connections by name.
 Tags "source:<system>", "target:<system>" and "writes:<warehouse>:<object>" name what a DAG moves (Airflow itself
 only knows tasks)."""
 from __future__ import annotations

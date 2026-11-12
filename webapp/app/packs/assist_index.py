@@ -1,6 +1,6 @@
 """The document index of Document & knowledge assistants (registry id `assist`): documents read into passages with
-their page (or section), kept per corpus in the tenant's own database, searched with full-text search — SQLite FTS5,
-or PostgreSQL's text search (to_tsvector / to_tsquery, ranked by ts_rank) — the way the RFP library searches, with no
+their page (or section), kept per corpus in the tenant's own database, searched with full-text search - SQLite FTS5,
+or PostgreSQL's text search (to_tsvector / to_tsquery, ranked by ts_rank) - the way the RFP library searches, with no
 vector database. An answer is made of sentences taken word for word from the passages found, each with its citation;
 when nothing in the documents answers the question, the answer says so. Nothing is invented."""
 from __future__ import annotations
@@ -164,7 +164,7 @@ def _stem(w: str) -> str:
 
 
 def cite(p: dict) -> str:
-    where = f"page {p['page']}" if p.get("page") else (f"“{p['section']}”" if p.get("section") else "")
+    where = f"page {p['page']}" if p.get("page") else (f"\"{p['section']}\"" if p.get("section") else "")
     return f"{p.get('title') or p['doc']}" + (f", {where}" if where else "")
 
 

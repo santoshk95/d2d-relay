@@ -2,7 +2,7 @@
 payload and a view type; the Validation queue lists them; a person accepts, sends back with a comment or
 reassigns; every decision is signed, audited, measured (time to validate, right first time) and handed back to the
 phase module that opened the checkpoint (register_kind). The queue also shows the human steps that existed before
-P10 — a dashboard waiting for its KPIs or its review, a publishing review — as derived items that open the page
+P10 - a dashboard waiting for its KPIs or its review, a publishing review - as derived items that open the page
 where the decision is made.
 """
 from __future__ import annotations
@@ -38,7 +38,7 @@ DERIVED = {"awaiting_kpis": ("dashboard.kpis", "Confirm the KPIs and their formu
 def register_kind(kind: str, label: str, on_decision=None, own_admins: bool = False) -> None:
     """A phase module names its checkpoint kinds; on_decision(checkpoint, decision, comment, who) runs after a
     decision is stored, so the module can continue (re-read with the correction, start the next step, write back).
-    own_admins (P17): only the tenant's own admins see and decide it — never a guest from another tenant."""
+    own_admins (P17): only the tenant's own admins see and decide it - never a guest from another tenant."""
     KINDS[kind] = {"label": label, "on_decision": on_decision, "own_admins": own_admins}
 
 
@@ -73,7 +73,7 @@ def open(kind: str, subject: str, module: str, name: str, view: str = "text", ev
            (cid, kind, subject, module, name[:200], view, json.dumps(evidence or {}), link, agent, run_id, assignee, team, opened_by or "agent", time.time()))
     db.audit("checkpoint.open", cid, {"kind": kind, "subject": subject, "name": name, "assignee": assignee}, opened_by or "system")
     if assignee:
-        notify.add(assignee, "review", f"Your check: {name}", f"{module} · {(KINDS.get(kind) or {}).get('label') or kind}", link or "#/validate")
+        notify.add(assignee, "review", f"Your check: {name}", f"{module} - {(KINDS.get(kind) or {}).get('label') or kind}", link or "#/validate")
     elif team:
         notify.add_many(notify.team_members(team), "review", f"A check is waiting: {name}", module, link or "#/validate")
     return get(cid)
@@ -262,7 +262,7 @@ def api_count():
 
 def _may_decide(cid: str) -> dict:
     """Only someone the checkpoint is for may decide it: the same rule as the queue (admin, the assignee, the team,
-    or — when it is for nobody in particular — a builder or the person who opened it)."""
+    or - when it is for nobody in particular - a builder or the person who opened it)."""
     u = _u()
     c = get(cid)
     if not c:

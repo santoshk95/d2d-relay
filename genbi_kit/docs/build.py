@@ -1,8 +1,8 @@
 """Build and check a deliverable from its YAML: the model, the checks, the .pptx or .docx, the HTML twin and
-check.json — used by `genbi deck|doc build|check` (the agent) and by the web app (studio.py, rfp.py).
+check.json - used by `genbi deck|doc build|check` (the agent) and by the web app (studio.py, rfp.py).
 
-  build(spec_path, out_dir, brand=…, template_path=…, workspace=…, renderer=…, evidence_base=…) -> info
-  check(spec_path, brand=…, template_path=…, workspace=…) -> report
+  build(spec_path, out_dir, brand=..., template_path=..., workspace=..., renderer=..., evidence_base=...) -> info
+  check(spec_path, brand=..., template_path=..., workspace=...) -> report
 
 `sources/brand.json` next to the YAML (written by the web app) supplies the brand, the house style and the tenant
 template files when the caller gives none, so the agent's command line and the app build the same thing."""
@@ -113,5 +113,5 @@ def summary_line(info: dict) -> str:
     r = info["report"]
     what = info.get("deck") or info.get("doc") or {}
     made = ", ".join(f"{k} {v}" for k, v in what.items() if k in ("slides", "blocks", "charts", "tables", "diagrams", "notes") and v)
-    return (f"{'deck' if info['kind'] == 'deck' else 'document'} “{info['title']}” — {made or 'nothing built'}; template {info['template']}; "
+    return (f"{'deck' if info['kind'] == 'deck' else 'document'} \"{info['title']}\" - {made or 'nothing built'}; template {info['template']}; "
             f"checks {'passed' if r['ok'] else 'FAILED'} ({r['counts']['fails']} problems, {r['counts']['warnings']} warnings)")

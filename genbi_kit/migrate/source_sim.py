@@ -1,7 +1,7 @@
 """The source simulator: a small, independent engine that runs a source report's query the way the source tool would
-— rows of the package's tables joined through its relationships, filtered, grouped by the visual's attribute items,
+- rows of the package's tables joined through its relationships, filtered, grouped by the visual's attribute items,
 aggregated with Cognos semantics (total / average / count / minimum / maximum / percentage, `for` levels, running
-and moving aggregates, rank, percentile, if / case, arithmetic calculated after aggregation) — written in plain
+and moving aggregates, rank, percentile, if / case, arithmetic calculated after aggregation) - written in plain
 Python over the CSVs, so it shares no code with the SQL and DAX the rules emit. The proof compares its numbers with
 the converted report's prototype SQL (and, when the DAX checker runs, with Power BI's own engine).
 """

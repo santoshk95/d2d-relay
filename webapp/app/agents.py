@@ -3,15 +3,15 @@ records gets a proper name and one line on what it does, so Team & agents, Home'
 notifications never show a raw job kind; and every kind of project folder knows which module it belongs to and
 where its screen is, so a running job links to the right page.
 
-A module that registers a new job kind (worker.register_job) or a new run stage (worker.agent(pid, stage, …)) adds
-its line to AGENTS; tests/cons_test.py fails when a registered kind has no name. Constant tables only — nothing here
+A module that registers a new job kind (worker.register_job) or a new run stage (worker.agent(pid, stage, ...)) adds
+its line to AGENTS; tests/cons_test.py fails when a registered kind has no name. Constant tables only - nothing here
 holds a tenant's data (docs/parallel-work.md, Tenancy).
 """
 from __future__ import annotations
 
 # job kind or run stage -> (agent name, what it does, what it is doing while it runs)
 AGENTS: dict[str, tuple[str, str, str]] = {
-    # D2D · Dashboards: the core lane (P0-P8)
+    # D2D - Dashboards: the core lane (P0-P8)
     "extract": ("Extractor", "Pulls the warehouse tables a person picked, with that person's own sign-in.", "pulling warehouse tables"),
     "data": ("Data designer", "Designs demo data for the business a person described and generates it.", "designing demo data"),
     "plan": ("Planner", "Plans a dashboard from the data and the request: KPIs, pages and visuals.", "planning a dashboard"),
@@ -64,7 +64,7 @@ SUBJECTS: dict = {}
 
 # folder kind (project.json `kind`) -> (module, link to its screen; {id} = the folder, {migration} = its programme)
 FOLDERS: dict[str, tuple[str, str]] = {
-    "dashboard": ("D2D · Dashboards", "#/p/{id}"),
+    "dashboard": ("D2D - Dashboards", "#/p/{id}"),
     "start": ("Start", "#/start/{id}"),
     "deliverable": ("Studio", "#/studio/{id}"),
     "rfp": ("RFP & bid response", "#/rfp/{id}"),
@@ -81,7 +81,7 @@ SHARED_SUBJECTS = {"servicedesk", "intan", "observe"}
 
 
 def name(kind: str | None) -> str:
-    """The agent's name for a job kind or a run stage ('Agent' for one nobody named — never the raw kind)."""
+    """The agent's name for a job kind or a run stage ('Agent' for one nobody named - never the raw kind)."""
     return NAMES.get(kind or "") or "Agent"
 
 

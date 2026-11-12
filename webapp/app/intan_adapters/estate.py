@@ -1,5 +1,5 @@
-"""The sample estate (build-plan v2, P13): a synthetic set of systems and integrations — the 17 of the signed-off
-mockup's integration map plus one or two per other platform — with seeded failures, used by the "Sample estate"
+"""The sample estate (build-plan v2, P13): a synthetic set of systems and integrations - the 17 of the signed-off
+mockup's integration map plus one or two per other platform - with seeded failures, used by the "Sample estate"
 adapter in the product and by the mock lab's simulators in tests (tests/mocklab/intan_sims.py translates it into
 each vendor's own payload shape). Everything here is synthetic (DemoData), never client data; runs are generated
 relative to "now" so baselines and trends work on any day.
@@ -31,56 +31,56 @@ RACI = [  # owners from the RACI table (pattern -> owner) for integrations whose
 
 # ---- the map: [id, source adapter, name, from, to, via, kind, schedule text, cadence, owner (None = not exposed by the tool), baseline seconds, success rate, volume, seeded plan]
 ESTATE = [
-    {"id": "I-014", "source": "n8n", "name": "Tally vouchers → warehouse", "from": "tally", "to": "n8n", "via": "n8n", "kind": "Flow", "schedule": "Every 30 min", "every_min": 30, "owner": "Finance IT", "duration_s": 42, "success": .996, "volume": 1200},
-    {"id": "I-015", "source": "n8n", "name": "n8n → Snowflake vouchers load", "from": "n8n", "to": "dwh", "via": "n8n", "kind": "Flow", "schedule": "Every 30 min", "every_min": 30, "owner": "Finance IT", "duration_s": 18, "success": .996, "volume": 1200, "writes": ["snowflake:FINANCE.VOUCHERS"]},
-    {"id": "I-022", "source": "adf", "name": "Zoho Books invoices → ADF", "from": "zoho", "to": "adf", "via": "ADF", "kind": "API pull", "schedule": "Hourly", "every_min": 60, "owner": "Data team", "duration_s": 180, "success": .979, "volume": 850,
+    {"id": "I-014", "source": "n8n", "name": "Tally vouchers -> warehouse", "from": "tally", "to": "n8n", "via": "n8n", "kind": "Flow", "schedule": "Every 30 min", "every_min": 30, "owner": "Finance IT", "duration_s": 42, "success": .996, "volume": 1200},
+    {"id": "I-015", "source": "n8n", "name": "n8n -> Snowflake vouchers load", "from": "n8n", "to": "dwh", "via": "n8n", "kind": "Flow", "schedule": "Every 30 min", "every_min": 30, "owner": "Finance IT", "duration_s": 18, "success": .996, "volume": 1200, "writes": ["snowflake:FINANCE.VOUCHERS"]},
+    {"id": "I-022", "source": "adf", "name": "Zoho Books invoices -> ADF", "from": "zoho", "to": "adf", "via": "ADF", "kind": "API pull", "schedule": "Hourly", "every_min": 60, "owner": "Data team", "duration_s": 180, "success": .979, "volume": 850,
      "plan": {"kind": "credential", "name": "ZohoBooks-OAuth", "expires_days": 3}},
-    {"id": "I-023", "source": "adf", "name": "ADF → Snowflake finance mart", "from": "adf", "to": "dwh", "via": "ADF", "kind": "Pipeline", "schedule": "Hourly", "every_min": 60, "owner": "Data team", "duration_s": 360, "success": 1.0, "volume": 850, "writes": ["snowflake:FINANCE.FACT_INVOICES"]},
-    {"id": "I-031", "source": "adf", "name": "SAP GL extract → ADF", "from": "sap", "to": "adf", "via": "ADF", "kind": "Pipeline", "schedule": "Daily 02:00", "daily_at": 2, "owner": "SAP team", "duration_s": 780, "success": .933, "volume": 410000,
+    {"id": "I-023", "source": "adf", "name": "ADF -> Snowflake finance mart", "from": "adf", "to": "dwh", "via": "ADF", "kind": "Pipeline", "schedule": "Hourly", "every_min": 60, "owner": "Data team", "duration_s": 360, "success": 1.0, "volume": 850, "writes": ["snowflake:FINANCE.FACT_INVOICES"]},
+    {"id": "I-031", "source": "adf", "name": "SAP GL extract -> ADF", "from": "sap", "to": "adf", "via": "ADF", "kind": "Pipeline", "schedule": "Daily 02:00", "daily_at": 2, "owner": "SAP team", "duration_s": 780, "success": .933, "volume": 410000,
      "plan": {"kind": "slow", "factor": 3.15, "since_days": 4}},
-    {"id": "I-040", "source": "uipath", "name": "SAP vendor master → UiPath", "from": "sap", "to": "uipath", "via": "UiPath", "kind": "Bot", "schedule": "Daily 06:00", "daily_at": 6, "owner": "Procurement", "duration_s": 720, "success": .867, "volume": 320,
-     "plan": {"kind": "screen_change", "last_n": 4, "error": "Selector not found: 'Vendor master' screen — element 'Save' (the screen gained a field on 3 Nov)"}},
-    {"id": "I-041", "source": "uipath", "name": "UiPath → Salesforce accounts", "from": "uipath", "to": "crm", "via": "UiPath", "kind": "Bot", "schedule": "Daily 06:30", "daily_at": 6.5, "owner": "Sales ops", "duration_s": 300, "success": .867, "volume": 320, "depends_on": ["I-040"],
+    {"id": "I-040", "source": "uipath", "name": "SAP vendor master -> UiPath", "from": "sap", "to": "uipath", "via": "UiPath", "kind": "Bot", "schedule": "Daily 06:00", "daily_at": 6, "owner": "Procurement", "duration_s": 720, "success": .867, "volume": 320,
+     "plan": {"kind": "screen_change", "last_n": 4, "error": "Selector not found: 'Vendor master' screen - element 'Save' (the screen gained a field on 3 Nov)"}},
+    {"id": "I-041", "source": "uipath", "name": "UiPath -> Salesforce accounts", "from": "uipath", "to": "crm", "via": "UiPath", "kind": "Bot", "schedule": "Daily 06:30", "daily_at": 6.5, "owner": "Sales ops", "duration_s": 300, "success": .867, "volume": 320, "depends_on": ["I-040"],
      "plan": {"kind": "dependency", "on": "I-040", "last_n": 4}},
-    {"id": "I-052", "source": "logs", "name": "Snowflake → Power BI refresh", "from": "dwh", "to": "pbi", "via": "Power BI", "kind": "Refresh", "schedule": "8×/day", "every_min": 180, "owner": None, "duration_s": 540, "success": .988, "volume": None, "feeds": ["Board Pack"]},
-    {"id": "I-058", "source": "sftp", "name": "Bank statements SFTP → ADF", "from": "sftp", "to": "adf", "via": "ADF", "kind": "File", "schedule": "Daily 07:00", "daily_at": 7, "owner": None, "duration_s": 60, "success": 1.0, "volume": 3500000,
+    {"id": "I-052", "source": "logs", "name": "Snowflake -> Power BI refresh", "from": "dwh", "to": "pbi", "via": "Power BI", "kind": "Refresh", "schedule": "8×/day", "every_min": 180, "owner": None, "duration_s": 540, "success": .988, "volume": None, "feeds": ["Board Pack"]},
+    {"id": "I-058", "source": "sftp", "name": "Bank statements SFTP -> ADF", "from": "sftp", "to": "adf", "via": "ADF", "kind": "File", "schedule": "Daily 07:00", "daily_at": 7, "owner": None, "duration_s": 60, "success": 1.0, "volume": 3500000,
      "plan": {"kind": "volume_drop", "pct": 18}},
-    {"id": "I-063", "source": "apigw", "name": "GST returns ← Zoho Books", "from": "zoho", "to": "gst", "via": "ClearTax", "kind": "API push", "schedule": "Monthly", "monthly_day": 20, "owner": "Tax", "duration_s": 240, "success": 1.0, "volume": 1,
+    {"id": "I-063", "source": "apigw", "name": "GST returns <- Zoho Books", "from": "zoho", "to": "gst", "via": "ClearTax", "kind": "API push", "schedule": "Monthly", "monthly_day": 20, "owner": "Tax", "duration_s": 240, "success": 1.0, "volume": 1,
      "plan": {"kind": "schema_change", "text": "Portal schema change announced for Dec: GSTR-1 v2 fields", "due_days": 26}},
-    {"id": "I-071", "source": "n8n", "name": "Power BI alerts → Jira", "from": "pbi", "to": "jira", "via": "n8n", "kind": "Webhook", "schedule": "On event", "events_per_day": 9, "owner": "BI team", "duration_s": 2, "success": 1.0, "volume": 1},
-    {"id": "I-077", "source": "airflow", "name": "Salesforce → Snowflake", "from": "crm", "to": "dwh", "via": "Airflow", "kind": "Pipeline", "schedule": "Every 15 min", "every_min": 15, "owner": "Data team", "duration_s": 40, "success": .999, "volume": 230, "writes": ["snowflake:SALES.ACCOUNTS"]},
-    {"id": "I-090", "source": "oic", "name": "Oracle Fusion AP invoices → OIC", "from": "fusion", "to": "oic", "via": "OIC", "kind": "Integration", "schedule": "Every 15 min", "every_min": 15, "owner": None, "duration_s": 25, "success": .992, "volume": 140,
+    {"id": "I-071", "source": "n8n", "name": "Power BI alerts -> Jira", "from": "pbi", "to": "jira", "via": "n8n", "kind": "Webhook", "schedule": "On event", "events_per_day": 9, "owner": "BI team", "duration_s": 2, "success": 1.0, "volume": 1},
+    {"id": "I-077", "source": "airflow", "name": "Salesforce -> Snowflake", "from": "crm", "to": "dwh", "via": "Airflow", "kind": "Pipeline", "schedule": "Every 15 min", "every_min": 15, "owner": "Data team", "duration_s": 40, "success": .999, "volume": 230, "writes": ["snowflake:SALES.ACCOUNTS"]},
+    {"id": "I-090", "source": "oic", "name": "Oracle Fusion AP invoices -> OIC", "from": "fusion", "to": "oic", "via": "OIC", "kind": "Integration", "schedule": "Every 15 min", "every_min": 15, "owner": None, "duration_s": 25, "success": .992, "volume": 140,
      "plan": {"kind": "usage", "value": 920000, "limit": 1000000, "text": "OIC message usage at 92 % of the monthly pack"}},
-    {"id": "I-091", "source": "oic", "name": "OIC → Snowflake AP mart", "from": "oic", "to": "dwh", "via": "OIC", "kind": "Integration", "schedule": "Every 15 min", "every_min": 15, "owner": None, "duration_s": 12, "success": .998, "volume": 140, "writes": ["snowflake:FINANCE.AP_INVOICES"]},
-    {"id": "I-095", "source": "ssis", "name": "SQL Server sales → SSIS package", "from": "sqlsrv", "to": "ssis", "via": "SSIS", "kind": "Package", "schedule": "Nightly 01:00", "daily_at": 1, "owner": "Data team", "duration_s": 1200, "success": .90, "volume": 2100000,
+    {"id": "I-091", "source": "oic", "name": "OIC -> Snowflake AP mart", "from": "oic", "to": "dwh", "via": "OIC", "kind": "Integration", "schedule": "Every 15 min", "every_min": 15, "owner": None, "duration_s": 12, "success": .998, "volume": 140, "writes": ["snowflake:FINANCE.AP_INVOICES"]},
+    {"id": "I-095", "source": "ssis", "name": "SQL Server sales -> SSIS package", "from": "sqlsrv", "to": "ssis", "via": "SSIS", "kind": "Package", "schedule": "Nightly 01:00", "daily_at": 1, "owner": "Data team", "duration_s": 1200, "success": .90, "volume": 2100000,
      "plan": {"kind": "slow", "factor": 2.6, "since_days": 6, "retries": 3}},
-    {"id": "I-096", "source": "ssis", "name": "SSIS → Snowflake sales mart", "from": "ssis", "to": "dwh", "via": "SSIS", "kind": "Package", "schedule": "Nightly 02:00", "daily_at": 2, "owner": "Data team", "duration_s": 1080, "success": .967, "volume": 2100000, "writes": ["snowflake:SALES.FACT_SALES"]},
-    {"id": "I-084", "source": "logs", "name": "SAP S/4HANA → Bank SFTP export", "from": "sap", "to": "sftp", "via": None, "kind": "File", "schedule": "Unknown", "daily_at": 5.97, "owner": None, "duration_s": 90, "success": 1.0, "volume": 18000,
+    {"id": "I-096", "source": "ssis", "name": "SSIS -> Snowflake sales mart", "from": "ssis", "to": "dwh", "via": "SSIS", "kind": "Package", "schedule": "Nightly 02:00", "daily_at": 2, "owner": "Data team", "duration_s": 1080, "success": .967, "volume": 2100000, "writes": ["snowflake:SALES.FACT_SALES"]},
+    {"id": "I-084", "source": "logs", "name": "SAP S/4HANA -> Bank SFTP export", "from": "sap", "to": "sftp", "via": None, "kind": "File", "schedule": "Unknown", "daily_at": 5.97, "owner": None, "duration_s": 90, "success": 1.0, "volume": 18000,
      "plan": {"kind": "orphan", "text": "SAP logs"}},
 ]
 
 # ---- one or two per other platform, each with a seeded failure, for the mock lab (not part of the 17-map)
 LAB = {
-    "cpi": [{"id": "L-CPI-1", "name": "S/4 → Salesforce orders", "from": "sap", "to": "crm", "via": "SAP CPI", "kind": "Integration", "schedule": "Every 10 min", "every_min": 10, "owner": "Integration CoE", "duration_s": 8, "success": .99, "volume": 60},
-            {"id": "L-CPI-2", "name": "Salesforce → S/4 customers", "from": "crm", "to": "sap", "via": "SAP CPI", "kind": "Integration", "schedule": "Hourly", "every_min": 60, "owner": "Integration CoE", "duration_s": 30, "success": .95, "volume": 20,
+    "cpi": [{"id": "L-CPI-1", "name": "S/4 -> Salesforce orders", "from": "sap", "to": "crm", "via": "SAP CPI", "kind": "Integration", "schedule": "Every 10 min", "every_min": 10, "owner": "Integration CoE", "duration_s": 8, "success": .99, "volume": 60},
+            {"id": "L-CPI-2", "name": "Salesforce -> S/4 customers", "from": "crm", "to": "sap", "via": "SAP CPI", "kind": "Integration", "schedule": "Hourly", "every_min": 60, "owner": "Integration CoE", "duration_s": 30, "success": .95, "volume": 20,
              "plan": {"kind": "credential_expired", "name": "SFDC_OAuth", "last_n": 5, "error": "401 Unauthorized from Salesforce: OAuth token expired"}}],
-    "mulesoft": [{"id": "L-MULE-1", "name": "Order API → NetSuite", "from": "webshop", "to": "netsuite", "via": "MuleSoft", "kind": "API", "schedule": "On event", "events_per_day": 400, "owner": "Integration CoE", "duration_s": 1, "success": .999, "volume": 1},
-                 {"id": "L-MULE-2", "name": "NetSuite → Web shop inventory", "from": "netsuite", "to": "webshop", "via": "MuleSoft", "kind": "Integration", "schedule": "Every 5 min", "every_min": 5, "owner": "Integration CoE", "duration_s": 6, "success": .97, "volume": 900,
+    "mulesoft": [{"id": "L-MULE-1", "name": "Order API -> NetSuite", "from": "webshop", "to": "netsuite", "via": "MuleSoft", "kind": "API", "schedule": "On event", "events_per_day": 400, "owner": "Integration CoE", "duration_s": 1, "success": .999, "volume": 1},
+                 {"id": "L-MULE-2", "name": "NetSuite -> Web shop inventory", "from": "netsuite", "to": "webshop", "via": "MuleSoft", "kind": "Integration", "schedule": "Every 5 min", "every_min": 5, "owner": "Integration CoE", "duration_s": 6, "success": .97, "volume": 900,
                   "plan": {"kind": "failing", "last_n": 6, "error": "HTTP 502 from NetSuite SuiteTalk endpoint"}}],
-    "boomi": [{"id": "L-BOOMI-1", "name": "NetSuite → Zoho Books invoices", "from": "netsuite", "to": "zoho", "via": "Boomi", "kind": "Integration", "schedule": "Hourly", "every_min": 60, "owner": "Finance IT", "duration_s": 95, "success": .99, "volume": 400,
+    "boomi": [{"id": "L-BOOMI-1", "name": "NetSuite -> Zoho Books invoices", "from": "netsuite", "to": "zoho", "via": "Boomi", "kind": "Integration", "schedule": "Hourly", "every_min": 60, "owner": "Finance IT", "duration_s": 95, "success": .99, "volume": 400,
                "plan": {"kind": "volume_drop", "pct": 31}}],
-    "logicapps": [{"id": "L-LA-1", "name": "Teams approvals → SharePoint", "from": "teams", "to": "sharepoint", "via": "Logic Apps", "kind": "Flow", "schedule": "On event", "events_per_day": 25, "owner": "Workplace IT", "duration_s": 3, "success": 1.0, "volume": 1},
-                  {"id": "L-LA-2", "name": "Invoice OCR → Dynamics 365", "from": "sharepoint", "to": "dynamics", "via": "Logic Apps", "kind": "Flow", "schedule": "Every 15 min", "every_min": 15, "owner": "Finance IT", "duration_s": 20, "success": .99, "volume": 30,
+    "logicapps": [{"id": "L-LA-1", "name": "Teams approvals -> SharePoint", "from": "teams", "to": "sharepoint", "via": "Logic Apps", "kind": "Flow", "schedule": "On event", "events_per_day": 25, "owner": "Workplace IT", "duration_s": 3, "success": 1.0, "volume": 1},
+                  {"id": "L-LA-2", "name": "Invoice OCR -> Dynamics 365", "from": "sharepoint", "to": "dynamics", "via": "Logic Apps", "kind": "Flow", "schedule": "Every 15 min", "every_min": 15, "owner": "Finance IT", "duration_s": 20, "success": .99, "volume": 30,
                    "plan": {"kind": "slow", "factor": 3.4, "since_days": 3}}],
-    "glue": [{"id": "L-GLUE-1", "name": "S3 clickstream → Redshift", "from": "s3", "to": "redshift", "via": "AWS Glue", "kind": "Pipeline", "schedule": "Hourly", "every_min": 60, "owner": "Data platform", "duration_s": 600, "success": .96, "volume": 5000000,
+    "glue": [{"id": "L-GLUE-1", "name": "S3 clickstream -> Redshift", "from": "s3", "to": "redshift", "via": "AWS Glue", "kind": "Pipeline", "schedule": "Hourly", "every_min": 60, "owner": "Data platform", "duration_s": 600, "success": .96, "volume": 5000000,
               "plan": {"kind": "failing", "last_n": 3, "error": "An error occurred while calling o123.pyWriteDynamicFrame: S3 access denied"}}],
-    "powerautomate": [{"id": "L-PA-1", "name": "Email attachments → SharePoint", "from": "mail", "to": "sharepoint", "via": "Power Automate", "kind": "Flow", "schedule": "On event", "events_per_day": 40, "owner": "Finance IT", "duration_s": 4, "success": .98, "volume": 1,
+    "powerautomate": [{"id": "L-PA-1", "name": "Email attachments -> SharePoint", "from": "mail", "to": "sharepoint", "via": "Power Automate", "kind": "Flow", "schedule": "On event", "events_per_day": 40, "owner": "Finance IT", "duration_s": 4, "success": .98, "volume": 1,
                        "plan": {"kind": "credential_expired", "name": "Office 365 Outlook (finance-bot)", "last_n": 8, "error": "Connection 'Office 365 Outlook' is in error: token expired"}}],
-    "blueprism": [{"id": "L-BP-1", "name": "Payroll portal → HR system", "from": "payroll", "to": "hr", "via": "Blue Prism", "kind": "Bot", "schedule": "Daily 05:00", "daily_at": 5, "owner": "HR ops", "duration_s": 900, "success": .9, "volume": 150,
+    "blueprism": [{"id": "L-BP-1", "name": "Payroll portal -> HR system", "from": "payroll", "to": "hr", "via": "Blue Prism", "kind": "Bot", "schedule": "Daily 05:00", "daily_at": 5, "owner": "HR ops", "duration_s": 900, "success": .9, "volume": 150,
                    "plan": {"kind": "screen_change", "last_n": 3, "error": "Element not found: 'Submit timesheet' button (application screen changed)"}}],
     "aa": [{"id": "L-AA-1", "name": "AP matching bot", "from": "mail", "to": "erp", "via": "Automation Anywhere", "kind": "Bot", "schedule": "Daily 04:00", "daily_at": 4, "owner": "Finance ops", "duration_s": 1500, "success": .9, "volume": 200,
             "plan": {"kind": "screen_change", "last_n": 3, "error": "UI element not found: object 'Invoice number' (screen changed)"}}],
-    "mail": [{"id": "L-MAIL-1", "name": "Supplier statements inbox → finance share", "from": "mail", "to": "share", "via": "Mail rule", "kind": "File", "schedule": "Daily", "daily_at": 8, "owner": None, "duration_s": 5, "success": 1.0, "volume": 24,
+    "mail": [{"id": "L-MAIL-1", "name": "Supplier statements inbox -> finance share", "from": "mail", "to": "share", "via": "Mail rule", "kind": "File", "schedule": "Daily", "daily_at": 8, "owner": None, "duration_s": 5, "success": 1.0, "volume": 24,
               "plan": {"kind": "volume_drop", "pct": 50}}],
     "kong": [{"id": "L-KONG-1", "name": "orders-api", "from": "webshop", "to": "erp", "via": "Kong", "kind": "API", "schedule": "On event", "events_per_day": 2000, "owner": "Platform team", "duration_s": 0.2, "success": .995, "volume": 1},
              {"id": "L-KONG-2", "name": "stock-api", "from": "erp", "to": "webshop", "via": "Kong", "kind": "API", "schedule": "On event", "events_per_day": 800, "owner": "Platform team", "duration_s": 0.3, "success": .72, "volume": 1,
@@ -202,7 +202,7 @@ def discovery(specs: list[dict], now: float | None = None, owners: bool = True) 
 
 
 def mockup_map() -> list[tuple[str, str, str]]:
-    """(id, from system, to system) of the 17 integrations the mockup shows — what the tests reproduce."""
+    """(id, from system, to system) of the 17 integrations the mockup shows - what the tests reproduce."""
     return [(s["id"], SYSTEMS[s["from"]][0], SYSTEMS[s["to"]][0]) for s in ESTATE]
 
 

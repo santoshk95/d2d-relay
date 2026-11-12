@@ -83,7 +83,7 @@ class Boomi(SysAdapter):
             if tag == "documentproperty" and el.get("name") == "schemaVersion":
                 out["schema_version"] = el.get("value")
             if tag == "processproperty" and SECRET_NAME.search(el.get("name") or "") and (el.get("value") or "").strip():
-                out["clear_secret"] = el.get("name")                       # the property's name only — never its value
+                out["clear_secret"] = el.get("name")                       # the property's name only - never its value
         return out
 
     def fetch(self, api, entity):

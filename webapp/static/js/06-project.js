@@ -8,19 +8,19 @@ const published = (st, v) => (st.publishes || []).filter(p => p.v === v);
 function header(st) {
   const runs = st.runs || [], mins = runs.reduce((a, r) => a + (r.duration_ms || 0), 0);
   const busy = RUN.has(st.status);
-  const sel = h('select', {title: busy ? 'AI model — a change applies from the next run' : 'AI model for the next runs'}, modelOptions(st.model));
+  const sel = h('select', {title: busy ? 'AI model - a change applies from the next run' : 'AI model for the next runs'}, modelOptions(st.model));
   if (st.access && !st.access.can_edit) sel.disabled = true;
   sel.onchange = async () => {
     try { S.project = await api(`/api/projects/${st.id}/model`, {json: {model: sel.value}}); notify(`AI model: ${modelName(sel.value)}`, 'ok'); S.key = null; render(); }
     catch (e) { notify(e.message, 'err'); sel.value = st.model; }
   };
   return h('div', {},
-    h('div', {class: 'crumbs'}, h('a', {href: '#/'}, 'Dashboards'), '›', st.name),
+    h('div', {class: 'crumbs'}, h('a', {href: '#/'}, 'Dashboards'), '>', st.name),
     h('div', {class: 'phead'},
       h('div', {style: 'flex:1 1 320px;min-width:0'}, h('div', {class: 'row', style: 'gap:12px'}, h('h1', {}, st.name), h('span', {id: 'hpill'}, pill(st.status))),
-        h('div', {class: 'meta'}, `Created ${when(st.created)} · ${st.files.length} data file${st.files.length === 1 ? '' : 's'}`,
-          st.versions.length ? ` · ${st.versions.length} version${st.versions.length === 1 ? '' : 's'}` : '',
-          runs.length ? ` · AI: ${dur(mins)}` : '')),
+        h('div', {class: 'meta'}, `Created ${when(st.created)} - ${st.files.length} data file${st.files.length === 1 ? '' : 's'}`,
+          st.versions.length ? ` - ${st.versions.length} version${st.versions.length === 1 ? '' : 's'}` : '',
+          runs.length ? ` - AI: ${dur(mins)}` : '')),
       h('span', {class: 'seg'}, h('em', {}, busy ? 'Model (next run)' : 'AI model'), sel),
       st.access ? accessBadge(st) : null,
       certSummary(st),
@@ -69,7 +69,7 @@ function banner(st) {
     return box('run', h('div', {class: 'spin'}), title, '', kind !== 'pbi' && kind !== 'pbix' ? h('button', {class: 'btn', onclick: stopRun}, 'Stop') : null);
   }
   if (st.status === 'awaiting_kpis') return box('you', icon('user'), 'Action required: confirm the plan',
-    'Check the KPIs and their formulas below, choose about any custom visuals, then confirm — Relay builds the prototype next.');
+    'Check the KPIs and their formulas below, choose about any custom visuals, then confirm - Relay builds the prototype next.');
   if (st.status === 'awaiting_review') {
     const bad = gatesFailed(v);
     if (bad.length) return box('you', icon('alert'), `Action required: v${lv} needs a fix before it can be approved`,
@@ -83,17 +83,17 @@ function banner(st) {
   }
   if (st.status === 'done') {
     const o = st.output || {};
-    if (!o.pbix) return box('you', icon('alert'), `Published · v${st.approved}: the Power BI file is not made yet`,
+    if (!o.pbix) return box('you', icon('alert'), `Published - v${st.approved}: the Power BI file is not made yet`,
       'Power BI Desktop makes the .pbix file from the published version: no new checks and no credits.', makePbixBtn(st));
-    return box('ok', icon('check'), `Power BI file ready · v${st.approved}`,
-      `${o.pbix} · ${o.pages} pages · ${o.visuals} visuals · ${o.measures} measures` + (o.dax ? " · DAX checked in Power BI's engine" : ''),
+    return box('ok', icon('check'), `Power BI file ready - v${st.approved}`,
+      `${o.pbix} - ${o.pages} pages - ${o.visuals} visuals - ${o.measures} measures` + (o.dax ? " - DAX checked in Power BI's engine" : ''),
       h('a', {class: 'btn primary', href: `/api/projects/${st.id}/download`}, icon('download'), 'Download'));
   }
   if (st.status === 'error') {
     const retryCost = (st.credits || {}).retry || 0;      // D2D Relay: the failed run's credits came back, so Retry pays again
     const retry = h('button', {class: 'btn primary', title: retryCost ? `Retry uses ${retryCost} credits` : 'Retry costs no credits', onclick: async () => { retry.disabled = true;
       try { S.project = await api(`/api/projects/${st.id}/retry`, {method: 'POST'}); S.key = null; render(); poll(); refreshOrg(true); } catch (e) { retry.disabled = false; notify(e.message, 'err'); } }},
-      'Retry', retryCost ? h('span', {class: 'cost'}, ` · ${retryCost} credits`) : null);
+      'Retry', retryCost ? h('span', {class: 'cost'}, ` - ${retryCost} credits`) : null);
     return box('err', icon('alert'), 'This step needs attention', st.error || 'Something went wrong.', st.job ? retry : null);
   }
   return null;
@@ -105,10 +105,10 @@ function tabsBar(st) {
 }
 async function stopRun(e) {
   e.target.disabled = true;
-  try { await api(`/api/projects/${S.pid}/stop`, {method: 'POST'}); notify('Stopping…'); poll(); } catch (err) { e.target.disabled = false; notify(err.message, 'err'); }
+  try { await api(`/api/projects/${S.pid}/stop`, {method: 'POST'}); notify('Stopping...'); poll(); } catch (err) { e.target.disabled = false; notify(err.message, 'err'); }
 }
 async function approve(st, v) {
-  try { S.project = await api(`/api/projects/${st.id}/approve`, {json: {version: v}}); notify(`v${v} approved — publishing to Power BI`, 'ok'); S.key = null; go('overview'); poll(); }
+  try { S.project = await api(`/api/projects/${st.id}/approve`, {json: {version: v}}); notify(`v${v} approved - publishing to Power BI`, 'ok'); S.key = null; go('overview'); poll(); }
   catch (e) { notify(e.message, 'err'); }
 }
 
@@ -127,7 +127,7 @@ function overviewTab(st) {
 }
 function liveCard(st) {
   return h('div', {class: 'card'}, h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Live activity'), h('span', {class: 'spacer'}),
-    h('a', {href: `#/p/${st.id}/activity`, class: 'small'}, 'Full activity log →')),
+    h('a', {href: `#/p/${st.id}/activity`, class: 'small'}, 'Full activity log')),
     h('div', {id: 'livelog'}), h('div', {class: 'live'}, h('div', {class: 'now', id: 'now'})));
 }
 function previewCard(st) {
@@ -138,9 +138,9 @@ function previewCard(st) {
 function requestCard(st) {
   return h('div', {class: 'card'}, h('h3', {}, 'Your request'), h('div', {class: 'say'}, st.prompt),
     st.data ? h('div', {class: 'note', style: 'margin-bottom:0'}, h('b', {}, 'Demo data: '), st.data.brief,
-      h('div', {class: 'muted small', style: 'margin-top:4px'}, `${{small: 'Small', medium: 'Medium', large: 'Large'}[st.data.size] || st.data.size} · ${st.data.start} to ${st.data.end}`)) : null,
+      h('div', {class: 'muted small', style: 'margin-top:4px'}, `${{small: 'Small', medium: 'Medium', large: 'Large'}[st.data.size] || st.data.size} - ${st.data.start} to ${st.data.end}`)) : null,
     h('div', {class: 'flist', style: 'margin-top:10px'}, st.files.map(f => h('span', {style: 'cursor:pointer', title: 'Preview the first rows',
-      onclick: () => previewData(st, f.name)}, icon('table'), ' ', f.name, ' · ', size(f.bytes), f.generated ? h('span', {class: 'tag acc', style: 'margin-left:4px'}, 'generated') : null))),
+      onclick: () => previewData(st, f.name)}, icon('table'), ' ', f.name, ' - ', size(f.bytes), f.generated ? h('span', {class: 'tag acc', style: 'margin-left:4px'}, 'generated') : null))),
     st.images.length ? h('div', {class: 'thumbs'}, st.images.map(n => h('img', {src: `/api/projects/${st.id}/images/${encodeURIComponent(n)}`, alt: n}))) : null);
 }
 function dataCard(st) {
@@ -149,20 +149,20 @@ function dataCard(st) {
   if (!st.data || !tables.length) return null;
   return h('div', {class: 'card'},
     h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Demo data'), h('span', {class: 'tag acc'}, 'generated'),
-      h('span', {class: 'muted small'}, `${tables.length} tables · ${(st.data_rows || 0).toLocaleString()} rows · ${st.data.start} to ${st.data.end}`),
+      h('span', {class: 'muted small'}, `${tables.length} tables - ${(st.data_rows || 0).toLocaleString()} rows - ${st.data.start} to ${st.data.end}`),
       h('span', {class: 'spacer'}), st.files_available && st.files_available.includes('datagen.yaml') ? h('button', {class: 'btn sm ghost', onclick: () => viewFile('datagen.yaml')}, icon('file'), 'Recipe') : null),
     st.data_summary ? notes(st.data_summary) : st.data_regenerated ? h('div', {class: 'muted small', style: 'margin-top:6px'},
-      `Regenerated ${when(st.data_regenerated)} after your comments — Relay's notes on the plan say what changed.`) : null,
+      `Regenerated ${when(st.data_regenerated)} after your comments - Relay's notes on the plan say what changed.`) : null,
     (st.data_story || []).length ? h('div', {}, h('div', {class: 'muted small', style: 'margin-top:8px;font-weight:600'}, 'What the data was made to show'),
       h('ul', {class: 'story small'}, st.data_story.map(s => h('li', {}, s)))) : null,
     h('div', {class: 'dtables'}, tables.map(t => h('button', {title: (t.columns || []).join(', '), onclick: () => previewData(st, t.file)},
-      h('b', {}, t.table), h('small', {}, `${(t.rows || 0).toLocaleString()} rows · ${(t.columns || []).length} columns` + (t.generated === false ? ' · yours' : ''))))),
-    st.status === 'awaiting_kpis' ? h('div', {class: 'muted small', style: 'margin-top:8px'}, 'Want different data? Say so in the comments below (e.g. "add a returns table", "make Europe grow faster") — Relay changes the recipe and regenerates it.') : null);
+      h('b', {}, t.table), h('small', {}, `${(t.rows || 0).toLocaleString()} rows - ${(t.columns || []).length} columns` + (t.generated === false ? ' - yours' : ''))))),
+    st.status === 'awaiting_kpis' ? h('div', {class: 'muted small', style: 'margin-top:8px'}, 'Want different data? Say so in the comments below (e.g. "add a returns table", "make Europe grow faster") - Relay changes the recipe and regenerates it.') : null);
 }
 async function previewData(st, file) {
   let r;
   try { r = await api(`/api/projects/${st.id}/data/${encodeURIComponent(file)}?limit=25`); } catch (e) { return notify(e.message, 'err'); }
-  modal(`${file} · ${r.total.toLocaleString()} rows`, h('div', {class: 'mbody'},
+  modal(`${file} - ${r.total.toLocaleString()} rows`, h('div', {class: 'mbody'},
     h('div', {class: 'dprev'}, h('table', {}, h('thead', {}, h('tr', {}, r.columns.map(c => h('th', {}, c)))),
       h('tbody', {}, r.rows.map(row => h('tr', {}, row.map(v => h('td', {}, v === null ? '' : String(v)))))))),
     h('div', {class: 'muted small', style: 'margin-top:8px'}, `The first ${r.rows.length} of ${r.total.toLocaleString()} rows.`)), true);
@@ -219,7 +219,7 @@ function proposalCard(v, policy) {
     h('div', {class: 'ttl'}, h('b', {}, v.title || v.name), h('span', {class: 'faint small mono'}, v.name),
       v.recommend ? h('span', {class: 'tag acc'}, 'Relay recommends: ' + (v.recommend === 'generate' ? 'build it' : 'use available')) : null),
     v.need ? h('div', {class: 'need small'}, v.need) : null,
-    h('div', {class: 'muted small'}, [v.fields ? 'Fields: ' + v.fields : '', pages ? 'Pages: ' + pages : ''].filter(Boolean).join(' · ')),
+    h('div', {class: 'muted small'}, [v.fields ? 'Fields: ' + v.fields : '', pages ? 'Pages: ' + pages : ''].filter(Boolean).join(' - ')),
     h('div', {class: 'choice'}, opt('generate', '✦ Build a new custom visual'), opt('available', 'Use available: ' + (v.fallback || 'closest visual'))));
 }
 function planVisuals(list) {
@@ -230,7 +230,7 @@ function planVisuals(list) {
 function planModel(plan) {
   const model = plan.model || {};
   return model.tables ? h('div', {class: 'card'}, h('h3', {}, 'Data model'),
-    h('div', {class: 'tables'}, model.tables.map(t => h('div', {}, h('b', {}, t.name), h('span', {class: 'muted small'}, [t.role, t.csv, t.grain].filter(Boolean).join(' · '))))),
+    h('div', {class: 'tables'}, model.tables.map(t => h('div', {}, h('b', {}, t.name), h('span', {class: 'muted small'}, [t.role, t.csv, t.grain].filter(Boolean).join(' - '))))),
     model.relationships ? h('div', {class: 'rels mono'}, model.relationships.map(r => h('span', {}, typeof r === 'string' ? r : JSON.stringify(r)))) : null) : null;
 }
 function planPages(plan) {
@@ -244,7 +244,7 @@ function planView(st) {
   const cvs = h('div', {}, proposals.map(v => proposalCard(v, st.custom_visuals)));
   S.planKpis = kpis;
   const list = h('div', {class: 'kpis'}, kpis.map(kpiCard));
-  const fb = h('textarea', {rows: 2, placeholder: 'Comments for Relay — needed to ask for a revised plan (or attach files), optional when confirming'});
+  const fb = h('textarea', {rows: 2, placeholder: 'Comments for Relay - needed to ask for a revised plan (or attach files), optional when confirming'});
   const askLabel = () => ['Ask Relay to revise the plan', costTag('change')];
   const ask = h('button', {class: 'btn', onclick: () => sendPlan('revise')}, ...askLabel());
   const ok = h('button', {class: 'btn primary', onclick: () => sendPlan('confirm')}, icon('check'), 'Confirm & build prototype');
@@ -262,8 +262,8 @@ function planView(st) {
     for (const f of files) fd.append(isImage(f) ? 'images' : 'files', f);
     ask.disabled = ok.disabled = att.button.disabled = true;
     try {
-      S.project = await upload(`/api/projects/${st.id}/kpis`, fd, p => { if (files.length) ask.textContent = `Uploading ${Math.round(p * 100)}%…`; });
-      notify(action === 'confirm' ? 'Plan confirmed — Relay is building the prototype' : 'Sent to Relay — the plan will be revised', 'ok');
+      S.project = await upload(`/api/projects/${st.id}/kpis`, fd, p => { if (files.length) ask.textContent = `Uploading ${Math.round(p * 100)}%...`; });
+      notify(action === 'confirm' ? 'Plan confirmed - Relay is building the prototype' : 'Sent to Relay - the plan will be revised', 'ok');
       S.key = null; render(); poll(); refreshOrg(true);
     } catch (e) { ask.disabled = ok.disabled = att.button.disabled = false; ask.replaceChildren(...askLabel()); toast(ok, e.message); }
   }
@@ -276,7 +276,7 @@ function planView(st) {
     dataCard(st),
     planModel(plan),
     h('div', {class: 'card'}, h('div', {class: 'row', style: 'margin-bottom:10px'}, h('h3', {style: 'margin:0'}, 'KPIs ', h('span', {class: 'muted'}, `(${kpis.length})`)),
-      h('span', {class: 'muted small'}, 'Edit anything — names, labels, the meaning or the DAX. Untick to drop a KPI.'), h('span', {class: 'spacer'}),
+      h('span', {class: 'muted small'}, 'Edit anything - names, labels, the meaning or the DAX. Untick to drop a KPI.'), h('span', {class: 'spacer'}),
       h('button', {class: 'btn sm', onclick: () => list.append(kpiCard({}, -1))}, icon('plus'), 'Add KPI')), list),
     proposals.length ? h('div', {class: 'card'}, h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, `Custom visuals `, h('span', {class: 'muted'}, `(${proposals.length})`)),
       h('span', {class: 'spacer'}), h('span', {class: 'tag'}, POLICY[st.custom_visuals] || '')),
@@ -295,23 +295,23 @@ function notes(text) {
 }
 function daxLine(st, v, dax) {
   if (!dax) return null;
-  if (!dax.checked) return h('div', {class: 'daxline muted'}, 'DAX not checked in Power BI\'s engine yet' + (dax.reason ? ` (${dax.reason})` : '') + ' — it is checked before publishing.');
+  if (!dax.checked) return h('div', {class: 'daxline muted'}, 'DAX not checked in Power BI\'s engine yet' + (dax.reason ? ` (${dax.reason})` : '') + ' - it is checked before publishing.');
   const bad = dax.problems > 0, diff = Array.isArray(dax.differences) ? dax.differences.length : (dax.differences || 0);
   return h('div', {class: 'daxline'},
     h('span', {class: bad ? 'bad' : 'ok'}, bad ? `⚠ Power BI's engine found ${dax.problems} DAX problem(s)` : '✓ DAX checked in Power BI\'s engine'),
     diff ? h('span', {class: 'bad'}, `⚠ ${diff} value(s) differ from the prototype`) : dax.compared ? h('span', {class: 'ok'}, '✓ values match the prototype') : null,
-    h('span', {class: 'muted'}, `${dax.measures} measures · ${dax.visuals} visual queries` + (dax.sampled && dax.sampled.length ? ' · large tables sampled' : '')),
+    h('span', {class: 'muted'}, `${dax.measures} measures - ${dax.visuals} visual queries` + (dax.sampled && dax.sampled.length ? ' - large tables sampled' : '')),
     h('button', {class: 'btn sm', onclick: () => showDax(st, v)}, 'Show values'));
 }
 /* review gates: every check a version passes before it can be approved, and again before publishing */
-const GMARK = {pass: '✓', warn: '!', fail: '✕', skip: '–'};
+const GMARK = {pass: '✓', warn: '!', fail: '✕', skip: '-'};
 const gatesFailed = v => ((v && v.gates) || []).filter(g => g.status === 'fail');
 function gatesPanel(st, v, opts = {}) {
   const gs = v.gates || [], busy = RUN.has(st.status);
   const run = (label, cls) => busy ? null : h('button', {class: 'btn sm ' + (cls || ''), title: 'Run every gate on this version now (the DAX check it has is reused)',
     onclick: e => runGates(st, v.v, e.currentTarget)}, icon('play'), label);
   if (!gs.length) return h('div', {class: 'gates'}, h('div', {class: 'gh'}, h('b', {}, 'Review gates'),
-    h('span', {class: 'muted small'}, 'Not recorded for this version (made before the gates existed) — they run again before publishing.'),
+    h('span', {class: 'muted small'}, 'Not recorded for this version (made before the gates existed) - they run again before publishing.'),
     h('span', {class: 'spacer'}), opts.rerun === false ? null : run('Run review gates')));
   const c = {pass: 0, warn: 0, fail: 0, skip: 0};
   gs.forEach(g => c[g.status]++);
@@ -344,7 +344,7 @@ function gatesPanel(st, v, opts = {}) {
     folded ? null : rows);
 }
 async function runGates(st, v, btn) {
-  btn.disabled = true; btn.lastChild.textContent = 'Running the gates…';
+  btn.disabled = true; btn.lastChild.textContent = 'Running the gates...';
   try { S.project = await api(`/api/projects/${st.id}/versions/${v}/gates`, {method: 'POST'}); notify(`Review gates ran for v${v}`, 'ok'); S.key = null; render(); }
   catch (e) { btn.disabled = false; btn.lastChild.textContent = 'Run again'; notify(e.message, 'err'); }
 }
@@ -353,7 +353,7 @@ function gateFix(st, v) {
   if (!bad.length) return null;
   const btn = h('button', {class: 'btn sm primary', disabled: RUN.has(st.status), title: "Fixing what failed in Relay's own review gates uses no credits", onclick: () => fixGates(st, v, btn)}, 'Ask Relay to fix them');
   return h('div', {class: 'note err gatefix'}, h('span', {style: 'flex:1;min-width:220px'},
-    h('b', {}, `v${v.v} did not pass ${bad.length} review gate${bad.length === 1 ? '' : 's'}`), ` (${bad.map(g => g.name).join(', ')}) — approval is locked until they pass.`), btn);
+    h('b', {}, `v${v.v} did not pass ${bad.length} review gate${bad.length === 1 ? '' : 's'}`), ` (${bad.map(g => g.name).join(', ')}) - approval is locked until they pass.`), btn);
 }
 async function fixGates(st, v, btn) {
   btn.disabled = true;
@@ -365,7 +365,7 @@ async function fixGates(st, v, btn) {
     fd.append('version', v.v);
     fd.append('fix_gates', '1');                 // D2D Relay: fixing what failed in Relay's own checks uses no credits
     S.project = await upload(`/api/projects/${st.id}/feedback`, fd);
-    notify('Sent to Relay — it is fixing the failing gates', 'ok'); S.version = null; S.key = null; render(); poll();
+    notify('Sent to Relay - it is fixing the failing gates', 'ok'); S.version = null; S.key = null; render(); poll();
   } catch (e) { btn.disabled = false; notify(e.message, 'err'); }
 }
 async function showDax(st, v) {
@@ -373,7 +373,7 @@ async function showDax(st, v) {
   try { r = await api(`/api/projects/${st.id}/dax/${v}`); } catch (e) { return modal('DAX check', h('div', {class: 'mbody'}, e.message)); }
   const row = (name, shown, bad) => h('tr', {}, h('td', {}, name), h('td', {class: 'v', style: bad ? 'color:var(--err)' : ''}, shown));
   const show = x => x.error || (x.text !== null && x.text !== undefined && x.text !== '' ? x.text : x.value === null ? '(blank)' : String(x.value));
-  modal(`DAX check · v${v}`, h('div', {class: 'mbody'},
+  modal(`DAX check - v${v}`, h('div', {class: 'mbody'},
     h('p', {class: 'muted small', style: 'margin-top:0'}, `Evaluated by Power BI's own engine (Power BI Desktop ${r.engine || ''}) under the report's default filters, in ${r.seconds} s.`
       + ((r.sampled || []).length ? ' Large tables were checked on a sample, so their values can differ from the full data: ' + r.sampled.join('; ') : '')),
     (r.problems || []).length ? h('div', {class: 'note warn'}, h('b', {}, 'Problems'), h('ul', {}, r.problems.map(p => h('li', {}, p)))) : null,
@@ -394,7 +394,7 @@ function customCard(st, v) {
   };
   const item = c => c.origin === 'project'
     ? h('a', {class: 'cvitem', href: `/api/projects/${st.id}/visuals/${c.name}/preview`, target: '_blank', title: 'Browser test of the visual'},
-        h('img', {src: `/api/projects/${st.id}/visuals/${c.name}/preview`, alt: ''}), h('div', {}, h('b', {class: 'small'}, c.title), h('div', {class: 'muted small'}, `new · v${c.version}`)))
+        h('img', {src: `/api/projects/${st.id}/visuals/${c.name}/preview`, alt: ''}), h('div', {}, h('b', {class: 'small'}, c.title), h('div', {class: 'muted small'}, `new - v${c.version}`)))
     : h('a', {class: 'cvitem', href: `/api/library/${c.name}/preview`, target: '_blank', title: 'From the visual library: a preview'},
         h('img', {src: `/api/library/${c.name}/preview`, alt: ''}), h('div', {}, h('b', {class: 'small'}, c.title), h('div', {class: 'muted small'}, 'from the library')));
   return h('div', {class: 'note'},
@@ -412,7 +412,7 @@ function reviewView(st) {
   const v = vs.find(x => x.v === S.version) || vs[vs.length - 1];
   const latest = vs[vs.length - 1].v;
   const fb = h('textarea', {rows: 3, id: 'feedback', placeholder: (v.v === latest ? 'What should change? e.g. "Add a page for suppliers", "Show margin instead of sales on the quadrant", "Use blue as the accent"'
-    : `Changes start from v${v.v} (it becomes the base again).`) + ' — attach CSVs or images if it needs more data or a design.'});
+    : `Changes start from v${v.v} (it becomes the base again).`) + ' - attach CSVs or images if it needs more data or a design.'});
   const changeLabel = () => ['Request changes', costTag('change')];
   const change = h('button', {class: 'btn', onclick: send}, ...changeLabel());
   const approved = st.status === 'done' && st.approved === v.v, blocked = gatesFailed(v).length > 0;
@@ -427,8 +427,8 @@ function reviewView(st) {
     for (const f of files) fd.append(isImage(f) ? 'images' : 'files', f);
     change.disabled = approveBtn.disabled = att.button.disabled = true;
     try {
-      S.project = await upload(`/api/projects/${st.id}/feedback`, fd, p => { if (files.length) change.textContent = `Uploading ${Math.round(p * 100)}%…`; });
-      notify('Sent to Relay — a new version is on its way', 'ok'); S.version = null; S.key = null; render(); poll(); refreshOrg(true);
+      S.project = await upload(`/api/projects/${st.id}/feedback`, fd, p => { if (files.length) change.textContent = `Uploading ${Math.round(p * 100)}%...`; });
+      notify('Sent to Relay - a new version is on its way', 'ok'); S.version = null; S.key = null; render(); poll(); refreshOrg(true);
     } catch (e) { change.disabled = att.button.disabled = false; approveBtn.disabled = approved || blocked; change.replaceChildren(...changeLabel()); toast(approveBtn, e.message); }
   }
   async function doApprove() { change.disabled = approveBtn.disabled = true; await approve(st, v.v); }
@@ -440,7 +440,7 @@ function reviewView(st) {
         h('div', {class: 'vers'}, vs.map(x => h('button', {class: x.v === v.v ? 'on' : '', title: x.label || '',
           onclick: () => { S.version = x.v; S.key = null; render(); }}, 'v' + x.v, published(st, x.v).length ? h('span', {class: 'ap'}, '✓') : null))),
         v.label ? h('span', {class: 'tag acc'}, v.label) : null,
-        h('span', {class: 'spacer'}), h('span', {class: 'muted small'}, `${v.pages.length} pages · ${v.visuals} visuals · ${v.measures} measures`),
+        h('span', {class: 'spacer'}), h('span', {class: 'muted small'}, `${v.pages.length} pages - ${v.visuals} visuals - ${v.measures} measures`),
         h('a', {class: 'btn sm ghost', href: `#/p/${st.id}/versions`, onclick: () => { S.vsel = v.v; }}, icon('clock'), 'History & changes'),
         h('a', {class: 'btn sm', href: `/api/projects/${st.id}/prototype/${v.v}`, target: '_blank'}, icon('external'), 'Open')),
       v.feedback ? h('div', {class: 'note'}, h('b', {}, 'You asked: '), v.feedback.replace(/^\(Start from[^)]*\)\s*/, ''), attachedList(v.attachments)) : null,
@@ -469,7 +469,7 @@ function doneCard(st) {
   return h('div', {class: 'card'},
     h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Your Power BI file'), h('span', {class: 'spacer'}),
       h('a', {class: 'btn primary', href: `/api/projects/${st.id}/download`}, icon('download'), 'Download ', o.zip || 'zip')),
-    h('div', {class: 'muted small', style: 'margin-top:4px'}, `${o.pbix}${o.pbix_mb ? ` (${o.pbix_mb} MB)` : ''} · ${o.pages} pages · ${o.visuals} visuals · ${o.measures} measures · from prototype v${st.approved}`),
+    h('div', {class: 'muted small', style: 'margin-top:4px'}, `${o.pbix}${o.pbix_mb ? ` (${o.pbix_mb} MB)` : ''} - ${o.pages} pages - ${o.visuals} visuals - ${o.measures} measures - from prototype v${st.approved}`),
     (o.gates || []).length ? gatesPanel(st, {v: st.approved, gates: o.gates, dax: {...(o.dax || {}), checked: true}}, {title: 'Review gates passed before publishing', rerun: false})
       : o.dax ? daxLine(st, st.approved, {...o.dax, problems: 0}) : null,
     (o.custom_visuals || []).length ? h('div', {class: 'small', style: 'margin-top:6px'}, '✦ Custom visuals: ' + o.custom_visuals.join(', ') + ' (inside the .pbix).') : null,
@@ -479,11 +479,11 @@ function doneCard(st) {
         : `Unzip the download and open ${o.pbix} in Power BI Desktop. The data is already inside it.`)),
       h('div', {}, h('b', {}, 'Refresh it with new data'),
         h('div', {class: 'small muted'}, folder ? 'Put the CSVs in this folder (unzipping the download into C:\\D2D Relay Data does it), then press Refresh in Power BI Desktop:'
-          : 'Point the DataFolder parameter at the folder with the CSVs (Transform data › Edit parameters), then press Refresh.'),
+          : 'Point the DataFolder parameter at the folder with the CSVs (Transform data > Edit parameters), then press Refresh.'),
         folder ? h('div', {class: 'path'}, h('code', {}, folder), copyBtn(folder)) : null,
         h('div', {class: 'small muted', style: 'margin-top:4px'}, (o.data_in_zip ? 'The zip holds the .pbix and the CSVs in data\\.'
           : `The zip holds the .pbix only: the CSVs (${o.data_mb || '?'} MB) are too large to add.`)
-          + ' Elsewhere, change the DataFolder parameter (Transform data › Edit parameters).')),
+          + ' Elsewhere, change the DataFolder parameter (Transform data > Edit parameters).')),
       st.access && st.access.can_publish ? h('div', {class: 'small muted'}, makePbixBtn(st, 'Make the Power BI file again')) : null));
 }
 

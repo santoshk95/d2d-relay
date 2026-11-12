@@ -1,10 +1,10 @@
-"""Confluence Cloud as a Connector SDK adapter for Business process documents: where a published process is filed —
+"""Confluence Cloud as a Connector SDK adapter for Business process documents: where a published process is filed -
 a page in a space with the step-by-step procedure (storage format) and the BPMN 2.0 map and the Word SOP attached.
 One adapter + one mock (tests/mocklab/sims/process.py: `confluence`).
 
 Read-only by default: `test` signs in and reads the space, `list_objects` lists its pages, `read` the pages Relay filed
-(label relay). A page is written only through connectors.request_write — after a named person accepted exactly that
-version — with the approval's id in an X-Relay-Approval header; the files are read again from the work item's outputs.
+(label relay). A page is written only through connectors.request_write - after a named person accepted exactly that
+version - with the approval's id in an X-Relay-Approval header; the files are read again from the work item's outputs.
 
   page   payload {"from": "processdocs:<item>:<step>", "title", "body" (storage XHTML), "files": [output names], "version"}
          -> POST /wiki/api/v2/pages, then POST /wiki/rest/api/content/{id}/child/attachment for each file

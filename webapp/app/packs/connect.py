@@ -1,4 +1,4 @@
-"""Connections (registry id `connect`) on the workbench — the connections hub itself, looked after as a Systems module:
+"""Connections (registry id `connect`) on the workbench - the connections hub itself, looked after as a Systems module:
 every connection a person may use (an admin: every connection in the workspace), its sign-in, scope, sharing and what
 uses it. The hub page (#/connections) stays where connections are made; this module checks, fixes and watches them.
 
@@ -7,7 +7,7 @@ Assess   each connection signed in again (read-only, as the hub's Test does) and
          uses, write access shared with the whole organisation, write access nothing uses, a connection nothing has
          used for 90 days, a key or password not renewed for a year, the same source connected twice.
 Change   from the assessment or a request naming connections: scope narrowed to read, sharing narrowed to the
-         owner's teams, an unused connection disabled — each after a named approver confirms, by the connection's
+         owner's teams, an unused connection disabled - each after a named approver confirms, by the connection's
          owner's rights (the hub's own rules: only the owner changes scope; the owner or an admin sharing and
          switching off), read back; renewing a sign-in or merging duplicates stays a step for a person.
 Run      every connection signed in again on a schedule; a failing sign-in, or a disabled connection still in use, is
@@ -99,24 +99,24 @@ def rules(cs: list[dict]) -> list[dict]:
         used = c["used_by"]
         if c["enabled"] and c["status"] in ("error", "reconsent"):
             if used:
-                out.append(_f("signin_failing", c, f"{c['name']} ({c['label']}) cannot sign in — {c['error'][:200]} — and {len(used)} thing(s) use it: {', '.join(used[:4])}", "high",
-                              f"{c['owner']} renews the sign-in in Connections (Renew).", [_p(c, "manual", why=f"{c['owner']} renews the sign-in in Connections › {c['name']} › Renew")],
+                out.append(_f("signin_failing", c, f"{c['name']} ({c['label']}) cannot sign in - {c['error'][:200]} - and {len(used)} thing(s) use it: {', '.join(used[:4])}", "high",
+                              f"{c['owner']} renews the sign-in in Connections (Renew).", [_p(c, "manual", why=f"{c['owner']} renews the sign-in in Connections > {c['name']} > Renew")],
                               cause="the stored sign-in no longer works (expired, rotated or revoked)", measured=c["status"]))
             else:
-                out.append(_f("signin_failing", c, f"{c['name']} ({c['label']}) cannot sign in — {c['error'][:200]} — and nothing uses it", "medium",
+                out.append(_f("signin_failing", c, f"{c['name']} ({c['label']}) cannot sign in - {c['error'][:200]} - and nothing uses it", "medium",
                               "Switch it off (nothing uses it), or renew the sign-in if it is still needed.", [_p(c, "update", "enabled", "off", "on", "nothing uses it and it cannot sign in")],
                               cause="the stored sign-in no longer works", measured=c["status"]))
         if not c["enabled"] and used:
-            out.append(_f("disabled_in_use", c, f"{c['name']} is switched off but {len(used)} thing(s) still use it: {', '.join(used[:4])} — they cannot refresh or run", "high",
+            out.append(_f("disabled_in_use", c, f"{c['name']} is switched off but {len(used)} thing(s) still use it: {', '.join(used[:4])} - they cannot refresh or run", "high",
                           "Switch it on again, or move those items to another connection.", [_p(c, "manual", why=f"switch {c['name']} on again, or move {', '.join(used[:3])} to another connection")],
                           cause="a connection was switched off while in use", measured="switched off"))
         if c["scope"] == "write" and c["sharing"] == "org":
-            out.append(_f("write_shared_org", c, f"{c['name']} can write to {c['label']} and is shared with the whole organisation — anyone can propose writes with {c['owner']}'s sign-in", "high",
+            out.append(_f("write_shared_org", c, f"{c['name']} can write to {c['label']} and is shared with the whole organisation - anyone can propose writes with {c['owner']}'s sign-in", "high",
                           "Share it with the owner's teams only (writes still need a named approver).", [_p(c, "update", "sharing", "team", "org", "keep write access to the owner's teams")],
-                          cause="a write-capable sign-in is open to everyone", measured="write · org"))
+                          cause="a write-capable sign-in is open to everyone", measured="write - org"))
         if c["scope"] == "write" and not used:
             out.append(_f("write_unused", c, f"{c['name']} has write access but nothing uses it", "medium", "Narrow it to read; widen it again when a change needs it.",
-                          [_p(c, "update", "scope", "read", "write", "nothing uses it to write")], cause="write access granted and not needed", measured="write · unused"))
+                          [_p(c, "update", "scope", "read", "write", "nothing uses it to write")], cause="write access granted and not needed", measured="write - unused"))
         age = _days(c["created"]) or 0
         last = _days(c["last_used"])
         if not used and age > UNUSED_DAYS and (last is None or last > UNUSED_DAYS) and c["enabled"] and c["status"] not in ("error", "reconsent"):
@@ -186,7 +186,7 @@ def a_health(ctx):
         mine = [f for f in fs if f["conn"] == c["id"]]
         worst = min((f["severity"] for f in mine), key=lambda s: w3.SEV_ORDER[s], default=None)
         checks.append({"name": c["id"], "label": f"{c['name']} ({c['label']})", "status": "pass" if not mine else "fail" if worst == "high" else "warn", "severity": worst,
-                       "measured": f"{c['status']} · {c['scope']} · {c['sharing']}", "expected": "signs in · used · least access",
+                       "measured": f"{c['status']} - {c['scope']} - {c['sharing']}", "expected": "signs in - used - least access",
                        "detail": "; ".join(f["what"] for f in mine)[:400] or "signs in; access fits its use"})
     checks.append(ctx.proof("references_real", label="Every finding names a connection in the hub", refs=[f["conn"] for f in fs], known=[c["id"] for c in _in_scope(ctx)]))
     eid = ctx.evidence("Health of each connection", {"checks": checks, "findings": fs}, kind="gates", ok=not fs)
@@ -257,17 +257,17 @@ def c_diagnose(ctx):
         try:
             now = _view(connectors._row(t["conn"]), uses)
         except connectors.ConnectorError:
-            checks.append({"name": t["id"], "label": t["what"][:160], "status": "pass", "detail": "the connection is gone — nothing to change"})
+            checks.append({"name": t["id"], "label": t["what"][:160], "status": "pass", "detail": "the connection is gone - nothing to change"})
             continue
         still = [f for f in rules([now]) if f["kind"] == t["kind"]]
         if not still and t["kind"] != "duplicate":
-            checks.append({"name": t["id"], "label": t["what"][:160], "status": "pass", "detail": "no longer true — nothing to change"})
+            checks.append({"name": t["id"], "label": t["what"][:160], "status": "pass", "detail": "no longer true - nothing to change"})
             continue
-        checks.append({"name": t["id"], "label": t["what"][:160], "status": "fail" if t["severity"] == "high" else "warn", "severity": t["severity"], "detail": f"Cause: {t.get('cause') or '—'}. Fix: {t['fix']}"})
+        checks.append({"name": t["id"], "label": t["what"][:160], "status": "fail" if t["severity"] == "high" else "warn", "severity": t["severity"], "detail": f"Cause: {t.get('cause') or '-'}. Fix: {t['fix']}"})
         for i, p in enumerate(t["proposals"]):
             props.append({"id": f"{w3.slug(t['id'])}-{i}", "include": True, "system": t["system"], "conn": t["conn"], "finding": t["kind"], **p})
     ctx.put("proposals", props)
-    return {"summary": f"{sum(1 for c in checks if c['status'] != 'pass')} problem(s) still true; {len(props)} change(s) proposed for a person to confirm — nothing has changed yet.",
+    return {"summary": f"{sum(1 for c in checks if c['status'] != 'pass')} problem(s) still true; {len(props)} change(s) proposed for a person to confirm - nothing has changed yet.",
             "counts": {"changes": len(props)}, "data": {"checks": checks}}
 
 
@@ -294,7 +294,7 @@ def validate_fix(recs, ctx):
     out = []
     for r in recs:
         if r.get("include") and r["action"] == "update" and r.get("value") not in CHANGEABLE.get(r.get("field"), ()):
-            out.append(f"{r['label']}: Relay only narrows access here — {r['field']} can become {' or '.join(CHANGEABLE.get(r.get('field'), ('nothing',)))}")
+            out.append(f"{r['label']}: Relay only narrows access here - {r['field']} can become {' or '.join(CHANGEABLE.get(r.get('field'), ('nothing',)))}")
     return out
 
 
@@ -313,19 +313,19 @@ def c_prove(ctx):
         now = {"scope": c["scope"], "sharing": c["sharing"], "enabled": "on" if c["enabled"] else "off"}[r["field"]]
         why_not = _may(r["field"], c, ctx.owner)
         hits = c["used_by"] if r["field"] in ("enabled", "scope") else []
-        checks.append({"name": r["id"], "label": f"{r['label']}: {r['field']} {now} → {r['value']}", "status": "fail" if why_not else "pass", "measured": now, "expected": r["value"],
+        checks.append({"name": r["id"], "label": f"{r['label']}: {r['field']} {now} {r['value']}", "status": "fail" if why_not else "pass", "measured": now, "expected": r["value"],
                        "detail": why_not or (f"affects {', '.join(hits[:4])}" if hits else "nothing that uses it is affected")})
     eid = ctx.evidence("Dry run", checks, kind="diff", ok=not any(x["status"] == "fail" for x in checks))
     for x in checks:
         x["evidence"] = eid
     return {"summary": f"Dry run of {len(recs)} change(s): {sum(1 for x in checks if x['status'] == 'pass')} ready, {sum(1 for x in checks if x['status'] == 'warn')} for a person, "
-                       f"{sum(1 for x in checks if x['status'] == 'fail')} not allowed — nothing was changed.", "data": {"checks": checks}}
+                       f"{sum(1 for x in checks if x['status'] == 'fail')} not allowed - nothing was changed.", "data": {"checks": checks}}
 
 
 def c_approve(ctx):
     recs = [r for r in ctx.records("fix") if r.get("include")]
     return {"summary": f"Release {sum(1 for r in recs if r['action'] == 'update')} change(s) to the connections hub" + (f"; {sum(1 for r in recs if r['action'] == 'manual')} step(s) for the owners." if any(r["action"] == "manual" for r in recs) else "."),
-            "data": {"items": [{"title": r["label"], "detail": f"{r['field']} → {r['value']}" if r["action"] == "update" else f"a person: {r.get('why')}"} for r in recs]}}
+            "data": {"items": [{"title": r["label"], "detail": f"{r['field']} {r['value']}" if r["action"] == "update" else f"a person: {r.get('why')}"} for r in recs]}}
 
 
 def c_learn(ctx):
@@ -348,10 +348,10 @@ def c_learn(ctx):
             db.audit("connect.change", r["conn"], {"field": r["field"], "value": r["value"], "item": ctx.id, "approver": ctx.st.get("approver")}, who)
             c = connectors._row(r["conn"])
             now = {"scope": c.get("scope"), "sharing": c.get("sharing"), "enabled": "on" if c.get("enabled") else "off"}[r["field"]]
-            checks.append({"name": r["id"], "label": f"{r['label']}: {r['field']} → {r['value']}", "status": "pass" if now == r["value"] else "fail", "measured": now, "expected": r["value"],
+            checks.append({"name": r["id"], "label": f"{r['label']}: {r['field']} {r['value']}", "status": "pass" if now == r["value"] else "fail", "measured": now, "expected": r["value"],
                            "detail": "read back in the hub"})
         except connectors.ConnectorError as e:
-            checks.append({"name": r["id"], "label": f"{r['label']}: {r['field']} → {r['value']}", "status": "fail", "detail": str(e)[:200]})
+            checks.append({"name": r["id"], "label": f"{r['label']}: {r['field']} {r['value']}", "status": "fail", "detail": str(e)[:200]})
     return {"summary": f"{sum(1 for x in checks if x['status'] == 'pass')} change(s) made and read back; {sum(1 for x in checks if x['status'] == 'warn')} for the owners; "
                        f"{sum(1 for x in checks if x['status'] == 'fail')} failed.", "data": {"checks": checks}, "ok": not any(x["status"] == "fail" for x in checks)}
 
@@ -400,7 +400,7 @@ def _run_work() -> wb.Work:
         for x in checks:
             x.setdefault("evidence", eid)
         return {"summary": f"{len(checks)} connection(s) signed in again: {len(breaks)} need attention.", "counts": {"watched": len(checks), "breaks": len(breaks)}, "data": {"checks": checks}}
-    w.steps["Watch"] = wb.Step(kind="proof", run=watch, view="gates", agent="Watcher", text="Every connection signed in again, read-only — the sign-in, and whether something switched off is still in use")
+    w.steps["Watch"] = wb.Step(kind="proof", run=watch, view="gates", agent="Watcher", text="Every connection signed in again, read-only - the sign-in, and whether something switched off is still in use")
     del old
     return w
 
@@ -414,12 +414,12 @@ class Hub(wb.Platform):
 
     uploads = ()
     simulator = "the mock-lab simulators behind each connection"
-    reads = "every connection you may use (an admin: all of them): sign-in, scope, sharing and what uses it — Relay's own records"
+    reads = "every connection you may use (an admin: all of them): sign-in, scope, sharing and what uses it - Relay's own records"
 
 
-GUIDE = """# Connections — the work item
+GUIDE = """# Connections - the work item
 
-Relay's connections module reads the connections hub — each connection's sign-in, scope, sharing and what uses it —
+Relay's connections module reads the connections hub - each connection's sign-in, scope, sharing and what uses it -
 and narrows access (scope to read, sharing to teams, switched off) only after a named person approves that very
 change, by the hub's own rules. Renewing a sign-in is the owner's step. Never invent a connection or a use."""
 
@@ -430,7 +430,7 @@ wb.register(wb.Pack(
     work={
         "assess": wb.Work(title="See which connections fail, are open too widely, or nothing uses", needs_source=False, sources=False,
                           fields=[wb.Field("retest", "Sign in to each connection again", "bool", default=True)], steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Reader", confirm=False, text="Every connection you may use, each signed in again — read-only at the vendor"),
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Reader", confirm=False, text="Every connection you may use, each signed in again - read-only at the vendor"),
             "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Scanner", text="Each connection in the hub's own terms: kind, owner, scope, sharing, sign-in and what uses it",
                                  edit=wb.Edit(columns=[wb.Column("include", "Include", "bool"), wb.Column("name", "Connection", readonly=True), wb.Column("scope", "Scope", readonly=True),
                                                        wb.Column("sharing", "Sharing", readonly=True)], add=False, remove=False, label="connection")),

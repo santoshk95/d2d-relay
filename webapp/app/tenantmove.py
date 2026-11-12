@@ -168,7 +168,7 @@ def import_(path: Path, *, as_platform: bool = False, tid: str | None = None, ke
         shutil.rmtree(work, ignore_errors=True)
 
 
-ENV_TEMPLATE = """# RELAY by PASDACS — a dedicated install for {name} ({tid}), packed {date}
+ENV_TEMPLATE = """# RELAY by PASDACS - a dedicated install for {name} ({tid}), packed {date}
 # Copy next to docker-compose.yml as .env (or into your Kubernetes secret), then import the export:
 #   docker compose run --rm webapp python -m app.tenantmove import /data/backups/tenant-export.tar.gz --as-platform
 D2D_TENANCY=single
@@ -227,7 +227,7 @@ ORCH_EXAMPLE = """# Copy to orch-token.env: the web app <-> orchestrator token, 
 token=change-me-to-a-long-random-string
 """
 
-README = """# {name} — dedicated install pack
+README = """# {name} - dedicated install pack
 
 Made by RELAY by PASDACS on {date} for the tenant `{tid}` ({kind}, {edition} edition).
 
@@ -240,7 +240,7 @@ Made by RELAY by PASDACS on {date} for the tenant `{tid}` ({kind}, {edition} edi
 1. Install Relay inside the network (Docker Compose or `kubectl apply -k`), with `.env.dedicated` as its settings and
    the secrets key pasted into `D2D_SECRET_KEY`.
 2. Import: `python -m app.tenantmove import tenant-export.tar.gz --as-platform` (in the web app container).
-3. Sign in with the workspace's identity provider (Admin › Sign-in) or the first admin's local password.
+3. Sign in with the workspace's identity provider (Admin > Sign-in) or the first admin's local password.
 
 Nothing in this pack can be opened without the key; keep the key apart from the pack.
 """

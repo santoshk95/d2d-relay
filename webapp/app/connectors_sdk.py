@@ -1,5 +1,5 @@
 """Connector SDK (build-plan v2, P10): every platform Relay can reach is one adapter behind the same six calls, so a
-new platform is **one adapter + one mock** — nothing else in the app changes.
+new platform is **one adapter + one mock** - nothing else in the app changes.
 
     class MyPlatform(Adapter):
         kind = "myplatform"                 # the id stored on the connection row
@@ -7,7 +7,7 @@ new platform is **one adapter + one mock** — nothing else in the app changes.
         category = "crm"                    # one of connectors.CATEGORIES
         signin = ["api_key", "oauth"]       # sign-in kinds (connectors.SIGNIN); the first is the default
         fields = [("base_url", "Base URL", True)]           # non-secret settings (key, label, required)
-        secrets = {"api_key": ["api_key"]}  # secret names per sign-in kind — stored in the secrets store, never returned
+        secrets = {"api_key": ["api_key"]}  # secret names per sign-in kind - stored in the secrets store, never returned
         can_write = True                    # the adapter knows how to write (still only with scope + approval)
 
         def describe(self) -> dict                     # the kind as the wizard shows it (label, category, sign-in, fields)
@@ -21,7 +21,7 @@ new platform is **one adapter + one mock** — nothing else in the app changes.
 
     The mock: a tiny API simulator in the tests (tests/mocklab, or an http.server in the suite) that answers the
     documented endpoints with synthetic records, rejects a missing sign-in with 401 and a write without an
-    approval with 403 — the contract tests/mocklab/mocklab_test.py checks for every platform. `MockAdapter` below
+    approval with 403 - the contract tests/mocklab/mocklab_test.py checks for every platform. `MockAdapter` below
     is the in-process stand-in the platform tests use; `RestApiAdapter` reads any platform that publishes an
     OpenAPI document (the mock-lab simulators included) with an API key, read-only.
 
@@ -64,7 +64,7 @@ class Adapter(ABC):
                 "dialect": self.dialect, "can_write": self.can_write, "sql": self.sql, "extract": self.extract}
 
     def rows(self, c: dict, obj: str, max_rows: int):
-        """Every record of one object, as pages (lists) of flat dicts — what an extract writes to Parquet. Only for
+        """Every record of one object, as pages (lists) of flat dicts - what an extract writes to Parquet. Only for
         adapters with `extract = True`."""
         raise ScopeError(f"{self.label} objects cannot be pulled into a dashboard")
 
@@ -139,7 +139,7 @@ class WarehouseAdapter(Adapter):
 
 class OracleDbAdapter(WarehouseAdapter):
     """Oracle Database through python-oracledb (thin mode): the phase-3 paths unchanged, plus what the warehouse
-    modules read — the data dictionary (pipelines) and `execute` for dictionary SQL (the data warehouse module's
+    modules read - the data dictionary (pipelines) and `execute` for dictionary SQL (the data warehouse module's
     estate). Read-only: `execute` runs one SELECT that passes the phase-3 read-only check, never a change."""
     MAX_ROWS = 200_000
 
@@ -157,7 +157,7 @@ class OracleDbAdapter(WarehouseAdapter):
         return cols, rows
 
     def dictionary(self, c: dict) -> dict[str, list[str]]:
-        """{"SCHEMA.TABLE": ["COLUMN", …]} for every table and view the sign-in can read (Oracle's own schemas left out)."""
+        """{"SCHEMA.TABLE": ["COLUMN", ...]} for every table and view the sign-in can read (Oracle's own schemas left out)."""
         from . import connectors
         _, rows = self.execute(c, "SELECT owner || '.' || table_name AS t, column_name AS c FROM all_tab_columns "
                                   f"WHERE owner NOT IN ({connectors.ORACLE_OWN}) ORDER BY owner, table_name, column_id")
@@ -221,11 +221,11 @@ class MockAdapter(Adapter):
 
 class RestApiAdapter(Adapter):
     """A generic REST adapter: the OpenAPI document lists the GET endpoints (the objects); `read` calls one with the
-    API key; writes are refused — a vendor-faithful adapter replaces it when a platform needs more."""
+    API key; writes are refused - a vendor-faithful adapter replaces it when a platform needs more."""
     kind, label, category = "rest_api", "REST API (OpenAPI)", "integration"
     signin = ["api_key"]
-    fields = [("openapi_url", "OpenAPI document URL (…/openapi.json)", True), ("base_url", "Base URL (optional: taken from the document)", False),
-              ("header", "Header carrying the key (default Authorization: Key …)", False)]
+    fields = [("openapi_url", "OpenAPI document URL (.../openapi.json)", True), ("base_url", "Base URL (optional: taken from the document)", False),
+              ("header", "Header carrying the key (default Authorization: Key ...)", False)]
     secrets = {"api_key": ["api_key"]}
     can_write = False
     TIMEOUT = 20

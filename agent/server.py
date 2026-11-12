@@ -15,7 +15,7 @@ Claude gets file tools for the project folder and Bash limited to the `genbi` to
 access and no sub-agents.
 
 Runners and lanes (platform plan, phase 0): every run goes through a `Runner` (start a run, stream normalised
-events: start, say, tool, result, done with usage — or error). `ClaudeCodeRunner` is the only one today; Codex CLI
+events: start, say, tool, result, done with usage - or error). `ClaudeCodeRunner` is the only one today; Codex CLI
 and Gemini CLI adapters plug in behind the same interface later. Runs are strictly sequential *per lane*: the
 `build` lane (dashboards; the only lane the app uses today) and the `chat` lane (Ask D, phase 5), so a question
 never waits behind a build. One run at a time in each lane.
@@ -148,7 +148,7 @@ def _env(run: "Run") -> dict[str, str]:
 
 def _short(text: str, n: int = 400) -> str:
     text = " ".join(str(text).split())
-    return text if len(text) <= n else text[: n - 1] + "…"
+    return text if len(text) <= n else text[: n - 3] + "..."
 
 
 def _detail(name: str, inp: dict) -> str:
@@ -164,9 +164,9 @@ def _detail(name: str, inp: dict) -> str:
     if name == "TodoWrite":
         todos = inp.get("todos") or []
         now = next((t.get("content") for t in todos if t.get("status") == "in_progress"), None)
-        return f"{sum(t.get('status') == 'completed' for t in todos)}/{len(todos)} done" + (f" · {now}" if now else "")
+        return f"{sum(t.get('status') == 'completed' for t in todos)}/{len(todos)} done" + (f" - {now}" if now else "")
     if name in ("TaskCreate", "TaskUpdate"):
-        return _short(" · ".join(str(inp[k]) for k in ("subject", "status") if inp.get(k)), 200)
+        return _short(" - ".join(str(inp[k]) for k in ("subject", "status") if inp.get(k)), 200)
     return _short(json.dumps(inp), 200)
 
 

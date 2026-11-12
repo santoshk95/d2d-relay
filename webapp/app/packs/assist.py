@@ -1,22 +1,22 @@
-"""Document & knowledge assistants (registry id `assist`) — answers from the tenant's own documents, each citing the
+"""Document & knowledge assistants (registry id `assist`) - answers from the tenant's own documents, each citing the
 passage and page it came from; when the documents do not answer, the assistant says so. Nothing is invented.
 
 Index    assist_index: documents (PDF, Word, PowerPoint, text, Markdown) read into passages with their page or section,
-         searched with full-text search (SQLite FTS5 / PostgreSQL text search) — no vector database. A corpus belongs
+         searched with full-text search (SQLite FTS5 / PostgreSQL text search) - no vector database. A corpus belongs
          to one team of one tenant: only its people (and admins) may ask it.
 Answers  extractive by rules: the sentences of the passages found that cover the question, each with its citation;
-         Relay (the agent, in the sequential lane) may draft the wording at Prove — every sentence must cite one of the
+         Relay (the agent, in the sequential lane) may draft the wording at Prove - every sentence must cite one of the
          passages it was given and carry no number those passages do not hold, or the draft is refused.
-Proof    golden questions: what a person expects the assistant to answer, from which document, with which words — and
+Proof    golden questions: what a person expects the assistant to answer, from which document, with which words - and
          questions it must refuse. Scored at Prove and on every scheduled run, kept as scores over time.
-Assess   Connect → Inventory → Health → Findings → Estimate: what the documents hold and where they are weak.
-Develop  Describe → Shape → Build → Prove → Ship → Run: the documents read, the golden questions agreed, the index
+Assess   Connect -> Inventory -> Health -> Findings -> Estimate: what the documents hold and where they are weak.
+Develop  Describe -> Shape -> Build -> Prove -> Ship -> Run: the documents read, the golden questions agreed, the index
          built, the score proven, a named approval, then the assistant live for its team and evaluated on a schedule.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: documents added or removed, golden questions edited,
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: documents added or removed, golden questions edited,
          re-proven against today's score before release.
-Migrate  Discover → Decide → Convert → Prove → Hand over → Run: a FAQ or another assistant's question-and-answer export
+Migrate  Discover -> Decide -> Convert -> Prove -> Hand over -> Run: a FAQ or another assistant's question-and-answer export
          turned into golden questions over the documents, old and new answers side by side.
-Run      Watch → Alert → Fix → Approve → Report: the golden set re-scored; a drop waits for a person."""
+Run      Watch -> Alert -> Fix -> Approve -> Report: the golden set re-scored; a drop waits for a person."""
 from __future__ import annotations
 
 import csv
@@ -49,7 +49,7 @@ class DocsPlatform(wb.Platform):
     id, label = "docs", "Documents you upload"
     uploads = ai.DOC_EXT
     simulator = "documents the tests write (PDF with a text layer, Word, PowerPoint, Markdown)"
-    reads = "the documents you upload — a copy in this work item's folder, read page by page into passages"
+    reads = "the documents you upload - a copy in this work item's folder, read page by page into passages"
 
 
 DOCS = DocsPlatform()
@@ -79,7 +79,7 @@ def corpora(u: dict) -> list[dict]:
 
 
 def corpus_options(u: dict) -> list[tuple[str, str]]:
-    return [(c["id"], f"{c['name']} · version {c['version']} · {len(c['docs'])} documents") for c in corpora(u)]
+    return [(c["id"], f"{c['name']} - version {c['version']} - {len(c['docs'])} documents") for c in corpora(u)]
 
 
 def publish(ctx: wb.Ctx, docs: list[dict], golden: list[dict], score: float | None, cid: str | None = None, note: str = "") -> dict:
@@ -113,7 +113,7 @@ def read_docs(ctx: wb.Ctx, names: set[str] | None = None) -> tuple[list[dict], l
         try:
             title, ps = ai.read(ctx.dir / "data" / f["name"])
         except Exception as e:  # noqa: BLE001 - shown as the reason, the other documents go on
-            rows.append([f["name"], "—", 0, 0, f"could not be read: {str(e)[:160]}"])
+            rows.append([f["name"], "-", 0, 0, f"could not be read: {str(e)[:160]}"])
             continue
         d = {"name": f["name"], "title": title, "passages": ps, "fingerprint": ai.fingerprint(ps)}
         docs.append(d)
@@ -151,7 +151,7 @@ def _doc_options(ctx: wb.Ctx):
     names = [d["name"] for d in load_docs(ctx)] or [f["name"] for f in ctx.files(ai.DOC_EXT)]
     for k in ("current_docs",):
         names += [d["name"] for d in ctx.get(k) or [] if d["name"] not in names]
-    return [("none", "None — it must refuse")] + [(n, n) for n in names]
+    return [("none", "None - it must refuse")] + [(n, n) for n in names]
 
 
 def _validate_golden(recs: list[dict], ctx: wb.Ctx) -> list[str]:
@@ -181,7 +181,7 @@ def evaluate(ctx: wb.Ctx, cid: str, golden: list[dict], tag: str) -> tuple[list[
             hit = g.get("expect_doc") in docs
             words = all(w in res["answer"].lower() for w in want)
             good = res["answered"] and hit and words
-            detail = (res["answer"][:300] + " — " + "; ".join(c["cite"] for c in res["citations"])) if res["answered"] else "not answered: no passage covers the question"
+            detail = (res["answer"][:300] + " - " + "; ".join(c["cite"] for c in res["citations"])) if res["answered"] else "not answered: no passage covers the question"
             if res["answered"] and not hit:
                 detail += f" (expected a citation of {g.get('expect_doc')})"
             elif res["answered"] and not words:
@@ -194,7 +194,7 @@ def evaluate(ctx: wb.Ctx, cid: str, golden: list[dict], tag: str) -> tuple[list[
                        "expected": "refused" if g.get("expect_doc") == "none" else f"cites {g.get('expect_doc')}", "detail": detail, "evidence": ev})
     score = round(100.0 * ok_n / n, 1) if n else None
     checks.insert(0, {"name": "score", "label": "Golden questions answered as expected", "status": "pass" if score is not None and score >= PASS_SCORE else "fail" if score is not None else "skip",
-                      "measured": f"{score:g} %" if score is not None else "—", "expected": f"at least {PASS_SCORE:g} %", "detail": f"{ok_n} of {n} golden question(s)"})
+                      "measured": f"{score:g} %" if score is not None else "-", "expected": f"at least {PASS_SCORE:g} %", "detail": f"{ok_n} of {n} golden question(s)"})
     return checks, score
 
 
@@ -260,9 +260,9 @@ def _draft_after(ctx: wb.Ctx, res: dict) -> dict:
     for c in checks:
         a = ans.get(c["name"])
         if isinstance(a, dict):
-            c["detail"] = f"Relay's wording (check it): {str(a.get('answer') or '')[:300]} — cites {', '.join(a.get('citations') or []) or 'nothing'}"
+            c["detail"] = f"Relay's wording (check it): {str(a.get('answer') or '')[:300]} - cites {', '.join(a.get('citations') or []) or 'nothing'}"
     ctx.evidence("Answers worded by Relay", {"answers": ans, "summary": res.get("text") or ""}, kind="agent", ok=True)
-    return {"summary": f"Relay worded {len(ans)} answer(s), each citing the passages it was given and holding no number they do not — check them; the scores did not change.",
+    return {"summary": f"Relay worded {len(ans)} answer(s), each citing the passages it was given and holding no number they do not - check them; the scores did not change.",
             "data": {"checks": checks}}
 
 
@@ -282,7 +282,7 @@ def d_describe(ctx: wb.Ctx) -> dict:
 def d_shape(ctx: wb.Ctx) -> dict:
     have = ctx.records(ctx.step_id)
     recs = have or suggest_golden(load_docs(ctx))
-    return {"summary": f"{len(recs)} golden question(s): what the assistant must answer, from which document, with which words — and one it must refuse. "
+    return {"summary": f"{len(recs)} golden question(s): what the assistant must answer, from which document, with which words - and one it must refuse. "
                        "Suggested from the documents' headings: correct them, add your own, then confirm the design.",
             "counts": {"golden questions": len(recs)}, "records": recs,
             "data": {"columns": ["Use", "Golden question", "Answered by", "Words"], "rows": [["yes" if r.get("include") else "no", r["question"], r.get("expect_doc"), r.get("expect")] for r in recs]}}
@@ -295,7 +295,7 @@ def d_build(ctx: wb.Ctx) -> dict:
     ctx.put("draft", draft)
     ctx.put("golden", ctx.records("shape"))
     ctx.output("corpus.json", ai.to_json([{k: d[k] for k in ("name", "title", "fingerprint")} | {"passages": len(d["passages"])} for d in docs]), label="The corpus (documents and passages)")
-    return {"summary": f"{n} passage(s) of {len(docs)} document(s) indexed for full-text search — a draft only this work item uses until it is approved.",
+    return {"summary": f"{n} passage(s) of {len(docs)} document(s) indexed for full-text search - a draft only this work item uses until it is approved.",
             "counts": {"passages": n, "documents": len(docs)}, "data": {"columns": ["Document", "Passages"], "rows": [[d["name"], len(d["passages"])] for d in docs]}}
 
 
@@ -323,7 +323,7 @@ def _run_item(ctx: wb.Ctx, c: dict, cad: dict) -> str:
     if rid and db.one("SELECT 1 FROM wb_items WHERE id = ? AND closed IS NULL", (rid,)):
         return rid
     p = db.project(ctx.id) or {}
-    item = wb.create(MODULE, "run", f"Run: {ctx.title}"[:160], who=ctx.owner, brief=f"Scheduled evaluation of the assistant “{c['name']}”, published from {ctx.id}.",
+    item = wb.create(MODULE, "run", f"Run: {ctx.title}"[:160], who=ctx.owner, brief=f"Scheduled evaluation of the assistant \"{c['name']}\", published from {ctx.id}.",
                      scope={"corpus": c["id"], "schedule": cad}, approver=ctx.st.get("approver"), visibility=p.get("visibility") or "private", team_id=p.get("team_id"), parent=ctx.id)
     db.run("UPDATE assist_corpora SET run_item = ? WHERE id = ?", (item["id"], c["id"]))
     return item["id"]
@@ -338,9 +338,9 @@ def d_run(ctx: wb.Ctx) -> dict:
         ctx.lineage_edge(ctx.lineage_node("table", ctx.id, d["name"], label=f"{d['name']} (document)", own=False), job, "reads", {"passages": d["passages"]})
     cad = wb.check_schedule(ctx.scope.get("cadence") or {"every": "week", "at": "06:00", "weekday": 0, "tz": "UTC"})
     rid = _run_item(ctx, c, cad)
-    return {"summary": f"The assistant “{c['name']}” (version {c['version']}) is live for its team; the Run item re-scores it {wb.schedule_text(cad).lower()}.",
+    return {"summary": f"The assistant \"{c['name']}\" (version {c['version']}) is live for its team; the Run item re-scores it {wb.schedule_text(cad).lower()}.",
             "counts": {"version": c["version"], "documents": len(c["docs"])},
-            "data": {"href": f"#/m/{MODULE}/i/{rid}", "label": "Open the Run item", "text": f"{len(c['docs'])} document(s) · {ctx.get('score')} % on {len([g for g in c['golden'] if g.get('include')])} golden question(s)"}}
+            "data": {"href": f"#/m/{MODULE}/i/{rid}", "label": "Open the Run item", "text": f"{len(c['docs'])} document(s) - {ctx.get('score')} % on {len([g for g in c['golden'] if g.get('include')])} golden question(s)"}}
 
 
 # ------------------------------------------------------------------ Assess
@@ -349,7 +349,7 @@ def a_connect(ctx: wb.Ctx) -> dict:
     rows = DOCS.test(ctx)
     if not rows:
         raise wb.StepFailed("Upload the documents to assess (PDF, Word, PowerPoint, text or Markdown).")
-    return {"summary": f"{len(rows)} document(s) uploaded — read-only copies.", "counts": {"documents": len(rows)},
+    return {"summary": f"{len(rows)} document(s) uploaded - read-only copies.", "counts": {"documents": len(rows)},
             "data": {"columns": ["Document", "Kind", "Status", "What Relay sees", "Access"], "rows": [[r["source"], r["kind"], "answered", r["sees"], r["scope"]] for r in rows]}}
 
 
@@ -373,7 +373,7 @@ def a_health(ctx: wb.Ctx) -> dict:
             + ([("no headings or pages to cite: answers cannot say where in the document", "low")] if not any(p.get("page") or p.get("section") for p in d["passages"]) else [])
         for i, (txt, sev) in enumerate(issues):
             findings.append({"id": f"{d['name']}-{i}", "document": d["name"], "issue": txt, "severity": sev, "decision": "keep"})
-        checks.append({"name": d["name"], "label": f"{d['title']} ({d['name']})", "status": "fail" if dup else "warn" if issues else "pass", "measured": f"{len(d['passages'])} passages · {words} words",
+        checks.append({"name": d["name"], "label": f"{d['title']} ({d['name']})", "status": "fail" if dup else "warn" if issues else "pass", "measured": f"{len(d['passages'])} passages - {words} words",
                        "expected": "", "detail": "; ".join(t for t, _ in issues) or "readable, citable, not a duplicate"})
     for r in ctx.records("inventory"):
         if r.get("include") and r["status"] != "read":
@@ -401,8 +401,8 @@ def a_estimate(ctx: wb.Ctx) -> dict:
     b = registry.brand()
     rate, cur = float(b.get("hourly_rate") or 0), b.get("currency") or ""
     h = (n * MINUTES["read and tidy a document"] * (1 if kept else 0.5) + max(5, 2 * n) * MINUTES["write a golden question"] + MINUTES["review the answers"]) / 60
-    note = "Assumptions: " + "; ".join(f"{v} min to {k}" for k, v in MINUTES.items()) + "; two golden questions per document, at least five." + ("" if rate else " Set an hourly rate under Admin › Branding to see the cost.")
-    items = [{"title": "Wave 1 — the assistant", "detail": f"{n} document(s), {len(kept)} issue(s) to fix first, {max(5, 2 * n)} golden question(s) to write", "effort": f"{h:.1f} h" + (f" · {cur}{rate * h:,.0f}" if rate else "")}]
+    note = "Assumptions: " + "; ".join(f"{v} min to {k}" for k, v in MINUTES.items()) + "; two golden questions per document, at least five." + ("" if rate else " Set an hourly rate under Admin > Branding to see the cost.")
+    items = [{"title": "Wave 1 - the assistant", "detail": f"{n} document(s), {len(kept)} issue(s) to fix first, {max(5, 2 * n)} golden question(s) to write", "effort": f"{h:.1f} h" + (f" - {cur}{rate * h:,.0f}" if rate else "")}]
     ctx.output("assessment.md", f"# Assistant assessment: {ctx.title}\n\n{items[0]['detail']}\n\nEffort: {items[0]['effort']}\n\n{note}\n", label="Assessment (Markdown)")
     return {"summary": f"About {h:.1f} h of a person's time to put this assistant live.", "counts": {"hours": round(h, 1)}, "data": {"items": items, "total": f"{h:.1f} h", "note": note}}
 
@@ -427,7 +427,7 @@ def c_request(ctx: wb.Ctx) -> dict:
     ctx.put("current_docs", [{**d, "from": item} for d in cur if d["name"] in {x["name"] for x in c["docs"]}])
     new, _ = read_docs(ctx)
     ctx.put("new_docs", new)
-    return {"summary": f"Change to “{c['name']}” (version {c['version']}, {len(c['docs'])} documents)" + (f"; {len(new)} new document(s) uploaded with the request." if new else "."),
+    return {"summary": f"Change to \"{c['name']}\" (version {c['version']}, {len(c['docs'])} documents)" + (f"; {len(new)} new document(s) uploaded with the request." if new else "."),
             "counts": {"documents": len(c["docs"]), "new": len(new)}, "data": {"text": ctx.brief or "(no request text)"}} if st is not None or not item else {"summary": "", "data": {"text": ""}}
 
 
@@ -453,7 +453,7 @@ def c_prove(ctx: wb.Ctx) -> dict:
     checks, score = evaluate(ctx, draft, golden, "Changed")
     before = ctx.get("before")
     checks.insert(1, {"name": "vs", "label": "Against today's assistant", "status": "warn" if before is not None and score is not None and score < before else "pass",
-                      "measured": f"{score:g} %" if score is not None else "—", "expected": f"today {before:g} %" if before is not None else "", "detail": "lower than today" if before is not None and score is not None and score < before else "as good or better"})
+                      "measured": f"{score:g} %" if score is not None else "-", "expected": f"today {before:g} %" if before is not None else "", "detail": "lower than today" if before is not None and score is not None and score < before else "as good or better"})
     ctx.put("score", score)
     ctx.put("golden", golden)
     save_docs(ctx, docs)
@@ -469,7 +469,7 @@ def c_approve(ctx: wb.Ctx) -> dict:
 def c_learn(ctx: wb.Ctx) -> dict:
     c = publish(ctx, load_docs(ctx), ctx.get("golden") or [], ctx.get("score"), ctx.get("corpus"), (ctx.brief or "")[:200])
     ai.drop(ctx.get("draft") or "")
-    return {"summary": f"Version {c['version']} of “{c['name']}” is live; the Run item re-scores it from its next round.", "counts": {"version": c["version"]},
+    return {"summary": f"Version {c['version']} of \"{c['name']}\" is live; the Run item re-scores it from its next round.", "counts": {"version": c["version"]},
             "data": {"href": f"#/m/{MODULE}/i/{c['run_item']}" if c.get("run_item") else f"#/m/{MODULE}/run", "label": "Open the Run item" if c.get("run_item") else "Run & support",
                      "text": f"{len(c['docs'])} document(s)"}}
 
@@ -525,7 +525,7 @@ def m_prove(ctx: wb.Ctx) -> dict:
     olds = {g["id"]: g.get("old") for g in ctx.get("golden") or []}
     for c in checks[1:]:
         if olds.get(c["name"]):
-            c["detail"] = f"Old: {olds[c['name']][:160]} · Relay: {c['detail']}"
+            c["detail"] = f"Old: {olds[c['name']][:160]} - Relay: {c['detail']}"
     ctx.put("score", score)
     return {"summary": f"Old answers and Relay's cited answers side by side: {score:g} % as expected." if score is not None else "Nothing to compare.", "counts": {"score %": score or 0},
             "data": {"checks": checks}}
@@ -582,7 +582,7 @@ def r_approve(ctx: wb.Ctx) -> dict:
             rows.append([r["question"], "Ticket", h.get("status")])
         else:
             rows.append([r["question"], "Keep watching", "recorded"])
-    return {"summary": f"{sum(1 for r in rows if r[1] == 'Ticket')} ticket(s), {sum(1 for r in rows if r[1] != 'Ticket')} kept — as you approved.", "data": {"columns": ["Golden question", "Decision", "Status"], "rows": rows}}
+    return {"summary": f"{sum(1 for r in rows if r[1] == 'Ticket')} ticket(s), {sum(1 for r in rows if r[1] != 'Ticket')} kept - as you approved.", "data": {"columns": ["Golden question", "Decision", "Status"], "rows": rows}}
 
 
 def r_report(ctx: wb.Ctx) -> dict:
@@ -597,10 +597,10 @@ def r_report(ctx: wb.Ctx) -> dict:
 def _cards(u: dict) -> list[dict]:
     rows = []
     for c in corpora(u):
-        team = (db.one("SELECT name FROM teams WHERE id = ?", (c.get("team_id"),)) or {}).get("name") or "—"
+        team = (db.one("SELECT name FROM teams WHERE id = ?", (c.get("team_id"),)) or {}).get("name") or "-"
         last = next((s["score"] for s in reversed(c["scores"]) if s.get("score") is not None), None)
         asked = (db.one("SELECT COUNT(*) AS n FROM assist_questions WHERE corpus = ?", (c["id"],)) or {}).get("n") or 0
-        rows.append([c["name"], f"v{c['version']}", team, len(c["docs"]), f"{last:g} %" if last is not None else "—", asked, f"#/m/{MODULE}/i/{c['run_item']}" if c.get("run_item") else ""])
+        rows.append([c["name"], f"v{c['version']}", team, len(c["docs"]), f"{last:g} %" if last is not None else "-", asked, f"#/m/{MODULE}/i/{c['run_item']}" if c.get("run_item") else ""])
     return [{"title": "Live assistants", "columns": ["Assistant", "Version", "Team", "Documents", "Golden score", "Questions asked", "Run item"], "rows": rows,
              "empty": "No assistant is live yet: a Develop item's Run step publishes one after its named approval."}]
 
@@ -622,7 +622,7 @@ def api_corpora():
 
 @router.post("/api/m/assist/corpora/{cid}/ask")
 def api_ask(cid: str, body: Ask):
-    """Ask an assistant: an answer made of the documents' own sentences, each cited — or a plain refusal."""
+    """Ask an assistant: an answer made of the documents' own sentences, each cited - or a plain refusal."""
     u = auth.current.get()
     if not u:
         raise HTTPException(401, "Sign in.")
@@ -639,7 +639,7 @@ def api_ask(cid: str, body: Ask):
     return {"answered": res["answered"], "answer": res["answer"], "citations": res["citations"]}
 
 
-GUIDE = """# Document & knowledge assistants — the work item
+GUIDE = """# Document & knowledge assistants - the work item
 
 This folder is one work item of Relay's knowledge assistants. Answers come from the documents in data/, read into
 passages (passages.json) with their page or section. When you are asked to word answers, questions.json holds each
@@ -647,21 +647,21 @@ golden question with the passages found for it: use only what those passages say
 write a number, a name or a fact that is not in a passage you cite. If the passages do not answer, say so."""
 
 wb.register(wb.Pack(
-    module=MODULE, guide=GUIDE, lineage="each document an assistant answers from, and the assistant as a job (system “Relay assistants”)",
+    module=MODULE, guide=GUIDE, lineage="each document an assistant answers from, and the assistant as a job (system \"Relay assistants\")",
     platforms=PLATFORMS, schemas={"golden": GOLDEN_COLUMNS}, cards=_cards, router=router,
     work={
         "assess": wb.Work(title="See what your documents hold and where an assistant would be weak", platforms=("docs",), steps={
-            "Connect": wb.Step(kind="platform", run=a_connect, agent="Reader", text="The documents you upload are opened — read-only copies in this work item"),
-            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Reader", text="Every document read into passages with its pages or sections — you untick what is out of scope",
+            "Connect": wb.Step(kind="platform", run=a_connect, agent="Reader", text="The documents you upload are opened - read-only copies in this work item"),
+            "Inventory": wb.Step(kind="platform", run=a_inventory, agent="Reader", text="Every document read into passages with its pages or sections - you untick what is out of scope",
                                  edit=wb.Edit(columns=[wb.Column("include", "Include", "bool"), wb.Column("name", "Document", readonly=True), wb.Column("title", "Title", readonly=True),
                                                        wb.Column("status", "Status", readonly=True)], add=False, remove=False, label="document")),
-            "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Checker", text="Unreadable, thin, duplicated or uncitable documents found — measured, not guessed"),
+            "Health": wb.Step(kind="proof", run=a_health, view="gates", agent="Checker", text="Unreadable, thin, duplicated or uncitable documents found - measured, not guessed"),
             "Findings": wb.Step(kind="person", run=a_findings, edit=FIND_EDIT, text="You keep or ignore each finding"),
             "Estimate": wb.Step(kind="deterministic", run=a_estimate, view="plan", agent="Estimator", text="The time a person needs to put the assistant live")}),
         "develop": wb.Work(title="An assistant over your documents that cites every answer", platforms=("docs",), steps={
             "Describe": wb.Step(kind="platform", run=d_describe, agent="Reader", text="The documents read into passages, each with its page or section"),
-            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Librarian", edit=GOLDEN_EDIT, confirm="the golden questions — what it must answer, from which document, and what it must refuse",
-                             text="Golden questions suggested from the documents' headings — you correct them, add your own and one it must refuse"),
+            "Shape": wb.Step(kind="deterministic", run=d_shape, agent="Librarian", edit=GOLDEN_EDIT, confirm="the golden questions - what it must answer, from which document, and what it must refuse",
+                             text="Golden questions suggested from the documents' headings - you correct them, add your own and one it must refuse"),
             "Build": wb.Step(kind="deterministic", run=d_build, agent="Indexer", text="The passages indexed for full-text search, as a draft only this work item uses"),
             "Prove": wb.Step(kind="proof", run=d_prove, view="gates", agent="Evaluator", back_to="shape", text="Every golden question asked: the right document cited, the right words, a refusal where the documents are silent",
                              actions={"wording": wb.Action(label="Ask Relay to word the answers", kind="agent", prompt=_draft_prompt, check=_draft_check, after=_draft_after, agent="Answer writer",
@@ -688,7 +688,7 @@ wb.register(wb.Pack(
         "run": wb.Work(title="Re-score a live assistant on a schedule; a drop waits for a person", needs_source=False, sources=False, platforms=("docs",), steps={
             "Watch": wb.Step(kind="proof", run=r_watch, view="gates", agent="Evaluator", text="The golden questions asked again; the score kept with the ones before it"),
             "Alert": wb.Step(kind="deterministic", run=r_alert, agent="Triage", text="A drop in the score, with the questions it no longer answers as expected"),
-            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=FIX_EDIT, text="Relay proposes what happens to each — you confirm"),
+            "Fix": wb.Step(kind="deterministic", run=r_fix, agent="Triage", edit=FIX_EDIT, text="Relay proposes what happens to each - you confirm"),
             "Approve": wb.Step(kind="platform", run=r_approve, agent="Dispatcher", text="What you approved goes out: a ticket through the service desk's own approval"),
             "Report": wb.Step(kind="deterministic", run=r_report, agent="Reporter", confirm_if=lambda ctx, out: bool(ctx.get("issues")), text="Scores over time; you confirm it when the score fell")},
             fields=[wb.Field("corpus", "Assistant to watch", "select", options=corpus_options, required=True), wb.Field("schedule", "Re-score it", "cadence", default={"every": "week", "at": "06:00", "weekday": 0, "tz": "UTC"})]),

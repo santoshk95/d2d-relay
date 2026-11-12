@@ -4,7 +4,7 @@ Two kinds of views:
 - raw: one per file in data/ (CSV, or a Parquet extract of a warehouse table), named after the file (e.g.
   fact_sales), all columns as detected;
 - model: once a definition exists, one per model table with the model's names and types
-  (e.g. "Sales" with "Unit Count"), plus the generated date table — so prototype SQL is written
+  (e.g. "Sales" with "Unit Count"), plus the generated date table - so prototype SQL is written
   against the same tables and columns as the DAX.
 """
 import datetime
@@ -146,7 +146,7 @@ def records(con, sql: str) -> list[dict]:
 def as_text(cols: list[str], rows: list[list], width: int = 32) -> str:
     def cell(v):
         s = "" if v is None else (f"{v:,.4f}".rstrip("0").rstrip(".") if isinstance(v, float) else str(v))
-        return s if len(s) <= width else s[: width - 1] + "…"
+        return s if len(s) <= width else s[: width - 3] + "..."
     table = [[cell(c) for c in cols]] + [[cell(v) for v in r] for r in rows]
     widths = [max(len(r[i]) for r in table) for i in range(len(cols))]
     lines = [" | ".join(r[i].ljust(widths[i]) for i in range(len(cols))) for r in table]

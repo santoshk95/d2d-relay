@@ -1,26 +1,26 @@
-"""Tool & vendor selection (registry id `selection`) — choosing a platform with the reasons written down: the RFP & bid
+"""Tool & vendor selection (registry id `selection`) - choosing a platform with the reasons written down: the RFP & bid
 response engine (P11) the other way round, as a consulting engagement.
 
-Engagement  Requirements → Long list → Issue → Score → PoC → Recommend.
-Requirements  read from an uploaded requirements sheet (CSV / Excel: id, requirement, category, weight, mandatory) —
-            rules first — or, from Word / PDF documents, by the agent ("Ask Relay to read the requirements"), every
+Engagement  Requirements -> Long list -> Issue -> Score -> PoC -> Recommend.
+Requirements  read from an uploaded requirements sheet (CSV / Excel: id, requirement, category, weight, mandatory) -
+            rules first - or, from Word / PDF documents, by the agent ("Ask Relay to read the requirements"), every
             requirement with the file and page it came from; a person corrects them; the weights add up to 100.
 Long list   the candidates Relay's own catalogue lists for the kind of tool (the module's platforms, e.g. BI &
-            dashboards: Power BI, Tableau, Looker …) plus any a person adds with the reason; a person picks the short
+            dashboards: Power BI, Tableau, Looker ...) plus any a person adds with the reason; a person picks the short
             list the RFP goes to (two at least).
 Issue       the RFP pack to issue: the RFP document (Word, through the P11 docs engine: scope, requirements with their
             weights, how to answer, how answers are scored) and one response workbook per vendor (Excel: every
-            requirement with Comply / Partial / Not / Alternative — RFP & bid response's own statuses — the answer
+            requirement with Comply / Partial / Not / Alternative - RFP & bid response's own statuses - the answer
             and its evidence). A person sends it; Relay sends nothing.
 Score       the vendors' completed workbooks are uploaded and read ("Read the responses"): points per requirement
-            (Comply 1, Partial and Alternative ½, Not 0 — the method the RFP stated) × its weight; a mandatory
+            (Comply 1, Partial and Alternative ½, Not 0 - the method the RFP stated) × its weight; a mandatory
             requirement answered Not excludes the vendor; every score carries the vendor's own answer and evidence.
             A person may change a status, with the reason.
 PoC         the proof of concept for the leading vendors: each success criterion (the mandatory requirements) with its
             result and where the evidence is.
 Recommend   the recommendation: the best weighted score among the vendors that met every mandatory requirement and
             passed the proof of concept, with the decision memo (Word) and the decision deck (PowerPoint) through the
-            docs engine, every figure sourced — a person confirms the decision.
+            docs engine, every figure sourced - a person confirms the decision.
 """
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ class RequirementsPlatform(wb.Platform):
     label = "Requirements and vendors' responses"
     uploads = (".csv", ".xlsx", ".docx", ".pdf", ".txt", ".md")
     reads = ("your requirements (a sheet, or Word / PDF documents the agent reads with page references) and the response workbooks the vendors "
-             "send back — copies in this work item's folder; nothing is sent from here")
+             "send back - copies in this work item's folder; nothing is sent from here")
     simulator = "requirements sheets, documents and completed response workbooks the tests write"
 
 
@@ -53,7 +53,7 @@ DOCS = RequirementsPlatform()
 
 
 def _categories(u=None) -> list[tuple[str, str]]:
-    return [(m["id"], f"{m['name']} — {', '.join(m['platforms'][:4])}") for m in registry.MODULES if m["pl"] not in ("hidden", "platform") and len(m["platforms"]) >= 2]
+    return [(m["id"], f"{m['name']} - {', '.join(m['platforms'][:4])}") for m in registry.MODULES if m["pl"] not in ("hidden", "platform") and len(m["platforms"]) >= 2]
 
 
 # ------------------------------------------------------------------ Requirements
@@ -107,7 +107,7 @@ def requirements(ctx: wb.Ctx) -> dict:
     docs = ctx.files((".docx", ".pdf", ".txt", ".md"))
     tot = sum(float(r.get("weight") or 0) for r in recs)
     return {"summary": f"{len(recs)} requirement(s)" + (f" read from the sheet" if fresh else "") + (f"; {len(docs)} document(s) Relay can read for more" if docs else "")
-                       + (f"; {'; '.join(notes)}" if notes else "") + f". The weights add up to {cx.num(tot)} — they must add up to 100.",
+                       + (f"; {'; '.join(notes)}" if notes else "") + f". The weights add up to {cx.num(tot)} - they must add up to 100.",
             "counts": {"requirements": len(recs), "mandatory": sum(1 for r in recs if r.get("mandatory")), "documents": len(docs)}, "records": recs,
             "data": {"columns": ["Id", "Requirement", "Category", "Weight", "Mandatory", "From"], "rows": [[r.get("ref"), r["text"], r.get("category"), r.get("weight"), "yes" if r.get("mandatory") else "no", r.get("source")] for r in recs]}}
 
@@ -142,7 +142,7 @@ REQ_EDIT = wb.Edit(columns=[wb.Column("ref", "Id"), wb.Column("text", "Requireme
                             wb.Column("weight", "Weight", "number"), wb.Column("mandatory", "Mandatory", "bool"), wb.Column("evidence", "How to evidence it"),
                             wb.Column("source", "From", readonly=True)], validate=_req_validate, label="requirement")
 
-READ_REQS = """FILE requirements.yaml — read WORK.md, then every document in data/ with `genbi read data/<file>` (Word, PDF,
+READ_REQS = """FILE requirements.yaml - read WORK.md, then every document in data/ with `genbi read data/<file>` (Word, PDF,
 text). List each requirement the documents state:
 
 requirements:
@@ -169,7 +169,7 @@ def _read_check(ctx: wb.Ctx) -> list[str]:
         return [f"requirements.yaml does not parse: {str(e).splitlines()[0][:200]}"]
     reqs = y.get("requirements") if isinstance(y, dict) else None
     if not isinstance(reqs, list) or not reqs:
-        return ["requirements.yaml needs `requirements:` — a list"]
+        return ["requirements.yaml needs `requirements:` - a list"]
     files = {f["name"] for f in ctx.files()}
     probs, seen = [], set()
     for i, r in enumerate(reqs, 1):
@@ -184,7 +184,7 @@ def _read_check(ctx: wb.Ctx) -> list[str]:
             probs.append(f"requirement {r.get('id')}: two share this id")
         seen.add(r.get("id"))
         if r.get("weight") is not None:
-            probs.append(f"requirement {r.get('id') or i}: leave the weight out — a person sets it")
+            probs.append(f"requirement {r.get('id') or i}: leave the weight out - a person sets it")
     return probs
 
 
@@ -204,7 +204,7 @@ def _read_after(ctx: wb.Ctx, res: dict) -> dict:
         n += 1
     ctx.evidence("Requirements Relay read from the documents", {"requirements": y.get("requirements"), "note": res.get("text") or ""}, kind="agent", ok=True)
     tot = sum(float(r.get("weight") or 0) for r in recs)
-    return {"summary": f"Relay read {n} requirement(s) from the documents, each with its file and page — set their weights (the total is {cx.num(tot)}; it must be 100).",
+    return {"summary": f"Relay read {n} requirement(s) from the documents, each with its file and page - set their weights (the total is {cx.num(tot)}; it must be 100).",
             "records": recs, "data": {"columns": ["Id", "Requirement", "Category", "Weight", "Mandatory", "From"],
                                       "rows": [[r.get("ref"), r["text"], r.get("category"), r.get("weight"), "yes" if r.get("mandatory") else "no", r.get("source")] for r in recs]}}
 
@@ -217,7 +217,7 @@ def long_list(ctx: wb.Ctx) -> dict:
              for i, p in enumerate(cat.get("platforms") or [])]
     recs = cx.keep_edits(ctx, fresh, ("shortlist", "why"))
     short = [r for r in recs if r.get("shortlist")]
-    return {"summary": f"{len(recs)} candidate(s) on the long list from Relay's catalogue for {cat.get('name', 'this kind of tool')} — add any other with the reason, "
+    return {"summary": f"{len(recs)} candidate(s) on the long list from Relay's catalogue for {cat.get('name', 'this kind of tool')} - add any other with the reason, "
                        f"and tick the short list the RFP goes to ({len(short)} now).",
             "counts": {"long list": len(recs), "short list": len(short)}, "records": recs,
             "data": {"columns": ["Short list", "Vendor or tool", "Why it is on the list"], "rows": [["yes" if r.get("shortlist") else "no", r["vendor"], r["why"]] for r in recs]}}
@@ -283,7 +283,7 @@ def issue(ctx: wb.Ctx) -> dict:
                 {"title": "Requirements", "blocks": [{"kind": "table", "table": cx.table(["Id", "Requirement", "Category", "Weight", "Mandatory"], ch, f"{R}#rows",
                                                                                        "Every requirement with its weight; the weights add up to 100")} for ch in cx.chunks(rec["rows"])]},
                 {"title": "How to answer", "blocks": [{"kind": "bullets", "bullets": ["Answer in the response workbook sent with this document, one row per requirement.",
-                                                                                     "Status: Comply, Partial, Not or Alternative — with your answer and the evidence (a document, a reference, a demonstration).",
+                                                                                     "Status: Comply, Partial, Not or Alternative - with your answer and the evidence (a document, a reference, a demonstration).",
                                                                                      "Leave no requirement unanswered: an empty status scores nothing."]}]},
                 {"title": "How answers are scored", "blocks": [{"kind": "bullets", "bullets": ["Comply scores the full weight, Partial and Alternative half of it, Not nothing.",
                                                                                               "A mandatory requirement answered Not ends the response's evaluation.",
@@ -291,7 +291,7 @@ def issue(ctx: wb.Ctx) -> dict:
     doc = {"kind": "doc", "title": f"Request for proposal: {ctx.title}"[:70], "subtitle": f"Issued {cx.iso_day(time.time())}", "audience": "the invited vendors", "date": cx.iso_day(time.time()), "sections": sections}
     a = cx.deliver(ctx, "rfp-pack", doc, "RFP document")
     gates = [a["gate"], ctx.proof("references_real", label="Every vendor on the short list has its response workbook", refs=[f"rfp-{cx.slug(r['vendor'])}.xlsx" for r in short], known=files)]
-    return {"summary": (f"The RFP pack: the document and {len(files)} response workbook(s) for {', '.join(r['vendor'] for r in short)} — check them, then send them yourself; Relay sends nothing."
+    return {"summary": (f"The RFP pack: the document and {len(files)} response workbook(s) for {', '.join(r['vendor'] for r in short)} - check them, then send them yourself; Relay sends nothing."
                         if a["ok"] else "The RFP document did not pass its checks: " + "; ".join(a["problems"][:3])),
             "ok": a["ok"], "counts": {"vendors": len(files), "requirements": len(reqs)}, "data": {"checks": gates}}
 
@@ -381,9 +381,9 @@ def _score_validate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
     probs = [] if recs else ["No response has been read yet: upload the vendors' workbooks and press Read the responses."]
     for r in recs:
         if r.get("status") not in STATUSES:
-            probs.append(f"{r['vendor']} · {r['req']}: the status is Comply, Partial, Not or Alternative (the vendor gave none).")
+            probs.append(f"{r['vendor']} - {r['req']}: the status is Comply, Partial, Not or Alternative (the vendor gave none).")
         elif r.get("status") != r.get("stated") and not str(r.get("note") or "").strip():
-            probs.append(f"{r['vendor']} · {r['req']}: you changed the vendor's answer ({r.get('stated')} → {r['status']}) — say why.")
+            probs.append(f"{r['vendor']} - {r['req']}: you changed the vendor's answer ({r.get('stated')} {r['status']}) - say why.")
     _points(recs)
     from .delivery import _text_problems
     return probs + _text_problems(recs, ("note",))
@@ -402,7 +402,7 @@ def _put_scores(ctx: wb.Ctx) -> dict:
     tot = _totals(recs, vendors)
     rec = {"vendors": tot, "by_vendor": {t["vendor"]: t for t in tot}, "points": POINTS, "count": len(tot),
            "rows": [[t["vendor"], cx.num(t["score"]), f"{t['mandatory_met']} of {t['mandatory']}", "yes" if t["excluded"] else "no"] for t in tot],
-           "answers": [[r["vendor"], r["req"], r["stated"], r["status"], cx.num(r["points"]), (r.get("note") or r.get("evidence") or "—")[:160]] for r in recs]}
+           "answers": [[r["vendor"], r["req"], r["stated"], r["status"], cx.num(r["points"]), (r.get("note") or r.get("evidence") or "-")[:160]] for r in recs]}
     cx.put(ctx, "scores", rec)
     return rec
 
@@ -417,14 +417,14 @@ def poc(ctx: wb.Ctx) -> dict:
     fresh = [{"id": f"{cx.slug(t['vendor'])}|{c['id']}", "vendor": t["vendor"], "criterion": f"{c['id']}: {c['text'][:140]}", "result": "planned", "evidence": "", "when": ""}
              for t in lead for c in crit]
     recs = cx.keep_edits(ctx, fresh, ("result", "evidence", "when"))
-    return {"summary": f"A proof of concept for {', '.join(t['vendor'] for t in lead)} on {len(crit)} criterion(s) — record each result and where its evidence is.",
+    return {"summary": f"A proof of concept for {', '.join(t['vendor'] for t in lead)} on {len(crit)} criterion(s) - record each result and where its evidence is.",
             "counts": {"vendors": len(lead), "criteria": len(crit)}, "records": recs,
             "data": {"columns": ["Vendor", "Criterion", "Result", "Evidence"], "rows": [[r["vendor"], r["criterion"], r["result"], r.get("evidence")] for r in recs]}}
 
 
 def _poc_validate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
-    probs = [f"{r['vendor']} · {r['criterion'][:40]}: record the result." for r in recs if r.get("result") == "planned"]
-    probs += [f"{r['vendor']} · {r['criterion'][:40]}: where is the evidence?" for r in recs if r.get("result") in ("passed", "failed") and not str(r.get("evidence") or "").strip()]
+    probs = [f"{r['vendor']} - {r['criterion'][:40]}: record the result." for r in recs if r.get("result") == "planned"]
+    probs += [f"{r['vendor']} - {r['criterion'][:40]}: where is the evidence?" for r in recs if r.get("result") in ("passed", "failed") and not str(r.get("evidence") or "").strip()]
     from .delivery import _text_problems
     return probs + _text_problems(recs, ("evidence",))
 
@@ -448,7 +448,7 @@ def recommend(ctx: wb.Ctx) -> dict:
     pick = next((t for t in ranked if not t["excluded"] and t["poc"] == "passed"), None)
     rec = {"recommended": pick["vendor"] if pick else None, "score": pick["score"] if pick else 0, "ranked": ranked, "count": len(ranked),
            "rows": [[t["vendor"], cx.num(t["score"]), f"{t['mandatory_met']} of {t['mandatory']}", t["poc"], t["why"]] for t in ranked],
-           "poc_rows": [[r["vendor"], r["criterion"], r["result"], r.get("evidence") or "—"] for r in pocs], "rfp": cx.read(ctx, "rfp") or {}}
+           "poc_rows": [[r["vendor"], r["criterion"], r["result"], r.get("evidence") or "-"] for r in pocs], "rfp": cx.read(ctx, "rfp") or {}}
     cx.put(ctx, "decision", rec)
     D = "record:decision"
     if pick:
@@ -460,7 +460,7 @@ def recommend(ctx: wb.Ctx) -> dict:
                     v=((rec["rfp"] or {}).get("short_list", 0), "record:rfp#short_list"))
     blocks = [{"kind": "paragraph", "text": s1, "figures": f1}, {"kind": "paragraph", "text": s2, "figures": f2}] + nv.blocks(ctx, "In short")
     day = cx.iso_day(time.time())
-    doc = {"kind": "doc", "title": f"Decision: {ctx.title}"[:70], "subtitle": f"Tool & vendor selection · {day}", "audience": "the decision makers", "date": day,
+    doc = {"kind": "doc", "title": f"Decision: {ctx.title}"[:70], "subtitle": f"Tool & vendor selection - {day}", "audience": "the decision makers", "date": day,
            "sections": [{"title": "Recommendation", "blocks": blocks},
                         {"title": "How the vendors compare", "blocks": [{"kind": "table", "table": cx.table(["Vendor", "Score (of 100)", "Mandatory met", "Proof of concept", "Why"], rec["rows"], f"{D}#rows",
                                                                                                          "Weighted scores from each vendor's own answers and evidence")}]},
@@ -471,7 +471,7 @@ def recommend(ctx: wb.Ctx) -> dict:
                         {"title": "Method", "blocks": [{"kind": "bullets", "bullets": ["Comply scores the full weight of a requirement, Partial and Alternative half, Not nothing; the weights add up to 100.",
                                                                                       "A mandatory requirement answered Not ends a vendor's evaluation.",
                                                                                       "The recommendation is the best score among the vendors that passed the proof of concept."]}]}]}
-    slides = [{"layout": "title", "title": ctx.title[:70], "subtitle": f"Decision · {day}"},
+    slides = [{"layout": "title", "title": ctx.title[:70], "subtitle": f"Decision - {day}"},
               {"layout": "bullets", "title": "Our recommendation", "bullets": [s1, s2], "figures": f1 + f2},
               {"layout": "chart", "title": "Weighted scores", "chart": {"type": "bar", "categories": [t["vendor"] for t in ranked], "series": [{"name": "Score (of 100)", "values": [float(t["score"]) for t in ranked]}],
                                                                        "unit": "points", "source": f"{D}#ranked", "alt": "Each vendor's weighted score out of 100"}},
@@ -479,7 +479,7 @@ def recommend(ctx: wb.Ctx) -> dict:
     if rec["poc_rows"]:
         slides.append({"layout": "table", "title": "Proof of concept", "table": cx.table(["Vendor", "Criterion", "Result", "Evidence"], rec["poc_rows"][:14], f"{D}#poc_rows", "Each criterion with its evidence")})
     slides.append({"layout": "closing", "title": "Thank you", "bullets": [cx.brand_line()]})
-    deck = {"kind": "deck", "title": f"Decision: {ctx.title}"[:70], "subtitle": f"Tool & vendor selection · {day}", "audience": "the decision makers", "date": day, "sections": [{"title": "Decision", "slides": slides}]}
+    deck = {"kind": "deck", "title": f"Decision: {ctx.title}"[:70], "subtitle": f"Tool & vendor selection - {day}", "audience": "the decision makers", "date": day, "sections": [{"title": "Decision", "slides": slides}]}
     a = cx.deliver(ctx, "decision-memo", doc, "Decision memo")
     b = cx.deliver(ctx, "decision-deck", deck, "Decision deck")
     gates = [a["gate"], b["gate"], ctx.proof("sourced", label="Every figure of the memo and the deck resolves to its record",
@@ -487,8 +487,8 @@ def recommend(ctx: wb.Ctx) -> dict:
     ok = a["ok"] and b["ok"] and gates[-1]["status"] in ("pass", "skip")
     ctx.put("summary", {"recommended": rec["recommended"], "score": rec["score"], "vendors": len(ranked), "when": time.time()})
     return {"summary": ((f"Recommended: {rec['recommended']} ({cx.num(rec['score'])} of 100)." if pick else "No vendor qualifies for a recommendation yet.")
-                        + (" The decision memo and the deck pass every check — confirm the decision." if ok else " The memo did not pass its checks: " + "; ".join((a["problems"] + b["problems"])[:3]))),
-            "ok": ok, "counts": {"vendors": len(ranked)}, "data": {"checks": gates}, "items": [f"{t['vendor']}: {cx.num(t['score'])} — {t['why']}" for t in ranked]}
+                        + (" The decision memo and the deck pass every check - confirm the decision." if ok else " The memo did not pass its checks: " + "; ".join((a["problems"] + b["problems"])[:3]))),
+            "ok": ok, "counts": {"vendors": len(ranked)}, "data": {"checks": gates}, "items": [f"{t['vendor']}: {cx.num(t['score'])} - {t['why']}" for t in ranked]}
 
 
 def _page_cards(u: dict) -> list[dict]:
@@ -499,19 +499,19 @@ def _page_cards(u: dict) -> list[dict]:
     for r in rows:
         if r["id"] in vis:
             s = (wb._load(r["id"]).get("data") or {}).get("summary") or {}
-            out.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), s.get("recommended") or "—", cx.num(s["score"]) if s.get("score") else "—", f"#/m/{MODULE}/i/{r['id']}"])
+            out.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), s.get("recommended") or "-", cx.num(s["score"]) if s.get("score") else "-", f"#/m/{MODULE}/i/{r['id']}"])
     return [{"title": "Selections", "columns": ["Selection", "Status", "Recommended", "Score", "Open"], "rows": out, "empty": "No selection yet."}]
 
 
-GUIDE = """# Tool & vendor selection — the work item
+GUIDE = """# Tool & vendor selection - the work item
 
 This folder is one selection of Relay's Tool & vendor selection module.
 
 - `data/`: the requirement documents and sheets, and the response workbooks the vendors sent back (`rfp-<vendor>.xlsx`).
-- `requirements.yaml`: what you write when asked to read the requirements — each with the file and page it came
+- `requirements.yaml`: what you write when asked to read the requirements - each with the file and page it came
   from, no weights (a person sets them).
 - `sources/rfp.json`, `scores.json`, `decision.json`: the RFP that was issued, the weighted scores, the decision.
-- `narrative.yaml`: what you write when asked — a few paragraphs, every number declared with its `record:` source.
+- `narrative.yaml`: what you write when asked - a few paragraphs, every number declared with its `record:` source.
 
 Never invent a requirement, a vendor's answer or a score."""
 
@@ -531,11 +531,11 @@ wb.register(wb.Pack(
                                     text="Read from your requirements sheet (rules first) or from your documents by the agent, each with where it came from; you set the weights, which add up to 100"),
             "Long list": wb.Step(kind="deterministic", run=long_list, agent="Market reader", edit=LONG_EDIT, confirm="who is on the long list and why, and the short list the RFP goes to",
                                  text="The candidates Relay's catalogue lists for this kind of tool, and any you add with the reason; you pick the short list"),
-            "Issue": wb.Step(kind="deterministic", run=issue, view="gates", agent="RFP writer", confirm="the RFP pack and who receives it — you send it, Relay sends nothing",
+            "Issue": wb.Step(kind="deterministic", run=issue, view="gates", agent="RFP writer", confirm="the RFP pack and who receives it - you send it, Relay sends nothing",
                              confirm_if=lambda ctx, out: out["ok"], text="The RFP document through the docs engine and a response workbook for each vendor on the short list"),
             "Score": wb.Step(kind="platform", run=score, agent="Evaluator", edit=SCORE_EDIT, confirm="the weighted scores, each with the vendor's own answer and evidence",
                              actions={"responses": wb.Action(label="Read the responses", kind="platform", run=score, agent="Evaluator",
-                                                             help="Read the vendors' completed workbooks you uploaded (Files › Upload on this item).")},
+                                                             help="Read the vendors' completed workbooks you uploaded (Files > Upload on this item).")},
                              text="The vendors' workbooks read and scored: each answer × its weight, a mandatory Not excludes; you may change a status, with the reason"),
             "PoC": wb.Step(kind="deterministic", run=poc, agent="Evaluator", edit=POC_EDIT, confirm="the proof-of-concept results with where their evidence is",
                            text="The leading vendors tried on the mandatory requirements; you record each result and its evidence"),

@@ -2,14 +2,14 @@
 
   dashboard:<project id>[/<measure>]   sources/dashboard-<id>.json (the web app's snapshot of a dashboard: its
                                        measures with the values Power BI's engine returned, pages, KPIs)
-  record:<name>[#<key.path>]           sources/<name>.json | .yaml | .md | .csv — an Assess / Programme / RFP /
+  record:<name>[#<key.path>]           sources/<name>.json | .yaml | .md | .csv - an Assess / Programme / RFP /
                                        Start / practice record the web app copied in; #key reads into a JSON record
   attachment:<file>[#<sheet or page>]  sources/<file> or attachments/<file> (read with `genbi read`)
   library:<id>                         an item of the tenant's past-responses library, listed in sources/library.json
   module:<id>                          a module of the registry, listed in sources/registry.json
   <path>                               any file inside the project folder
 
-A reference that points outside the project folder (…/ or an absolute path elsewhere) crosses the tenant boundary
+A reference that points outside the project folder (.../ or an absolute path elsewhere) crosses the tenant boundary
 and is refused; nothing is read from another folder."""
 from __future__ import annotations
 
@@ -104,7 +104,7 @@ class Resolver:
 
     # ---- resolution
     def resolve(self, ref: str) -> dict:
-        """{"ok", "kind", "path", "value", "why", "link"} — value is the scalar the reference names, when it names one."""
+        """{"ok", "kind", "path", "value", "why", "link"} - value is the scalar the reference names, when it names one."""
         ref = (ref or "").strip()
         if not ref:
             return {"ok": False, "kind": "", "path": "", "value": None, "why": "no source given"}
@@ -169,7 +169,7 @@ class Resolver:
         return {"ok": True, "kind": "file", "path": found.relative_to(self.root).as_posix(), "value": None, "why": ""}
 
     def _csv_cell(self, path: Path, frag: str):
-        """attachment:x.csv#<column>=<key>:<value column>  or  #<column>:sum — a value read from a CSV."""
+        """attachment:x.csv#<column>=<key>:<value column>  or  #<column>:sum - a value read from a CSV."""
         try:
             with path.open(encoding="utf-8-sig", newline="") as fh:
                 rows = list(csv.DictReader(fh))

@@ -1,11 +1,11 @@
 """How D2D Relay emails sign-in codes: as info@pasdacs.com, through Microsoft Graph, with a DELEGATED sign-in.
 
-No client secret is needed: the Entra app is a public client (Authentication → "Allow public client flows" = Yes) with
+No client secret is needed: the Entra app is a public client (Authentication -> "Allow public client flows" = Yes) with
 the delegated Graph permissions Mail.Send and offline_access. The mailbox signs in once with a device code:
 
     docker exec -it -u relay -w /srv d2d-relay /opt/relay/bin/launch web python -m app.otp_mail login
 
-Delegated means the app can only ever send as the account that signed in — so it is limited to info@pasdacs.com
+Delegated means the app can only ever send as the account that signed in - so it is limited to info@pasdacs.com
 without any Exchange policy. The refresh token is kept encrypted in the secrets store; every use returns a new one,
 and main.py refreshes it once a day so it never lapses (Microsoft ends one after 90 days unused).
 
@@ -107,9 +107,9 @@ def _login() -> None:
     r = httpx.post(f"{MS_LOGIN}/{TENANT}/oauth2/v2.0/devicecode", timeout=20, data={"client_id": CLIENT_ID, "scope": SCOPE})
     if r.status_code != 200:
         sys.exit(f"Microsoft refused to start the sign-in ({r.status_code}): {r.text[:400]}\n"
-                 "Check the app: Authentication → Allow public client flows = Yes.")
+                 "Check the app: Authentication -> Allow public client flows = Yes.")
     dc = r.json()
-    print("\n" + dc["message"] + f"\n\nSign in as {SENDER}. Waiting…", flush=True)
+    print("\n" + dc["message"] + f"\n\nSign in as {SENDER}. Waiting...", flush=True)
     end, wait = time.time() + int(dc.get("expires_in", 900)), int(dc.get("interval", 5))
     while time.time() < end:
         time.sleep(wait)
@@ -141,7 +141,7 @@ def main(argv: list[str]) -> None:
         _login()
     elif cmd == "status":
         m = mode()
-        print(f"sending as: {SENDER or '(not set)'} · mode: {m or 'not set up'}")
+        print(f"sending as: {SENDER or '(not set)'} - mode: {m or 'not set up'}")
         if m:
             (_app_token if m == "app" else _delegated_token)()
             print("Microsoft gave a token: sending works.")

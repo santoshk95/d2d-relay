@@ -4,11 +4,11 @@ Every unexpected exception in Relay's own code becomes one JSON log line, event 
 Doctor reads the web app's log, opens one incident per fingerprint, fixes the cause on a copy of the code, proves it
 and deploys it (doctor/README.md).
 
-A bug is a programming error (KeyError, TypeError, AttributeError, NameError, IndexError, …) or a database
+A bug is a programming error (KeyError, TypeError, AttributeError, NameError, IndexError, ...) or a database
 programming error (no such column / table, a column that does not exist), raised with Relay's own code on the stack
 (webapp/app, genbi_kit). Not a bug, and never reported: what the app raises on purpose for a person (HTTPException,
 AgentError, QuotaError, ValueError, a module's own *Error), timeouts and connection errors, a stopped job, a file read
-while it was being written (OSError) — people already see those, and a code change would not help.
+while it was being written (OSError) - people already see those, and a code change would not help.
 
 Reported from: requests (main.py's handler for unexpected exceptions), every `traceback.print_exc()` in the code
 (install() wraps it, so the job worker and every background loop report without changes), asyncio tasks nobody
@@ -48,7 +48,7 @@ DB_BUG = re.compile(r"no such (column|table|function)|has no column named|column
 EVERY_S = 30
 INSTANCE = os.environ.get("D2D_INSTANCE", "local")
 CONTEXT: contextvars.ContextVar[dict] = contextvars.ContextVar("relay_error_context", default={})
-RECENT: dict[str, dict] = {}          # fingerprint -> what this process has seen (Admin › Operations › Relay Doctor)
+RECENT: dict[str, dict] = {}          # fingerprint -> what this process has seen (Admin > Operations > Relay Doctor)
 _LOCK = threading.Lock()
 _ORIG_PRINT_EXC = traceback.print_exc
 _CTX_KEYS = ("route", "method", "kind", "pid", "job", "tenant", "at")
@@ -71,7 +71,7 @@ def scrub(text: str, limit: int) -> str:
         text = rx.sub(rep, text)
     if len(text) > limit:
         head = limit // 4
-        text = text[:head] + "\n… (cut) …\n" + text[-(limit - head - 12):]
+        text = text[:head] + "\n... (cut) ...\n" + text[-(limit - head - 12):]
     return text
 
 

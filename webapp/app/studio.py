@@ -1,23 +1,23 @@
-"""Proposals, decks & documents — the consulting studio (build-plan v2, P11).
+"""Proposals, decks & documents - the consulting studio (build-plan v2, P11).
 
 A studio item is a folder output/projects/<id>/ with `kind: deliverable` in project.json: brief.md (what, for whom,
 by when, template; every later comment appended), sources/ (the facts the agent may use: snapshots of picked
 dashboards, starts, RFP responses, the practice pulse, the registry's module facts, library items, attachments
 read with the P10 reader, brand.json + the tenant template files), outline.yaml, deck.yaml or doc.yaml, builds/vN/
-(the .pptx / .docx, the HTML twin, the PDF, check.json). Journey Brief → Outline → Draft → Check → Review → Final:
+(the .pptx / .docx, the HTML twin, the PDF, check.json). Journey Brief -> Outline -> Draft -> Check -> Review -> Final:
 
-  Brief     POST /api/studio — type, audience, due date, template, sources, files; queues `studio_outline`
-  Outline   job studio_outline (llm) → outline.yaml; checkpoint `studio.outline` (view plan): the person reorders,
-            cuts, adds (PUT …/outline) and confirms, or sends it back with a comment (the agent re-outlines)
-  Draft     job studio_draft (llm) → deck.yaml / doc.yaml; the app builds and checks it (genbi_kit.docs); failing
+  Brief     POST /api/studio - type, audience, due date, template, sources, files; queues `studio_outline`
+  Outline   job studio_outline (llm) -> outline.yaml; checkpoint `studio.outline` (view plan): the person reorders,
+            cuts, adds (PUT .../outline) and confirms, or sends it back with a comment (the agent re-outlines)
+  Draft     job studio_draft (llm) -> deck.yaml / doc.yaml; the app builds and checks it (genbi_kit.docs); failing
             checks go back to the same session (fix rounds); the build is builds/vN/
   Check     the check report on the page (sources, numbers vs source, placeholders, limits, contrast, alt text,
             house style, tenant boundary)
-  Review    checkpoint `studio.final` (view link → the HTML twin + PDF); comments in place; send back = another draft
+  Review    checkpoint `studio.final` (view link -> the HTML twin + PDF); comments in place; send back = another draft
             round with the comment
-  Final     files downloadable; "File to …" through a write-scoped connection (connectors.request_write → a
+  Final     files downloadable; "File to ..." through a write-scoped connection (connectors.request_write -> a
             `connection.write` checkpoint); "Send by mail" through the mailer, only after the final is accepted;
-            later edits to the YAML (PUT …/yaml) re-run the checks and reopen the review.
+            later edits to the YAML (PUT .../yaml) re-run the checks and reopen the review.
 """
 from __future__ import annotations
 
@@ -104,7 +104,7 @@ def spec_name(st: dict) -> str:
 
 
 def _note(pid: str, heading: str, body: str) -> None:
-    """A dated section at the bottom of brief.md — the file the agent reads (store.note writes request.md, the dashboard's)."""
+    """A dated section at the bottom of brief.md - the file the agent reads (store.note writes request.md, the dashboard's)."""
     with (folder(pid) / "brief.md").open("a", encoding="utf-8") as f:
         f.write(f"\n\n## {heading} ({time.strftime('%Y-%m-%d %H:%M')})\n\n{body.strip()}\n")
 
@@ -120,7 +120,7 @@ def _safe(name: str, taken: set[str]) -> str:
 
 def _brief_md(st: dict, sources: dict, attachments: list[dict]) -> str:
     t = TYPE_BY_ID.get(st["type"], (st["type"], st["type"], "deck"))
-    lines = [f"# {st['name']}", "", f"**Deliverable:** {t[1]} ({t[2]})  ", f"**Audience:** {st.get('audience') or '—'}  ", f"**Due:** {st.get('due') or '—'}  ",
+    lines = [f"# {st['name']}", "", f"**Deliverable:** {t[1]} ({t[2]})  ", f"**Audience:** {st.get('audience') or '-'}  ", f"**Due:** {st.get('due') or '-'}  ",
              f"**Template:** {'the tenant template' if st.get('template') == 'tenant' else 'RELAY'}", "", "## The brief", "", (st.get("brief") or "").strip() or "(none)", "",
              "## Sources (in sources/)", ""]
     for k, label in (("dashboards", "Dashboards"), ("starts", "Starts"), ("rfps", "RFP responses"), ("modules", "Module facts"), ("library", "Library items")):
@@ -309,7 +309,7 @@ def check_outline(d: Path, st: dict) -> list[str]:
     allowed = docs_spec.LAYOUTS if deck else docs_spec.BLOCKS
     problems = []
     if not str(raw.get("story") or "").strip():
-        problems.append("story is missing — 2-3 sentences on the argument")
+        problems.append("story is missing - 2-3 sentences on the argument")
     secs = raw.get("sections")
     if not isinstance(secs, list) or not secs:
         return problems + ["sections is empty"]
@@ -321,7 +321,7 @@ def check_outline(d: Path, st: dict) -> list[str]:
             continue
         units = s.get(key) if isinstance(s.get(key), list) else s.get("slides" if not deck else "blocks")
         if not isinstance(units, list) or not units:
-            problems.append(f"section “{s.get('title')}” has no {key}")
+            problems.append(f"section \"{s.get('title')}\" has no {key}")
             continue
         for u in units:
             n += 1
@@ -330,11 +330,11 @@ def check_outline(d: Path, st: dict) -> list[str]:
                 continue
             lay = str(u.get("layout") or u.get("kind") or "").lower()
             if lay not in allowed:
-                problems.append(f"{key[:-1]} {n} “{u.get('title')}”: layout must be one of {', '.join(allowed)}")
+                problems.append(f"{key[:-1]} {n} \"{u.get('title')}\": layout must be one of {', '.join(allowed)}")
             for ref in u.get("sources") or []:
                 r = resolver.resolve(str(ref))
                 if not r["ok"]:
-                    problems.append(f"{key[:-1]} {n} “{u.get('title')}”: source {ref} — {r['why']}")
+                    problems.append(f"{key[:-1]} {n} \"{u.get('title')}\": source {ref} - {r['why']}")
     if n < 3:
         problems.append(f"only {n} {key}: a deliverable needs more than that")
     return problems
@@ -359,7 +359,7 @@ def outline_view(raw: dict | None, st: dict) -> dict:
 
 
 def outline_evidence(v: dict) -> dict:
-    return {"summary": f"{v['counts']['sections']} sections, {v['counts']['units']} {v['counts']['unit']}s — {v['story'][:200]}",
+    return {"summary": f"{v['counts']['sections']} sections, {v['counts']['units']} {v['counts']['unit']}s - {v['story'][:200]}",
             "counts": {"sections": v["counts"]["sections"], v["counts"]["unit"] + "s": v["counts"]["units"]},
             "items": [f"{s['title']}: " + ", ".join(u["title"] for u in s["units"][:6]) for s in v["sections"][:8]], "rows": v["sections"]}
 
@@ -381,7 +381,7 @@ def outlined(pid: str, summary: str = "") -> dict:
     store.save(st)
     checkpoints.withdraw(CP_OUTLINE, pid, who="system")
     checkpoints.open(CP_OUTLINE, pid, MODULE, f"Outline: {st['name']}", "plan", outline_evidence(v), link=f"{ROUTE}/{pid}", assignee=_owner(pid), agent="Relay writer", opened_by="agent")
-    worker.app_note(pid, "studio_outline", f"Outline ready: {v['counts']['sections']} sections, {v['counts']['units']} {v['counts']['unit']}s. Reorder, cut or add, then confirm it — or send it back with a comment.", "ok")
+    worker.app_note(pid, "studio_outline", f"Outline ready: {v['counts']['sections']} sections, {v['counts']['units']} {v['counts']['unit']}s. Reorder, cut or add, then confirm it - or send it back with a comment.", "ok")
     db.audit("studio.outlined", pid, {"rounds": st["outline_rounds"], **v["counts"]}, "agent")
     return st
 
@@ -437,7 +437,7 @@ def reviewed(pid: str, rec: dict, summary: str = "") -> dict:
     store.save(st)
     checkpoints.withdraw(CP_FINAL, pid, who="system")
     files = rec["files"]
-    ev = {"summary": f"Build v{rec['v']}: " + (", ".join(f"{v} {k}" for k, v in rec["counts"].items() if v) or "built") + f" — checks {'passed' if rec['ok'] else 'FAILED (' + str(rec['fails']) + ' problems)'}"
+    ev = {"summary": f"Build v{rec['v']}: " + (", ".join(f"{v} {k}" for k, v in rec["counts"].items() if v) or "built") + f" - checks {'passed' if rec['ok'] else 'FAILED (' + str(rec['fails']) + ' problems)'}"
                      + (f", {rec['warnings']} warnings" if rec["warnings"] else ""),
           "items": [f"{c['label']}: {c['summary']}" for c in rec["checks"]], "counts": {"version": rec["v"], "problems": rec["fails"], "warnings": rec["warnings"]},
           "twin": f"/api/studio/{pid}/preview/{rec['v']}", "pdf": f"/api/studio/{pid}/builds/{rec['v']}/{files['pdf']}" if files.get("pdf") else None,
@@ -466,7 +466,7 @@ async def _outline(pid: str, args: dict) -> None:
             break
         if attempt == worker.FIX_ROUNDS:
             raise RuntimeError(f"outline.yaml still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-        worker.app_note(pid, "studio_outline", f"The check found {len(problems)} problem(s) in outline.yaml — Relay is fixing them.", "warn", problems)
+        worker.app_note(pid, "studio_outline", f"The check found {len(problems)} problem(s) in outline.yaml - Relay is fixing them.", "warn", problems)
         res = await worker.agent(pid, "studio_outline", "The web app checked outline.yaml and found these problems:\n\n" + "\n".join(f"- {p}" for p in problems[:25])
                                  + "\n\nFix them in outline.yaml (keep the rest) and end with one sentence on what you fixed.", worker.TURNS["fix"], "outline",
                                  resume=res.get("session_id"), system=studio_prompts.SYSTEM)
@@ -477,11 +477,11 @@ async def _draft(pid: str, args: dict) -> None:
     d = folder(pid)
     st = load(pid)
     comment = args.get("comment")
-    worker.app_note(pid, "studio_draft", "Relay is revising the draft with your comments." if comment else "Relay is drafting from the confirmed outline — every figure with its source.")
+    worker.app_note(pid, "studio_draft", "Relay is revising the draft with your comments." if comment else "Relay is drafting from the confirmed outline - every figure with its source.")
     res = await worker.agent(pid, "studio_draft", studio_prompts.draft(st, comment), worker.TURNS["studio_draft"], "draft", system=studio_prompts.SYSTEM)
     rec = None
     for attempt in range(worker.FIX_ROUNDS + 1):
-        worker.app_note(pid, "studio_draft", "Building the deliverable and running the checks: sources, numbers vs source, placeholders, limits, contrast, alt text, house style, tenant boundary…")
+        worker.app_note(pid, "studio_draft", "Building the deliverable and running the checks: sources, numbers vs source, placeholders, limits, contrast, alt text, house style, tenant boundary...")
         store.update(pid, status="building")
         try:
             rec = await asyncio.to_thread(build_version, pid, load(pid))
@@ -496,7 +496,7 @@ async def _draft(pid: str, args: dict) -> None:
         if attempt == worker.FIX_ROUNDS:
             break
         store.update(pid, status="drafting")
-        worker.app_note(pid, "studio_draft", f"The checks found {len(problems)} problem(s) — Relay is fixing them.", "warn", problems)
+        worker.app_note(pid, "studio_draft", f"The checks found {len(problems)} problem(s) - Relay is fixing them.", "warn", problems)
         res = await worker.agent(pid, "studio_draft", studio_prompts.fix(load(pid), problems), worker.TURNS["fix"], "draft", resume=res.get("session_id"), system=studio_prompts.SYSTEM)
     if rec is None:
         raise RuntimeError(f"{spec_name(st)} could not be built: " + "; ".join(problems[:3]))
@@ -504,16 +504,16 @@ async def _draft(pid: str, args: dict) -> None:
 
 
 async def _rebuild(pid: str, args: dict) -> None:
-    """Later edits to the YAML (PUT …/yaml) re-run the build and the checks; the review reopens on the new version."""
+    """Later edits to the YAML (PUT .../yaml) re-run the build and the checks; the review reopens on the new version."""
     st = load(pid)
     worker.app_note(pid, "studio_build", "Rebuilding after your edit and running every check again.")
     rec = await asyncio.to_thread(build_version, pid, st)
     reviewed(pid, rec, st.get("draft_summary") or "")
 
 
-worker.register_job("studio_outline", _outline, status="outlining", done="Outline ready — confirm it in the studio", llm=True, turns=60, timeout_s=1800)
+worker.register_job("studio_outline", _outline, status="outlining", done="Outline ready - confirm it in the studio", llm=True, turns=60, timeout_s=1800)
 worker.register_job("studio_draft", _draft, status="drafting", done="Draft ready to review in the studio", llm=True, turns=120, timeout_s=3600)
-worker.register_job("studio_build", _rebuild, status="building", done="Rebuilt — review it in the studio")
+worker.register_job("studio_build", _rebuild, status="building", done="Rebuilt - review it in the studio")
 
 
 # ---------------------------------------------------------------- decisions
@@ -529,7 +529,7 @@ def _on_outline(c: dict, decision: str, comment: str | None, who: str) -> None:
     if decision == "accept":
         st.update(outline_confirmed={"by": who, "when": time.time(), "checkpoint": c["id"]})
         store.save(st)
-        store.log(pid, {"kind": "user", "stage": "studio", "text": "Confirmed the outline" + (f" — {comment}" if comment else "")})
+        store.log(pid, {"kind": "user", "stage": "studio", "text": "Confirmed the outline" + (f" - {comment}" if comment else "")})
         db.audit("studio.outline_confirmed", pid, {"checkpoint": c["id"]}, who)
         worker.enqueue(pid, "studio_draft")
     else:
@@ -558,7 +558,7 @@ def _on_final(c: dict, decision: str, comment: str | None, who: str) -> None:
         db.audit("studio.final", pid, {"version": v, "checkpoint": c["id"]}, who)
         owner = _owner(pid)
         if owner and owner != who:
-            notify.add(owner, "review", f"Final: {st.get('name')}", f"v{v} accepted — file it or send it", f"{ROUTE}/{pid}")
+            notify.add(owner, "review", f"Final: {st.get('name')}", f"v{v} accepted - file it or send it", f"{ROUTE}/{pid}")
     else:
         comment = " ".join((comment or "").split())[:2000]
         pending = [x for x in st.get("comments") or [] if x.get("stage") == "review" and x.get("version") == v]
@@ -708,7 +708,7 @@ def summary():
     items.sort(key=lambda s: -(s.get("updated") or s.get("created") or 0))
     return {"items": len(items), "awaiting": sum(1 for s in items if s["status"] in ("awaiting_outline", "awaiting_review")), "final": sum(1 for s in items if s["status"] == "final"),
             "running": sum(1 for s in items if s["status"] in RUNNING), "recent": items[:5], "can_create": auth.is_dev(u),
-            "hint": "Brief a proposal, deck or document — drafted from Relay's facts in your template, every figure sourced."}
+            "hint": "Brief a proposal, deck or document - drafted from Relay's facts in your template, every figure sourced."}
 
 
 @router.post("/api/studio")
@@ -728,7 +728,7 @@ async def create(title: str = Form(""), type: str = Form("proposal"), brief: str
         raise HTTPException(400, "Template must be relay or tenant.")
     tpl = registry.templates()
     if template == "tenant" and not (tpl["pptx"] or tpl["docx"]):
-        raise HTTPException(400, "No tenant template is set: upload one under Admin › Branding, or use the RELAY template.")
+        raise HTTPException(400, "No tenant template is set: upload one under Admin > Branding, or use the RELAY template.")
     try:
         picks = json.loads(sources or "{}")
         assert isinstance(picks, dict)
@@ -771,7 +771,7 @@ async def create(title: str = Form(""), type: str = Form("proposal"), brief: str
     store.save(st)
     await asyncio.to_thread(_preread, d, [a["name"] for a in attachments])
     db.audit("studio.create", pid, {"name": title, "type": type, "template": template, "sources": {k: v for k, v in written.items() if v}, "attachments": [a["name"] for a in attachments]}, u["id"])
-    store.log(pid, {"kind": "user", "stage": "studio", "text": f"Briefed “{title}” ({TYPE_BY_ID[type][1]}) with {len(attachments)} attachment(s)"})
+    store.log(pid, {"kind": "user", "stage": "studio", "text": f"Briefed \"{title}\" ({TYPE_BY_ID[type][1]}) with {len(attachments)} attachment(s)"})
     worker.enqueue(pid, "studio_outline")
     return state(pid, u)
 
@@ -960,7 +960,7 @@ def put_yaml(pid: str, body: YamlIn):
     """Later edits: the person changes the YAML; the checks run again and the review reopens on a new version."""
     u, st = _get(pid, "edit")
     if st["status"] in RUNNING:
-        raise HTTPException(409, "Relay is working on it — wait for the current step to finish.")
+        raise HTTPException(409, "Relay is working on it - wait for the current step to finish.")
     try:
         raw = yaml.safe_load(body.yaml)
     except yaml.YAMLError as e:
@@ -973,7 +973,7 @@ def put_yaml(pid: str, body: YamlIn):
     d = folder(pid)
     (d / spec_name(st)).write_text(body.yaml, encoding="utf-8")
     _note(pid, "Edited by hand", f"{spec_name(st)} changed by {u['id']}; the checks run again.")
-    store.log(pid, {"kind": "user", "stage": "studio", "text": f"Edited {spec_name(st)} — rebuilding and checking"})
+    store.log(pid, {"kind": "user", "stage": "studio", "text": f"Edited {spec_name(st)} - rebuilding and checking"})
     if st.get("status") == "final":
         st["final"] = None
     st["status"] = "queued"
@@ -1018,7 +1018,7 @@ def file_to(pid: str, body: FileTo):
     except connectors.ConnectorError:
         raise HTTPException(400, "That connection is not yours or shared with you.")
     if not connectors.may_write(c):
-        raise HTTPException(403, f"{c['name']} is {connectors.SCOPES.get(c.get('scope') or 'read')}: change its scope to “Read & write — with approval” under Connections first.")
+        raise HTTPException(403, f"{c['name']} is {connectors.SCOPES.get(c.get('scope') or 'read')}: change its scope to \"Read & write - with approval\" under Connections first.")
     files = b["files"]
     fname = files.get("pptx") or files.get("docx")
     path = folder(pid) / "builds" / f"v{v}" / fname
@@ -1042,16 +1042,16 @@ def file_to(pid: str, body: FileTo):
         st.setdefault("filed", []).append({"connection": c["id"], "connection_name": c["name"], "target": target, "version": v, "checkpoint": cp["id"], "requested": time.time(),
                                            "by": u["id"], "status": "waiting"})
     store.save(st)
-    store.log(pid, {"kind": "user", "stage": "studio", "text": f"Asked to file v{v} to {c['name']}: {target} — waiting for the write approval"})
+    store.log(pid, {"kind": "user", "stage": "studio", "text": f"Asked to file v{v} to {c['name']}: {target} - waiting for the write approval"})
     db.audit("studio.file_requested", pid, {"connection": c["id"], "target": target, "version": v, "checkpoint": cp["id"]}, u["id"])
     return {"filed": False, "checkpoint": cp, "state": state(pid, u)}
 
 
-FILED_STATUS = {"waiting": "Waiting for the write approval", "filed": "Filed", "sent_back": "Sent back — not filed", "failed": "Not filed"}
+FILED_STATUS = {"waiting": "Waiting for the write approval", "filed": "Filed", "sent_back": "Sent back - not filed", "failed": "Not filed"}
 
 
 def _filed(cp: dict, event: str, result) -> None:
-    """connectors' write hook (origin studio:<id>:v<n>): the filing request hears what happened — filed with its
+    """connectors' write hook (origin studio:<id>:v<n>): the filing request hears what happened - filed with its
     link (and whether Drive converted it to a Google format), sent back, or not filed and why."""
     origin = str(((cp.get("evidence") or {}).get("payload") or {}).get("from") or "").split(":")
     if len(origin) < 2:
@@ -1071,7 +1071,7 @@ def _filed(cp: dict, event: str, result) -> None:
         f["note"] = str(result)[:300]
     store.save(st)
     text = {"written": f"Filed v{f['version']} to {f['connection_name']}: {f['target']}" + (" (converted to a Google format)" if f.get("converted") else ""),
-            "sent_back": f"The write approval for {f['target']} was sent back — nothing was filed"}.get(event, f"{f['target']} was not filed: {str(result)[:200]}")
+            "sent_back": f"The write approval for {f['target']} was sent back - nothing was filed"}.get(event, f"{f['target']} was not filed: {str(result)[:200]}")
     store.log(pid, {"kind": "agent", "stage": "studio", "text": text})
     if f.get("by") and f.get("by") != cp.get("decided_by"):
         notify.add(f["by"], "share" if event == "written" else "alert", text[:200], "", f"{ROUTE}/{pid}")
@@ -1107,8 +1107,8 @@ def send_mail(pid: str, u: dict, aid: str, to: list[str], subject: str, text: st
         if files.get(key):
             att.append((f"{stem} v{v}.{key}", mime, (folder(pid) / "builds" / f"v{v}" / files[key]).read_bytes()))
     b_ = registry.brand()
-    subject = subject.strip()[:200] or f"{st['name']} — {TYPE_BY_ID.get(st['type'], ('', st['type']))[1]}"
-    html = f"<p>{(text.strip() or 'Please find the deliverable attached.').replace(chr(10), '<br>')}</p><p style=\"color:#56626E;font-size:12px\">Sent from {b_['full']}" + (f" · {b_['powered']}" if b_["partner"] else "") + "</p>"
+    subject = subject.strip()[:200] or f"{st['name']} - {TYPE_BY_ID.get(st['type'], ('', st['type']))[1]}"
+    html = f"<p>{(text.strip() or 'Please find the deliverable attached.').replace(chr(10), '<br>')}</p><p style=\"color:#56626E;font-size:12px\">Sent from {b_['full']}" + (f" - {b_['powered']}" if b_["partner"] else "") + "</p>"
     try:
         mailer.send(aid, u["id"], to, subject, html, att)
     except mailer.EmailError as e:
@@ -1132,7 +1132,7 @@ def mail(pid: str, body: MailIn):
 def delete_item(pid: str):
     u, st = _get(pid, "edit")
     if st["status"] in RUNNING and worker.current.get("pid") == pid:
-        raise HTTPException(409, "Relay is working on it — stop it first.")
+        raise HTTPException(409, "Relay is working on it - stop it first.")
     for k in (CP_OUTLINE, CP_FINAL):
         checkpoints.withdraw(k, pid, who=u["id"])
     db.skip_queued(pid)

@@ -1,5 +1,5 @@
 """Ask D (platform plan, phase 5 + Round 5): questions about your data, answered with the numbers, a summary, next
-actions and follow-up questions — every step checked.
+actions and follow-up questions - every step checked.
 
 Three scopes:
   dashboard  one dashboard: its model (tables, measures, relationships), its pages, the filters the person set, on
@@ -7,11 +7,11 @@ Three scopes:
   team       the dashboards of the person's teams they can open, plus their own warehouse connections (live)
   org        every dashboard they can open + their own connections, guided by the organisation ontology and
              organisation-default metrics; sources the ontology knows but the person cannot open are listed as
-             "not included" — data is always fetched with the person's own permissions, never anyone else's
+             "not included" - data is always fetched with the person's own permissions, never anyone else's
 
 How an answer is made: Claude (the person's own AI provider, the agent's chat lane, no tools at all) gets a context
-pack and replies with JSON: either a query for one of the listed engines, or the answer. The web app — never
-Claude — checks each query (one read-only SELECT, only the listed tables, no file functions), runs it with the
+pack and replies with JSON: either a query for one of the listed engines, or the answer. The web app - never
+Claude - checks each query (one read-only SELECT, only the listed tables, no file functions), runs it with the
 person's permissions and hands back the rows. At most MAX_QUERIES rounds. Every number in an answer comes from a
 query result; the answer shows the SQL, where it ran, the checks, and whether it used certified metrics.
 """
@@ -42,7 +42,7 @@ FILE_FUNCS = re.compile(r"^(read_|scan_|parquet_|glob$|getenv$|query$|query_tabl
 SYSTEM = """You are Ask Relay, the data assistant of D2D Relay. You answer business questions with numbers from the person's
 own data, then explain them in plain language and suggest what to do next.
 
-You cannot run anything yourself. Reply with exactly ONE JSON object and nothing else — no prose, no code fence:
+You cannot run anything yourself. Reply with exactly ONE JSON object and nothing else - no prose, no code fence:
   {"action": "query", "engine": "<engine id from the context>", "sql": "<one read-only SELECT>", "why": "<short>"}
     The app runs it with the person's permissions and returns up to 50 rows as JSON. Use the engine's SQL dialect
     and only the tables listed for that engine (DuckDB engines: the exact view names, quoted with double quotes).
@@ -54,10 +54,11 @@ You cannot run anything yourself. Reply with exactly ONE JSON object and nothing
    "next_questions": ["<follow-up question>", "<another>", "<a third>"],
    "metrics_used": ["<names of certified metrics whose definition you used>"],
    "not_included": ["<data the question needed that is not available here>"]}
-Rules: never invent a number — every number in the answer must come from a query result. Prefer the certified
+Rules: never invent a number - every number in the answer must come from a query result. Prefer the certified
 metrics' definitions (DAX for meaning, SQL for the query) whenever the question is about them, and list them in
 metrics_used. At most 3 queries before answering. Keep result rows small (aggregate; LIMIT 50). If the data cannot
-answer the question, say so in the summary and in not_included.
+answer the question, say so in the summary and in not_included. Write plain keyboard characters only: a hyphen or a
+comma instead of a long dash, straight quotes, three dots, no arrows or middle dots.
 Write for a business reader: headline, summary, actions and next_questions use business words, never SQL, table or
 column names (say "revenue", not "net_rev_amt"); round sensibly ($1.42M, 32.9%); keep the summary to 2-4 short sentences.
 Actions are concrete things a manager could do this week. Next questions are ones a manager would naturally ask next.
@@ -247,7 +248,7 @@ def _not_included(u: dict, src: dict) -> list[str]:
     for e in semantic.ontology()["entities"]:
         for k in e["keys"]:
             if k["source"] not in mine:
-                out.append(f"{e['name']}: {k['source']} › {k['tbl']} (you have no access)")
+                out.append(f"{e['name']}: {k['source']} > {k['tbl']} (you have no access)")
     return sorted(set(out))
 
 
@@ -255,26 +256,26 @@ def context_pack(u: dict, scope: dict) -> tuple[str, dict]:
     """The text Claude gets, and the engines the app will run queries on."""
     src = scope_sources(u, scope)
     engines: dict[str, dict] = {}
-    parts = [f"Scope: {src['kind']}" + (f" — dashboard {store.load(src['projects'][0]).get('name')}" if src["kind"] == "dashboard" else "")]
+    parts = [f"Scope: {src['kind']}" + (f" - dashboard {store.load(src['projects'][0]).get('name')}" if src["kind"] == "dashboard" else "")]
     if src["projects"]:
         combined = src["kind"] != "dashboard"
         eid = "extract" if combined else f"dashboard:{src['projects'][0]}"
         con, tables = _extract_engine(src["projects"], combined)
         engines[eid] = {"kind": "extract", "con": con, "tables": tables, "projects": src["projects"]}
         names = {p: store.load(p).get("name") for p in src["projects"]}
-        parts.append(f"\n## Engine `{eid}` — DuckDB over " + ("the dashboard's data (the same views as the prototype)" if not combined else
+        parts.append(f"\n## Engine `{eid}` - DuckDB over " + ("the dashboard's data (the same views as the prototype)" if not combined else
                      "the data of the dashboards you can open (one schema per dashboard: " + ", ".join(f"p_{re.sub(r'[^a-z0-9]', '_', p.lower())} = {names[p]}" for p in src["projects"]) + ")"))
         for t, cols in sorted(tables.items())[:120]:
             parts.append(f"- {t}: {', '.join(cols[:40])}")
     for cid in src["connections"]:
         c = connectors._row(cid)                     # noqa: SLF001
         if not (connectors.KINDS.get(c["kind"]) or {}).get("dialect"):
-            continue                                 # an API platform (Oracle Retail MFCS …): asked about through the dashboards its objects were pulled into
+            continue                                 # an API platform (Oracle Retail MFCS ...): asked about through the dashboards its objects were pulled into
         tbls = _live_tables(c)
         if not tbls:
             continue
         engines[f"live:{cid}"] = {"kind": "live", "connection": c, "tables": tbls}
-        parts.append(f"\n## Engine `live:{cid}` — {connectors.KINDS[c['kind']]['label']} ({c['name']}), live, "
+        parts.append(f"\n## Engine `live:{cid}` - {connectors.KINDS[c['kind']]['label']} ({c['name']}), live, "
                      f"{connectors.KINDS[c['kind']]['dialect']} SQL, your own login")
         for obj, cols in tbls.items():
             parts.append(f"- {obj}: {', '.join(cols[:40]) or '(columns: query with LIMIT 1 to see them)'}")
@@ -285,7 +286,7 @@ def context_pack(u: dict, scope: dict) -> tuple[str, dict]:
         defn = _project_defn(pid)
         parts.append("\n## The dashboard's model")
         for m in defn.get("measures") or []:
-            parts.append(f"- measure [{m['name']}] = {m.get('expression')}" + (f" — {m['description']}" if m.get("description") else ""))
+            parts.append(f"- measure [{m['name']}] = {m.get('expression')}" + (f" - {m['description']}" if m.get("description") else ""))
         for r in defn.get("relationships") or []:
             parts.append(f"- relationship {r}")
         pages = [p.get("name") for p in defn.get("pages") or []]
@@ -314,7 +315,7 @@ def context_pack(u: dict, scope: dict) -> tuple[str, dict]:
             cols = [f"{c['name']}: {c['description']}" + (" (unconfirmed)" if c.get("status") == "suggested" else "") + (" [sensitive]" if c.get("sensitive") else "")
                     for c in t["columns"] if c.get("description")]
             if t.get("description") or cols:
-                described.append(f"- {t['table']}" + (f" — {t['description']}" if t.get("description") else "") + (": " + "; ".join(cols[:30]) if cols else ""))
+                described.append(f"- {t['table']}" + (f" - {t['description']}" if t.get("description") else "") + (": " + "; ".join(cols[:30]) if cols else ""))
         if described:
             parts.append("\n## What the data means (descriptions; 'unconfirmed' ones are AI drafts)")
             parts += described
@@ -327,8 +328,8 @@ def context_pack(u: dict, scope: dict) -> tuple[str, dict]:
         if onto["entities"]:
             parts.append("\n## Organisation ontology (entities and where they live)")
             for e in onto["entities"]:
-                parts.append(f"- {e['name']}: " + "; ".join(f"{k['source']} › {k['tbl']}[{k['col']}]" for k in e["keys"])
-                             + (f" — {e.get('definition') or e.get('description')}" if (e.get("definition") or e.get("description")) else ""))
+                parts.append(f"- {e['name']}: " + "; ".join(f"{k['source']} > {k['tbl']}[{k['col']}]" for k in e["keys"])
+                             + (f" - {e.get('definition') or e.get('description')}" if (e.get("definition") or e.get("description")) else ""))
         defaults = onto["defaults"]
         if defaults:
             parts.append("- organisation defaults: " + ", ".join(f"{d['term']} = {d['team']}'s definition" for d in defaults))
@@ -337,7 +338,7 @@ def context_pack(u: dict, scope: dict) -> tuple[str, dict]:
         if mine:
             parts.append("\n## Business entities in this data")
             parts += [f"- {e['name']}: " + ", ".join(f"{k['tbl']}[{k['col']}]" for k in e["keys"] if str(k["source"]).split("/")[0] in src["projects"])
-                      + (f" — {e.get('definition') or e.get('description')}" if (e.get("definition") or e.get("description")) else "")
+                      + (f" - {e.get('definition') or e.get('description')}" if (e.get("definition") or e.get("description")) else "")
                       + (f" (e.g. {'; '.join(e['examples'][:2])})" if e.get("examples") else "") for e in mine[:40]]
     ni = _not_included(u, src)
     if ni:
@@ -419,7 +420,7 @@ async def _claude(u: dict, prompt: str, session: str | None, workdir: str, model
     async with httpx.AsyncClient(timeout=httpx.Timeout(15, read=None)) as client:
         async with client.stream("POST", f"{url}/runs", json=payload) as r:
             if r.status_code == 409:
-                raise AskError("Ask D is answering another question of yours — try again in a moment.")
+                raise AskError("Ask D is answering another question of yours - try again in a moment.")
             if r.status_code != 200:
                 raise AskError(f"The AI provider refused the question: {(await r.aread()).decode(errors='replace')[:200]}")
             async for line in r.aiter_lines():
@@ -576,15 +577,16 @@ def _finish(reply: dict, queries: list[dict], ctx: dict, usage: dict) -> dict:
     used = [str(n) for n in reply.get("metrics_used") or []]
     certified = [n for n in used if n.lower() in ctx["metrics"]]
     result = reply.get("result") or {}
+    say = lambda x, n: store.human(str(x or ""))[:n]            # noqa: E731 - the AI's words in plain characters; never the data
     return {"result": {"type": result.get("type") if result.get("type") in ("number", "table", "chart") else "table",
-                       "headline": str(result.get("headline") or "")[:200], "chart": result.get("chart") if isinstance(result.get("chart"), dict) else None},
+                       "headline": say(result.get("headline"), 200), "chart": result.get("chart") if isinstance(result.get("chart"), dict) else None},
             "data": {"columns": main["columns"], "rows": main["rows"][:1000], "row_count": main["row_count"], "limited": main["limited"]} if main else None,
-            "summary": str(reply.get("summary") or "")[:2000], "actions": [str(a)[:400] for a in (reply.get("actions") or [])[:3]],
-            "next_questions": [str(a)[:200] for a in (reply.get("next_questions") or [])[:3]],
+            "summary": say(reply.get("summary"), 2000), "actions": [say(a, 400) for a in (reply.get("actions") or [])[:3]],
+            "next_questions": [say(a, 200) for a in (reply.get("next_questions") or [])[:3]],
             "validation": {"main_query": main["id"] if main else None, "queries": [{k: v for k, v in q.items() if k != "rows"} for q in queries],
                            "where": main["where"] if main else None,
                            "certified": bool(used) and len(certified) == len(used), "metrics_used": used, "certified_metrics": certified,
-                           "not_included": list(dict.fromkeys([str(x) for x in reply.get("not_included") or []] + ctx["not_included"]))[:20]},
+                           "not_included": list(dict.fromkeys([say(x, 400) for x in reply.get("not_included") or []] + ctx["not_included"]))[:20]},
             "usage": usage}
 
 
@@ -661,4 +663,4 @@ td,th{{border-bottom:1px solid #EEE;padding:3px 8px;text-align:left}}.f{{margin-
 <div>{'<span class="b">Certified</span>' if v.get("certified") else '<span class="b">Ad hoc</span>'}<span class="b">{h.escape(str(v.get("where") or ""))}</span></div>
 {chart}<p>{h.escape(body.get("summary") or "")}</p>
 <table><tr>{''.join(f'<th>{h.escape(c)}</th>' for c in cols)}</tr>{table}</table>
-<div class="f">D2D Relay · Ask Relay · {time.strftime('%Y-%m-%d %H:%M')}</div></div>"""
+<div class="f">D2D Relay - Ask Relay - {time.strftime('%Y-%m-%d %H:%M')}</div></div>"""

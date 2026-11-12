@@ -49,12 +49,12 @@ async function renderSchedules() {
   try { d = await api('/api/schedules'); } catch (e) { $('#main').replaceChildren(page); return page.append(h('div', {class: 'note err'}, e.message)); }
   if (!location.hash.startsWith('#/schedules')) return;
   $('#main').replaceChildren(page);
-  const target = s => s.target.type === 'dashboard' ? `Dashboard · ${(d.dashboards.find(x => x.id === s.target.project) || {}).name || s.target.project}`
-    : s.target.type === 'page' ? `Page · ${(d.pages.find(x => x.id === s.target.id) || {}).title || s.target.id}`
-    : s.target.type === 'askd' ? `Ask D · “${s.target.question}”`
-    : `${s.target.type === 'metric' ? '[' + s.target.measure + ']' : 'SQL'} ${s.target.op} ${s.target.threshold.toLocaleString()} · ${(d.dashboards.find(x => x.id === s.target.project) || {}).name || s.target.project}`;
+  const target = s => s.target.type === 'dashboard' ? `Dashboard - ${(d.dashboards.find(x => x.id === s.target.project) || {}).name || s.target.project}`
+    : s.target.type === 'page' ? `Page - ${(d.pages.find(x => x.id === s.target.id) || {}).title || s.target.id}`
+    : s.target.type === 'askd' ? `Ask D - "${s.target.question}"`
+    : `${s.target.type === 'metric' ? '[' + s.target.measure + ']' : 'SQL'} ${s.target.op} ${s.target.threshold.toLocaleString()} - ${(d.dashboards.find(x => x.id === s.target.project) || {}).name || s.target.project}`;
   const act = (s, a, label, cls) => h('button', {class: 'btn sm' + (cls ? ' ' + cls : ''), onclick: async e => {
-    e.target.disabled = true; if (a === 'run') notify('Running…');
+    e.target.disabled = true; if (a === 'run') notify('Running...');
     try { const r = await api(`/api/schedules/${s.id}/${a}`, {method: 'POST'});
       if (a === 'run') notify(r.ok ? r.result : r.error, r.ok ? 'ok' : 'err'); renderSchedules(); }
     catch (err) { notify(err.message, 'err'); e.target.disabled = false; } }}, label);
@@ -66,16 +66,16 @@ async function renderSchedules() {
     s.paused_reason ? h('div', {class: 'note warn small'}, s.paused_reason) : null,
     h('div', {class: 'kv small', style: 'margin-top:8px'},
       h('dt', {}, 'When'), h('dd', {}, s.when),
-      h('dt', {}, 'Next'), h('dd', {}, s.status === 'active' && s.next_run ? new Date(s.next_run * 1000).toLocaleString() : '—'),
-      h('dt', {}, 'Last'), h('dd', {}, s.last_run ? `${when(s.last_run)} · ${s.last_status}` + (s.last_error && s.last_status !== 'paused' ? ` — ${s.last_error}` : '') : 'not run yet'),
-      s.kind === 'alert' ? [h('dt', {}, 'Value'), h('dd', {}, s.state.value == null ? '—' : Number(s.state.value).toLocaleString(undefined, {maximumFractionDigits: 4}))] : null,
+      h('dt', {}, 'Next'), h('dd', {}, s.status === 'active' && s.next_run ? new Date(s.next_run * 1000).toLocaleString() : '-'),
+      h('dt', {}, 'Last'), h('dd', {}, s.last_run ? `${when(s.last_run)} - ${s.last_status}` + (s.last_error && s.last_status !== 'paused' ? ` - ${s.last_error}` : '') : 'not run yet'),
+      s.kind === 'alert' ? [h('dt', {}, 'Value'), h('dd', {}, s.state.value == null ? '-' : Number(s.state.value).toLocaleString(undefined, {maximumFractionDigits: 4}))] : null,
       h('dt', {}, 'Sent'), h('dd', {}, s.email_account_id ? `by email from ${acct(s.email_account_id) || 'a removed account'} to ${s.recipients.map(r => (d.people.find(p => p.id === r) || {}).name || r).join(', ')}` : 'in Relay only')),
     h('div', {class: 'row', style: 'margin-top:10px'},
       act(s, 'run', s.kind === 'alert' ? 'Check now' : 'Send now'), s.status === 'active' ? act(s, 'pause', 'Pause') : act(s, 'resume', 'Resume', 'primary'),
       h('button', {class: 'btn sm', onclick: () => scheduleDialog(s.kind, d, s)}, icon('edit'), 'Edit'),
       s.kind === 'report' && s.state.file ? h('a', {class: 'btn sm', href: `/api/schedules/${s.id}/latest`}, icon('download'), 'Latest') : null,
       h('span', {class: 'spacer'}),
-      h('button', {class: 'btn sm', onclick: async () => { if (!await confirmBox(`Delete “${s.name}”?`, s.kind === 'alert' ? 'The alert stops checking.' : 'The report is no longer sent; its last copy is deleted.', 'Delete')) return; await api(`/api/schedules/${s.id}`, {method: 'DELETE'}); renderSchedules(); }}, 'Delete')));
+      h('button', {class: 'btn sm', onclick: async () => { if (!await confirmBox(`Delete "${s.name}"?`, s.kind === 'alert' ? 'The alert stops checking.' : 'The report is no longer sent; its last copy is deleted.', 'Delete')) return; await api(`/api/schedules/${s.id}`, {method: 'DELETE'}); renderSchedules(); }}, 'Delete')));
   const reports = d.schedules.filter(s => s.kind === 'report'), alerts = d.schedules.filter(s => s.kind === 'alert');
   page.append(h('div', {}, h('div', {class: 'phead'}, h('div', {class: 'grow'}, h('h1', {}, 'Schedules'),
       h('div', {class: 'meta'}, `Reports emailed on a schedule and alerts on your KPIs. New schedules use your time zone, ${myTz()} (change it in Settings).`)),
@@ -84,8 +84,8 @@ async function renderSchedules() {
     !d.accounts.length ? h('div', {class: 'note'}, icon('info'), ' Connect a Gmail or Microsoft email account in ', h('a', {href: '#/settings'}, 'Settings'),
       ' to have reports and alerts emailed. Without one they arrive here, in Relay.') : null,
     scheduleAsk(d),
-    h('h3', {}, 'Reports'), reports.length ? reports.map(card) : h('div', {class: 'muted small', style: 'margin-bottom:16px'}, 'No reports yet — for example, your Monday overview as a PDF at 8:00.'),
-    h('h3', {style: 'margin-top:18px'}, 'Alerts'), alerts.length ? alerts.map(card) : h('div', {class: 'muted small'}, 'No alerts yet — for example, tell me when Net Sales falls under target.')));
+    h('h3', {}, 'Reports'), reports.length ? reports.map(card) : h('div', {class: 'muted small', style: 'margin-bottom:16px'}, 'No reports yet - for example, your Monday overview as a PDF at 8:00.'),
+    h('h3', {style: 'margin-top:18px'}, 'Alerts'), alerts.length ? alerts.map(card) : h('div', {class: 'muted small'}, 'No alerts yet - for example, tell me when Net Sales falls under target.')));
 }
 
 function scheduleDialog(kind, d, s, prefill) {
@@ -106,16 +106,16 @@ function scheduleDialog(kind, d, s, prefill) {
       t.type === 'dashboard' ? f('Dashboard', sel(d.dashboards.map(x => [x.id, x.name]), t.project, x => { t.project = x; })) : null,
       t.type === 'page' ? f('Page', d.pages.length ? sel(d.pages.map(x => [x.id, x.title]), t.id, x => { t.id = x; }) : h('div', {class: 'muted small'}, 'You have no pages yet.')) : null,
       t.type === 'askd' ? [f('Question', inp(t.question, x => { t.question = x; }, {placeholder: 'How did sales do last week, by region?'})),
-        f('Look at', sel([['team', 'My team’s data'], ['org', 'Everything I can open'], ...d.dashboards.map(x => ['dashboard:' + x.id, 'Dashboard · ' + x.name])],
+        f('Look at', sel([['team', 'My team\'s data'], ['org', 'Everything I can open'], ...d.dashboards.map(x => ['dashboard:' + x.id, 'Dashboard - ' + x.name])],
           t.scope.kind === 'dashboard' ? 'dashboard:' + t.scope.project : t.scope.kind, x => { t.scope = x.startsWith('dashboard:') ? {kind: 'dashboard', project: x.slice(10)} : {kind: x}; }),
           'Answered with your own access each time; it goes to you only.')] : null,
       f('Format', sel([['pdf', 'PDF'], ['png', 'PNG image']], t.format, x => { t.format = x; }))] : [
       f('Dashboard', sel(d.dashboards.map(x => [x.id, x.name]), t.project, x => { t.project = x; t.measure = ''; loadMeasures(); })),
       f('Check', sel([['metric', 'A measure of the dashboard'], ['sql', 'My own SQL (one number)']], t.type, x => { t.type = x; draw(); })),
-      t.type === 'metric' ? f('Measure', measures === null ? h('div', {class: 'muted small'}, 'Loading measures…') : sel([['', 'Choose…'], ...measures.map(m => [m.name, m.name + (m.checkable ? '' : ' — use SQL')])], t.measure, x => { t.measure = x; }),
-        'Measures built from one table (SUM, AVERAGE, COUNT, DIVIDE …) are checked on the dashboard’s data.')
+      t.type === 'metric' ? f('Measure', measures === null ? h('div', {class: 'muted small'}, 'Loading measures...') : sel([['', 'Choose...'], ...measures.map(m => [m.name, m.name + (m.checkable ? '' : ' - use SQL')])], t.measure, x => { t.measure = x; }),
+        'Measures built from one table (SUM, AVERAGE, COUNT, DIVIDE ...) are checked on the dashboard\'s data.')
         : f('SQL', (() => { const el = h('textarea', {rows: 3, class: 'mono', placeholder: 'SELECT SUM("Revenue") FROM "Sales" WHERE "Month" >= DATE \'2026-10-01\''}, t.sql || ''); el.oninput = () => { t.sql = el.value; }; return el; })(),
-          'One read-only SELECT over the dashboard’s tables, returning one number.'),
+          'One read-only SELECT over the dashboard\'s tables, returning one number.'),
       h('div', {class: 'row'}, f('Alert when it is', sel([['<', 'below'], ['<=', 'at or below'], ['>', 'above'], ['>=', 'at or above']], t.op, x => { t.op = x; })),
         f('Threshold', inp(t.threshold, x => { t.threshold = x; }, {type: 'number', step: 'any', style: 'width:160px'})),
         h('button', {class: 'btn sm', style: 'align-self:flex-end', onclick: async () => { try { const r = await api('/api/schedules-preview', {json: {target: t}}); notify(`Now: ${r.value == null ? 'no value' : Number(r.value).toLocaleString()}`, 'ok'); } catch (e) { notify(e.message, 'err'); } }}, 'Test value'))];
@@ -128,7 +128,7 @@ function scheduleDialog(kind, d, s, prefill) {
         c.freq === 'monthly' ? f('Day', sel([...Array(28).keys()].map(i => [i + 1, String(i + 1)]), c.day, x => { c.day = +x; })) : null,
         f(c.freq === 'hourly' ? 'Minute' : 'At', inp(c.freq === 'hourly' ? c.time : c.time, x => { c.time = x; }, {type: 'time', style: 'width:120px'})),
         f('Time zone', sel(tzList(v.tz).map(z => [z, z]), v.tz, x => { v.tz = x; }))),
-      f('Email from', sel([['', 'Do not email — keep it in Relay'], ...d.accounts.map(a => [a.id, `${a.address} (${a.kind === 'gmail' ? 'Gmail' : 'Microsoft'}${a.status !== 'connected' ? ', ' + a.status : ''})`])],
+      f('Email from', sel([['', 'Do not email - keep it in Relay'], ...d.accounts.map(a => [a.id, `${a.address} (${a.kind === 'gmail' ? 'Gmail' : 'Microsoft'}${a.status !== 'connected' ? ', ' + a.status : ''})`])],
         v.email_account_id || '', x => { v.email_account_id = x || null; draw(); }), d.accounts.length ? null : 'Connect an email account in Settings first.'),
       kind === 'report' && t.type !== 'askd' && v.email_account_id ? f('To', h('div', {class: 'opts'}, d.people.map(p => h('label', {class: 'chk'},
         h('input', {type: 'checkbox', checked: v.recipients.includes(p.id), onchange: e => { v.recipients = e.target.checked ? [...v.recipients, p.id] : v.recipients.filter(r => r !== p.id); }}), p.name))),
@@ -149,13 +149,13 @@ function scheduleDialog(kind, d, s, prefill) {
 /* describe a report or an alert in words: the AI drafts it, Relay checks it against the real data, the person confirms */
 function scheduleAsk(d) {
   const out = h('div', {class: 'stack', style: 'gap:10px'});
-  const ta = h('textarea', {rows: 2, placeholder: 'e.g. “Every Monday at 9 send me the kirana dashboard as a PDF” or “Tell me when daily sales in Koramangala fall below ₹50,000”',
+  const ta = h('textarea', {rows: 2, placeholder: 'e.g. "Every Monday at 9 send me the kirana dashboard as a PDF" or "Tell me when daily sales in Koramangala fall below ₹50,000"',
     'aria-label': 'Describe the report or alert'});
   let current = null;                                    // the draft on screen, revised by follow-ups
   const go = async (text, previous) => {
     text = (text || '').trim();
     if (!text) return ta.focus();
-    btn.disabled = true; btn.textContent = 'Drafting…';
+    btn.disabled = true; btn.textContent = 'Drafting...';
     out.replaceChildren(h('div', {class: 'card flat'}, skel('rows')));
     try { draw(await api('/api/schedules-draft', {json: {request: text, previous}}), text); }
     catch (e) { out.replaceChildren(h('div', {class: 'note err'}, e.message)); }
@@ -173,28 +173,28 @@ function scheduleAsk(d) {
     if (dft.kind === 'alert') {
       const v = r.preview.value;
       pv.append(h('div', {class: 'note ' + (r.preview.fires_now ? 'warn' : 'ok')}, h('b', {}, 'Right now: ', v == null ? 'no value' : Number(v).toLocaleString(undefined, {maximumFractionDigits: 4})),
-        ' — ', r.preview.fires_now ? 'the condition is already met, so the first check will alert you.' : 'the condition is not met; you hear from it when it is.'));
+        ' - ', r.preview.fires_now ? 'the condition is already met, so the first check will alert you.' : 'the condition is not met; you hear from it when it is.'));
     } else {
       pv.append(h('button', {class: 'btn sm', onclick: async e => {
-        const b = e.currentTarget; b.disabled = true; b.textContent = t.type === 'askd' ? 'Answering and drawing…' : 'Drawing…';
+        const b = e.currentTarget; b.disabled = true; b.textContent = t.type === 'askd' ? 'Answering and drawing...' : 'Drawing...';
         try { const res = await fetch('/api/schedules-draft/preview', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({target: t})});
           if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `Preview failed (${res.status})`);
           const img = h('img', {src: URL.createObjectURL(await res.blob()), alt: 'Preview of the report', class: 'sprev'}); pv.replaceChildren(h('div', {class: 'small muted'}, 'What it would send now:'), img); }
         catch (err) { notify(err.message, 'err'); b.disabled = false; b.textContent = 'Preview it'; } }},
         icon('file'), t.type === 'askd' ? 'Preview it (answers the question once)' : 'Preview it'));
     }
-    const follow = h('input', {type: 'text', placeholder: 'Change something: “make it 7am”, “weekdays only”, “also send to Priya”…', 'aria-label': 'Change the draft'});
+    const follow = h('input', {type: 'text', placeholder: 'Change something: "make it 7am", "weekdays only", "also send to Priya"...', 'aria-label': 'Change the draft'});
     follow.onkeydown = e => { if (e.key === 'Enter') go(follow.value, current); };
     out.replaceChildren(h('div', {class: 'card sdraft'},
       h('div', {class: 'row'}, h('span', {class: 'nicon ' + (dft.kind === 'alert' ? 'alert' : 'report')}, icon(dft.kind === 'alert' ? 'alert' : 'clock')),
-        h('div', {class: 'grow'}, h('div', {class: 'faint small'}, dft.kind === 'alert' ? 'New alert · draft' : 'New report · draft'), h('b', {style: 'font-size:15px'}, dft.name))),
+        h('div', {class: 'grow'}, h('div', {class: 'faint small'}, dft.kind === 'alert' ? 'New alert - draft' : 'New report - draft'), h('b', {style: 'font-size:15px'}, dft.name))),
       r.explanation ? h('p', {class: 'small', style: 'margin:8px 0 0'}, r.explanation) : null,
       h('dl', {class: 'kv small', style: 'margin-top:10px'},
         h('dt', {}, dft.kind === 'alert' ? 'Checks' : 'Sends'), h('dd', {}, sm.what + (t.format ? ` (${t.format.toUpperCase()})` : '')),
         t.type === 'sql' ? [h('dt', {}, 'SQL'), h('dd', {}, h('code', {class: 'mono small'}, t.sql))] : null,
         h('dt', {}, 'When'), h('dd', {}, sm.when),
         h('dt', {}, 'First run'), h('dd', {}, new Date(sm.next_run * 1000).toLocaleString()),
-        h('dt', {}, 'To'), h('dd', {}, sm.to.join(', ') + (sm.by_email ? ' · by email' : ' · in Relay'))),
+        h('dt', {}, 'To'), h('dd', {}, sm.to.join(', ') + (sm.by_email ? ' - by email' : ' - in Relay'))),
       pv,
       h('div', {class: 'row', style: 'margin-top:12px;flex-wrap:wrap'},
         h('button', {class: 'btn primary', onclick: async e => { e.currentTarget.disabled = true;
@@ -231,7 +231,7 @@ async function scheduleSettings() {
   const gmail = () => {
     const addr = h('input', {type: 'email', placeholder: 'you@gmail.com'}), pw = h('input', {type: 'password', placeholder: 'abcd efgh ijkl mnop', autocomplete: 'off'}), e2 = h('div', {});
     const m = modal('Connect Gmail', h('div', {class: 'mbody stack'},
-      h('div', {class: 'small'}, 'Relay sends with an app password, never your Google password. In your Google account turn on 2-Step Verification, then open Security › App passwords, create one for “Relay” and paste the 16 letters here.'),
+      h('div', {class: 'small'}, 'Relay sends with an app password, never your Google password. In your Google account turn on 2-Step Verification, then open Security > App passwords, create one for "Relay" and paste the 16 letters here.'),
       h('label', {class: 'f'}, 'Gmail address'), addr, h('label', {class: 'f'}, 'App password'), pw, e2,
       h('div', {class: 'row', style: 'justify-content:flex-end'}, h('button', {class: 'btn primary', onclick: async ev => { ev.target.disabled = true;
         try { drawAcc(await api('/api/email/gmail', {json: {address: addr.value, app_password: pw.value}})); m.remove(); notify('Gmail connected', 'ok'); }
@@ -245,7 +245,7 @@ async function scheduleSettings() {
     h('label', {class: 'f', style: 'margin-top:14px'}, 'Email accounts for reports and alerts'), accRows,
     h('div', {class: 'row', style: 'margin-top:10px'}, h('button', {class: 'btn', onclick: gmail}, 'Connect Gmail'),
       h('button', {class: 'btn', onclick: microsoft, disabled: !acc.microsoft_ready, title: acc.microsoft_ready ? '' : 'Your administrator has not set up Microsoft email yet'}, 'Connect Microsoft work account'),
-      h('span', {class: 'spacer'}), h('a', {href: '#/schedules'}, 'My schedules →'))),
+      h('span', {class: 'spacer'}), h('a', {href: '#/schedules'}, 'My schedules'))),
     h('div', {class: 'card'}, h('h3', {}, `My AI use in ${use.month}`),
       h('div', {class: 'stats', style: 'margin:6px 0 10px'}, h('div', {class: 'stat'}, h('b', {}, usd(use.cost_usd)), h('span', {}, 'estimated cost')),
         h('div', {class: 'stat'}, h('b', {}, tok(use.tokens)), h('span', {}, 'tokens'))),
@@ -292,16 +292,16 @@ async function adminCosts() {
   const price = h('input', {type: 'number', min: 0, step: 0.25, value: r.price_tb, style: 'width:90px', 'aria-label': 'Price per TB scanned in USD'});
   return h('div', {},
     h('div', {class: 'row'}, h('span', {class: 'muted small'}, 'Month (UTC)'), msel, h('span', {class: 'spacer'}),
-      h('span', {class: 'faint small'}, 'LLM costs are the providers’ list-price estimates per run; warehouse cost is bytes scanned × the price per TB.')),
+      h('span', {class: 'faint small'}, 'LLM costs are the providers\' list-price estimates per run; warehouse cost is bytes scanned × the price per TB.')),
     h('div', {class: 'stats'}, tile('LLM cost', usd(t.llm_usd), change == null ? '' : `${change >= 0 ? '+' : ''}${(100 * change).toFixed(0)}% vs previous month`),
-      tile('tokens', tok(t.tokens), `${t.runs} runs`), tile('warehouse', usd(t.warehouse_usd), `${t.queries} live queries · ${size(t.bytes_scanned)} scanned`),
+      tile('tokens', tok(t.tokens), `${t.runs} runs`), tile('warehouse', usd(t.warehouse_usd), `${t.queries} live queries - ${size(t.bytes_scanned)} scanned`),
       tile('extracts', size(t.extract_bytes), `${t.extracts} refreshed this month`)),
     h('div', {class: 'card flat'}, h('h3', {}, 'LLM cost per day'), r.by_day.length ? trend : h('div', {class: 'muted small'}, 'Nothing this month.')),
     h('div', {class: 'grid2'}, h('div', {class: 'card flat'}, h('h3', {}, 'Per team'), bars(r.by_team, 'Team')), h('div', {class: 'card flat'}, h('h3', {}, 'Per person'), bars(r.by_user, 'Person'))),
     h('div', {class: 'grid2'}, h('div', {class: 'card flat'}, h('h3', {}, 'Per model'), bars(r.by_model, 'Model')), h('div', {class: 'card flat'}, h('h3', {}, 'Per step'), bars(r.by_step, 'Step'))),
     h('div', {class: 'card flat'}, h('h3', {}, 'Warehouse queries'),
       r.warehouse.length ? h('table', {class: 'utable'}, h('tr', {}, h('th', {class: 'l'}, 'Connection'), h('th', {class: 'l'}, 'Kind'), h('th', {class: 'l'}, 'People'), h('th', {}, 'Queries'), h('th', {}, 'Scanned'), h('th', {}, 'Cost')),
-        r.warehouse.map(x => h('tr', {}, h('td', {}, x.name || x.connection), h('td', {}, x.kind), h('td', {}, x.people.join(', ')), h('td', {class: 'n'}, x.queries), h('td', {class: 'n'}, x.bytes ? size(x.bytes) : '—'), h('td', {class: 'n'}, usd(x.cost_usd)))))
+        r.warehouse.map(x => h('tr', {}, h('td', {}, x.name || x.connection), h('td', {}, x.kind), h('td', {}, x.people.join(', ')), h('td', {class: 'n'}, x.queries), h('td', {class: 'n'}, x.bytes ? size(x.bytes) : '-'), h('td', {class: 'n'}, usd(x.cost_usd)))))
         : h('div', {class: 'muted small'}, 'No live warehouse queries this month.'),
       h('div', {class: 'row small', style: 'margin-top:10px'}, h('span', {class: 'muted'}, 'Price per TB scanned (USD)'), price,
         h('button', {class: 'btn sm', onclick: async () => { try { await api('/api/admin/costs/price', {method: 'PUT', json: {price_tb: Number(price.value)}}); notify('Saved', 'ok'); reAdmin(); } catch (e) { notify(e.message, 'err'); } }}, 'Save'),
@@ -312,7 +312,7 @@ async function adminCosts() {
         : h('div', {class: 'muted small'}, 'No warehouse extracts.')),
     h('div', {class: 'card flat'}, h('h3', {}, 'Quotas'),
       h('div', {class: 'hint', style: 'margin-bottom:10px'}, 'A monthly AI budget per person or team. At the warning level people are told once; at the limit new builds and Ask D questions wait until next month (running work finishes).'),
-      r.quotas.length ? r.quotas.map(x => h('div', {class: 'row'}, h('div', {class: 'grow'}, quotaBar({...x, level: x.spent_usd >= x.monthly_usd ? 'stop' : x.spent_usd >= x.monthly_usd * x.soft_pct / 100 ? 'warn' : 'ok'}, x.scope === 'workspace' ? 'The whole workspace' : `${x.scope === 'team' ? 'Team' : 'Person'} · ${x.name}`)),
+      r.quotas.length ? r.quotas.map(x => h('div', {class: 'row'}, h('div', {class: 'grow'}, quotaBar({...x, level: x.spent_usd >= x.monthly_usd ? 'stop' : x.spent_usd >= x.monthly_usd * x.soft_pct / 100 ? 'warn' : 'ok'}, x.scope === 'workspace' ? 'The whole workspace' : `${x.scope === 'team' ? 'Team' : 'Person'} - ${x.name}`)),
         h('button', {class: 'btn sm', onclick: async () => { await api('/api/admin/quotas', {method: 'PUT', json: {scope: x.scope, target_id: x.target_id, monthly_usd: null}}); reAdmin(); }}, 'Remove')))
         : h('div', {class: 'muted small'}, 'No quotas.'),
       h('div', {style: 'margin-top:12px'}, qform())));
@@ -322,12 +322,12 @@ async function adminCosts() {
 async function adminScheduling() {
   const [e, s] = await Promise.all([api('/api/admin/email'), api('/api/admin/schedules')]);
   const cid = h('input', {type: 'text', value: e.client_id || '', placeholder: 'Application (client) ID'}), ten = h('input', {type: 'text', value: e.tenant || 'organizations'}),
-    sec = h('input', {type: 'password', placeholder: e.has_secret ? 'Stored — leave empty to keep' : 'Client secret', autocomplete: 'off'});
+    sec = h('input', {type: 'password', placeholder: e.has_secret ? 'Stored - leave empty to keep' : 'Client secret', autocomplete: 'off'});
   return h('div', {},
     h('div', {class: 'card flat'}, h('h3', {}, 'Microsoft work email'),
       h('div', {class: 'hint'}, 'Register an app in Microsoft Entra ID with the delegated permissions Mail.Send, User.Read and offline_access, and this redirect URI. Each person then connects their own mailbox in Settings; Relay can only send as them.'),
       h('div', {class: 'row', style: 'margin:8px 0'}, h('code', {class: 'mono'}, e.redirect_uri), copyBtn(e.redirect_uri)),
-      h('label', {class: 'f'}, 'Client ID'), cid, h('label', {class: 'f'}, 'Tenant'), ten, h('div', {class: 'hint'}, 'Your tenant ID or domain; “organizations” accepts any work account.'),
+      h('label', {class: 'f'}, 'Client ID'), cid, h('label', {class: 'f'}, 'Tenant'), ten, h('div', {class: 'hint'}, 'Your tenant ID or domain; "organizations" accepts any work account.'),
       h('label', {class: 'f'}, 'Client secret'), sec,
       h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:10px'}, h('button', {class: 'btn primary', onclick: async () => {
         try { await api('/api/admin/email', {method: 'PUT', json: {client_id: cid.value, tenant: ten.value, client_secret: sec.value || null}}); notify('Saved', 'ok'); reAdmin(); } catch (err) { notify(err.message, 'err'); } }}, 'Save'))),
@@ -335,7 +335,7 @@ async function adminScheduling() {
       s.schedules.length ? h('table', {class: 'utable'}, h('tr', {}, ['Name', 'Owner', 'Kind', 'When', 'Status', 'Last run'].map(t => h('th', {class: 'l'}, t))),
         s.schedules.map(x => h('tr', {}, h('td', {}, x.name), h('td', {}, x.owner), h('td', {}, x.kind), h('td', {}, x.when),
           h('td', {}, x.status === 'paused' ? h('span', {class: 'tag err', title: x.paused_reason || ''}, 'paused') : h('span', {class: 'tag ok'}, 'active')),
-          h('td', {}, x.last_run ? `${when(x.last_run)} · ${x.last_status}` : '—'))))
+          h('td', {}, x.last_run ? `${when(x.last_run)} - ${x.last_status}` : '-'))))
         : h('div', {class: 'muted small'}, 'No schedules yet.'),
-      s.accounts.length ? h('div', {class: 'hint', style: 'margin-top:10px'}, `Email accounts: ${s.accounts.map(a => `${a.address} (${a.owner}, ${a.status})`).join(' · ')}`) : null));
+      s.accounts.length ? h('div', {class: 'hint', style: 'margin-top:10px'}, `Email accounts: ${s.accounts.map(a => `${a.address} (${a.owner}, ${a.status})`).join(' - ')}`) : null));
 }

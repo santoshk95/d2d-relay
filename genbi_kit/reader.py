@@ -1,4 +1,4 @@
-"""`genbi read <path>` — what an attachment says, as text the agent can reason over (build-plan v2, P10: Start from an
+"""`genbi read <path>` - what an attachment says, as text the agent can reason over (build-plan v2, P10: Start from an
 idea or a plan; P11 reuses the same readers for RFP packs).
 
 One reader per kind of file, every one standard library or a small pure-Python package (python-docx, openpyxl,
@@ -77,7 +77,7 @@ def read(path: Path | str, write_cache: bool = True) -> dict:
         info["error"] = True
     if len(info.get("text") or "") > MAX_TEXT:
         info["truncated"] = len(info["text"])
-        info["text"] = info["text"][:MAX_TEXT] + f"\n\n… ({len(info['text']) - MAX_TEXT:,} more characters not shown)"
+        info["text"] = info["text"][:MAX_TEXT] + f"\n\n... ({len(info['text']) - MAX_TEXT:,} more characters not shown)"
     if write_cache:
         try:
             cp = cache_path(path)
@@ -107,7 +107,7 @@ def _docx(path: Path) -> dict:
             style = (p.style.name if p.style is not None else "") or ""
             m = re.match(r"Heading (\d)", style)
             if m or style == "Title":
-                level = int(m.group(1)) + 1 if m else 1          # the Title is "#", Heading 1 is "##", …
+                level = int(m.group(1)) + 1 if m else 1          # the Title is "#", Heading 1 is "##", ...
                 headings.append(t)
                 lines.append("#" * min(level, 5) + " " + t)
             elif "List" in style:
@@ -335,7 +335,7 @@ def _video(path: Path) -> dict:
     frames = sorted(f.name for f in out_dir.glob("frame-*.jpg"))
     rel = [f"{CACHE_DIR}/{path.name}.frames/{f}" for f in frames]
     text = (f"Video {path.name}: {dur:g} s" + (f", {meta.get('width')} × {meta.get('height')} px" if meta.get("width") else "")
-            + f". {len(frames)} key frame(s), one every {every:g} s, saved as JPEG next to it — Read each to see the screens and clicks:\n"
+            + f". {len(frames)} key frame(s), one every {every:g} s, saved as JPEG next to it - Read each to see the screens and clicks:\n"
             + "\n".join(f"- {path.parent / r}" for r in rel))
     return {"text": text, "frames": rel, "every_s": every, "meta": meta,
             "note": "" if frames else "no frames were produced (empty or unreadable video)"}
@@ -359,7 +359,7 @@ _READERS = {"doc": _docx, "pdf": _pdf, "deck": _pptx, "sheet": _sheet, "image": 
 # ---------------------------------------------------------------- the text for the agent
 
 def report(info: dict) -> str:
-    head = f"{info['name']} — {info['kind']}, {info['bytes']:,} bytes"
+    head = f"{info['name']} - {info['kind']}, {info['bytes']:,} bytes"
     if info.get("pages"):
         head += f", {info['pages']} page(s)" if info["kind"] != "deck" else f", {info['pages']} slide(s)"
     if info.get("rows") is not None and info["kind"] == "sheet":

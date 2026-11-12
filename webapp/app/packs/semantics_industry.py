@@ -2,8 +2,8 @@
 the entities of its industry with their keys and relations, the metrics and KPIs a team certifies (DAX for the BI
 model, SQL for the warehouse, a target per KPI), and a sample-data recipe (genbi_kit.datagen) whose tables the
 entities and metrics are built on, with stories planted for a demo to find. Installing a pack writes through the
-modules that own each part — entities into the ontology, metrics as drafts for the four-eyes review of Formulas &
-metrics, the recipe for Sample & synthetic data — nothing is rebuilt here.
+modules that own each part - entities into the ontology, metrics as drafts for the four-eyes review of Formulas &
+metrics, the recipe for Sample & synthetic data - nothing is rebuilt here.
 """
 from __future__ import annotations
 

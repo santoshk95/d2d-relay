@@ -1,6 +1,6 @@
 """Observability (phase 8): metrics, structured logs and alerts on stuck work.
 
-- `GET /metrics`: Prometheus text for this instance — jobs and queue depth per lane, the running job's age, the
+- `GET /metrics`: Prometheus text for this instance - jobs and queue depth per lane, the running job's age, the
   agent's lanes (busy and since when), the DAX checker (online, queue depth, oldest request), schedules, sessions,
   this month's cost, HTTP requests and errors, per-person workspaces, active alerts. It needs
   `Authorization: Bearer $D2D_METRICS_TOKEN`; without that variable the endpoint does not exist.
@@ -9,7 +9,7 @@
 - Watchdog (every minute): rules for a stuck build or chat lane, a stalled queue, the agent or a workspace down, the
   DAX checker's backlog (one checker on one PC serves every build: the first bottleneck as people are added), overdue
   schedules, a burst of server errors. A new alert tells every Admin (in the app, and on the ops webhook when one is
-  set); a cleared one says so. Admin › Monitoring shows the live view and the DAX checker's queue history.
+  set); a cleared one says so. Admin > Monitoring shows the live view and the DAX checker's queue history.
 """
 import asyncio
 import collections
@@ -268,7 +268,7 @@ def rules(s: dict) -> dict[str, dict]:
     lb = s.get("last_backup")
     if lb and now - lb > t["backup_max_h"] * 3600:
         found["backup_old"] = {"severity": "warning", "text": f"The last backup was {round((now - lb) / 3600)} h ago (the nightly one runs at "
-                               f"{os.environ.get('D2D_BACKUP_HOUR_UTC', '21')}:00 UTC when the app is up). Run Admin › Operations › Back up now."}
+                               f"{os.environ.get('D2D_BACKUP_HOUR_UTC', '21')}:00 UTC when the app is up). Run Admin > Operations > Back up now."}
     if s["schedules_late"]:
         found["schedules_late"] = {"severity": "warning", "text": f"{s['schedules_late']} schedule(s) are more than {t['schedule_late_min']} min overdue."}
     if s["errors_15min"] >= t["errors_15min"]:

@@ -3,8 +3,8 @@ before the report is shared.
 
 The engine is Analysis Services from Power BI Desktop, so it runs on the Windows PC, not in Docker: the DAX checker
 (daxcheck/daxcheck.ps1, started on that PC) watches a queue folder next to the projects. This module builds a check
-copy of the model — the same model.bim the PBIP gets, with every CSV table and the date table loaded as a DAX
-DATATABLE from the DuckDB views (no Power Query needed) — plus one query per measure and per visual with the
+copy of the model - the same model.bim the PBIP gets, with every CSV table and the date table loaded as a DAX
+DATATABLE from the DuckDB views (no Power Query needed) - plus one query per measure and per visual with the
 report's default filters, drops them in the queue and reads the engine's answer: object errors (syntax, semantic,
 circular dependencies), each query's rows or error, and the measures' values. Then every visual's numbers and title
 are compared with what its prototype SQL returned, so Power BI shows what the user approved in the prototype.
@@ -108,7 +108,7 @@ def _filters(dd: dict) -> list[str]:
 
 
 def _visual_fields(v: dict, catalog: dict) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """(role, ref) of the columns a visual groups by — a drill hierarchy at its top level — and of its measures, the
+    """(role, ref) of the columns a visual groups by - a drill hierarchy at its top level - and of its measures, the
     title measure last (role "title")."""
     entry, groups, measures = catalog.get(v["type"]) or {}, [], []
     drill = set(entry.get("drill") or []) | set(entry.get("first_only") or [])     # the visual opens at the first level
@@ -223,7 +223,7 @@ def differences(dd: dict, con, catalog: dict, report: dict) -> list[str]:
                 texts = [r.get(_sql_column(r, "item", "item") or "item") for r in rows]
                 for i, (_, ref) in enumerate(measures):
                     if i < len(texts) and not _same(texts[i], dax[0].get(f"m{i}")):
-                        found.append(f"{ref} — prototype {_show(texts[i])} but Power BI {_show(dax[0].get(f'm{i}'))}")
+                        found.append(f"{ref} - prototype {_show(texts[i])} but Power BI {_show(dax[0].get(f'm{i}'))}")
             for i, (role, ref) in enumerate(measures):
                 if role != "title" and not atlas:
                     continue
@@ -237,7 +237,7 @@ def differences(dd: dict, con, catalog: dict, report: dict) -> list[str]:
                     whole = got.get(f"measure:{MEASURE.match(ref).group(1)}")
                     b = whole["rows"][0][0] if whole and whole.get("rows") else None
                     if a is not None and not _same(a, b):
-                        found.append(f"title — prototype {_show(a)} but Power BI {_show(b)}")
+                        found.append(f"title - prototype {_show(a)} but Power BI {_show(b)}")
                     continue
                 keys = [(role_g, _sql_column(rows[0], role_g, ref_g)) for role_g, ref_g in groups]
                 if any(k is None for _, k in keys):
@@ -247,7 +247,7 @@ def differences(dd: dict, con, catalog: dict, report: dict) -> list[str]:
                     key = tuple(_key(d.get(role_g)) for role_g, _ in groups)
                     if key in sql_rows and not _same(sql_rows[key], d.get(f"m{i}")):
                         label = f"{ref}" + (f" for {', '.join(str(k) for k in key)}" if key else "")
-                        found.append(f"{label} — prototype {_show(sql_rows[key])} but Power BI {_show(d.get(f'm{i}'))}")
+                        found.append(f"{label} - prototype {_show(sql_rows[key])} but Power BI {_show(d.get(f'm{i}'))}")
             out += [f"{where}: {f}" for f in found[:3]]
     return out
 
@@ -297,9 +297,9 @@ def summary(report: dict) -> dict:
 
 def text_report(s: dict, name: str) -> str:
     """DAX check.txt for the PBIP: what Power BI's engine computed for every measure and visual."""
-    lines = [f"{name} — DAX check in Power BI's engine (Power BI Desktop {s.get('engine')})",
+    lines = [f"{name} - DAX check in Power BI's engine (Power BI Desktop {s.get('engine')})",
              time.strftime("Checked %Y-%m-%d %H:%M %Z", time.localtime(s.get("when", time.time()))) +
-             f" · {s['measures']} measures, {s['visuals']} visuals, {len(s['problems'])} problem(s)", ""]
+             f" - {s['measures']} measures, {s['visuals']} visuals, {len(s['problems'])} problem(s)", ""]
     if s.get("sampled"):
         lines += ["Large tables were checked on a sample, so these values can differ from the full data: "
                   + "; ".join(s["sampled"]), ""]

@@ -1,20 +1,20 @@
-"""Adoption & enablement (registry id `enable`) — people ready for the new way: who needs what, learning paths, practice
+"""Adoption & enablement (registry id `enable`) - people ready for the new way: who needs what, learning paths, practice
 on sample data, guides and a playbook through the docs engine, and an adoption scorecard; as a consulting engagement.
 
-Engagement  the registry's journey Roles → Learn → Practise → Adopt → Measure (its confirm point: Learn).
-Roles       the workspace's people with what they do on Relay — from the audit log (each action mapped to the module it
-            belongs to) and the Validation queue — classed as leads, builders, validators and business users; a
+Engagement  the registry's journey Roles -> Learn -> Practise -> Adopt -> Measure (its confirm point: Learn).
+Roles       the workspace's people with what they do on Relay - from the audit log (each action mapped to the module it
+            belongs to) and the Validation queue - classed as leads, builders, validators and business users; a
             person corrects the class and writes what each needs.
 Learn       a learning path per role: the modules this workspace uses, each lesson from the module's own registry facts
             (what it does, its journey, where a person confirms) and where to open it.
 Practise    who practised on sample data, not production: a dashboard of theirs built on generated demo data, or a
             person's note of where they practised.
-Adopt       the guides (one per role) and the playbook for validating agent work, through the P11 docs engine — from the
+Adopt       the guides (one per role) and the playbook for validating agent work, through the P11 docs engine - from the
             registry's facts and the workspace's own records (the checkpoint kinds in use, how long decisions take,
             how often work is accepted first time), every figure sourced.
 Measure     the adoption scorecard: active people per module from the audit log, the views of delivered reports from
             an uploaded Power BI activity log, Ask D questions, decisions and time to validate from the Validation
-            queue — against the person's targets (the wizard); the scorecard document through the docs engine. The
+            queue - against the person's targets (the wizard); the scorecard document through the docs engine. The
             `schedule` field (every week by default) measures again; a round waits for a person only below target.
 """
 from __future__ import annotations
@@ -46,7 +46,7 @@ ROLE_MODULES = {"lead": ["delivery", "validate"], "builder": [], "validator": ["
 class UsagePlatform(wb.Platform):
     label = "Relay's audit log and records, and a report activity export"
     uploads = (".csv",)
-    reads = ("who did what on Relay (the audit log), the Validation queue's decisions, dashboards built on sample data — and, when you upload it, the "
+    reads = ("who did what on Relay (the audit log), the Validation queue's decisions, dashboards built on sample data - and, when you upload it, the "
              "Power BI activity log (views of the reports that were delivered); nothing is written")
     simulator = "the platform's own records made in the tests; the Power BI activity log of tests/mocklab/finops_sim.py"
 
@@ -91,7 +91,7 @@ def roles(ctx: wb.Ctx) -> dict:
         mine = [a for a in acts if a["who"] == p["id"]]
         mods = sorted({a["module"] for a in mine})
         role = "lead" if p["admin"] else "builder" if p["dev"] else "validator" if p["id"] in decided else "business"
-        fresh.append({"id": p["id"], "include": True, "person": p["name"], "role": role, "modules": ", ".join(_module_name(m) for m in mods) or "—", "actions": len(mine),
+        fresh.append({"id": p["id"], "include": True, "person": p["name"], "role": role, "modules": ", ".join(_module_name(m) for m in mods) or "-", "actions": len(mine),
                       "last": cx.when(max((a["ts"] for a in mine), default=None)), "needs": NEEDS[role], "module_ids": mods})
     recs = cx.keep_edits(ctx, fresh, ("include", "role", "needs"))
     for r in recs:
@@ -99,7 +99,7 @@ def roles(ctx: wb.Ctx) -> dict:
         if f:
             r.update(modules=f["modules"], actions=f["actions"], last=f["last"], module_ids=f["module_ids"])
     cx.put(ctx, "usage_people", {"people": len(recs), "rows": [[r["person"], dict(ROLES)[r["role"]], r["modules"], r["actions"], r["last"]] for r in recs]})
-    return {"summary": f"{len(recs)} people: what each does on Relay (the audit log of the last three months) — correct their role and say what each needs.",
+    return {"summary": f"{len(recs)} people: what each does on Relay (the audit log of the last three months) - correct their role and say what each needs.",
             "counts": {"people": len(recs), **{dict(ROLES)[k].lower() + "s": sum(1 for r in recs if r["role"] == k) for k, _ in ROLES}}, "records": recs,
             "data": {"columns": ["In scope", "Person", "Role", "Uses", "Actions", "Last active", "Needs"],
                      "rows": [["yes" if r["include"] else "no", r["person"], dict(ROLES)[r["role"]], r["modules"], r["actions"], r["last"], r["needs"]] for r in recs]}}
@@ -132,7 +132,7 @@ def _lesson(mid: str) -> tuple[str, str]:
     w = "develop" if "develop" in m["work"] else (m["work"][0] if m["work"] else "engage")
     plan = registry.plan_for(m, w)
     conf = registry.confirm_for(m, w)
-    return (f"{m['text']} The journey: {' → '.join(plan['journey'])}. You confirm: {', '.join(c[0] for c in conf)}.", m.get("route") or f"#/m/{mid}")
+    return (f"{m['text']} The journey: {' '.join(plan['journey'])}. You confirm: {', '.join(c[0] for c in conf)}.", m.get("route") or f"#/m/{mid}")
 
 
 def learn(ctx: wb.Ctx) -> dict:
@@ -152,7 +152,7 @@ def learn(ctx: wb.Ctx) -> dict:
             fresh.append({"id": f"{role}-{mid}", "include": True, "role": label, "role_id": role, "module": _module_name(mid), "module_id": mid, "lesson": text, "where": where,
                           "people": len(who)})
     recs = cx.keep_edits(ctx, fresh, ("include",))
-    return {"summary": f"{len({r['role'] for r in recs})} learning path(s), {len(recs)} lesson(s) — each from the module's own facts and where to open it.",
+    return {"summary": f"{len({r['role'] for r in recs})} learning path(s), {len(recs)} lesson(s) - each from the module's own facts and where to open it.",
             "counts": {"paths": len({r['role'] for r in recs}), "lessons": len(recs)}, "records": recs,
             "data": {"columns": ["In the path", "Role", "Module", "Lesson", "Where"], "rows": [["yes" if r["include"] else "no", r["role"], r["module"], r["lesson"][:160], r["where"]] for r in recs]}}
 
@@ -188,9 +188,9 @@ def practise(ctx: wb.Ctx) -> dict:
                       "note": ""})
     recs = cx.keep_edits(ctx, fresh, ("note",))
     n = sum(1 for r in recs if r["practised"] == "yes" or str(r.get("note") or "").strip())
-    return {"summary": f"{n} of {len(recs)} people practised on sample data — record where the others did, or that they still need to.",
+    return {"summary": f"{n} of {len(recs)} people practised on sample data - record where the others did, or that they still need to.",
             "counts": {"people": len(recs), "practised": n}, "records": recs,
-            "data": {"columns": ["Person", "Role", "Practised", "Evidence", "Note"], "rows": [[r["person"], r["role"], r["practised"], r.get("evidence") or "—", r.get("note") or ""] for r in recs]}}
+            "data": {"columns": ["Person", "Role", "Practised", "Evidence", "Note"], "rows": [[r["person"], r["role"], r["practised"], r.get("evidence") or "-", r.get("note") or ""] for r in recs]}}
 
 
 def _practise_validate(recs: list[dict], ctx: wb.Ctx) -> list[str]:
@@ -228,7 +228,7 @@ def adopt(ctx: wb.Ctx) -> dict:
     V = "record:validation"
     p1, f1 = cx.say("In the last three months people decided {d} checks; {a} were accepted first time, and the median decision took {m} minutes.",
                     d=(v["decided"], f"{V}#decided"), a=(v["accepted"], f"{V}#accepted"), m=(v["median_minutes"], f"{V}#median_minutes"))
-    play = {"kind": "doc", "title": "Playbook: validating agent work", "subtitle": f"{ctx.title} · {day}", "audience": "everyone who confirms agent work", "date": day,
+    play = {"kind": "doc", "title": "Playbook: validating agent work", "subtitle": f"{ctx.title} - {day}", "audience": "everyone who confirms agent work", "date": day,
             "sections": [{"title": "Why a person confirms", "blocks": [{"kind": "paragraph", "text": "Relay's agents do the repeated work; a person confirms every step that matters. "
                                                                                                     "Nothing reaches a live system, a buyer or a client without a named approval."},
                                                                        {"kind": "paragraph", "text": p1, "figures": f1}]},
@@ -236,22 +236,22 @@ def adopt(ctx: wb.Ctx) -> dict:
                                                                                                "Correct the rows in place when something is wrong; your changes are saved when you confirm.",
                                                                                                "Accept when it is right. Send it back with a note when it is not: the step runs again with your note.",
                                                                                                "A check named for someone else is theirs: ask them, or an admin to reassign it."]}]},
-                         {"title": "The checks in this workspace", "blocks": [{"kind": "table", "table": cx.table(["Check", "Decided", "Accepted first time"], v["rows"] or [["—"] * 3], f"{V}#rows",
+                         {"title": "The checks in this workspace", "blocks": [{"kind": "table", "table": cx.table(["Check", "Decided", "Accepted first time"], v["rows"] or [["-"] * 3], f"{V}#rows",
                                                                                                                   "Decisions of the last three months, by kind of check")}]}]}
     out = [cx.deliver(ctx, "playbook", play, "Playbook for validating agent work")]
     for role, label in ROLES:
         mine = [r for r in lessons if r["role"] == label]
         if not mine:
             continue
-        guide = {"kind": "doc", "title": f"Getting started on Relay: {label.lower()}s"[:70], "subtitle": f"{ctx.title} · {day}", "audience": f"the workspace's {label.lower()}s", "date": day,
+        guide = {"kind": "doc", "title": f"Getting started on Relay: {label.lower()}s"[:70], "subtitle": f"{ctx.title} - {day}", "audience": f"the workspace's {label.lower()}s", "date": day,
                  "sections": [{"title": "Your learning path", "blocks": [{"kind": "paragraph", "text": f"What a {label.lower()} uses on Relay in this workspace, module by module. Each lesson opens where the work is."},
                                                                          {"kind": "table", "table": cx.table(["Module", "Lesson", "Where"], [[r["module"], r["lesson"], r["where"]] for r in mine],
                                                                                                              "record:paths#rows", "From each module's own facts")}]},
-                              {"title": "Practise first", "blocks": [{"kind": "paragraph", "text": "Practise on sample data, not production: New dashboard › Generate demo data builds a realistic data set with stories planted in it."}]}]}
+                              {"title": "Practise first", "blocks": [{"kind": "paragraph", "text": "Practise on sample data, not production: New dashboard > Generate demo data builds a realistic data set with stories planted in it."}]}]}
         out.append(cx.deliver(ctx, f"guide-{role}", guide, f"Guide for {label.lower()}s"))
     gates = [o["gate"] for o in out] + [ctx.proof("sourced", label="Every figure of the playbook resolves to its record", figures=[{"label": x["text"], "value": x["value"], "source": x["source"]} for x in f1])]
     ok = all(o["ok"] for o in out) and gates[-1]["status"] == "pass"
-    return {"summary": (f"The playbook and {len(out) - 1} guide(s), one per role, pass every check — confirm them before they are shared." if ok
+    return {"summary": (f"The playbook and {len(out) - 1} guide(s), one per role, pass every check - confirm them before they are shared." if ok
                         else "A guide did not pass its checks: " + "; ".join(p for o in out for p in o["problems"])[:400]),
             "ok": ok, "counts": {"documents": len(out)}, "data": {"checks": gates}}
 
@@ -326,8 +326,8 @@ def measure(ctx: wb.Ctx) -> dict:
     doc = {"kind": "doc", "title": f"Adoption scorecard: {ctx.title}"[:70], "subtitle": f"Week of {day}", "audience": "the lead and the sponsor", "date": day,
            "sections": [{"title": "Adoption", "blocks": [{"kind": "paragraph", "text": p1, "figures": f1}, {"kind": "paragraph", "text": p2, "figures": f2}, {"kind": "paragraph", "text": p3, "figures": f3}]
                          + nv.blocks(ctx, "In short")},
-                        {"title": "Module by module", "blocks": [{"kind": "table", "table": cx.table(["Module", "People", "Actions"], rec["rows"] or [["—"] * 3], f"{S}#rows", "From the audit log, the last thirty days")}]},
-                        {"title": "Report views", "blocks": [{"kind": "table", "table": cx.table(["Report", "Views", "Viewers", "Delivered by Relay"], rec["report_rows"] or [["—"] * 4], f"{S}#report_rows",
+                        {"title": "Module by module", "blocks": [{"kind": "table", "table": cx.table(["Module", "People", "Actions"], rec["rows"] or [["-"] * 3], f"{S}#rows", "From the audit log, the last thirty days")}]},
+                        {"title": "Report views", "blocks": [{"kind": "table", "table": cx.table(["Report", "Views", "Viewers", "Delivered by Relay"], rec["report_rows"] or [["-"] * 4], f"{S}#report_rows",
                                                                                                "From the uploaded Power BI activity log")}]}]}
     a = cx.deliver(ctx, "scorecard", doc, "Adoption scorecard")
     gates.append(a["gate"])
@@ -345,19 +345,19 @@ def _page_cards(u: dict) -> list[dict]:
     for r in rows:
         if r["id"] in vis:
             s = (wb._load(r["id"]).get("data") or {}).get("summary") or {}
-            out.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), f"{cx.num(s['active_pct'])} %" if s.get("active_pct") is not None else "—",
-                        f"{cx.num(s['median_minutes'])} min" if s.get("median_minutes") is not None else "—", f"#/m/{MODULE}/i/{r['id']}"])
+            out.append([r["title"], wb.STATUS_LABEL.get(r["status"], r["status"]), f"{cx.num(s['active_pct'])} %" if s.get("active_pct") is not None else "-",
+                        f"{cx.num(s['median_minutes'])} min" if s.get("median_minutes") is not None else "-", f"#/m/{MODULE}/i/{r['id']}"])
     return [{"title": "Adoption scorecards", "columns": ["Engagement", "Status", "Active", "Time to decide", "Open"], "rows": out, "empty": "No adoption engagement yet."}]
 
 
-GUIDE = """# Adoption & enablement — the work item
+GUIDE = """# Adoption & enablement - the work item
 
 This folder is one adoption engagement of Relay's Adoption & enablement module.
 
 - `sources/usage_people.json`, `paths.json`, `validation.json`, `adoption.json`: who does what on Relay (the audit
   log), the learning paths, the Validation queue's decisions and the adoption scorecard's figures.
 - `playbook.yaml`, `guide-*.yaml`, `scorecard.yaml`: what the docs engine built (the same as `genbi doc build`).
-- `narrative.yaml`: what you write when asked — a few paragraphs, every number declared with its `record:` source.
+- `narrative.yaml`: what you write when asked - a few paragraphs, every number declared with its `record:` source.
 
 Never write a number the records do not hold."""
 
@@ -371,19 +371,19 @@ wb.register(wb.Pack(
         title="Make validating agent work the team's habit: who needs what, learning paths, practice, guides and a playbook, an adoption scorecard",
         needs_source=False, schedule_from="Measure",
         steps={
-            "Roles": wb.Step(kind="deterministic", run=roles, agent="Usage reader", edit=ROLES_EDIT, confirm="who needs what — each person's role and what they need",
-                             text="The workspace's people with what they do on Relay (the audit log) — leads, builders, validators, business users; you correct the roles and say what each needs"),
+            "Roles": wb.Step(kind="deterministic", run=roles, agent="Usage reader", edit=ROLES_EDIT, confirm="who needs what - each person's role and what they need",
+                             text="The workspace's people with what they do on Relay (the audit log) - leads, builders, validators, business users; you correct the roles and say what each needs"),
             "Learn": wb.Step(kind="deterministic", run=learn, agent="Learning designer", edit=LEARN_EDIT,
                              text="A learning path per role: the modules this workspace uses, each lesson from the module's own facts and where to open it"),
             "Practise": wb.Step(kind="deterministic", run=practise, agent="Practice tracker", edit=PRACTISE_EDIT, confirm="who practised on sample data, and what is next for the others",
-                                text="Who practised on sample data, not production — a dashboard of theirs on generated demo data, or your note"),
+                                text="Who practised on sample data, not production - a dashboard of theirs on generated demo data, or your note"),
             "Adopt": wb.Step(kind="deterministic", run=adopt, view="gates", agent="Guide writer", confirm="the guides and the playbook before they are shared", confirm_if=lambda ctx, out: out["ok"],
-                             text="A guide per role and the playbook for validating agent work, through the docs engine — every figure from the workspace's records"),
+                             text="A guide per role and the playbook for validating agent work, through the docs engine - every figure from the workspace's records"),
             "Measure": wb.Step(kind="proof", run=measure, view="gates", agent="Adoption scorer", confirm="the adoption scorecard, when it is below target",
                                confirm_if=lambda ctx, out: out["ok"] and out["counts"].get("below target", 0) > 0,
                                actions={"wording": nv.action(("adoption",), "Summarise adoption for the sponsor: who uses Relay, how fast people decide, what is next.",
                                                              agent="Adoption scorer", rebuild=lambda ctx: measure(ctx))},
-                               text="Active people per module, report views, Ask D, decisions and time to validate — against your targets, with the scorecard document")},
+                               text="Active people per module, report views, Ask D, decisions and time to validate - against your targets, with the scorecard document")},
         fields=[wb.Field("target_active_pct", "Target: people active in thirty days (per cent)", "number", help="Leave empty to measure without judging."),
                 wb.Field("target_minutes", "Target: median minutes to decide a check", "number"),
                 wb.Field("template", "Template", "select", options=cx.template_options, default="relay"),

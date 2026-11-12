@@ -1,18 +1,18 @@
-"""Finance & accounting (registry id `integrate`) on the workbench — Oracle Fusion Financials, TallyPrime, Zoho Books,
+"""Finance & accounting (registry id `integrate`) on the workbench - Oracle Fusion Financials, TallyPrime, Zoho Books,
 QuickBooks Online, Xero; Busy, ClearTax and the GST / TRACES / MCA portals through their exports.
 
 Assess   the ledgers (with each one's debits and credits: a trial balance), vouchers, customers and invoices of each
          book; rules: the trial balance must balance, the import jobs that keep failing (Tally's import log, Fusion's
          ESS), duplicate customers, GSTINs, invoices GSTR-1 would refuse (no place of supply, an odd tax rate), and
          Tally's XML port answering without a sign-in.
-Develop  Discover → Map → Build → Prove → Ship → Run: the chart of accounts and ledger mapping — each source ledger onto
-         the target's chart (same name, then its group's rule: debtors → receivables, duties & taxes by tax), corrected
+Develop  Discover -> Map -> Build -> Prove -> Ship -> Run: the chart of accounts and ledger mapping - each source ledger onto
+         the target's chart (same name, then its group's rule: debtors -> receivables, duties & taxes by tax), corrected
          in place; the trial-balance proof (every ledger with a balance mapped, debits = credits, the mapped totals equal
          the source's, account types that fit); a named approver; the missing accounts created through one approval.
-Change   Request → Diagnose → Fix → Prove → Approve → Learn: a voucher import that names a ledger the company lacks
+Change   Request -> Diagnose -> Fix -> Prove -> Approve -> Learn: a voucher import that names a ledger the company lacks
          (the ledger created under its group), invoices without a place of supply (corrected from the customer's own
          place of contact), released with approval and checked on the system.
-Migrate  Discover → Decide → Convert → Prove → Hand over → Run: opening balances between ledgers (Tally → Zoho Books …):
+Migrate  Discover -> Decide -> Convert -> Prove -> Hand over -> Run: opening balances between ledgers (Tally -> Zoho Books ...):
          keep / merge / retire ledgers, one balanced opening journal on the mapped accounts, the trial-balance proof
          before the load and after it (read back from the target's journals).
 Run      the imports and the GST checks on a schedule; the GSTR-1 B2B file of the period prepared from the invoices that
@@ -48,8 +48,8 @@ def _p_tb(ctx, file: str, **_):
     dr = round(sum(float(r.get("debit") or 0) for r in rows), 2)
     cr = round(sum(float(r.get("credit") or 0) for r in rows), 2)
     ok = abs(dr - cr) <= 0.01
-    return {"status": "pass" if ok else "fail", "measured": f"{dr:,.2f} debit · {cr:,.2f} credit", "expected": "equal",
-            "detail": f"{len(rows)} account(s); debits {dr:,.2f}, credits {cr:,.2f}" + ("" if ok else f" — off by {abs(dr - cr):,.2f}"), "rows": rows[:500]}
+    return {"status": "pass" if ok else "fail", "measured": f"{dr:,.2f} debit - {cr:,.2f} credit", "expected": "equal",
+            "detail": f"{len(rows)} account(s); debits {dr:,.2f}, credits {cr:,.2f}" + ("" if ok else f" - off by {abs(dr - cr):,.2f}"), "rows": rows[:500]}
 
 
 def rule_trial_balance(ctx, inv, spec=None) -> list[dict]:
@@ -68,7 +68,7 @@ rule_trial_balance.label = "The trial balance balances (debits = credits)"
 
 def rule_gstr1(ctx, inv, spec=None) -> list[dict]:
     """GSTR-1 readiness of India invoices: a place of supply on every one (proposed from the customer's own place of
-    contact — the data, never a guess) and a tax rate GST knows."""
+    contact - the data, never a guess) and a tax rate GST knows."""
     out = []
     for system, rows in inv.rows("invoice"):
         india = [r for r in rows if (r.get("currency") == "INR" or r.get("gstin") or r.get("customer_place"))]
@@ -100,7 +100,7 @@ def rule_open_port(ctx, inv, spec=None) -> list[dict]:
     out = []
     for it in inv.items:
         if it.get("platform") == "TallyPrime" and it.get("entity") == "account":
-            out.append(w3.finding("open_port", it["system"], "account", "XML port", f"{it['system']}: Tally's XML port answered Relay without any sign-in — anyone on the network can read and post vouchers",
+            out.append(w3.finding("open_port", it["system"], "account", "XML port", f"{it['system']}: Tally's XML port answered Relay without any sign-in - anyone on the network can read and post vouchers",
                                   "high", fix="Limit the port to the integration host (firewall) or put an authenticating gateway in front of it.", work="change"))
     return out
 
@@ -135,7 +135,7 @@ def import_log(ctx, seen) -> list[dict]:
 
 def propose_ledger(ctx, c, a, api, run) -> list[dict]:
     """A voucher names a ledger the company does not have: create it under the group its name says (a tax ledger
-    under Duties & Taxes) — the person confirms the group."""
+    under Duties & Taxes) - the person confirms the group."""
     m = re.search(r"Ledger '([^']+)' does not exist", run.get("error") or "")
     if not m:
         return []
@@ -147,7 +147,7 @@ def propose_ledger(ctx, c, a, api, run) -> list[dict]:
 
 def propose_pos(ctx, c, a, api, run) -> list[dict]:
     """Invoices without a place of supply: each takes its customer's own place of contact (or the state its GSTIN is
-    registered in) — from the data, never a guess; an empty value waits for the person."""
+    registered in) - from the data, never a guess; an empty value waits for the person."""
     out = []
     for r in a.records(api, "invoice"):
         if not r.get("place_of_supply") and (r.get("currency") == "INR" or r.get("gstin")):
@@ -168,7 +168,7 @@ SIGNATURES = [
 
 
 def gst_monitor(ctx, seen) -> list[dict]:
-    """Run › Watch: GSTR-1 readiness of each Zoho Books organisation, and the B2B file of the period from what passes."""
+    """Run > Watch: GSTR-1 readiness of each Zoho Books organisation, and the B2B file of the period from what passes."""
     rows = []
     for c, a in w3.systems(ctx, ("zoho_books",)):
         inv = seen.records(c, a, "invoice")
@@ -188,8 +188,8 @@ def gst_monitor(ctx, seen) -> list[dict]:
         if period:
             fp = period[5:7] + period[:4]
             ctx.output(f"gstr1-{fp}-{w3.slug(c['name'])}.json", json.dumps({"fp": fp, "b2b": [{"ctin": k, "inv": v} for k, v in b2b.items()]}, indent=1),
-                       label=f"GSTR-1 B2B for {period} · {c['name']} (to file on the portal)")
-        row = {"name": f"gstr1:{c['id']}", "label": f"GSTR-1 for {period or 'the period'} · {c['name']}", "status": "fail" if gap else "pass", "measured": f"{len(gap)} without a place of supply",
+                       label=f"GSTR-1 B2B for {period} - {c['name']} (to file on the portal)")
+        row = {"name": f"gstr1:{c['id']}", "label": f"GSTR-1 for {period or 'the period'} - {c['name']}", "status": "fail" if gap else "pass", "measured": f"{len(gap)} without a place of supply",
                "expected": "0", "detail": f"{len(good)} B2B invoice(s) ready in the file" + (f"; {len(gap)} held back: {', '.join(str(r.get('number')) for r in gap[:6])}" if gap else "")}
         if gap:
             row["break"] = {"conn": c["id"], "system": c["name"], "job": "gstr1", "label": f"GSTR-1 for {period}", "status": "failed", "streak": 1,
@@ -230,11 +230,11 @@ def _sources(ctx, tc) -> tuple[str, list[dict]]:
         ent, recs, _ = w3.from_upload(ctx, SPEC, f)
         if ent == "account":
             return f["name"], recs
-    raise wb.StepFailed("Nothing to map: connect the source books (Tally …) or upload their trial balance (ledger, group, debit, credit).")
+    raise wb.StepFailed("Nothing to map: connect the source books (Tally ...) or upload their trial balance (ledger, group, debit, credit).")
 
 
 def suggest(ledger: dict, chart: dict[str, dict]) -> tuple[str, str]:
-    """(target account, why) for one source ledger: the same name, a tax ledger by its tax, its group's rule — or ''."""
+    """(target account, why) for one source ledger: the same name, a tax ledger by its tax, its group's rule - or ''."""
     n = w3.norm_name(ledger["name"])
     hit = next((t for t in chart if w3.norm_name(t) == n), None)
     if hit:
@@ -266,7 +266,7 @@ def _new_type(name: str, ledger: dict) -> str:
 def _options(ctx):
     chart = (ctx.get("ledgers") or {}).get("chart") or []
     new = sorted({r["target"] for r in ctx.records("map") if str(r.get("target") or "").startswith("+")} | set((ctx.get("ledgers") or {}).get("creates") or []))
-    return [("", "— not mapped —")] + [(n, n) for n in chart] + [(n, f"Create: {n[1:]}") for n in new]
+    return [("", "- not mapped -")] + [(n, n) for n in chart] + [(n, f"Create: {n[1:]}") for n in new]
 
 
 def discover(ctx):
@@ -297,15 +297,15 @@ def map_step(ctx):
         base = {"id": r["name"], "ledger": r["name"], "group": r.get("group"), "debit": r.get("debit"), "credit": r.get("credit"), "target": t, "why": why or "no rule fits: pick the account"}
         recs.append({**base, **({"target": have[r["name"]]["target"]} if r["name"] in have else {})})
     mapped = sum(1 for r in recs if r["target"])
-    return {"summary": f"{mapped} of {len(recs)} ledger(s) mapped by rule — the same name, a tax ledger by its tax, its group's rule; correct any, then confirm the mapping.",
+    return {"summary": f"{mapped} of {len(recs)} ledger(s) mapped by rule - the same name, a tax ledger by its tax, its group's rule; correct any, then confirm the mapping.",
             "records": recs, "counts": {"mapped": mapped, "ledgers": len(recs)},
-            "data": {"pairs": [{"from": f"{r['ledger']} ({r['group']})", "to": (r["target"][1:] + " (new)") if str(r["target"]).startswith("+") else (r["target"] or "—"), "rule": r["why"],
+            "data": {"pairs": [{"from": f"{r['ledger']} ({r['group']})", "to": (r["target"][1:] + " (new)") if str(r["target"]).startswith("+") else (r["target"] or "-"), "rule": r["why"],
                                 "status": "mapped" if r["target"] else "missing"} for r in recs]},
-            "items": [f"{r['ledger']} → {r['target'] or '—'}" for r in recs[:8]]}
+            "items": [f"{r['ledger']} {r['target'] or '-'}" for r in recs[:8]]}
 
 
 def validate_map(recs, ctx):
-    out = [f"{r['ledger']}: it carries {float(r.get('debit') or 0) - float(r.get('credit') or 0):,.2f} — map it to an account" for r in recs
+    out = [f"{r['ledger']}: it carries {float(r.get('debit') or 0) - float(r.get('credit') or 0):,.2f} - map it to an account" for r in recs
            if not r.get("target") and (float(r.get("debit") or 0) or float(r.get("credit") or 0))]
     types = (ctx.get("ledgers") or {}).get("types") or {}
     for r in recs:
@@ -363,7 +363,7 @@ def prove(ctx):
     checks = [ctx.proof("references_real", label="Every ledger with a balance is mapped", refs=moving, known=[r["ledger"] for r in recs if r.get("target")])]
     checks += tb_proofs(ctx, "source-tb-mapped.csv", "mapped-tb.csv", "Trial balance", ("debit", "credit", "balance"))
     probs = validate_map(recs, ctx)
-    checks.append({"name": "types", "label": "Every ledger rolls into an account of a type that fits", "status": "fail" if probs else "pass", "detail": "; ".join(probs[:4]) or "debtors to receivables, taxes to liabilities …",
+    checks.append({"name": "types", "label": "Every ledger rolls into an account of a type that fits", "status": "fail" if probs else "pass", "detail": "; ".join(probs[:4]) or "debtors to receivables, taxes to liabilities ...",
                    "measured": len(probs), "expected": 0})
     bad = sum(1 for c in checks if c["status"] == "fail")
     return {"summary": f"The trial-balance proof of the mapping: {len(checks) - bad} of {len(checks)} pass.", "data": {"checks": checks}, "counts": {"pass": len(checks) - bad, "fail": bad}}
@@ -374,8 +374,8 @@ def ship(ctx):
     tc = ctx.connection((ctx.get("ledgers") or {})["target"])
     approver = db.user(ctx.st.get("approver") or "") or {}
     return {"summary": f"Go live: the mapping, and {len(new)} new account(s) in {tc['name']}.",
-            "data": {"items": [{"title": "New accounts", "detail": ", ".join(f"{n['name']} ({n['type']})" for n in new) or "none — every target account exists"},
-                               {"title": "The mapping", "detail": "ledger-mapping.csv — the interface and the migrations use it"},
+            "data": {"items": [{"title": "New accounts", "detail": ", ".join(f"{n['name']} ({n['type']})" for n in new) or "none - every target account exists"},
+                               {"title": "The mapping", "detail": "ledger-mapping.csv - the interface and the migrations use it"},
                                {"title": "Then", "detail": "The accounts are created through one write a named person approves; Relay reads the chart back."},
                                {"title": "Named approval", "detail": approver.get("name") or "the owner of this work item"}]}}
 
@@ -421,7 +421,7 @@ def m_decide(ctx):
         base = {"id": r["name"], "ledger": r["name"], "group": r.get("group"), "balance": bal, "decision": d, "into": dup_of.get(r["name"], ""), "reason": why}
         recs.append({**base, **({"decision": have[r["name"]]["decision"]} if r["name"] in have else {})})
     n = Counter(r["decision"] for r in recs)
-    return {"summary": f"Keep {n['keep']}, merge {n['merge']}, retire {n['retire']} ledger(s) — rules first: a zero balance needs no opening line, duplicates merge into the one that carries more.",
+    return {"summary": f"Keep {n['keep']}, merge {n['merge']}, retire {n['retire']} ledger(s) - rules first: a zero balance needs no opening line, duplicates merge into the one that carries more.",
             "records": recs, "counts": dict(n), "data": {"columns": ["Ledger", "Group", "Balance", "Decision", "Why"], "rows": [[r["ledger"], r["group"], r["balance"], r["decision"], r["reason"]] for r in recs]}}
 
 
@@ -460,7 +460,7 @@ def m_convert(ctx):
         kept_rows.append({"ledger": r["name"], "account": acc, "debit": bal if bal > 0 else 0.0, "credit": -bal if bal < 0 else 0.0, "balance": bal})
         cross.append({"ledger": r["name"], "decision": d, "account": acc, "debit": r.get("debit"), "credit": r.get("credit")})
     if unmapped:
-        raise wb.StepFailed(f"{len(unmapped)} ledger(s) with a balance have no target account: {', '.join(unmapped[:6])}. Map them (a Develop item's mapping, or Decide › retire).")
+        raise wb.StepFailed(f"{len(unmapped)} ledger(s) with a balance have no target account: {', '.join(unmapped[:6])}. Map them (a Develop item's mapping, or Decide > retire).")
     for ln in lines.values():                            # an account's opening is its net balance on one side
         net = round(ln["debit"] - ln["credit"], 2)
         ln["debit"], ln["credit"] = (net, 0.0) if net > 0 else (0.0, -net)
@@ -514,7 +514,7 @@ def m_run(ctx):
 def m_verify(ctx):
     hs = w3.writes(ctx, ctx.step_id)
     if not hs or hs[-1].get("status") != "written":
-        return {"summary": "The load is not written yet — approve it in the Validation queue first.", "data": {"checks": []}}
+        return {"summary": "The load is not written yet - approve it in the Validation queue first.", "data": {"checks": []}}
     tc = ctx.connection((ctx.get("migrate") or {})["target"])
     ta = w3.adapter_of(tc)
     ref = ctx.get("journal_ref")
@@ -523,7 +523,7 @@ def m_verify(ctx):
     w3.snap(ctx, "landed-journal", tb, ["account", "debit", "credit", "balance"])
     checks = tb_proofs(ctx, "opening-source.csv", "landed-journal.csv", "Read back from the target")
     good = all(c["status"] == "pass" for c in checks)
-    return {"summary": (f"Read back from {tc['name']}: the journal {ref} is there and the trial balance agrees account by account." if good else f"Read back from {tc['name']}: the trial balance disagrees — see the checks."),
+    return {"summary": (f"Read back from {tc['name']}: the journal {ref} is there and the trial balance agrees account by account." if good else f"Read back from {tc['name']}: the trial balance disagrees - see the checks."),
             "data": {"checks": checks}, "counts": {"lines": len(lines)}}
 
 
@@ -541,7 +541,7 @@ def w3_tb(lines: list[dict]) -> list[dict]:
 def d_verify(ctx):
     hs = w3.writes(ctx, ctx.step_id)
     if not hs or hs[-1].get("status") != "written":
-        return {"summary": "The accounts are not created yet — approve the write in the Validation queue first.", "data": {"checks": []}}
+        return {"summary": "The accounts are not created yet - approve the write in the Validation queue first.", "data": {"checks": []}}
     tc = ctx.connection((ctx.get("ledgers") or {})["target"])
     ta = w3.adapter_of(tc)
     chart = [r["name"] for r in ctx.seen.records(tc, ta, "account")]
@@ -555,7 +555,7 @@ def _targets_opt(u):
     for c in connectors.mine(u["id"]):
         a = w3.adapter_of({"kind": c["kind"]})
         if a and "account" in a.CREATES:
-            out.append((c["id"], f"{c['name']} · {c['label']}"))
+            out.append((c["id"], f"{c['name']} - {c['label']}"))
     return out
 
 
@@ -563,7 +563,7 @@ def _develop_items(u):
     rows = db.q("SELECT id, title FROM wb_items WHERE module = ? AND work = 'develop' AND status = 'done' ORDER BY updated DESC LIMIT 50", (MODULE,))
     from .. import auth
     vis = auth.access_map(u, [r["id"] for r in rows])
-    return [("", "No — by the mapping rules")] + [(r["id"], r["title"]) for r in rows if r["id"] in vis]
+    return [("", "No - by the mapping rules")] + [(r["id"], r["title"]) for r in rows if r["id"] in vis]
 
 
 PLATFORMS = {
@@ -577,11 +577,11 @@ PLATFORMS = {
                               uploads=(".csv", ".xlsx", ".json")),
 }
 
-GUIDE = """# Finance & accounting — the work item
+GUIDE = """# Finance & accounting - the work item
 
 Relay's Finance & accounting module maps ledgers between books, moves opening balances with a trial-balance proof and
 prepares GST returns. Rules do the mapping, the checks and the proofs; nothing is filed or posted without a named
-person's approval. `data/` holds the uploads and Relay's read-only snapshots (source-tb.csv, mapped-tb.csv …);
+person's approval. `data/` holds the uploads and Relay's read-only snapshots (source-tb.csv, mapped-tb.csv ...);
 `outputs/` the mapping, the journal and the GSTR-1 file. Never invent a ledger, an amount or a GSTIN."""
 
 w3.hook(MODULE)
@@ -591,15 +591,15 @@ wb.register(wb.Pack(
     lineage="each set of books read (system), the ledger mapping and the opening balances as feeds edges from the source books to the target's",
     schemas={"mapping": ["ledger", "group", "target", "why"], "decision": ["ledger", "decision", "reason"]},
     work={
-        "assess": w3.assess_work(SPEC, "See what the books hold — the trial balance, the imports that fail, what GSTR-1 would refuse"),
+        "assess": w3.assess_work(SPEC, "See what the books hold - the trial balance, the imports that fail, what GSTR-1 would refuse"),
         "develop": wb.Work(title="Map the chart of accounts: each source ledger onto the target's, proven on the trial balance", needs_source=True,
                            fields=[wb.Field("target", "Map into", "select", options=_targets_opt, required=True, help="The books whose chart the ledgers map onto (its scope must allow writes for new accounts).")],
                            steps={
-            "Discover": wb.Step(kind="platform", run=w3.stepfn(discover), agent="Ledger reader", text="The source ledgers with their debits and credits, and the target's chart of accounts — read-only"),
+            "Discover": wb.Step(kind="platform", run=w3.stepfn(discover), agent="Ledger reader", text="The source ledgers with their debits and credits, and the target's chart of accounts - read-only"),
             "Map": wb.Step(kind="deterministic", run=map_step, view="mapping", agent="Mapper", confirm="the ledger mapping, side by side with each ledger's group and balance",
                            edit=wb.Edit(columns=[wb.Column("ledger", "Ledger", readonly=True), wb.Column("group", "Group", readonly=True), wb.Column("target", "Target account", "select", options=_options),
                                                  wb.Column("why", "Why", readonly=True)], add=False, remove=False, validate=validate_map, label="ledger"),
-                           text="Each ledger onto the target's chart — the same name, a tax ledger by its tax, its group's rule — you correct it in place"),
+                           text="Each ledger onto the target's chart - the same name, a tax ledger by its tax, its group's rule - you correct it in place"),
             "Build": wb.Step(kind="deterministic", run=build, agent="Mapper", text="The mapping file, the mapped trial balance and the accounts the target still needs"),
             "Prove": wb.Step(kind="proof", run=prove, view="gates", agent="Prover", back_to="map", text="The trial-balance proof: every ledger with a balance mapped, debits equal credits, the mapped totals equal the source's, types that fit"),
             "Ship": wb.Step(kind="person", run=ship, view="plan", approver=True, text="The named approver confirms the mapping and the new accounts"),
@@ -609,10 +609,10 @@ wb.register(wb.Pack(
         "migrate": wb.Work(title="Move opening balances between ledgers, proven on the trial balance before and after the load", needs_source=True,
                            fields=[wb.Field("target", "Move into", "select", options=_targets_opt, required=True), wb.Field("from_item", "Use the mapping of", "select", options=_develop_items),
                                    wb.Field("as_of", "Opening balances as of (YYYY-MM-DD)", "text", help="The journal date in the target (blank: today).")], steps={
-            "Discover": wb.Step(kind="platform", run=w3.stepfn(m_discover), agent="Ledger reader", text="The source trial balance and the target's chart — read-only"),
+            "Discover": wb.Step(kind="platform", run=w3.stepfn(m_discover), agent="Ledger reader", text="The source trial balance and the target's chart - read-only"),
             "Decide": wb.Step(kind="deterministic", run=m_decide, agent="Decider", edit=wb.Edit(columns=[wb.Column("decision", "Decision", "select", options=(("keep", "Keep"), ("merge", "Merge"), ("retire", "Retire"))),
                                                                                              wb.Column("ledger", "Ledger", readonly=True), wb.Column("reason", "Why", readonly=True)], add=False, remove=False, label="ledger"),
-                              text="Keep, merge or retire each ledger with the reason — a zero balance needs no opening line"),
+                              text="Keep, merge or retire each ledger with the reason - a zero balance needs no opening line"),
             "Convert": wb.Step(kind="deterministic", run=m_convert, agent="Converter", text="One balanced opening journal on the mapped accounts, and a crosswalk for every ledger"),
             "Prove": wb.Step(kind="proof", run=m_prove, view="gates", agent="Prover", back_to="decide", text="The trial-balance proof, old and new side by side: every ledger accounted for, both sides balance, every account's totals agree"),
             "Hand over": wb.Step(kind="person", run=m_handover, view="plan", approver=True, text="The owner signs off the opening balances"),
