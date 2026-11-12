@@ -674,10 +674,21 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   admin`. The data before the fresh start: `data\backups\relay-db-20261111-064453.dump` (no dashboards are left
   from then but the sample below). Since item 22 the nightly sweep deletes hand-made dumps after 30 days: this one
   and the three others of 10-11 November go around 10-11 December; move any that must stay out of `data\backups`.
-- **Images:** since 2026-11-11 ~20:13 IST web and admin run `d2d-relay:442a396` (= latest: items 23 and 24); the
-  previous `d2d-relay:c8e615f` (rupees only) and `d2d-relay:8f39265` (before payments) stay tagged for going back
+- **Items 25, 26 and 27 are live** (2026-11-12, 09:21 IST, after the user's "Yes, deploy"): web and admin run
+  `d2d-relay:e2be1d2` (= latest; commits be64b37 and e2be1d2 on top of item 25's, not pushed: GitHub is still at
+  b314076). `d2d-relay:442a396` (items 23 and 24), `c8e615f` and `8f39265` stay tagged for going back
   (`docker tag <image> d2d-relay:latest`, then `docker compose up -d --no-deps web admin`); the database container
-  still runs `d2d-relay:8689305`'s image.
+  still runs `d2d-relay:8689305`'s image. Checked on live: the security headers through Cloudflare, the privacy
+  notice's new section, `genbi` with `-P` and the AI engine's `PYTHONSAFEPATH`, the new database columns (credit
+  requests' purpose, payments' and organisations' billing and invoice columns), no errors in the log. Both PC helpers
+  were started again at ~09:24 IST (the DAX checker now runs the new `daxcheck.ps1`).
+- **The PC restarted at 02:38 IST on 2026-11-12** (Windows, overnight) and **the live site was down until ~09:17
+  IST**: Docker Desktop starts only when someone signs in to Windows, and the PC helpers do not start by themselves.
+  For a public launch: stop overnight restarts (Windows Update active hours, or restart only by hand), and let Docker
+  start without a sign-in or move D2D Relay to a server (see the audit, P3).
+- **GST 18% is not set yet** (item 25's deploy step): the auto mode refused Claude's direct write to the live payment
+  settings. The user sets it on the admin portal (http://127.0.0.1:8102 → Payments: GST 18, added on top), or allows
+  Claude to. Until then rupee prices have no GST added (test mode only).
 - **The admin portal through the internet needs two steps in Cloudflare** (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal"), and the team name and AUD tag in `.env`.
   Until then the admin portal works on the D2D Relay PC only: http://127.0.0.1:8102.
@@ -690,7 +701,7 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   activates the account) into the live `.env` by hand, a live-mode webhook with its own secret, a restart of web and
   admin, then Sell credits online switched on (admin portal, Payments). Open choices: GST added or not (now: not),
   whether a GST invoice is needed (not built), and the refund rule (refunds are made by hand on Razorpay).
-- **GST invoices (item 25) are built, not deployed.** Needed from the user first: PASDACS's legal name, registered
+- **GST invoices (item 25) are live** (2026-11-12, with items 26 and 27). Still needed from the user: PASDACS's legal name, registered
   address, state, PIN and GSTIN; the SAC code (the accountant's; the setting suggests 998314); the LUT's ARN if one is
   filed for 2026-27 (else dollar sales carry IGST, included in the price). They go on the admin portal (Payments → Tax
   invoices), or the user sends them and they are set at the deploy. Live keys cannot sell until they are complete.
@@ -700,15 +711,11 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
   **The Razorpay account takes Indian cards only** (seen in test mode): until the user switches on international
   payments (Razorpay Dashboard → Account & Settings → International payments; Razorpay reviews it), a buyer abroad
   sees dollar prices but only an Indian card goes through.
-- **Abuse.** Anyone with a business mailbox can sign up and create an organisation (as asked). Live, since item 19, it
-  gets 50 credits at once (about two dashboards' AI time) without anyone's approval; with item 27 (not deployed) the
-  50 wait for PASDACS's approval of each new organisation. Since item 21 PASDACS gets an email for every sign-in, and
-  pauses an organisation or switches a person off on the admin portal.
-- **Items 26 and 27 are in the work folder, not committed, not deployed.** Deploying them: build and restart web and
-  admin as for earlier items (the user's go-ahead), then close the DAX checker's window on the PC and start
-  `daxcheck\start-daxcheck.cmd` again (item 26 changes `daxcheck.ps1`). Every suite passed on a release candidate of
-  them, review off and on, and an upgrade from the live image (item 26); not run: a build with real Claude, a real
-  Razorpay checkout, real email.
+- **Abuse.** Anyone with a business mailbox can sign up and create an organisation (as asked). Since item 27 (live
+  2026-11-12) its 50 starting credits wait for PASDACS's approval: info@pasdacs.com gets a review email for each new
+  organisation, answered on the admin portal (Requests) or by telling Claude (`python -m app.orgs approve|decline`).
+  Since item 21 PASDACS gets an email for every sign-in, and pauses an organisation or switches a person off on the
+  admin portal. Not run for items 26 and 27: a build with real Claude, a real Razorpay checkout, real email.
 - **Brand palettes cost no credits** (as asked; Ask Relay has cost credits since item 19). Their AI cost is recorded in
   `usage` only.
 - **Turnkey deployments (the user's decision of 2026-11-11):** an organisation that wants its own warehouse or
