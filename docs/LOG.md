@@ -1090,8 +1090,11 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       (no compose, `pbix\`, `daxcheck\`, `config\` or Docker change); `d2d-relay:2686fc4` tagged latest; web, admin and
       the job runner restarted (down about 9 seconds). Checked on live: all three on `2686fc4`; the new wording served
       and the old gone; a code asked for without a token refused with the new message (403); the widget at 1280 and
-      375 px, nothing sideways; payments live; no errors. `d2d-relay:d1882f7` kept for going back. Left: on a wide
-      screen "Need help?" breaks across two lines; keep it on one line in the next release.
+      375 px, nothing sideways; payments live; no errors. `d2d-relay:d1882f7` kept for going back.
+    - **Follow-up `baf70e5`** (the user: "fix need help wrap and deploy"): on a wide screen "Need help?" broke across
+      two lines; the small print's links now stay whole (`.fine a`). Tested 847 of 847 (review on); **live since 23:27
+      IST** (`d2d-relay:baf70e5`; `2686fc4` kept), checked: the rule served, "Need help?" whole on its own line at 1280
+      px, the widget at 1280 and 375 px, the bot check refusing a request without a token, payments live, no errors.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1132,12 +1135,14 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-13 night, after item 41's deploy. **Live:** web, admin and the job runner run `d2d-relay:2686fc4`
-(= latest, since 23:15 IST), with the Turnstile bot check on; the database container runs `d2d-relay:8689305`'s
+Updated 2026-11-13 night, after item 41's follow-up. **Live:** web, admin and the job runner run `d2d-relay:baf70e5`
+(= latest, since 23:27 IST), with the Turnstile bot check on; the database container runs `d2d-relay:8689305`'s
 image; live holds only PASDACS and info@pasdacs.com, and sells credits online with the live Razorpay keys (since 21:35
-IST, "Selling credits online" below). This folder, the deploy folder and **GitHub** are on this log entry: item 41
-and its log were pushed the same night, on the user's "Push" (scanned first: nothing secret or private). **Going
-back** to item 40 (`d2d-relay:d1882f7`, kept): in the deploy
+IST, "Selling credits online" below). This folder, the deploy folder and **GitHub** are on this log entry: pushed with
+it, on the user's "fix need help wrap and deploy and anything pending" (scanned first: nothing secret or private).
+**Going back** to item 41 as first deployed (`d2d-relay:2686fc4`, kept): `docker tag d2d-relay:2686fc4
+d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (only the small print's wrapping differs).
+**Going back** to item 40 (`d2d-relay:d1882f7`, kept): in the deploy
 folder `git reset --keep 93e2a8a`, `docker tag d2d-relay:d1882f7 d2d-relay:latest`, then `docker compose up -d
 --no-deps web admin runner`. **Going back** to item 39 (`d2d-relay:96ea48a`,
 kept): in the deploy folder `git reset --keep 5fbd0a7`, `docker tag d2d-relay:96ea48a d2d-relay:latest`, then
@@ -1215,7 +1220,7 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   change the notice before adding any pixel or tag. LinkedIn and Meta lead-form ads ask for a privacy policy link;
   pasdacs.com has had none since 2026-11-06. Ads running overnight pay for clicks while a restart has the site down.
 
-### Selling credits online (the user, when Razorpay activates the account)
+### Selling credits online (done on 2026-11-13: live keys, both websites verified, selling on; steps below)
 
 Buying credits online is off on live since 2026-11-12 (the user: "from the live site remove buy credits for now as its
 in test, allow only request credits, once razorpay is activated we can allow production to buy credits"): the Razorpay
