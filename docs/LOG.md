@@ -1135,8 +1135,9 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 Updated 2026-11-13 night, after item 41's deploy. **Live:** web, admin and the job runner run `d2d-relay:2686fc4`
 (= latest, since 23:15 IST), with the Turnstile bot check on; the database container runs `d2d-relay:8689305`'s
 image; live holds only PASDACS and info@pasdacs.com, and sells credits online with the live Razorpay keys (since 21:35
-IST, "Selling credits online" below). This folder and the deploy folder are on this log entry; **GitHub** is on
-`93e2a8a` (item 41 and its log not pushed yet). **Going back** to item 40 (`d2d-relay:d1882f7`, kept): in the deploy
+IST, "Selling credits online" below). This folder, the deploy folder and **GitHub** are on this log entry: item 41
+and its log were pushed the same night, on the user's "Push" (scanned first: nothing secret or private). **Going
+back** to item 40 (`d2d-relay:d1882f7`, kept): in the deploy
 folder `git reset --keep 93e2a8a`, `docker tag d2d-relay:d1882f7 d2d-relay:latest`, then `docker compose up -d
 --no-deps web admin runner`. **Going back** to item 39 (`d2d-relay:96ea48a`,
 kept): in the deploy folder `git reset --keep 5fbd0a7`, `docker tag d2d-relay:96ea48a d2d-relay:latest`, then
