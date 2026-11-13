@@ -1070,11 +1070,15 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   it before that word, "Modify Shared Resources"): heartbeat fresh, idle, no error, and live's watchdog logged
   `pbix_offline` resolved at 10:56 IST (32 minutes). The cause is unknown. If it stops
   again, check `data\projects\.pbix\heartbeat.json` in the deploy folder and start `pbix\start-pbix.cmd`.
-- **Sign-in codes fail while Microsoft's mail is down (2026-11-13).** Microsoft Graph refused the last code asked for
-  (09:49 IST, on the admin portal) with 502 "UnknownError". The mailbox's own sign-in still worked, so the fault is
-  Microsoft's and clears by itself. The watchdog's alerts are sent the same way, so they may not arrive while it lasts.
-  If codes still fail later, look for MailError in `docker logs d2d-relay-web` and `d2d-relay-admin`; a refused token
-  means the mailbox signs in again (`python -m app.otp_mail login`). Sign-in stays email code only (Decided, below).
+- **Sign-in mail failed during Microsoft's outage (2026-11-13): working again.** Microsoft Graph refused the last code
+  asked for (09:49 IST, on the admin portal) with 502 "UnknownError" after 21 seconds. The mailbox's own sign-in still
+  worked, so the fault was Microsoft's. The public site logged no failed sign-in. The watchdog's alerts are sent the
+  same way, so the ones raised during the outage may not have arrived. At 20:02 IST, on the user's "Yes, send it",
+  `python -m app.otp_mail test` emailed info@pasdacs.com in about a second, with nothing in the logs after it. If
+  codes fail again, look for MailError in `docker logs d2d-relay-web` and `d2d-relay-admin`. A Graph 5xx while the
+  token still works is Microsoft's and clears by itself; a refused token means the mailbox signs in again (`python -m
+  app.otp_mail login`). `otp_mail status` only checks the token (it passed during the outage too); `otp_mail test`
+  proves mail goes out. Sign-in stays email code only (Decided, below).
 - **The first trial organisation (2026-11-13)** has not signed in yet. When its first person signs in and names the
   organisation, its starting-credit request waits for PASDACS: approve it on the admin portal's Requests, or ask
   Claude to run `python -m app.orgs approve <request id>`. The trial guide (PowerPoint and PDF) is outside git, in
