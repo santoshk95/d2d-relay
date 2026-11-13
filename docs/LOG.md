@@ -1139,6 +1139,12 @@ included, sees Request credits only; the webhook secret stays, so the webhook st
    invoice details are complete. Then switch Sell credits online on.
 5. For buyers abroad: International payments in the Razorpay Dashboard (Account & Settings; Razorpay reviews it).
    Until then only Indian cards go through, though people abroad see dollar prices ($1 a credit; ₹100 in India).
+6. Razorpay takes live payments only from websites registered on the account: **done on 2026-11-13.**
+   https://pasdacs.com is approved, and https://d2d.pasdacs.com, where the checkout opens, was verified the same
+   evening (the user added it under Account & Settings, Business website detail; Razorpay's form asks how a reviewer
+   signs in: with their own work email and the emailed code, as anyone does). API keys belong to the account, not to
+   a website, so the live keys already in use cover it: checked afterwards, Razorpay accepts them (HTTP 200).
+   Regenerating keys would expire the ones in use (as the test keys did on 2026-11-13).
 
 2026-11-13: the user regenerated the test keys (the same Razorpay account, so the test keys parked in the live `.env`
 no longer work; harmless while parked), and Razorpay's real test mode was checked again on a test stack running live's
@@ -1146,7 +1152,36 @@ image `d2d-relay:189ccac`: `rzp_real_check.py` 18 of 18, and `rzp_real_ui.py pay
 test Visa (`pay_TzhhKsntjyR2sT`, captured; 100 credits and a GST invoice). Two test fixes came with it: an order's
 `workspace` note is `pasdacs` (`db.PLATFORM`), not `platform`; and Razorpay's checkout now asks "Save your card as per
 RBI guidelines?" after Continue, which `rzp_real_ui.py` answers with Maybe later. The test keys are in git-ignored
-`tests/stack/.env.real`. That evening the user had the live keys: steps 1 to 5 above are next.
+`tests/stack/.env.real`.
+
+**Live keys since 2026-11-13 20:55 IST (steps 1 to 3 done).** The user typed the live keys into the live `.env` and
+added the live-mode webhook in Razorpay; the `# ` left on both key lines was taken off (every other line checked
+unchanged; the old "Parked" note replaced), Razorpay accepted the pair (a read-only look-up, HTTP 200), and web and
+admin were recreated after the user's "Yes, deploy now" (live idle; down about 9 seconds; the image unchanged,
+`d2d-relay:189ccac`). Checked on live: payments mode `live` in web and admin, the webhook answers an unsigned call with
+400 "The signature does not match." through Cloudflare, healthz and the sign-in page 200, no errors. Nobody could buy
+yet: Sell credits online was off, GST 0 and PASDACS's invoice details empty. Going back: put `# ` before the two key
+lines in the live `.env` and recreate web and admin the same way (payments go "off").
+
+**Selling online since 2026-11-13 21:35 IST (step 4 done).** The user signed in to the admin portal in the app's
+browser and Claude filled in Payments from PASDACS's GST registration certificate (REG-06, sent by the user): the legal
+name, the principal place of business, Karnataka (from the GSTIN), the PIN and the GSTIN; SAC 998314 (the portal's
+suggestion, for the accountant to confirm; changing it later changes only later invoices); invoices `D2D/26-27/00001`
+on. GST 18% added on top: 25 credits ₹2,950, 50 ₹5,900, 100 ₹11,800, 250 ₹29,500, 500 ₹59,000; abroad $25 to $500.
+The packs and "owners can buy" are unchanged. Saved at 21:34 with selling off, then switched on at 21:35 after the
+user's "Switch it on". No LUT for 2026-27 yet (the user files it later, "its ok for dollar"): until its ARN is set,
+dollar sales carry IGST inside the dollar price. Checked on live: mode `live`, selling on, nothing missing for
+invoices, PASDACS's own organisation offered real payments, healthz 200, no errors. Still open: the first real
+purchase (the user's; the smallest pack, to see the payment, the credits and invoice `D2D/26-27/00001`). Switching
+off: untick Sell credits online on the admin portal and save.
+
+**Step 5 was already done:** the user's Razorpay page (Account & Settings, International payments) shows international
+cards enabled and active on the payment gateway (up to ₹5,00,000 a payment, settled T+0; non-3D Secure cards not
+requested, so such cards are declined). A live order in US dollars is accepted: one $25 order made to check it
+(`order_TzijB63N8cG4pa`, receipt `d2d-usd-check`, never paid) on 2026-11-13. Later that evening the user shortened the
+invoice address to the district alone (saved 21:37); as GST invoices (rule 46) ask for the supplier's address, the
+full address from the GST registration went back at 21:41 on the user's "Restore full address" (no payment in between,
+so every invoice carries it).
 
 Refunds: none (item 25); any made by hand on Razorpay are recorded.
 
