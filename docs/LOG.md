@@ -1039,8 +1039,13 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       column there (PASDACS 0); payments still live and selling on; the webhook and the admin portal answer; no
       errors. No personal sign-up was tried on live (it would email a real address). `d2d-relay:189ccac` kept for
       going back. Not pushed.
-    - **Still to change elsewhere**: pasdacs.com's D2D and Platform pages and the social pack still say D2D is for work
-      emails only ("open to anyone with a work email"; "Personal addresses ... are not accepted").
+    - **pasdacs.com and the social pack** (the user's "Update and publish", the same evening; details in the corporate
+      repository's `docs/STATUS.md`): the D2D page's sign-in, credits and closing lines and the Platform band's line
+      say anyone with an email address (commit `668d763`, Worker version `6cfdc583`, 22:31 IST; tested live: the new
+      lines and none of the old, the pages' code chunks identical to the build, the 13 sitemap URLs 200, nothing
+      sideways at 320 to 1440 px; IndexNow accepted 13 URLs). The social pack was regenerated from it (`678bf60`:
+      the Platform posts, the D2D stories, the WhatsApp status and the copy). Not pushed. Posts already published
+      (the WhatsApp Business profile and catalogue, social posts) are the user's to edit.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1151,8 +1156,8 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   longer resolves (checked 2026-11-12, ~13:30 IST). https://d2d.pasdacs.com is the only address.
 - **Social media and ads** (item 38's check, 2026-11-12; item 39, 2026-11-13). Since item 39 anyone can sign up: a
   work email joins its company's organisation (whose starting credits wait for PASDACS's review), a personal address
-  (Gmail, Outlook, Yahoo ...) gets a personal workspace that buys its credits; throw-away inboxes stay refused. The
-  copy on pasdacs.com and in the social pack still says "work email" only. New organisations wait for PASDACS's review, and the
+  (Gmail, Outlook, Yahoo ...) gets a personal workspace that buys its credits; throw-away inboxes stay refused.
+  pasdacs.com and the social pack say so since the same evening. New organisations wait for PASDACS's review, and the
   admin portal works only on this PC until the Cloudflare Access step above. Neither site counts visitors (D2D
   Relay's privacy notice promises no tracking cookies): use UTM-tagged links and the ad platforms' own counts, and
   change the notice before adding any pixel or tag. LinkedIn and Meta lead-form ads ask for a privacy policy link;
