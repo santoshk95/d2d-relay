@@ -58,7 +58,8 @@ for path, must in (("/terms.html", ["Terms of service", "Bengaluru, Karnataka", 
           and "frame-ancestors 'self'" in h.get("content-security-policy", "") and h.get("x-content-type-options") == "nosniff", h)
     check(f"legal: {path} is in plain characters", not [ch for ch in t if ch in TYPO], "".join(ch for ch in t if ch in TYPO)[:20])
 s, h, t = raw("GET", P, "/login.html")
-check("legal: the sign-in page says signing in accepts the terms, and links them", 'href="terms.html"' in t and "accept" in t, s)
+check("legal: the sign-in page says signing in accepts the terms, and links them",       # item 41: "you agree to the Terms"
+      'href="terms.html"' in t and ("accept" in t or "agree to the" in t), s)
 s, h, t = raw("GET", P, "/privacy.html")
 check("legal: the privacy notice links the terms, refunds and contact", all(f'href="{x}.html"' in t for x in ("terms", "refunds", "contact")), s)
 
