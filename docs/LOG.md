@@ -1125,10 +1125,13 @@ in test, allow only request credits, once razorpay is activated we can allow pro
 test keys are parked as comments in the live `.env` (with a note there), so payments are "off" and everyone, PASDACS
 included, sees Request credits only; the webhook secret stays, so the webhook still answers. Going live:
 
-1. The live keys (rzp_live_...) into the live `.env` in place of the parked test keys.
+1. The live keys (rzp_live_...) into the live `.env` (the deploy folder's) in place of the parked test keys: the
+   lines `# RELAY_RAZORPAY_KEY_ID=...` and `# RELAY_RAZORPAY_KEY_SECRET=...` become `RELAY_RAZORPAY_KEY_ID=rzp_live_...`
+   and `RELAY_RAZORPAY_KEY_SECRET=...` (no `# `, no quotes or spaces). `RELAY_RAZORPAY_WEBHOOK_SECRET` stays as it is.
 2. A live-mode webhook in the Razorpay Dashboard: URL https://d2d.pasdacs.com/api/payments/webhook, events
    payment.captured, order.paid, payment.failed and refund.processed, its secret as `RELAY_RAZORPAY_WEBHOOK_SECRET`.
-3. Restart web and admin.
+3. Restart web and admin so they read the `.env` again: `docker compose up -d --no-deps --force-recreate web admin`
+   in the deploy folder (`docker compose restart` keeps the old values; the job runner does not read the keys).
 4. On the admin portal, Payments: PASDACS's invoice details (legal name, registered address, state, PIN and GSTIN; the
    SAC code from the accountant, the setting suggests 998314; the LUT's ARN if one is filed for 2026-27, else dollar
    sales carry IGST, included in the price), and GST 18% added on top (the user's decision of 2026-11-11, "₹100 + 18%
@@ -1136,6 +1139,14 @@ included, sees Request credits only; the webhook secret stays, so the webhook st
    invoice details are complete. Then switch Sell credits online on.
 5. For buyers abroad: International payments in the Razorpay Dashboard (Account & Settings; Razorpay reviews it).
    Until then only Indian cards go through, though people abroad see dollar prices ($1 a credit; ₹100 in India).
+
+2026-11-13: the user regenerated the test keys (the same Razorpay account, so the test keys parked in the live `.env`
+no longer work; harmless while parked), and Razorpay's real test mode was checked again on a test stack running live's
+image `d2d-relay:189ccac`: `rzp_real_check.py` 18 of 18, and `rzp_real_ui.py pay` paid ₹1,178.82 with Razorpay's
+test Visa (`pay_TzhhKsntjyR2sT`, captured; 100 credits and a GST invoice). Two test fixes came with it: an order's
+`workspace` note is `pasdacs` (`db.PLATFORM`), not `platform`; and Razorpay's checkout now asks "Save your card as per
+RBI guidelines?" after Continue, which `rzp_real_ui.py` answers with Maybe later. The test keys are in git-ignored
+`tests/stack/.env.real`. That evening the user had the live keys: steps 1 to 5 above are next.
 
 Refunds: none (item 25); any made by hand on Razorpay are recorded.
 
@@ -1150,7 +1161,8 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
 - **A removed person cannot come back on their own** (item 32): their address is blocked until an owner unblocks it.
 - **Abuse:** Turnstile on "Send code" (S7, S13): the user chose not now (2026-11-12). New organisations wait for
   PASDACS's review of their starting credits (item 27), and PASDACS gets an email for every sign-in (item 21).
-- **Never run on the test stacks:** a real Razorpay checkout and real email delivery. Since item 34 the end-to-end
+- **Never run on the test stacks:** a real Razorpay checkout and real email delivery (Razorpay's real test mode is
+  checked by hand with `rzp_real_check.py` and `rzp_real_ui.py`: last on 2026-11-13). Since item 34 the end-to-end
   run covers real Claude, Power BI's engine (the DAX check) and the Power BI file maker, on the test stack's own copies
   of this PC's helpers (`tests/stack/helpers.ps1`).
 - **pay_check can race the test stack's own start-up sweep** (item 38, test only): `ops.nightly` backs up and sweeps

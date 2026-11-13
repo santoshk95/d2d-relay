@@ -67,7 +67,7 @@ def main():
     s2, ro = razorpay(f"/orders/{o.get('order_id')}")
     c.check("order: Razorpay holds it for ₹1,178.82 in INR, with our receipt and notes",
             s2 == 200 and ro["amount"] == 117882 and ro["currency"] == "INR" and ro["receipt"] == o["id"] and ro["status"] == "created"
-            and ro["notes"].get("workspace") == "platform" and ro["notes"].get("credits") == "100", (s2, ro))
+            and ro["notes"].get("workspace") == "pasdacs" and ro["notes"].get("credits") == "100", (s2, ro))   # db.PLATFORM
     s, v = pas.post("/api/payments/verify", {"razorpay_order_id": o["order_id"], "razorpay_payment_id": "pay_ZZZZZZZZZZZZZZ", "razorpay_signature": "f" * 64})
     c.check("verify: a made-up signature is refused (400)", s == 400, (s, c.detail_of(v)))
     ghost = "pay_" + "Q" * 14

@@ -92,6 +92,13 @@ with sync_playwright() as p:
             pages_before = len(ctx.pages)
             f.locator("button:visible:has-text('Pay'), button:visible:has-text('Continue')").last.click()
             page.wait_for_timeout(6000)
+            # Razorpay may ask to save the card (RBI tokenisation, seen 2026-11-13): never for a test payment
+            later = f.get_by_role("button", name="Maybe later")
+            if later.count() and later.first.is_visible():
+                shot(page, "save-card")
+                later.first.click()
+                out["save_card_prompt"] = "Maybe later"
+                page.wait_for_timeout(6000)
             shot(page, "after-card")
             out["after_card"] = describe(f) if not f.is_detached() else "checkout closed"
             out["pages"] = [pg.url[:120] for pg in ctx.pages]
