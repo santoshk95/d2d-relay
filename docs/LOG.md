@@ -1063,11 +1063,13 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
 
 ### Before the public launch (the user)
 
-- **The Power BI file maker is stopped (2026-11-13).** Its process ended at 10:13 IST with no error in its heartbeat
-  (its queue was empty; the DAX checker kept running), and the watchdog raised `pbix_offline` at 10:24 IST. Until it
-  runs again, no dashboard can be published as a .pbix. Start it by double-clicking `pbix\start-pbix.cmd` in the
-  deploy folder, then check that `data\projects\.pbix\heartbeat.json` is fresh. Claude Code's auto mode refused to
-  start it ("Modify Shared Resources"), although host helpers were started that way before.
+- **The Power BI file maker stopped once (2026-11-13): running again.** Its process ended at 10:13 IST with no error
+  in its heartbeat (its queue was empty; the DAX checker kept running), and the watchdog raised `pbix_offline` at
+  10:24 IST; its email may not have arrived (the mail outage below). Restarted at 10:56 IST on the user's "Start it
+  for me" (`pbix\start-pbix.cmd` through `Invoke-CimMethod Win32_Process Create`; Claude Code's auto mode had refused
+  it before that word, "Modify Shared Resources"): heartbeat fresh, idle, no error, and live's watchdog logged
+  `pbix_offline` resolved at 10:56 IST (32 minutes). The cause is unknown. If it stops
+  again, check `data\projects\.pbix\heartbeat.json` in the deploy folder and start `pbix\start-pbix.cmd`.
 - **Sign-in codes fail while Microsoft's mail is down (2026-11-13).** Microsoft Graph refused the last code asked for
   (09:49 IST, on the admin portal) with 502 "UnknownError". The mailbox's own sign-in still worked, so the fault is
   Microsoft's and clears by itself. The watchdog's alerts are sent the same way, so they may not arrive while it lasts.
