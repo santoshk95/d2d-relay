@@ -1074,6 +1074,25 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       still live and selling on; no errors. `d2d-relay:96ea48a` kept for going back. The check alone off: empty both
       keys in the live `.env`, then `docker compose up -d --no-deps --force-recreate web`.
 
+41. **A clean, minimal sign-in page** (the user, 2026-11-13: "too much wordings, make it clean and minimal and
+    professional"). Code `2686fc4` (+ `f981608`, a test's wording); release image `d2d-relay:2686fc4`, built from the
+    clean commit and tested; **live since 23:15 IST** the same day.
+    - **Sign in:** one line ("Enter your email to receive a sign-in code."), Email, the security check above the
+      button, Continue, and one line for the terms, the privacy notice and help. The code step: "Sign-in code", "We
+      sent a sign-in code to ... It expires in 10 minutes.", and Resend code (with the check on: back to the email step
+      for a fresh check) or a different email. Shorter first-sign-up steps (organisation, personal workspace) and
+      messages. How organisations and personal workspaces work is told at the first sign-up step, on pasdacs.com and in
+      the terms.
+    - **Tests** on `d2d-relay:2686fc4`, review on: 847 of 847. The first run had 846: `item30_check` looked for
+      "accept" on the sign-in page; it now also takes "agree to the" (the new line's wording) and passed 54 of 54 on
+      the same stack. `item40_check` also checks Resend code (22). Wording and layout only, so no review-off run.
+    - **Deployed at 23:15 IST** after the user's "Yes, deploy": live idle; deploy folder fast-forwarded to `f981608`
+      (no compose, `pbix\`, `daxcheck\`, `config\` or Docker change); `d2d-relay:2686fc4` tagged latest; web, admin and
+      the job runner restarted (down about 9 seconds). Checked on live: all three on `2686fc4`; the new wording served
+      and the old gone; a code asked for without a token refused with the new message (403); the widget at 1280 and
+      375 px, nothing sideways; payments live; no errors. `d2d-relay:d1882f7` kept for going back. Left: on a wide
+      screen "Need help?" breaks across two lines; keep it on one line in the next release.
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -1113,12 +1132,13 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-13 late evening, after item 40's deploy. **Live:** web, admin and the job runner run
-`d2d-relay:d1882f7` (= latest, since 22:56 IST), with the Turnstile bot check on; the database container runs
-`d2d-relay:8689305`'s image; live holds only PASDACS and info@pasdacs.com, and sells credits online with the live
-Razorpay keys (since 21:35 IST, "Selling credits online" below). This folder, the deploy folder and **GitHub** are on
-this log entry: item 40 and its log were pushed the same night, on the user's "Push" (scanned first for the live
-`.env`, `tunnel.env` and test-key values, the Turnstile keys and private details: none). **Going back** to item 39 (`d2d-relay:96ea48a`,
+Updated 2026-11-13 night, after item 41's deploy. **Live:** web, admin and the job runner run `d2d-relay:2686fc4`
+(= latest, since 23:15 IST), with the Turnstile bot check on; the database container runs `d2d-relay:8689305`'s
+image; live holds only PASDACS and info@pasdacs.com, and sells credits online with the live Razorpay keys (since 21:35
+IST, "Selling credits online" below). This folder and the deploy folder are on this log entry; **GitHub** is on
+`93e2a8a` (item 41 and its log not pushed yet). **Going back** to item 40 (`d2d-relay:d1882f7`, kept): in the deploy
+folder `git reset --keep 93e2a8a`, `docker tag d2d-relay:d1882f7 d2d-relay:latest`, then `docker compose up -d
+--no-deps web admin runner`. **Going back** to item 39 (`d2d-relay:96ea48a`,
 kept): in the deploy folder `git reset --keep 5fbd0a7`, `docker tag d2d-relay:96ea48a d2d-relay:latest`, then
 `docker compose up -d --no-deps web admin runner` (the Turnstile lines in the `.env` are then ignored). **Going back**
 to item 38 (`d2d-relay:189ccac`, kept): in the deploy folder `git reset --keep c8d0f0f`,
