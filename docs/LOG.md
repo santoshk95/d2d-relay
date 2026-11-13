@@ -1171,8 +1171,8 @@ Updated 2026-11-13 night, after item 42. **Live:** web, admin and the job runner
 since 23:49 IST), with the Turnstile bot check on and the AI on PASDACS's Anthropic API key first, the Claude
 subscription as its backup (item 42); the database container runs `d2d-relay:8689305`'s image; live holds only
 PASDACS and info@pasdacs.com, and sells credits online with the live Razorpay keys (since 21:35 IST, "Selling credits
-online" below). This folder and the deploy folder are on this log entry; **GitHub** stays on item 41's (`d63c052`)
-until the user says push. **Going back** to item 41 (`d2d-relay:baf70e5`, kept): in the deploy folder `git reset
+online" below). This folder, the deploy folder and **GitHub** are on this log entry: pushed with it, on the user's
+"Yes, push" (scanned first: nothing secret or private). **Going back** to item 41 (`d2d-relay:baf70e5`, kept): in the deploy folder `git reset
 --keep d63c052`, `docker tag d2d-relay:baf70e5 d2d-relay:latest`, then `docker compose up -d --no-deps web admin
 runner` (older code ignores `RELAY_ANTHROPIC_API_KEY`: every run on the subscription again). **Going back** to item 41
 as first deployed (`d2d-relay:2686fc4`, kept): the same with `docker tag d2d-relay:2686fc4 d2d-relay:latest` (only
