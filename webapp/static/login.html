@@ -77,19 +77,19 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
   </div>
   <main class="form">
     <h2 id="signin">Sign in to D2D Relay</h2>
-    <p class="muted" id="lead">Use your email: we email you a 6-digit code, no password needed. New here? With a work email, the first person from your company creates its organisation and colleagues who sign in later join it. A personal address (Gmail, Outlook and the like) gets a private workspace that buys its credits online.</p>
+    <p class="muted" id="lead">Enter your email to receive a sign-in code.</p>
     <div id="error" class="err" role="alert" hidden></div>
     <div id="note" class="none" role="status" hidden></div>
     <form id="askform" style="display:grid;gap:10px">
-      <div><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>
-      <button type="submit" id="askbtn">Email me a code</button>
+      <div><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required></div>
+      <div id="botcheck" hidden></div>
+      <button type="submit" id="askbtn">Continue</button>
     </form>
     <form id="codeform" style="display:grid;gap:10px" hidden>
-      <div><label for="code">6-digit code</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required></div>
+      <div><label for="code">Sign-in code</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required></div>
       <button type="submit" id="codebtn">Sign in</button>
-      <p class="fine"><a href="#" id="again">Send a new code</a> or <a href="#" id="other">use another address</a></p>
+      <p class="fine"><a href="#" id="again">Resend code</a> or <a href="#" id="other">use a different email</a></p>
     </form>
-    <div id="botcheck" hidden></div>
     <form id="orgform" style="display:grid;gap:10px" hidden>
       <p class="muted" id="orglead"></p>
       <div><label for="orgname">Organisation name</label><input id="orgname" name="orgname" autocomplete="organization" maxlength="80" required></div>
@@ -97,8 +97,7 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
       <p class="fine" id="orgcredits"></p>
       <button type="submit" id="orgbtn">Create organisation</button>
     </form>
-    <p class="fine" id="privacy">We use your email address to sign you in and to keep your organisation's work together. What D2D Relay keeps, who handles it and your rights: <a href="privacy.html">privacy notice</a>. By signing in you accept the <a href="terms.html">terms of service</a>.</p>
-    <p class="fine">Questions? Write to <a href="mailto:info@pasdacs.com">info@pasdacs.com</a>.</p>
+    <p class="fine" id="privacy">By continuing, you agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Notice</a>. <a href="contact.html">Need help?</a></p>
   </main>
 </div>
 <script>
@@ -117,7 +116,7 @@ if (ADMIN) {
   document.querySelector('.hero p').textContent = 'Every organisation, its credits and connectors, and what they ask PASDACS for.';
   document.querySelector('.powered span').textContent = 'D2D Relay admin, PASDACS only';
   $('signin').textContent = 'Sign in to D2D Relay admin';
-  $('lead').textContent = `PASDACS only: use your ${domains} address. We email you a 6-digit code, no password needed.`;
+  $('lead').textContent = `For PASDACS staff. Use your ${domains} address.`;
   $('email').placeholder = 'name' + (D2D_PORTAL.admin_domains ? '@' + D2D_PORTAL.admin_domains[0] : '@pasdacs.com');
   $('privacy').hidden = true;
 }
@@ -146,12 +145,12 @@ function botStart(key) {
   const s = document.createElement('script');
   s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onBotLoad';
   s.async = true;
-  s.onerror = () => show('error', 'The check that you are a person could not load. Check your connection, or allow challenges.cloudflare.com, and reload the page.');
+  s.onerror = () => show('error', 'The security check could not load. Check your connection and reload the page.');
   document.head.appendChild(s);
 }
 async function ask() {
   show('error'); show('note');
-  if (BOT.key && !BOT.token) return show('error', 'Please finish the check that shows you are a person, then ask for the code.');
+  if (BOT.key && !BOT.token) return show('error', 'Please complete the security check first.');
   $('askbtn').disabled = true;
   try {
     const j = await post('/auth/otp/start', {email: $('email').value.trim(), turnstile: BOT.token});
@@ -175,18 +174,18 @@ function orgStep(o) {
   $('signin').textContent = o.personal ? 'Create your workspace' : 'Create your organisation';
   $('lead').hidden = true;
   $('orglead').textContent = o.personal
-    ? `${o.email} is a personal address, so you get a private workspace of your own: nobody else joins it. To work with colleagues, sign in with your work email instead.`
-    : `You are the first person from ${o.domain} on D2D Relay. Name your organisation: everyone who signs in later with an @${o.domain} address joins it and shares its credits, and you are its owner.`;
+    ? 'A private workspace, just for you.'
+    : `You are the first from ${o.domain}. Colleagues who sign in with an @${o.domain} address will join your organisation.`;
   document.querySelector('label[for=orgname]').textContent = o.personal ? 'Workspace name' : 'Organisation name';
   $('orgbtn').textContent = o.personal ? 'Create workspace' : 'Create organisation';
   $('orgname').value = $('orgname').value || o.suggested || '';
   $('person').value = $('person').value || o.person || '';
   $('orgcredits').textContent = o.personal
-    ? 'A personal workspace starts with no credits: you buy them online (card or UPI) when you need them. Next you set up your brand.'
+    ? 'Credits are bought online when you need them.'
     : o.credits_review
-    ? `PASDACS reviews every new organisation and adds its ${o.credits_review} starting credits when it approves: you get an email. Next you set up your brand.`
-    : o.credits ? `It starts with ${o.credits} credits. Next you set up your brand.`
-    : 'Next you set up your brand. Credits come from PASDACS: ask for them under Request credits, and PASDACS approves them.';
+    ? `Your ${o.credits_review} starting credits are added once PASDACS approves your organisation.`
+    : o.credits ? `It starts with ${o.credits} credits.`
+    : 'Credits are added by PASDACS on request.';
   $('orgname').focus(); $('orgname').select();
 }
 $('orgform').addEventListener('submit', async e => {
@@ -195,7 +194,12 @@ $('orgform').addEventListener('submit', async e => {
   catch (err) { show('error', err.message); $('orgbtn').disabled = false; }
 });
 if (!ADMIN) fetch('/auth/otp/organisation', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : null).then(o => { if (o && o.domain) orgStep(o); }).catch(() => {});
-$('again').addEventListener('click', e => { e.preventDefault(); ask(); });
+/* Resend: straight away without the bot check; with it, back to the email step for a fresh check (a token works once) */
+$('again').addEventListener('click', e => {
+  e.preventDefault();
+  if (!BOT.key) return ask();
+  show('note'); show('error'); $('codeform').hidden = true; $('askform').hidden = false; botReset(); $('askbtn').focus();
+});
 $('other').addEventListener('click', e => { e.preventDefault(); show('note'); show('error'); $('codeform').hidden = true; $('askform').hidden = false; $('email').focus(); });
 fetch('/auth/providers').then(r => r.json()).then(cfg => {
   if (cfg.mode !== 'otp' && cfg.mode !== 'sso') return location.replace('/');

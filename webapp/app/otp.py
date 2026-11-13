@@ -67,8 +67,8 @@ TURNSTILE_SITE_KEY = (os.environ.get("D2D_TURNSTILE_SITE_KEY") or "").strip()
 TURNSTILE_SECRET = (os.environ.get("D2D_TURNSTILE_SECRET") or "").strip()
 TURNSTILE_VERIFY = (os.environ.get("D2D_TURNSTILE_VERIFY") or "https://challenges.cloudflare.com/turnstile/v0/siteverify").strip()
 TURNSTILE_ACTION = "otp-start"                      # the widget's action; a token made for another action is refused
-BOT_TEXT = "Please finish the check that shows you are a person, then ask for the code again."
-BOT_DOWN_TEXT = "The check that you are a person could not be confirmed just now. Try again in a minute."
+BOT_TEXT = "Please complete the security check, then try again."
+BOT_DOWN_TEXT = "The security check could not be confirmed. Please try again in a minute."
 
 
 def turnstile_on() -> bool:
@@ -213,7 +213,7 @@ def start(body: StartBody, request: Request):
         return _err("The code could not be sent. Try again in a minute; if it keeps failing, write to info@pasdacs.com.", 502)
     with db.use(db.PLATFORM):
         db.audit("auth.otp_sent", None, {"ip": ip, "domain": orgs.domain_of(email)}, "system")
-    return {"ok": True, "message": f"A 6-digit code is on its way to {email}. It works for 10 minutes."}
+    return {"ok": True, "message": f"We sent a sign-in code to {email}. It expires in 10 minutes."}
 
 
 def _check_code(email: str, code: str, request: Request) -> bool:

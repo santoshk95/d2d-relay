@@ -49,7 +49,7 @@ p = c.Person(f"nora.{S}@bots{S}.com")
 hdr = {"cf-connecting-ip": p.ip}
 t0 = time.time()
 s, r = p.post("/auth/otp/start", {"email": p.email, "turnstile": ""}, headers=hdr)
-check("no token: refused (403) with a plain reason", s == 403 and "person" in str(c.detail_of(r)), (s, r))
+check("no token: refused (403) with a plain reason", s == 403 and "security check" in str(c.detail_of(r)), (s, r))
 time.sleep(2)
 check("no token: no code was made or sent", c.code_from_logs(c.WEB_C, p.email, t0) is None, "a code is in the log")
 t1 = time.time()
@@ -115,6 +115,9 @@ with sync_playwright() as p:
             out["note"] = page.locator("#note").inner_text()
             out["error"] = page.locator("#error").inner_text() if page.locator("#error").is_visible() else ""
             out["token_after"] = page.evaluate("BOT.token")
+            page.click("#again")
+            page.wait_for_timeout(500)
+            out["resend_back"] = page.evaluate("!document.querySelector('#askform').hidden && document.querySelector('#codeform').hidden")
         out[f"errors_{w}"] = errors
         ctx.close()
     b.close()
@@ -129,8 +132,9 @@ except (ValueError, IndexError):
 for w in (320, 1280):
     check(f"{w} px: the widget renders and gives its token", ui.get(f"widget_{w}") is True and ui.get(f"token_{w}") == "XXXX.DUMMY.TOKEN.XXXX", ui)
     check(f"{w} px: nothing sideways, no script errors", ui.get(f"sideways_{w}") is False and ui.get(f"errors_{w}") == [], ui)
-check("1280 px: Email me a code sends the code (the token went with it)", "code is on its way" in str(ui.get("note")) and not ui.get("error"), ui)
+check("1280 px: Continue sends the code (the token went with it)", "We sent a sign-in code" in str(ui.get("note")) and not ui.get("error"), ui)
 check("1280 px: the widget is reset for the next ask (a token works once)", ui.get("token_after") in ("", "XXXX.DUMMY.TOKEN.XXXX"), ui)
+check("1280 px: Resend code goes back to the email step for a fresh check", ui.get("resend_back") is True, ui)
 for w in (320, 1280):
     subprocess.run(["docker", "cp", f"{c.WEB_C}:/tmp/item40-signin-{w}.png", c.out_path(f"item40-signin-{w}.png")], check=False, capture_output=True)
 

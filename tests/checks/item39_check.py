@@ -159,7 +159,7 @@ check("alert: and gets no starting-credit review mail for it", not any("[org-rev
 section("the screens")
 s, page = c.Person("x").get("/login.html")
 check("sign-in page: any email; no 'Use your work email' any more",
-      s == 200 and "Use your email" in str(page) and "Use your work email" not in str(page) and "Create your workspace" in str(page), s)
+      s == 200 and "Enter your email" in str(page) and "Use your work email" not in str(page) and "Create your workspace" in str(page), s)
 s, t = c.Person("x").get("/terms.html")
 check("terms: personal workspaces described (no free credits, they buy online)", s == 200 and "personal workspace" in str(t) and "buys them online" in str(t), s)
 p1.post("/api/me/tour", {"step": "done"})
