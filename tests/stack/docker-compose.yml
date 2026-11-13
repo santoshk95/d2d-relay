@@ -30,6 +30,8 @@ x-signin: &signin
   # item 40: the bot check, with Cloudflare's published test keys (they always pass); set them empty to turn it off
   RELAY_TURNSTILE_SITE_KEY: ${TEST_TURNSTILE_SITE_KEY-1x00000000000000000000AA}
   RELAY_TURNSTILE_SECRET: ${TEST_TURNSTILE_SECRET-1x0000000000000000000000000000000AA}
+  # item 42: the installation's Anthropic API key (empty: the Claude login only); a real-Claude test sets it
+  RELAY_ANTHROPIC_API_KEY: ${TEST_ANTHROPIC_API_KEY-}
 
 services:
   db:

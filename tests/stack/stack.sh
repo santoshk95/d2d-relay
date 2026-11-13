@@ -49,6 +49,8 @@ export TEST_RZP_API=${TEST_RZP_API:-http://d2d-relay-test-web:9911/v1}
 # Item 40: the bot check on, with Cloudflare's published test keys (always pass); TEST_TURNSTILE_SECRET= turns it off
 export TEST_TURNSTILE_SITE_KEY=${TEST_TURNSTILE_SITE_KEY-1x00000000000000000000AA}
 export TEST_TURNSTILE_SECRET=${TEST_TURNSTILE_SECRET-1x0000000000000000000000000000000AA}
+# Item 42: the installation's Anthropic API key, empty unless a real-Claude test sets it (never a live key in .env here)
+export TEST_ANTHROPIC_API_KEY=${TEST_ANTHROPIC_API_KEY-}
 export CODE_APP= CODE_APP_AT= CODE_STATIC= CODE_STATIC_AT=     # test the image itself, not the working tree
 
 docker compose -p d2d-relay-test down -v >/dev/null 2>&1 || true
@@ -56,7 +58,7 @@ rm -rf ./test-projects && mkdir -p ./test-projects ./empty-app ./empty-static   
 {
   echo "# Written by stack.sh for the running test stack (git-ignored); docker compose reads it in this folder"
   for v in TEST_IMAGE TEST_DB_PASSWORD TEST_START_REVIEW TEST_RZP_KEY_ID TEST_RZP_SECRET TEST_RZP_WEBHOOK TEST_RZP_API \
-           TEST_CLAUDE_VOLUME TEST_CLAUDE_EXTERNAL TEST_TURNSTILE_SITE_KEY TEST_TURNSTILE_SECRET; do
+           TEST_CLAUDE_VOLUME TEST_CLAUDE_EXTERNAL TEST_TURNSTILE_SITE_KEY TEST_TURNSTILE_SECRET TEST_ANTHROPIC_API_KEY; do
     echo "$v=${!v}"
   done
 } > .env

@@ -527,6 +527,24 @@ currency beside them. Paid ones are kept (tax and accounting law
 asks for eight years), without names once an organisation is erased; checkouts never paid go after a year (the
 nightly sweep). Each person's own payments are in Download my data.
 
+## The AI's Claude account
+
+The AI engine runs Claude Code. Without an API key it uses the Claude subscription it is signed in with (the
+`claude-api-auth` volume; `docs/LOG.md`, "The AI runs on a personal Claude plan"). Since item 42 (the user,
+2026-11-13: "claude api key ... as primary and personal as backup"), `RELAY_ANTHROPIC_API_KEY` in the live `.env`
+makes an Anthropic API key the main provider for every dashboard, change and Ask Relay question
+(`app/providers.py`): each run gets the key as its own `ANTHROPIC_API_KEY`, and when the API fails with an
+authentication, credit, rate-limit or outage error the run goes once more on the subscription (dashboards:
+`worker.agent`; Ask Relay: `askd._claude`), with an `ai.fallback` audit record and a note in the dashboard's activity.
+Each run records which one answered (`provider`: "Anthropic API (this installation's key)" or "Claude (this
+installation's login)").
+
+To switch it on: create a key in the Anthropic Console (API keys), set a monthly spend limit there (the API bills per
+token), add `RELAY_ANTHROPIC_API_KEY=sk-ant-...` to the live `.env` by hand, then
+`docker compose up -d --no-deps --force-recreate web admin`. Never name it `ANTHROPIC_API_KEY` in the `.env`: the AI
+engine takes `ANTHROPIC_*` variables for itself (`relay_init.AGENT_PREFIXES`), would then use the key for every run,
+and the subscription could never take over. Empty again = the subscription only.
+
 ## Bot check
 
 Since item 40 (the user, 2026-11-13: "bot check add back", once anyone could sign up) "Email me a code" on the public

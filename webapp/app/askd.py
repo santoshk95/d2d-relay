@@ -413,6 +413,33 @@ async def _claude(u: dict, prompt: str, session: str | None, workdir: str, model
     cfg = providers.run_config(u["id"], model, 600)
     if cfg.get("runner"):                     # Ask Relay runs on Claude with no tools; another CLI's choice uses Claude
         cfg = providers.run_config(u["id"], model, 600, kind="claude_account")
+    failed, done = None, {}
+    try:
+        done = await _claude_run(u, prompt, session, workdir, system, cfg)
+        if done.get("ok") is False:
+            failed = done.get("text") or ""
+    except AskError as e:
+        failed = str(e)
+        if not providers.is_failover_error(failed):
+            raise
+    if failed is not None and providers.is_failover_error(failed):
+        # item 42: as for dashboards (worker.agent), the backup provider answers once when the main one fails with an
+        # authentication, quota, rate-limit or outage error (the installation's API key -> its Claude login)
+        backup = providers.backup_kind(u["id"])
+        try:
+            bcfg = providers.run_config(u["id"], model, 600, kind=backup) if backup else None
+        except providers.ProviderError:
+            bcfg = None
+        if bcfg and not bcfg.get("runner"):
+            db.audit("ai.fallback", None, {"from": cfg["kind"], "to": bcfg["kind"], "error": failed[:300], "where": "ask"}, u["id"])
+            return {**await _claude_run(u, prompt, session, workdir, system, bcfg), "fallback": True}
+    if not done:
+        raise AskError((failed or "The AI provider stopped without an answer.")[:300])
+    return done
+
+
+async def _claude_run(u: dict, prompt: str, session: str | None, workdir: str, system: str | None, cfg: dict) -> dict:
+    """One Ask Relay request on one provider."""
     payload = {"workdir": workdir, "prompt": prompt, "system": system or SYSTEM, "model": cfg["model"], "max_turns": 2,
                "timeout_s": 600, "resume": session, "lane": "chat", "runner": "claude-code", "env": cfg["env"], "tools": []}
     url = await instances.agent_url(u["id"])

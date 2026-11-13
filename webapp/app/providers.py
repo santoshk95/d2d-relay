@@ -15,6 +15,12 @@ A person picks one of the kinds the Admin's AI policy allows:
 Every run gets only the environment its owner's choice needs (agent runner: PROVIDER_ENV). Secrets live in the
 secrets store; nothing here is ever returned by the API. A backup provider (the person's, else the policy's) takes
 over once when the main one fails with an authentication, quota, rate-limit or outage error.
+
+The installation's own Anthropic API key (D2D Relay item 42, the user 2026-11-13: "claude api key ... as primary and
+personal as backup"): RELAY_ANTHROPIC_API_KEY (D2D_ANTHROPIC_API_KEY to the web app; never ANTHROPIC_API_KEY, which the
+AI engine would inherit for every run, so the backup could never run without it). When it is set, a person who has not
+chosen a provider of their own (claude_account with no token of their own: everyone on D2D Relay) runs on that key
+first, and the installation's Claude login (the subscription the AI engine is signed in with) is the backup.
 """
 import base64
 import hashlib
@@ -30,6 +36,8 @@ import yaml
 
 from . import db, secrets_store
 
+INSTALL_API_KEY = (os.environ.get("D2D_ANTHROPIC_API_KEY") or "").strip()       # item 42: the installation's API key
+INSTALL_API_LABEL = "Anthropic API (this installation's key)"
 GATEWAY_URL = os.environ.get("D2D_LITELLM_URL", "http://litellm:4000")
 GATEWAY_DIR = Path(os.environ.get("D2D_LITELLM_DIR", "/data/llm"))
 KINDS = {"claude_account": "Claude Docker (Claude account)", "anthropic_api": "Anthropic API key",
@@ -246,14 +254,25 @@ def gateway_token(uid: str, ttl_s: int) -> str:
 
 # ---------------------------------------------------------------- what a run gets
 
+def _install_key_first(uid: str | None, s: dict) -> bool:
+    """Item 42: the installation's API key runs first for a person with no provider of their own."""
+    if not INSTALL_API_KEY or s.get("kind", "claude_account") != "claude_account":
+        return False
+    return not (uid and secrets_store.get(f"user:{uid}", "claude_oauth_token"))
+
+
 def run_config(uid: str | None, model: str, ttl_s: int, kind: str | None = None) -> dict:
     """{env, model, provider, kind} for a run owned by `uid`. kind overrides the person's choice (the backup)."""
     s = settings(uid) if uid else {"kind": "claude_account", "route": None, "base_url": ""}
+    if kind is None and _install_key_first(uid, s):
+        kind = "anthropic_api"                              # item 42: the installation's key; its backup is its login
     kind = kind or s["kind"]
     if is_cli_model_id(model) and kind not in CLI_KINDS:     # a CLI pick running on Claude (backup, Ask Relay): Claude's default
         from .worker import DEFAULT_MODEL                   # late import: worker imports providers
         model = DEFAULT_MODEL
     sec = (lambda n: secrets_store.get(f"user:{uid}", n)) if uid else (lambda n: None)
+    if kind == "anthropic_api" and not sec("anthropic_api_key") and INSTALL_API_KEY:
+        return {"kind": kind, "env": {"ANTHROPIC_API_KEY": INSTALL_API_KEY}, "model": model, "provider": INSTALL_API_LABEL}
     if kind == "claude_account":
         token = sec("claude_oauth_token")
         return {"kind": kind, "env": {"CLAUDE_CODE_OAUTH_TOKEN": token} if token else {}, "model": model,
@@ -289,14 +308,18 @@ def run_config(uid: str | None, model: str, ttl_s: int, kind: str | None = None)
 
 
 def backup_kind(uid: str | None) -> str | None:
-    """The provider to try when the main one fails: the person's backup, else the policy's (mapped to a kind)."""
+    """The provider to try when the main one fails: the person's backup, else the policy's (mapped to a kind). When
+    the installation's API key ran first (item 42), its backup is the installation's Claude login."""
     s = settings(uid) if uid else {}
+    primary = "anthropic_api" if _install_key_first(uid, s) else s.get("kind", "claude_account")
     if s.get("backup"):
-        return s["backup"] if s["backup"] != s.get("kind") else None
+        return s["backup"] if s["backup"] != primary else None
+    if primary == "anthropic_api" and s.get("kind", "claude_account") == "claude_account":
+        return "claude_account"
     b = _policy().get("backup")
     kind = {"claude_account": "claude_account", "anthropic_api": "anthropic_api", "enterprise": "enterprise"}.get(b) \
         or ("litellm" if b in ("bedrock", "azure_foundry", "vertex") else None)
-    return kind if kind and kind != s.get("kind", "claude_account") else None
+    return kind if kind and kind != primary else None
 
 
 def is_failover_error(text: str) -> bool:
