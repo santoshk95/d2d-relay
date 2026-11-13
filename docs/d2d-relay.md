@@ -527,6 +527,26 @@ currency beside them. Paid ones are kept (tax and accounting law
 asks for eight years), without names once an organisation is erased; checkouts never paid go after a year (the
 nightly sweep). Each person's own payments are in Download my data.
 
+## Bot check
+
+Since item 40 (the user, 2026-11-13: "bot check add back", once anyone could sign up) "Email me a code" on the public
+site can need Cloudflare Turnstile (`app/otp.py`, `login.html`): the widget sits under the form, and the server checks
+its token with Cloudflare (siteverify) before a code is made or sent. A token works once (the page resets the widget
+after each ask). A missing or refused token gets 403 and no code; if Cloudflare cannot be asked, 503 and no code. The
+per-address and per-network limits below still apply. The admin portal never shows it.
+
+To switch it on:
+
+1. Cloudflare dashboard, **Turnstile**, **Add widget**: a name (e.g. "D2D Relay sign-in"), hostname
+   `d2d.pasdacs.com`, widget mode **Managed**, no pre-clearance. Create it and copy its two keys.
+2. In the live `.env`: `RELAY_TURNSTILE_SITE_KEY=` (public: it is sent to every browser) and `RELAY_TURNSTILE_SECRET=`
+   (secret: typed in by hand, never in commits).
+3. `docker compose up -d --no-deps --force-recreate web` (a plain `restart` keeps the old values). Both keys empty
+   switches it off the same way.
+
+The test stack runs with Cloudflare's published test keys (always pass: `1x00000000000000000000AA` and
+`1x0000000000000000000000000000000AA`); the suites send a token with every code they ask for (`d2d_checks.Person`).
+
 ## Sign-in alerts
 
 Every successful sign-in sends info@pasdacs.com an email (`app/signin_alerts.py`): who, their organisation (and

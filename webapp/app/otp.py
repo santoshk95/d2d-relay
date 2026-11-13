@@ -17,8 +17,13 @@ The code: 6 digits, valid 10 minutes, 5 tries, then it dies. One code a minute, 
 an hour per network. Only a salted hash is stored (in the platform's schema, whatever workspace the person belongs to). A
 session is made in the person's own workspace (their organisation's tenant), so the cookie carries it.
 
+A bot check before any code is sent (item 40, the user 2026-11-13: "bot check add back"; security audit S7, S13): with
+both Cloudflare Turnstile keys set (RELAY_TURNSTILE_SITE_KEY, RELAY_TURNSTILE_SECRET) the public site's sign-in page
+shows Turnstile's widget, and /auth/otp/start needs its token, checked with Cloudflare (siteverify) before a code is
+made or sent; a token works once. Without the keys nothing changes. If Cloudflare cannot be asked, no code is sent.
+
 The admin portal (portal.py, D2D_PORTAL=admin) uses the same codes for addresses at the admin domains (pasdacs.com)
-only. There is no "create your organisation" step there: a PASDACS address without an account joins the platform's
+only, without the bot check. There is no "create your organisation" step there: a PASDACS address without an account joins the platform's
 own workspace (PASDACS). Its sessions are of their own kind (portal.SESSION_KIND) and cookie (d2d_admin).
 """
 from __future__ import annotations
@@ -32,6 +37,7 @@ import threading
 import time
 import traceback
 
+import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -56,6 +62,38 @@ SIGNUP_TTL = 1800                       # after the code: time to name the new o
 SIGNUP_COOKIE = "d2d_signup"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _lock = threading.Lock()
+# Item 40: Cloudflare Turnstile on "Email me a code" (both keys, or off)
+TURNSTILE_SITE_KEY = (os.environ.get("D2D_TURNSTILE_SITE_KEY") or "").strip()
+TURNSTILE_SECRET = (os.environ.get("D2D_TURNSTILE_SECRET") or "").strip()
+TURNSTILE_VERIFY = (os.environ.get("D2D_TURNSTILE_VERIFY") or "https://challenges.cloudflare.com/turnstile/v0/siteverify").strip()
+TURNSTILE_ACTION = "otp-start"                      # the widget's action; a token made for another action is refused
+BOT_TEXT = "Please finish the check that shows you are a person, then ask for the code again."
+BOT_DOWN_TEXT = "The check that you are a person could not be confirmed just now. Try again in a minute."
+
+
+def turnstile_on() -> bool:
+    """The public site asks for Turnstile's token when both keys are set; the admin portal never does."""
+    return bool(TURNSTILE_SITE_KEY and TURNSTILE_SECRET) and not portal.ADMIN
+
+
+def _human(token: str, ip: str) -> bool | None:
+    """Cloudflare's answer for the widget's token: True (a person), False (refused), None (Cloudflare could not be
+    asked: no code is sent then either)."""
+    token = (token or "").strip()
+    if not token or len(token) > 2048:
+        return False
+    try:
+        r = httpx.post(TURNSTILE_VERIFY, data={"secret": TURNSTILE_SECRET, "response": token, **({"remoteip": ip} if ip else {})},
+                       timeout=10)
+        j = r.json()
+    except Exception:  # noqa: BLE001 - the reason goes to the log; the person is asked to try again
+        traceback.print_exc()
+        return None
+    if not isinstance(j, dict):
+        return None
+    if not j.get("success"):
+        return False
+    return not (j.get("action") and j["action"] != TURNSTILE_ACTION)
 
 db.register_schema("""-- D2D Relay: one-time sign-in codes (hash only) and the step after them for a new organisation
 CREATE TABLE IF NOT EXISTS otp_codes (
@@ -116,6 +154,7 @@ def _mail(to: str, code: str) -> None:
 
 class StartBody(BaseModel):
     email: str = ""
+    turnstile: str = ""                     # item 40: the Turnstile widget's token, when the bot check is on
 
 
 class VerifyBody(BaseModel):
@@ -142,6 +181,13 @@ def start(body: StartBody, request: Request):
         with db.use(db.PLATFORM):
             db.audit("auth.otp_refused", None, {"ip": _ip(request), "reason": "throw-away domain"}, "system")
         return _err(orgs.REFUSED_TEXT)
+    if turnstile_on():                               # item 40: a person, not a bot, before any code is made or sent
+        human = _human(body.turnstile, _ip(request))
+        if not human:
+            with db.use(db.PLATFORM):
+                db.audit("auth.otp_refused", None, {"ip": _ip(request), "reason": "bot check" if human is False else "bot check unreachable"},
+                         "system")
+            return _err(BOT_TEXT if human is False else BOT_DOWN_TEXT, 403 if human is False else 503)
     now, ip = time.time(), _ip(request)
     with _lock, db.use(db.PLATFORM):
         recent = db.q("SELECT created FROM otp_codes WHERE email = ? AND created > ? ORDER BY created DESC", (email, now - 3600))

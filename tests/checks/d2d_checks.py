@@ -31,6 +31,9 @@ DB_C = os.environ.get("D2D_TEST_DB", "d2d-relay-test-db")
 TESTS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))     # the repository's tests/ folder
 OUT = os.environ.get("D2D_TEST_OUT") or os.path.join(TESTS, "out")      # this run's logs and screenshots (git-ignored)
 _ips = (f"198.51.100.{n}" for n in itertools.count(10))
+# Item 40: every code a suite asks for carries a bot-check token (the stack's Cloudflare test keys pass any); a body
+# that names "turnstile" itself (item40_check.py) is sent as it is
+TURNSTILE_TOKEN = os.environ.get("D2D_TEST_TURNSTILE", "XXXX.DUMMY.TOKEN.XXXX")
 
 
 def out_path(name: str) -> str:
@@ -106,6 +109,8 @@ class Person:
         self.http = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
 
     def call(self, method: str, path: str, body=None, headers=None):
+        if path == "/auth/otp/start" and isinstance(body, dict) and "turnstile" not in body:
+            body = {**body, "turnstile": TURNSTILE_TOKEN}
         data = json.dumps(body).encode() if body is not None else None
         req = urllib.request.Request(self.base + path, data=data, method=method,
                                      headers={**({"Content-Type": "application/json"} if data else {}), **(headers or {})})

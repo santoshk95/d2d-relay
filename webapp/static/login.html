@@ -89,6 +89,7 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
       <button type="submit" id="codebtn">Sign in</button>
       <p class="fine"><a href="#" id="again">Send a new code</a> or <a href="#" id="other">use another address</a></p>
     </form>
+    <div id="botcheck" hidden></div>
     <form id="orgform" style="display:grid;gap:10px" hidden>
       <p class="muted" id="orglead"></p>
       <div><label for="orgname">Organisation name</label><input id="orgname" name="orgname" autocomplete="organization" maxlength="80" required></div>
@@ -127,12 +128,35 @@ async function post(url, body) {
   if (!r.ok) throw new Error(j.detail || 'Something went wrong. Try again.');
   return j;
 }
+/* item 40: Cloudflare Turnstile before a code is sent, when the site has its keys (never on the admin portal). Its
+   token works once, so the widget is reset after every ask. */
+const BOT = {key: '', id: null, token: ''};
+function botReset() {
+  BOT.token = '';
+  if (BOT.id !== null && window.turnstile) { try { turnstile.reset(BOT.id); } catch (e) { /* it renders again on reload */ } }
+}
+function botStart(key) {
+  BOT.key = key;
+  $('botcheck').hidden = false;
+  window.onBotLoad = () => {
+    BOT.id = turnstile.render('#botcheck', {sitekey: key, action: 'otp-start', theme: 'auto',
+      size: $('botcheck').clientWidth >= 300 ? 'flexible' : 'compact',
+      callback: t => { BOT.token = t; }, 'expired-callback': () => { BOT.token = ''; }, 'error-callback': () => { BOT.token = ''; }});
+  };
+  const s = document.createElement('script');
+  s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onBotLoad';
+  s.async = true;
+  s.onerror = () => show('error', 'The check that you are a person could not load. Check your connection, or allow challenges.cloudflare.com, and reload the page.');
+  document.head.appendChild(s);
+}
 async function ask() {
-  show('error'); show('note'); $('askbtn').disabled = true;
+  show('error'); show('note');
+  if (BOT.key && !BOT.token) return show('error', 'Please finish the check that shows you are a person, then ask for the code.');
+  $('askbtn').disabled = true;
   try {
-    const j = await post('/auth/otp/start', {email: $('email').value.trim()});
+    const j = await post('/auth/otp/start', {email: $('email').value.trim(), turnstile: BOT.token});
     show('note', j.message); $('askform').hidden = true; $('codeform').hidden = false; $('code').value = ''; $('code').focus();
-  } catch (e) { show('error', e.message); } finally { $('askbtn').disabled = false; }
+  } catch (e) { show('error', e.message); } finally { $('askbtn').disabled = false; botReset(); }
 }
 $('askform').addEventListener('submit', e => { e.preventDefault(); ask(); });
 $('codeform').addEventListener('submit', async e => {
@@ -147,7 +171,7 @@ $('codeform').addEventListener('submit', async e => {
 /* D2D Relay: the first person from a business domain creates its organisation (and owns it) */
 function orgStep(o) {
   show('note'); show('error');
-  $('askform').hidden = true; $('codeform').hidden = true; $('orgform').hidden = false;
+  $('askform').hidden = true; $('codeform').hidden = true; $('orgform').hidden = false; $('botcheck').hidden = true;
   $('signin').textContent = o.personal ? 'Create your workspace' : 'Create your organisation';
   $('lead').hidden = true;
   $('orglead').textContent = o.personal
@@ -173,7 +197,10 @@ $('orgform').addEventListener('submit', async e => {
 if (!ADMIN) fetch('/auth/otp/organisation', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : null).then(o => { if (o && o.domain) orgStep(o); }).catch(() => {});
 $('again').addEventListener('click', e => { e.preventDefault(); ask(); });
 $('other').addEventListener('click', e => { e.preventDefault(); show('note'); show('error'); $('codeform').hidden = true; $('askform').hidden = false; $('email').focus(); });
-fetch('/auth/providers').then(r => r.json()).then(cfg => { if (cfg.mode !== 'otp' && cfg.mode !== 'sso') location.replace('/'); }).catch(() => {});
+fetch('/auth/providers').then(r => r.json()).then(cfg => {
+  if (cfg.mode !== 'otp' && cfg.mode !== 'sso') return location.replace('/');
+  if (!ADMIN && cfg.turnstile && $('orgform').hidden) botStart(cfg.turnstile);
+}).catch(() => {});
 </script>
 </body>
 </html>

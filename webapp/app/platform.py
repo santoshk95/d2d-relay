@@ -62,6 +62,9 @@ def _to_login(message: str) -> RedirectResponse:
 @router.get("/auth/providers")
 def sign_in_options():
     out = {"mode": auth.MODE, "providers": identity.providers(public=True), "local": identity.local_enabled()}
+    if auth.MODE == "otp":                             # D2D Relay item 40: the bot check's public site key (or none)
+        from . import otp                              # late import (otp -> platform)
+        out["turnstile"] = otp.TURNSTILE_SITE_KEY if otp.turnstile_on() else ""
     t = auth.tenant_row(db.tenant())
     if t and t["kind"] != "platform":                  # P17: the workspace this sign-in page is for
         out["tenant"] = {"id": t["id"], "name": t["name"], "kind": t["kind"]}
