@@ -996,8 +996,16 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       `189ccac`; the sign-in, legal and health pages 200; `/`, `/index.html` and `/js/...` still 303 to sign in;
       `/og/d2d-relay.png` (1200 x 630, the committed file) and `/robots.txt` 200; LinkedIn's, Facebook's, X's and
       WhatsApp's preview bots get the new title and image; the five dot paths 404 through Cloudflare and on this PC;
-      the admin portal answers on this PC; no errors. `d2d-relay:334b493` kept for going back. Not pushed (GitHub
-      stays on `df65429`).
+      the admin portal answers on this PC; no errors. `d2d-relay:334b493` kept for going back. Not pushed then (GitHub
+      stayed on `df65429`); pushed on 2026-11-13.
+    - **Afterwards, on pasdacs.com and in the social pack** (the corporate repository; details in its
+      `docs/STATUS.md`): the D2D page `/platform/d2d/` (the user: "add a d2d static page in the corporate site under
+      platform relay as a sub project d2d", then "Yes publish, do a full test"; commit `14ed57a`, Worker version
+      `8750ac8d`, 2026-11-12 late evening; tested live, 42 of 42) and D2D's own band with its logo right under the
+      Platform page's hero (D2D needs "its own logo and section", then "Yes, publish"; commit `4371db7`, Worker version
+      `2b6c0556`, 2026-11-13 morning; tested live, 26 of 26). Neither shows prices, and their "Try D2D" buttons open
+      https://d2d.pasdacs.com/. The social pack (its own private repository) has had a Platform post, a Relay and a D2D
+      story, WhatsApp catalogue items 8 and 9 and their copy since 2026-11-13 (`8bbd128`; the user: "yeah add").
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1038,11 +1046,11 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-12, after item 38's deploy. **Live:** web, admin and the job runner run `d2d-relay:189ccac`
-(= latest, since 21:53 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
-info@pasdacs.com. This folder and the deploy folder are on this log entry; **GitHub** is still on `df65429` (item 37's
-log): item 38 is not pushed (items 34 to 37 and their logs were pushed after their deploys; every pushed commit
-scanned for the live `.env` and `tunnel.env` values and key patterns: none). **Going back** to item 37
+Updated 2026-11-13, at the clean-up before the user cleared the day's sessions. **Live:** web, admin and the job
+runner run `d2d-relay:189ccac` (= latest, since 2026-11-12 21:53 IST); the database container runs
+`d2d-relay:8689305`'s image; live holds only PASDACS and info@pasdacs.com (no sign-in code has gone out since). This
+folder, the deploy folder and **GitHub** are on this log entry: item 38 and its log were pushed on 2026-11-13 (every
+pushed commit scanned for the live `.env` and `tunnel.env` values and key patterns: none). **Going back** to item 37
 (`d2d-relay:334b493`, kept): in the deploy folder `git reset --keep df65429`, `docker tag d2d-relay:334b493
 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; to item 36 (`d2d-relay:53fb6ad`, kept)
 the same with `cec5ed2`; to item 35 (`d2d-relay:e05f035`, kept) with `8bbfd7e`; to item 34 (`d2d-relay:aa4531e`,
@@ -1055,6 +1063,20 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
 
 ### Before the public launch (the user)
 
+- **The Power BI file maker is stopped (2026-11-13).** Its process ended at 10:13 IST with no error in its heartbeat
+  (its queue was empty; the DAX checker kept running), and the watchdog raised `pbix_offline` at 10:24 IST. Until it
+  runs again, no dashboard can be published as a .pbix. Start it by double-clicking `pbix\start-pbix.cmd` in the
+  deploy folder, then check that `data\projects\.pbix\heartbeat.json` is fresh. Claude Code's auto mode refused to
+  start it ("Modify Shared Resources"), although host helpers were started that way before.
+- **Sign-in codes fail while Microsoft's mail is down (2026-11-13).** Microsoft Graph refused the last code asked for
+  (09:49 IST, on the admin portal) with 502 "UnknownError". The mailbox's own sign-in still worked, so the fault is
+  Microsoft's and clears by itself. The watchdog's alerts are sent the same way, so they may not arrive while it lasts.
+  If codes still fail later, look for MailError in `docker logs d2d-relay-web` and `d2d-relay-admin`; a refused token
+  means the mailbox signs in again (`python -m app.otp_mail login`). Sign-in stays email code only (Decided, below).
+- **The first trial organisation (2026-11-13)** has not signed in yet. When its first person signs in and names the
+  organisation, its starting-credit request waits for PASDACS: approve it on the admin portal's Requests, or ask
+  Claude to run `python -m app.orgs approve <request id>`. The trial guide (PowerPoint and PDF) is outside git, in
+  `Downloads\D2D Trial Guide`.
 - **The AI runs on a personal Claude plan** (audit P1). The AI engine signs in with a Claude subscription ("Ultra", no
   team seat), which Anthropic treats as a consumer plan: customers' data in it may be used to train models if the
   account's "Help improve Claude" setting is on (then kept up to 5 years; otherwise 30 days). **That setting is off
@@ -1151,6 +1173,8 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
 
 ### Decided (nothing to do)
 
+- **Sign-in stays email code only** (the user, 2026-11-13, during Microsoft's mail outage: "ignore it we will not
+  break the flow"): no one-time sign-in link or other way round the emailed code.
 - **The user's answers of 2026-11-12:** no refunds and no cancellations; disputes at the courts of Bengaluru,
   Karnataka; BitLocker skipped for now; overnight restarts handled by the user; no bot check on sign-in for now;
   owners see every dashboard with who made it (S8); deleting is immediate, after a warning (P5); the web app's
