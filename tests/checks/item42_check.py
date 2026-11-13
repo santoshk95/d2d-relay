@@ -65,9 +65,10 @@ for who in ("None", "u-item42-nobody"):
 
 print("\n== Ask Relay falls back once")
 r = as_json(in_app("""
-import asyncio, json
+import asyncio, json, time
 from app import askd, db, providers as p
 p.INSTALL_API_KEY = 'sk-ant-item42-not-a-real-key'
+t0 = time.time()                                   # this run's records only (a rerun on the same stack adds more)
 u = {'id': 'u-item42-asker'}
 calls = []
 def fake(script):
@@ -91,7 +92,7 @@ with db.use(db.PLATFORM):
             out[name] = {'provider': res.get('provider'), 'fallback': bool(res.get('fallback')), 'calls': list(calls)}
         except askd.AskError as e:
             out[name] = {'error': str(e)[:80], 'calls': list(calls)}
-    out['audits'] = db.one("SELECT count(*) AS n FROM audit WHERE action = 'ai.fallback' AND who = 'u-item42-asker'")['n']
+    out['audits'] = db.one("SELECT count(*) AS n FROM audit WHERE action = 'ai.fallback' AND who = 'u-item42-asker' AND ts >= ?", (t0,))['n']
 print(json.dumps(out))
 """))
 key, login = "Anthropic API (this installation's key)", "Claude (this installation's login)"
@@ -108,7 +109,7 @@ check("Ask Relay: each fallback leaves an ai.fallback record", r.get("audits") =
 
 print("\n== the AI engine never holds the key itself")
 pid = subprocess.run(["docker", "exec", c.WEB_C, "pgrep", "-u", "agent", "-o", "-f", "server"], capture_output=True, text=True).stdout.strip()
-env = subprocess.run(["docker", "exec", "-u", "root", c.WEB_C, "sh", "-c", f"tr '\\0' '\\n' < /proc/{pid}/environ | cut -d= -f1"],
+env = subprocess.run(["docker", "exec", "-u", "agent", c.WEB_C, "sh", "-c", f"tr '\\0' '\\n' < /proc/{pid}/environ | cut -d= -f1"],   # its own user: root may not read it
                      capture_output=True, text=True).stdout.split() if pid else []
 check("the AI engine's own environment has no Anthropic key, whatever the web app holds",
       bool(env) and not any(k in env for k in ("ANTHROPIC_API_KEY", "D2D_ANTHROPIC_API_KEY", "RELAY_ANTHROPIC_API_KEY")),
