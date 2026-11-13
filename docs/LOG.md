@@ -1048,6 +1048,32 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       branches at `622377c`, the pack's `main` at `678bf60`. Posts already published
       (the WhatsApp Business profile and catalogue, social posts) are the user's to edit.
 
+40. **A bot check before a sign-in code is emailed: Cloudflare Turnstile** (the user, 2026-11-13: "bot check add back",
+    once item 39 let anyone sign up; security audit S7, S13). Code `d1882f7`; release image `d2d-relay:d1882f7`, built
+    from the clean commit and tested; **live since 22:56 IST** the same day, on with the user's own Turnstile keys.
+    - **How** (`otp.py`, `login.html`; `docs/d2d-relay.md`, "Bot check"): with both keys set (`RELAY_TURNSTILE_SITE_KEY`,
+      `RELAY_TURNSTILE_SECRET`) the public sign-in page shows the widget under the form, and `/auth/otp/start` checks
+      its token with Cloudflare (siteverify, action `otp-start`) before a code is made or sent: no token or a refused
+      one, 403; Cloudflare out of reach, 503; no code either way, and the address's limits are not used up. A token
+      works once (the page resets the widget after each ask). Without the keys nothing changes; the admin portal never
+      asks. The privacy notice names the check under Cloudflare.
+    - **Tests** on `d2d-relay:d1882f7`: every suite, 846 checks with the starting-credit review on and 829 off, all
+      passing, with the bot check on throughout (the stack runs Cloudflare's published test keys, and
+      `d2d_checks.Person` sends a token with every code it asks for), and the new `item40_check.py` (21: the site key
+      on the public page only; no token, no code and no limit used; Cloudflare's no, Cloudflare out of reach and a
+      token for another action refused; the admin portal; the widget in Chromium at 320 and 1280 px). Upgrade from
+      `96ea48a`: 23 of 23.
+    - **The keys:** the user made the widget in Cloudflare (hostname d2d.pasdacs.com, Managed) and typed both keys into
+      the live `.env`; checked before the deploy: both lines well formed, and Cloudflare knows the secret.
+    - **Deployed at 22:56 IST** after the user's "Yes, deploy": live idle; deploy folder fast-forwarded to `d1882f7` (no
+      compose, `pbix\`, `daxcheck\`, `config\` or Docker change); `d2d-relay:d1882f7` tagged latest; web, admin and the
+      job runner restarted (down about 8 seconds). Checked on live: all three on `d1882f7`; the public sign-in page gets
+      the site key, the admin portal none; a code asked for without a token is refused (403, nothing sent); in
+      Chromium the live page shows Cloudflare's widget under the form at 1280 and 375 px (Turnstile's requests 200,
+      nothing sideways; a headless browser is asked to tick "Verify you are human", as a bot should be); payments
+      still live and selling on; no errors. `d2d-relay:96ea48a` kept for going back. The check alone off: empty both
+      keys in the live `.env`, then `docker compose up -d --no-deps --force-recreate web`.
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -1087,12 +1113,14 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-13 evening, after item 39's deploy. **Live:** web, admin and the job runner run `d2d-relay:96ea48a`
-(= latest, since 22:21 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
-info@pasdacs.com, and sells credits online with the live Razorpay keys (since 21:35 IST, "Selling credits online"
-below). This folder, the deploy folder and **GitHub** are on this log entry: item 39 and its logs were pushed the
-same evening, on the user's "Push all" (every pushed commit scanned for the live `.env`, `tunnel.env` and test-key
-values and for private details: none). **Going back** to item 38 (`d2d-relay:189ccac`, kept): in the deploy folder `git reset --keep c8d0f0f`,
+Updated 2026-11-13 late evening, after item 40's deploy. **Live:** web, admin and the job runner run
+`d2d-relay:d1882f7` (= latest, since 22:56 IST), with the Turnstile bot check on; the database container runs
+`d2d-relay:8689305`'s image; live holds only PASDACS and info@pasdacs.com, and sells credits online with the live
+Razorpay keys (since 21:35 IST, "Selling credits online" below). This folder and the deploy folder are on this log
+entry; **GitHub** is on `5fbd0a7` (item 40 and its log not pushed yet). **Going back** to item 39 (`d2d-relay:96ea48a`,
+kept): in the deploy folder `git reset --keep 5fbd0a7`, `docker tag d2d-relay:96ea48a d2d-relay:latest`, then
+`docker compose up -d --no-deps web admin runner` (the Turnstile lines in the `.env` are then ignored). **Going back**
+to item 38 (`d2d-relay:189ccac`, kept): in the deploy folder `git reset --keep c8d0f0f`,
 `docker tag d2d-relay:189ccac d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; the
 `personal` column stays (older code ignores it), but older code refuses free mail at sign-in, so anyone with a
 personal workspace is locked out until item 39 is back. **Going back** to item 37
@@ -1241,8 +1269,9 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   job run without the shared sign-in.
 - **S6, the rest:** the web app's own connections are not limited: the user's decision of 2026-11-12, to review later.
 - **A removed person cannot come back on their own** (item 32): their address is blocked until an owner unblocks it.
-- **Abuse:** Turnstile on "Send code" (S7, S13): the user chose not now (2026-11-12). New organisations wait for
-  PASDACS's review of their starting credits (item 27), and PASDACS gets an email for every sign-in (item 21).
+- **Abuse:** Turnstile on "Send code" (S7, S13): done in item 40 (2026-11-13, live with the user's keys), after the user
+  had chosen not now on 2026-11-12. New organisations wait for PASDACS's review of their starting credits (item 27),
+  and PASDACS gets an email for every sign-in (item 21).
 - **Never run on the test stacks:** a real Razorpay checkout and real email delivery (Razorpay's real test mode is
   checked by hand with `rzp_real_check.py` and `rzp_real_ui.py`: last on 2026-11-13). Since item 34 the end-to-end
   run covers real Claude, Power BI's engine (the DAX check) and the Power BI file maker, on the test stack's own copies

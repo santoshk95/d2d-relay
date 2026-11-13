@@ -77,7 +77,8 @@ already running, `bash tests/run_all.sh <output name>` runs the suites alone.
 | `item37_check.py`: a sunburst's labels on thin slices: none on another, each inside its own slice | 10 |
 | `item38_check.py`: share tags and image, robots.txt, no `./` or `../` past the sign-in check | 41 |
 | `item39_check.py`: personal workspaces for free mail (Gmail ...), throw-away mail refused, the Organisation page | 37 |
-| **All, for item 39** (788 / 771 for 189ccac, 747 / 730 for 334b493, 737 / 720 for 53fb6ad, 685 / 668 for 54f6ed7) | **825 / 808** |
+| `item40_check.py`: the Turnstile bot check before a code (the stack runs Cloudflare's test keys; every suite sends a token) | 21 |
+| **All, for item 40** (825 / 808 for 96ea48a, 788 / 771 for 189ccac, 747 / 730 for 334b493, 685 / 668 for 54f6ed7) | **846 / 829** |
 
 One suite by hand, with the stack running:
 
