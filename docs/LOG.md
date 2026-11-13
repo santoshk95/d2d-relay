@@ -1038,13 +1038,14 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       sign-in page, terms and privacy notice new; a throw-away address refused with the new message; the `personal`
       column there (PASDACS 0); payments still live and selling on; the webhook and the admin portal answer; no
       errors. No personal sign-up was tried on live (it would email a real address). `d2d-relay:189ccac` kept for
-      going back. Not pushed.
+      going back. Pushed the same evening ("Push all").
     - **pasdacs.com and the social pack** (the user's "Update and publish", the same evening; details in the corporate
       repository's `docs/STATUS.md`): the D2D page's sign-in, credits and closing lines and the Platform band's line
       say anyone with an email address (commit `668d763`, Worker version `6cfdc583`, 22:31 IST; tested live: the new
       lines and none of the old, the pages' code chunks identical to the build, the 13 sitemap URLs 200, nothing
       sideways at 320 to 1440 px; IndexNow accepted 13 URLs). The social pack was regenerated from it (`678bf60`:
-      the Platform posts, the D2D stories, the WhatsApp status and the copy). Not pushed. Posts already published
+      the Platform posts, the D2D stories, the WhatsApp status and the copy). Pushed the same evening: both site
+      branches at `622377c`, the pack's `main` at `678bf60`. Posts already published
       (the WhatsApp Business profile and catalogue, social posts) are the user's to edit.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
@@ -1089,8 +1090,9 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 Updated 2026-11-13 evening, after item 39's deploy. **Live:** web, admin and the job runner run `d2d-relay:96ea48a`
 (= latest, since 22:21 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
 info@pasdacs.com, and sells credits online with the live Razorpay keys (since 21:35 IST, "Selling credits online"
-below). This folder and the deploy folder are on this log entry; **GitHub** is on `c8d0f0f` (item 39 and its log not
-pushed yet). **Going back** to item 38 (`d2d-relay:189ccac`, kept): in the deploy folder `git reset --keep c8d0f0f`,
+below). This folder, the deploy folder and **GitHub** are on this log entry: item 39 and its logs were pushed the
+same evening, on the user's "Push all" (every pushed commit scanned for the live `.env`, `tunnel.env` and test-key
+values and for private details: none). **Going back** to item 38 (`d2d-relay:189ccac`, kept): in the deploy folder `git reset --keep c8d0f0f`,
 `docker tag d2d-relay:189ccac d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; the
 `personal` column stays (older code ignores it), but older code refuses free mail at sign-in, so anyone with a
 personal workspace is locked out until item 39 is back. **Going back** to item 37
