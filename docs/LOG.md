@@ -1072,7 +1072,8 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       Chromium the live page shows Cloudflare's widget under the form at 1280 and 375 px (Turnstile's requests 200,
       nothing sideways; a headless browser is asked to tick "Verify you are human", as a bot should be); payments
       still live and selling on; no errors. `d2d-relay:96ea48a` kept for going back. The check alone off: empty both
-      keys in the live `.env`, then `docker compose up -d --no-deps --force-recreate web`.
+      keys in the live `.env`, then `docker compose up -d --no-deps --force-recreate web`. The user tried it in a
+      private window the same night: the check passed on its own (no click), and the code came.
 
 41. **A clean, minimal sign-in page** (the user, 2026-11-13: "too much wordings, make it clean and minimal and
     professional"). Code `2686fc4` (+ `f981608`, a test's wording); release image `d2d-relay:2686fc4`, built from the
@@ -1095,6 +1096,37 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       two lines; the small print's links now stay whole (`.fine a`). Tested 847 of 847 (review on); **live since 23:27
       IST** (`d2d-relay:baf70e5`; `2686fc4` kept), checked: the rule served, "Need help?" whole on its own line at 1280
       px, the widget at 1280 and 375 px, the bot check refusing a request without a token, payments live, no errors.
+
+42. **The AI on PASDACS's Anthropic API key first, the Claude subscription as its backup** (the user, 2026-11-13: "i
+    have claude api key, how to enable it as primary and personal as backup"; audit P1). Code `01559b6` (+ `6592bb6`,
+    the new test's fix); release image `d2d-relay:01559b6`, built from the clean commit and tested; **live since 23:49
+    IST** the same day, with the user's key.
+    - **How** (`providers.py`, `askd.py`; `docs/d2d-relay.md`, "The AI's Claude account"): with
+      `RELAY_ANTHROPIC_API_KEY` in the live `.env`, every AI run whose owner has no provider of their own goes to
+      Anthropic with the key, given to that run only. When the key is refused, out of credit or rate-limited, or
+      Anthropic is down, the run is tried once more on the AI engine's own Claude sign-in, with an `ai.fallback`
+      record. Dashboards and changes already fell back this way; Ask Relay now does too. Each run records which one
+      answered. Never name the line `ANTHROPIC_API_KEY`: the AI engine would then hold the key itself and use it for
+      every run, so the backup could never answer. Without the line nothing changes.
+    - **Tests** on `d2d-relay:01559b6`, review on: 858 of 858. The first run had 857: the new `item42_check` read the
+      AI engine's environment as root, which may not read it; it now reads it as the engine's own user and counts only
+      its own run's fallback records (`6592bb6`), 11 of 11 on the same stack. The provider does not touch the
+      starting-credit review, so no review-off run. With real Claude on the test stack (live's sign-in volume, the
+      user's key for that run only): the key answered, a deliberately wrong key fell back to the sign-in, which
+      answered, and one fallback record; both answers forgotten, the test's folder removed from the volume, and the
+      stack's `.env` (which held the key) deleted. When the first try fails, Ask Relay cannot forget that try's
+      transcript (its session is not known); the nightly sweep removes it after 7 days.
+    - **The key:** the user typed it into the live `.env`. Checked before the deploy: one well-formed
+      `RELAY_ANTHROPIC_API_KEY` line, no plain `ANTHROPIC_API_KEY`, and Anthropic accepts the key (a model list, no
+      cost).
+    - **Deployed at 23:49 IST** after the user's "Key added, deploy": live idle (no job, no project, the AI engine not
+      busy); deploy folder fast-forwarded to `6592bb6` (no compose, `pbix\`, `daxcheck\`, `config\` or Docker change);
+      `d2d-relay:01559b6` tagged latest; web, admin and the job runner recreated (down about 8 seconds). Checked on
+      live, with no AI call: all three on `01559b6`; in web and admin a run's main provider is "Anthropic API (this
+      installation's key)" and its backup "Claude (this installation's login)"; the AI engine's own environment and
+      the job runner hold no Anthropic key; health and the sign-in page 200; the bot check still refuses a request
+      without a token; payments live and selling on; no errors. `d2d-relay:baf70e5` kept for going back. The key alone
+      off: empty the line in the live `.env`, then `docker compose up -d --no-deps --force-recreate web admin`.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1135,13 +1167,16 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-13 night, after item 41's follow-up. **Live:** web, admin and the job runner run `d2d-relay:baf70e5`
-(= latest, since 23:27 IST), with the Turnstile bot check on; the database container runs `d2d-relay:8689305`'s
-image; live holds only PASDACS and info@pasdacs.com, and sells credits online with the live Razorpay keys (since 21:35
-IST, "Selling credits online" below). This folder, the deploy folder and **GitHub** are on this log entry: pushed with
-it, on the user's "fix need help wrap and deploy and anything pending" (scanned first: nothing secret or private).
-**Going back** to item 41 as first deployed (`d2d-relay:2686fc4`, kept): `docker tag d2d-relay:2686fc4
-d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (only the small print's wrapping differs).
+Updated 2026-11-13 night, after item 42. **Live:** web, admin and the job runner run `d2d-relay:01559b6` (= latest,
+since 23:49 IST), with the Turnstile bot check on and the AI on PASDACS's Anthropic API key first, the Claude
+subscription as its backup (item 42); the database container runs `d2d-relay:8689305`'s image; live holds only
+PASDACS and info@pasdacs.com, and sells credits online with the live Razorpay keys (since 21:35 IST, "Selling credits
+online" below). This folder and the deploy folder are on this log entry; **GitHub** stays on item 41's (`d63c052`)
+until the user says push. **Going back** to item 41 (`d2d-relay:baf70e5`, kept): in the deploy folder `git reset
+--keep d63c052`, `docker tag d2d-relay:baf70e5 d2d-relay:latest`, then `docker compose up -d --no-deps web admin
+runner` (older code ignores `RELAY_ANTHROPIC_API_KEY`: every run on the subscription again). **Going back** to item 41
+as first deployed (`d2d-relay:2686fc4`, kept): the same with `docker tag d2d-relay:2686fc4 d2d-relay:latest` (only
+the small print's wrapping differs from `baf70e5`).
 **Going back** to item 40 (`d2d-relay:d1882f7`, kept): in the deploy
 folder `git reset --keep 93e2a8a`, `docker tag d2d-relay:d1882f7 d2d-relay:latest`, then `docker compose up -d
 --no-deps web admin runner`. **Going back** to item 39 (`d2d-relay:96ea48a`,
@@ -1183,12 +1218,15 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   organisation, its starting-credit request waits for PASDACS: approve it on the admin portal's Requests, or ask
   Claude to run `python -m app.orgs approve <request id>`. The trial guide (PowerPoint and PDF) is outside git, in
   `Downloads\D2D Trial Guide`.
-- **The AI runs on a personal Claude plan** (audit P1). The AI engine signs in with a Claude subscription ("Ultra", no
-  team seat), which Anthropic treats as a consumer plan: customers' data in it may be used to train models if the
-  account's "Help improve Claude" setting is on (then kept up to 5 years; otherwise 30 days). **That setting is off
-  since 2026-11-12 (the user).** For customers' data, still recommended: an Anthropic API key (commercial terms: not used
-  for training, a data processing addendum; D2D Relay supports it, provider `anthropic_api`) or a Team or Enterprise
-  plan. The privacy notice says Anthropic handles the data, and nothing about training until then.
+- **The AI's Claude plan** (audit P1): **mitigated since item 42 (2026-11-13, 23:49 IST).** Runs go to Anthropic with
+  PASDACS's API key (commercial terms: not used for training, a data processing addendum). The AI engine's Claude
+  subscription ("Ultra", no team seat, which Anthropic treats as a consumer plan) is now only the backup: it answers a
+  run only when the key fails (refused, out of credit, rate-limited, Anthropic down), and each such run leaves an
+  `ai.fallback` record. On it, customers' data may be used to train models if the account's "Help improve Claude"
+  setting is on (then kept up to 5 years; otherwise 30 days). **That setting is off since 2026-11-12 (the user).**
+  Still the user's: a monthly spend limit on the key in the Anthropic Console, if not set yet (the API bills per token;
+  `docs/d2d-relay.md`, "The AI's Claude account"); a Team or Enterprise plan would put the backup under commercial
+  terms too. The privacy notice says Anthropic handles the data, and nothing about training.
 - **Terms and policies** (P2, P4): published on 2026-11-12 (item 30): terms of service, refund and cancellation
   (none), contact. Still: a lawyer's review of them and of the privacy notice (check "PASDACS's own server in India",
   name a grievance officer if wanted); PASDACS's registered address and phone on the contact page (Razorpay's website
@@ -1214,7 +1252,8 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
 - **Social media and ads** (item 38's check, 2026-11-12; item 39, 2026-11-13). Since item 39 anyone can sign up: a
   work email joins its company's organisation (whose starting credits wait for PASDACS's review), a personal address
   (Gmail, Outlook, Yahoo ...) gets a personal workspace that buys its credits; throw-away inboxes stay refused.
-  pasdacs.com and the social pack say so since the same evening. New organisations wait for PASDACS's review, and the
+  pasdacs.com and the social pack say so since the same evening; nothing has been posted yet (the user, 2026-11-13),
+  so nothing published needs changing. New organisations wait for PASDACS's review, and the
   admin portal works only on this PC until the Cloudflare Access step above. Neither site counts visitors (D2D
   Relay's privacy notice promises no tracking cookies): use UTM-tagged links and the ad platforms' own counts, and
   change the notice before adding any pixel or tag. LinkedIn and Meta lead-form ads ask for a privacy policy link;
@@ -1238,7 +1277,8 @@ included, sees Request credits only; the webhook secret stays, so the webhook st
    SAC code from the accountant, the setting suggests 998314; the LUT's ARN if one is filed for 2026-27, else dollar
    sales carry IGST, included in the price), and GST 18% added on top (the user's decision of 2026-11-11, "₹100 + 18%
    GST": 25 credits ₹2,500 + ₹450 GST = ₹2,950; dollar prices abroad unchanged). Live keys cannot sell before the
-   invoice details are complete. Then switch Sell credits online on.
+   invoice details are complete. Then switch Sell credits online on. **The LUT** (the user, 2026-11-13): filed once
+   revenue passes about ₹2 lakh; until then dollar sales carry IGST inside the price. Then add its ARN on Payments.
 5. For buyers abroad: International payments in the Razorpay Dashboard (Account & Settings; Razorpay reviews it).
    Until then only Indian cards go through, though people abroad see dollar prices ($1 a credit; ₹100 in India).
 6. Razorpay takes live payments only from websites registered on the account: **done on 2026-11-13.**
@@ -1268,7 +1308,7 @@ lines in the live `.env` and recreate web and admin the same way (payments go "o
 **Selling online since 2026-11-13 21:35 IST (step 4 done).** The user signed in to the admin portal in the app's
 browser and Claude filled in Payments from PASDACS's GST registration certificate (REG-06, sent by the user): the legal
 name, the principal place of business, Karnataka (from the GSTIN), the PIN and the GSTIN; SAC 998314 (the portal's
-suggestion, for the accountant to confirm; changing it later changes only later invoices); invoices `D2D/26-27/00001`
+suggestion; **confirmed by the user the same night**); invoices `D2D/26-27/00001`
 on. GST 18% added on top: 25 credits ₹2,950, 50 ₹5,900, 100 ₹11,800, 250 ₹29,500, 500 ₹59,000; abroad $25 to $500.
 The packs and "owners can buy" are unchanged. Saved at 21:34 with selling off, then switched on at 21:35 after the
 user's "Switch it on". No LUT for 2026-27 yet (the user files it later, "its ok for dollar"): until its ARN is set,
@@ -1330,9 +1370,12 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
 ### Decided (nothing to do)
 
 - **Sign-in stays email code only** (the user, 2026-11-13, during Microsoft's mail outage: "ignore it we will not
-  break the flow"): no one-time sign-in link or other way round the emailed code.
+  break the flow"): no one-time sign-in link or other way round the emailed code. **No password sign-in either** (the
+  user, 2026-11-13 night: "password sign in not required remove it"; the idea came up when Razorpay's website check
+  asked for a test login, and Razorpay verified the site without one).
 - **The user's answers of 2026-11-12:** no refunds and no cancellations; disputes at the courts of Bengaluru,
-  Karnataka; BitLocker skipped for now; overnight restarts handled by the user; no bot check on sign-in for now;
+  Karnataka; BitLocker skipped for now; overnight restarts handled by the user; no bot check on sign-in for now (item
+  40 added one on 2026-11-13, once anyone could sign up);
   owners see every dashboard with who made it (S8); deleting is immediate, after a warning (P5); the web app's
   outbound traffic is not limited for now (S6).
 

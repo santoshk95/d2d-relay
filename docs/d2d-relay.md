@@ -530,7 +530,7 @@ nightly sweep). Each person's own payments are in Download my data.
 ## The AI's Claude account
 
 The AI engine runs Claude Code. Without an API key it uses the Claude subscription it is signed in with (the
-`claude-api-auth` volume; `docs/LOG.md`, "The AI runs on a personal Claude plan"). Since item 42 (the user,
+`claude-api-auth` volume; `docs/LOG.md`, "The AI's Claude plan"). Since item 42 (the user,
 2026-11-13: "claude api key ... as primary and personal as backup"), `RELAY_ANTHROPIC_API_KEY` in the live `.env`
 makes an Anthropic API key the main provider for every dashboard, change and Ask Relay question
 (`app/providers.py`): each run gets the key as its own `ANTHROPIC_API_KEY`, and when the API fails with an

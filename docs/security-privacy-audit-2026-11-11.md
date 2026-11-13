@@ -55,7 +55,7 @@ not committed**.
 | S15 | Low | 124 leftover and current routes are reachable (129 before S9); several belong to RELAY, not D2D Relay | Fixed (item 30): RELAY's leftovers off, 111 reachable |
 | S16 | Low | Build supply chain: floating dev dependencies, a CLI checked against its own manifest | Fixed (item 30: the kit's lockfile, `npm ci`) |
 | S17 | Low | A warehouse sign-in started by one person can be finished in another person's browser | Fixed (item 30) |
-| P1 | High | Customers' data goes through a personal Claude plan | Training switched off (the user, 2026-11-12); an API key or Team plan still recommended |
+| P1 | High | Customers' data goes through a personal Claude plan | Mitigated, live (item 42, 2026-11-13): an Anthropic API key runs first, the plan only as its backup; training switched off (the user, 2026-11-12) |
 | P2 | High | No terms of service, refund and cancellation policy, contact page or data processing agreement | Terms, refund and cancellation, contact published (item 30); DPA on request; legal review open |
 | P3 | High | Disk not encrypted; backups on the same disk; live secrets in a user's Downloads folder | BitLocker skipped for now (the user, 2026-11-12); old backups deleted; open |
 | P4 | Medium | The privacy notice is written for India; dollar prices invite customers from the EU and UK | Two corrections made; legal review open |
@@ -282,7 +282,12 @@ Microsoft mail and GitHub callbacks check their state the same way; their featur
 
 ## Data governance and privacy
 
-### P1 High - customers' data on a personal Claude plan (open: the user's decision)
+### P1 High - customers' data on a personal Claude plan (mitigated: an API key first, item 42)
+
+**Since 2026-11-13 (work log item 42, live at 23:49 IST):** runs go to Anthropic with PASDACS's API key under the
+Commercial Terms. The subscription answers a run only when the key fails (refused, out of credit, rate-limited,
+Anthropic down), and each such run leaves an `ai.fallback` record, so only those runs still go through the consumer
+plan. A spend limit on the key in the Anthropic Console is the user's to set. The finding as written on 2026-11-11:
 
 Already in `LOG.md` ("Still open"). The AI engine signs in with a consumer Claude subscription, so customers' uploads,
 samples and questions are processed under consumer terms: they may be used for training if "Help improve Claude" is

@@ -77,8 +77,9 @@ already running, `bash tests/run_all.sh <output name>` runs the suites alone.
 | `item37_check.py`: a sunburst's labels on thin slices: none on another, each inside its own slice | 10 |
 | `item38_check.py`: share tags and image, robots.txt, no `./` or `../` past the sign-in check | 41 |
 | `item39_check.py`: personal workspaces for free mail (Gmail ...), throw-away mail refused, the Organisation page | 37 |
-| `item40_check.py`: the Turnstile bot check before a code (the stack runs Cloudflare's test keys; every suite sends a token) | 21 |
-| **All, for item 40** (825 / 808 for 96ea48a, 788 / 771 for 189ccac, 747 / 730 for 334b493, 685 / 668 for 54f6ed7) | **846 / 829** |
+| `item40_check.py`: the Turnstile bot check before a code (the stack runs Cloudflare's test keys; every suite sends a token), Resend code since item 41 | 22 |
+| `item42_check.py`: the installation's API key first, its Claude sign-in as the backup, Ask Relay's fallback, no key in the AI engine | 11 |
+| **All, for item 42** (847 for baf70e5 and 2686fc4; 846 / 829 for d1882f7, 825 / 808 for 96ea48a, 788 / 771 for 189ccac, 747 / 730 for 334b493, 685 / 668 for 54f6ed7) | **858** / not run |
 
 One suite by hand, with the stack running:
 
@@ -127,6 +128,11 @@ The test stack can mount live's Claude sign-in, the volume `claude-api-auth`, fo
 never deletes the volume, not even with `down -v`. stack.sh refuses any other volume that is not external, and writes
 both settings to `stack/.env`, so the teardown in `tests/stack` keeps them. Set both on every command that names the
 stack anywhere else. Never copy the sign-in (`.credentials.json`): a refresh in a copy could rotate the token live uses.
+
+An Anthropic API key first (item 42): `TEST_ANTHROPIC_API_KEY=<key>` gives the stack's web and admin
+`RELAY_ANTHROPIC_API_KEY`, so runs go to the key and fall back to the mounted sign-in. stack.sh writes it to
+`stack/.env` with the other settings (ignored by git): delete that file after the teardown. Run the suites without
+it: `item42_check.py` checks the no-key default and sets a fake key of its own.
 
 End to end, as a customer would, needs this PC's DAX checker and Power BI file maker too: `stack/helpers.ps1` starts
 the repository's copies on the test stack's own queues (and a data folder of their own, `C:\D2D Relay Test`), never
