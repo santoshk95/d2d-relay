@@ -39,9 +39,18 @@ def seen(request: Request) -> dict:
 
 def sign_in(tid: str, uid: str, kind: str, request: Request) -> None:
     """Called once a session exists. Never raises; the email is sent from a background thread. A new organisation
-    whose starting credits PASDACS reviews gets no alert: its review email (orgs.py) says the same, and more."""
-    if not ENABLED or not TO or (kind == "created" and orgs.reviews_new()):
+    whose starting credits PASDACS reviews gets no alert: its review email (orgs.py) says the same, and more. A new
+    personal workspace (item 39) has nothing to review, so its alert is how PASDACS hears of it."""
+    if not ENABLED or not TO:
         return
+    if kind == "created" and orgs.reviews_new():
+        try:
+            with db.use(db.PLATFORM):
+                personal = orgs.is_personal(orgs.row(tid))
+        except Exception:  # noqa: BLE001 - an alert never stops a sign-in
+            personal = False
+        if not personal:
+            return
     try:
         threading.Thread(target=_send, args=(tid, uid, kind, seen(request)), daemon=True, name="signin-alert").start()
     except Exception:  # noqa: BLE001 - an alert never stops a sign-in
@@ -58,7 +67,10 @@ def _send(tid: str, uid: str, kind: str, seen: dict) -> None:
             codes = db.one("SELECT count(*) AS n FROM otp_codes WHERE ip = ? AND created > ?",
                            (seen["ip"], seen["at"] - 3600))["n"] if seen["ip"] else 0
         email, org = u.get("email") or "?", o.get("name") or tid
-        if kind == "created":
+        personal = orgs.is_personal(o)
+        if kind == "created" and personal:
+            subject = f"D2D Relay: new personal account {email}"
+        elif kind == "created":
             subject = f"D2D Relay: new organisation {org} ({email})"
         elif kind == "joined":
             subject = f"D2D Relay: {email} joined {org}"
@@ -68,8 +80,9 @@ def _send(tid: str, uid: str, kind: str, seen: dict) -> None:
             subject = f"D2D Relay sign-in: {email} ({org})"
         when = datetime.fromtimestamp(seen["at"], IST).strftime("%Y-%m-%d %H:%M:%S IST")
         rows = [("Who", f"{u.get('name') or ''} <{email}>"),
-                ("Organisation", f"{org} (@{o.get('domain') or '?'})" + (" - the platform's own" if tid == db.PLATFORM else "")),
-                ("What", KINDS.get(kind, kind)),
+                ("Organisation", f"{org} ({orgs.where(o) if o else '?'})" + (" - the platform's own" if tid == db.PLATFORM else "")),
+                ("What", "created a personal workspace (no starting credits; it buys online)" if kind == "created" and personal
+                 else KINDS.get(kind, kind)),
                 ("Role", "owner" if u.get("org_role") == "admin" else "member"),
                 ("First sign-in", "yes" if sessions <= 1 else f"no ({sessions} sessions on record)"),
                 ("When", when), ("Where", seen["site"]),

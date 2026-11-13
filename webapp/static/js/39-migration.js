@@ -55,7 +55,7 @@ function migrationDialog() {
   const label = side => BI_TOOLS.filter(([k]) => picked[side].has(k)).map(([, n]) => n).join(', ') || '...';
   const mailto = () => {
     const body = `Hello PASDACS,\n\nWe would like to move our dashboards with Migration D2D.\n\nFrom: ${label('source')}\nTo: ${label('target')}\n`
-      + (count.value ? `Dashboards, roughly: ${count.value}\n` : '') + `Organisation: ${org}${o.domain ? ` (@${o.domain})` : ''}\n`
+      + (count.value ? `Dashboards, roughly: ${count.value}\n` : '') + `Organisation: ${org}${o.domain ? ` (${orgWhere(o)})` : ''}\n`
       + `Requested by: ${me.name || ''} <${me.email || ''}>\n` + (msg.value.trim() ? `\n${msg.value.trim()}\n` : '');
     return `mailto:${contact}?subject=${encodeURIComponent(`D2D Relay: Migration D2D for ${org}`)}&body=${encodeURIComponent(body)}`;
   };

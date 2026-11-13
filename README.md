@@ -2,7 +2,8 @@
 
 D2D means **Data to Decision**: D2D Relay is a product of the **Relay Platform** by PASDACS.
 
-D2D Relay turns a company's CSV files into a checked Power BI dashboard. A person signs in with their work email,
+D2D Relay turns a company's CSV files into a checked Power BI dashboard. A person signs in with their email (a work
+address joins their company's organisation; a personal one gets a workspace of its own that buys its credits),
 uploads CSV files and describes the dashboard they need. D2D Relay plans it, agrees the KPIs with them, builds a
 clickable prototype, checks every version (Power BI's own engine included) and hands over a Power BI file (.pbix)
 with its data.

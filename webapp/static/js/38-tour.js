@@ -44,9 +44,10 @@ function renderTour() {
     o.id ? h('div', {class: 'card'}, h('h3', {}, o.is_owner ? `${o.name} is ready` : `You joined ${o.name}`),
       h('dl', {class: 'kv small'},
         h('dt', {}, 'Owner'), h('dd', {}, o.is_owner ? `you (${(S.me || {}).email || ''})` : (o.owner ? o.owner.name : '-')),
-        h('dt', {}, 'Who joins'), h('dd', {}, `everyone who signs in with an @${o.domain} address`),
+        h('dt', {}, 'Who joins'), h('dd', {}, isPersonal(o) ? 'only you: this is a personal workspace' : `everyone who signs in with an @${o.domain} address`),
         h('dt', {}, 'Credits'), h('dd', {}, o.credits ? `${credits(o.credits)} left`
           : isStart(o.pending_request) ? `none yet: PASDACS is reviewing ${o.name} and adds ${credits(o.pending_request.credits)} to start when it approves (you get an email)`
+          : isPersonal(o) ? 'none yet: buy them online with Buy credits'
           : 'none yet: ask for them with Request credits'))) : null];
 
   const brand = () => {
@@ -89,6 +90,7 @@ function renderTour() {
       o.pending_request ? h('p', {class: 'small muted', style: 'margin:4px 0'}, isStart(o.pending_request)
         ? `PASDACS is reviewing ${o.name}: you get an email when your starting credits are added.`
         : `${credits(o.pending_request.credits)} asked for, waiting for PASDACS.`)
+        : isPersonal(o) ? ((o.pay || {}).on ? h('button', {class: 'btn sm', type: 'button', onclick: () => buyDialog()}, icon('coin'), 'Buy credits') : null)
         : h('button', {class: 'btn sm', type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits')) : null,
     h('div', {class: 'card'}, h('h3', {}, 'Moving from another BI tool?'),
       h('p', {class: 'small muted', style: 'margin:4px 0'}, 'Migration D2D moves dashboards between Cognos, Qlik, Looker, Tableau, Power BI and more. Ask PASDACS to switch it on for you.'),

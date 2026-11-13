@@ -3,9 +3,14 @@
 An organisation is a P17 tenant of its own (a client under the platform, docs/P17-tenancy.md): its own database schema
 and folders, so its dashboards, connections, branding, Ask Relay conversations and notifications are never seen by
 another organisation. People are matched to it by their email domain (otp.py): the first person from a business domain
-creates it and is its owner (the tenant's admin); everyone after them from that domain joins it as a BI Dev. Public and
-disposable mail domains (public_domains.py) cannot sign in at all. The platform's own workspace (PASDACS, where the
-platform admin works) is an organisation too, for the platform admin's domain.
+creates it and is its owner (the tenant's admin); everyone after them from that domain joins it as a BI Dev. The
+platform's own workspace (PASDACS, where the platform admin works) is an organisation too, for the platform admin's domain.
+
+Personal workspaces (item 39, the user 2026-11-13: "allow gmail and all emails but no credits and request credit
+options, they can only buy online"): an address at a free mail domain (Gmail, Outlook, Yahoo ...: public_domains.is_free)
+gets an organisation of its own, personal = 1, whose `domain` is the full address (so nobody else ever matches it). It
+holds that one person only (no Add people), starts with no credits (no starting-credit request) and cannot use Request
+credits: it buys online (payments.py). A platform admin can still add credits by hand. Disposable mail cannot sign in.
 
 Credits are pooled per organisation (relay.tn_orgs.credits); every change is a row in relay.tn_credits:
   start   the starting credits (D2D_CREDITS_START, 50)
@@ -60,6 +65,7 @@ from . import auth, db, edition, notify, portal, public_domains
 
 router = APIRouter()
 db.register_control_columns("tn_orgs", {"connectors": "TEXT NOT NULL DEFAULT '[]'"})   # the connectors switched on
+db.register_control_columns("tn_orgs", {"personal": "INTEGER NOT NULL DEFAULT 0"})       # item 39: one free-mail address
 # what a credit request is for: 'start' (a new organisation's starting credits, made at sign-up) or 'more' (asked for)
 db.register_control_columns("tn_credit_requests", {"purpose": "TEXT NOT NULL DEFAULT 'more'"})
 
@@ -109,6 +115,41 @@ def public(email_or_domain: str) -> bool:
     if "@" in v and v == PLATFORM_EMAIL:
         return False
     return public_domains.is_public(domain_of(v))
+
+
+REFUSED_TEXT = ("Use an email address you keep: throw-away inboxes (Mailinator, temp mail and the like) cannot be used "
+                "for D2D Relay.")
+PERSONAL_PEOPLE_TEXT = ("A personal workspace is just you. To work with colleagues, sign in with your work email: your "
+                        "company gets an organisation of its own.")
+PERSONAL_REQUEST_TEXT = "Personal workspaces buy credits online: use Buy credits."
+
+
+def refused(email: str) -> bool:
+    """A disposable (throw-away) mail address: it cannot sign in at all (never the platform admin's own address)."""
+    v = (email or "").strip().lower()
+    if "@" in v and v == PLATFORM_EMAIL:
+        return False
+    return public_domains.is_disposable(domain_of(v))
+
+
+def personal_address(email: str) -> bool:
+    """A free mail address (Gmail, Outlook, Yahoo ...): a personal workspace of its own, never an organisation by
+    domain (item 39). Never the platform admin's own address."""
+    v = (email or "").strip().lower()
+    if "@" in v and v == PLATFORM_EMAIL:
+        return False
+    return public_domains.is_free(domain_of(v))
+
+
+def is_personal(o: dict | None) -> bool:
+    return bool(o) and bool(o.get("personal"))
+
+
+def where(o: dict | None) -> str:
+    """How an organisation is shown next to its name: @its domain, or the address of a personal workspace."""
+    if not o:
+        return "?"
+    return f"personal, {o['domain']}" if is_personal(o) else f"@{o['domain']}"
 
 
 def suggested_name(domain: str) -> str:
@@ -177,28 +218,33 @@ def init() -> None:
 def create(name: str, email: str, person: str, seen: dict | None = None) -> tuple[str, str]:
     """A new organisation for a new business domain: its tenant (schema, folders), its owner (the tenant's admin and a
     BI Dev in its Default team) and its starting credits, or (reviews_new) its request for them, which PASDACS is
-    emailed to review. seen: where the sign-up came from (signin_alerts.seen). Returns (tenant id, owner's user id).
-    OrgError('exists') when another person of the domain made it first."""
+    emailed to review. A free mail address gets a personal workspace instead (item 39): keyed by the full address, no
+    starting credits and no request; PASDACS hears of it through the sign-in alert. seen: where the sign-up came from
+    (signin_alerts.seen). Returns (tenant id, owner's user id). OrgError('exists') when another person of the domain
+    made it first (or, for a personal address, its workspace is already there)."""
     from . import tenancy
     email = (email or "").strip().lower()
     domain = domain_of(email)
+    personal = personal_address(email)
+    key = email if personal else domain                                 # tn_orgs.domain: unique; a personal one is the address
     name = " ".join((name or "").split())[:80]
     person = " ".join((person or "").split())[:120] or name_from(email)
     if len(name) < 2:
-        raise OrgError("Give your organisation a name.")
-    if public(email):
-        raise OrgError("Use your work email address.")
+        raise OrgError("Give your workspace a name." if personal else "Give your organisation a name.")
+    if refused(email):
+        raise OrgError(REFUSED_TEXT)
     with _create_lock:
         with db.use(db.PLATFORM):
-            if by_domain(domain):
+            if by_domain(key):
                 raise OrgError("exists")
             if db.one("SELECT 1 AS x FROM relay.tn_accounts WHERE email = ?", (email,)):
                 raise OrgError("This email address already has an account. Sign in again.")
             tid = tenancy._slug(name)                                   # noqa: SLF001 - the console's own id rule
             now, uid = time.time(), "u-" + secrets.token_hex(6)
+            notes = f"D2D Relay personal workspace ({email})" if personal else f"D2D Relay organisation ({domain})"
             db.run("INSERT INTO relay.tn_tenants (id, kind, parent_id, name, edition, status, deployment, host, partner_access, region, "
                    "notes, created, created_by, updated, updated_by) VALUES (?, 'client', ?, ?, 'enterprise', 'active', 'shared', NULL, "
-                   "'open', NULL, ?, ?, 'signup', ?, 'signup')", (tid, db.PLATFORM, name, f"D2D Relay organisation ({domain})", now, now))
+                   "'open', NULL, ?, ?, 'signup', ?, 'signup')", (tid, db.PLATFORM, name, notes, now, now))
         try:
             db.init_tenant(tid)
             with db.use(tid):
@@ -206,9 +252,9 @@ def create(name: str, email: str, person: str, seen: dict | None = None) -> tupl
                        (uid, email, person, now))
                 db.run("INSERT INTO memberships (user_id, team_id, role) VALUES (?, ?, 'dev')", (uid, db.DEFAULT_TEAM))
                 db.run("INSERT INTO relay.tn_accounts (user_id, email, home_tenant, created) VALUES (?, ?, ?, ?)", (uid, email, tid, now))
-                db.run("INSERT INTO relay.tn_orgs (tenant_id, name, domain, owner_id, credits, setup_done, created, created_by) "
-                       "VALUES (?, ?, ?, ?, 0, 0, ?, ?)", (tid, name, domain, uid, now, uid))
-                if START and not START_REVIEW:
+                db.run("INSERT INTO relay.tn_orgs (tenant_id, name, domain, owner_id, credits, setup_done, created, created_by, personal) "
+                       "VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?)", (tid, name, key, uid, now, uid, 1 if personal else 0))
+                if START and not START_REVIEW and not personal:
                     _entry(tid, "start", START, note="Starting credits", who={"id": uid, "name": person})
         except Exception:
             with db.use(db.PLATFORM):
@@ -222,9 +268,9 @@ def create(name: str, email: str, person: str, seen: dict | None = None) -> tupl
             raise
     tenancy._invalidate()                                               # noqa: SLF001
     seen = seen or {}
-    tenancy.ctl_audit("d2d.org_created", tid, tid, {"name": name, "domain": domain, "owner": email, "ip": seen.get("ip"),
-                                                    "country": seen.get("country")}, who=uid)
-    if reviews_new():
+    tenancy.ctl_audit("d2d.org_created", tid, tid, {"name": name, "domain": key, "personal": personal, "owner": email,
+                                                    "ip": seen.get("ip"), "country": seen.get("country")}, who=uid)
+    if reviews_new() and not personal:
         try:
             _start_request(tid, uid, name, domain, person, email, seen)
         except Exception:  # noqa: BLE001 - the organisation exists; PASDACS can still add credits by hand
@@ -268,11 +314,12 @@ def _review_signals(tid: str, domain: str, ip: str) -> list[tuple[str, str]]:
                 except ValueError:
                     continue
                 if d.get("ip") == ip:
-                    same.append(f"{d.get('name') or r['tenant_id']} (@{d.get('domain') or '?'})")
+                    at = f"personal, {d.get('domain')}" if d.get("personal") else f"@{d.get('domain') or '?'}"
+                    same.append(f"{d.get('name') or r['tenant_id']} ({at})")
             out.append(("Organisations from this network, last 30 days", ", ".join(same[:10]) or "none"))
         base = parent_domain(domain)
-        near = [f"{o['name']} (@{o['domain']})" for o in db.q("SELECT name, domain FROM relay.tn_orgs WHERE tenant_id != ?", (tid,))
-                if o["domain"] == base or o["domain"].endswith("." + base)]
+        near = [f"{o['name']} (@{o['domain']})" for o in db.q("SELECT name, domain, personal FROM relay.tn_orgs WHERE tenant_id != ?", (tid,))
+                if not o["personal"] and (o["domain"] == base or o["domain"].endswith("." + base))]
         out.append((f"Other organisations on {base}", ", ".join(near[:10]) or "none"))
     return out
 
@@ -449,6 +496,10 @@ def _short(o: dict, what: str) -> str:
         return (f"Not enough credits. {uses}, and {o['name']} has none yet: PASDACS is reviewing your new organisation and adds "
                 f"its {int(p['credits']):,} starting credits when it approves. You will get an email.")
     from . import payments
+    if is_personal(o):                                  # item 39: personal workspaces only buy
+        more = ("Buy credits to continue." if payments.offer(None, o)["on"]
+                else f"Buying credits online is not open right now; write to {CONTACT}.")
+        return f"Not enough credits. {uses} and your workspace has {o['credits']} left. {more}"
     more = ("Buy credits, or ask PASDACS for some (Request credits), to continue." if payments.offer(None, o)["on"]
             else "Ask PASDACS for credits (Request credits) to continue.")
     return f"Not enough credits. {uses} and {o['name']} has {o['credits']} left. {more}"
@@ -552,6 +603,7 @@ def me_info(u: dict | None) -> dict:
         return out
     primary = u["id"] == o["owner_id"]
     return {**out, "id": o["tenant_id"], "name": o["name"], "domain": o["domain"], "credits": o["credits"], "owner": _owner(o),
+            "personal": is_personal(o),                                           # item 39: one free-mail address, buys only
             "is_owner": is_owner(u), "is_primary": primary,                       # people management: several owners, one main
             "setup_needed": primary and not o["setup_done"],                      # only the main owner sets the organisation up
             "connectors": connectors_of(o["tenant_id"]),                          # none: CSV files only
@@ -687,6 +739,8 @@ def add_person(body: PersonAdd):
     """An owner adds someone from the organisation's own email domain (or adds back someone they removed), as a member
     or an owner. They are emailed an invitation; they sign in with a code like everyone else."""
     u, o = _must_owner()
+    if is_personal(o):                                          # item 39: a personal workspace is its one person
+        raise HTTPException(403, PERSONAL_PEOPLE_TEXT)
     email = (body.email or "").strip().lower()
     role = {"owner": "admin", "member": "member"}.get((body.role or "member").strip().lower())
     if not role:
@@ -813,7 +867,7 @@ def delete_organisation(body: Confirm):
     if " ".join((body.confirm or "").split()).lower() != " ".join(o["name"].split()).lower():
         raise HTTPException(400, f"Type the organisation's name, {o['name']}, to confirm.")
     out = governance.erase_org(o["tenant_id"], u["id"])
-    _tell_platform(f"{o['name']} deleted itself", f"The main owner deleted {o['name']} (@{o['domain']}): {out['people']} people, "
+    _tell_platform(f"{o['name']} deleted itself", f"The main owner deleted {o['name']} ({where(o)}): {out['people']} people, "
                    f"{out['dashboards']} dashboards. Its payments and invoices stay, without names.", "#/orgs")
     return {"erased": True, "signed_out": True}
 
@@ -866,6 +920,8 @@ def credit_request(body: CreditRequest):
     it also goes to PASDACS by email, Reply-To the person, and to the platform admins' notifications."""
     from . import tenancy
     u, o = _must()
+    if is_personal(o):                                          # item 39: personal workspaces only buy
+        raise HTTPException(403, PERSONAL_REQUEST_TEXT)
     n = int(body.credits or 0)
     if not 1 <= n <= 100000:
         raise HTTPException(400, "Ask for 1 to 100,000 credits.")
@@ -945,7 +1001,7 @@ def connector_request(body: ConnectorRequest):
     _not_too_many(u, "d2d.connector_request")
     names = ", ".join(connector_label(k) for k in kinds)
     on = connectors_of(o["tenant_id"])
-    rows = [("Organisation", o["name"]), ("Email domain", o["domain"]), ("Workspace id", o["tenant_id"]),
+    rows = [("Organisation", o["name"]), ("Personal address" if is_personal(o) else "Email domain", o["domain"]), ("Workspace id", o["tenant_id"]),
             ("Requested by", f"{u.get('name') or ''} <{u.get('email') or ''}>"), ("Connectors requested", names),
             ("Switched on now", ", ".join(connector_label(k) for k in on) or "none (CSV files only)"), ("Message", msg or "(none)")]
     sent = _to_pasdacs(f"D2D Relay: {o['name']} asks to connect {names}", "A D2D Relay organisation asks PASDACS to connect its own "
@@ -986,7 +1042,7 @@ def migration_request(body: MigrationRequest):
     msg = (body.message or "").strip()[:1500]
     _not_too_many(u, "d2d.migration_request")
     names = lambda ids: ", ".join(BI_TOOLS[k] for k in ids)                 # noqa: E731
-    rows = [("Organisation", o["name"]), ("Email domain", o["domain"]), ("Workspace id", o["tenant_id"]),
+    rows = [("Organisation", o["name"]), ("Personal address" if is_personal(o) else "Email domain", o["domain"]), ("Workspace id", o["tenant_id"]),
             ("Requested by", f"{u.get('name') or ''} <{u.get('email') or ''}>"), ("Moving from", names(src)),
             ("Moving to", names(dst)), ("Dashboards, roughly", f"{n:,}" if n else "not given"), ("Message", msg or "(none)")]
     sent = _to_pasdacs(f"D2D Relay: {o['name']} asks about Migration D2D ({names(src)} to {names(dst)})",
@@ -1025,7 +1081,7 @@ def all_orgs():
             continue
         spent = -(db.one("SELECT coalesce(sum(delta), 0) AS s FROM relay.tn_credits WHERE tenant_id = ? AND kind IN ('charge', 'refund')",
                          (o["tenant_id"],))["s"] or 0)
-        out.append({"id": o["tenant_id"], "name": o["name"], "domain": o["domain"], "credits": o["credits"], "spent": spent,
+        out.append({"id": o["tenant_id"], "name": o["name"], "domain": o["domain"], "personal": is_personal(o), "credits": o["credits"], "spent": spent,
                     "owner": owner, "people": people, "dashboards": dashboards, "created": o["created"], "last_login": last,
                     "status": t.get("status"), "platform": o["tenant_id"] == db.PLATFORM, "connectors": connectors_of(o["tenant_id"]),
                     "pending": _pending(o["tenant_id"])})

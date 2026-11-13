@@ -533,8 +533,10 @@ def production():
     codes = [Person(f"net{i}.{STAMP}@limits{STAMP}.com").post("/auth/otp/start", {"email": f"net{i}.{STAMP}@limits{STAMP}.com"},
                                                                headers={"cf-connecting-ip": ip})[0] for i in range(21)]
     check("production: 20 codes an hour per network, then 429", codes[:20] == [200] * 20 and codes[20] == 429, codes)
-    s, r = Person("x").post("/auth/otp/start", {"email": "someone@gmail.com"})
-    check("production: free mail addresses are refused", s == 400, (s, r))
+    s, r = Person("x").post("/auth/otp/start", {"email": f"someone.{STAMP}@mailinator.com"})
+    check("production: throw-away mail addresses are refused", s == 400, (s, r))
+    s, r = Person("x").post("/auth/otp/start", {"email": f"someone.{STAMP}@gmail.com"})
+    check("production: a free mail address gets a code (a personal workspace, item 39)", s == 200, (s, r))
 
 
 def rehearsal():

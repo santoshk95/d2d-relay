@@ -1,9 +1,11 @@
-"""D2D Relay sign-in: a one-time code by email, for people with a business email address (D2D_AUTH=otp).
+"""D2D Relay sign-in: a one-time code by email (D2D_AUTH=otp).
 
 Who may sign in (orgs.py):
   - anyone with an address at a business domain. The first person from a domain names and creates their
     organisation on the sign-in page and becomes its owner; everyone after them from that domain joins it;
-  - never an address at a free or disposable mail domain (Gmail, Outlook, Yahoo ...: public_domains.py);
+  - anyone with a free mail address (Gmail, Outlook, Yahoo ...: public_domains.is_free, item 39): they name and create
+    a personal workspace of their own, which nobody else joins; it buys its credits online;
+  - never an address at a disposable (throw-away) mail domain (public_domains.is_disposable);
   - D2D_OTP_EMAIL is the platform admin (the bootstrap admin of the platform's own workspace).
 
   D2D_OTP_FROM               the mailbox the code is sent from (default: D2D_OTP_EMAIL)
@@ -53,8 +55,6 @@ PER_IP_HOUR = 20
 SIGNUP_TTL = 1800                       # after the code: time to name the new organisation
 SIGNUP_COOKIE = "d2d_signup"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-PUBLIC_TEXT = ("Use your work email address. Personal and free email addresses (Gmail, Outlook, Yahoo and the like) "
-               "cannot be used for D2D Relay.")
 _lock = threading.Lock()
 
 db.register_schema("""-- D2D Relay: one-time sign-in codes (hash only) and the step after them for a new organisation
@@ -138,10 +138,10 @@ def start(body: StartBody, request: Request):
         with db.use(db.PLATFORM):
             db.audit("auth.otp_refused", None, {"ip": _ip(request), "reason": "admin portal", "domain": orgs.domain_of(email)}, "system")
         return _err(ADMIN_ONLY_TEXT, 403)
-    if orgs.public(email):
+    if orgs.refused(email):
         with db.use(db.PLATFORM):
-            db.audit("auth.otp_refused", None, {"ip": _ip(request), "reason": "public domain"}, "system")
-        return _err(PUBLIC_TEXT)
+            db.audit("auth.otp_refused", None, {"ip": _ip(request), "reason": "throw-away domain"}, "system")
+        return _err(orgs.REFUSED_TEXT)
     now, ip = time.time(), _ip(request)
     with _lock, db.use(db.PLATFORM):
         recent = db.q("SELECT created FROM otp_codes WHERE email = ? AND created > ? ORDER BY created DESC", (email, now - 3600))
@@ -223,7 +223,7 @@ def _account(email: str) -> tuple[str, dict] | JSONResponse | None:
 def verify(body: VerifyBody, request: Request):
     email = (body.email or "").strip().lower()
     code = re.sub(r"\D", "", body.code or "")
-    if len(code) != 6 or not EMAIL_RE.match(email) or orgs.public(email) or not _check_code(email, code, request):
+    if len(code) != 6 or not EMAIL_RE.match(email) or orgs.refused(email) or not _check_code(email, code, request):
         return _err("That code is wrong or has expired. Ask for a new one.")
     if portal.ADMIN:
         return _admin_signed_in(email, request, body.next)
@@ -233,8 +233,10 @@ def verify(body: VerifyBody, request: Request):
     if found:
         tid, u = found
         return _signed_in(tid, u["id"], request, body.next)
-    with db.use(db.PLATFORM):
-        o = orgs.by_domain(orgs.domain_of(email))
+    o = None
+    if not orgs.personal_address(email):            # item 39: a free mail address never joins anyone by domain
+        with db.use(db.PLATFORM):
+            o = orgs.by_domain(orgs.domain_of(email))
     if o:                                            # a colleague created the organisation: join it
         if not auth.tenant_row(o["tenant_id"]):
             return _err("Your organisation's account has been closed. Write to info@pasdacs.com.", 403)
@@ -242,14 +244,13 @@ def verify(body: VerifyBody, request: Request):
             return _err(f"An owner of {o['name']} removed this address. Ask one of its owners to add you back.", 403)
         uid = orgs.join(o["tenant_id"], email)
         return _signed_in(o["tenant_id"], uid, request, body.next or "#/d2d", "joined")
-    # the first person from this domain: they name the organisation next (POST /auth/otp/organisation)
+    # the first person from this domain, or a personal address: they name the organisation or workspace next
+    # (POST /auth/otp/organisation)
     token, now = secrets.token_urlsafe(32), time.time()
     with db.use(db.PLATFORM):
         db.run("INSERT INTO otp_signup (token_hash, email, created, expires) VALUES (?, ?, ?, ?)",
                (hashlib.sha256(token.encode()).hexdigest(), email, now, now + SIGNUP_TTL))
-    domain = orgs.domain_of(email)
-    r = JSONResponse({"ok": True, "organisation": {"email": email, "domain": domain, "suggested": orgs.suggested_name(domain),
-                                                   "person": orgs.name_from(email), **_start_credits()}})
+    r = JSONResponse({"ok": True, "organisation": _signup_info(email)})
     r.set_cookie(SIGNUP_COOKIE, token, max_age=SIGNUP_TTL, httponly=True, samesite="lax", secure=identity.SECURE_COOKIE,
                  path="/auth/otp/")
     return r
@@ -290,9 +291,18 @@ def signup_pending(request: Request):
     s = _signup(request)
     if not s:
         return {}                                    # nothing waiting (the usual case)
-    domain = orgs.domain_of(s["email"])
-    return {"email": s["email"], "domain": domain, "suggested": orgs.suggested_name(domain), "person": orgs.name_from(s["email"]),
-            **_start_credits()}
+    return _signup_info(s["email"])
+
+
+def _signup_info(email: str) -> dict:
+    """What the sign-in page needs to name a new organisation, or (item 39) a personal workspace: no starting credits,
+    it buys online."""
+    domain = orgs.domain_of(email)
+    if orgs.personal_address(email):
+        return {"email": email, "domain": domain, "personal": True, "suggested": orgs.name_from(email),
+                "person": orgs.name_from(email), "credits": 0, "credits_review": 0}
+    return {"email": email, "domain": domain, "personal": False, "suggested": orgs.suggested_name(domain),
+            "person": orgs.name_from(email), **_start_credits()}
 
 
 def _start_credits() -> dict:
@@ -303,8 +313,8 @@ def _start_credits() -> dict:
 
 @router.post("/auth/otp/organisation")
 def create_organisation(body: OrgBody, request: Request):
-    """The first person from a business domain names their organisation: it is created, they own it, and they go on to
-    the first-time setup (#/setup: the brand)."""
+    """The first person from a business domain names their organisation (or, item 39, a free mail address its personal
+    workspace): it is created, they own it, and they go on to the first-time setup (#/setup: the brand)."""
     if portal.ADMIN:
         return _err("Organisations are created on the public D2D Relay site.", 404)
     s = _signup(request)
@@ -316,6 +326,8 @@ def create_organisation(body: OrgBody, request: Request):
     except orgs.OrgError as e:
         if str(e) != "exists":
             return _err(str(e))
+        if orgs.personal_address(s["email"]):        # item 39: a personal workspace is never joined
+            return _err("Your workspace could not be created. Sign in again, or write to info@pasdacs.com.", 409)
         with db.use(db.PLATFORM):                    # a colleague was a moment quicker: join their organisation
             o = orgs.by_domain(orgs.domain_of(s["email"]))
         if not o:

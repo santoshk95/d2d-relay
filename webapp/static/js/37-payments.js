@@ -100,7 +100,7 @@ async function buyDialog(reason) {
   if (d.billing_needed) {                           // asked once: they go on every GST invoice
     const bm = modal('Buy credits', h('div', {class: 'mbody'},
       reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
-      h('p', {style: reason ? null : 'margin-top:0'}, h('b', {}, 'First, your organisation\'s billing details. '),
+      h('p', {style: reason ? null : 'margin-top:0'}, h('b', {}, isPersonal() ? 'First, your billing details. ' : 'First, your organisation\'s billing details. '),
         'They go on its GST invoices. You give them once; owners can change them on the Organisation page.'),
       d.may_edit_billing ? billingForm(d.billing, () => { bm.remove(); buyDialog(reason); })
         : h('div', {class: 'note'}, 'An owner of your organisation adds them on the Organisation page. Ask one of them, or ask PASDACS (Request credits).')));
@@ -198,7 +198,7 @@ async function buyDialog(reason) {
     out,
     h('div', {class: 'row', style: 'justify-content:space-between;gap:12px;margin-top:12px;align-items:center;flex-wrap:wrap'},
       h('span', {class: 'small muted'}, cur === 'INR' ? 'Card, UPI, netbanking or wallet, through Razorpay. ' : 'By card, through Razorpay. ',
-        h('a', {href: '#', onclick: e => { e.preventDefault(); m.remove(); requestDialog(reason); }}, 'Ask PASDACS instead')),
+        isPersonal() ? null : h('a', {href: '#', onclick: e => { e.preventDefault(); m.remove(); requestDialog(reason); }}, 'Ask PASDACS instead')),
       d.can ? payBtn : null)));
 }
 

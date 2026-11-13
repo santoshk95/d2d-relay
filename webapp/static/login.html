@@ -77,11 +77,11 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
   </div>
   <main class="form">
     <h2 id="signin">Sign in to D2D Relay</h2>
-    <p class="muted" id="lead">Use your work email: we email you a 6-digit code, no password needed. New here? The first person from your company creates its organisation; colleagues who sign in later join it.</p>
+    <p class="muted" id="lead">Use your email: we email you a 6-digit code, no password needed. New here? With a work email, the first person from your company creates its organisation and colleagues who sign in later join it. A personal address (Gmail, Outlook and the like) gets a private workspace that buys its credits online.</p>
     <div id="error" class="err" role="alert" hidden></div>
     <div id="note" class="none" role="status" hidden></div>
     <form id="askform" style="display:grid;gap:10px">
-      <div><label for="email">Work email</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+      <div><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>
       <button type="submit" id="askbtn">Email me a code</button>
     </form>
     <form id="codeform" style="display:grid;gap:10px" hidden>
@@ -148,12 +148,18 @@ $('codeform').addEventListener('submit', async e => {
 function orgStep(o) {
   show('note'); show('error');
   $('askform').hidden = true; $('codeform').hidden = true; $('orgform').hidden = false;
-  $('signin').textContent = 'Create your organisation';
+  $('signin').textContent = o.personal ? 'Create your workspace' : 'Create your organisation';
   $('lead').hidden = true;
-  $('orglead').textContent = `You are the first person from ${o.domain} on D2D Relay. Name your organisation: everyone who signs in later with an @${o.domain} address joins it and shares its credits, and you are its owner.`;
+  $('orglead').textContent = o.personal
+    ? `${o.email} is a personal address, so you get a private workspace of your own: nobody else joins it. To work with colleagues, sign in with your work email instead.`
+    : `You are the first person from ${o.domain} on D2D Relay. Name your organisation: everyone who signs in later with an @${o.domain} address joins it and shares its credits, and you are its owner.`;
+  document.querySelector('label[for=orgname]').textContent = o.personal ? 'Workspace name' : 'Organisation name';
+  $('orgbtn').textContent = o.personal ? 'Create workspace' : 'Create organisation';
   $('orgname').value = $('orgname').value || o.suggested || '';
   $('person').value = $('person').value || o.person || '';
-  $('orgcredits').textContent = o.credits_review
+  $('orgcredits').textContent = o.personal
+    ? 'A personal workspace starts with no credits: you buy them online (card or UPI) when you need them. Next you set up your brand.'
+    : o.credits_review
     ? `PASDACS reviews every new organisation and adds its ${o.credits_review} starting credits when it approves: you get an email. Next you set up your brand.`
     : o.credits ? `It starts with ${o.credits} credits. Next you set up your brand.`
     : 'Next you set up your brand. Credits come from PASDACS: ask for them under Request credits, and PASDACS approves them.';

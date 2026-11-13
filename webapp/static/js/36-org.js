@@ -15,6 +15,10 @@ const costTag = what => ORG().id && costOf(what) ? h('span', {class: 'cost'}, ` 
 /* every price in one line: "a new dashboard uses 25, a change 10, Ask Relay 10 for up to 5 questions" */
 const costLine = (c = ORG().costs || {}) => `a new dashboard uses ${c.dashboard || 0}, a change ${c.change || 0}`
   + (c.ask ? `, Ask Relay ${c.ask} for up to ${c.ask_questions || 5} questions` : '');
+/* item 39: a personal workspace (one free mail address, e.g. Gmail) buys its credits online and never asks PASDACS for them */
+const isPersonal = (o = ORG()) => !!(o && o.personal);
+/* next to an organisation's name: @its domain, or a personal workspace's own address */
+const orgWhere = (o = ORG()) => isPersonal(o) ? `personal, ${o.domain}` : `@${o.domain}`;
 
 /* ---------------- the chip in the top bar ---------------- */
 function renderOrgChip() {
@@ -30,15 +34,15 @@ function renderOrgChip() {
 function orgMenu(anchor) {
   const o = ORG();
   popover(anchor, [
-    h('div', {class: 'pmhead'}, h('div', {class: 'small faint'}, 'Your organisation'), h('b', {}, o.name),
-      h('div', {class: 'small muted'}, 'Owner: ', o.owner ? (o.is_owner ? 'you' : o.owner.name) : '-', ` - @${o.domain}`)),
+    h('div', {class: 'pmhead'}, h('div', {class: 'small faint'}, isPersonal(o) ? 'Your personal workspace' : 'Your organisation'), h('b', {}, o.name),
+      h('div', {class: 'small muted'}, 'Owner: ', o.owner ? (o.is_owner ? 'you' : o.owner.name) : '-', ` - ${orgWhere(o)}`)),
     h('div', {style: 'padding:2px 12px 10px'}, h('div', {class: 'credbig'}, Number(o.credits || 0).toLocaleString()),
       h('div', {class: 'small muted'}, `credits left - ${costLine()}`),
       o.pending_request ? h('div', {class: 'small', style: 'margin-top:6px'}, h('span', {class: 'tag warn'}, 'Waiting for PASDACS'),
         ` ${Number(o.pending_request.credits).toLocaleString()} ${isStart(o.pending_request) ? 'starting credits, under review' : 'credits asked for'}`) : null),
     (o.pay || {}).on ? h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); buyDialog(); }}, icon('coin'), h('span', {class: 'grow'}, 'Buy credits')) : null,
-    h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); requestDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Request credits')),
-    h('a', {class: 'pmitem', href: '#/org', onclick: closePopover}, icon('building'), h('span', {class: 'grow'}, 'Organisation, people and credit history')),
+    isPersonal(o) ? null : h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); requestDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Request credits')),
+    h('a', {class: 'pmitem', href: '#/org', onclick: closePopover}, icon('building'), h('span', {class: 'grow'}, isPersonal(o) ? 'Workspace and credit history' : 'Organisation, people and credit history')),
     h('a', {class: 'pmitem', href: '#/migration', onclick: closePopover}, icon('swap'), h('span', {class: 'grow'}, 'Migration D2D')),
     h('a', {class: 'pmitem', href: '#/welcome', onclick: () => { closePopover(); TOUR.step = 0; }}, icon('spark'), h('span', {class: 'grow'}, 'Take the tour')),
     h('a', {class: 'pmitem', href: '/privacy.html', target: '_blank', rel: 'noopener', onclick: closePopover}, icon('shield'), h('span', {class: 'grow'}, 'Privacy notice')),
@@ -68,7 +72,7 @@ function creditsLine() {
       ? `${Number(o.pending_request.credits).toLocaleString()} starting credits, waiting for PASDACS's review`
       : `${Number(o.pending_request.credits).toLocaleString()} credits asked for, waiting for PASDACS`) : null,
     (o.pay || {}).on ? h('button', {class: 'btn sm ghost', type: 'button', onclick: () => buyDialog()}, icon('coin'), 'Buy credits')
-      : h('button', {class: 'btn sm ghost', type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'));
+      : isPersonal(o) ? null : h('button', {class: 'btn sm ghost', type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'));
 }
 
 /* More credits: Buy credits when PASDACS sells them online to this organisation (37-payments.js), else Request credits */
@@ -82,6 +86,16 @@ function requestDialog(reason) {
   const o = ORG(), me = S.me || {};
   if (!o.id) return;
   const contact = o.contact || 'info@pasdacs.com';
+  if (isPersonal(o)) {                          // item 39: a personal workspace buys; it does not ask PASDACS
+    if ((o.pay || {}).on) return buyDialog(reason);
+    const m = modal('Credits', h('div', {class: 'mbody'},
+      reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
+      h('p', {style: 'margin-top:0'}, 'Personal workspaces buy their credits online, and buying online is not open right now. '
+        + `Please write to ${contact}.`),
+      h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'},
+        h('button', {class: 'btn primary', type: 'button', onclick: () => m.remove()}, 'OK'))));
+    return;
+  }
   if (isStart(o.pending_request)) {            // a new organisation: PASDACS reviews it and adds its starting credits
     const p = o.pending_request;
     const m = modal('Starting credits', h('div', {class: 'mbody'},
@@ -123,7 +137,7 @@ function requestDialog(reason) {
   const msg = h('textarea', {rows: 3, placeholder: 'Anything we should know (optional): an invoice or purchase order reference, a deadline...'});
   const mailto = () => {
     const subject = `D2D Relay: ${amount} credits for ${o.name}`;
-    const body = `Hello PASDACS,\n\nPlease add ${amount} credits to our D2D Relay organisation.\n\nOrganisation: ${o.name} (@${o.domain})\n`
+    const body = `Hello PASDACS,\n\nPlease add ${amount} credits to our D2D Relay organisation.\n\nOrganisation: ${o.name} (${orgWhere(o)})\n`
       + `Requested by: ${me.name || ''} <${me.email || ''}>\nCredits now: ${o.credits}\n` + (msg.value.trim() ? `\n${msg.value.trim()}\n` : '');
     return `mailto:${contact}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
@@ -147,7 +161,7 @@ function requestDialog(reason) {
     reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
     h('p', {style: 'margin-top:0'}, h('b', {}, 'PASDACS approves every credit request. '), `Tell us how many credits ${o.name} needs: we reply by email, and once it is approved the credits appear here at once.`,
       (o.pay || {}).on ? [' Or ', h('a', {href: '#', onclick: e => { e.preventDefault(); e.currentTarget.closest('.modal').remove(); buyDialog(reason); }}, 'buy credits online'), ' now.'] : null),
-    h('dl', {class: 'kv small'}, h('dt', {}, 'Organisation'), h('dd', {}, `${o.name} - @${o.domain}`),
+    h('dl', {class: 'kv small'}, h('dt', {}, 'Organisation'), h('dd', {}, `${o.name} - ${orgWhere(o)}`),
       h('dt', {}, 'Requested by'), h('dd', {}, `${me.name || ''} - ${me.email || ''}`), h('dt', {}, 'Credits now'), h('dd', {}, credits(o.credits))),
     h('label', {class: 'f'}, 'Credits you need'), h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, picks, custom),
     h('div', {class: 'hint'}, `Credits: ${costLine()}.`),
@@ -179,14 +193,15 @@ async function renderOrg() {
   const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
   const payBox = h('div'), billBox = h('div');   // credits bought online and the billing details (37-payments.js), filled in once fetched
   fillPayments(payBox, billBox);
+  const personal = isPersonal(d);              // item 39: one free mail address; it buys, nobody joins it
   page.append(
-    h('div', {class: 'phead'}, h('div', {style: 'flex:1;min-width:0'}, h('div', {class: 'eyebrow'}, 'Organisation'),
+    h('div', {class: 'phead'}, h('div', {style: 'flex:1;min-width:0'}, h('div', {class: 'eyebrow'}, personal ? 'Personal workspace' : 'Organisation'),
       h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, h('h1', {}, d.name), rename),
-      h('div', {class: 'meta'}, `@${d.domain} - since ${when(d.created)} - ${d.people.length} ${d.people.length === 1 ? 'person' : 'people'} - `
+      h('div', {class: 'meta'}, `${orgWhere(d)} - since ${when(d.created)} - ${d.people.length} ${d.people.length === 1 ? 'person' : 'people'} - `
         + `${d.dashboards} dashboard${d.dashboards === 1 ? '' : 's'}`))),
     h('div', {class: 'orggrid'},
       h('div', {class: 'card'}, h('h3', {}, 'Credits'),
-        h('div', {class: 'credbig'}, Number(d.credits || 0).toLocaleString()), h('div', {class: 'muted small'}, `credits left, shared by everyone in ${d.name}`),
+        h('div', {class: 'credbig'}, Number(d.credits || 0).toLocaleString()), h('div', {class: 'muted small'}, personal ? 'credits left in your workspace' : `credits left, shared by everyone in ${d.name}`),
         h('dl', {class: 'kv small', style: 'margin-top:12px'},
           h('dt', {}, 'New dashboard'), h('dd', {}, credits(d.costs.dashboard)),
           h('dt', {}, 'A change'), h('dd', {}, `${credits(d.costs.change)}: revising the plan, a change request, building a custom visual Relay suggested`),
@@ -194,17 +209,21 @@ async function renderOrg() {
           h('dt', {}, 'Free'), h('dd', {}, 'Confirming the plan, fixing failed review gates, approving and publishing')),
         h('div', {class: 'row', style: 'margin-top:12px;gap:10px;flex-wrap:wrap'},
           (d.pay || {}).on ? h('button', {class: 'btn primary', type: 'button', onclick: () => buyDialog()}, icon('coin'), 'Buy credits') : null,
-          h('button', {class: 'btn' + ((d.pay || {}).on ? '' : ' primary'), type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'),
-          h('span', {class: 'small muted'}, ((d.pay || {}).on ? 'Buy a pack online (card, UPI, netbanking), or ask PASDACS. ' : 'PASDACS approves every request. ')
+          personal ? null : h('button', {class: 'btn' + ((d.pay || {}).on ? '' : ' primary'), type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'),
+          h('span', {class: 'small muted'}, (personal ? ((d.pay || {}).on ? 'Buy a pack online (card, UPI, netbanking). '
+              : `Personal workspaces buy credits online, which is not open right now: write to ${d.contact || 'info@pasdacs.com'}. `)
+            : (d.pay || {}).on ? 'Buy a pack online (card, UPI, netbanking), or ask PASDACS. ' : 'PASDACS approves every request. ')
             + 'When a run fails or is stopped, its credits come back.'))),
       h('div', {class: 'card'}, h('h3', {}, 'Owners'),
         h('div', {class: 'stack', style: 'gap:6px'}, d.people.filter(p => p.owner).map(p => h('div', {},
           h('b', {}, p.name + (p.id === (S.me || {}).id ? ' (you)' : '')), p.primary ? h('span', {class: 'tag acc', style: 'margin-left:6px'}, 'Main owner') : null,
           h('div', {class: 'small muted'}, p.email)))),
-        h('p', {class: 'small muted'}, `Owners manage the people, the organisation's name and its credit requests, and can open every dashboard in it. `
+        h('p', {class: 'small muted'}, personal
+          ? 'A personal workspace is just you: nobody else joins it. To work with colleagues, sign in with your work email: your company gets an organisation of its own.'
+          : `Owners manage the people, the organisation's name and its credit requests, and can open every dashboard in it. `
           + `Everyone who signs in with an @${d.domain} address joins ${d.name} as a member and shares its credits; each person's dashboards are private until they share them.`),
         d.is_primary && d.people.length > 1 ? h('button', {class: 'btn sm', type: 'button', onclick: () => transferDialog(d)}, icon('swap'), 'Transfer ownership') : null)),
-    peopleCard(d, th),
+    personal ? '' : peopleCard(d, th),          // '' not null: Element.append writes null as text
     h('div', {class: 'card'}, h('h3', {}, 'Credit history'),
       d.ledger.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'What', 'Who', 'Dashboard', 'Credits', 'Left'], 4),
         h('tbody', {}, d.ledger.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, LEDGER(r)), h('td', {}, r.user_name || 'Relay'),
@@ -213,7 +232,7 @@ async function renderOrg() {
         : h('div', {class: 'muted small'}, 'Nothing yet.')),
     payBox,
     billBox,
-    h('div', {class: 'card'}, h('h3', {}, 'Credit requests'),
+    personal ? '' : h('div', {class: 'card'}, h('h3', {}, 'Credit requests'),
       (d.requests || []).length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['Asked', 'Who', 'Credits', 'Answer', ''], 2),
         h('tbody', {}, d.requests.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, isStart(r) ? 'Starting credits' : r.user_name || '-'),
           h('td', {class: 'n'}, Number(r.credits).toLocaleString()), h('td', {}, requestState(r)),
@@ -424,7 +443,8 @@ async function renderOrgs() {
       h('tbody', {}, d.orgs.map(o => h('tr', {},
         h('td', {}, h('b', {}, o.name), o.platform ? h('span', {class: 'tag', style: 'margin-left:6px'}, 'Platform') : null,
           o.status && o.status !== 'active' ? h('span', {class: 'tag err', style: 'margin-left:6px'}, o.status) : null,
-          h('div', {class: 'small muted'}, '@' + o.domain)),
+          isPersonal(o) ? h('span', {class: 'tag', style: 'margin-left:6px'}, 'Personal') : null,
+          h('div', {class: 'small muted'}, isPersonal(o) ? o.domain : '@' + o.domain)),
         h('td', {}, o.owner ? [o.owner.name, h('div', {class: 'small muted'}, o.owner.email)] : '-'),
         h('td', {class: 'small', style: 'white-space:nowrap', title: (o.connectors || []).map(kindLabel).join(', ') || null},
           !(o.connectors || []).length ? h('span', {class: 'muted'}, 'CSV only') : o.connectors.length === d.catalogue.length ? `All ${o.connectors.length}`

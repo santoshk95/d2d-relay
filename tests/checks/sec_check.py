@@ -136,9 +136,10 @@ check("headers: one range still works (206)", s == 206 and len(t) == 10, (s, len
 
 # ---------------------------------------------------------------------------------------------------- sign-in
 section("sign-in hardening")
-for addr in ("someone@gmail.com", "someone@outlook.com", "someone@yahoo.co.in", "someone@mailinator.com", "a@b"):
+for addr in ("someone@mailinator.com", "someone@yopmail.com", "someone@guerrillamail.com", "a@b"):
     s, r = c.Person(addr).post("/auth/otp/start", {"email": addr})
     check(f"sign-in: {addr} is refused", s == 400, (s, r))
+# item 39: free mail (Gmail, Outlook, Yahoo ...) signs in to a personal workspace of its own (item39_check.py)
 s, r = c.Person(f"x@acme{STAMP}.com", A).post("/auth/otp/start", {"email": f"x@acme{STAMP}.com"})
 check("sign-in: the admin portal refuses an address outside PASDACS (403)", s == 403, (s, r))
 v = c.Person(f"vera@guess{STAMP}.com")

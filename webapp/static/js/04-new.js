@@ -190,7 +190,8 @@ function renderNew() {
     typeof ORG === 'function' && ORG().id && (ORG().credits || 0) < costOf('dashboard')       // D2D Relay: say it before the form is filled in
       ? h('div', {class: 'note warn row', style: 'gap:10px;flex-wrap:wrap'}, h('span', {style: 'flex:1;min-width:220px'},
           `Not enough credits for a new dashboard: it uses ${costOf('dashboard')} credits and ${ORG().name} has ${ORG().credits}.`),
-        h('button', {class: 'btn sm primary', type: 'button', onclick: () => creditsDialog()}, icon('plus'), ORG().pending_request ? 'Credits requested' : 'Request credits')) : null,
+        h('button', {class: 'btn sm primary', type: 'button', onclick: () => creditsDialog()}, icon('plus'),
+          ORG().pending_request ? 'Credits requested' : isPersonal() ? 'Buy credits' : 'Request credits')) : null,
     form));
 }
 

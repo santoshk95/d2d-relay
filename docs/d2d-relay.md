@@ -16,7 +16,7 @@ Only the Claude sign-in volume (`claude-api-auth`) is shared, so both apps use t
 | Public address | https://d2d.pasdacs.com (Cloudflare tunnel) |
 | Admin portal | https://admin-d2d.pasdacs.com: PASDACS only, behind Cloudflare Access and its own email code (see "Admin portal") |
 | On this PC | public site http://127.0.0.1:8100, admin portal http://127.0.0.1:8102 |
-| Sign-in | a 6-digit code emailed to any **business** address (no passwords, no SSO); free and disposable mail refused |
+| Sign-in | a 6-digit code emailed (no passwords, no SSO): a business address joins its organisation, a free mail address gets a personal workspace (item 39); disposable mail refused |
 | Organisations | one per email domain, each in its own workspace; the first person creates and owns it |
 | Credits | 50 to start, more when PASDACS approves a request; a new dashboard uses 25, a change 10, Ask Relay 10 for up to 5 questions (see "Organisations and credits") |
 | Platform admins | every **@pasdacs.com** address, on the admin portal only (every organisation, credits, connectors, requests) |
@@ -227,9 +227,16 @@ To open it through the internet (Cloudflare dashboard, once):
 
 ## Organisations and credits
 
-Anyone with a business email address can sign in. Free and disposable mail (Gmail, Outlook, Yahoo, iCloud, Proton,
-Mailinator ...) is refused; add or allow domains with `RELAY_PUBLIC_DOMAINS_EXTRA` / `RELAY_PUBLIC_DOMAINS_ALLOW`
-(comma-separated).
+Anyone with an email address they keep can sign in. Disposable (throw-away) mail (Mailinator, temp mail, Yopmail ...)
+is refused; refuse more domains with `RELAY_PUBLIC_DOMAINS_EXTRA`, or treat a listed domain as a business with
+`RELAY_PUBLIC_DOMAINS_ALLOW` (comma-separated).
+
+- **A free mail address** (Gmail, Outlook, Yahoo, iCloud, Proton ...: `public_domains.FREE`; item 39, the user's
+  decision of 2026-11-13, "so i get larger base") gets a **personal workspace** of its own: it names it after the
+  code, nobody else ever joins it (no Add people), it has no starting credits and no Request credits, and it buys
+  credits online (Payments). PASDACS can still add credits by hand (Organisations, Credits), and is told of every new
+  personal account by the sign-in alert. On the admin portal it shows as Personal, with its address. Its row in
+  `relay.tn_orgs` has `personal = 1` and the full address as its `domain`, so nobody matches it by domain.
 
 - **The first person from a domain** names their organisation after the code and becomes its main owner. They then
   get the first-time tour (below), with the brand (logo, description, palette) as one of its steps, all of it

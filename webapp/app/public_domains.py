@@ -1,5 +1,8 @@
-"""D2D Relay: email domains that are not an organisation's own - free mail and disposable (throw-away) mail. People
-with such an address cannot sign in or create an organisation (otp.py, orgs.py).
+"""D2D Relay: email domains that are not an organisation's own - free mail and disposable (throw-away) mail.
+
+Since item 39 (the user, 2026-11-13: "allow gmail and all emails ... they can only buy online"): an address at a free
+mail domain (Gmail, Outlook, Yahoo ...: FREE and FAMILY) signs in to a personal workspace of its own (orgs.py), never to
+an organisation shared by domain. Disposable mail (DISPOSABLE, and D2D_PUBLIC_DOMAINS_EXTRA) still cannot sign in.
 
   D2D_PUBLIC_DOMAINS_EXTRA   more domains to refuse (comma-separated)
   D2D_PUBLIC_DOMAINS_ALLOW   domains to accept although they are listed here (comma-separated)
@@ -53,9 +56,22 @@ def _env(name: str) -> set[str]:
 EXTRA, ALLOW = _env("D2D_PUBLIC_DOMAINS_EXTRA"), _env("D2D_PUBLIC_DOMAINS_ALLOW")
 
 
+def _norm(domain: str) -> str:
+    return (domain or "").strip().lower().rstrip(".")
+
+
+def is_disposable(domain: str) -> bool:
+    """Throw-away mail (and D2D_PUBLIC_DOMAINS_EXTRA): it cannot sign in at all."""
+    d = _norm(domain)
+    return bool(d) and d not in ALLOW and (d in DISPOSABLE or d in EXTRA)
+
+
+def is_free(domain: str) -> bool:
+    """Free mail (Gmail, Outlook, Yahoo ...): each address gets a personal workspace (item 39)."""
+    d = _norm(domain)
+    return bool(d) and d not in ALLOW and not is_disposable(d) and (d in FREE or bool(FAMILY.match(d)))
+
+
 def is_public(domain: str) -> bool:
     """Whether an email domain is free or disposable mail (not an organisation's own)."""
-    d = (domain or "").strip().lower().rstrip(".")
-    if not d or d in ALLOW:
-        return False
-    return d in FREE or d in DISPOSABLE or d in EXTRA or bool(FAMILY.match(d))
+    return is_free(domain) or is_disposable(domain)

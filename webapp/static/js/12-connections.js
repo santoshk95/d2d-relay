@@ -78,7 +78,7 @@ function connectorRequestDialog(cat, preselect = []) {
   const msg = h('textarea', {rows: 3, placeholder: 'Which data, roughly how much, and by when (optional). For example: our sales and stock tables, about 10 million rows, for a board report next month.'});
   const names = () => off.filter(c => picked.has(c.kind)).map(c => c.label).join(', ') || 'a warehouse';
   const mailto = () => {
-    const body = `Hello PASDACS,\n\nPlease connect ${names()} for our D2D Relay organisation.\n\nOrganisation: ${org}${o.domain ? ` (@${o.domain})` : ''}\n`
+    const body = `Hello PASDACS,\n\nPlease connect ${names()} for our D2D Relay organisation.\n\nOrganisation: ${org}${o.domain ? ` (${typeof orgWhere === 'function' ? orgWhere(o) : '@' + o.domain})` : ''}\n`
       + `Requested by: ${me.name || ''} <${me.email || ''}>\n` + (msg.value.trim() ? `\n${msg.value.trim()}\n` : '');
     return `mailto:${contact}?subject=${encodeURIComponent(`D2D Relay: connect ${names()} for ${org}`)}&body=${encodeURIComponent(body)}`;
   };
