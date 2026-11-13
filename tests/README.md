@@ -63,11 +63,11 @@ already running, `bash tests/run_all.sh <output name>` runs the suites alone.
 
 | Suite | Checks: review on / off |
 |---|---|
-| `d2d_checks.py` (groups `connectors portal credits people production`) | 119 / 119 |
+| `d2d_checks.py` (groups `connectors portal credits people production`) | 120 / 120 |
 | `gov_check.py` + `gov_ui_check.py` | 60 + 10 |
 | `ask_credits_check.py`, `review_fixes_check.py` | 14, 13 |
 | `pay_check.py` + `pay_ui_check.py` | 114 + 37 |
-| `sec_check.py` | 132 / 115 |
+| `sec_check.py` | 131 / 114 |
 | `item29_check.py` + `tour_ui_check.py` | 34 + 28 |
 | `item30_check.py`, `rename_check.py` | 54, 8 |
 | `jobs_check.py`, `accounts_check.py` | 18, 45 |
@@ -75,7 +75,9 @@ already running, `bash tests/run_all.sh <output name>` runs the suites alone.
 | `item35_check.py`: labels in the prototype of the built-in visuals gallery and in the rebuilt Atlas visuals | 9 |
 | `item36_check.py`: KPI names clear of their values in low tiles; measure titles in the prototype | 10 |
 | `item37_check.py`: a sunburst's labels on thin slices: none on another, each inside its own slice | 10 |
-| **All, for item 37** (737 / 720 for 53fb6ad, 727 / 710 for e05f035, 718 / 701 for aa4531e, 685 / 668 for 54f6ed7) | **747 / 730** |
+| `item38_check.py`: share tags and image, robots.txt, no `./` or `../` past the sign-in check | 41 |
+| `item39_check.py`: personal workspaces for free mail (Gmail ...), throw-away mail refused, the Organisation page | 37 |
+| **All, for item 39** (788 / 771 for 189ccac, 747 / 730 for 334b493, 737 / 720 for 53fb6ad, 685 / 668 for 54f6ed7) | **825 / 808** |
 
 One suite by hand, with the stack running:
 

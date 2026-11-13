@@ -1007,6 +1007,41 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       https://d2d.pasdacs.com/. The social pack (its own private repository) has had a Platform post, a Relay and a D2D
       story, WhatsApp catalogue items 8 and 9 and their copy since 2026-11-13 (`8bbd128`; the user: "yeah add").
 
+39. **Anyone can sign up: a personal address (Gmail, Outlook, Yahoo ...) gets a personal workspace that buys its
+    credits** (the user, 2026-11-13: "can you allow gmail and all emails but no credits and request credit options,
+    they can only buy online so i get larger base"; then, asked: organisations keep Request credits and PASDACS can
+    still give anyone credits on the admin portal, a personal workspace is just its person, throw-away inboxes stay
+    refused, PASDACS hears of personal sign-ups as of organisations). Code `96ea48a`; release image
+    `d2d-relay:96ea48a`, built from the clean commit and tested; **live since 22:21 IST** the same day.
+    - **Who signs in** (`public_domains.py`, `otp.py`): free mail (`is_free`: the FREE list and the FAMILY brands'
+      country domains) signs in; disposable mail (`is_disposable`) is still refused, with its own message. A business
+      domain makes or joins its organisation as before.
+    - **A personal workspace** (`orgs.py`): an organisation of its own, `personal = 1` (a new `relay.tn_orgs` column),
+      whose `domain` is the full address, so nobody ever joins it by domain. Its person names it after the code
+      ("Create your workspace"). No starting credits and no starting-credit request; Request credits and Add people
+      are refused (403); out of credits, it is told to buy. PASDACS adds credits by hand as for any organisation, sees
+      it as Personal on the admin portal, and gets the sign-in alert for each new one (for an organisation the review
+      mail stands in for that alert; a personal workspace has nothing to review).
+    - **Screens and pages**: the sign-in page (any email), the Organisation page, its menu, the tour and New dashboard
+      without Request credits or people for a personal workspace; the terms, privacy notice and contact page say so
+      (effective 13 November 2026). Plain characters throughout.
+    - **Tests** on `d2d-relay:96ea48a`: every suite, 825 checks with the starting-credit review on and 808 off, all
+      passing, with the new `item39_check.py` (37: who signs in, two Gmail addresses in two workspaces, Yahoo and
+      Outlook, a business domain unchanged, the refusals, the admin portal, a checkout at the stand-in Razorpay, the
+      alert, and the Organisation page in Chromium). `d2d_checks` and `sec_check` now expect free mail to get a code
+      and throw-away mail to be refused. The first run's screenshots showed a stray "null" where a personal
+      workspace's cards are left out (Element.append writes null as text): fixed before the release, and checked.
+      Upgrade from `189ccac`: 23 of 23 (with `OLD_HAS_PURPOSE=1`, as for any old image from item 27 on).
+    - **Deployed at 22:21 IST** after the user's "once tests pass, deploy it": live idle; deploy folder fast-forwarded
+      to `96ea48a` (no compose, `pbix\`, `daxcheck\`, `config\` or Docker change); `d2d-relay:96ea48a` tagged latest;
+      web, admin and the job runner restarted (down about 9 seconds). Checked on live: all three on `96ea48a`; the
+      sign-in page, terms and privacy notice new; a throw-away address refused with the new message; the `personal`
+      column there (PASDACS 0); payments still live and selling on; the webhook and the admin portal answer; no
+      errors. No personal sign-up was tried on live (it would email a real address). `d2d-relay:189ccac` kept for
+      going back. Not pushed.
+    - **Still to change elsewhere**: pasdacs.com's D2D and Platform pages and the social pack still say D2D is for work
+      emails only ("open to anyone with a work email"; "Personal addresses ... are not accepted").
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -1046,11 +1081,14 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-13, at the clean-up before the user cleared the day's sessions. **Live:** web, admin and the job
-runner run `d2d-relay:189ccac` (= latest, since 2026-11-12 21:53 IST); the database container runs
-`d2d-relay:8689305`'s image; live holds only PASDACS and info@pasdacs.com (no sign-in code has gone out since). This
-folder, the deploy folder and **GitHub** are on this log entry: item 38 and its log were pushed on 2026-11-13 (every
-pushed commit scanned for the live `.env` and `tunnel.env` values and key patterns: none). **Going back** to item 37
+Updated 2026-11-13 evening, after item 39's deploy. **Live:** web, admin and the job runner run `d2d-relay:96ea48a`
+(= latest, since 22:21 IST); the database container runs `d2d-relay:8689305`'s image; live holds only PASDACS and
+info@pasdacs.com, and sells credits online with the live Razorpay keys (since 21:35 IST, "Selling credits online"
+below). This folder and the deploy folder are on this log entry; **GitHub** is on `c8d0f0f` (item 39 and its log not
+pushed yet). **Going back** to item 38 (`d2d-relay:189ccac`, kept): in the deploy folder `git reset --keep c8d0f0f`,
+`docker tag d2d-relay:189ccac d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; the
+`personal` column stays (older code ignores it), but older code refuses free mail at sign-in, so anyone with a
+personal workspace is locked out until item 39 is back. **Going back** to item 37
 (`d2d-relay:334b493`, kept): in the deploy folder `git reset --keep df65429`, `docker tag d2d-relay:334b493
 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`; to item 36 (`d2d-relay:53fb6ad`, kept)
 the same with `cec5ed2`; to item 35 (`d2d-relay:e05f035`, kept) with `8bbfd7e`; to item 34 (`d2d-relay:aa4531e`,
@@ -1111,8 +1149,10 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   names, addresses and networks in that mailbox: give their folder a one-year retention tag (P6).
 - **The old address** d2d-relay.pasdacs.com: done. The user removed its public hostname in Cloudflare; the name no
   longer resolves (checked 2026-11-12, ~13:30 IST). https://d2d.pasdacs.com is the only address.
-- **Social media and ads** (item 38's check, 2026-11-12). Sign-up takes a work email only (Gmail, Outlook and Yahoo
-  are refused), so ads should say so and aim at businesses. New organisations wait for PASDACS's review, and the
+- **Social media and ads** (item 38's check, 2026-11-12; item 39, 2026-11-13). Since item 39 anyone can sign up: a
+  work email joins its company's organisation (whose starting credits wait for PASDACS's review), a personal address
+  (Gmail, Outlook, Yahoo ...) gets a personal workspace that buys its credits; throw-away inboxes stay refused. The
+  copy on pasdacs.com and in the social pack still says "work email" only. New organisations wait for PASDACS's review, and the
   admin portal works only on this PC until the Cloudflare Access step above. Neither site counts visitors (D2D
   Relay's privacy notice promises no tracking cookies): use UTM-tagged links and the ad platforms' own counts, and
   change the notice before adding any pixel or tag. LinkedIn and Meta lead-form ads ask for a privacy policy link;
