@@ -85,7 +85,8 @@ already running, `bash tests/run_all.sh <output name>` runs the suites alone.
 | `item48_check.py`: a started build's credits and its free Retry, planning still refunded, nothing on screen or in the terms about credits coming back | 12 |
 | `item49_check.py`: the job runner's two-minute tidy of its own finished jobs, with stand-in containers (never a running job, never another stack's) | 8 |
 | `item50_check.py`: the admin portal's Overview (online now, sign-ups newest first, totals; not on the public site; its first page) | 19 |
-| **All, for item 50** (943 for 1c841da; 935 for 777f30c; 858 for 01559b6 and a871751; 847 for baf70e5 and 2686fc4; 846 / 829 for d1882f7, 825 / 808 for 96ea48a, 788 / 771 for 189ccac, 747 / 730 for 334b493, 685 / 668 for 54f6ed7) | **962** / not run |
+| `item51_check.py`: the sign-in code email in D2D's look (mail stubbed in the web and admin containers: who gets it, the code, plain characters, nothing fetched; in Chromium: 320 to 1280 px, dark mode) | 25 |
+| **All, for item 51** (962 for 22c7464; 943 for 1c841da; 935 for 777f30c; 858 for 01559b6 and a871751; 847 for baf70e5 and 2686fc4; 846 / 829 for d1882f7, 825 / 808 for 96ea48a, 788 / 771 for 189ccac, 747 / 730 for 334b493, 685 / 668 for 54f6ed7) | **987** / not run |
 
 One suite by hand, with the stack running:
 

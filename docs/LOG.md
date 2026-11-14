@@ -1204,6 +1204,16 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     30 seconds; PASDACS's own people show among the online but are not sign-ups. Code `22c7464`; `item50_check` 19 of 19,
     all suites 962 of 962 (review on). Live since 11:51 IST on the user's "Yes, deploy when tests pass" (live idle): the
     API answers only after an admin sign-in; on live it counted 2 sign-ups that day, both personal workspaces, 1 dashboard.
+51. **The sign-in code email in D2D's look** (the user, 2026-11-14: "can you give me nice email for otp rather than
+    plain, in D2D theme"). It was three plain paragraphs; `app/code_email.py` now renders it like the sign-in page:
+    the dark band with the D2D lockup (the three-row mark drawn with table cells on a white tile) and a mint bar, then
+    "Your sign-in code", the code large in a mint panel, how long it lasts, what to do with an email nobody asked for,
+    and a short footer with the site and the help address. Built as email has to be (tables, inline styles, no
+    pictures or web fonts, so nothing is fetched when it is opened), with a dark version for mail apps in dark mode;
+    the admin portal's says it is for the admin sign-in page. The subject is unchanged. Code `8029415`;
+    `item51_check` 25 of 25, all suites 987 of 987 (review on). Live since 17:51 IST on the user's "Yes, deploy" (live
+    idle): the live web and admin containers render it, each with its own wording, and nothing was sent. Not yet seen
+    in a real mail app (Gmail, Outlook): no test email was sent, so the next sign-in code is the first in the new look.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1244,9 +1254,10 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-14 11:55 IST, after items 44-50, the first real purchase and that morning's crash (the site down from
+Updated 2026-11-14 17:55 IST, after items 44-51, the first real purchase and that morning's crash (the site down from
 about 07:26 to 08:52 IST, "Overnight restarts" below). **Live:** web, admin and the job runner run
-`d2d-relay:22c7464` (= latest, since 2026-11-14 11:51 IST, item 50, the admin Overview; item 49 since 11:25; items 44-48 since 11:09:
+`d2d-relay:8029415` (= latest, since 2026-11-14 17:51 IST, item 51, the sign-in code email in D2D's look; item 50
+since 11:51, the admin Overview; item 49 since 11:25; items 44-48 since 11:09:
 credits by visuals, the private queue without Stop, builds side by side, one model, and the user's rule for builds
 that do not finish), with the Turnstile
 bot check on and the AI on PASDACS's Anthropic API key first (Claude Opus 5.5), the Claude subscription as its backup
@@ -1254,9 +1265,12 @@ bot check on and the AI on PASDACS's Anthropic API key first (Claude Opus 5.5), 
 day, and sells credits online with the live
 Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
 whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
-folder, the deploy folder and **GitHub** carry this log entry: pushed with item 50 on the user's "Yes, deploy when tests
-pass" (item 49 on "close what all you can do and pblish all live and update it", items 44-48 on "ok if all tested deploy
-and publish it"). **Going back** to item 49 (`d2d-relay:1c841da`, kept): in the deploy folder `git reset --keep
+folder and the deploy folder carry this log entry; **GitHub** is still on `2c3fdf5` (item 50's log): item 51 went live
+on the user's "Yes, deploy" and is not pushed yet (item 50 was pushed on "Yes, deploy when tests pass", item 49 on
+"close what all you can do and pblish all live and update it", items 44-48 on "ok if all tested deploy and publish
+it"). **Going back** to item 50 (`d2d-relay:22c7464`, kept): in the deploy folder `git reset --keep 2c3fdf5`, `docker
+tag d2d-relay:22c7464 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (the plain sign-in code
+email again). **Going back** to item 49 (`d2d-relay:1c841da`, kept): in the deploy folder `git reset --keep
 318e248`, `docker tag d2d-relay:1c841da d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (no
 Overview). **Going back** to items 44-48 (`d2d-relay:777f30c`, kept): in the deploy folder `git reset --keep c410d9d`, `docker tag
 d2d-relay:777f30c d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (only the runner's tidy
