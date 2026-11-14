@@ -71,7 +71,7 @@ async def main():
 
 asyncio.run(main())
 print(json.dumps({"parallel": worker.PARALLEL, "spans": sorted(spans, key=lambda s: s[3]), "peak": peak,
-                  "took": round(time.time() - T0, 2), "left": len(worker.RUNNING)}))
+                  "took": round(time.time() - T0, 2), "left": len(worker.ACTIVE)}))
 """)
 try:
     r = json.loads(out.strip().splitlines()[-1])

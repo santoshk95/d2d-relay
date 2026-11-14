@@ -94,7 +94,7 @@ PARALLEL = max(1, int(os.environ.get("D2D_BUILD_PARALLEL") or 3))
 # Publishing (the DAX check in Power BI's engine, the .pbix from Power BI Desktop) runs on this Windows PC's helpers, one
 # at a time: its jobs take no AI slot and run one at a time (the user, 2026-11-14: "pbix file will be sequence only")
 SERIAL = {"pbi", "pbix"}
-RUNNING: dict[str, dict] = {}           # job id -> {pid, kind, model, task, started, job, owner, tenant}: every tenant's
+ACTIVE: dict[str, dict] = {}           # job id -> {pid, kind, model, task, started, job, owner, tenant}: every tenant's
 
 
 def _seen(j: dict) -> bool:
@@ -104,13 +104,13 @@ def _seen(j: dict) -> bool:
 
 def running_jobs() -> list[dict]:
     """This tenant's running jobs, oldest first."""
-    return sorted((j for j in RUNNING.values() if _seen(j)), key=lambda j: j["started"])
+    return sorted((j for j in ACTIVE.values() if _seen(j)), key=lambda j: j["started"])
 
 
 class _Current:
     """The oldest running job this tenant may see, read like the one job of before item 46 (pid, kind, task, started,
     job, owner, tenant); another tenant sees an idle mapping. For one project ask running_job / is_running /
-    running_since; every tenant's jobs are RUNNING (all_running for PASDACS's screens)."""
+    running_since; every tenant's jobs are ACTIVE (all_running for PASDACS's screens)."""
 
     def _job(self) -> dict | None:
         mine = running_jobs()
@@ -168,7 +168,7 @@ def running_since(pid: str) -> float | None:
 
 def all_running() -> list[dict]:
     """Every tenant's running jobs, oldest first, without their tasks: for PASDACS's own screens only."""
-    return [{k: v for k, v in j.items() if k != "task"} for j in sorted(RUNNING.values(), key=lambda j: j["started"])]
+    return [{k: v for k, v in j.items() if k != "task"} for j in sorted(ACTIVE.values(), key=lambda j: j["started"])]
 wake: asyncio.Event | None = None       # set when a job is queued, so the worker starts it at once (made per loop)
 _loop: asyncio.AbstractEventLoop | None = None
 POLL_S = 5                              # safety net: the worker also looks at the queue this often
@@ -249,7 +249,7 @@ def waiting() -> int:
 
 def busy_owners() -> set[str]:
     """Whose jobs the agent runs now, whatever the tenant (the workspace reaper must not stop them)."""
-    return {j["owner"] for j in RUNNING.values() if j.get("owner")}
+    return {j["owner"] for j in ACTIVE.values() if j.get("owner")}
 
 
 def busy_owner() -> str | None:
@@ -382,16 +382,16 @@ async def worker_loop() -> None:
 def _start_next() -> bool:
     """Start the oldest waiting job that has room: its project has no job running, and an AI slot is free (fewer than
     PARALLEL running) or, for publishing (SERIAL), no other publishing job runs. False when there is none to start."""
-    busy = {(j["tenant"], j["pid"]) for j in RUNNING.values()}
-    ai = sum(1 for j in RUNNING.values() if j["kind"] not in SERIAL)
-    serial = any(j["kind"] in SERIAL for j in RUNNING.values())
+    busy = {(j["tenant"], j["pid"]) for j in ACTIVE.values()}
+    ai = sum(1 for j in ACTIVE.values() if j["kind"] not in SERIAL)
+    serial = any(j["kind"] in SERIAL for j in ACTIVE.values())
 
     def room(r: dict) -> bool:
         return not serial if r["kind"] in SERIAL else ai < PARALLEL
-    row = next((r for r in _waiting_rows() if r["id"] not in RUNNING and (r["tenant"], r["pid"]) not in busy and room(r)), None)
+    row = next((r for r in _waiting_rows() if r["id"] not in ACTIVE and (r["tenant"], r["pid"]) not in busy and room(r)), None)
     if row is None:
         return False
-    RUNNING[row["id"]] = {"pid": row["pid"], "kind": row["kind"], "model": row["model"], "task": None, "started": time.time(),
+    ACTIVE[row["id"]] = {"pid": row["pid"], "kind": row["kind"], "model": row["model"], "task": None, "started": time.time(),
                           "job": row["id"], "owner": row["owner_id"], "tenant": row["tenant"]}
     asyncio.create_task(_job(row))
     return True
@@ -406,20 +406,20 @@ async def _job(row: dict) -> None:
         with db.use(row["tenant"]):
             db.set_job(jid, "running")
             task = asyncio.create_task(_run(pid, kind, args))     # the task keeps this context
-            RUNNING[jid]["task"] = task
+            ACTIVE[jid]["task"] = task
             from . import monitor
             monitor.log("job.start", job=jid, pid=pid, kind=kind, model=row["model"], owner=row["owner_id"], tenant=row["tenant"],
-                        running=len(RUNNING))
+                        running=len(ACTIVE))
             await asyncio.wait({task})
             _finish(jid, pid)
             done = db.job(jid) or {}
             monitor.log("job.end", "info" if done.get("state") == "done" else "warn", job=jid, pid=pid, kind=kind,
-                        state=done.get("state"), seconds=round(time.time() - RUNNING[jid]["started"]),
+                        state=done.get("state"), seconds=round(time.time() - ACTIVE[jid]["started"]),
                         error=(done.get("error") or "")[:200] or None, tenant=row["tenant"])
     except Exception:  # noqa: BLE001
         traceback.print_exc()
     finally:
-        RUNNING.pop(jid, None)
+        ACTIVE.pop(jid, None)
         if wake is not None:
             wake.set()                            # a slot is free
 
