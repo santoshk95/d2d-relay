@@ -32,7 +32,7 @@ ACCESS_TEAM = _team if "." in _team or not _team else f"{_team}.cloudflareaccess
 ACCESS_AUD = (os.environ.get("D2D_ADMIN_ACCESS_AUD") or "").strip()
 # What the admin portal answers under /api (everything else there is 404)
 API = ("/api/me", "/api/registry", "/api/brand", "/api/notifications", "/api/admin/orgs", "/api/admin/requests",
-       "/api/admin/payments")
+       "/api/admin/payments", "/api/admin/overview")     # item 50: who is online, who signed up
 _jwks = None
 
 

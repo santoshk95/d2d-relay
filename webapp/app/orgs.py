@@ -1111,6 +1111,51 @@ def all_orgs():
             "review": reviews_new()}
 
 
+ONLINE_S = 300                     # item 50: a public-site session seen within five minutes counts as online now
+
+
+@router.get("/api/admin/overview")
+def overview():
+    """Item 50 (the user, 2026-11-14: "can you put a small dashboard in the admin like live users and who are have signed
+    up"): who is online now (a public-site session seen in the last ONLINE_S seconds; the admin portal's own sessions
+    never count), everyone who has signed up, newest first, and the totals. PASDACS's own workspace shows among the
+    online but is not a sign-up."""
+    _admin()
+    now = time.time()
+    midnight = now - (now + 19800) % 86400             # today began at midnight, India time
+    people, online = [], []
+    tot = {"people": 0, "workspaces": 0, "business": 0, "personal": 0, "online": 0, "today": 0, "week": 0, "dashboards": 0}
+    for o in db.q("SELECT * FROM relay.tn_orgs ORDER BY created"):
+        platform = o["tenant_id"] == db.PLATFORM
+        try:
+            with db.use(o["tenant_id"]):
+                users = db.q("SELECT id, name, email, created, last_login FROM users WHERE active = 1 AND home_tenant IS NULL")
+                seen = {r["user_id"]: r["t"] for r in db.q("SELECT user_id, max(last_seen) AS t FROM sessions WHERE provider <> ? "
+                                                           "AND expires > ? GROUP BY user_id", (portal.SESSION_KIND, now))}
+                made = {r["owner_id"]: r["n"] for r in db.q("SELECT owner_id, count(*) AS n FROM projects GROUP BY owner_id")}
+        except db.UnknownTenant:
+            continue
+        for u in users:
+            row = {"name": u["name"], "email": u["email"], "org": o["name"], "org_id": o["tenant_id"], "personal": is_personal(o),
+                   "platform": platform, "owner": u["id"] == o["owner_id"], "signed_up": u["created"], "last_login": u["last_login"],
+                   "last_seen": seen.get(u["id"]), "dashboards": made.get(u["id"], 0), "credits": o["credits"]}
+            if row["last_seen"] and now - row["last_seen"] <= ONLINE_S:
+                online.append(row)
+            if not platform:
+                people.append(row)
+        if not platform:
+            tot["workspaces"] += 1
+            tot["personal" if is_personal(o) else "business"] += 1
+            tot["dashboards"] += sum(made.values())
+    tot["people"] = len(people)
+    tot["online"] = sum(1 for r in online if not r["platform"])
+    tot["today"] = sum(1 for r in people if (r["signed_up"] or 0) >= midnight)
+    tot["week"] = sum(1 for r in people if (r["signed_up"] or 0) >= now - 7 * 86400)
+    people.sort(key=lambda r: r["signed_up"] or 0, reverse=True)
+    online.sort(key=lambda r: r["last_seen"] or 0, reverse=True)
+    return {"now": now, "online_minutes": ONLINE_S // 60, "totals": tot, "online": online, "people": people[:200]}
+
+
 def _asked(action: str) -> list[dict]:
     """The latest requests of one kind (audited when they were sent), newest first, with the organisation's name."""
     names = {o["tenant_id"]: o["name"] for o in db.q("SELECT tenant_id, name FROM relay.tn_orgs")}

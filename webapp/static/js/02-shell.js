@@ -65,7 +65,8 @@ function navGroups(route) {          // D2D Relay: dashboards, Ask Relay, brandi
   const on = p => route.startsWith(p);
   const me = S.me || {};
   if (isAdminPortal()) return [{id: 'top', label: '', items: [   // the admin portal: every organisation and what they ask for
-    ['#/orgs', 'layers', 'Organisations', route === '#/orgs' || route === '' || route === '#/'],
+    ['#/overview', 'chart', 'Overview', route === '#/overview' || route === '' || route === '#/'],   // item 50: online now, sign-ups
+    ['#/orgs', 'layers', 'Organisations', route === '#/orgs'],
     ['#/requests', 'send', 'Requests', route === '#/requests'],
     ['#/payments', 'coin', 'Payments', route === '#/payments'],        // credits bought online (37-payments.js)
     ['#/notifications', 'bell', 'Notifications', route === '#/notifications']]}];
@@ -216,12 +217,13 @@ function route() {
   }
   if (tab !== S.tab) { S.tab = tab; S.key = null; S.act = null; }
   renderShell();
-  if (isAdminPortal()) {                     // D2D Relay's admin portal: four screens, everything else opens Organisations
+  if (isAdminPortal()) {                     // D2D Relay's admin portal: five screens, everything else opens the Overview
     if (location.hash === '#/requests') return renderRequests();
     if (location.hash === '#/payments') return renderPayments();
     if (location.hash === '#/notifications') return renderNotes();
-    if (location.hash !== '#/orgs') history.replaceState(null, '', '#/orgs');
-    return renderOrgs();
+    if (location.hash === '#/orgs') return renderOrgs();
+    if (location.hash !== '#/overview') history.replaceState(null, '', '#/overview');   // item 50
+    return renderOverview();
   }
   if (!pid) document.title = 'D2D Relay';
   // D2D Relay: only these screens exist; anything else (old links, bookmarks) opens the dashboards list

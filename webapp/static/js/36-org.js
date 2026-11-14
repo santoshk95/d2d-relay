@@ -465,6 +465,46 @@ async function renderOrgs() {
     h('p', {class: 'small muted'}, 'What organisations ask for (credits, connectors) is under ', h('a', {href: '#/requests'}, 'Requests'), '.'));
 }
 
+/* ---------------- Overview (#/overview, the admin portal's first page): who is online now and who has signed up (item 50) */
+async function renderOverview(again) {
+  const y = again ? window.scrollY : 0;
+  let d;
+  try { d = await api('/api/admin/overview'); }
+  catch (e) { if (!again) $('#main').replaceChildren(h('div', {class: 'page wide'}, h('div', {class: 'note err'}, e.message))); return; }
+  if (location.hash !== '#/overview') return;
+  document.title = 'Overview - D2D Relay admin';
+  const t = d.totals;
+  const tile = (label, n, sub) => h('div', {class: 'card', style: 'margin:0'}, h('div', {class: 'muted small'}, label),
+    h('div', {class: 'credbig'}, Number(n || 0).toLocaleString()), h('div', {class: 'small muted'}, sub));
+  const who = r => [h('b', {}, r.name || r.email), h('div', {class: 'small muted'}, r.email)];
+  const where = r => [r.org, h('span', {class: 'tag', style: 'margin-left:6px'}, r.platform ? 'PASDACS' : r.personal ? 'Personal' : 'Business')];
+  const head = cols => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < 2 ? 'l' : null}, c))));
+  const page = h('div', {class: 'page wide'},
+    h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('div', {class: 'eyebrow'}, 'Platform'), h('h1', {}, 'Overview'),
+      h('div', {class: 'meta'}, `Who is on D2D Relay now and who has signed up. Online means seen in the last ${d.online_minutes} minutes; `
+        + 'the page refreshes itself every 30 seconds.'))),
+    h('div', {style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px'},
+      tile('Online now', t.online, 'people using the site'),
+      tile('Signed up', t.people, `${t.today} today, ${t.week} this week`),
+      tile('Workspaces', t.workspaces, `${t.business} business, ${t.personal} personal`),
+      tile('Dashboards', t.dashboards, 'made by them')),
+    h('div', {class: 'card'}, h('h3', {}, `Online now (${d.online.length})`),
+      d.online.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, head(['Person', 'Workspace', 'Last seen']),
+        h('tbody', {}, d.online.map(r => h('tr', {}, h('td', {}, who(r)), h('td', {}, where(r)), h('td', {class: 'n'}, ago(r.last_seen)))))))
+        : h('div', {class: 'muted small'}, 'Nobody right now.')),
+    h('div', {class: 'card'}, h('h3', {}, `Signed up (${d.people.length})`),
+      d.people.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'},
+        head(['Person', 'Workspace', 'Signed up', 'Last seen', 'Dashboards', 'Credits left']),
+        h('tbody', {}, d.people.map(r => h('tr', {}, h('td', {}, who(r)), h('td', {}, where(r)), h('td', {class: 'n'}, when(r.signed_up)),
+          h('td', {class: 'n'}, r.last_seen ? ago(r.last_seen) : r.last_login ? ago(r.last_login) : '-'),
+          h('td', {class: 'n'}, r.dashboards), h('td', {class: 'n'}, r.credits))))))
+        : h('div', {class: 'muted small'}, 'Nobody yet.')));
+  $('#main').replaceChildren(page);
+  if (again) window.scrollTo(0, y);
+  clearTimeout(S.overviewTimer);
+  S.overviewTimer = setTimeout(() => { if (location.hash === '#/overview') renderOverview(true); }, 30000);
+}
+
 /* ---------------- Requests (#/requests, the admin portal): credits and connectors organisations asked for ---------------- */
 async function renderRequests() {
   const page = h('div', {class: 'page wide'});
