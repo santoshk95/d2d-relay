@@ -162,6 +162,13 @@ For a local test only, set `RELAY_OTP_DEV_LOG=1` and codes are printed in `docke
 settings: app mode (a client secret) needs nothing more; in delegated mode, run the `login` command above in
 `d2d-relay-admin` too.
 
+The email itself is in D2D's look (item 51, `webapp/app/code_email.py`): the sign-in page's dark band with the D2D
+lockup and a mint bar, then the code large in a mint panel, how long it lasts, and what to do if nobody asked for it.
+It is built as email has to be (tables, inline styles, no pictures or web fonts, so nothing is fetched when it is
+opened), with a dark version for mail apps in dark mode; the admin portal's says it is for the admin sign-in page. To
+look at it without sending one, write an example and open it in a browser: `python -m app.code_email out.html` in
+`webapp` (add `admin` for the admin portal's).
+
 Code rules: 6 digits, valid for 10 minutes, 5 tries. Per address: 1 code a minute and 6 codes an hour. Per network
 (Cloudflare's `cf-connecting-ip`): 20 codes an hour. Only a salted hash is stored. A session lasts 12 hours
 (`RELAY_SESSION_HOURS`).
