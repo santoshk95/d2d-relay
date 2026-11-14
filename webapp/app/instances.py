@@ -140,7 +140,7 @@ async def reaper(busy_owner) -> None:
                 if s.get("state") != "running" or not uid:
                     continue
                 last_active.setdefault(uid, time.time())      # first seen (e.g. after an app restart): full idle period
-                if time.time() - last_active.get(uid, 0) < IDLE_MIN * 60 or busy_owner() == uid:
+                if time.time() - last_active.get(uid, 0) < IDLE_MIN * 60 or uid in busy_owner():    # item 46: a set
                     continue
                 try:
                     async with httpx.AsyncClient(timeout=3) as c:

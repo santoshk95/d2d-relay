@@ -28,8 +28,8 @@ CANDIDATES = [
     "claude-3-7-sonnet-20250219", "claude-3-5-haiku-20241022", "claude-3-haiku-20240307",
 ]
 FAMILIES = {"fable": "Top-tier family; the highest cost.", "opus": "Large and highly capable.",
-            "sonnet": "Balanced speed and quality; the default.", "haiku": "Fastest and cheapest; best for small edits."}
-DEFAULT = "sonnet"
+            "sonnet": "Balanced speed and quality.", "haiku": "Fastest and cheapest; best for small edits."}
+DEFAULT = "claude-opus-5-5"            # item 47: the Relay Model's own model, the default
 
 
 def probe(name: str, cwd: str) -> dict:

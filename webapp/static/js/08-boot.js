@@ -17,7 +17,7 @@ function render() {
   // item 45: no count of the jobs ahead (they may be other organisations')
   if (bt) bt.textContent = st.status === 'queued' ? 'It starts shortly. You can leave this page; it keeps its place.'
     : st.running_since ? `Running for ${dur(Date.now() - st.running_since * 1000)}` + (['pbi', 'pbix'].includes((st.job || {}).kind)
-      ? ' - Power BI Desktop on the D2D Relay PC, one file at a time' : ' - one agent, one step at a time') : '';
+      ? ' - Power BI Desktop on the D2D Relay PC, one file at a time' : '') : '';     // item 46: builds run side by side
   renderLive();
   const lf = $('#liveframe');
   if (lf && st.live_prototype && st.live_prototype !== S.live) { S.live = st.live_prototype; lf.replaceChildren(protoFrame(`/api/projects/${st.id}/prototype/live?t=${st.live_prototype}`)); }

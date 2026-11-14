@@ -579,7 +579,7 @@ def state(pid: str, u: dict | None = None) -> dict:
             conns.append({"id": cid, "name": "(removed)", "kind": "", "label": "", "status": "gone"})
     out = {**st, "attachments": attachments_state(pid, st), "analysis": v, "open_checkpoints": {c["view"]: c["id"] for c in cps},
            "position": worker.position(pid) if st["status"] == "queued" else 0,
-           "running_since": worker.current.get("started") if worker.current.get("pid") == pid else None,
+           "running_since": worker.running_since(pid),
            "connection_details": conns, "owner": p["owner_id"] if p else None, "owner_name": names.get(p["owner_id"]) if p else None,
            "confirmed": {k: {**c, "by_name": names.get(c.get("by"), c.get("by"))} for k, c in (st.get("confirmed") or {}).items()},
            "next": _next(st, v) if v else [], "promised": promised(pid) if st.get("status") == "planned" else [],
@@ -785,7 +785,7 @@ async def start_dashboard_api(pid: str):
 @router.delete("/api/start/{pid}")
 def delete_start(pid: str):
     u, st = _get(pid, "edit")
-    if st["status"] in RUNNING and worker.current.get("pid") == pid:
+    if st["status"] in RUNNING and worker.is_running(pid):
         raise HTTPException(409, "Relay is reading it - stop it first.")
     checkpoints.withdraw(KIND, pid, who=u["id"])
     db.run("DELETE FROM start_plan_checkpoints WHERE start_id = ?", (pid,))
@@ -813,7 +813,7 @@ def test_hook_analysis(pid: str, body: AnalysisBody):
     problems = check_analysis(d)
     if problems:
         raise HTTPException(400, "; ".join(problems))
-    if worker.current.get("pid") == pid:
+    if worker.is_running(pid):
         raise HTTPException(409, "The agent is running for this start.")
     db.skip_queued(pid)
     analysed(pid, body.summary)

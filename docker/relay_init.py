@@ -50,7 +50,9 @@ ROLES = ("all", "database", "web", "admin")
 AGENT_PASS = {"AGENT_MODEL", "MODELS_FILE", "TZ", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "NODE_EXTRA_CA_CERTS",
               "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy",
               # item 31: each build in a container of its own (RELAY_JOB_CONTAINERS=auto|on|off), the API guard's switch
-              "D2D_JOB_CONTAINERS", "D2D_AGENT_PEER_CHECK"}
+              "D2D_JOB_CONTAINERS", "D2D_AGENT_PEER_CHECK",
+              # item 46: how many builds the AI engine runs at once (the web app's worker reads the same setting)
+              "D2D_BUILD_PARALLEL"}
 AGENT_PREFIXES = ("CLAUDE_CODE_", "ANTHROPIC_", "AGY_")
 # Security audit S6: the AI engine reaches the internet only through docker/egress_proxy.py (Anthropic's hosts), and
 # every other connection its user makes is stopped (iptables, when the container has NET_ADMIN). RELAY_AGENT_EGRESS=off
@@ -401,7 +403,7 @@ def environments(env: dict, egress: bool = False) -> None:
     web = {k: v for k, v in env.items() if k not in skip} | base | {"HOME": "/home/relay", "USER": "relay", "LOGNAME": "relay"}
     write_env("web", web, "relay")
     agent = {k: v for k, v in env.items() if k in AGENT_PASS or k.startswith(AGENT_PREFIXES)} | base | {
-        "HOME": "/home/agent", "USER": "agent", "LOGNAME": "agent", "AGENT_MODEL": env.get("AGENT_MODEL") or "sonnet",
+        "HOME": "/home/agent", "USER": "agent", "LOGNAME": "agent", "AGENT_MODEL": env.get("AGENT_MODEL") or "relay",    # item 47: the Relay Model (Claude Opus 5.5)
         "CLAUDE_CONFIG_DIR": "/home/agent/.claude", "CODEX_HOME": "/home/agent/.codex",
         "GEMINI_CLI_SYSTEM_SETTINGS_PATH": "/etc/gemini-cli/settings.json", "AGY_SHARED_LOGIN": "/opt/agy-login",
         "DISABLE_AUTOUPDATER": "1", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1", "NO_UPDATE_NOTIFIER": "1",

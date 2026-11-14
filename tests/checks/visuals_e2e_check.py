@@ -220,14 +220,18 @@ for mode in MODES:
 
 # ---------------------------------------------------------------- plan -> KPIs -> build -> approve -> publish -> .pbix
 end = time.time() + 120 * 60
+AI_STATUSES = {"generating_data", "planning", "building", "revising"}
+at_once = 0                                       # item 46: the most AI runs seen running at the same time
 while time.time() < end:
     busy = False
+    now_ai = 0
     for mode, run in runs.items():
         if not run["pid"] or run["status"] in ("done", "error"):
             continue
         busy = True
         st = p.get(f"/api/projects/{run['pid']}")[1] or {}
         status = st.get("status") or ""
+        now_ai += status in AI_STATUSES
         if status == "awaiting_kpis" and "plan" not in run["steps"]:
             run["steps"]["plan"] = round((time.time() - run["t0"]) / 60, 1)
             kpis = (st.get("plan") or {}).get("kpis") or []
@@ -252,9 +256,12 @@ while time.time() < end:
         elif status == "error":
             run["status"], run["error"] = "error", (st.get("error") or "")[:500]
             print(f"  {mode}: stopped: {run['error'][:300]}", flush=True)
+    at_once = max(at_once, now_ai)
     if not busy:
         break
     time.sleep(10)
+if len([m for m in MODES if runs.get(m, {}).get("pid")]) > 1:
+    check(f"parallel: the dashboards' AI runs went side by side ({at_once} at once at most; item 46)", at_once >= 2, at_once)
 
 # ---------------------------------------------------------------- what each report is made of
 summary = []

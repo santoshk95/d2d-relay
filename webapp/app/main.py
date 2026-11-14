@@ -93,7 +93,7 @@ async def lifespan(_):
     from . import tenancy                       # P17: grants end on time even when nobody is using the app
     errors.install_loop(asyncio.get_running_loop())
     tasks = [asyncio.create_task(worker.worker_loop()), asyncio.create_task(ops.nightly()),
-             asyncio.create_task(instances.reaper(worker.busy_owner)),
+             asyncio.create_task(instances.reaper(worker.busy_owners)),
              asyncio.create_task(data_routes.scheduler()), asyncio.create_task(schedules.scheduler()),
              asyncio.create_task(monitor.watchdog()), asyncio.create_task(tenancy.sweeper()),
              asyncio.create_task(doctor.loop()), asyncio.create_task(_otp_mail_keepalive())]  # Relay Doctor's shared folder: what runs now, the hold, Admin requests
@@ -557,7 +557,7 @@ def get_project(pid: str):
     live = d / "prototype" / "index.html"
     st["live_prototype"] = live.stat().st_mtime if live.exists() else None
     st["position"] = worker.position(pid) if st["status"] == "queued" else 0
-    st["running_since"] = worker.current.get("started") if worker.current.get("pid") == pid else None
+    st["running_since"] = worker.running_since(pid)
     st["files_available"] = sorted(n for n in VIEWABLE if (d / n).exists())
     me = auth.current.get()
     level, via = auth.access(me, db.project(pid))

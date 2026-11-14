@@ -16,9 +16,9 @@ access and no sub-agents.
 
 Runners and lanes (platform plan, phase 0): every run goes through a `Runner` (start a run, stream normalised
 events: start, say, tool, result, done with usage - or error). `ClaudeCodeRunner` is the only one today; Codex CLI
-and Gemini CLI adapters plug in behind the same interface later. Runs are strictly sequential *per lane*: the
-`build` lane (dashboards; the only lane the app uses today) and the `chat` lane (Ask Relay, phase 5), so a question
-never waits behind a build. One run at a time in each lane.
+and Gemini CLI adapters plug in behind the same interface later. Runs are kept apart *per lane*: the `build` lane
+(dashboards) and the `chat` lane (Ask Relay, phase 5), so a question never waits behind a build. The build lane takes
+D2D_BUILD_PARALLEL runs at once (item 46, default 3; each build runs in a job container of its own), the chat lane one.
 """
 import asyncio
 import json
@@ -40,7 +40,10 @@ from pydantic import BaseModel
 from runners import RUNNER_ENV, installed
 
 ROOT = Path(os.environ.get("WORKSPACES", "/data/projects")).resolve()
-MODEL = os.environ.get("AGENT_MODEL", "sonnet")
+# item 47 (the user, 2026-11-14: "in API use opus 5.5 as default and same in personal as well dont use any other model
+# for Relay Model powered by claude"): a run that names no model gets the Relay Model (config/house-models.json, served
+# by claude-opus-5-5), on the API key and on the Claude login alike; Claude Opus 5.5 itself without a house model
+MODEL = os.environ.get("AGENT_MODEL") or "relay"
 CATALOG = Path(os.environ.get("MODELS_FILE", "/opt/genbi/config/models.json"))
 
 
@@ -138,8 +141,11 @@ async def only_the_web_app(request, call_next):
 
 
 LANES = ("build", "chat")
-locks = {lane: asyncio.Lock() for lane in LANES}
-since: dict[str, float] = {}                       # lane -> when its current run started (observability, phase 8)
+# Item 46 (the user, 2026-11-14: "Add parallel builds"): the build lane takes D2D_BUILD_PARALLEL runs at once (each build
+# runs in a job container of its own, item 31; the web app's worker never sends more), the chat lane one at a time
+CAPACITY = {"build": max(1, int(os.environ.get("D2D_BUILD_PARALLEL") or 3)), "chat": 1}
+slots = {lane: asyncio.Semaphore(CAPACITY[lane]) for lane in LANES}
+active: dict[str, list[float]] = {lane: [] for lane in LANES}   # lane -> when each of its running runs started (phase 8)
 RUN_STATS: dict[tuple, list] = {}                  # (runner, lane, outcome) -> [count, seconds]
 STARTED = time.time()
 
@@ -448,10 +454,12 @@ if os.environ.get("D2D_RUNNERS") and "claude-code" not in os.environ["D2D_RUNNER
 
 @app.get("/health")
 def health():
-    lanes = {lane: lock.locked() for lane, lock in locks.items()}
-    # `busy` = the build lane, as before (the web app gates redeploys and its status pill on it)
-    return {"ok": True, "busy": lanes["build"], "lanes": lanes, "runners": list(RUNNERS), "model": MODEL,
-            "models": _models(), "since": {lane: since.get(lane) for lane in LANES}}
+    lanes = {lane: bool(active[lane]) for lane in LANES}
+    # `busy` = a run in the build lane, as before (the web app gates redeploys and its status pill on it); item 46: how
+    # many run in each lane, and how many each takes
+    return {"ok": True, "busy": lanes["build"], "lanes": lanes, "runs": {lane: len(active[lane]) for lane in LANES},
+            "capacity": CAPACITY, "runners": list(RUNNERS), "model": MODEL, "models": _models(),
+            "since": {lane: min(active[lane]) if active[lane] else None for lane in LANES}}
 
 
 @app.get("/metrics", response_class=PlainTextResponse)
@@ -459,9 +467,13 @@ def metrics():
     now = time.time()
     out = ["# TYPE d2d_agent_up gauge", "d2d_agent_up 1", f"d2d_agent_uptime_seconds {now - STARTED:.0f}",
            "# TYPE d2d_agent_lane_busy gauge"]
-    out += [f'd2d_agent_lane_busy{{lane="{lane}"}} {int(lock.locked())}' for lane, lock in locks.items()]
+    out += [f'd2d_agent_lane_busy{{lane="{lane}"}} {int(bool(active[lane]))}' for lane in LANES]
     out.append("# TYPE d2d_agent_lane_busy_seconds gauge")
-    out += [f'd2d_agent_lane_busy_seconds{{lane="{lane}"}} {now - since[lane] if lane in since else 0:.0f}' for lane in LANES]
+    out += [f'd2d_agent_lane_busy_seconds{{lane="{lane}"}} {now - min(active[lane]) if active[lane] else 0:.0f}' for lane in LANES]
+    out.append("# TYPE d2d_agent_lane_runs gauge")
+    out += [f'd2d_agent_lane_runs{{lane="{lane}"}} {len(active[lane])}' for lane in LANES]
+    out.append("# TYPE d2d_agent_lane_capacity gauge")
+    out += [f'd2d_agent_lane_capacity{{lane="{lane}"}} {CAPACITY[lane]}' for lane in LANES]
     out += ["# TYPE d2d_agent_runs_total counter", "# TYPE d2d_agent_run_seconds_total counter"]
     for (runner, lane, outcome), (n, secs) in sorted(RUN_STATS.items()):
         lab = f'runner="{runner}",lane="{lane}",outcome="{outcome}"'
@@ -489,21 +501,23 @@ async def runs(run: Run):
     workdir = (ROOT / run.workdir).resolve()
     if ROOT not in workdir.parents or not workdir.is_dir():
         raise HTTPException(400, "workdir must be an existing project folder")
-    model, allowed = run.model or MODEL, _models()
+    allowed = _models()
+    model = run.model or (MODEL if MODEL in allowed else "claude-opus-5-5")      # item 47: Opus 5.5 when nothing is named
     if run.runner == "claude-code" and model not in allowed and not run.env.get("ANTHROPIC_BASE_URL"):   # a gateway names its own models
         raise HTTPException(400, f"model must be one of {', '.join(allowed)}")
-    if run.lane not in locks:
+    if run.lane not in slots:
         raise HTTPException(400, f"lane must be one of {', '.join(LANES)}")
     runner = RUNNERS.get(run.runner)
     if runner is None:
         raise HTTPException(400, f"runner must be one of {', '.join(RUNNERS)}")
-    lock = locks[run.lane]
-    if lock.locked():
-        raise HTTPException(409, f"Another agent run is in progress in the {run.lane} lane")
+    slot = slots[run.lane]
+    if slot.locked():
+        raise HTTPException(409, f"The {run.lane} lane is full: {CAPACITY[run.lane]} run(s) at once")
 
     async def stream():
-        async with lock:
-            since[run.lane] = started = time.time()
+        async with slot:
+            started = time.time()
+            active[run.lane].append(started)
             outcome = "stopped"
             events = runner.run(run, workdir, model)
             try:
@@ -515,7 +529,7 @@ async def runs(run: Run):
                     yield json.dumps(ev) + "\n"
             finally:
                 await events.aclose()        # the client went away: the runner's cleanup kills its process
-                since.pop(run.lane, None)
+                active[run.lane].remove(started)
                 _record(runner.name, run.lane, outcome, time.time() - started)
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")

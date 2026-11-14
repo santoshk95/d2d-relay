@@ -117,7 +117,7 @@ def delete_project(pid: str, u: dict) -> dict:
     level, _ = auth.access(u, p)
     if level != "owner":
         raise HTTPException(403, "Only the dashboard's owner or an owner of the organisation can delete it.")
-    if st.get("status") in worker.RUNNING or worker.current.get("pid") == pid \
+    if st.get("status") in worker.RUNNING or worker.is_running(pid) \
             or db.one("SELECT 1 AS x FROM jobs WHERE pid = ? AND state = 'running'", (pid,)):
         raise HTTPException(409, "Relay is working on this dashboard. Stop the run first, then delete it.")
     name, rel, d = st.get("name") or pid, store.rel(pid), store.root() / pid

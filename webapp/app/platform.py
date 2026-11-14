@@ -628,7 +628,7 @@ async def admin_workspaces():
 async def admin_workspace_action(uid: str, action: str):
     if action not in ("start", "stop"):
         raise HTTPException(400, "start or stop")
-    if action == "stop" and worker.current.get("owner") == uid:
+    if action == "stop" and uid in worker.busy_owners():
         raise HTTPException(409, "This person's job is running; stop it from the dashboard first.")
     try:
         return await (instances.start(uid) if action == "start" else instances.stop(uid, "stopped by an admin", auth.who()))

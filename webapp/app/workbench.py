@@ -1273,7 +1273,7 @@ def start(pid: str, sid: str | None = None, *, who: str | None = None, comment: 
         raise HTTPException(409, "This work item is closed.")
     if not module_on(st["module"]):                     # P17: switched off here - the work waits until it is back on
         raise _off(st["module"])
-    if not _internal and st["status"] in RUNNING and (worker.current.get("pid") == pid or st["status"] == "queued"):
+    if not _internal and st["status"] in RUNNING and (worker.is_running(pid) or st["status"] == "queued"):
         raise HTTPException(409, "Relay is already working on this item - wait for it, or stop it first.")
     step = _step(st, sid) if sid else current_step(st)
     if step is None:
@@ -1680,7 +1680,7 @@ def close(pid: str, who: str, comment: str) -> dict:
     if not (comment or "").strip():
         raise HTTPException(400, "Say why the work item closes.")
     st = _load(pid)
-    if worker.current.get("pid") == pid or st["status"] == "queued":
+    if worker.is_running(pid) or st["status"] == "queued":
         worker.stop(pid)
     checkpoints.withdraw(f"wb.{st['module']}", pid, who=who)
 

@@ -1,6 +1,6 @@
 {
  "checked": "2026-11-03",
- "default": "sonnet",
+ "default": "claude-opus-5-5",
  "about": "Models this Claude login can use (agent/probe_models.py). relative_cost: price per token vs Sonnet (latest), from Claude Code's own price table.",
  "models": [
   {
@@ -31,7 +31,7 @@
    "version": "5.5",
    "latest": true,
    "relative_cost": 1.0,
-   "note": "Balanced speed and quality; the default."
+   "note": "Balanced speed and quality."
   },
   {
    "id": "haiku",
@@ -71,7 +71,7 @@
    "version": "5.5",
    "latest": false,
    "relative_cost": 2.0,
-   "note": "Large and highly capable."
+   "note": "Large and highly capable; the default (item 47)."
   },
   {
    "id": "claude-opus-5",
@@ -111,7 +111,7 @@
    "version": "5.5",
    "latest": false,
    "relative_cost": 1.0,
-   "note": "Balanced speed and quality; the default."
+   "note": "Balanced speed and quality."
   },
   {
    "id": "claude-sonnet-5",
@@ -121,7 +121,7 @@
    "version": "5",
    "latest": false,
    "relative_cost": 1.0,
-   "note": "Balanced speed and quality; the default."
+   "note": "Balanced speed and quality."
   },
   {
    "id": "claude-sonnet-4-6",
@@ -131,7 +131,7 @@
    "version": "4.6",
    "latest": false,
    "relative_cost": 1.5,
-   "note": "Balanced speed and quality; the default."
+   "note": "Balanced speed and quality."
   },
   {
    "id": "claude-sonnet-4-5",
@@ -141,7 +141,7 @@
    "version": "4.5",
    "latest": false,
    "relative_cost": 1.5,
-   "note": "Balanced speed and quality; the default."
+   "note": "Balanced speed and quality."
   },
   {
    "id": "claude-haiku-5-5",

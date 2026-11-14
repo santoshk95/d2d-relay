@@ -531,6 +531,18 @@ nightly sweep). Each person's own payments are in Download my data.
 
 ## The AI's Claude account
 
+**One model, Claude Opus 5.5** (item 47, the user, 2026-11-14: "in API use opus 5.5 as default and same in personal as
+well dont use any other model for Relay Model powered by claude"): every run, dashboards, changes, Ask Relay and Relay
+Doctor, asks for the Relay Model, which the AI engine serves with `claude-opus-5-5` (`config/house-models.json`) on
+the API key and on the subscription alike; a run that names no model gets it too (the engine's default, `relay`), and
+the catalog's own default is `claude-opus-5-5`. Opus 5.5 costs $4 / $20 per million input / output tokens on the API,
+twice Sonnet 5.5, so the key's monthly limit ($150) lasts for about half as many builds.
+
+**Builds side by side** (item 46, the user, 2026-11-14: "Add parallel builds"): up to `RELAY_BUILD_PARALLEL` (3)
+dashboard runs at once, each in a job container of its own, never two of one dashboard; more wait in the queue, which
+shows each organisation only its own jobs (item 45). Publishing (the DAX check and the .pbix, Power BI on this
+PC) runs one at a time on its own lane, outside those three. Customers cannot stop a waiting or running build.
+
 The AI engine runs Claude Code. Without an API key it uses the Claude subscription it is signed in with (the
 `claude-api-auth` volume; `docs/LOG.md`, "The AI's Claude plan"). Since item 42 (the user,
 2026-11-13: "claude api key ... as primary and personal as backup"), `RELAY_ANTHROPIC_API_KEY` in the live `.env`

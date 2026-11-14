@@ -1040,7 +1040,7 @@ def state(pid: str, u: dict | None = None) -> dict:
            "redteam": redteam_view(d) if (d / "redteam.yaml").exists() else None, "open_checkpoints": [{"id": c["id"], "kind": c["kind"], "name": c["name"], "assignee": c.get("assignee_id"), "review": (c.get("evidence") or {}).get("review")} for c in cps],
            "packs": packs, "latest_pack": packs[-1] if packs else None, "owner": p["owner_id"] if p else None, "owner_name": names.get(p["owner_id"]) if p else None,
            "people_names": {k: names.get(v, v) for k, v in (st.get("people") or {}).items()}, "position": worker.position(pid) if st["status"] == "queued" else 0,
-           "running_since": worker.current.get("started") if worker.current.get("pid") == pid else None, "rate_cards": rate_cards(), "test_hooks": TEST_HOOKS,
+           "running_since": worker.running_since(pid), "rate_cards": rate_cards(), "test_hooks": TEST_HOOKS,
            "library_count": db.one("SELECT COUNT(*) AS n FROM rfp_library")["n"], "reviews_needed": [{"key": k, "label": l, "done": k in (st.get("reviews") or {})} for k, l in REVIEWS],
            "can_submit": st.get("status") == "ready"}
     if u is not None:
@@ -1575,7 +1575,7 @@ def retry(pid: str):
 @router.delete("/api/rfp/{pid}")
 def delete_response(pid: str):
     u, st = _get(pid, "edit")
-    if st["status"] in RUNNING and worker.current.get("pid") == pid:
+    if st["status"] in RUNNING and worker.is_running(pid):
         raise HTTPException(409, "Relay is working on it - stop it first.")
     for k in CP.values():
         checkpoints.withdraw(k, pid, who=u["id"])
@@ -1599,7 +1599,7 @@ def _hook_guard(pid: str) -> tuple[dict, dict]:
     if not TEST_HOOKS:
         raise HTTPException(404, "Not found")
     u, st = _get(pid, "edit")
-    if worker.current.get("pid") == pid:
+    if worker.is_running(pid):
         raise HTTPException(409, "The agent is running for this response.")
     db.skip_queued(pid)
     return u, st

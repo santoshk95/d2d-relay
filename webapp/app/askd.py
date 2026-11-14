@@ -386,15 +386,15 @@ def _json_reply(text: str) -> dict | None:
 
 
 def models_for(uid: str) -> dict:
-    """The models Ask Relay may use for this person: their gateway routes, else the Claude catalog. Ask Relay defaults to Sonnet
-    (fast and cheap for short answers) when the catalog has it."""
+    """The models Ask Relay may use for this person: their gateway routes, else the Claude catalog, whose default it uses
+    (item 47, the user, 2026-11-14: one model for everything, the Relay Model served by Claude Opus 5.5)."""
     from . import worker
     base = {**worker.model_catalog(), "default": worker.DEFAULT_MODEL}
     cat = providers.catalog_for(uid, base)
     if cat.get("provider") in providers.CLI_KINDS:     # Ask Relay always answers on Claude (no tools), not on another CLI
         cat = {**base, "provider": "claude_account"}
     ids = [m["id"] for m in cat["models"]]
-    default = cat["default"] if cat.get("provider") == "litellm" else ("sonnet" if "sonnet" in ids else cat["default"])
+    default = cat["default"]
     return {"default": default, "ids": ids, "models": cat["models"]}
 
 

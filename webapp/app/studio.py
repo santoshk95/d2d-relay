@@ -600,7 +600,7 @@ def state(pid: str, u: dict | None = None) -> dict:
            "outline": outline_view(load_outline(d), st) if (d / "outline.yaml").exists() else None, "open_checkpoints": {k: c["id"] for k, c in cps.items()},
            "builds": builds, "latest": latest, "report": check_report(pid, latest["v"], d) if latest else None, "spec": spec_text, "spec_name": spec_name(st),
            "attachments": att, "owner": p["owner_id"] if p else None, "owner_name": names.get(p["owner_id"]) if p else None,
-           "position": worker.position(pid) if st["status"] == "queued" else 0, "running_since": worker.current.get("started") if worker.current.get("pid") == pid else None,
+           "position": worker.position(pid) if st["status"] == "queued" else 0, "running_since": worker.running_since(pid),
            "sources_list": sorted(x.name for x in (d / "sources").glob("*") if x.is_file()), "test_hooks": TEST_HOOKS,
            "final": {**st["final"], "by_name": names.get(st["final"].get("by"), "someone")} if st.get("final") else None,
            "outline_confirmed": {**st["outline_confirmed"], "by_name": names.get(st["outline_confirmed"].get("by"), "someone")} if st.get("outline_confirmed") else None,
@@ -1131,7 +1131,7 @@ def mail(pid: str, body: MailIn):
 @router.delete("/api/studio/{pid}")
 def delete_item(pid: str):
     u, st = _get(pid, "edit")
-    if st["status"] in RUNNING and worker.current.get("pid") == pid:
+    if st["status"] in RUNNING and worker.is_running(pid):
         raise HTTPException(409, "Relay is working on it - stop it first.")
     for k in (CP_OUTLINE, CP_FINAL):
         checkpoints.withdraw(k, pid, who=u["id"])
@@ -1155,7 +1155,7 @@ def hook_outline(pid: str, body: HookIn):
     if not TEST_HOOKS:
         raise HTTPException(404, "Not found")
     u, st = _get(pid, "edit")
-    if worker.current.get("pid") == pid:
+    if worker.is_running(pid):
         raise HTTPException(409, "The agent is running for this item.")
     (folder(pid) / "outline.yaml").write_text(body.yaml, encoding="utf-8")
     problems = check_outline(folder(pid), st)
@@ -1171,7 +1171,7 @@ async def hook_draft(pid: str, body: HookIn):
     if not TEST_HOOKS:
         raise HTTPException(404, "Not found")
     u, st = _get(pid, "edit")
-    if worker.current.get("pid") == pid:
+    if worker.is_running(pid):
         raise HTTPException(409, "The agent is running for this item.")
     try:
         raw = yaml.safe_load(body.yaml)

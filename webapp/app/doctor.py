@@ -85,12 +85,14 @@ def holding() -> dict | None:
 async def _app_state() -> dict:
     from . import monitor, worker                          # late: worker imports this module
     now = time.time()
-    pid = dict.get(worker.current, "pid")                  # the job running now, whatever its tenant (worker.busy_owner)
-    running = {"kind": dict.get(worker.current, "kind"), "pid": pid, "tenant": dict.get(worker.current, "tenant"),
-               "age_s": round(now - dict.get(worker.current, "started", now))} if pid else None
+    jobs = worker.all_running()                            # every tenant's (item 46: up to worker.PARALLEL at once)
+    oldest = jobs[0] if jobs else None
+    running = {"kind": oldest["kind"], "pid": oldest["pid"], "tenant": oldest["tenant"],
+               "age_s": round(now - oldest["started"])} if oldest else None
     agent = await monitor._agent()                         # noqa: SLF001
     return {"time": now, "instance": db.INSTANCE, "commit": COMMIT, "started": STARTED, "process": os.getpid(),
-            "running": running, "queue": worker.waiting(), "agent": {"ok": bool(agent.get("ok")), "lanes": agent.get("lanes") or {}},
+            "running": running, "jobs_running": len(jobs), "queue": worker.waiting(),
+            "agent": {"ok": bool(agent.get("ok")), "lanes": agent.get("lanes") or {}},
             "holding": bool(holding()), "errors": errors.recent(30)}
 
 
