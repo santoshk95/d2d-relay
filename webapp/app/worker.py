@@ -210,14 +210,23 @@ def busy_owner() -> str | None:
 
 
 def position(pid: str) -> int:
-    """How many jobs run before this project's queued job (0 = it is next or running)."""
+    """How many of this tenant's own jobs run before this project's queued job (0 = none of its own). Item 45 (the
+    user, 2026-11-14: "why to public it shows other job details"): another organisation's jobs are never counted."""
     t = db.tenant()
-    ahead = 1 if dict.__len__(current) and (dict.get(current, "pid"), dict.get(current, "tenant")) != (pid, t) else 0
+    ahead = 1 if current.get("pid") not in (None, pid) else 0          # current.get: only this tenant's running job
     for row in _waiting_rows():
-        if row["pid"] == pid and row["tenant"] == t:
+        if row["tenant"] != t:
+            continue
+        if row["pid"] == pid:
             return ahead
         ahead += 1
     return 0
+
+
+def waiting_here() -> int:
+    """Item 45: this tenant's own waiting jobs (waiting() counts every tenant's, for PASDACS's screens only)."""
+    t = db.tenant()
+    return sum(1 for r in _waiting_rows() if r["tenant"] == t)
 
 
 def stop(pid: str) -> bool:

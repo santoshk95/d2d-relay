@@ -14,7 +14,8 @@ function render() {
   }
   // in-place updates while Relay works
   const bt = $('#btext');
-  if (bt) bt.textContent = st.status === 'queued' ? (st.position ? `${st.position} job(s) ahead of this one` : 'Starting next...')
+  // item 45: no count of the jobs ahead (they may be other organisations')
+  if (bt) bt.textContent = st.status === 'queued' ? 'It starts shortly. You can leave this page; it keeps its place.'
     : st.running_since ? `Running for ${dur(Date.now() - st.running_since * 1000)}` + (['pbi', 'pbix'].includes((st.job || {}).kind)
       ? ' - Power BI Desktop on the D2D Relay PC, one file at a time' : ' - one agent, one step at a time') : '';
   renderLive();

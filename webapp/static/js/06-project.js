@@ -61,7 +61,7 @@ function banner(st) {
   if (RUN.has(st.status)) {
     const kind = st.status === 'queued' || st.status === 'building_pbi' ? (st.job || {}).kind
       : {generating_data: 'data', planning: 'plan', building: 'build', revising: 'revise'}[st.status];
-    const title = st.status === 'queued' ? (kind === 'pbix' ? 'Waiting to make the Power BI file' : 'Waiting for the agent') : {data: 'Relay is designing and generating demo data for your business',
+    const title = st.status === 'queued' ? (kind === 'pbix' ? 'Waiting to make the Power BI file' : 'In the queue') : {data: 'Relay is designing and generating demo data for your business',
       plan: 'Relay is reading your data and planning the report',
       build: 'Relay is building the model, KPIs and prototype', revise: `Relay is applying your changes (v${(lv || 0) + 1})`,
       pbi: "Publishing: checking the DAX in Power BI's engine, then making the Power BI file (.pbix)",

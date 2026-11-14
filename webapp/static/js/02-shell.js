@@ -193,7 +193,7 @@ async function refreshSys() {
     const r = S.health = await api('/api/health'), ag = r.agent || {};
     a.className = 'health ' + (!ag.ok ? 'down' : ag.busy ? 'busy' : 'ok');
     $('span', a).textContent = !ag.ok ? 'Agent offline' : ag.busy ? 'Agent running' + (r.running_model && modelName(r.running_model) ? ` - ${modelName(r.running_model)}` : '')
-      + (r.queue ? ` - ${r.queue} waiting` : '') : 'Agents ready';
+      + (r.queue ? ` - ${r.queue} waiting` : '') : r.queue ? 'In the queue' : 'Agents ready';      // item 45: own jobs only
     d.className = 'health ' + (!r.daxcheck ? 'down' : r.daxcheck.state === 'checking' ? 'busy' : 'ok');
     $('span', d).textContent = !r.daxcheck ? 'DAX checker off' : r.daxcheck.state === 'checking' ? 'Checking DAX...' : 'DAX checker on';
     d.title = r.daxcheck ? "Power BI's own engine checks every measure and visual before a report is published"

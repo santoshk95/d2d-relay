@@ -297,8 +297,11 @@ async def health():
             agent = (await client.get(f"{worker.AGENT_URL}/health")).json()
     except Exception as e:  # noqa: BLE001
         agent = {"ok": False, "error": e.__class__.__name__}
-    agent = {"ok": bool(agent.get("ok")), "busy": bool(agent.get("busy"))}     # security audit: never the models behind Relay's
-    return {"ok": True, "agent": agent, "queue": worker.waiting(), "running": worker.current.get("pid"),
+    # security audit: never the models behind Relay's. Item 45: only this organisation's own work - whether the shared
+    # agent is busy with, or has waiting jobs from, another organisation is not shown (worker.current is per tenant)
+    mine = bool(worker.current.get("pid"))
+    agent = {"ok": bool(agent.get("ok")), "busy": bool(agent.get("busy")) and mine}
+    return {"ok": True, "agent": agent, "queue": worker.waiting_here(), "running": worker.current.get("pid"),
             "running_model": _shown_model(worker.current.get("model")), "daxcheck": daxcheck.available()}
 
 
