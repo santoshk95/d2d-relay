@@ -1174,7 +1174,8 @@ Anthropic API key first, the Claude subscription as its backup (item 42); the da
 `d2d-relay:8689305`'s image; live holds only PASDACS and info@pasdacs.com, and sells credits online with the live
 Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
 whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
-folder is on this log entry (docs only); the deploy folder and **GitHub** are on 5ed9b21 until the next push.
+folder is on this log entry (the work log and a test only); the deploy folder and **GitHub** are on ace422d until the
+next push.
 **Going back** to item 41 (`d2d-relay:baf70e5`, kept): in the deploy folder `git reset
 --keep d63c052`, `docker tag d2d-relay:baf70e5 d2d-relay:latest`, then `docker compose up -d --no-deps web admin
 runner` (older code ignores `RELAY_ANTHROPIC_API_KEY`: every run on the subscription again). **Going back** to item 41
@@ -1244,7 +1245,11 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   the containers came back at 08:52 (Docker Desktop starts at sign-in; the database cleared the lock file the crash
   left), so the live site was down for about an hour and a half. The crash left both helpers' heartbeat files full of
   zero bytes; Claude started both at 08:58 IST on the user's "Start them for me" (heartbeats fresh and idle, no
-  watchdog alert, no errors). If 0x154 comes back, check the disk's health: it often points to storage or memory.
+  watchdog alert, no errors). Checked the same morning: the four SSDs report healthy, Windows logged no disk errors
+  in 14 days, and every drive has room; Windows could not write a crash dump (volmgr 161), so the cause is unknown
+  (the one earlier unexpected shutdown, 2026-10-29 13:55, had no stop code: a power cut or a forced reset). If 0x154
+  comes back: update the SSDs' firmware with Samsung Magician (it also shows the health data that needs admin) and
+  run Windows Memory Diagnostic.
 - **The two PC helpers do not start by themselves (one-time).** Put shortcuts to `daxcheck\start-daxcheck.cmd` and
   `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC restarts"); Claude Code may not add
   them. Until then, after a restart someone signs in and starts both by hand; the watchdog warns PASDACS after 10
@@ -1382,15 +1387,16 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   checked by hand with `rzp_real_check.py` and `rzp_real_ui.py`: last on 2026-11-13). Since item 34 the end-to-end
   run covers real Claude, Power BI's engine (the DAX check) and the Power BI file maker, on the test stack's own copies
   of this PC's helpers (`tests/stack/helpers.ps1`).
-- **pay_check can race the test stack's own start-up sweep** (item 38, test only): `ops.nightly` backs up and sweeps
-  about a minute after the stack starts, which is when pay_check backdates a checkout and sweeps it; when the stack's
-  sweep comes first, the test's finds nothing and the check fails (a rerun passes). The check could accept the
-  checkout gone either way, or the stack could start its suites after that first run.
+- **pay_check's race with the test stack's own start-up sweep** (item 38, test only): **fixed on 2026-11-14.**
+  `ops.nightly` backs up and sweeps about a minute after the stack starts, which is when pay_check backdates a
+  checkout and sweeps it; the check now adds up what every sweep since the backdating removed (their
+  `retention.sweep` audit rows), so it passes whichever sweep comes first. Forced on a test stack of `01559b6`: the
+  old check fails, the new one passes; pay_check 114 of 114.
 - **The job runner's start-up sweep** (found while moving the release tests into `tests/`, 2026-11-12) is fixed in
   item 34, live since 17:05 IST: each runner removes only its own stack's jobs. A test stack from an image before
   item 34 (`upgrade_check.py` starts one) would still remove live's, so `tests/stack/stack.sh` refuses to start while
   any job container exists and warns if its runner removed one.
-- **The release test suite is in `tests/`** since 2026-11-12 (committed here; not pushed, and nothing in the image
+- **The release test suite is in `tests/`** since 2026-11-12 (on GitHub; nothing in the image
   changes): the suites, the test stack's compose file and `stack.sh`, the stand-in Razorpay and the audit's route list.
   `tests/README.md` says how to start the stack, run the suites in both review modes and tear down, and the real-Claude
   rule. Run from the repository against live's image `d2d-relay:54f6ed7`: 685 checks with the starting-credit review
