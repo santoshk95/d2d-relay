@@ -50,8 +50,8 @@ A, B = {ta!r}, {tb!r}
 rows = [{{"pid": "b-1", "tenant": B, "created": 1, "id": "j1"}}, {{"pid": "a-1", "tenant": A, "created": 2, "id": "j2"}},
         {{"pid": "b-2", "tenant": B, "created": 3, "id": "j3"}}, {{"pid": "a-2", "tenant": A, "created": 4, "id": "j4"}}]
 worker._waiting_rows = lambda: rows            # B has a job running and two waiting; A has two waiting
-worker.ACTIVE["j0"] = {"pid": "b-run", "tenant": B, "model": "relay", "owner": "u-b", "kind": "build", "job": "j0",   # item 46
-                        "task": None, "started": time.time()}
+worker.ACTIVE["j0"] = {{"pid": "b-run", "tenant": B, "model": "relay", "owner": "u-b", "kind": "build", "job": "j0",   # item 46
+                        "task": None, "started": time.time()}}
 res = {{}}
 with _db.use(A):
     res["a"] = [worker.position("a-1"), worker.position("a-2"), worker.waiting_here()]
