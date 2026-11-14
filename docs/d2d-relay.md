@@ -276,8 +276,7 @@ is refused; refuse more domains with `RELAY_PUBLIC_DOMAINS_EXTRA`, or treat a li
 | Ask Relay: up to 5 answered questions in one conversation (`RELAY_CREDITS_ASK_QUESTIONS`), charged at its 1st, 6th, 11th ... question | 10 (`RELAY_CREDITS_ASK`) |
 | Confirming the plan, fixing failed review gates, approving and publishing, brand palettes | free |
 
-A request without enough credits is refused before anything starts, with the balance in the message. When a run
-fails, is stopped, or is cut off by a restart, its credits come back on their own; Retry then uses them again. Every
+A request without enough credits is refused before anything starts, with the balance in the message. Every
 AI cost is still recorded on the server (the `usage` table); the screens show no tokens and no cost breakdown. Ask
 Relay shows the credits a conversation used and the questions left in them; a question that gets no answer gives
 its credits back.

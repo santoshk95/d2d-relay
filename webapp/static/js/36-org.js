@@ -219,8 +219,7 @@ async function renderOrg() {
           personal ? null : h('button', {class: 'btn' + ((d.pay || {}).on ? '' : ' primary'), type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'),
           h('span', {class: 'small muted'}, (personal ? ((d.pay || {}).on ? 'Buy a pack online (card, UPI, netbanking). '
               : `Personal workspaces buy credits online, which is not open right now: write to ${d.contact || 'info@pasdacs.com'}. `)
-            : (d.pay || {}).on ? 'Buy a pack online (card, UPI, netbanking), or ask PASDACS. ' : 'PASDACS approves every request. ')
-            + 'When a run fails or is stopped, its credits come back.'))),
+            : (d.pay || {}).on ? 'Buy a pack online (card, UPI, netbanking), or ask PASDACS. ' : 'PASDACS approves every request. ')))),
       h('div', {class: 'card'}, h('h3', {}, 'Owners'),
         h('div', {class: 'stack', style: 'gap:6px'}, d.people.filter(p => p.owner).map(p => h('div', {},
           h('b', {}, p.name + (p.id === (S.me || {}).id ? ' (you)' : '')), p.primary ? h('span', {class: 'tag acc', style: 'margin-left:6px'}, 'Main owner') : null,

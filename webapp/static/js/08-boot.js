@@ -63,6 +63,7 @@ if (isAdminPortal()) {             // D2D Relay's admin portal: organisations an
   loadRegistry().then(() => route());
 } else {
   setInterval(() => { refreshList(); refreshSys(); if (typeof refreshOrg === 'function') refreshOrg(); }, 5000);   // refreshOrg: at most every 30 s
-  loadMe().then(ensureWorkspace);
-  Promise.all([loadModels(), loadRegistry()]).then(() => { refreshList(); refreshSys(); route(); });
+  const me = loadMe();                            // item 44: the first page waits for the person (prices are per organisation)
+  me.then(ensureWorkspace);
+  Promise.all([loadModels(), loadRegistry(), me.catch(() => null)]).then(() => { refreshList(); refreshSys(); route(); });
 }

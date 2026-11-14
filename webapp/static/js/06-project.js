@@ -91,7 +91,7 @@ function banner(st) {
   }
   if (st.status === 'error') {
     const retryCost = (st.credits || {}).retry || 0;      // D2D Relay: the failed run's credits came back, so Retry pays again
-    const retry = h('button', {class: 'btn primary', title: retryCost ? `Retry uses ${retryCost} credits` : 'Retry costs no credits', onclick: async () => { retry.disabled = true;
+    const retry = h('button', {class: 'btn primary', title: retryCost ? `Retry uses ${retryCost} credits` : null, onclick: async () => { retry.disabled = true;
       try { S.project = await api(`/api/projects/${st.id}/retry`, {method: 'POST'}); S.key = null; render(); poll(); refreshOrg(true); } catch (e) { retry.disabled = false; notify(e.message, 'err'); } }},
       'Retry', retryCost ? h('span', {class: 'cost'}, ` - ${retryCost} credits`) : null);
     return box('err', icon('alert'), 'This step needs attention', st.error || 'Something went wrong.', st.job ? retry : null);

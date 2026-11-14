@@ -741,8 +741,8 @@ async def review_kpis(pid: str, payload: str = Form(...), files: list[UploadFile
                    + (f"\n\nComment: {feedback}" if feedback else ""))
         store.log(pid, {"kind": "user", "stage": "plan", "text": f"Confirmed {len(kpis)} KPIs"
                         + (f" ({len(changes)} edit(s))" if changes else "") + (f" - {feedback}" if feedback else "")})
-        # D2D Relay: building the first prototype is part of the new dashboard (no charge); it carries that charge,
-        # so a failed build gives it back
+        # D2D Relay: building the first prototype is part of the new dashboard (no charge); it carries that charge
+        # (what happens to it when the build does not finish: worker.give_back)
         carry = st.get("credit_charge") if not st.get("versions") and not orgs.refunded(st.get("credit_charge")) else None
         worker.enqueue(pid, "build", **orgs.job_args(carry))
     return get_project(pid)
@@ -1185,7 +1185,7 @@ def stop(pid: str):
     the admin portal, which has no dashboards); a failed run gives its credits back on its own."""
     _get(pid)
     if orgs.row(db.tenant()) and not orgs.platform_admin(auth.current.get()):
-        raise HTTPException(403, "A build cannot be stopped: it finishes on its own, and its credits come back if it fails.")
+        raise HTTPException(403, "A build cannot be stopped: it finishes on its own.")
     if not worker.stop(pid):
         raise HTTPException(409, "Nothing is running for this project.")
     return {"ok": True}

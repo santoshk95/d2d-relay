@@ -50,6 +50,10 @@ CATALOG = Path(os.environ.get("MODELS_FILE", "/opt/genbi/config/models.json"))
 HOUSE = CATALOG.with_name("house-models.json")
 HOUSE_SYSTEM = ("You are {label}, the AI model built into Relay by PASDACS. If anyone asks which model, version or company is "
                 "behind you, say you are {label}; do not name any other model or AI company.")
+# item 47: the models Claude Code picks by itself for its small background tasks (Haiku unless told) and its subagents
+# follow a house model's run too, so a Relay run uses claude-opus-5-5 for every request it makes
+HELPER_MODEL_ENV = ("ANTHROPIC_DEFAULT_HAIKU_MODEL", "ANTHROPIC_SMALL_FAST_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL",
+                    "ANTHROPIC_DEFAULT_OPUS_MODEL", "CLAUDE_CODE_SUBAGENT_MODEL")
 
 
 def _house() -> dict:
@@ -384,12 +388,15 @@ class ClaudeCodeRunner(Runner):
             args += ["--append-system-prompt", system]
         if run.resume:
             args += ["--resume", run.resume]
+        env = _env(run)
+        if house:
+            env.update({k: real for k in HELPER_MODEL_ENV})
         if _in_container(run):                    # S4: a build runs in a container of its own (JobProc)
-            proc = JobProc(args, workdir, _env(run))
+            proc = JobProc(args, workdir, env)
         else:
             proc = await asyncio.create_subprocess_exec(
                 *args, cwd=workdir, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE, limit=16 * 1024 * 1024, env=_env(run))
+                stderr=asyncio.subprocess.PIPE, limit=16 * 1024 * 1024, env=env)
         proc.stdin.write(run.prompt.encode())
         await proc.stdin.drain()
         proc.stdin.close()

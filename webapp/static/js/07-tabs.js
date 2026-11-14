@@ -245,7 +245,7 @@ function creditsCard(st) {
   return h('div', {class: 'card'}, h('h3', {}, 'Credits'),
     h('div', {class: 'muted small', style: 'margin:-6px 0 8px'}, `This dashboard has used ${credits(c.used || 0)}. A new dashboard uses ${k.dashboard || 0}`
       + (two ? ` with Power BI's built-in visuals or ${k.dashboard_custom} with custom visuals` : '')
-      + `, a change ${k.change || 0}; when a run fails or is stopped, its credits come back.`),
+      + `, a change ${k.change || 0}.`),
     items.length ? h('table', {class: 'utable'}, h('thead', {}, h('tr', {}, h('th', {}, 'When'), h('th', {class: 'l'}, 'What'), h('th', {class: 'l'}, 'Who'), h('th', {}, 'Credits'))),
       h('tbody', {}, items.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, what(r)), h('td', {}, r.user_name || 'Relay'),
         h('td', {class: 'n delta' + (r.delta > 0 ? ' plus' : '')}, (r.delta > 0 ? '+' : '') + r.delta)))))

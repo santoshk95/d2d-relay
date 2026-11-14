@@ -289,15 +289,21 @@ def stop(pid: str) -> bool:
         if jid:
             db.set_job(jid, "stopped", "stopped before it started")
         store.update(pid, status="error", error="Stopped before it started. Press Retry to run this step.")
-        give_back(pid, st.get("job") or {})
+        give_back(pid, st.get("job") or {}, started=False)
         return True
     return False
 
 
-def give_back(pid: str, args: dict, kind: str | None = None) -> int:
+KEPT = {"build", "revise"}                # item 48: building a prototype (the first one, or a change's)
+
+
+def give_back(pid: str, args: dict, kind: str | None = None, started: bool = True) -> int:
     """D2D Relay: the run a charge paid for did not deliver (failed, stopped, cut off by a restart): the credits go back
-    to the organisation and the activity log says so. Retry charges again (main.retry)."""
+    to the organisation and the activity log says so; Retry charges again (main.retry). Item 48 (the user,
+    2026-11-14): a prototype build that had started keeps its credits, and its Retry costs nothing (the charge rides on)."""
     cid = (args or {}).get("charge")
+    if started and (kind or (args or {}).get("kind")) in KEPT:
+        return 0
     try:
         n = orgs.refund(cid, "The run did not finish.")
         if n:
