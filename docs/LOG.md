@@ -1250,10 +1250,11 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   (the one earlier unexpected shutdown, 2026-10-29 13:55, had no stop code: a power cut or a forced reset). If 0x154
   comes back: update the SSDs' firmware with Samsung Magician (it also shows the health data that needs admin) and
   run Windows Memory Diagnostic.
-- **The two PC helpers do not start by themselves (one-time).** Put shortcuts to `daxcheck\start-daxcheck.cmd` and
-  `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC restarts"); Claude Code may not add
-  them. Until then, after a restart someone signs in and starts both by hand; the watchdog warns PASDACS after 10
-  minutes without either.
+- **The two PC helpers start by themselves since 2026-11-14:** on the user's "Yes, add them", Claude put shortcuts to
+  `daxcheck\start-daxcheck.cmd` and `pbix\start-pbix.cmd` in the user's Startup folder ("D2D Relay DAX checker" and
+  "D2D Relay Power BI file maker", minimised; `docs/d2d-relay.md`, "After the PC restarts"), so both start at sign-in.
+  Someone still has to sign in after a restart (Docker Desktop and the helpers start then); the watchdog warns
+  PASDACS after 10 minutes without either.
 - **The admin portal through the internet** needs two steps in Cloudflare (an Access application, then the public
   hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal") and the team name and AUD tag in `.env`
   (optionally `RELAY_ADMIN_EMAILS`). Until then it works on the D2D Relay PC only: http://127.0.0.1:8102.

@@ -119,8 +119,8 @@ the app writes and checks the report, then asks the maker on this PC for the fil
 ### After the PC restarts
 
 Docker Desktop starts when you sign in to Windows, and the containers come back by themselves. The two helpers
-start by themselves too once their shortcuts are in the Startup folder (one-time; Windows does not let an app put
-them there for you):
+start by themselves too once their shortcuts are in the Startup folder (one-time; on the D2D Relay PC they are there
+since 2026-11-14, as "D2D Relay DAX checker" and "D2D Relay Power BI file maker"). To add them on a PC:
 
 1. Press Win+R, type `shell:startup` and press Enter: the Startup folder opens.
 2. In another window, open `C:\Users\santosh.k\Downloads\D2D Relay`. Right-drag `daxcheck\start-daxcheck.cmd` into
