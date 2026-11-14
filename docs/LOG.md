@@ -1265,10 +1265,9 @@ bot check on and the AI on PASDACS's Anthropic API key first (Claude Opus 5.5), 
 day, and sells credits online with the live
 Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
 whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
-folder and the deploy folder carry this log entry; **GitHub** is still on `2c3fdf5` (item 50's log): item 51 went live
-on the user's "Yes, deploy" and is not pushed yet (item 50 was pushed on "Yes, deploy when tests pass", item 49 on
-"close what all you can do and pblish all live and update it", items 44-48 on "ok if all tested deploy and publish
-it"). **Going back** to item 50 (`d2d-relay:22c7464`, kept): in the deploy folder `git reset --keep 2c3fdf5`, `docker
+folder, the deploy folder and **GitHub** carry this log entry: item 51 went live on the user's "Yes, deploy" and was
+pushed on their "Yes, push" (item 50 was pushed on "Yes, deploy when tests pass", item 49 on "close what all you can do
+and pblish all live and update it", items 44-48 on "ok if all tested deploy and publish it"). **Going back** to item 50 (`d2d-relay:22c7464`, kept): in the deploy folder `git reset --keep 2c3fdf5`, `docker
 tag d2d-relay:22c7464 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (the plain sign-in code
 email again). **Going back** to item 49 (`d2d-relay:1c841da`, kept): in the deploy folder `git reset --keep
 318e248`, `docker tag d2d-relay:1c841da d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (no
