@@ -1128,6 +1128,15 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       without a token; payments live and selling on; no errors. `d2d-relay:baf70e5` kept for going back. The key alone
       off: empty the line in the live `.env`, then `docker compose up -d --no-deps --force-recreate web admin`.
 
+43. **The contact page gives PASDACS's address: "Bangalore, India"** (the user, 2026-11-14, after the lawyer's review:
+    "address you can put as Bangalore, India"). One line under the email box on `contact.html`; `item30_check` looks
+    for it. Code `a871751`. The first build also showed a phone number the user had given; release tests 858 of 858
+    (review on); it went live at 09:33 IST, and on the user's "remove number, its not required" it came out again:
+    that commit was never pushed and was replaced by `a871751` (legal pages 54 of 54 on its image), live since
+    09:36 IST, its old image deleted. Checked on live: the contact page has the address and no number (Cloudflare does
+    not cache it), health and the sign-in page 200, the webhook still refuses an unsigned call (400), the AI engine
+    idle, no errors. `d2d-relay:01559b6` kept for going back.
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)
@@ -1167,15 +1176,17 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-14 09:00 IST, after the first real purchase and that morning's crash (the site down from about 07:26
-to 08:52 IST, "Overnight restarts" below). **Live:** web, admin and the job runner run
-`d2d-relay:01559b6` (= latest, since 2026-11-13 23:49 IST), with the Turnstile bot check on and the AI on PASDACS's
-Anthropic API key first, the Claude subscription as its backup (item 42); the database container runs
+Updated 2026-11-14 09:40 IST, after item 43, the first real purchase and that morning's crash (the site down from
+about 07:26 to 08:52 IST, "Overnight restarts" below). **Live:** web, admin and the job runner run
+`d2d-relay:a871751` (= latest, since 2026-11-14 09:36 IST, item 43), with the Turnstile bot check on and the AI on
+PASDACS's Anthropic API key first, the Claude subscription as its backup (item 42); the database container runs
 `d2d-relay:8689305`'s image; live holds only PASDACS and info@pasdacs.com, and sells credits online with the live
 Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
 whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
-folder is on this log entry (the work log and a test only); the deploy folder and **GitHub** are on ace422d until the
-next push.
+folder, the deploy folder and **GitHub** carry this log entry: pushed with item 43 on the user's "deploy when tests
+pass, then push". **Going back** to item 42 (`d2d-relay:01559b6`, kept): in the deploy folder `git reset --keep
+13c387a`, `docker tag d2d-relay:01559b6 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`
+(only the contact page's address differs).
 **Going back** to item 41 (`d2d-relay:baf70e5`, kept): in the deploy folder `git reset
 --keep d63c052`, `docker tag d2d-relay:baf70e5 d2d-relay:latest`, then `docker compose up -d --no-deps web admin
 runner` (older code ignores `RELAY_ANTHROPIC_API_KEY`: every run on the subscription again). **Going back** to item 41
@@ -1228,13 +1239,13 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   run only when the key fails (refused, out of credit, rate-limited, Anthropic down), and each such run leaves an
   `ai.fallback` record. On it, customers' data may be used to train models if the account's "Help improve Claude"
   setting is on (then kept up to 5 years; otherwise 30 days). **That setting is off since 2026-11-12 (the user).**
-  Still the user's: a monthly spend limit on the key in the Anthropic Console, if not set yet (the API bills per token;
-  `docs/d2d-relay.md`, "The AI's Claude account"); a Team or Enterprise plan would put the backup under commercial
+  The key has a monthly spend limit of $150 in the Anthropic Console (the user, 2026-11-14; the API bills per token,
+  `docs/d2d-relay.md`, "The AI's Claude account"). A Team or Enterprise plan would put the backup under commercial
   terms too. The privacy notice says Anthropic handles the data, and nothing about training.
 - **Terms and policies** (P2, P4): published on 2026-11-12 (item 30): terms of service, refund and cancellation
-  (none), contact. Still: a lawyer's review of them and of the privacy notice (check "PASDACS's own server in India",
-  name a grievance officer if wanted); PASDACS's registered address and phone on the contact page (Razorpay's website
-  review usually asks for them); a signed data processing agreement when a customer asks.
+  (none), contact. **The lawyer has reviewed them** (the user, 2026-11-14), and the contact page gives PASDACS's
+  address as "Bangalore, India" since item 43 (no phone number, the user's choice). Still: a signed data processing
+  agreement when a customer asks.
 - **The PC** (P3): BitLocker is skipped for now (the user, 2026-11-12). The nightly backup (02:30 IST) is on the
   same disk as the data: keep an encrypted copy somewhere else. (Every older backup was deleted on 2026-11-12, on the
   user's word.)
@@ -1255,13 +1266,10 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   "D2D Relay Power BI file maker", minimised; `docs/d2d-relay.md`, "After the PC restarts"), so both start at sign-in.
   Someone still has to sign in after a restart (Docker Desktop and the helpers start then); the watchdog warns
   PASDACS after 10 minutes without either.
-- **The admin portal through the internet** needs two steps in Cloudflare (an Access application, then the public
-  hostname admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal") and the team name and AUD tag in `.env`
-  (optionally `RELAY_ADMIN_EMAILS`). Until then it works on the D2D Relay PC only: http://127.0.0.1:8102.
-- **The mailbox.** The mail app sends app-only (a client secret), which Microsoft lets it do as any mailbox: limit
-  it to info@pasdacs.com with Exchange Online's RBAC for Applications, which replaces Application Access Policies
-  (`docs/d2d-relay.md`, "Limit the mail app to info@pasdacs.com"). The sign-in alerts and the review emails keep
-  names, addresses and networks in that mailbox: give their folder a one-year retention tag (P6).
+- **The admin portal stays on this PC until revenue reaches ₹2 lakh** (the user, 2026-11-14): http://127.0.0.1:8102.
+  Then, to reach it through the internet: two steps in Cloudflare (an Access application, then the public hostname
+  admin-d2d.pasdacs.com; `docs/d2d-relay.md`, "Admin portal") and the team name and AUD tag in `.env` (optionally
+  `RELAY_ADMIN_EMAILS`).
 - **The old address** d2d-relay.pasdacs.com: done. The user removed its public hostname in Cloudflare; the name no
   longer resolves (checked 2026-11-12, ~13:30 IST). https://d2d.pasdacs.com is the only address.
 - **Social media and ads** (item 38's check, 2026-11-12; item 39, 2026-11-13). Since item 39 anyone can sign up: a
@@ -1334,7 +1342,8 @@ credits online on the admin portal and save.
 **The first real purchase: 2026-11-14, 00:04 IST** (the user, from PASDACS's own workspace): 25 credits, ₹2,950 by
 UPI. The checkout confirmed it at once: credits added (PASDACS 75), invoice `D2D/26-27/00001` (₹2,500 + CGST 9%
 ₹225 + SGST 9% ₹225, place of supply Karnataka, SAC 998314), no mail error. It is a real tax invoice in the series:
-the accountant should know it was PASDACS's own test purchase. **Razorpay's webhook was blocked at first:** the site
+the user told the accountant it was PASDACS's own test purchase (2026-11-14). **Razorpay's webhook was blocked at
+first:** the site
 logs every POST, and none came to `/api/payments/webhook` after the payment. The payment did not need it; it is the
 safety net for a buyer who closes the tab after paying (then the credits come when someone in that organisation next
 opens Organisation or Buy credits, for 2 days, or when the admin portal's Payments looks the checkout up), and the
@@ -1425,6 +1434,10 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   owners see every dashboard with who made it (S8); deleting is immediate, after a warning (P5); the web app's
   outbound traffic is not limited for now (S6).
 
+- **The mailbox stays as it is** (the user, 2026-11-14: "mailbox restriction ignore it"): the mail app keeps sending
+  app-only, which Microsoft lets it do as any mailbox of the tenant; no RBAC for Applications limit to info@pasdacs.com
+  (`docs/d2d-relay.md`, "Limit the mail app to info@pasdacs.com", if that changes) and no retention tag on the folder
+  of sign-in alerts and review emails.
 - **Migration D2D is a contact form** (item 29): PASDACS does the migration with the organisation; it is not
   self-service. Requests arrive at info@pasdacs.com and on the admin portal's Requests page.
 - **The first-time tour** shows on its own only to people who start on or after 2026-11-12; Take the tour (the
