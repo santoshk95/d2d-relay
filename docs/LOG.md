@@ -1195,6 +1195,15 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     site, the webhook, the AI engine's 3 build slots and the Relay Model as before. Also checked that day: the
     corporate site and its social pack were clean and pushed; Relay's paused wording work stays uncommitted and its
     GitHub backup branch was still identical (34 files and one new file).
+50. **The admin portal opens on an Overview: who is online now and who has signed up** (the user, 2026-11-14: "can you
+    put a small dashboard in the admin like live users and who are have signed up"). `GET /api/admin/overview` (admin
+    portal only; the public site answers 404): who is online now (a public-site session seen in the last five minutes;
+    the admin portal's own sessions never count), everyone who signed up, newest first, with their workspace (business
+    or personal), sign-up time, last seen, dashboards and credits left, and the totals (sign-ups today and this week,
+    workspaces by kind, dashboards made). The Overview is the admin portal's first page and menu item, refreshed every
+    30 seconds; PASDACS's own people show among the online but are not sign-ups. Code `22c7464`; `item50_check` 19 of 19,
+    all suites 962 of 962 (review on). Live since 11:51 IST on the user's "Yes, deploy when tests pass" (live idle): the
+    API answers only after an admin sign-in; on live it counted 2 sign-ups that day, both personal workspaces, 1 dashboard.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1235,9 +1244,9 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-14 11:30 IST, after items 44-49, the first real purchase and that morning's crash (the site down from
+Updated 2026-11-14 11:55 IST, after items 44-50, the first real purchase and that morning's crash (the site down from
 about 07:26 to 08:52 IST, "Overnight restarts" below). **Live:** web, admin and the job runner run
-`d2d-relay:1c841da` (= latest, since 2026-11-14 11:25 IST, item 49, the job runner's tidy; items 44-48 since 11:09:
+`d2d-relay:22c7464` (= latest, since 2026-11-14 11:51 IST, item 50, the admin Overview; item 49 since 11:25; items 44-48 since 11:09:
 credits by visuals, the private queue without Stop, builds side by side, one model, and the user's rule for builds
 that do not finish), with the Turnstile
 bot check on and the AI on PASDACS's Anthropic API key first (Claude Opus 5.5), the Claude subscription as its backup
@@ -1245,9 +1254,11 @@ bot check on and the AI on PASDACS's Anthropic API key first (Claude Opus 5.5), 
 day, and sells credits online with the live
 Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
 whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
-folder, the deploy folder and **GitHub** carry this log entry: pushed with item 49 on the user's "close what all you can
-do and pblish all live and update it" (items 44-48 on "ok if all tested deploy and publish it"). **Going back** to
-items 44-48 (`d2d-relay:777f30c`, kept): in the deploy folder `git reset --keep c410d9d`, `docker tag
+folder, the deploy folder and **GitHub** carry this log entry: pushed with item 50 on the user's "Yes, deploy when tests
+pass" (item 49 on "close what all you can do and pblish all live and update it", items 44-48 on "ok if all tested deploy
+and publish it"). **Going back** to item 49 (`d2d-relay:1c841da`, kept): in the deploy folder `git reset --keep
+318e248`, `docker tag d2d-relay:1c841da d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (no
+Overview). **Going back** to items 44-48 (`d2d-relay:777f30c`, kept): in the deploy folder `git reset --keep c410d9d`, `docker tag
 d2d-relay:777f30c d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (only the runner's tidy
 differs). **Going back** to item 43 (`d2d-relay:a871751`, kept): in the deploy folder `git reset --keep
 c948af2` (it takes `config/models.json` back too), `docker tag d2d-relay:a871751 d2d-relay:latest`, then `docker
