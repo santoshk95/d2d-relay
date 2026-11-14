@@ -66,7 +66,7 @@ function banner(st) {
       build: 'Relay is building the model, KPIs and prototype', revise: `Relay is applying your changes (v${(lv || 0) + 1})`,
       pbi: "Publishing: checking the DAX in Power BI's engine, then making the Power BI file (.pbix)",
       pbix: 'Making the Power BI file (.pbix) in Power BI Desktop'}[kind] || 'Publishing';
-    return box('run', h('div', {class: 'spin'}), title, '', kind !== 'pbi' && kind !== 'pbix' ? h('button', {class: 'btn', onclick: stopRun}, 'Stop') : null);
+    return box('run', h('div', {class: 'spin'}), title, '', null);      // item 45: no Stop (the user: "hide it everywhere")
   }
   if (st.status === 'awaiting_kpis') return box('you', icon('user'), 'Action required: confirm the plan',
     'Check the KPIs and their formulas below, choose about any custom visuals, then confirm - Relay builds the prototype next.');
@@ -102,10 +102,6 @@ function tabsBar(st) {
   const counts = {versions: st.versions.length};
   return h('div', {class: 'tabs'}, TABS.map(([id, label]) => h('a', {href: `#/p/${st.id}/${id}`, class: S.tab === id ? 'on' : ''}, label,
     counts[id] ? h('span', {class: 'count'}, counts[id]) : null)));
-}
-async function stopRun(e) {
-  e.target.disabled = true;
-  try { await api(`/api/projects/${S.pid}/stop`, {method: 'POST'}); notify('Stopping...'); poll(); } catch (err) { e.target.disabled = false; notify(err.message, 'err'); }
 }
 async function approve(st, v) {
   try { S.project = await api(`/api/projects/${st.id}/approve`, {json: {version: v}}); notify(`v${v} approved - publishing to Power BI`, 'ok'); S.key = null; go('overview'); poll(); }

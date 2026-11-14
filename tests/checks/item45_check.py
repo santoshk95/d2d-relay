@@ -3,7 +3,9 @@ public it shows other job details?". The shared agent serves every organisation 
 one organisation is not shown to another.
 - a project's queue position counts only its own organisation's jobs (another one's running or waiting jobs never);
 - /api/health: the queue is the organisation's own; the agent is "busy" for it only while its own job runs;
-- a queued dashboard says "In the queue" and that it starts shortly, with no count of the jobs ahead.
+- a queued dashboard says "In the queue" and that it starts shortly, with no count of the jobs ahead;
+- no Stop: the user, of the Stop button, "hide it everywhere, so customers can't stop a waiting or running build"
+  (no button, and the API refuses with 403).
 Screenshot: item45-queued.png in the run's folder.
 python -I -X utf8 item45_check.py <public> <admin>"""
 import json
@@ -83,6 +85,9 @@ for _ in range(90):                            # its first run fails at once her
     if not pid or (st.get("status") == "error" and not (st.get("credits") or {}).get("used")):
         break
     time.sleep(2)
+s, r = a.post(f"/api/projects/{pid}/stop") if pid else (0, None)
+check("stop: a customer cannot stop a build (403), and is told it finishes on its own", s == 403
+      and "finishes on its own" in str(c.detail_of(r)), (s, r))
 PLAY = r"""
 import json, sys, time
 from playwright.sync_api import sync_playwright
@@ -104,6 +109,7 @@ with sync_playwright() as pw:
     page.wait_for_selector(".banner.run, .box.run, #btext", timeout=20000)
     page.wait_for_timeout(1500)
     out["text"] = page.evaluate("document.body.innerText")
+    out["stop_buttons"] = page.locator("button:text-is('Stop')").count()
     page.screenshot(path="/tmp/item45-queued.png", full_page=False)
     out["errors"] = errors
     b.close()
@@ -124,6 +130,7 @@ if o:
     check("ui: a queued dashboard says In the queue and that it starts shortly", "In the queue" in t
           and "It starts shortly. You can leave this page; it keeps its place." in t, t[:600])
     check("ui: ... with no count of the jobs ahead and no 'waiting for the agent'", "ahead of this one" not in t and "Waiting for the agent" not in t, t[:600])
+    check("ui: ... and no Stop button", o.get("stop_buttons") == 0, o.get("stop_buttons"))
     check("ui: no script errors", not o["errors"], o["errors"])
 subprocess.run(["docker", "cp", f"{c.WEB_C}:/tmp/item45-queued.png", c.out_path("item45-queued.png")], check=False)
 

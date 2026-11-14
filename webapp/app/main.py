@@ -1180,7 +1180,12 @@ def set_visuals_mode(pid: str, body: VisualsChoice):
 
 @app.post("/api/projects/{pid}/stop")
 def stop(pid: str):
+    """Item 45 (the user, 2026-11-14, of the Stop button: "hide it everywhere, so customers can't stop a waiting or
+    running build"): inside an organisation nobody on the public site may stop one (orgs.platform_admin holds only on
+    the admin portal, which has no dashboards); a failed run gives its credits back on its own."""
     _get(pid)
+    if orgs.row(db.tenant()) and not orgs.platform_admin(auth.current.get()):
+        raise HTTPException(403, "A build cannot be stopped: it finishes on its own, and its credits come back if it fails.")
     if not worker.stop(pid):
         raise HTTPException(409, "Nothing is running for this project.")
     return {"ok": True}
