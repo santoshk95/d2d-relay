@@ -1167,12 +1167,14 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-13 night, after item 42. **Live:** web, admin and the job runner run `d2d-relay:01559b6` (= latest,
-since 23:49 IST), with the Turnstile bot check on and the AI on PASDACS's Anthropic API key first, the Claude
-subscription as its backup (item 42); the database container runs `d2d-relay:8689305`'s image; live holds only
-PASDACS and info@pasdacs.com, and sells credits online with the live Razorpay keys (since 21:35 IST, "Selling credits
-online" below). This folder, the deploy folder and **GitHub** are on this log entry: pushed with it, on the user's
-"Yes, push" (scanned first: nothing secret or private). **Going back** to item 41 (`d2d-relay:baf70e5`, kept): in the deploy folder `git reset
+Updated 2026-11-14 03:00 IST, after the first real purchase. **Live:** web, admin and the job runner run
+`d2d-relay:01559b6` (= latest, since 2026-11-13 23:49 IST), with the Turnstile bot check on and the AI on PASDACS's
+Anthropic API key first, the Claude subscription as its backup (item 42); the database container runs
+`d2d-relay:8689305`'s image; live holds only PASDACS and info@pasdacs.com, and sells credits online with the live
+Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
+whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
+folder is on this log entry (docs only); the deploy folder and **GitHub** are on 5ed9b21 until the next push.
+**Going back** to item 41 (`d2d-relay:baf70e5`, kept): in the deploy folder `git reset
 --keep d63c052`, `docker tag d2d-relay:baf70e5 d2d-relay:latest`, then `docker compose up -d --no-deps web admin
 runner` (older code ignores `RELAY_ANTHROPIC_API_KEY`: every run on the subscription again). **Going back** to item 41
 as first deployed (`d2d-relay:2686fc4`, kept): the same with `docker tag d2d-relay:2686fc4 d2d-relay:latest` (only
@@ -1313,9 +1315,39 @@ on. GST 18% added on top: 25 credits ₹2,950, 50 ₹5,900, 100 ₹11,800, 250 �
 The packs and "owners can buy" are unchanged. Saved at 21:34 with selling off, then switched on at 21:35 after the
 user's "Switch it on". No LUT for 2026-27 yet (the user files it later, "its ok for dollar"): until its ARN is set,
 dollar sales carry IGST inside the dollar price. Checked on live: mode `live`, selling on, nothing missing for
-invoices, PASDACS's own organisation offered real payments, healthz 200, no errors. Still open: the first real
-purchase (the user's; the smallest pack, to see the payment, the credits and invoice `D2D/26-27/00001`). Switching
-off: untick Sell credits online on the admin portal and save.
+invoices, PASDACS's own organisation offered real payments, healthz 200, no errors. Switching off: untick Sell
+credits online on the admin portal and save.
+
+**The first real purchase: 2026-11-14, 00:04 IST** (the user, from PASDACS's own workspace): 25 credits, ₹2,950 by
+UPI. The checkout confirmed it at once: credits added (PASDACS 75), invoice `D2D/26-27/00001` (₹2,500 + CGST 9%
+₹225 + SGST 9% ₹225, place of supply Karnataka, SAC 998314), no mail error. It is a real tax invoice in the series:
+the accountant should know it was PASDACS's own test purchase. **Razorpay's webhook was blocked at first:** the site
+logs every POST, and none came to `/api/payments/webhook` after the payment. The payment did not need it; it is the
+safety net for a buyer who closes the tab after paying (then the credits come when someone in that organisation next
+opens Organisation or Buy credits, for 2 days, or when the admin portal's Payments looks the checkout up), and the
+only way a refund made on the Razorpay Dashboard is recorded. The webhook's settings were right (Live mode, the URL
+exactly https://d2d.pasdacs.com/api/payments/webhook, enabled, the four events) and a call signed with the live
+secret got 200 through Cloudflare from the PC. The cause was Cloudflare's **Bot Fight Mode**, which challenges
+automated calls from cloud servers such as Razorpay's: the user saw it stopping the webhook in Cloudflare's security
+events (Security, Analytics, Events). It cannot be skipped for one path by WAF or page rules, so the user turned it
+**off** by 02:38 IST (a setting for the whole pasdacs.com zone; sign-in keeps its Turnstile check). Checked at 02:55
+IST: two calls from Razorpay arrived, its retry of the payment's two events (no other payment was made), and both got
+200 (so the secret in Razorpay matches the live `.env`); no credits were added twice (one credit entry that night,
+PASDACS still 75). A test checkout started at 02:41 was left before any payment and stays unpaid. Before Bot Fight
+Mode is turned back on, add IP Access rules (Allow) for Razorpay's webhook addresses, which it then leaves alone
+(Razorpay's docs list them; in November 2026: 52.66.75.174, 52.66.76.63, 52.66.151.218, 35.154.217.40, 35.154.22.73,
+35.154.143.15, 13.126.199.247, 13.126.238.192, 13.232.194.134, 18.96.225.0/26 and 18.99.161.0/26). Razorpay retries
+a refused call for 24 hours, then disables the webhook and mails its alert address; its delivery log (Accounts &
+Settings, Webhooks) keeps 3 hours.
+
+**Dollars, checked in Razorpay's test mode the same night** (no money): a test stack on the live image
+`d2d-relay:01559b6` with the user's test keys (`tests/stack/.env.real`, still valid): `rzp_real_check.py` 18 of 18,
+then `rzp_real_ui.py pay-usd`: a buyer billed in the United States paid $100 in Razorpay's own checkout with its
+international test Visa; 100 credits added, export invoice issued (the stack's seller has a LUT; live has none, and
+that case, 18% IGST inside the dollar price, is in `pay_check.py` on every release). A real dollar payment on live
+needs a buyer whom Cloudflare places outside India (or a VPN), billed outside India, with a card issued outside India
+(an Indian card does not test it: Razorpay's international payments are for cards from abroad); the smallest pack is
+$25, a real export sale.
 
 **Step 5 was already done:** the user's Razorpay page (Account & Settings, International payments) shows international
 cards enabled and active on the payment gateway (up to ₹5,00,000 a payment, settled T+0; non-3D Secure cards not
