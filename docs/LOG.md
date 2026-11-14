@@ -1167,7 +1167,8 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-14 03:00 IST, after the first real purchase. **Live:** web, admin and the job runner run
+Updated 2026-11-14 09:00 IST, after the first real purchase and that morning's crash (the site down from about 07:26
+to 08:52 IST, "Overnight restarts" below). **Live:** web, admin and the job runner run
 `d2d-relay:01559b6` (= latest, since 2026-11-13 23:49 IST), with the Turnstile bot check on and the AI on PASDACS's
 Anthropic API key first, the Claude subscription as its backup (item 42); the database container runs
 `d2d-relay:8689305`'s image; live holds only PASDACS and info@pasdacs.com, and sells credits online with the live
@@ -1237,7 +1238,13 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   same disk as the data: keep an encrypted copy somewhere else. (Every older backup was deleted on 2026-11-12, on the
   user's word.)
 - **Overnight restarts:** the user handles them (2026-11-12). (The PC restarted at 02:38 IST that day and the live
-  site was down until ~09:17 IST: Docker Desktop starts only when someone signs in to Windows.)
+  site was down until ~09:17 IST: Docker Desktop starts only when someone signs in to Windows.) **2026-11-14: the PC
+  crashed** with a blue screen (stop code 0x154, UNEXPECTED_STORE_EXCEPTION; Windows logged an unexpected shutdown)
+  at about 07:26 IST (the helpers' last heartbeats; Windows' own last record says 07:08) and started again at 08:51;
+  the containers came back at 08:52 (Docker Desktop starts at sign-in; the database cleared the lock file the crash
+  left), so the live site was down for about an hour and a half. The crash left both helpers' heartbeat files full of
+  zero bytes; Claude started both at 08:58 IST on the user's "Start them for me" (heartbeats fresh and idle, no
+  watchdog alert, no errors). If 0x154 comes back, check the disk's health: it often points to storage or memory.
 - **The two PC helpers do not start by themselves (one-time).** Put shortcuts to `daxcheck\start-daxcheck.cmd` and
   `pbix\start-pbix.cmd` in the Startup folder (`docs/d2d-relay.md`, "After the PC restarts"); Claude Code may not add
   them. Until then, after a restart someone signs in and starts both by hand; the watchdog warns PASDACS after 10
