@@ -49,7 +49,8 @@ def app_py(code: str) -> str:
 for path, must in (("/terms.html", ["Terms of service", "Bengaluru, Karnataka", "no refunds and no cancellations", "privacy.html",
                                     "laws of India"]),
                    ("/refunds.html", ["no refunds and no cancellations", "Delivery", "Payment errors", "info@pasdacs.com"]),
-                   ("/contact.html", ["info@pasdacs.com", "Data Protection Board of India", "Migration D2D"])):
+                   ("/contact.html", ["info@pasdacs.com", "Data Protection Board of India", "Migration D2D",
+                                      "Bangalore, India"])):   # item 43
     s, h, t = raw("GET", P, path)
     flat = " ".join(t.split())                                  # the page's words, whatever the line breaks
     check(f"legal: {path} opens without signing in, with what it must say", s == 200 and all(m in flat for m in must),
