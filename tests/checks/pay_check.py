@@ -506,13 +506,32 @@ print(governance.erase_org({tid!r}, "pay-check"))
     c.check("erase: its payments stay for the accounts, without the people", rr["user_id"] == "" and rr["email"] == "" and rr["org_name"] == "Pay Test"
             and rr["amount"] == "265382" and rr["status"] == "paid", rr)
     c.check("erase: its GST invoices stay (accounts are kept eight years)", invoice(o2["id"]).get("no") == i2["no"], invoice(o2["id"]).get("no"))
-    g.sql(f"UPDATE relay.tn_payments SET created = created - 400 * 86400 WHERE id = '{o6['id']}'")
+    # The stack's own start-up backup and sweep (ops.nightly, about a minute after the stack starts) may run between the
+    # backdating and the sweep below and remove the checkout first: count what every sweep since the backdating removed.
     out = g.app("""
-from app import governance
-print(governance.sweep()["unpaid_checkouts"])
+with _db.use(_db.PLATFORM):
+    print(_db.one("SELECT COALESCE(MAX(id), 0) AS n FROM audit")["n"])
 """)
-    c.check("sweep: a checkout never paid goes after the log period; paid ones stay", out.strip().splitlines()[-1] == "1" and row(o6["id"]) == {}
-            and row(o2["id"]).get("status") == "paid", out[-200:])
+    try:
+        mark = int(out.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        mark = 0
+    g.sql(f"UPDATE relay.tn_payments SET created = created - 400 * 86400 WHERE id = '{o6['id']}'")
+    out = g.app(f"""
+import json
+from app import governance
+mine = governance.sweep()["unpaid_checkouts"]
+with _db.use(_db.PLATFORM):
+    every = [json.loads(r["detail"] or "{{}}").get("unpaid_checkouts", 0)
+             for r in _db.q("SELECT detail FROM audit WHERE action = 'retention.sweep' AND id > ? ORDER BY id", ({mark},))]
+print(json.dumps({{"mine": mine, "every": every}}))
+""")
+    try:
+        sw = json.loads(out.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        sw = {}
+    c.check("sweep: a checkout never paid goes after the log period; paid ones stay", sum(sw.get("every") or []) == 1
+            and sw.get("mine") in (0, 1) and row(o6["id"]) == {} and row(o2["id"]).get("status") == "paid", out[-200:])
 
     bad = [n for n, ok in c.RESULTS if not ok]
     print(f"\n{len(c.RESULTS) - len(bad)} of {len(c.RESULTS)} checks passed" + (f"; failed: {bad}" if bad else ""))
