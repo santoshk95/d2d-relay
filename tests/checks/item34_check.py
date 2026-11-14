@@ -38,11 +38,12 @@ def request_md(pid: str) -> str:
 
 
 def wait_failed(p, pid: str) -> dict:
-    """The test stack has no Claude sign-in: the plan run fails at once and gives its credits back."""
+    """The test stack has no Claude sign-in: the plan run fails at once and gives its credits back. The status turns to
+    error a moment before the refund, so wait for both (item 44: the next dashboard may need all 50 credits)."""
     st = {}
     for _ in range(90):
         st = p.get(f"/api/projects/{pid}")[1] or {}
-        if st.get("status") == "error":
+        if st.get("status") == "error" and not (st.get("credits") or {}).get("used"):
             break
         time.sleep(2)
     return st

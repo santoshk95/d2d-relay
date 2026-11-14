@@ -18,7 +18,7 @@ Only the Claude sign-in volume (`claude-api-auth`) is shared, so both apps use t
 | On this PC | public site http://127.0.0.1:8100, admin portal http://127.0.0.1:8102 |
 | Sign-in | a 6-digit code emailed (no passwords, no SSO): a business address joins its organisation, a free mail address gets a personal workspace (item 39); disposable mail refused |
 | Organisations | one per email domain, each in its own workspace; the first person creates and owns it |
-| Credits | 50 to start, more when PASDACS approves a request; a new dashboard uses 25, a change 10, Ask Relay 10 for up to 5 questions (see "Organisations and credits") |
+| Credits | 50 to start, more when PASDACS approves a request; a new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10, Ask Relay 10 for up to 5 questions (see "Organisations and credits") |
 | Platform admins | every **@pasdacs.com** address, on the admin portal only (every organisation, credits, connectors, requests) |
 
 ## Containers
@@ -269,7 +269,9 @@ is refused; refuse more domains with `RELAY_PUBLIC_DOMAINS_EXTRA`, or treat a li
 | What | Credits |
 |---|---|
 | Start | 50 (`RELAY_CREDITS_START`), once PASDACS has reviewed and approved the new organisation (below); more are bought online (Payments, below) or come when PASDACS approves a request |
-| New dashboard (plan, KPIs and first prototype) | 25 (`RELAY_CREDITS_DASHBOARD`) |
+| New dashboard (plan, KPIs and first prototype) with Power BI's built-in visuals only | 25 (`RELAY_CREDITS_DASHBOARD`) |
+| New dashboard with custom visuals: built-in first with custom where needed, or Relay custom visuals (item 44) | 50 (`RELAY_CREDITS_DASHBOARD_CUSTOM`) |
+| Moving a dashboard made with built-in visuals to custom visuals (its Details tab), once | the difference, 25 |
 | A change: revise the plan, a change request, building a suggested custom visual, an Ask Relay answer sent to a dashboard | 10 (`RELAY_CREDITS_CHANGE`) |
 | Ask Relay: up to 5 answered questions in one conversation (`RELAY_CREDITS_ASK_QUESTIONS`), charged at its 1st, 6th, 11th ... question | 10 (`RELAY_CREDITS_ASK`) |
 | Confirming the plan, fixing failed review gates, approving and publishing, brand palettes | free |

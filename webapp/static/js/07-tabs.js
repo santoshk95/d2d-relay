@@ -239,10 +239,13 @@ function renderLive() {
 /* ---------------- details tab ---------------- */
 function creditsCard(st) {
   const c = st.credits || {}, items = c.items || [];
-  const what = r => (r.kind === 'refund' ? 'Given back: ' : '') + (r.what === 'dashboard' ? 'new dashboard' : 'change') + (r.note && r.kind === 'charge' ? ` - ${r.note}` : '');
+  const what = r => (r.kind === 'refund' ? 'Given back: ' : '') + ({dashboard: 'new dashboard', visuals: 'custom visuals'}[r.what] || 'change')
+    + (r.note && r.kind === 'charge' ? ` - ${r.note}` : '');
+  const k = c.costs || {}, two = k.dashboard_custom && k.dashboard_custom !== k.dashboard;     // item 44: by its visuals
   return h('div', {class: 'card'}, h('h3', {}, 'Credits'),
-    h('div', {class: 'muted small', style: 'margin:-6px 0 8px'}, `This dashboard has used ${credits(c.used || 0)}. A new dashboard uses ${(c.costs || {}).dashboard || 0}, `
-      + `a change ${(c.costs || {}).change || 0}; when a run fails or is stopped, its credits come back.`),
+    h('div', {class: 'muted small', style: 'margin:-6px 0 8px'}, `This dashboard has used ${credits(c.used || 0)}. A new dashboard uses ${k.dashboard || 0}`
+      + (two ? ` with Power BI's built-in visuals or ${k.dashboard_custom} with custom visuals` : '')
+      + `, a change ${k.change || 0}; when a run fails or is stopped, its credits come back.`),
     items.length ? h('table', {class: 'utable'}, h('thead', {}, h('tr', {}, h('th', {}, 'When'), h('th', {class: 'l'}, 'What'), h('th', {class: 'l'}, 'Who'), h('th', {}, 'Credits'))),
       h('tbody', {}, items.map(r => h('tr', {}, h('td', {}, when(r.ts)), h('td', {}, what(r)), h('td', {}, r.user_name || 'Relay'),
         h('td', {class: 'n delta' + (r.delta > 0 ? ' plus' : '')}, (r.delta > 0 ? '+' : '') + r.delta)))))
@@ -253,14 +256,21 @@ const VISUALS_LABEL = {builtin: "Power BI's built-in visuals only", mixed: 'Buil
 function visualsSetting(st) {
   const mode = st.visuals_mode || 'relay';
   if (!(st.access && st.access.can_edit)) return VISUALS_LABEL[mode] || mode;
-  const sel = h('select', {class: 'sel', 'aria-label': 'Visuals for the next versions', style: 'max-width:340px'},
-    Object.entries(VISUALS_LABEL).map(([v, t]) => h('option', {value: v, selected: v === mode}, t)));
+  // item 44: a dashboard paid at the built-in price pays the difference once to move to custom visuals
+  const extra = (st.credits || {}).custom_extra || 0, more = v => extra && v !== 'builtin' ? ` (${extra} more credits)` : '';
+  const sel = h('select', {class: 'sel', 'aria-label': 'Visuals for the next versions', style: 'max-width:380px'},
+    Object.entries(VISUALS_LABEL).map(([v, t]) => h('option', {value: v, selected: v === mode}, t + more(v))));
   sel.onchange = async () => {
     sel.disabled = true;
-    try { S.project = await api(`/api/projects/${st.id}/visuals`, {json: {mode: sel.value}}); notify(`Visuals: ${VISUALS_LABEL[sel.value]} - for the next versions`, 'ok'); S.key = null; render(); }
-    catch (e) { notify(e.message, 'err'); sel.value = mode; sel.disabled = false; }
+    try {
+      S.project = await api(`/api/projects/${st.id}/visuals`, {json: {mode: sel.value}});
+      notify(`Visuals: ${VISUALS_LABEL[sel.value]} - for the next versions` + (more(sel.value) ? ` - ${extra} credits used` : ''), 'ok');
+      if (more(sel.value) && typeof refreshOrg === 'function') refreshOrg(true);
+      S.key = null; render();
+    } catch (e) { notify(e.message, 'err'); sel.value = mode; sel.disabled = false; }
   };
-  return [sel, h('div', {class: 'muted small'}, 'Applies from the next plan, build or change.')];
+  return [sel, h('div', {class: 'muted small'}, (extra ? `Custom visuals use ${extra} more credits on this dashboard, once. ` : '')
+    + 'Applies from the next plan, build or change.')];
 }
 function detailsTab(st) {
   const style = st.style || {};

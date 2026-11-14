@@ -74,7 +74,8 @@ Two helpers run on Windows next to them, because Power BI only runs there. Publi
    Power BI Desktop.
 
 A new organisation gets 50 starting credits once PASDACS has reviewed and approved it (PASDACS is emailed about every
-new organisation). A new dashboard uses 25, a change 10, and Ask Relay 10 for up to 5 questions in a conversation.
+new organisation). A new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10, and
+Ask Relay 10 for up to 5 questions in a conversation.
 More credits come from PASDACS, which approves every request, or are bought online once PASDACS switches selling on
 (off on the live site until Razorpay activates the account).
 

@@ -433,7 +433,8 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
         raise HTTPException(400, "Data size must be small, medium or large, and the period 3 to 60 months.")
     if not files and not generate and not warehouse:
         raise HTTPException(400, "Upload at least one CSV file - or connect a warehouse, or generate demo data.")
-    orgs.require("dashboard")                   # D2D Relay: before anything is saved
+    cost = orgs.dashboard_cost(visuals_mode)    # item 44: 25 with Power BI's built-in visuals, 50 with custom visuals
+    orgs.require("dashboard", n=cost)           # D2D Relay: before anything is saved
 
     title = name.strip() or (" ".join(data_brief.split()[:5]).rstrip(".,;:").title() if generate
                              else picked[0]["object"].split(".")[-1].replace("_", " ").title() if warehouse
@@ -481,7 +482,8 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
     (d / "request.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     store.save({"id": pid, "name": title, "prompt": prompt, "model": model, "style": style, "created": time.time(),
-                "custom_visuals": custom_visuals, "visuals_mode": visuals_mode, **({"data": data} if data else {}),
+                "custom_visuals": custom_visuals, "visuals_mode": visuals_mode, "custom_paid": visuals_mode != "builtin",
+                **({"data": data} if data else {}),
                 **({"warehouse": {"connection_id": conn["id"], "kind": conn["kind"], "name": conn["name"], "tables": picked}}
                    if warehouse else {}),
                 "status": "queued", "files": saved, "images": pics, "versions": [], "runs": [], "job": None, "error": None})
@@ -493,7 +495,7 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
         store.update(pid, credit_charge=cid)
         return worker.enqueue(pid, "data" if generate else "extract" if warehouse else "plan", **orgs.job_args(cid))
     try:
-        orgs.paid("dashboard", pid, title, first_run)
+        orgs.paid("dashboard", pid, title, first_run, None if visuals_mode == "builtin" else "custom visuals", n=cost)
     except orgs.NoCredits:
         shutil.rmtree(d, ignore_errors=True)
         db.run("DELETE FROM projects WHERE id = ?", (pid,))
@@ -568,6 +570,9 @@ def get_project(pid: str):
     st.setdefault("model", worker.DEFAULT_MODEL)
     st.setdefault("custom_visuals", "ask")
     st.setdefault("visuals_mode", "relay")
+    st["custom_paid"] = _custom_paid(st)
+    st["credits"]["custom_extra"] = (0 if st["custom_paid"] or not orgs.row(db.tenant())      # item 44: what moving this
+                                     else orgs.custom_extra())                                  # one to custom visuals uses
     if not st.get("publishes") and st.get("output") and st.get("approved"):     # published before the history was kept
         st["publishes"] = [{"v": st["approved"], "when": st.get("finished"), "pbix": st["output"].get("pbix"),
                             "zip": st["output"].get("zip"), "dax": st["output"].get("dax")}]
@@ -1092,8 +1097,8 @@ def retry(pid: str):
     args = {k: v for k, v in job.items() if k not in ("kind", "id", "model")}
     old = orgs.charge_row(args.get("charge"))
     again = bool(old) and orgs.refunded(old["id"])       # D2D Relay: the failed run's credits came back, so this run pays
-    if again:
-        orgs.require(old["what"])
+    if again:                                            # the same credits as the charge that came back (item 44: by visuals)
+        orgs.require(old["what"], n=-old["delta"])
     store.log(pid, {"kind": "user", "stage": job["kind"], "text": "Retry"})
     if not again:
         worker.enqueue(pid, job["kind"], **args)
@@ -1103,7 +1108,7 @@ def retry(pid: str):
         if st.get("credit_charge") == old["id"]:
             store.update(pid, credit_charge=cid)
         return worker.enqueue(pid, job["kind"], **{**args, **orgs.job_args(cid)})
-    orgs.paid(old["what"], pid, st["name"], rerun, note="Retry")
+    orgs.paid(old["what"], pid, st["name"], rerun, note="Retry", n=-old["delta"])
     return get_project(pid)
 
 
@@ -1127,16 +1132,36 @@ class VisualsChoice(BaseModel):
     mode: str
 
 
+VISUALS_SHORT = {"builtin": "Power BI's built-in visuals only", "mixed": "built-in first, custom where needed",
+                 "relay": "Relay custom visuals"}
+
+
+def _custom_paid(st: dict) -> bool:
+    """Item 44: whether this dashboard has paid the custom-visuals price. One from before item 44 counts as paid for
+    the visuals it had (one price for all then); a built-in one pays the difference when it moves to custom visuals."""
+    return bool(st.get("custom_paid", (st.get("visuals_mode") or "relay") != "builtin"))
+
+
 @app.post("/api/projects/{pid}/visuals")
 def set_visuals_mode(pid: str, body: VisualsChoice):
-    """Which visuals the next versions use: relay (custom visuals), builtin (Power BI's own only) or mixed."""
+    """Which visuals the next versions use: relay (custom visuals), builtin (Power BI's own only) or mixed. Item 44: a
+    dashboard paid at the built-in price pays the difference (orgs.custom_extra) once, when it first moves to custom."""
     st = _get(pid)
     mode = (body.mode or "").strip().lower()
     if mode not in VISUALS_MODES:
         raise HTTPException(400, "Visuals must be relay, builtin or mixed.")
-    if mode != st.get("visuals_mode", "relay"):
-        changes = {"visuals_mode": mode, **({"custom_visuals": "never"} if mode == "builtin" else {})}
-        store.update(pid, **changes)
+    with orgs._lock:                            # noqa: SLF001 - one switch at a time, so the difference is charged once
+        st = _get(pid)
+        changed = mode != st.get("visuals_mode", "relay")
+        if changed:
+            paid = _custom_paid(st)
+            if mode != "builtin" and not paid:
+                if orgs.custom_extra() > 0:     # NoCredits (402) when the organisation cannot pay it: nothing changes
+                    orgs.charge("visuals", pid, st.get("name"), f"switched to {VISUALS_SHORT[mode]}", n=orgs.custom_extra())
+                paid = True
+            changes = {"visuals_mode": mode, "custom_paid": paid, **({"custom_visuals": "never"} if mode == "builtin" else {})}
+            store.update(pid, **changes)
+    if changed:
         req = store.ROOT / pid / "request.md"
         if req.exists():                    # the agent reads its brief from request.md: keep its Visuals line current
             text = req.read_text(encoding="utf-8")

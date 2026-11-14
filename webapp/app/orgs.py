@@ -14,7 +14,9 @@ credits: it buys online (payments.py). A platform admin can still add credits by
 
 Credits are pooled per organisation (relay.tn_orgs.credits); every change is a row in relay.tn_credits:
   start   the starting credits (D2D_CREDITS_START, 50)
-  charge  a new dashboard (D2D_CREDITS_DASHBOARD, 25); a change (D2D_CREDITS_CHANGE, 10): asking Relay to revise the
+  charge  a new dashboard (D2D_CREDITS_DASHBOARD, 25, with Power BI's built-in visuals only; D2D_CREDITS_DASHBOARD_CUSTOM,
+          50, with custom visuals: item 44, and a built-in one moved to custom visuals pays the difference once, what
+          "visuals"); a change (D2D_CREDITS_CHANGE, 10): asking Relay to revise the
           plan, a change request on a prototype, building a custom visual Relay suggested, an Ask Relay answer sent to
           a dashboard; Ask Relay (D2D_CREDITS_ASK, 10) for up to D2D_CREDITS_ASK_QUESTIONS (5) answered questions in
           one conversation: charged at its 1st, 6th, 11th ... question (askd_routes.py)
@@ -81,13 +83,27 @@ def reviews_new() -> bool:
     return bool(START) and START_REVIEW
 COST = {"dashboard": int(os.environ.get("D2D_CREDITS_DASHBOARD") or 25), "change": int(os.environ.get("D2D_CREDITS_CHANGE") or 10),
         "ask": int(os.environ.get("D2D_CREDITS_ASK") or 10)}
+# item 44 (the user, 2026-11-14): "25 credits in dashboard is for default visual and 50 credits for custom visuals (fully
+# custom / default plus custom)": COST["dashboard"] is a dashboard of Power BI's built-in visuals only, this one a
+# dashboard with custom visuals (mixed or relay)
+COST["dashboard_custom"] = max(int(os.environ.get("D2D_CREDITS_DASHBOARD_CUSTOM") or 50), COST["dashboard"])
 ASK_QUESTIONS = int(os.environ.get("D2D_CREDITS_ASK_QUESTIONS") or 5)   # the Ask Relay questions COST["ask"] pays for
 
 
 def costs() -> dict:
     """What the screens show: each kind of work's credits, and how many Ask Relay questions COST["ask"] covers."""
     return {**COST, "ask_questions": ASK_QUESTIONS}
-WHAT = {"dashboard": "New dashboard", "change": "Change"}
+
+
+def dashboard_cost(visuals_mode: str | None) -> int:
+    """Item 44: what a new dashboard uses, by its visuals (builtin, mixed or relay)."""
+    return COST["dashboard"] if visuals_mode == "builtin" else COST["dashboard_custom"]
+
+
+def custom_extra() -> int:
+    """Item 44: what moving a dashboard paid at the built-in price to custom visuals uses, once (the difference)."""
+    return COST["dashboard_custom"] - COST["dashboard"]
+WHAT = {"dashboard": "New dashboard", "change": "Change", "visuals": "Custom visuals"}
 CONTACT = (os.environ.get("D2D_CREDITS_CONTACT") or "info@pasdacs.com").strip()
 PLATFORM_EMAIL = (os.environ.get("D2D_OTP_EMAIL") or os.environ.get("D2D_ADMIN_EMAIL") or "").strip().lower()
 REQUESTS_PER_HOUR = 5
@@ -488,9 +504,12 @@ def _entry(tid: str, kind: str, delta: int, *, what: str | None = None, pid: str
     return e
 
 
-def _short(o: dict, what: str) -> str:
+def _short(o: dict, what: str, n: int | None = None) -> str:
+    n = COST.get(what, 0) if n is None else n
     uses = (f"Ask Relay uses {COST['ask']} credits for up to {ASK_QUESTIONS} questions" if what == "ask" else
-            f"{'A new dashboard' if what == 'dashboard' else 'A change'} uses {COST[what]} credits")
+            f"Custom visuals on this dashboard use {n} more credits" if what == "visuals" else
+            f"A new dashboard with custom visuals uses {n} credits" if what == "dashboard" and n > COST["dashboard"] else
+            f"{'A new dashboard' if what == 'dashboard' else 'A change'} uses {n} credits")
     p = _pending(o["tenant_id"])
     if p and p.get("purpose") == "start":
         return (f"Not enough credits. {uses}, and {o['name']} has none yet: PASDACS is reviewing your new organisation and adds "
@@ -505,29 +524,32 @@ def _short(o: dict, what: str) -> str:
     return f"Not enough credits. {uses} and {o['name']} has {o['credits']} left. {more}"
 
 
-def require(what: str) -> None:
-    """Before any work starts: refuse (NoCredits) when this organisation cannot pay for `what`."""
+def require(what: str, *, n: int | None = None) -> None:
+    """Before any work starts: refuse (NoCredits) when this organisation cannot pay for `what` (n credits when given,
+    e.g. a dashboard's price by its visuals, else COST[what])."""
     o = row(db.tenant())
-    if o and o["credits"] < COST[what]:
-        raise NoCredits(_short(o, what))
+    n = COST[what] if n is None else n
+    if o and o["credits"] < n:
+        raise NoCredits(_short(o, what, n))
 
 
-def charge(what: str, pid: str | None = None, name: str | None = None, note: str | None = None) -> str | None:
-    """Take the credits for `what` from the current organisation; returns the charge id (None: no organisation here,
-    nothing to pay). NoCredits when the balance is too low."""
+def charge(what: str, pid: str | None = None, name: str | None = None, note: str | None = None, *, n: int | None = None) -> str | None:
+    """Take the credits for `what` (n, else COST[what]) from the current organisation; returns the charge id (None: no
+    organisation here, nothing to pay). NoCredits when the balance is too low."""
     tid = db.tenant()
     if not row(tid):
         return None
-    e = _entry(tid, "charge", -COST[what], what=what, pid=pid, pname=name, note=note, guard=True)
+    n = COST[what] if n is None else n
+    e = _entry(tid, "charge", -n, what=what, pid=pid, pname=name, note=note, guard=True)
     if e is None:
-        raise NoCredits(_short(row(tid), what))
+        raise NoCredits(_short(row(tid), what, n))
     return e["id"]
 
 
-def paid(what: str, pid: str, name: str | None, start, note: str | None = None):
+def paid(what: str, pid: str, name: str | None, start, note: str | None = None, *, n: int | None = None):
     """Charge for `what`, then start the work: start(charge id or None) queues the run that delivers it. If starting
     fails, the credits are given back and the error goes on."""
-    cid = charge(what, pid, name, note)
+    cid = charge(what, pid, name, note, n=n)
     try:
         return start(cid)
     except BaseException:
@@ -1169,7 +1191,8 @@ def approve(rid: str, credits: int | None, note: str, u: dict) -> dict:
         text = f"PASDACS approved {o['name']} on D2D Relay and added {n:,} starting credits" + (f". {note}" if note else ".")
         _tell_asker(r, o, f"{o['name']} is approved: {n:,} starting credits", text)
         _answer_mail(r, o, f"D2D Relay: {o['name']} is approved, {n:,} starting credits added",
-                     [text, f"Sign in at {_site()} to build your first dashboard (a new dashboard uses {COST['dashboard']} credits)."])
+                     [text, f"Sign in at {_site()} to build your first dashboard (a new dashboard uses {COST['dashboard']} credits "
+                            f"with Power BI's built-in visuals, {COST['dashboard_custom']} with custom visuals)."])
     else:
         text = f"PASDACS approved {n:,} credits for {o['name']}" + (f" (you asked for {r['credits']:,})" if n != r["credits"] else "") + \
             (f". {note}" if note else ".")

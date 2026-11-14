@@ -75,10 +75,13 @@ function renderNew() {
     ['auto', 'Build them when they fit better than the available visuals'], ['never', 'Only use the available visuals']].map(([v, t]) => h('option', {value: v}, t)));
   // Which visuals the report uses, in the order offered (the user, 2026-11-12): Power BI's own (built-in) visuals only
   // by default, then built-in first with a custom visual only where none fits, and last Relay / Visual Atlas custom visuals
+  // item 44: each choice with its credits inside an organisation (25 built-in only, 50 with custom visuals)
+  const inOrg = typeof ORG === 'function' && !!ORG().id && typeof dashCost === 'function' && dashCost('builtin') > 0;
   const visualsSel = h('select', {class: 'sel', 'aria-label': 'Visuals'}, [['builtin', "Power BI's built-in visuals only"],
     ['mixed', 'Built-in first, custom where needed'], ['relay', 'Relay custom visuals']]
-    .map(([v, t]) => h('option', {value: v}, t)));
+    .map(([v, t]) => h('option', {value: v}, inOrg ? `${t} (${dashCost(v)} credits)` : t)));
   const visualsHint = h('div', {class: 'hint'});
+  const useLine = h('b', {class: 'useline'});
   let customChoice = custom.value;          // Custom visuals as chosen, given back when built-in only is left
   custom.onchange = () => { customChoice = custom.value; };
   const syncVisuals = () => {
@@ -88,6 +91,7 @@ function renderNew() {
     visualsHint.textContent = {relay: 'Designed visuals in your colors (embedded in the report).',
       builtin: 'Every Format-pane option. Nothing embedded: works where custom visuals are blocked, in exports, subscriptions and mobile.',
       mixed: 'Standard Power BI visuals, plus a custom one where no built-in visual can show it.'}[visualsSel.value];
+    useLine.textContent = inOrg ? `Uses ${dashCost(visualsSel.value)} credits (${ORG().name} has ${Number(ORG().credits || 0).toLocaleString()}). ` : '';
   };
   visualsSel.onchange = syncVisuals;
   syncVisuals();
@@ -158,7 +162,7 @@ function renderNew() {
         h('div', {}, h('small', {}, 'Palette from the brand'), palette),
         h('div', {}, h('small', {}, 'Background'), h('label', {class: 'chk'}, dark, h('span', {}, 'dark report'))))),
     h('div', {class: 'row', style: 'margin-top:22px'}, goBtn, h('span', {class: 'muted small'},
-      typeof ORG === 'function' && ORG().id ? h('b', {}, `Uses ${costOf('dashboard')} credits (${ORG().name} has ${Number(ORG().credits || 0).toLocaleString()}). `) : null,
+      inOrg ? useLine : null,
       'Relay reads your data and proposes a plan for you to confirm first. Nothing is built before you agree.')), bar);
   form.onsubmit = e => {
     e.preventDefault();
@@ -189,7 +193,9 @@ function renderNew() {
     h('h1', {}, 'New dashboard'), h('div', {class: 'muted', style: 'margin:4px 0 16px'}, 'Four short steps. Bring your CSVs, or let Relay generate demo data. Relay plans first - you confirm the KPIs before anything is built.'),
     typeof ORG === 'function' && ORG().id && (ORG().credits || 0) < costOf('dashboard')       // D2D Relay: say it before the form is filled in
       ? h('div', {class: 'note warn row', style: 'gap:10px;flex-wrap:wrap'}, h('span', {style: 'flex:1;min-width:220px'},
-          `Not enough credits for a new dashboard: it uses ${costOf('dashboard')} credits and ${ORG().name} has ${ORG().credits}.`),
+          `Not enough credits for a new dashboard: it uses ${costOf('dashboard')} credits`
+          + (typeof twoPrices === 'function' && twoPrices() ? ` with Power BI's built-in visuals (${costOf('dashboard_custom')} with custom visuals)` : '')
+          + ` and ${ORG().name} has ${ORG().credits}.`),
         h('button', {class: 'btn sm primary', type: 'button', onclick: () => creditsDialog()}, icon('plus'),
           ORG().pending_request ? 'Credits requested' : isPersonal() ? 'Buy credits' : 'Request credits')) : null,
     form));

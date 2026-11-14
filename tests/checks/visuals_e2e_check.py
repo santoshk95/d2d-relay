@@ -198,12 +198,14 @@ s, r = p.sign_in("End To End", "Eve E2E")
 check("setup: an organisation signs up", s == 200, (s, r))
 p.post("/api/me/tour", {"step": "done"})
 p.post("/api/org/setup")
-s, r = p.post("/api/org/credit-request", {"credits": 100, "message": "end-to-end test"})
+s, r = p.post("/api/org/credit-request", {"credits": 150, "message": "end-to-end test"})
 rid = ((r or {}).get("request") or {}).get("id")
 adm = c.signed_in("info@pasdacs.com", c.ADMIN_BASE)
-s2, r2 = adm.post(f"/api/admin/requests/{rid}/approve", {"credits": 100}) if rid else (0, r)
-credits = (p.get("/api/me")[1].get("org") or {}).get("credits")
-check("setup: PASDACS approves 100 more credits (three dashboards use 75)", s2 == 200 and (credits or 0) >= 25 * len(MODES), (s, r, s2, credits))
+s2, r2 = adm.post(f"/api/admin/requests/{rid}/approve", {"credits": 150}) if rid else (0, r)
+me_org = p.get("/api/me")[1].get("org") or {}
+credits, costs = me_org.get("credits"), me_org.get("costs") or {}
+need = sum(costs.get("dashboard" if m == "builtin" else "dashboard_custom", costs.get("dashboard", 25)) for m in MODES)   # item 44
+check(f"setup: PASDACS approves 150 more credits (three dashboards use {need})", s2 == 200 and (credits or 0) >= need, (s, r, s2, credits))
 tid = g.sql(f"SELECT tenant_id FROM relay.tn_orgs WHERE domain = 'e2e{c.STAMP}.com'")
 
 data = sales_csv()

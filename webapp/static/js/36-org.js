@@ -10,10 +10,15 @@ ICONS.building = ICONS.building || 'M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 
 const ORG = () => (S.me && S.me.org) || {};
 const credits = n => `${Number(n || 0).toLocaleString()} credit${n === 1 ? '' : 's'}`;
 const costOf = what => (ORG().costs || {})[what] || 0;
+/* item 44: a new dashboard's credits by its visuals (Power BI's built-in visuals only, or custom visuals) */
+const dashCost = mode => (mode === 'builtin' ? costOf('dashboard') : costOf('dashboard_custom')) || costOf('dashboard');
+const twoPrices = (c = ORG().costs || {}) => !!(c.dashboard_custom && c.dashboard_custom !== c.dashboard);
 /* " - 15 credits" after a button's label (nothing outside an organisation) */
 const costTag = what => ORG().id && costOf(what) ? h('span', {class: 'cost'}, ` - ${costOf(what)} credits`) : null;
-/* every price in one line: "a new dashboard uses 25, a change 10, Ask Relay 10 for up to 5 questions" */
-const costLine = (c = ORG().costs || {}) => `a new dashboard uses ${c.dashboard || 0}, a change ${c.change || 0}`
+/* every price in one line: "a new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change
+   10, Ask Relay 10 for up to 5 questions" */
+const costLine = (c = ORG().costs || {}) => `a new dashboard uses ${c.dashboard || 0}`
+  + (twoPrices(c) ? ` with Power BI's built-in visuals or ${c.dashboard_custom} with custom visuals` : '') + `, a change ${c.change || 0}`
   + (c.ask ? `, Ask Relay ${c.ask} for up to ${c.ask_questions || 5} questions` : '');
 /* item 39: a personal workspace (one free mail address, e.g. Gmail) buys its credits online and never asks PASDACS for them */
 const isPersonal = (o = ORG()) => !!(o && o.personal);
@@ -203,7 +208,9 @@ async function renderOrg() {
       h('div', {class: 'card'}, h('h3', {}, 'Credits'),
         h('div', {class: 'credbig'}, Number(d.credits || 0).toLocaleString()), h('div', {class: 'muted small'}, personal ? 'credits left in your workspace' : `credits left, shared by everyone in ${d.name}`),
         h('dl', {class: 'kv small', style: 'margin-top:12px'},
-          h('dt', {}, 'New dashboard'), h('dd', {}, credits(d.costs.dashboard)),
+          h('dt', {}, 'New dashboard'), h('dd', {}, twoPrices(d.costs)
+            ? `${credits(d.costs.dashboard)} with Power BI's built-in visuals; ${credits(d.costs.dashboard_custom)} with custom visuals (built-in plus custom, or all custom)`
+            : credits(d.costs.dashboard)),
           h('dt', {}, 'A change'), h('dd', {}, `${credits(d.costs.change)}: revising the plan, a change request, building a custom visual Relay suggested`),
           d.costs.ask ? [h('dt', {}, 'Ask Relay'), h('dd', {}, `${credits(d.costs.ask)} for up to ${d.costs.ask_questions || 5} questions in a conversation`)] : null,
           h('dt', {}, 'Free'), h('dd', {}, 'Confirming the plan, fixing failed review gates, approving and publishing')),

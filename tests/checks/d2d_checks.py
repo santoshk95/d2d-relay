@@ -371,8 +371,8 @@ def credits_by_approval():
     s, o = owner.get("/api/org")
     check("credits: ... with a 'starting credits' line of 50 in its history",
           s == 200 and any(x["kind"] == "start" and x["delta"] == 50 for x in o.get("ledger", [])), o.get("ledger"))
-    check("credits: the prices: 25 a dashboard, 10 a change, 10 for up to 5 Ask Relay questions",
-          (org.get("costs") or {}) == {"dashboard": 25, "change": 10, "ask": 10, "ask_questions": 5}, org.get("costs"))
+    check("credits: the prices: 25 a dashboard (50 with custom visuals, item 44), 10 a change, 10 for up to 5 Ask Relay questions",
+          (org.get("costs") or {}) == {"dashboard": 25, "dashboard_custom": 50, "change": 10, "ask": 10, "ask_questions": 5}, org.get("costs"))
     admin0 = signed_in("info@pasdacs.com", ADMIN_BASE)
     s, r = admin0.post(f"/api/admin/orgs/{org.get('id')}/credits", {"credits": -50, "note": "Test: back to none"})
     check("credits: PASDACS takes the 50 back (to test running out)", s == 200, (s, r))
