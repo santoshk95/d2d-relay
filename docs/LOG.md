@@ -1185,6 +1185,16 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     `worker.give_back`). The sentence that credits come back when a run fails or is stopped is gone from the Organisation
     page, a dashboard's Credits card, the Stop refusal, `docs/d2d-relay.md` and the Terms of Service (the terms changed
     after the lawyer's review of the same day).
+49. **The job runner removes its own finished jobs left behind, every two minutes** (found 2026-11-14 while testing
+    items 44-48: a finished live job container, exited 0 at 10:13 IST, had been left after its stream went away, and
+    the runner removed leftovers only when it started; the leftover kept the test stack from starting). `tidy_once`
+    runs every two minutes beside the runner's API and removes this stack's job containers that ended, or were created
+    but never started, more than five minutes before (`D2D_JOB_STALE_S`); a running job and another stack's are never
+    touched. Code `1c841da`; `item49_check` 8 of 8 (stand-in containers); all suites 943 of 943 (review on). Live since
+    11:25 IST, live idle at the time: the runner serves with the tidy beside it, its first rounds without an error; the
+    site, the webhook, the AI engine's 3 build slots and the Relay Model as before. Also checked that day: the
+    corporate site and its social pack were clean and pushed; Relay's paused wording work stays uncommitted and its
+    GitHub backup branch was still identical (34 files and one new file).
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1225,17 +1235,21 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-14 11:15 IST, after items 44-48, the first real purchase and that morning's crash (the site down from
+Updated 2026-11-14 11:30 IST, after items 44-49, the first real purchase and that morning's crash (the site down from
 about 07:26 to 08:52 IST, "Overnight restarts" below). **Live:** web, admin and the job runner run
-`d2d-relay:777f30c` (= latest, since 2026-11-14 11:09 IST, items 44-48: credits by visuals, the private queue
-without Stop, builds side by side, one model, and the user's rule for builds that do not finish), with the Turnstile
+`d2d-relay:1c841da` (= latest, since 2026-11-14 11:25 IST, item 49, the job runner's tidy; items 44-48 since 11:09:
+credits by visuals, the private queue without Stop, builds side by side, one model, and the user's rule for builds
+that do not finish), with the Turnstile
 bot check on and the AI on PASDACS's Anthropic API key first (Claude Opus 5.5), the Claude subscription as its backup
 (item 42); the database container runs `d2d-relay:8689305`'s image; live holds PASDACS and the first sign-ups of that
 day, and sells credits online with the live
 Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
 whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
-folder, the deploy folder and **GitHub** carry this log entry: pushed with items 44-48 on the user's "ok if all tested
-deploy and publish it". **Going back** to item 43 (`d2d-relay:a871751`, kept): in the deploy folder `git reset --keep
+folder, the deploy folder and **GitHub** carry this log entry: pushed with item 49 on the user's "close what all you can
+do and pblish all live and update it" (items 44-48 on "ok if all tested deploy and publish it"). **Going back** to
+items 44-48 (`d2d-relay:777f30c`, kept): in the deploy folder `git reset --keep c410d9d`, `docker tag
+d2d-relay:777f30c d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (only the runner's tidy
+differs). **Going back** to item 43 (`d2d-relay:a871751`, kept): in the deploy folder `git reset --keep
 c948af2` (it takes `config/models.json` back too), `docker tag d2d-relay:a871751 d2d-relay:latest`, then `docker
 compose up -d --no-deps web admin runner` (one build at a time again, one price for every dashboard).
 **Going back** to item 42 (`d2d-relay:01559b6`, kept): the same with `git reset --keep 13c387a`.
@@ -1296,8 +1310,9 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   terms too. The privacy notice says Anthropic handles the data, and nothing about training.
 - **Terms and policies** (P2, P4): published on 2026-11-12 (item 30): terms of service, refund and cancellation
   (none), contact. **The lawyer has reviewed them** (the user, 2026-11-14), and the contact page gives PASDACS's
-  address as "Bangalore, India" since item 43 (no phone number, the user's choice). Still: a signed data processing
-  agreement when a customer asks.
+  address as "Bangalore, India" since item 43 (no phone number, the user's choice). The terms changed later that day
+  (item 48: one sentence removed): the user may show the lawyer. Still: a signed data processing agreement when a
+  customer asks.
 - **The PC** (P3): BitLocker is skipped for now (the user, 2026-11-12). The nightly backup (02:30 IST) is on the
   same disk as the data: keep an encrypted copy somewhere else. (Every older backup was deleted on 2026-11-12, on the
   user's word.)

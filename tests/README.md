@@ -83,7 +83,8 @@ already running, `bash tests/run_all.sh <output name>` runs the suites alone.
 | `item45_check.py`: the queue shows an organisation its own jobs only (positions, /api/health), "In the queue", no Stop (button or API) | 15 |
 | `item46_check.py`: up to 3 jobs at once with stand-in jobs (never two of one dashboard, publishing one at a time), the AI engine's lanes, the Opus 5.5 defaults | 13 |
 | `item48_check.py`: a started build's credits and its free Retry, planning still refunded, nothing on screen or in the terms about credits coming back | 12 |
-| **All, for items 44-48** (858 for 01559b6 and a871751; 847 for baf70e5 and 2686fc4; 846 / 829 for d1882f7, 825 / 808 for 96ea48a, 788 / 771 for 189ccac, 747 / 730 for 334b493, 685 / 668 for 54f6ed7) | **935** / not run |
+| `item49_check.py`: the job runner's two-minute tidy of its own finished jobs, with stand-in containers (never a running job, never another stack's) | 8 |
+| **All, for item 49** (935 for 777f30c; 858 for 01559b6 and a871751; 847 for baf70e5 and 2686fc4; 846 / 829 for d1882f7, 825 / 808 for 96ea48a, 788 / 771 for 189ccac, 747 / 730 for 334b493, 685 / 668 for 54f6ed7) | **943** / not run |
 
 One suite by hand, with the stack running:
 
