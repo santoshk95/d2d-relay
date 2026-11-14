@@ -1136,6 +1136,55 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     09:36 IST, its old image deleted. Checked on live: the contact page has the address and no number (Cloudflare does
     not cache it), health and the sign-in page 200, the webhook still refuses an unsigned call (400), the AI engine
     idle, no errors. `d2d-relay:01559b6` kept for going back.
+44. **A dashboard's credits follow its visuals: 25 with Power BI's built-in visuals, 50 with custom visuals** (the user,
+    2026-11-14: "25 credits in dashboard is for default visual and 50credits for custom visuals(fully custom/default plus
+    custom)"). `orgs.COST["dashboard_custom"]` (`RELAY_CREDITS_DASHBOARD_CUSTOM`, 50) beside `COST["dashboard"]` (25); a
+    new dashboard is charged by its visuals (built-in first with custom where needed, or Relay custom visuals: 50, noted
+    "custom visuals" in its history) and refused before anything is saved when the organisation cannot pay it. A built-in
+    dashboard moved to custom visuals on its Details tab pays the difference (25) once ("custom visuals" in its history);
+    back and forth after that is free; dashboards from before count as paid for the visuals they had. Retry charges what
+    the charge that came back was. Screens: the New dashboard form's choices carry their credits and its Uses line follows
+    the choice; the Organisation page, a dashboard's Credits card, Buy credits, the tour and the admin portal give both
+    prices; the Visuals switch says what custom visuals add. The first page now waits for the signed-in person (a page
+    opened directly drew before the organisation was known).
+45. **The queue shows each organisation only its own jobs, and builds cannot be stopped** (the user, 2026-11-14, on a
+    dashboard saying "1 job(s) ahead of this one": "Why to public it shows other job details?", then "Just accept detials
+    and show queue" and, of the Stop button, "Hide it everywhere, so customers can't stop a waiting or running build"). A
+    waiting dashboard says "In the queue: It starts shortly. You can leave this page; it keeps its place."; its position,
+    /api/health's queue and the agent's busy flag count the organisation's own jobs only (which job runs was already
+    private, P17); no Stop button, and `POST /api/projects/<id>/stop` answers 403 inside an organisation.
+46. **Builds side by side, up to 3** (the user, 2026-11-14: "Add parallel builds", and "power bi pbix file will be sequence
+    only as it run in the same windows machine"). The worker starts the oldest waiting job whenever one of
+    `RELAY_BUILD_PARALLEL` (3) slots is free, never two of one dashboard (`worker.ACTIVE`; `worker.current` is the oldest
+    one a tenant may see, as before; `running_job`, `is_running`, `running_since`, `all_running`, `busy_owners` for the
+    rest); publishing (`pbi`, `pbix`: the DAX checker and the Power BI file maker on this PC) runs one at a time outside
+    those slots. The AI engine's build lane takes as many runs (a semaphore; relay_init passes the setting), the chat lane
+    one; /health and /metrics say how many run and the capacity. Each build still runs in a job container of its own
+    (8 GB cap each; the Docker VM has 15.5 GB). **Items 44-48 tested and live:** release image `d2d-relay:777f30c`
+    (code 7619e16, 16e38c3, 56af6e7, 1d23630, 9725b54, 777f30c; tests 470d90b), 935 of 935 checks with the review on
+    (item44 37, item45 15, item46 13, item48 12). Real Claude on the test stack (the subscription, no API key): the
+    three Visuals modes built **side by side** (3 runs at once; planned in about a minute, published with their .pbix at
+    8.9, 10.1 and 11.4 minutes: about 11 minutes for all three, where one at a time took about 30), 45 of 45, and
+    `real_build_check` 20 of 20. Every job container ran `--model claude-opus-5-5` with Claude Code's helper models set to
+    it; each build peaked at 134 to 382 MiB, 549 MiB for all at once. The first build of item 46 did not start (its job
+    list took the name of the status set `worker.RUNNING`; renamed `ACTIVE`). Live since 11:09 IST after the user's "ok if
+    all tested deploy and publish it", live idle at the time: the AI engine takes 3 builds and 1 chat run, defaults to
+    the Relay Model, prices 25 and 50, the screens and terms as tested, no errors. A finished live job
+    container the runner had not removed (exited 0 at 10:13 IST) was removed by hand: it blocked the test stack.
+47. **One model: Claude Opus 5.5** (the user, 2026-11-14: "in API use opus 5.5 as default and same in personal as well dont
+    use any other model for Relay Model powered by claude"). Every run already asked for the Relay Model
+    (`config/house-models.json`: `claude-opus-5-5`, on the API key and the Claude login alike); now nothing falls back to
+    Sonnet either: the AI engine's default is the Relay Model, Ask Relay no longer prefers Sonnet, the catalog's default and
+    the worker's last fallback are `claude-opus-5-5`, and a Relay run sets Claude Code's own helper models (its background
+    tasks, Haiku unless told, and its subagents: `ANTHROPIC_DEFAULT_HAIKU_MODEL`, `ANTHROPIC_SMALL_FAST_MODEL`,
+    `ANTHROPIC_DEFAULT_SONNET_MODEL`, `ANTHROPIC_DEFAULT_OPUS_MODEL`, `CLAUDE_CODE_SUBAGENT_MODEL`) to `claude-opus-5-5`.
+    Opus 5.5 is $4 / $20 per million input / output tokens on the API, twice Sonnet 5.5. The Console's usage page showed
+    only a tiny Haiku 5.5 entry that day (2,286 tokens in, 4 out, from before any D2D run on the key; its data lagged by
+    hours); the live runs' own records showed the Relay Model only (a dashboard's data and plan: about $0.97).
+48. **The user's rule for builds that do not finish** (2026-11-14; not shown to customers, at the user's request; see
+    `worker.give_back`). The sentence that credits come back when a run fails or is stopped is gone from the Organisation
+    page, a dashboard's Credits card, the Stop refusal, `docs/d2d-relay.md` and the Terms of Service (the terms changed
+    after the lawyer's review of the same day).
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1176,17 +1225,20 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-14 09:40 IST, after item 43, the first real purchase and that morning's crash (the site down from
+Updated 2026-11-14 11:15 IST, after items 44-48, the first real purchase and that morning's crash (the site down from
 about 07:26 to 08:52 IST, "Overnight restarts" below). **Live:** web, admin and the job runner run
-`d2d-relay:a871751` (= latest, since 2026-11-14 09:36 IST, item 43), with the Turnstile bot check on and the AI on
-PASDACS's Anthropic API key first, the Claude subscription as its backup (item 42); the database container runs
-`d2d-relay:8689305`'s image; live holds only PASDACS and info@pasdacs.com, and sells credits online with the live
+`d2d-relay:777f30c` (= latest, since 2026-11-14 11:09 IST, items 44-48: credits by visuals, the private queue
+without Stop, builds side by side, one model, and the user's rule for builds that do not finish), with the Turnstile
+bot check on and the AI on PASDACS's Anthropic API key first (Claude Opus 5.5), the Claude subscription as its backup
+(item 42); the database container runs `d2d-relay:8689305`'s image; live holds PASDACS and the first sign-ups of that
+day, and sells credits online with the live
 Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
 whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
-folder, the deploy folder and **GitHub** carry this log entry: pushed with item 43 on the user's "deploy when tests
-pass, then push". **Going back** to item 42 (`d2d-relay:01559b6`, kept): in the deploy folder `git reset --keep
-13c387a`, `docker tag d2d-relay:01559b6 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner`
-(only the contact page's address differs).
+folder, the deploy folder and **GitHub** carry this log entry: pushed with items 44-48 on the user's "ok if all tested
+deploy and publish it". **Going back** to item 43 (`d2d-relay:a871751`, kept): in the deploy folder `git reset --keep
+c948af2` (it takes `config/models.json` back too), `docker tag d2d-relay:a871751 d2d-relay:latest`, then `docker
+compose up -d --no-deps web admin runner` (one build at a time again, one price for every dashboard).
+**Going back** to item 42 (`d2d-relay:01559b6`, kept): the same with `git reset --keep 13c387a`.
 **Going back** to item 41 (`d2d-relay:baf70e5`, kept): in the deploy folder `git reset
 --keep d63c052`, `docker tag d2d-relay:baf70e5 d2d-relay:latest`, then `docker compose up -d --no-deps web admin
 runner` (older code ignores `RELAY_ANTHROPIC_API_KEY`: every run on the subscription again). **Going back** to item 41
