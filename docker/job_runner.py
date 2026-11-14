@@ -12,12 +12,14 @@ engine's user (nothing else reaches it: the job containers do not get that volum
     proxy) and its API guard (S4: the AI engine's user is refused) apply to it as to the AI engine itself.
 No other organisation's folders, no /data, no secrets, no Docker. All capabilities dropped, no new privileges.
 It streams the job's stdout back line by line, and stops and removes the container when the job ends or the AI
-engine stops listening (Stop, a timeout, a restart).
+engine stops listening (Stop, a timeout, a restart). Its own jobs left behind are removed when it starts (sweep) and,
+once they have ended more than five minutes before, every two minutes (tidy; item 49). Up to three run at once (item 46).
 
 API (HTTP over the Unix socket): POST /jobs {cwd, argv, env, prompt, library} -> NDJSON lines {"o": stdout line},
 then {"x": exit code, "e": the end of stderr}; GET /health.
 """
 import asyncio
+import calendar
 import io
 import json
 import os
@@ -225,6 +227,61 @@ async def sweep() -> None:
             print(f"[runner] removed a job left from before: {name}", flush=True)
 
 
+STALE_S = int(os.environ.get("D2D_JOB_STALE_S") or 300)       # item 49: a job that ended longer ago than this is left over
+
+
+def _age(ts: str | None) -> float:
+    """Seconds since a Docker timestamp such as 2026-11-14T04:43:07.438676534Z; 0 for none (0001-01-01: never)."""
+    if not ts or ts.startswith("0001-"):
+        return 0.0
+    try:
+        return time.time() - calendar.timegm(time.strptime(ts.rstrip("Z").split(".")[0], "%Y-%m-%dT%H:%M:%S"))
+    except ValueError:
+        return 0.0
+
+
+async def tidy_once(max_age: float = STALE_S) -> list[str]:
+    """Item 49: remove this stack's job containers that ended (or never started) more than max_age seconds ago. The
+    stream that ran a job removes its container when it ends, but on 2026-11-14 one was found left behind (exited 0)
+    after its stream went away, and such a leftover keeps a test stack from starting. A running job and another
+    stack's are never touched."""
+    removed = []
+    async with docker() as d:
+        r = await d.get("/containers/json", params={"all": "true", "filters": json.dumps(
+            {"label": ["d2d-relay.job=1", f"d2d-relay.web={WEB}"], "status": ["exited", "dead", "created"]})})
+        for c in (r.json() if r.status_code == 200 else []):
+            i = await d.get(f"/containers/{c['Id']}/json")
+            if i.status_code != 200:
+                continue
+            info = i.json()
+            state = info.get("State") or {}
+            if state.get("Running") or (_age(state.get("FinishedAt")) or _age(info.get("Created"))) < max_age:
+                continue
+            await d.delete(f"/containers/{c['Id']}", params={"force": "true"})
+            name = (c.get("Names") or ["/" + c["Id"][:12]])[0].lstrip("/")
+            removed.append(name)
+            print(f"[runner] removed a finished job left behind: {name}", flush=True)
+    return removed
+
+
+async def tidy() -> None:
+    """Item 49: tidy_once every two minutes, beside the API."""
+    while True:
+        await asyncio.sleep(120)
+        try:
+            await tidy_once()
+        except Exception as e:  # noqa: BLE001 - tried again in two minutes
+            print(f"[runner] could not tidy finished jobs: {e}", flush=True)
+
+
+async def _serve(server: uvicorn.Server, sock: socket.socket) -> None:
+    keeper = asyncio.create_task(tidy())
+    try:
+        await server.serve(sockets=[sock])
+    finally:
+        keeper.cancel()
+
+
 def main() -> None:
     os.makedirs(os.path.dirname(SOCK), exist_ok=True)
     if os.path.exists(SOCK):
@@ -240,7 +297,7 @@ def main() -> None:
         print(f"[runner] could not list old jobs: {e}", flush=True)
     print(f"[runner] serving on {SOCK} for the web container {WEB}", flush=True)
     server = uvicorn.Server(uvicorn.Config(app, log_level="warning", access_log=False))
-    asyncio.run(server.serve(sockets=[s]))
+    asyncio.run(_serve(server, s))
 
 
 if __name__ == "__main__":
