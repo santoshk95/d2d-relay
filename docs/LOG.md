@@ -1214,6 +1214,47 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     `item51_check` 25 of 25, all suites 987 of 987 (review on). Live since 17:51 IST on the user's "Yes, deploy" (live
     idle): the live web and admin containers render it, each with its own wording, and nothing was sent. Not yet seen
     in a real mail app (Gmail, Outlook): no test email was sent, so the next sign-in code is the first in the new look.
+52. **The three display bugs a real build showed, fixed** (the user, 2026-11-15: "fix all the bugs"; found that day
+    while taking the marketing kit's screens, Engineering below). The .pbix was never wrong; the prototype people
+    approve, the gates and Ask Relay were.
+    - **The prototype's matrix no longer adds up ratios.** Power BI computes every measure once per row header, and a
+      matrix with several Rows fields opens at its first level unless Row headers > Auto expand is on (Microsoft:
+      "When disabled, row headers start collapsed"). `matrix()` in `genbi_kit/assets/stock_visuals.js` now draws
+      that: one row per first-level value from SQL at that level, or with `rowHeaders.autoExpand` every level, each
+      group's row bold with its own values above its indented children (Row subtotal position Top, the default; Bottom
+      puts a Total row after them), in the visual's sort order. The prototype SQL returns a row per row header shown:
+      group rows and the Total line come from `GROUP BY ROLLUP` (lower Rows columns empty; a blank member as
+      '(Blank)'); GENBI.md and `genbi catalog pbi.pivotTable` say so. Where the SQL has no row for a header, a measure
+      that adds up adds up its detail rows and any other stays blank: `stock.additive_measures()` reads each measure's
+      DAX (ratios, averages, distinct counts, minimums and maximums, ranks, running totals and ALL-fixed values do not
+      add up), which also fixes the table's Total line for a measure like an average order value. `genbi prototype`
+      reports SQL that returns more rows than the matrix shows (both scorecards of the evidence: "returns 3 rows for
+      Category = Electronics ...") and, with Auto expand, a group without its own row. The DAX check asks Power BI for
+      the level the matrix opens at, and compares two Rows levels by position: before, both shared one key, so a
+      stepped matrix was never compared at all (one reason the gates passed it).
+    - **Card text.** Power BI's multi-row card never wraps a value: it cuts it with "..." (values side by side, as
+      many to a line as fit). The prototype measured its values at 15 px and drew them at 16 px, so a cut sentence ran
+      into the next; now each value is measured as drawn and cut inside its own place, and a cut text value is marked:
+      the Display check fails it ("3 text values cut with ... - Power BI cuts them the same way ... pbi.cardVisual
+      does, with value: {textWrap: true}"). The new card draws `value.textWrap` (word wrap over the lines it has room
+      for). GENBI.md: sentences go in `pbi.cardVisual` with text wrap, never a multi-row card.
+    - **Ask Relay.** A rate, share, margin or growth column holding fractions (nearly all values between -1.5 and 1.5,
+      not all whole numbers) reads as a percentage everywhere: the chips ("Growth Pct avg 9.9%"), axis, bar labels,
+      tooltips, Table view, "See the numbers" and the snapshot image, whose table showed raw floats and whose bars
+      could not show a fall (both fixed). Such a column averages in the chips like other ratios and never gets a
+      currency sign. The count says "8 cities" (city -> cities, status -> statuses, products stays). The prompt asks
+      the AI for a percentage as a fraction in a pct-named column. A stored answer keeps a decimal as text; both read
+      the same.
+    - Tried on the evidence (`marketing/demo/sales-performance-64a3`, re-drawn with the new code): both scorecards are
+      reported and their ratios stay blank; rewritten the new way (Auto expand and ROLLUP, the insights in a wrapped
+      new card) it shows Electronics at a 32.9% margin and +9.8% growth (was 100.3% and -9.0%), North at +23.2%, the
+      sentences whole, and passes the Display check. Not looked at: Power BI Desktop drawing an auto-expanded matrix
+      and a wrapped new card (the checks cover the prototype, the files and the DAX queries).
+    - Code `b77f38e`; `item52_check` 37 of 37, all suites 1024 of 1024 (review on). Live since 15:48 IST on the
+      user's "commit and deploy once tests pass" (live idle: no runs, two dashboards waiting on their owners): web,
+      admin and the job runner report `b77f38e`, the public site answers. Dashboards built before it keep their
+      prototypes until their next change; then `genbi prototype` reports a stepped matrix whose SQL returns the detail
+      rows, and the agent rewrites it. Not pushed.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1254,9 +1295,10 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-14 17:55 IST, after items 44-51, the first real purchase and that morning's crash (the site down from
+Updated 2026-11-15 15:55 IST, after items 44-52, the first real purchase and the crash of 2026-11-14 (the site down from
 about 07:26 to 08:52 IST, "Overnight restarts" below). **Live:** web, admin and the job runner run
-`d2d-relay:8029415` (= latest, since 2026-11-14 17:51 IST, item 51, the sign-in code email in D2D's look; item 50
+`d2d-relay:b77f38e` (= latest, since 2026-11-15 15:48 IST, item 52, the three display bugs fixed; item 51 since
+2026-11-14 17:51 IST, the sign-in code email in D2D's look; item 50
 since 11:51, the admin Overview; item 49 since 11:25; items 44-48 since 11:09:
 credits by visuals, the private queue without Stop, builds side by side, one model, and the user's rule for builds
 that do not finish), with the Turnstile
@@ -1265,9 +1307,13 @@ bot check on and the AI on PASDACS's Anthropic API key first (Claude Opus 5.5), 
 day, and sells credits online with the live
 Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
 whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
-folder, the deploy folder and **GitHub** carry this log entry: item 51 went live on the user's "Yes, deploy" and was
-pushed on their "Yes, push" (item 50 was pushed on "Yes, deploy when tests pass", item 49 on "close what all you can do
-and pblish all live and update it", items 44-48 on "ok if all tested deploy and publish it"). **Going back** to item 50 (`d2d-relay:22c7464`, kept): in the deploy folder `git reset --keep 2c3fdf5`, `docker
+folder and the deploy folder carry this log entry; **GitHub** is still on `8cca2c7`: item 52 (`1a2638f`, `b77f38e` and
+this log) went live on the user's "commit and deploy once tests pass" and is not pushed (item 51 went live on "Yes,
+deploy" and was pushed on "Yes, push"; item 50 was pushed on "Yes, deploy when tests pass", item 49 on "close what all
+you can do and pblish all live and update it", items 44-48 on "ok if all tested deploy and publish it"). **Going back**
+to item 51 (`d2d-relay:8029415`, kept): in the deploy folder `git reset --keep 1a2638f`, `docker tag
+d2d-relay:8029415 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (the prototype's matrix
+adds up ratios again, the multi-row card's text runs together, Ask Relay shows 0.845). **Going back** to item 50 (`d2d-relay:22c7464`, kept): in the deploy folder `git reset --keep 2c3fdf5`, `docker
 tag d2d-relay:22c7464 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (the plain sign-in code
 email again). **Going back** to item 49 (`d2d-relay:1c841da`, kept): in the deploy folder `git reset --keep
 318e248`, `docker tag d2d-relay:1c841da d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (no
@@ -1512,7 +1558,7 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   live's data, Power BI Desktop and older .pbix helpers, the item 21 lockdown probes, the audit's proof kit (overlay
   image, sandbox-escape proofs, the DAX checker's test models), the older split-test compose files, and past runs'
   logs and screenshots.
-- **Three display bugs found by a real build (2026-11-15, not fixed):** seen while taking screens for the marketing
+- **Three display bugs found by a real build (2026-11-15; fixed as item 52 above, live since 15:48 IST):** seen while taking screens for the marketing
   kit on the test stack (`d2d-relay:8029415`, review on, real Claude; a made-up organisation, "Sample Retail", with
   `samples/sales.csv` and `samples/products.csv`, Power BI's built-in visuals). The dashboard's folder (definition,
   prototype, versions, .pbix) is kept on this PC in `marketing/demo/sales-performance-64a3/`, its screens in
