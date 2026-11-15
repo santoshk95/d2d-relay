@@ -1512,6 +1512,28 @@ Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (
   live's data, Power BI Desktop and older .pbix helpers, the item 21 lockdown probes, the audit's proof kit (overlay
   image, sandbox-escape proofs, the DAX checker's test models), the older split-test compose files, and past runs'
   logs and screenshots.
+- **Three display bugs found by a real build (2026-11-15, not fixed):** seen while taking screens for the marketing
+  kit on the test stack (`d2d-relay:8029415`, review on, real Claude; a made-up organisation, "Sample Retail", with
+  `samples/sales.csv` and `samples/products.csv`, Power BI's built-in visuals). The dashboard's folder (definition,
+  prototype, versions, .pbix) is kept on this PC in `marketing/demo/sales-performance-64a3/`, its screens in
+  `marketing/screens/` (`proto/p1.png`, `proto/p2.png`, `proto/p3.png`, `ask/05-answer-more.png`); `marketing/` is
+  not in git. The kit keeps all three out of its images and videos.
+  1. **The prototype's matrix adds up ratios.** `matrix()` in `genbi_kit/assets/stock_visuals.js` uses only the first
+     `Rows` field, so a stepped matrix (Rows `Sales[Category]`, `Sales[Product]`) shows only its top level, and every
+     cell is the sum of the detail rows, ratio measures included (only the Total row leaves non-additive measures
+     blank). "Product scorecard against target" showed Electronics at a 100.3% profit margin and a 102% target margin
+     (Office 98.9% and 120%); "Scorecard by region and city" showed its region rows the same way. Power BI's own matrix
+     computes each measure per row, so the .pbix should be right (not opened to check), but the prototype people
+     approve is wrong, and the review gates passed it (11 passed, custom visuals skipped).
+  2. **A multi-row card cuts long text values.** `multiRowCard()` in the same file puts the values side by side and
+     shortens each with `fit()` at an assumed size, so the Overview's "Key insights" (`pbi.multiRowCard` with three
+     sentence measures) showed each sentence cut mid-word and running into the next. The same build's Relay-visuals
+     version drew its insights properly.
+  3. **Ask Relay's numbers and plurals.** In `webapp/static/js/14-askd.js` a value under 1 is shown as a plain
+     decimal (line 18), so a growth rate read 0.845 for 84.5% and its average "Growth Pct avg 0.096", although `RATIO`
+     (line 9) already recognises such columns; and the row count adds an "s" (line 118): "8 citys".
+  Fix as one item, with checks in `tests/checks/`: a stepped matrix with a ratio measure, a multi-row card of long
+  sentences, and an Ask Relay answer with a percentage column on a "city" axis.
 
 ### Decided (nothing to do)
 
