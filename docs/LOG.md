@@ -1254,7 +1254,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       user's "commit and deploy once tests pass" (live idle: no runs, two dashboards waiting on their owners): web,
       admin and the job runner report `b77f38e`, the public site answers. Dashboards built before it keep their
       prototypes until their next change; then `genbi prototype` reports a stepped matrix whose SQL returns the detail
-      rows, and the agent rewrites it. Not pushed.
+      rows, and the agent rewrites it. Pushed at 17:42 IST on the user's "Yes, push".
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1295,7 +1295,7 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-15 15:55 IST, after items 44-52, the first real purchase and the crash of 2026-11-14 (the site down from
+Updated 2026-11-15 17:45 IST, after items 44-52, the first real purchase and the crash of 2026-11-14 (the site down from
 about 07:26 to 08:52 IST, "Overnight restarts" below). **Live:** web, admin and the job runner run
 `d2d-relay:b77f38e` (= latest, since 2026-11-15 15:48 IST, item 52, the three display bugs fixed; item 51 since
 2026-11-14 17:51 IST, the sign-in code email in D2D's look; item 50
@@ -1307,9 +1307,9 @@ bot check on and the AI on PASDACS's Anthropic API key first (Claude Opus 5.5), 
 day, and sells credits online with the live
 Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
 whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
-folder and the deploy folder carry this log entry; **GitHub** is still on `8cca2c7`: item 52 (`1a2638f`, `b77f38e` and
-this log) went live on the user's "commit and deploy once tests pass" and is not pushed (item 51 went live on "Yes,
-deploy" and was pushed on "Yes, push"; item 50 was pushed on "Yes, deploy when tests pass", item 49 on "close what all
+folder, the deploy folder and **GitHub** carry this log entry: item 52 went live on the user's "commit and deploy once
+tests pass" and was pushed on their "Yes, push" (item 51 went live on "Yes, deploy" and was pushed on "Yes, push";
+item 50 was pushed on "Yes, deploy when tests pass", item 49 on "close what all
 you can do and pblish all live and update it", items 44-48 on "ok if all tested deploy and publish it"). **Going back**
 to item 51 (`d2d-relay:8029415`, kept): in the deploy folder `git reset --keep 1a2638f`, `docker tag
 d2d-relay:8029415 d2d-relay:latest`, then `docker compose up -d --no-deps web admin runner` (the prototype's matrix
