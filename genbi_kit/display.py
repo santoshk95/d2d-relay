@@ -1,7 +1,8 @@
 """Display check: draw every page of a prototype in headless Chromium and read back what each visual shows.
 
-Fails on script errors, visuals that could not draw, and labels no business user should see - NaN, undefined,
-∞, [object ...], doubled display units ($2.95BM). Warns on unformatted numbers, values cut off by their card and
+Fails on script errors, visuals that could not draw, labels no business user should see - NaN, undefined,
+∞, [object ...], doubled display units ($2.95BM) - and a built-in card's text cut with "..." (a sentence Power BI would
+show cut too). Warns on unformatted numbers, values cut off by their card and
 visuals that draw nothing. Runs where Playwright is installed (the agent image): `genbi gates` and the agent
 service's POST /display-check, which the app calls for every version and before publishing.
 """
@@ -46,6 +47,7 @@ READ = r"""async () => {
       return {id: v.id, name, type: v.type, text: ((b.innerText || '') + ' ' + svgText).slice(0, 6000),
               marks: b.querySelectorAll('svg path, svg rect, svg circle, svg line, svg polygon, svg polyline, canvas, img, td').length,
               clipped: [...b.querySelectorAll('.gb-kpi-value')].some(e => e.scrollWidth > e.clientWidth + 1),
+              cut: [...b.querySelectorAll('[data-cut]')].map(e => e.getAttribute('data-cut')).slice(0, 20),
               overflow: b.scrollWidth > b.clientWidth + 6 || b.scrollHeight > b.clientHeight + 6,
               failed: !!b.querySelector('.aerr'), queryFailed: !!b.querySelector('.err'),
               data: !!(v.model || v.atlas)};
@@ -105,6 +107,12 @@ def check(html: Path, timeout_s: int = 120) -> dict:
             raw = RAW.search(v["text"])
             if raw:
                 items.append(warn(f"{where} shows an unformatted number ({raw.group(0)}) - give the measure a format string"))
+            cut = v.get("cut") or []                   # a card's text values cut with "..." (Power BI's built-in cards)
+            if cut:
+                items.append(fail(f"{where}: {len(cut)} text value{'s' if len(cut) > 1 else ''} cut with \"...\" (\"{cut[0][:70]}...\") - "
+                                  f"Power BI cuts {'them' if len(cut) > 1 else 'it'} the same way, as a card never wraps a value "
+                                  f"(pbi.cardVisual does, with value: {{textWrap: true}}): give it more room, a smaller font size "
+                                  f"or shorter text"))
             if v["clipped"]:
                 items.append(warn(f"{where}: the value is cut off - the card is too narrow for it"))
             elif v["overflow"] and v["type"] != "table":

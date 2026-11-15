@@ -438,7 +438,18 @@ unless its owner chose otherwise):
   {fontSize: 12}}}` - same objects and checks, written into the report theme for every visual of that type.
 - **Cards**: prefer `pbi.cardVisual` (several measures in one visual, `reference` well for "vs last year",
   accent bar, layout) over the legacy `pbi.card` / `pbi.multiRowCard`. `pbi.kpi` needs a trend axis
-  (`Date[Month Start]`) and shows the value at its last point vs the target.
+  (`Date[Month Start]`) and shows the value at its last point vs the target. A card never wraps a value: Power BI
+  cuts what does not fit with "..." (the multi-row card too). Sentences (insights) go in `pbi.cardVisual` with
+  `value: {textWrap: true, fontSize: 12}` (and `label: {show: false}` or a short `label.text`); the Display check
+  fails a card whose text is cut.
+- **Matrix** (`pbi.pivotTable`): Power BI computes every measure once per row header - a ratio is never added up.
+  Several Rows fields open at the first level (people expand it), so the prototype SQL returns one row per value of
+  the first Rows field (and of the first Columns field), each measure computed for it. To open every level, set
+  `rowHeaders: {autoExpand: true}` and return the detail rows plus a row per group whose lower Rows columns are
+  empty - `GROUP BY ROLLUP ("Region", "City")` gives exactly that, with joins on `IS NOT DISTINCT FROM`. A row with
+  every Rows column empty gives the Total line its values (ratios too; without it only measures that add up get a
+  total). Return a blank member as '(Blank)'. `genbi prototype` reports SQL that returns more rows than the matrix
+  shows.
 - **Maps** need a location column with a data category in the model: `{name: City, type: string, category: City}`
   (Country, StateOrProvince, PostalCode, Latitude, Longitude ... - also WebUrl / ImageUrl for tables). Power BI
   geocodes online; the prototype lists the locations.
@@ -542,7 +553,8 @@ warm theme is used. Use the look and colors the user asks for (`request.md`); ot
   headline measures, `reference` = vs last year / target), `pbi.lineChart` for the trend (target and last year as
   series, a dashed style for last year), `pbi.waterfallChart` for what moved the total, `pbi.scatterChart` for the
   main entity against two measures, `pbi.donutChart` / `pbi.treemap` for the mix, `pbi.pivotTable` with a gradient
-  for patterns (weekday × month), `pbi.funnel` for conversion; insight titles as text measures in `title`.
+  for patterns (weekday × month), `pbi.funnel` for conversion; insight titles as text measures in `title`; the
+  insight sentences in a `pbi.cardVisual` with `value: {textWrap: true}` (never a multi-row card: it cuts them).
 
 ## DAX patterns (proven in Power BI)
 

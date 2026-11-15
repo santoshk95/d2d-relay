@@ -130,6 +130,7 @@ def model_for(v: dict, rows: list[dict], fmt) -> dict:
 def _describer(d: dict):
     """Field reference -> how a data view names and types it (Visual Atlas visuals)."""
     fmts = {m["name"]: m.get("format") or None for m in d.get("measures", [])}
+    additive = stock.additive_measures(d.get("measures", []))
     types = {(t["name"], c["name"]): c.get("type", "string") for t in d["tables"] for c in t.get("columns", [])}
     types.update({(c["table"], c["name"]): c.get("type", "string") for c in d.get("calculated_columns", [])})
     mtable = d.get("measures_table", "Metrics")
@@ -139,7 +140,7 @@ def _describer(d: dict):
         m = MEASURE.match(ref)
         if m:
             return {"name": m.group(1), "query": f"{mtable}.{m.group(1)}", "type": "numeric", "measure": True,
-                    "format": fmts.get(m.group(1))}
+                    "format": fmts.get(m.group(1)), "additive": additive.get(m.group(1), False)}
         c = COLUMN.match(ref)
         if not c:
             raise ValueError(f"field {ref} is neither [Measure] nor Table[Column]")
@@ -163,13 +164,14 @@ def _stock_item(v: dict, entry: dict, rows: list[dict], describe, theme: dict) -
     Format-pane settings merged over the report theme's styles for this visual."""
     if not rows:
         raise ValueError("query returned no rows")
+    fmt = stock.prototype_format(entry["visualType"], v.get("format"), (theme or {}).get("styles"))
     sample, fields, missing = rows[0], {}, []
     for role, refs in (v.get("fields") or {}).items():
         refs = refs if isinstance(refs, list) else [refs]
-        drill = role in entry["drill"] or role in entry.get("first_only", ())
-        for ref in refs[:1] if drill else refs:                # a drill hierarchy shows its top level
+        refs = stock.shown(entry, role, refs, fmt)              # a drill hierarchy, or a matrix, shows its top level
+        for ref in refs:
             dsc = describe(ref)
-            col = atlas._lookup(sample, dsc["name"], role, len(refs) == 1 or drill)
+            col = atlas._lookup(sample, dsc["name"], role, len(refs) == 1)
             if col is None:
                 missing.append(f'"{dsc["name"]}"')
                 continue
@@ -177,8 +179,58 @@ def _stock_item(v: dict, entry: dict, rows: list[dict], describe, theme: dict) -
     if missing:
         raise ValueError(f"query must return a column per field, named after it: missing {', '.join(missing)}")
     return {"vt": entry["visualType"], "renderer": entry["renderer"], "fields": fields, "rows": rows[:STOCK_ROWS],
-            "format": stock.prototype_format(entry["visualType"], v.get("format"), (theme or {}).get("styles")),
-            "sort": v.get("sort")}
+            "format": fmt, "sort": v.get("sort")}
+
+
+def _matrix_problems(v: dict, item: dict) -> list[str]:
+    """Where a matrix's prototype SQL does not return one row per row header the matrix shows (stock_visuals.js draws
+    it that way, and genbi daxcheck compares those rows): several rows for one header - a finer grain than shown, which
+    the prototype could only add up, and a ratio does not add up - and, with Auto expand, a group without its own row
+    while one of its measures does not add up."""
+    fields, rows = item["fields"], item["rows"]
+    levels, cf, values = fields.get("Rows") or [], (fields.get("Columns") or [None])[0], fields.get("Values") or []
+    defined = (v.get("fields") or {}).get("Rows") or []
+    defined, n = defined if isinstance(defined, list) else [defined], len(levels)
+    if not n:
+        return []
+    blank = lambda x: x is None or x == ""                       # noqa: E731
+    key = lambda x: "" if blank(x) else str(x)                   # noqa: E731
+
+    def depth(r) -> int:                                          # n: a detail row; d < n: a group's own row (0: the Total)
+        s = [not blank(r.get(f["col"])) for f in levels]
+        d = s.index(False) if False in s else n
+        return n if any(s[d:]) else d
+
+    def where(path, ck) -> str:
+        return " and ".join([f"{f['name']} = {p or '(Blank)'}" for f, p in zip(levels, path)] + ([f"{cf['name']} = {ck or '(Blank)'}"] if cf else []))
+
+    seen: dict = {}
+    for r in rows:
+        d = depth(r)
+        k = (d, tuple(key(r.get(f["col"])) for f in levels[:d]), key(r.get(cf["col"])) if cf else "")
+        seen[k] = seen.get(k, 0) + 1
+    many = next(((k, c) for k, c in seen.items() if k[0] == n and c > 1), None)
+    if many:
+        (_, path, ck), c = many
+        unit = levels[-1]["name"] + (f" and {cf['name']}" if cf else "")
+        if len(defined) > n:
+            return [f"the prototype SQL returns {c} rows for {where(path, ck)}, but the matrix opens at its first Rows level: Power BI "
+                    f"shows one row per {unit}, with every measure computed for the whole {levels[0]['name']} (a ratio is never added "
+                    f"up) - return one row per {unit}, or set rowHeaders: {{autoExpand: true}} to open every level and return the "
+                    f"detail rows plus a row per group with the lower Rows columns empty (GROUP BY ROLLUP)"]
+        return [f"the prototype SQL returns {c} rows for {where(path, ck)}, but Power BI shows one row per {unit} with every measure "
+                f"computed for it (a ratio is never added up) - return one row per {unit}"]
+    if n > 1 and any(not f.get("additive") for f in values):
+        odd = next(f for f in values if not f.get("additive"))
+        for (d, path, ck) in list(seen):
+            if d != n:
+                continue
+            for g in range(1, n):
+                if (g, path[:g], ck) not in seen:
+                    return [f"with Auto expand Power BI shows every {levels[g - 1]['name']} in its own row with [{odd['name']}] "
+                            f"computed for the whole group, but the prototype SQL has no row for {where(path[:g], ck)} with "
+                            f"{levels[g]['name']} empty - return a row per group too (GROUP BY ROLLUP)"]
+    return []
 
 
 def build_pages(d: dict, con) -> tuple[list[dict], list[str]]:
@@ -222,6 +274,8 @@ def build_pages(d: dict, con) -> tuple[list[dict], list[str]]:
                         header["title"] = _readable(dynamic.group(1))
                         errors.append(_no_title(page, v, dynamic.group(1)))
                     item.update(stock=_stock_item(v, stock.catalog()[v["type"]], rows, describe, d.get("theme") or {}), header=header)
+                    if item["stock"]["renderer"] == "matrix":
+                        errors += [f"{page['name']} / {v['id']} ({v['type']}): {p}" for p in _matrix_problems(v, item["stock"])]
                 except Exception as e:  # noqa: BLE001 - reported to the agent
                     item.update(error=str(e).splitlines()[0][:300], header=header)
                     errors.append(f"{page['name']} / {v['id']} ({v['type']}): {str(e).splitlines()[0][:300]}")

@@ -107,20 +107,23 @@ def _filters(dd: dict) -> list[str]:
     return out
 
 
-def _visual_fields(v: dict, catalog: dict) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """(role, ref) of the columns a visual groups by - a drill hierarchy at its top level - and of its measures, the
-    title measure last (role "title")."""
+def _visual_fields(v: dict, catalog: dict, styles: dict | None = None) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """(role, ref) of the columns a visual groups by - as it opens: a drill hierarchy, or a matrix without Auto expand, at
+    its top level - and of its measures, the title measure last (role "title"). styles: the theme's `styles`."""
+    from . import stock
     entry, groups, measures = catalog.get(v["type"]) or {}, [], []
     drill = set(entry.get("drill") or []) | set(entry.get("first_only") or [])     # the visual opens at the first level
+    fmt = stock.prototype_format(entry["visualType"], v.get("format"), styles) if entry.get("family") == "powerbi" else None
     raw = v.get("fields") or {}
     fields = {"columns": raw} if isinstance(raw, list) else dict(raw)      # a table visual lists its fields
     for role, refs in fields.items():
         refs = refs if isinstance(refs, list) else [refs]
+        keep = len(stock.shown(entry, role, refs, fmt)) if fmt is not None else (1 if role in drill else len(refs))
         for i, ref in enumerate(refs):
             ref = str(ref).strip()
             if MEASURE.match(ref):
                 measures.append((role, ref))
-            elif COLUMN.match(ref) and not (role in drill and i > 0):
+            elif COLUMN.match(ref) and i < keep:
                 groups.append((role, ref))
     title = str(v.get("title") or "").strip()
     if MEASURE.match(title):
@@ -144,7 +147,7 @@ def queries(dd: dict, catalog: dict) -> list[dict]:
         for v in page["visuals"]:
             if v["type"] in ("slicer", "textbox", "pageNavigator"):
                 continue
-            groups, measures = _visual_fields(v, catalog)
+            groups, measures = _visual_fields(v, catalog, (dd.get("theme") or {}).get("styles"))
             if not groups and not measures:
                 continue
             cols = [f"'{COLUMN.match(ref).group(1)}'[{COLUMN.match(ref).group(2)}]" for _, ref in groups]
@@ -215,9 +218,10 @@ def differences(dd: dict, con, catalog: dict, report: dict) -> list[str]:
                 rows = prototype.records(con, sql)
             except Exception:  # noqa: BLE001 - the prototype check reports broken SQL
                 continue
-            groups, measures = _visual_fields(v, catalog)
+            groups, measures = _visual_fields(v, catalog, (dd.get("theme") or {}).get("styles"))
             atlas = (catalog.get(v["type"]) or {}).get("family") in ("atlas", "powerbi")   # one SQL column per field
-            dax = [dict(zip([r for r, _ in groups] + [f"m{i}" for i in range(len(measures))], r)) for r in q.get("rows") or []]
+            # by position: two columns of one well (a matrix's Rows levels) must not share a key
+            dax = [dict(zip([f"g{j}" for j in range(len(groups))] + [f"m{i}" for i in range(len(measures))], r)) for r in q.get("rows") or []]
             where, found = f"{page['name']} / {v['id']}", []
             if v["type"] == "narrative" and rows and dax:
                 texts = [r.get(_sql_column(r, "item", "item") or "item") for r in rows]
@@ -244,7 +248,7 @@ def differences(dd: dict, con, catalog: dict, report: dict) -> list[str]:
                     continue
                 sql_rows = {tuple(_key(r[k]) for _, k in keys): r[col] for r in rows}
                 for d in dax:
-                    key = tuple(_key(d.get(role_g)) for role_g, _ in groups)
+                    key = tuple(_key(d.get(f"g{j}")) for j in range(len(groups)))
                     if key in sql_rows and not _same(sql_rows[key], d.get(f"m{i}")):
                         label = f"{ref}" + (f" for {', '.join(str(k) for k in key)}" if key else "")
                         found.append(f"{label} - prototype {_show(sql_rows[key])} but Power BI {_show(d.get(f'm{i}'))}")

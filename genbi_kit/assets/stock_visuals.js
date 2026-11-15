@@ -40,6 +40,23 @@
     while (s.length > 1 && measure(s + '...', size, weight) > w) s = s.slice(0, -1);
     return s.length > 1 ? s + '...' : '';
   }
+  // A card's value in the width it has, measured at the size and weight it is drawn: cut with "..." where it does not
+  // fit, as Power BI cuts it. A cut text value (a sentence) is marked data-cut for the display check.
+  function cutText(parent, x, y, raw, s, w, o) {
+    const shown = fit(s, w, o.size, o.bold ? 600 : 400), t = text(parent, x, y, shown, o);
+    if (shown !== String(s) && typeof raw === 'string') t.setAttribute('data-cut', String(s).slice(0, 200));
+    return t;
+  }
+  function wrapLines(s, w, size, weight) {      // word wrap; a word wider than the line keeps a line of its own
+    const out = [];
+    let line = '';
+    for (const word of String(s).split(/\s+/).filter(Boolean)) {
+      const next = line ? line + ' ' + word : word;
+      if (!line || measure(next, size, weight) <= w) line = next; else { out.push(line); line = word; }
+    }
+    if (line) out.push(line);
+    return out;
+  }
   function rgb(hex) {
     const h = String(hex || '#000000').replace('#', '');
     return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) || 0);
@@ -828,12 +845,23 @@
       const anchor = align === 'center' ? 'middle' : align === 'right' ? 'end' : 'start';
       const v = first(rows, m.col);
       const valueText = num(v, m.format, get('value', 'labelDisplayUnits', 0), get('value', 'labelPrecision', null), undefined, ctx);
-      const vy = ch * (refs.length ? 0.36 : 0.44);
-      const t = text(g, ax, vy, fit(valueText, cw - 20, vSize, 600), {size: vSize, color: color(get('value', 'fontColor'), ctx, ctx.text), anchor, bold: get('value', 'bold', true)});
-      hover(t, () => [[m.name, num(v, m.format, 1, null, null, ctx)]]);
-      if (get('label', 'show', true)) text(g, ax, vy + vSize * 0.72, fit(get('label', 'text', m.name), cw - 20, lSize), {size: lSize, color: color(get('label', 'fontColor'), ctx, ctx.muted), anchor});
+      const vo = {size: vSize, color: color(get('value', 'fontColor'), ctx, ctx.text), anchor, bold: get('value', 'bold', true)};
+      const showLabel = get('label', 'show', true), lh = vSize * 1.18;
+      // Text wrap (value.textWrap) breaks a long value over lines, as many as the card has room for; without it Power BI
+      // keeps the value on one line and cuts it
+      let lines = get('value', 'textWrap', false) ? wrapLines(valueText, cw - 20, vSize, vo.bold ? 600 : 400) : [valueText];
+      const room = Math.max(1, Math.floor((ch - 12 - (showLabel ? lSize * 1.4 : 0) - refs.length * lSize * 1.3) / lh));
+      if (lines.length > room) lines = [...lines.slice(0, room - 1), lines.slice(room - 1).join(' ')];
+      const vy = lines.length > 1 ? Math.max(6 + lh / 2, (ch - lines.length * lh - (showLabel ? lSize * 1.4 : 0) - refs.length * lSize * 1.3) / 2 + lh / 2)
+        : ch * (refs.length ? 0.36 : 0.44);
+      lines.forEach((s, i) => {
+        const t = cutText(g, ax, vy + i * lh, typeof v === 'string' ? v : null, s, cw - 20, vo);
+        hover(t, () => [[m.name, num(v, m.format, 1, null, null, ctx)]]);
+      });
+      const below = vy + (lines.length - 1) * lh;          // the value's last line
+      if (showLabel) text(g, ax, below + vSize * 0.72, fit(get('label', 'text', m.name), cw - 20, lSize), {size: lSize, color: color(get('label', 'fontColor'), ctx, ctx.muted), anchor});
       refs.forEach((r, k) => {
-        const rv = first(rows, r.col), ry = vy + vSize * 0.72 + lSize * (1.6 + k * 1.3);
+        const rv = first(rows, r.col), ry = below + vSize * 0.72 + lSize * (1.6 + k * 1.3);
         if (ry > ch - 6) return;
         const title = get('referenceLabelTitle', 'titleText', r.name), rs = get('referenceLabelValue', 'valueFontSize', 9) * PT;
         text(g, ax, ry, fit(`${title}: ${num(rv, r.format, get('referenceLabelValue', 'valueDisplayUnits', 0), get('referenceLabelValue', 'valuePrecision', null), undefined, ctx)}`, cw - 20, rs),
@@ -847,31 +875,40 @@
     if (!f) return note(svg, W, H, 'Add a field', ctx);
     const v = f.measure ? first(item.rows, f.col) : first(item.rows, f.col);
     const size = get('labels', 'fontSize', Math.min(27, H / 2.6 / PT)) * PT;
-    const t = text(svg, W / 2, H * 0.45, fit(num(v, f.format, get('labels', 'labelDisplayUnits', 0), get('labels', 'labelPrecision', null), undefined, ctx), W - 10, size),
+    const t = cutText(svg, W / 2, H * 0.45, v, num(v, f.format, get('labels', 'labelDisplayUnits', 0), get('labels', 'labelPrecision', null), undefined, ctx), W - 10,
       {size, color: color(get('labels', 'color'), ctx, ctx.text), anchor: 'middle', bold: get('labels', 'bold', false)});
     hover(t, () => [[f.name, num(v, f.format, 1, null, null, ctx)]]);
     if (get('categoryLabels', 'show', true)) text(svg, W / 2, H * 0.45 + size * 0.75, fit(f.name, W - 10, get('categoryLabels', 'fontSize', 12) * PT * 0.8), {size: get('categoryLabels', 'fontSize', 12) * PT * 0.8, color: color(get('categoryLabels', 'color'), ctx, ctx.muted), anchor: 'middle'});
     return null;
   }
+  // Power BI's multi-row card: a card per row of data (its text columns make the card's title) and in each card the
+  // values side by side, as many to a line as fit at about 120 px each, the others on the next lines, each value above
+  // its name. Power BI does not wrap a value: one that does not fit its place is cut with "..." - a sentence belongs in
+  // pbi.cardVisual with value.textWrap. Cards below the bottom scroll in Power BI.
   function multiRowCard(svg, W, H, item, ctx, get) {
     const fs = fieldsOf(item, 'Values');
     if (!fs.length) return note(svg, W, H, 'Add fields', ctx);
     const cols = fs.filter(f => !f.measure), meas = fs.filter(f => f.measure);
-    const rows = item.rows.slice(0, 30), rh = Math.max(44, Math.min(70, H / Math.max(1, rows.length)));
-    const bar = get('card', 'barShow', true), barCol = color(get('card', 'barColor'), ctx, ctx.palette[0]);
-    rows.forEach((r, i) => {
-      const y = i * rh;
-      if (y + rh > H + 1) return;
-      if (bar) el('rect', {x: 0, y: y + 4, width: get('card', 'barWeight', 3), height: rh - 8, fill: barCol}, svg);
-      const title = cols.map(c => catLabel(r[c.col], c)).join(' - ');
-      if (title) text(svg, 12, y + 12, fit(title, W - 20, 12, 600), {size: get('cardTitle', 'fontSize', 9) * PT, color: color(get('cardTitle', 'color'), ctx, ctx.text), bold: true});
-      const w = (W - 12) / Math.max(1, meas.length);
+    const vSize = get('dataLabels', 'fontSize', 12) * PT, lSize = get('categoryLabels', 'fontSize', 8) * PT, tSize = get('cardTitle', 'fontSize', 9) * PT;
+    const labels = get('categoryLabels', 'show', true), bar = get('card', 'barShow', true), barW = bar ? get('card', 'barWeight', 3) : 0;
+    const barCol = color(get('card', 'barColor'), ctx, ctx.palette[0]), x0 = barW + 9, inner = Math.max(20, W - x0 - 4);
+    const perLine = Math.max(1, Math.min(meas.length, Math.floor(inner / 120))), colW = inner / perLine;
+    const block = vSize * 1.25 + (labels ? lSize * 1.4 : 0) + 6, nLines = Math.ceil(meas.length / perLine);
+    const vo = {size: vSize, color: color(get('dataLabels', 'color'), ctx, ctx.text)}, lo = {size: lSize, color: color(get('categoryLabels', 'color'), ctx, ctx.muted)};
+    let y = 0;
+    for (const r of item.rows.slice(0, 30)) {
+      const title = cols.map(c => catLabel(r[c.col], c)).join(' - '), th = title ? tSize * 1.6 : 0, rh = th + nLines * block + 10;
+      if (y > 0 && y + rh > H + 1) break;
+      if (bar) el('rect', {x: 0, y: y + 4, width: barW, height: rh - 8, fill: barCol}, svg);
+      if (title) text(svg, x0, y + 5 + tSize * 0.7, fit(title, inner, tSize, 600), {size: tSize, color: color(get('cardTitle', 'color'), ctx, ctx.text), bold: true});
       meas.forEach((m, k) => {
-        text(svg, 12 + k * w, y + rh * 0.55, fit(num(r[m.col], m.format, 0, null, undefined, ctx), w - 6, 15), {size: get('dataLabels', 'fontSize', 12) * PT, color: color(get('dataLabels', 'color'), ctx, ctx.text)});
-        if (get('categoryLabels', 'show', true)) text(svg, 12 + k * w, y + rh * 0.8, fit(m.name, w - 6, 10), {size: get('categoryLabels', 'fontSize', 8) * PT, color: color(get('categoryLabels', 'color'), ctx, ctx.muted)});
+        const bx = x0 + (k % perLine) * colW, by = y + 6 + th + Math.floor(k / perLine) * block, s = num(r[m.col], m.format, 0, null, undefined, ctx);
+        hover(cutText(svg, bx, by + vSize * 0.6, r[m.col], s, colW - 12, vo), () => [[m.name, s]]);
+        if (labels) text(svg, bx, by + vSize * 1.25 + lSize * 0.55, fit(m.name, colW - 12, lSize), lo);
       });
-      el('line', {x1: 0, x2: W, y1: y + rh, y2: y + rh, stroke: mix(ctx.border, '#FFFFFF', 0.3)}, svg);
-    });
+      y += rh;
+      el('line', {x1: 0, x2: W, y1: y, y2: y, stroke: mix(ctx.border, '#FFFFFF', 0.3)}, svg);
+    }
     return null;
   }
   function kpi(svg, W, H, item, ctx, get) {
@@ -930,7 +967,8 @@
       r.forEach(c => {
         const td = document.createElement('td');
         td.textContent = c.text;
-        td.style.cssText = `padding:${pad + 1}px 6px;text-align:${c.num ? 'right' : 'left'};white-space:nowrap;${grid ? 'border-bottom:1px solid ' + gcol : ''};${c.bold ? 'font-weight:600' : ''}`;
+        td.style.cssText = `padding:${pad + 1}px 6px;text-align:${c.num ? 'right' : 'left'};white-space:nowrap;${grid ? 'border-bottom:1px solid ' + gcol : ''};${c.bold ? 'font-weight:600' : ''}`
+          + (c.indent ? `;padding-left:${6 + c.indent}px` : '');
         if (c.color) td.style.color = c.color;
         if (c.bg) td.style.background = c.bg;
         tr.appendChild(td);
@@ -945,39 +983,104 @@
     wrap.appendChild(t);
     body.appendChild(wrap);
   }
-  const additive = f => !fmtParts(f.format).pct;
-  function cellStyle(get, f, row, rows, ctx) {
+  // whether a measure's values add up over rows to its total (from its DAX, see stock.additive_measures; older pages: not a %)
+  const additive = f => f.additive !== undefined ? !!f.additive : !fmtParts(f.format).pct;
+  function cellStyle(get, f, row, ranges, ctx) {
     // conditional formatting on values: `for: "[Measure]"` entries with backColor / fontColor (gradient or field value)
     const out = {};
     for (const prop of ['backColor', 'fontColor']) {
       const spec = override(get, 'values', prop, {measure: f.name, values: []});
-      if (spec !== undefined) out[prop === 'backColor' ? 'bg' : 'color'] = pointColor(spec, [row], ctx, null, colRanges(rows));
+      if (spec !== undefined) out[prop === 'backColor' ? 'bg' : 'color'] = pointColor(spec, [row], ctx, null, ranges);
     }
     return out;
   }
   function table(body, item, ctx, get) {
-    const fs = fieldsOf(item, 'Values'), rows = item.rows.slice(0, 500);
+    const fs = fieldsOf(item, 'Values'), rows = item.rows.slice(0, 500), ranges = colRanges(rows);
     const head = fs.map(f => ({text: f.name, num: f.measure}));
-    const out = rows.map(r => fs.map(f => ({text: f.measure ? num(r[f.col], f.format, 1, null, null, ctx) : catLabel(r[f.col], f), num: f.measure, ...(f.measure ? cellStyle(get, f, r, rows, ctx) : {})})));
+    const out = rows.map(r => fs.map(f => ({text: f.measure ? num(r[f.col], f.format, 1, null, null, ctx) : catLabel(r[f.col], f), num: f.measure, ...(f.measure ? cellStyle(get, f, r, ranges, ctx) : {})})));
     const totals = get('total', 'totals', true) && fs.some(f => f.measure) ? fs.map((f, i) => ({text: i === 0 && !f.measure ? get('total', 'label', 'Total') : f.measure && additive(f) ? num(total(rows, f.col), f.format, 1, null, null, ctx) : '', num: f.measure})) : null;
     htmlTable(body, item, ctx, get, head, out, totals);
   }
+  // Power BI's matrix computes every measure once per row header: a ratio is never added up. It opens at the first level
+  // of its Rows (and Columns); with Auto expand (rowHeaders.autoExpand) every Rows level is open, each group's row with
+  // its subtotal above its children, indented (Top, the compact layout's default), or a Total row after them (Bottom).
+  // The prototype SQL returns a row per row header shown (prototype._stock_item passes the levels shown): per value of
+  // the first level, or with Auto expand the detail rows plus a row per group with the lower Rows columns empty (GROUP
+  // BY ROLLUP); a row with every Rows column empty is the Total line. Where there is no row for a header, a measure that
+  // adds up adds up its detail rows and any other stays blank - never a sum Power BI would not show.
   function matrix(body, item, ctx, get) {
-    const rf = fieldsOf(item, 'Rows')[0], cf = fieldsOf(item, 'Columns')[0], vs = fieldsOf(item, 'Values'), rows = item.rows;
-    const rkeys = rf ? uniq(rows, rf.col) : [null], ckeys = cf ? uniq(rows, cf.col) : [null];
-    const rowTotal = get('rowTotal', 'show', get('subTotals', 'rowSubtotals', true)), colTotal = get('columnTotal', 'show', get('subTotals', 'columnSubtotals', true));
-    const head = [{text: rf ? rf.name : ''}];
+    const lv = fieldsOf(item, 'Rows'), cf = fieldsOf(item, 'Columns')[0], vs = fieldsOf(item, 'Values'), n = lv.length;
+    const blank = x => x === null || x === undefined || x === '', key = x => blank(x) ? '' : String(x);
+    const colOf = r => cf ? key(r[cf.col]) : '', ckeys = cf ? uniq(item.rows, cf.col).map(key) : [''];
+    const pathOf = (r, d) => lv.slice(0, d).map(f => key(r[f.col])), id = (path, ck) => JSON.stringify([path, ck]);
+    const put = (m, k, r) => { if (!m.has(k)) m.set(k, []); m.get(k).push(r); };
+    // a detail row has every Rows column set (or a blank member between set ones); a group's own row has the first d set
+    // and the rest empty (d = 0: the Total line)
+    const depth = r => { const s = lv.map(f => !blank(r[f.col])), d = s.indexOf(false); return d < 0 || s.slice(d).some(Boolean) ? n : d; };
+    const isDetail = new Set(), own = new Map(), groups = [];
+    item.rows.forEach(r => { if (depth(r) === n) isDetail.add(r); else groups.push(r); });
+    // a group's row adds up to its detail rows in every measure that adds up; one that does not is a member with a blank name
+    groups.sort((a, b) => depth(b) - depth(a)).forEach(r => {
+      const d = depth(r), path = pathOf(r, d), ck = colOf(r);
+      const kids = item.rows.filter(x => isDetail.has(x) && colOf(x) === ck && path.every((p, i) => key(x[lv[i].col]) === p));
+      const fits = kids.length && vs.filter(additive).every(v => { const a = r[v.col], b = total(kids, v.col);
+        return typeof a !== 'number' || b === null || Math.abs(a - b) <= Math.max(1e-6, 0.005 * Math.max(Math.abs(a), Math.abs(b))); });
+      if (fits) put(own, id(path, ck), r); else isDetail.add(r);
+    });
+    const order = item.rows.filter(r => isDetail.has(r)), under = new Map();
+    order.forEach(r => { for (let d = 0; d <= n; d++) put(under, id(pathOf(r, d), colOf(r)), r); });
+    const rowsOf = (path, ck) => (path.length === n ? under : own).get(id(path, ck)) || [];
+    function value(path, ck, v) {          // the cell of a row header (a path of Rows values) and a column
+      const rs = rowsOf(path, ck);
+      if (rs.length === 1) return rs[0][v.col];
+      const src = rs.length ? rs : path.length < n ? under.get(id(path, ck)) || [] : [];   // more rows than headers, or a group with no row
+      return src.length && additive(v) ? total(src, v.col) : null;
+    }
+    const sumOf = xs => xs.some(x => typeof x === 'number') ? xs.reduce((s, x) => s + (typeof x === 'number' ? x : 0), 0) : null;
+    const across = (path, v) => additive(v) ? sumOf(ckeys.map(ck => value(path, ck, v))) : null;      // the Total column
+    const show = (x, v) => blank(x) ? '' : num(x, v.format, 1, null, null, ctx);
+    // the order: the SQL's, or the visual's sort (a measure, or the level's own column) within each level
+    const sort = item.sort ? (Array.isArray(item.sort) ? item.sort : [item.sort, 'asc']) : null;
+    const sname = sort ? refName(sort[0]) : null, desc = sort && String(sort[1] || '').toLowerCase().startsWith('d');
+    const kidsOf = path => {
+      const out = [], d = path.length;
+      order.forEach(r => { if (path.every((p, i) => key(r[lv[i].col]) === p)) { const k = key(r[lv[d].col]); if (!out.includes(k)) out.push(k); } });
+      const m = vs.find(v => v.name === sname);
+      if (!sort || !(m || lv[d].name === sname)) return out;
+      const by = k => m ? (cf ? (additive(m) ? across([...path, k], m) : value([...path, k], ckeys[0], m)) : value([...path, k], '', m)) : k;
+      return out.sort((a, b) => {
+        const x = by(a), y = by(b);
+        if (blank(x) || blank(y)) return blank(x) - blank(y);
+        return (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), undefined, {numeric: true})) * (desc ? -1 : 1);
+      });
+    };
+    const colTotal = get('columnTotal', 'show', get('subTotals', 'columnSubtotals', true)), rowTotal = get('rowTotal', 'show', get('subTotals', 'rowSubtotals', true));
+    const subtotals = get('subTotals', 'rowSubtotals', true), bottom = String(get('subTotals', 'rowSubtotalsPosition', 'Top')) === 'Bottom';
+    const step = get('rowHeaders', 'steppedLayoutIndentation', 12), ranges = colRanges(order);   // conditional colors scale over the detail rows
+    const head = [{text: n ? lv[0].name : ''}];
     ckeys.forEach(c => vs.forEach(v => head.push({text: (cf ? catLabel(c, cf) + (vs.length > 1 ? ' - ' : '') : '') + (vs.length > 1 || !cf ? v.name : ''), num: true})));
     if (cf && colTotal) vs.forEach(v => head.push({text: 'Total' + (vs.length > 1 ? ' - ' + v.name : ''), num: true}));
-    const cell = (pred, v) => ({text: num(total(rows, v.col, pred), v.format, 1, null, null, ctx), num: true});
-    const out = rkeys.map(rk => {
-      const line = [{text: rf ? catLabel(rk, rf) : 'Total', bold: !rf}];
-      ckeys.forEach(ck => vs.forEach(v => line.push({...cell(r => (!rf || String(r[rf.col]) === String(rk)) && (!cf || String(r[cf.col]) === String(ck)), v), ...cellStyle(get, v, Object.assign({}, ...rows.filter(r => (!rf || String(r[rf.col]) === String(rk)) && (!cf || String(r[cf.col]) === String(ck)))), rows, ctx)})));
-      if (cf && colTotal) vs.forEach(v => line.push(additive(v) ? {...cell(r => !rf || String(r[rf.col]) === String(rk), v), bold: true} : {text: '', num: true}));
-      return line;
+    const out = [];
+    const line = (label, path, o) => {    // o: {depth, bold, values (shown), detail (conditional colors)}
+      const cells = [{text: label, bold: o.bold, indent: o.depth * step}];
+      ckeys.forEach(ck => vs.forEach(v => {
+        if (!o.values) return cells.push({text: '', num: true});
+        const x = value(path, ck, v), c = {text: show(x, v), num: true, bold: o.bold};
+        cells.push(o.detail ? {...c, ...cellStyle(get, v, {...Object.assign({}, ...rowsOf(path, ck)), [v.col]: x}, ranges, ctx)} : c);
+      }));
+      if (cf && colTotal) vs.forEach(v => cells.push({text: o.values ? show(across(path, v), v) : '', num: true, bold: true}));
+      out.push(cells);
+    };
+    const walk = path => kidsOf(path).forEach(k => {
+      const p = [...path, k], d = path.length, label = catLabel(k === '' ? null : k, lv[d]);
+      if (p.length === n) return line(label, p, {depth: d, values: true, detail: true});
+      line(label, p, {depth: d, bold: true, values: subtotals && !bottom});     // a group: bold, with its subtotal on its row
+      walk(p);
+      if (subtotals && bottom) line(get('subTotals', 'rowSubtotalsLabel', 'Total'), p, {depth: d + 1, bold: true, values: true});
     });
-    const totals = rf && rowTotal ? [{text: 'Total'}].concat(...ckeys.map(ck => vs.map(v => additive(v) ? cell(r => !cf || String(r[cf.col]) === String(ck), v) : {text: '', num: true})),
-      cf && colTotal ? vs.map(v => additive(v) ? cell(() => true, v) : {text: '', num: true}) : []) : null;
+    if (n) walk([]); else line('Total', [], {depth: 0, bold: true, values: true, detail: true});
+    const totals = n && rowTotal ? [{text: 'Total'}, ...ckeys.flatMap(ck => vs.map(v => ({text: show(value([], ck, v), v), num: true}))),
+      ...(cf && colTotal ? vs.map(v => ({text: show(across([], v), v), num: true})) : [])] : null;
     htmlTable(body, item, ctx, get, head, out, totals);
   }
   function slicer(body, item, ctx, get) {

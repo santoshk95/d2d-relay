@@ -22,6 +22,7 @@ import re
 import secrets
 import threading
 import time
+from decimal import Decimal
 from pathlib import Path
 
 import duckdb
@@ -61,6 +62,8 @@ answer the question, say so in the summary and in not_included. Write plain keyb
 comma instead of a long dash, straight quotes, three dots, no arrows or middle dots.
 Write for a business reader: headline, summary, actions and next_questions use business words, never SQL, table or
 column names (say "revenue", not "net_rev_amt"); round sensibly ($1.42M, 32.9%); keep the summary to 2-4 short sentences.
+In a query, return a percentage as a fraction (0.329 for 32.9%) in a column whose name says pct, share, margin, rate
+or growth (margin_pct): the app shows such a column as a percentage in the chart and the table.
 Actions are concrete things a manager could do this week. Next questions are ones a manager would naturally ask next.
 D2D Relay has no certified metrics: never mention certified metrics or their absence; leave metrics_used empty.
 Use not_included only for data the question needed that is missing, never for a note about definitions."""
@@ -658,27 +661,67 @@ def message(mid: str, uid: str) -> tuple[dict, dict]:
     return json.loads(m["body"]), {"scope": json.loads(m["scope"]), "question": json.loads(q["body"])["text"] if q else ""}
 
 
+PCT_NAME = re.compile(r"pct|percent|%|share|margin|rate|growth", re.I)
+
+
+def pct_columns(cols: list, rows: list[dict]) -> set:
+    """Columns holding percentages as fractions (0.845 = 84.5%), as 14-askd.js's askPctCols() finds them: a rate, share,
+    margin or growth whose values are (nearly all) between -1.5 and 1.5 and not all whole numbers."""
+    out = set()
+    for c in cols:
+        vals = []
+        for r in rows:
+            try:
+                vals.append(float(r.get(c)))
+            except (TypeError, ValueError):
+                pass
+        if PCT_NAME.search(str(c)) and vals and sum(abs(x) <= 1.5 for x in vals) >= 0.8 * len(vals) and any(x != round(x) for x in vals):
+            out.add(c)
+    return out
+
+
+def shown_number(v, pct: bool = False, short: bool = False) -> str:
+    """A value as the answer card shows it: 84.5% for a percentage (a stored answer keeps a decimal as text), a number
+    with thousands separators and at most 2 decimals (4 below 1; 2.9M style when short), anything else as it is."""
+    if isinstance(v, Decimal) or (pct and isinstance(v, str)):
+        try:
+            v = float(v)
+        except ValueError:
+            return str(v)
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return "" if v is None else str(v)
+    if pct:
+        p = v * 100
+        return f"{p:,.{2 if 0 < abs(p) < 1 else 1}f}".rstrip("0").rstrip(".") + "%"
+    a = abs(v)
+    if short and a >= 1e4:
+        return f"{v / 1e9:.1f}B" if a >= 1e9 else f"{v / 1e6:.1f}M" if a >= 1e6 else f"{v / 1e3:.1f}K"
+    if isinstance(v, int):
+        return f"{v:,}"
+    return f"{v:.{3 if short else 4}f}".rstrip("0").rstrip(".") if 0 < a < 1 else f"{v:,.2f}".rstrip("0").rstrip(".")
+
+
 def snapshot_html(body: dict, question: str) -> str:
     """A self-contained card (no scripts, no external files) for the headless-browser PNG."""
     import html as h
     data = body.get("data") or {}
     cols, rows = data.get("columns") or [], (data.get("rows") or [])[:20]
+    pcts = pct_columns(cols, data.get("rows") or [])
     chart = ""
     spec = (body.get("result") or {}).get("chart")
     if spec and rows and spec.get("x") in cols and (spec.get("y") or [None])[0] in cols:
         ys = [float(r.get(spec["y"][0]) or 0) for r in rows]
-        top = max(ys) or 1
+        lo, hi = min(0.0, *ys), max(0.0, *ys)                  # a negative value (a fall) hangs below the zero line
+        y_of = lambda x: 30 + 170 * (hi - x) / ((hi - lo) or 1)  # noqa: E731
         bw = 640 / max(1, len(ys))
-        def short(v: float) -> str:
-            a = abs(v)
-            return f"{v / 1e9:.1f}B" if a >= 1e9 else f"{v / 1e6:.1f}M" if a >= 1e6 else f"{v / 1e3:.1f}K" if a >= 1e4 else f"{v:,.4g}"
-        bars = "".join(f'<rect x="{i * bw + 4}" y="{200 - 170 * v / top}" width="{bw - 8}" height="{170 * v / top}" rx="3" fill="#2C7A66"/>'
-                       + (f'<text x="{i * bw + bw / 2}" y="{196 - 170 * v / top}" font-size="9.5" text-anchor="middle" fill="#2F4039">{short(v)}</text>'
+        bars = "".join(f'<rect x="{i * bw + 4}" y="{min(y_of(v), y_of(0))}" width="{bw - 8}" height="{abs(y_of(v) - y_of(0))}" rx="3" fill="#2C7A66"/>'
+                       + (f'<text x="{i * bw + bw / 2}" y="{y_of(v) - 4 if v >= 0 else y_of(v) + 11}" font-size="9.5" text-anchor="middle" fill="#2F4039">'
+                          f'{shown_number(v, spec["y"][0] in pcts, short=True)}</text>'
                           if len(ys) <= 20 else "")           # values on the bars, so the image reads on its own
                        + f'<text x="{i * bw + bw / 2}" y="216" font-size="10" text-anchor="middle" fill="#5F655F">{h.escape(str(rows[i].get(spec["x"]))[:12])}</text>'
                        for i, v in enumerate(ys))
         chart = f'<svg width="660" height="225" viewBox="0 0 660 225">{bars}</svg>'
-    table = "".join("<tr>" + "".join(f"<td>{h.escape(str(r.get(c, '')))}</td>" for c in cols) + "</tr>" for r in rows)
+    table = "".join("<tr>" + "".join(f"<td>{h.escape(shown_number(r.get(c), c in pcts))}</td>" for c in cols) + "</tr>" for r in rows)
     v = body.get("validation") or {}
     return f"""<!doctype html><meta charset="utf-8"><style>
 body{{margin:0;padding:24px;font:14px/1.5 'Segoe UI',Arial,sans-serif;color:#111827;background:#F3F4F6}}

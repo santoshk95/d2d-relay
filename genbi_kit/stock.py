@@ -183,10 +183,16 @@ SPECS = {
     "tableEx": _spec("Table", "Tables", [_r("Values", GM, None, "Columns", ("columns", "fields", "values"), "the columns, in order")],
                      [["Values"]], renderer="table"),
     "pivotTable": _spec("Matrix", "Tables", [
-        _r("Rows", G, None, "Rows", ("rows",), "row headers; several fields make a stepped hierarchy"),
-        _r("Columns", G, None, "Columns", ("columns",), "column headers"),
+        _r("Rows", G, None, "Rows", ("rows",), "row headers; several fields make a stepped hierarchy, which opens at its "
+                                               "first level (rowHeaders.autoExpand opens every level)"),
+        _r("Columns", G, None, "Columns", ("columns",), "column headers (several open at the first level)"),
         _r("Values", M, None, "Values", ("values", "value", "measures"), "the measures in the cells")],
-        [["Values"], ["Rows"]], renderer="matrix"),
+        [["Values"], ["Rows"]], renderer="matrix",
+        notes="Power BI computes every measure once per row header (a ratio is never added up), so the prototype SQL returns "
+              "one row per header the matrix shows: per value of the first Rows field (and of the first Columns field), as it "
+              "opens; with rowHeaders: {autoExpand: true}, every level: the detail rows plus a row per group whose lower Rows "
+              "columns are empty (GROUP BY ROLLUP). A row with every Rows column empty gives the Total line its values (ratios "
+              "too; without it only measures that add up get a total). Return a blank member as '(Blank)'."),
     "slicer": _spec("Slicer", "Tables", [_r("Values", G, None, "Field", ("field", "values"), "the column to filter by (several = hierarchy)")],
                     [["Values"]], sorting=False, renderer="slicer",
                     notes="A slicer on one page; report-wide synced slicers come from `filters`."),
@@ -614,6 +620,65 @@ def plain(spec: dict, value):
             if value == v or (isinstance(value, str) and (str(v).lower() == value.lower() or label.lower() == value.lower())):
                 return v
     return value
+
+
+def opens_expanded(fmt: dict | None) -> bool:
+    """A matrix opens every Rows level when Row headers > Auto expand is on; otherwise at its first level, and people
+    expand it (Microsoft: "When disabled, row headers start collapsed"). fmt: prototype_format()'s output."""
+    return bool((((fmt or {}).get("rowHeaders") or {}).get("_") or {}).get("autoExpand"))
+
+
+def shown(entry: dict, role: str, refs: list, fmt: dict | None = None) -> list:
+    """The fields of a well the visual shows when it opens, which are the columns its prototype SQL returns: a drill
+    hierarchy's top level, the first field of a well the prototype draws alone, a matrix's first Rows level (all of them
+    with Auto expand) and its first Columns level."""
+    if role in entry["drill"] or role in entry.get("first_only", ()):
+        return refs[:1]
+    if entry.get("visualType") == "pivotTable" and (role == "Columns" or (role == "Rows" and not opens_expanded(fmt))):
+        return refs[:1]
+    return refs
+
+
+# Functions whose result is not the sum of the result over parts of the rows: averages, minimums and maximums,
+# distinct counts, ranks, running totals and balances, and values fixed by ALL / ALLSELECTED / REMOVEFILTERS.
+NON_ADDITIVE = re.compile(r"\b(DIVIDE|AVERAGE[AX]?|MIN[AX]?|MAX[AX]?|MEDIANX?|PERCENTILEX?\.\w+|DISTINCTCOUNT(?:NOBLANK)?|"
+                          r"RANKX?|GEOMEANX?|STDEVX?\.\w+|VARX?\.\w+|SELECTEDVALUE|ALL|ALLSELECTED|ALLEXCEPT|ALLNOBLANKROW|"
+                          r"REMOVEFILTERS|DATESYTD|DATESQTD|DATESMTD|TOTALYTD|TOTALQTD|TOTALMTD|DATESINPERIOD|DATESBETWEEN|"
+                          r"CLOSINGBALANCE\w+|OPENINGBALANCE\w+|LASTDATE|FIRSTDATE|LASTNONBLANK\w*|FIRSTNONBLANK\w*)\s*\(", re.I)
+
+
+def _pct_format(fmt) -> bool:
+    """A percentage format (the prototype's fmtParts(): first section, quoted text and backslashes left out)."""
+    return "%" in re.sub(r'"[^"]*"', "", str(fmt or "").split(";")[0]).replace("\\", "")
+
+
+def additive_measures(measures: list[dict]) -> dict[str, bool]:
+    """Measure name -> whether adding up its values over rows gives its value for all of them: SUM, COUNTROWS, a sum or
+    difference of such measures. Not a ratio (a % format, DIVIDE or /), an average, a distinct count, a minimum or
+    maximum, a rank, a running total or balance, or a value fixed by ALL. When unsure it says no: the prototype then
+    leaves a total blank rather than show a sum Power BI would not."""
+    exprs = {m["name"]: str(m.get("expression") or "") for m in measures}
+    fmts = {m["name"]: m.get("format") for m in measures}
+    memo: dict[str, bool] = {}
+
+    def add(name: str, trail: tuple = ()) -> bool:
+        if name in memo:
+            return memo[name]
+        if name in trail:
+            return True                                   # a cycle: Power BI refuses it anyway
+        code = re.sub(r'"(?:[^"]|"")*"|//[^\n]*|--[^\n]*|/\*.*?\*/', " ", exprs[name], flags=re.S)
+        ops = re.sub(r"'(?:[^']|'')*'", "T", re.sub(r"\[[^\]]*\]", "[c]", code))
+        ok = not _pct_format(fmts.get(name)) and "/" not in ops and not NON_ADDITIVE.search(ops)
+        refs = []
+        for m in re.finditer(r"\[([^\]]+)\]", code):     # [Measure] on its own; Table[Column] and 'Table'[Column] are columns
+            before = code[:m.start()].rstrip()
+            if (not before or not (before[-1].isalnum() or before[-1] in "_'")) and m.group(1) in exprs:
+                refs.append(m.group(1))
+        ok = ok and all(add(r, trail + (name,)) for r in refs)
+        memo[name] = ok
+        return ok
+
+    return {name: add(name) for name in exprs}
 
 
 def prototype_format(vt: str, fmt: dict | None, styles: dict | None = None) -> dict:

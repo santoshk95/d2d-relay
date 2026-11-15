@@ -8,16 +8,41 @@ const ASK_COLORS = ['#2C7A66', '#4E6E9E', '#B78A2A', '#A8475A'];      // enterpr
 const ASK_IN = (() => { try { return /Kolkata|Calcutta/.test(Intl.DateTimeFormat().resolvedOptions().timeZone) || /-IN$/.test(navigator.language); } catch (e) { return false; } })();
 const RATIO = /(per|avg|average|mean|rate|ratio|share|pct|percent|margin|%|price)/i;
 const MONEY = /(sales|revenue|amount|value|price|cost|profit|spend|gmv|income|turnover)/i;
+const PCT = /(pct|percent|%|share|margin|rate|growth)/i;            // names of columns that may hold a percentage
 const prettyCol = c => String(c).replace(/_/g, ' ').replace(/\b\w/g, m => m.toUpperCase());
-function askNum(v, cur) {
+// Columns holding percentages as fractions (0.845 = 84.5%), the way Ask Relay's queries return them: a rate, share,
+// margin or growth whose values are (nearly all) between -1.5 and 1.5 and not all whole numbers
+function askPctCols(cols, rows) {
+  return new Set((cols || []).filter(c => {
+    if (!PCT.test(c)) return false;
+    const v = (rows || []).map(r => r[c]).filter(x => x != null && x !== '' && !isNaN(x)).map(Number);
+    return v.length > 0 && v.filter(x => Math.abs(x) <= 1.5).length >= 0.8 * v.length && v.some(x => x !== Math.round(x));
+  }));
+}
+function askNum(v, cur, pct) {
   if (v == null || isNaN(v)) return '-';
+  if (pct) { const p = v * 100; return (+p.toFixed(Math.abs(p) < 1 && p !== 0 ? 2 : 1)).toLocaleString(ASK_IN ? 'en-IN' : undefined) + '%'; }
   const a = Math.abs(v), p = cur || '';
   if (ASK_IN && cur === '₹') return a >= 1e7 ? `${p}${(v / 1e7).toFixed(2).replace(/\.?0+$/, '')} Cr` : a >= 1e5 ? `${p}${(v / 1e5).toFixed(1).replace(/\.0$/, '')} L`
     : `${p}${(+v.toFixed(2)).toLocaleString('en-IN')}`;
   return a >= 1e9 ? `${p}${(v / 1e9).toFixed(1).replace(/\.0$/, '')}B` : a >= 1e6 ? `${p}${(v / 1e6).toFixed(1).replace(/\.0$/, '')}M`
     : a >= 1e4 ? `${p}${(v / 1e3).toFixed(1).replace(/\.0$/, '')}K` : a < 1 && v !== 0 ? String(+v.toFixed(3)) : `${p}${(+v.toFixed(2)).toLocaleString()}`;
 }
-const askFull = (v, cur) => v == null || isNaN(v) ? '-' : (cur || '') + (+(+v).toFixed(4)).toLocaleString(ASK_IN ? 'en-IN' : undefined);
+const askFull = (v, cur, pct) => v == null || isNaN(v) ? '-' : pct ? (+(v * 100).toFixed(2)).toLocaleString(ASK_IN ? 'en-IN' : undefined) + '%'
+  : (cur || '') + (+(+v).toFixed(4)).toLocaleString(ASK_IN ? 'en-IN' : undefined);
+// a name in the plural: "city" -> "cities", "order date" -> "order dates", "status" -> "statuses"; a word already
+// ending in s (products, sales) stays as it is
+function plural(phrase) {
+  return String(phrase).replace(/([a-z]+)$/i, w => {
+    const lw = w.toLowerCase(), odd = {person: 'people', child: 'children', man: 'men', woman: 'women'};
+    if (odd[lw]) return odd[lw];
+    if (/^(series|species|data|staff|news|info)$/.test(lw)) return w;
+    if (/is$/.test(lw)) return w.slice(0, -2) + 'es';
+    if (/(ss|us|x|z|ch|sh)$/.test(lw)) return w + 'es';
+    if (/s$/.test(lw)) return w;
+    return /[^aeiou]y$/.test(lw) ? w.slice(0, -1) + 'ies' : w + 's';
+  });
+}
 function niceTicks(lo, hi, n = 4) {
   if (hi === lo) hi = lo + 1;
   const raw = (hi - lo) / n, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1, 2, 2.5, 5, 10].map(f => f * mag).find(x => x >= raw) || raw;
@@ -36,7 +61,9 @@ function askChart(ans, opts = {}) {
   if (!nums.length || !dims.length) return null;
   const text = `${(ans.result || {}).headline || ''} ${ans.summary || ''}`;
   const cur = (text.match(/[₹$€£]/) || [])[0] || '';
-  const curOf = c => cur && MONEY.test(c) && !/(share|pct|percent|%|margin)/i.test(c) ? cur : '';
+  const pcts = askPctCols(nums, rows0), ratio = c => RATIO.test(c) || pcts.has(c);      // percentages show as 84.5%, and average
+  const curOf = c => cur && MONEY.test(c) && !pcts.has(c) && !/(share|pct|percent|%|margin)/i.test(c) ? cur : '';
+  const short = (v, c) => askNum(v, curOf(c), pcts.has(c)), full = (v, c) => askFull(v, curOf(c), pcts.has(c));
   const st = {x: dims.includes(spec.x) ? spec.x : dims[0], on: new Set((spec.y || []).filter(c => nums.includes(c)).slice(0, 4)), view: 'bar', sort: false, top: 0,
     values: (d.rows || []).length <= 12, filters: {}, from: null, to: null};      // labels only where they fit; hover shows the rest
   if (!st.on.size) st.on.add(nums[0]);
@@ -54,9 +81,9 @@ function askChart(ans, opts = {}) {
   const aggregate = rows => {                       // one row per value of "By": sums, or averages for ratio-like measures
     const g = new Map();
     for (const r of rows) { const k = r[st.x]; if (!g.has(k)) g.set(k, {k, n: 0, s: {}}); const e = g.get(k); e.n++; for (const c of nums) e.s[c] = (e.s[c] || 0) + (+r[c] || 0); }
-    return [...g.values()].map(e => ({[st.x]: e.k, ...Object.fromEntries(nums.map(c => [c, RATIO.test(c) ? e.s[c] / e.n : e.s[c]]))}));
+    return [...g.values()].map(e => ({[st.x]: e.k, ...Object.fromEntries(nums.map(c => [c, ratio(c) ? e.s[c] / e.n : e.s[c]]))}));
   };
-  const total = (rows, c) => { const v = rows.map(r => +r[c] || 0); return RATIO.test(c) ? v.reduce((a, b) => a + b, 0) / (v.length || 1) : v.reduce((a, b) => a + b, 0); };
+  const total = (rows, c) => { const v = rows.map(r => +r[c] || 0); return ratio(c) ? v.reduce((a, b) => a + b, 0) / (v.length || 1) : v.reduce((a, b) => a + b, 0); };
   function filterButton(c) {
     const set = st.filters[c], all = distinct(c);
     const label = !set ? 'All' : set.size === 1 ? String([...set][0]) : `${set.size} of ${all.length}`;
@@ -100,8 +127,8 @@ function askChart(ans, opts = {}) {
           else if (!on) { if (st.on.size >= 4) st.on.delete([...st.on][0]); st.on.add(c); }
           if (st.view === 'table') st.tsort = c;
           draw(); }},
-        h('span', {class: 'akl'}, on ? h('i', {style: `background:${color}`}) : null, prettyCol(c), RATIO.test(c) ? h('em', {}, ' avg') : null),
-        h('b', {}, askNum(total(filtered, c), curOf(c))), i === 0 ? null : null);
+        h('span', {class: 'akl'}, on ? h('i', {style: `background:${color}`}) : null, prettyCol(c), ratio(c) ? h('em', {}, ' avg') : null),
+        h('b', {}, short(total(filtered, c), c)), i === 0 ? null : null);
     }));
     tools.replaceChildren(...[...['bar', 'line', 'table'].map(v => h('button', {class: 'btn sm' + (st.view === v ? ' on' : ''), type: 'button', 'aria-pressed': String(st.view === v),
         onclick: () => { st.view = v; draw(); }}, {bar: 'Bar', line: 'Line', table: 'Table'}[v])),
@@ -115,7 +142,8 @@ function askChart(ans, opts = {}) {
     else drawChart(rows, shown);
     const active = [...Object.entries(st.filters).filter(([, s]) => s).map(([c, s]) => `${prettyCol(c)} = ${[...s].join(', ')}`),
       st.from || st.to ? `${prettyCol(dateCol)} ${st.from || '...'} to ${st.to || '...'}` : null, st.top ? `top ${st.top} by ${prettyCol(first)}` : null].filter(Boolean);
-    foot.replaceChildren(h('span', {class: 'faint small'}, `${rows.length} ${prettyCol(st.x).toLowerCase()}${rows.length === 1 ? '' : 's'} - ${filtered.length} of ${rows0.length} rows` + (active.length ? ' - ' + active.join(' - ') : '')),
+    const what = prettyCol(st.x).toLowerCase();
+    foot.replaceChildren(h('span', {class: 'faint small'}, `${rows.length} ${rows.length === 1 ? what : plural(what)} - ${filtered.length} of ${rows0.length} rows` + (active.length ? ' - ' + active.join(' - ') : '')),
       h('span', {class: 'spacer'}),
       !opts.onAsk ? h('span', {}) : h('button', {class: 'btn sm', type: 'button', onclick: () => opts.onAsk(`Looking at ${shown.map(prettyCol).join(' and ')} by ${prettyCol(st.x)}`
         + (active.length ? ` with ${active.join('; ')}` : '') + ': what stands out, and why?')}, icon('spark'), 'Ask about this view'));
@@ -126,7 +154,7 @@ function askChart(ans, opts = {}) {
     const th = c => h('th', {class: c === st.x ? 'l' : '', 'aria-sort': c === sortBy ? 'descending' : 'none'},
       h('button', {class: 'athbtn', type: 'button', onclick: () => { st.tsort = c; draw(); }}, prettyCol(c), c === sortBy ? ' ▾' : ''));
     host.replaceChildren(h('div', {class: 'dprev', style: 'max-height:320px'}, h('table', {class: 'utable'}, h('tr', {}, [st.x, ...shown].map(th)),
-      sorted.map(r => h('tr', {}, h('td', {}, String(r[st.x] ?? '')), shown.map(c => h('td', {class: 'n'}, askFull(+r[c], curOf(c)))))))));
+      sorted.map(r => h('tr', {}, h('td', {}, String(r[st.x] ?? '')), shown.map(c => h('td', {class: 'n'}, full(+r[c], c))))))));
     svg = null;
   }
   function drawChart(rows, shown) {
@@ -134,36 +162,36 @@ function askChart(ans, opts = {}) {
     const vals = rows.flatMap(r => shown.map(s => +r[s] || 0));
     const ticks = niceTicks(Math.min(0, ...vals), Math.max(0, ...vals, 0.0001));
     const lo = ticks[0], hi = ticks[ticks.length - 1], Y = v => T + ph - (ph * ((+v || 0) - lo)) / (hi - lo || 1);
-    const cur0 = curOf(shown[0]);
+    const tick = t => shown.every(s => pcts.has(s)) ? askNum(t, '', true) : askNum(t, shown.length === 1 ? curOf(shown[0]) : '');
     svg = document.createElementNS(NS, 'svg');
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', '100%'); svg.setAttribute('role', 'group');
     svg.setAttribute('aria-label', `${st.view === 'bar' ? 'Bar' : 'Line'} chart of ${shown.map(prettyCol).join(', ')} by ${prettyCol(st.x)}. Use the arrow keys to move between points.`);
     const el = (tag, attrs, txt) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (txt != null) e.textContent = txt; svg.append(e); return e; };
     el('rect', {x: 0, y: 0, width: W, height: H, fill: '#fff'});
     ticks.forEach(t => { el('line', {x1: L, x2: W - R, y1: Y(t), y2: Y(t), stroke: t === 0 ? '#C9C4B5' : '#EEEBE3'});
-      el('text', {x: L - 6, y: Y(t) + 3.5, 'font-size': 10, 'text-anchor': 'end', fill: '#6E756E'}, askNum(t, shown.length === 1 ? cur0 : '')); });
+      el('text', {x: L - 6, y: Y(t) + 3.5, 'font-size': 10, 'text-anchor': 'end', fill: '#6E756E'}, tick(t)); });
     const every = Math.max(1, Math.ceil(n / 12));
     rows.forEach((r, i) => { if (i % every === 0) el('text', {x: L + i * bw + bw / 2, y: H - B + 15, 'font-size': 10, 'text-anchor': 'middle', fill: '#5F655F'}, String(r[st.x] ?? '').slice(0, 13)); });
     el('text', {x: L + pw / 2, y: H - 4, 'font-size': 10, 'text-anchor': 'middle', fill: '#6E756E', 'font-weight': 600}, prettyCol(st.x));
     if (!rows.length) el('text', {x: W / 2, y: H / 2, 'font-size': 13, 'text-anchor': 'middle', fill: '#6E756E'}, 'Nothing matches the filters');
     const marks = shown.map(() => []), showVals = st.values && rows.length * shown.length <= 24;
     shown.forEach((s, si) => {
-      const color = ASK_COLORS[si % 4], cs = curOf(s);
+      const color = ASK_COLORS[si % 4];
       if (st.view === 'bar') {
         const gw = Math.max(2, bw - 8) / shown.length;
         rows.forEach((r, i) => { const v = +r[s] || 0, x = L + i * bw + 4 + si * gw;
           marks[si].push(el('rect', {x, y: Math.min(Y(v), Y(0)), width: Math.max(1.5, gw - 1), height: Math.abs(Y(v) - Y(0)), rx: 3, fill: color, class: 'amark'}));
-          if (showVals) el('text', {x: x + gw / 2, y: Math.min(Y(v), Y(0)) - 4, 'font-size': 9.5, 'text-anchor': 'middle', fill: '#2F4039'}, askNum(v, cs)); });
+          if (showVals) el('text', {x: x + gw / 2, y: Math.min(Y(v), Y(0)) - 4, 'font-size': 9.5, 'text-anchor': 'middle', fill: '#2F4039'}, short(v, s)); });
       } else {
         el('polyline', {points: rows.map((r, i) => `${L + i * bw + bw / 2},${Y(r[s])}`).join(' '), fill: 'none', stroke: color, 'stroke-width': 2.4, 'stroke-linejoin': 'round'});
         rows.forEach((r, i) => { marks[si].push(el('circle', {cx: L + i * bw + bw / 2, cy: Y(r[s]), r: n > 30 ? 2.2 : 3.5, fill: '#fff', stroke: color, 'stroke-width': 2, class: 'amark'}));
-          if (showVals) el('text', {x: L + i * bw + bw / 2, y: Y(r[s]) - 8, 'font-size': 9.5, 'text-anchor': 'middle', fill: '#2F4039'}, askNum(+r[s], cs)); });
+          if (showVals) el('text', {x: L + i * bw + bw / 2, y: Y(r[s]) - 8, 'font-size': 9.5, 'text-anchor': 'middle', fill: '#2F4039'}, short(+r[s], s)); });
       }
     });
     const show = (i, band) => {
       marks.forEach(ms => ms.forEach((m, j) => m.classList.toggle('dim', j !== i)));
       const r = rows[i];
-      tip.replaceChildren(h('b', {}, String(r[st.x] ?? '')), ...shown.map((s, si) => h('div', {}, h('i', {style: `background:${ASK_COLORS[si % 4]}`}), `${prettyCol(s)}: `, h('b', {}, askFull(+r[s], curOf(s))))),
+      tip.replaceChildren(h('b', {}, String(r[st.x] ?? '')), ...shown.map((s, si) => h('div', {}, h('i', {style: `background:${ASK_COLORS[si % 4]}`}), `${prettyCol(s)}: `, h('b', {}, full(+r[s], s)))),
         ...(opts.onAsk ? [h('div', {class: 'faint'}, 'Click to ask about it')] : []));
       const bb = band.getBoundingClientRect(), wb = host.getBoundingClientRect();
       tip.style.left = Math.min(Math.max(0, bb.left - wb.left + bb.width / 2 - 95), Math.max(0, wb.width - 200)) + 'px';
@@ -172,8 +200,8 @@ function askChart(ans, opts = {}) {
     const hide = () => { tip.classList.remove('on'); marks.forEach(ms => ms.forEach(m => m.classList.remove('dim'))); };
     const bands = rows.map((r, i) => {
       const band = el('rect', {x: L + i * bw, y: T, width: bw, height: ph, fill: 'transparent', class: 'aband', tabindex: 0, role: 'button',
-        'aria-label': `${r[st.x]}: ` + shown.map(s => `${prettyCol(s)} ${askFull(+r[s], curOf(s))}`).join(', ')});
-      const askIt = () => { if (opts.onAsk && shown.length) opts.onAsk(`Tell me more about ${r[st.x]}: why is ${prettyCol(shown[0])} ${askFull(+r[shown[0]], curOf(shown[0]))}, and what drives it?`); };
+        'aria-label': `${r[st.x]}: ` + shown.map(s => `${prettyCol(s)} ${full(+r[s], s)}`).join(', ')});
+      const askIt = () => { if (opts.onAsk && shown.length) opts.onAsk(`Tell me more about ${r[st.x]}: why is ${prettyCol(shown[0])} ${full(+r[shown[0]], shown[0])}, and what drives it?`); };
       band.addEventListener('mouseenter', () => show(i, band)); band.addEventListener('focus', () => show(i, band));
       band.addEventListener('mouseleave', hide); band.addEventListener('blur', hide);
       band.addEventListener('click', askIt);
@@ -212,8 +240,10 @@ function askCsvBtn(d) {             // the answer's numbers as a CSV file, for E
 }
 function askTable(d, max) {
   if (!d || !d.rows.length) return null;
+  const pcts = askPctCols(d.columns, d.rows);           // a percentage held as a fraction reads 84.5%, as in the chart
   return h('div', {class: 'dprev', style: 'max-height:280px'}, h('table', {}, h('tr', {}, d.columns.map(c => h('th', {}, c))),
-    d.rows.slice(0, max || 100).map(r => h('tr', {}, d.columns.map(c => h('td', {}, r[c] == null ? '' : typeof r[c] === 'number' ? r[c].toLocaleString() : String(r[c])))))));
+    d.rows.slice(0, max || 100).map(r => h('tr', {}, d.columns.map(c => h('td', {}, r[c] == null ? '' : pcts.has(c) && r[c] !== '' && !isNaN(r[c]) ? askFull(Number(r[c]), '', true)
+      : typeof r[c] === 'number' ? r[c].toLocaleString() : String(r[c])))))));
 }
 
 function answerCard(m, opts) {
