@@ -1255,6 +1255,21 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
       admin and the job runner report `b77f38e`, the public site answers. Dashboards built before it keep their
       prototypes until their next change; then `genbi prototype` reports a stepped matrix whose SQL returns the detail
       rows, and the agent rewrites it. Pushed at 17:42 IST on the user's "Yes, push".
+53. **The tunnel on cloudflared 2026.11.0** (the user, 2026-11-16: "Yes, update and deploy", after the check that
+    followed their restart of the PC). The restart (08:57 IST, from the Start menu, not a crash) needed nothing by
+    hand: Docker Desktop started the five containers at sign-in (09:03) and the Startup-folder shortcuts the two
+    helpers (09:01), so the site was down about 5 minutes. The check found one gap: the tunnel held 3 of its 4
+    connections to Cloudflare, because one Cloudflare server (198.41.192.77) refused the fourth at every try ("control
+    stream encountered a failure while serving") and cloudflared 2025.11.1 keeps retrying the same server after that
+    error. That version was also a year old, and Cloudflare supports releases from within a year of its newest
+    (2026.11.0, out 2026-11-12). `docker-compose.yml` now pins `cloudflare/cloudflared:2026.11.0`; the command
+    (`tunnel --no-autoupdate run`), the token in `tunnel.env` and the image's user stay the same, and the image now
+    also sets `NO_AUTOUPDATE`. The release notes in between remove no flag we use; 2026.5.2 checks DNS and port 7844
+    when it starts, and 2026.9.0 classifies the edge's registration errors better. Checked before the switch: the
+    live command line parses on the new image (offline). Count the tunnel's connections with `docker exec
+    d2d-relay-web curl -s http://d2d-relay-tunnel:20241/ready` (`readyConnections`, normally 4). **Going back:** set
+    the pin to `2025.11.1` (image kept on this PC), then `docker compose --profile tunnel up -d --no-deps tunnel` in
+    the deploy folder.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 

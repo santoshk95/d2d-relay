@@ -140,8 +140,9 @@ services:
   # https://d2d.pasdacs.com -> d2d-relay-web and https://admin-d2d.pasdacs.com -> d2d-relay-admin, through
   # Cloudflare (no port is opened on this PC). The tunnel and its public hostnames are made in the Cloudflare
   # dashboard; its token goes in tunnel.env (one line: TUNNEL_TOKEN=...), a file of its own so no app container sees it.
+  # Cloudflare supports cloudflared releases from within a year of its newest one: move this pin on at least yearly.
   tunnel:
-    image: cloudflare/cloudflared:2025.11.1
+    image: cloudflare/cloudflared:2026.11.0
     container_name: d2d-relay-tunnel
     profiles: ["tunnel"]
     command: tunnel --no-autoupdate run
