@@ -1271,7 +1271,7 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     the pin to `2025.11.1` (image kept on this PC), then `docker compose --profile tunnel up -d --no-deps tunnel` in
     the deploy folder. Code `151f02e`; live since 09:29 IST (live idle): the tunnel was replaced in about a second and
     registered all 4 connections within 3 seconds (two in Bangalore, two in Mumbai), its new start-up checks all
-    passed, no warnings or request errors, and the public site answers.
+    passed, no warnings or request errors, and the public site answers. Pushed at 09:32 IST on the user's "Yes, push".
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1325,8 +1325,8 @@ bot check on and the AI on PASDACS's Anthropic API key first (Claude Opus 5.5), 
 day, and sells credits online with the live
 Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
 whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
-folder and the deploy folder carry this log entry, **GitHub** the one before it: item 53 went live on the user's "Yes,
-update and deploy" and is not pushed yet; item 52 went live on the user's "commit and deploy once
+folder, the deploy folder and **GitHub** carry this log entry: item 53 went live on the user's "Yes, update and
+deploy" and was pushed on their "Yes, push"; item 52 went live on the user's "commit and deploy once
 tests pass" and was pushed on their "Yes, push" (item 51 went live on "Yes, deploy" and was pushed on "Yes, push";
 item 50 was pushed on "Yes, deploy when tests pass", item 49 on "close what all
 you can do and pblish all live and update it", items 44-48 on "ok if all tested deploy and publish it"). **Going back**
