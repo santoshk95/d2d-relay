@@ -1269,7 +1269,9 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     live command line parses on the new image (offline). Count the tunnel's connections with `docker exec
     d2d-relay-web curl -s http://d2d-relay-tunnel:20241/ready` (`readyConnections`, normally 4). **Going back:** set
     the pin to `2025.11.1` (image kept on this PC), then `docker compose --profile tunnel up -d --no-deps tunnel` in
-    the deploy folder.
+    the deploy folder. Code `151f02e`; live since 09:29 IST (live idle): the tunnel was replaced in about a second and
+    registered all 4 connections within 3 seconds (two in Bangalore, two in Mumbai), its new start-up checks all
+    passed, no warnings or request errors, and the public site answers.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1310,19 +1312,21 @@ login. The API checks were run again: the 81 above plus 10 for the test login, a
 
 ## Still open
 
-Updated 2026-11-15 17:45 IST, after items 44-52, the first real purchase and the crash of 2026-11-14 (the site down from
-about 07:26 to 08:52 IST, "Overnight restarts" below). **Live:** web, admin and the job runner run
-`d2d-relay:b77f38e` (= latest, since 2026-11-15 15:48 IST, item 52, the three display bugs fixed; item 51 since
+Updated 2026-11-16 09:30 IST, after items 44-53, the first real purchase, the crash of 2026-11-14 (the site down from
+about 07:26 to 08:52 IST, "Overnight restarts" below) and the user's restart of 2026-11-16. **Live:** web, admin and
+the job runner run `d2d-relay:b77f38e` (= latest, since 2026-11-15 15:48 IST, item 52, the three display bugs fixed; item 51 since
 2026-11-14 17:51 IST, the sign-in code email in D2D's look; item 50
 since 11:51, the admin Overview; item 49 since 11:25; items 44-48 since 11:09:
 credits by visuals, the private queue without Stop, builds side by side, one model, and the user's rule for builds
 that do not finish), with the Turnstile
 bot check on and the AI on PASDACS's Anthropic API key first (Claude Opus 5.5), the Claude subscription as its backup
-(item 42); the database container runs `d2d-relay:8689305`'s image; live holds PASDACS and the first sign-ups of that
+(item 42); the database container runs `d2d-relay:8689305`'s image and the tunnel `cloudflare/cloudflared:2026.11.0`
+(item 53, since 2026-11-16 09:29 IST); live holds PASDACS and the first sign-ups of that
 day, and sells credits online with the live
 Razorpay keys (since 21:35 IST; the first real purchase at 00:04 IST; Cloudflare's Bot Fight Mode is off for the
 whole pasdacs.com zone since about 02:38 IST, as it blocked Razorpay's webhook: "Selling credits online" below). This
-folder, the deploy folder and **GitHub** carry this log entry: item 52 went live on the user's "commit and deploy once
+folder and the deploy folder carry this log entry, **GitHub** the one before it: item 53 went live on the user's "Yes,
+update and deploy" and is not pushed yet; item 52 went live on the user's "commit and deploy once
 tests pass" and was pushed on their "Yes, push" (item 51 went live on "Yes, deploy" and was pushed on "Yes, push";
 item 50 was pushed on "Yes, deploy when tests pass", item 49 on "close what all
 you can do and pblish all live and update it", items 44-48 on "ok if all tested deploy and publish it"). **Going back**
@@ -1412,7 +1416,10 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   in 14 days, and every drive has room; Windows could not write a crash dump (volmgr 161), so the cause is unknown
   (the one earlier unexpected shutdown, 2026-10-29 13:55, had no stop code: a power cut or a forced reset). If 0x154
   comes back: update the SSDs' firmware with Samsung Magician (it also shows the health data that needs admin) and
-  run Windows Memory Diagnostic.
+  run Windows Memory Diagnostic. **2026-11-16:** the user restarted the PC from the Start menu at 08:57 IST and
+  everything came back on its own (the containers at 09:03, both helpers from their Startup-folder shortcuts at 09:01;
+  the site down about 5 minutes), so a planned restart needs nothing by hand; only the tunnel came back with 3 of its
+  4 connections, fixed by item 53.
 - **The two PC helpers start by themselves since 2026-11-14:** on the user's "Yes, add them", Claude put shortcuts to
   `daxcheck\start-daxcheck.cmd` and `pbix\start-pbix.cmd` in the user's Startup folder ("D2D Relay DAX checker" and
   "D2D Relay Power BI file maker", minimised; `docs/d2d-relay.md`, "After the PC restarts"), so both start at sign-in.
