@@ -1273,6 +1273,15 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     registered all 4 connections within 3 seconds (two in Bangalore, two in Mumbai), its new start-up checks all
     passed, no warnings or request errors, and the public site answers. Pushed at 09:32 IST on the user's "Yes, push".
 
+Clean-up of 2026-11-16 (the user asked for a marketing session's stopped test stack to be removed and everything
+cleaned): that stack from 2026-11-15 (two containers, four volumes and its network; no Claude login among them) is
+gone, Docker's untagged build leftovers were pruned (49 MB), and the last test run's leftovers (`tests/out`,
+`tests/stack/test-projects` and `tests/stack/.env`, which the next stack.sh makes again) went to the Recycle Bin.
+Kept on purpose: the rollback images named under Still open, the cloudflared 2025.11.1 image (item 53), Docker's build
+cache (it keeps release builds fast) and `tests/stack/.env.real`. GitHub, this folder and the deploy folder were then
+on the same commit, and every other repository on this PC was committed and pushed (Relay's paused wording changes
+stay uncommitted on purpose, identical to their backup branch).
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)
