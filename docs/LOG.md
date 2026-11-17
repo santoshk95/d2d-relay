@@ -9,6 +9,10 @@ D2D means Data to Decision. D2D Relay is a product of the Relay Platform by PASD
 Power BI dashboard generation from CSV files and Google BigQuery. It has its own repository, image, container, data and
 sign-in. The setup guide is `docs/d2d-relay.md`.
 
+**Turned down on 2026-11-17 (item 54).** The app is switched off: its five containers are stopped, not removed, and its
+data is kept. d2d.pasdacs.com is now a static page about D2D (how it works, a 79-second video, contact), served by a
+Cloudflare Worker from the PASDACS site repository (`d2d-page/`). The rest of this section describes the app as it ran.
+
 - Live at https://d2d-relay.pasdacs.com, served through a Cloudflare tunnel (container `d2d-relay-tunnel`, token in the
   git-ignored `tunnel.env`). On the host PC it is http://127.0.0.1:8100.
 - The admin portal, https://admin-d2d.pasdacs.com (PASDACS only; on the host PC http://127.0.0.1:8102).
@@ -1322,6 +1326,40 @@ Kept on purpose: the rollback images named under Still open, the cloudflared 202
 cache (it keeps release builds fast) and `tests/stack/.env.real`. GitHub, this folder and the deploy folder were then
 on the same commit, and every other repository on this PC was committed and pushed (Relay's paused wording changes
 stay uncommitted on purpose, identical to their backup branch).
+
+54. **The app turned down; d2d.pasdacs.com a static page** (the user, 2026-11-17: "remove and turn down d2d platform
+    from the live site d2d.pasdacs.com, keep a static page and video on how it works and content and contact us for
+    more info via email or contact form"). Done in this order, at about 23:25 IST:
+    - **The static page first.** A Cloudflare Worker, `pasdacs-d2d-page`, from the PASDACS site repository
+      (`d2d-page/`, `wrangler.d2d.jsonc`, `worker/d2d-page.ts`; `d2d-page/README.md` says how to build, deploy and
+      undo it), took the hostname as the route `d2d.pasdacs.com/*`. The tunnel's DNS record and public hostname are
+      unchanged: the route answers before a request could reach the tunnel. (A custom domain was refused because the
+      hostname has that record, and the deploy login can't edit DNS.) The page: what D2D is, the how-to video with a
+      contact end card (the marketing kit's `video/how-it-works/`), the five steps, the 12 checks, what comes with it,
+      a contact form (handed to the site's own form handler: its D1 table and info@pasdacs.com) and a note for people
+      who had an account (their data is kept, switched off; email info@pasdacs.com for a copy or deletion).
+      `privacy.html`, `terms.html`, `refunds.html` and `contact.html` stay online as they stood at `b15d40b`, each
+      with a note that the app closed. `/login.html`, `/login` and `/gallery` redirect to the page, the app's API
+      answers 410, and admin-d2d.pasdacs.com (still behind Access) has no origin now.
+    - **Before stopping:** nothing was building (no job containers, both helper queues empty) and nobody had signed
+      in for two hours. In the install: 3 accounts, 2 outside PASDACS (both personal workspaces whose credits PASDACS
+      gave, 50 each; one used its 50 on two builds), no credit request pending, and one live payment, PASDACS's own
+      Rs 2,950 test of 2026-11-14 (a second Rs 2,950 checkout by PASDACS was never paid).
+    - **Backup:** `relay-ctl db-dump` to `data\backups\relay-db-20261117-175615.dump` (1.06 MB), beside the nightly
+      backups.
+    - **Stopped:** `docker compose --profile tunnel stop` (runner and tunnel, then web and admin, then the database).
+      The containers and the volumes `d2d-relay-db-data`, `d2d-relay-data`, `d2d-relay-admin-data`,
+      `d2d-relay-agy-login` and `d2d-relay-runner-sock` are kept, as are `data\projects` and the shared Claude
+      sign-in. With `unless-stopped`, Docker does not start stopped containers again after a restart.
+    - **Host helpers:** the DAX checker and the Power BI file maker were stopped, and their Startup-folder shortcuts
+      moved to the Start menu folder "D2D Relay helpers (off)", so nothing starts at logon.
+    - **Not changed:** Razorpay (the live keys stay in `.env`; no checkout can start without the app, and its webhook
+      would now get the page's 410), the Entra mail app and its secret, the Turnstile widget, Cloudflare Access for
+      admin-d2d, the tunnel and its token. Account holders were not emailed.
+    - **Bringing it back:** take the Worker's route off (`npx wrangler delete -c wrangler.d2d.jsonc` in the site
+      repository, or remove the route in the Cloudflare dashboard), `docker compose --profile tunnel up -d` in the deploy
+      folder, and start the two helpers from "D2D Relay helpers (off)" (back in Startup for logon). The DNS record was
+      never touched, so the tunnel serves the hostname again at once.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
