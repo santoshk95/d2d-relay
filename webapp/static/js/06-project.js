@@ -226,8 +226,9 @@ function planVisuals(list) {
 function planModel(plan) {
   const model = plan.model || {};
   return model.tables ? h('div', {class: 'card'}, h('h3', {}, 'Data model'),
-    h('div', {class: 'tables'}, model.tables.map(t => h('div', {}, h('b', {}, t.name), h('span', {class: 'muted small'}, [t.role, t.csv, t.grain].filter(Boolean).join(' - '))))),
-    model.relationships ? h('div', {class: 'rels mono'}, model.relationships.map(r => h('span', {}, typeof r === 'string' ? r : JSON.stringify(r)))) : null) : null;
+    h('div', {class: 'tables'}, model.tables.map(t => h('div', {title: t.description || null}, h('b', {}, t.name), h('span', {class: 'muted small'}, [t.role, t.csv, t.grain].filter(Boolean).join(' - '))))),
+    model.relationships && model.relationships.length ? h('div', {class: 'rels mono'}, model.relationships.map(r => h('span', {}, typeof r === 'string' ? r : JSON.stringify(r)))) : null,
+    model.note ? h('div', {class: 'muted small', style: 'margin-top:8px'}, model.note) : null) : null;   // item 58: a hand-off's note on its tables
 }
 function planPages(plan) {
   return plan.pages ? h('div', {class: 'card'}, h('h3', {}, `Pages `, h('span', {class: 'muted'}, `(${plan.pages.length})`)),
@@ -265,8 +266,11 @@ function planView(st) {
   }
   const actions = h('div', {class: 'card actions'}, h('div', {class: 'ask'}, fb, att.list), att.button, ask, ok, att.input);
   att.dropOn(actions);
+  // item 58: a plan that came with a DAWB hand-off (until Relay revises it)
+  const ho = st.handoff && (st.plan_rounds || 0) <= 1 ? st.handoff : null;
   return [
-    h('div', {class: 'card'}, h('div', {class: 'row', style: 'margin-bottom:8px'}, h('h3', {style: 'margin:0'}, "Relay's plan")),
+    h('div', {class: 'card'}, h('div', {class: 'row', style: 'margin-bottom:8px'}, h('h3', {style: 'margin:0'}, ho ? `${ho.from || 'DAWB'}'s plan` : "Relay's plan"),
+      ho ? h('span', {class: 'tag acc', title: [ho.release ? `Release ${ho.release}` : '', ho.run ? `run ${ho.run}` : ''].filter(Boolean).join(', ') || null}, `From a ${ho.from || 'DAWB'} hand-off`) : null),
       st.plan_summary ? notes(st.plan_summary) : null, plan.summary ? h('p', {class: 'muted'}, plan.summary) : null,
       st.plan_error ? h('div', {class: 'note err'}, st.plan_error) : null),
     dataCard(st),

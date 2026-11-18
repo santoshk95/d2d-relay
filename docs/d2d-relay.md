@@ -482,6 +482,38 @@ addresses are fixed (`D2D_ENTRA_LOGIN`, `D2D_FABRIC_API`, `D2D_POWERBI_API` exis
 `tests/checks/fake_powerbi.py`). Not covered: Azure Analysis Services, models with an encrypted sensitivity label, and
 DirectLake models whose definition Fabric does not export.
 
+## A dashboard from a DAWB hand-off
+
+DAWB, the lakehouse builder, writes a D2D project after every lakehouse build (item 58): the data is in and profiled
+and a plan is proposed, so the dashboard starts at Confirm KPIs with DAWB's plan instead of Relay planning from
+scratch. On **New dashboard**, **From a DAWB hand-off** takes the hand-off folder as one `.zip`
+(`POST /api/projects/import`, `webapp/app/handoff.py`); the visuals, custom visuals and style choices are the usual
+ones, and it uses what any new dashboard uses (25 credits with Power BI's built-in visuals, 50 with custom visuals).
+
+**The hand-off** (format 1): `project.json` (`kind` "d2d-project", `format` 1: name, description, audience, refresh,
+privacy, lineage, quality; `inputs`, each CSV with its table, description, rows and columns with name, type and
+description, the types text, whole number, decimal, date, date and time, true or false; `plan` with `model` (tables
+as names or `{name, role, grain}`, `relationships` as `"many_table[column] -> one_table[column]"`, a note), `kpis`
+(`{name, dax, description, format}`, format currency, percent or whole number, or a Power BI `format_string`) and
+`pages` (`{name, purpose, visuals}`, each visual with a title, a kind, a query on the gold tables and its place on a
+24-column grid)), `data/<table>.csv`, and `manifest.json`, written last (`run`, `release`, every file with its sha256,
+rows and columns). The zip holds the folder as it is, or its files at the top; Windows backslashes are fine.
+
+**Checked before anything is saved or charged**, each problem named in the refusal: every file the manifest lists is in
+the zip with its sha256; each input is `data/<table>.csv` with its columns in order and its rows; D2D's own profile
+reads every CSV (`profile.md`, `profile.json`, as Relay's planning makes them); each relationship joins columns of the
+same type, its one side has a value in every row, each value once, and no table reaches another along two filter
+paths; the plan passes D2D's plan check (KPIs with readable DAX, pages). At most 2,000 files and 8 GB unpacked
+(`RELAY_HANDOFF_MAX_GB`); an upload cut off by a restart is tidied a day later.
+
+**What the dashboard gets**: `plan.yaml` from DAWB's plan (a KPI's label is its name; formats currency `\$#,0`,
+percent `0.0%`, whole number `#,0`; a KPI with the name of a column, which Power BI refuses, becomes "Total ..." with
+the old name as its label, and the KPIs that use it follow); `request.md` for the build, which keeps the KPIs' DAX and
+the table and column names they use, gives the tables and columns DAWB's descriptions (columns carry a `description`
+in definition.yaml since item 58) and treats DAWB's visuals, queries and grid as guidance, not as the report's layout;
+DAWB's `project.json` and `manifest.json` as written, in `handoff/`. The plan screen says "DAWB's plan" until Relay
+revises it; from Confirm KPIs on, the dashboard is like any other.
+
 ## Text people read
 
 Everything D2D Relay shows, emails or writes into a Power BI file uses plain keyboard characters (the user's request

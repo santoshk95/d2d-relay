@@ -176,11 +176,18 @@ def data(spec: dict, files: list[str], feedback: str | None = None) -> str:
                        start=spec.get("start"), end=spec.get("end"))
 
 
-def build(chosen: list[dict], visuals: str | None = None) -> str:
-    """BUILD, with the custom visuals the user chose to have built (plan.yaml `custom_visuals`)."""
+# Item 58: a dashboard imported from a DAWB hand-off: its plan came with it (request.md says how to use it)
+HANDOFF = (" This dashboard came from a hand-off of DAWB, the lakehouse builder: read request.md, \"From a DAWB hand-off\" - "
+           "keep the table and column names the KPIs use (each model table named after its CSV), give the tables and "
+           "columns DAWB's descriptions, and use its planned visuals as guidance, not as a fixed layout.")
+
+
+def build(chosen: list[dict], visuals: str | None = None, handoff: bool = False) -> str:
+    """BUILD, with the custom visuals the user chose to have built (plan.yaml `custom_visuals`); handoff: the plan
+    came from a DAWB hand-off (item 58)."""
     make = [v for v in chosen if v.get("decision") == "generate"] if visuals != "builtin" else []
     keep = [v for v in chosen if v.get("decision") == "available"]
-    text = visuals_note(visuals)
+    text = visuals_note(visuals) + (HANDOFF if handoff else "")
     if make:
         text += ("\nFirst build the custom visuals the user chose (CLAUDE.md, Custom visuals) - "
                  + "; ".join(f"{v['title']} (`{v['name']}`): {v.get('need', '')}" for v in make)

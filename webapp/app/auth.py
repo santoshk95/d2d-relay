@@ -249,7 +249,8 @@ def check(u: dict | None, method: str, path: str) -> JSONResponse | None:
         # admin portal (admin-d2d.pasdacs.com, its own container); an organisation's owner manages their own
         # workspace through /api/org.
         return _deny(404, "Administration is on the D2D Relay admin portal.")
-    if path == "/api/projects" and method == "POST":
+    # a new dashboard, or (item 58) one from a DAWB hand-off; no dashboard's id is "import" (store.new_id adds -xxxx)
+    if path in ("/api/projects", "/api/projects/import") and method == "POST":
         return None if is_dev(u) else _deny(403, "Your account cannot create dashboards in this organisation.")
     m = PROJECT.match(path)
     if m:

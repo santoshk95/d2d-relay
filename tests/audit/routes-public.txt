@@ -1,6 +1,6 @@
 404-admin 57
 404-edition 330
-OPEN 135
+OPEN 136
 nonapi 17
 OPEN	DELETE	/api/askd/threads/{tid}	app.governance.api_delete_thread
 OPEN	DELETE	/api/branding/logo	app.branding.remove_logo
@@ -102,6 +102,7 @@ OPEN	POST	/api/payments/order	app.payments.start
 OPEN	POST	/api/payments/verify	app.payments.verify
 OPEN	POST	/api/payments/webhook	app.payments.webhook
 OPEN	POST	/api/projects	app.main.create_project
+OPEN	POST	/api/projects/import	app.main.import_project
 OPEN	POST	/api/projects/{pid}/approve	app.main.approve
 OPEN	POST	/api/projects/{pid}/certify	app.semantic_routes.update_to_certified
 OPEN	POST	/api/projects/{pid}/custom-visuals	app.main.choose_visual

@@ -35,6 +35,7 @@ from . import governance                             # item 22: erasure, "Downlo
 from . import headers                                # security audit: security headers, the Range guard
 from . import payments                               # item 23: buying credits online with Razorpay
 from . import semreview                              # item 55: Semantic Review (models against the KPI dictionary)
+from . import handoff                                # item 58: a new dashboard from a DAWB hand-off, with its plan
 
 errors.install()                                # every traceback.print_exc() and thread crash reports Relay's own bugs (Relay Doctor)
 STATIC = Path(__file__).resolve().parent.parent / "static"
@@ -189,12 +190,14 @@ def _size(n: int) -> str:
         n /= 1024
 
 
-async def _save_upload(upload: UploadFile, path: Path) -> int:
+async def _save_upload(upload: UploadFile, path: Path, limit: int | None = None) -> int:
     size = 0
     with path.open("wb") as out:
         while chunk := await upload.read(CHUNK):
-            out.write(chunk)
             size += len(chunk)
+            if limit is not None and size > limit:
+                raise HTTPException(413, f'"{upload.filename}" is larger than this D2D Relay takes ({_size(limit)}).')
+            out.write(chunk)
     return size
 
 
@@ -392,15 +395,9 @@ DATA_SIZES = {"small": "about 5,000 rows in the biggest table", "medium": "about
               "large": "about 500,000 rows in the biggest table"}
 
 
-@app.post("/api/projects")
-async def create_project(prompt: str = Form(...), name: str = Form(""), model: str = Form(""),
-                         look: str = Form(""), brand: str = Form(""), palette: str = Form(""), dark: str = Form(""),
-                         custom_visuals: str = Form("ask"), data_mode: str = Form("upload"), data_brief: str = Form(""),
-                         data_size: str = Form("medium"), data_months: int = Form(12),
-                         connection_id: str = Form(""), tables: str = Form(""), visuals_mode: str = Form("builtin"),
-                         use_brand: str = Form("1"),
-                         files: list[UploadFile] = File(default=[]), images: list[UploadFile] = File(default=[])):
-    prompt = prompt.strip()
+def _options(model, custom_visuals, visuals_mode, look, brand, palette, dark, use_brand) -> tuple[str, str, str, dict]:
+    """A new dashboard's choices on the form (New dashboard, and item 58's import of a hand-off): the AI model, custom
+    visuals, the visuals and the visual style."""
     model = _model(model)
     custom_visuals = custom_visuals.strip().lower() or "ask"
     if custom_visuals not in POLICIES:
@@ -417,6 +414,33 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
     house = branding.chosen_style() if isinstance(use_brand, str) and use_brand.strip() in ("1", "true", "on") and not brand.strip() else None
     if house:                                   # D2D Relay: the palette chosen under Branding (the form's own look wins)
         style = {**house, **{k: v for k, v in style.items() if k in ("look", "dark")}}
+    return model, custom_visuals, visuals_mode, style
+
+
+def _style_lines(style: dict, custom_visuals: str, visuals_mode: str) -> list[str]:
+    """request.md's visual style, custom visuals and visuals sections."""
+    lines = []
+    if style:
+        lines += ["", "## Visual style (put these in definition.yaml `theme`)", ""]
+        lines += [f"- look: {style['look']} ({LOOKS[style['look']]})"] if style.get("look") else []
+        lines += [f"- accent: \"{style['accent']}\" (the brand color), palette: {style['palette']}"] if style.get("accent") else []
+        lines += [f"- colors: [{', '.join(chr(34) + c + chr(34) for c in style['colors'])}] (the brand palette \"{style.get('brand_name', '')}\", in this order)"] if style.get("colors") else []
+        lines += ["- dark: true (dark report background)"] if style.get("dark") else []
+    lines += ["", "## Custom visuals", "", f"- Custom visuals: {custom_visuals} - {POLICIES[custom_visuals]}"]
+    lines += ["", "## Visuals", "", _visuals_line(visuals_mode)]
+    return lines
+
+
+@app.post("/api/projects")
+async def create_project(prompt: str = Form(...), name: str = Form(""), model: str = Form(""),
+                         look: str = Form(""), brand: str = Form(""), palette: str = Form(""), dark: str = Form(""),
+                         custom_visuals: str = Form("ask"), data_mode: str = Form("upload"), data_brief: str = Form(""),
+                         data_size: str = Form("medium"), data_months: int = Form(12),
+                         connection_id: str = Form(""), tables: str = Form(""), visuals_mode: str = Form("builtin"),
+                         use_brand: str = Form("1"),
+                         files: list[UploadFile] = File(default=[]), images: list[UploadFile] = File(default=[])):
+    prompt = prompt.strip()
+    model, custom_visuals, visuals_mode, style = _options(model, custom_visuals, visuals_mode, look, brand, palette, dark, use_brand)
     files, images = _check_uploads(files, images)
     generate, warehouse = data_mode == "generate", data_mode == "warehouse"
     picked = []
@@ -480,14 +504,7 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
                                          or ["- (extracted from the warehouse first)" if warehouse else "- (generated in the data stage)"])
     if pics:
         lines += ["", "## Reference images (in images/)", ""] + [f"- {p}" for p in pics]
-    if style:
-        lines += ["", "## Visual style (put these in definition.yaml `theme`)", ""]
-        lines += [f"- look: {style['look']} ({LOOKS[style['look']]})"] if style.get("look") else []
-        lines += [f"- accent: \"{style['accent']}\" (the brand color), palette: {style['palette']}"] if style.get("accent") else []
-        lines += [f"- colors: [{', '.join(chr(34) + c + chr(34) for c in style['colors'])}] (the brand palette \"{style.get('brand_name', '')}\", in this order)"] if style.get("colors") else []
-        lines += ["- dark: true (dark report background)"] if style.get("dark") else []
-    lines += ["", "## Custom visuals", "", f"- Custom visuals: {custom_visuals} - {POLICIES[custom_visuals]}"]
-    lines += ["", "## Visuals", "", _visuals_line(visuals_mode)]
+    lines += _style_lines(style, custom_visuals, visuals_mode)
     (d / "request.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     store.save({"id": pid, "name": title, "prompt": prompt, "model": model, "style": style, "created": time.time(),
@@ -505,6 +522,88 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
         return worker.enqueue(pid, "data" if generate else "extract" if warehouse else "plan", **orgs.job_args(cid))
     try:
         orgs.paid("dashboard", pid, title, first_run, None if visuals_mode == "builtin" else "custom visuals", n=cost)
+    except orgs.NoCredits:
+        shutil.rmtree(d, ignore_errors=True)
+        db.run("DELETE FROM projects WHERE id = ?", (pid,))
+        raise
+    return store.load(pid)
+
+
+@app.post("/api/projects/import")
+async def import_project(bundle: UploadFile = File(..., alias="handoff"), name: str = Form(""), prompt: str = Form(""),
+                         model: str = Form(""), look: str = Form(""), brand: str = Form(""), palette: str = Form(""),
+                         dark: str = Form(""), custom_visuals: str = Form("ask"), visuals_mode: str = Form("builtin"),
+                         use_brand: str = Form("1"), images: list[UploadFile] = File(default=[])):
+    """Item 58 (the user, 2026-11-18): a new dashboard from a DAWB hand-off, the folder DAWB wrote as one .zip. It is
+    checked against its manifest before anything is saved or charged (handoff.stage) and waits at Confirm KPIs with
+    DAWB's plan: Relay does not plan it again. It costs what any new dashboard costs (the user's choice)."""
+    model, custom_visuals, visuals_mode, style = _options(model, custom_visuals, visuals_mode, look, brand, palette, dark, use_brand)
+    if not (bundle.filename or "").lower().endswith(".zip"):
+        raise HTTPException(400, "Choose the hand-off folder as one .zip file.")
+    _, images = _check_uploads([], images)
+    cost = orgs.dashboard_cost(visuals_mode)    # item 44: 25 with Power BI's built-in visuals, 50 with custom visuals
+    orgs.require("dashboard", n=cost)           # before anything is saved
+    root = store.root()
+    handoff.sweep(root)
+    token = secrets.token_hex(6)
+    staging, upload = root / f".import-{token}", root / f".import-{token}.zip"
+    try:
+        await _save_upload(bundle, upload, handoff.MAX_BYTES)
+        h = await asyncio.to_thread(handoff.stage, upload, staging)
+    except handoff.HandoffError as e:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise HTTPException(400, e.text())
+    except BaseException:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    finally:
+        upload.unlink(missing_ok=True)
+
+    added = prompt.strip()
+    title = " ".join((name.strip() or h["name"]).split())[:120]
+    pid = store.new_id(title)
+    d = root / pid
+    try:
+        shutil.move(str(staging), str(d))      # the checked folder becomes the dashboard's
+    except BaseException:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    try:
+        staged = await _store_uploads(d, [], images, replace_data=False)
+        pics = [s["name"] for s in staged if s["kind"] == "image"]
+        worker.refresh_guide(d)
+        (d / "plan.yaml").write_text(yaml.safe_dump(h["plan"], sort_keys=False, allow_unicode=True, width=110), encoding="utf-8")
+        lines = handoff.request_lines(h, title, added)
+        if pics:
+            lines += ["", "## Reference images (in images/)", ""] + [f"- {p}" for p in pics]
+        lines += _style_lines(style, custom_visuals, visuals_mode)
+        (d / "request.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+        store.save({"id": pid, "name": title, "prompt": handoff.prompt_text(h, added), "model": model, "style": style,
+                    "created": time.time(), "custom_visuals": custom_visuals, "visuals_mode": visuals_mode,
+                    "custom_paid": visuals_mode != "builtin",
+                    "handoff": {"from": h["product"], "release": h["release"], "run": h["run"], "made": h["made"],
+                                "zip": _safe_name(bundle.filename, "handoff.zip"), "tables": len(h["files"]),
+                                "rows": h["rows"], "relationships": len(h["keys"]), "renamed": h["renamed"]},
+                    "status": "awaiting_kpis", "plan_rounds": 1, "plan_summary": handoff.summary(h),
+                    "files": [{"name": f["name"], "bytes": f["bytes"]} for f in h["files"]], "images": pics,
+                    "versions": [], "runs": [], "job": None, "error": None})
+    except BaseException:
+        shutil.rmtree(d, ignore_errors=True)
+        raise
+    db.add_project(pid, auth.who() or db.ADMIN_ID)
+    db.audit("project.import", pid, {"name": title, "from": h["product"], "release": h["release"], "run": h["run"],
+                                     "tables": len(h["files"]), "rows": h["rows"], "model": model}, auth.who())
+    worker.app_note(pid, "plan", f"Imported {h['product']}'s hand-off ({handoff.origin(h)}): {len(h['files'])} files with "
+                    f"{h['rows']:,} rows, each matching the manifest (sha256, rows, columns).", "ok",
+                    [f"{f['name']}: {f['rows']:,} rows" for f in h["files"]])
+    worker.app_note(pid, "plan", f"Plan from {h['product']}: {len(h['plan']['kpis'])} KPIs on {len(h['plan']['pages'])} "
+                    "pages. Waiting for you to confirm the KPIs.", "ok", [f"{a} is now {b}" for a, b in h["renamed"]] or None)
+
+    def keep(cid: str | None) -> dict:          # the charge rides with the first build, as a new dashboard's does
+        return store.update(pid, credit_charge=cid)
+    try:
+        orgs.paid("dashboard", pid, title, keep, f"{h['product']} hand-off" + ("" if visuals_mode == "builtin" else ", custom visuals"),
+                  n=cost)
     except orgs.NoCredits:
         shutil.rmtree(d, ignore_errors=True)
         db.run("DELETE FROM projects WHERE id = ?", (pid,))

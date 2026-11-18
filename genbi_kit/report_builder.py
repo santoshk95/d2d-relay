@@ -290,6 +290,8 @@ def _model_bim(defn: dict, model: Model) -> dict:
                 if not cat:
                     raise DefinitionError(f"{t['name']}[{c['name']}]: category must be one of {', '.join(sorted(set(DATA_CATEGORIES.values())))}")
                 col["dataCategory"] = cat
+            if c.get("description"):      # item 58: shown in Power BI's Data pane (a DAWB hand-off's column descriptions)
+                col["description"] = human(str(c["description"]))
             if c["type"] == "date":
                 col["formatString"] = "yyyy-MM-dd"
             if t.get("date_table") and c["name"] == "Date":

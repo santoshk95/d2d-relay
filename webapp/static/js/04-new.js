@@ -3,7 +3,7 @@ function picker(name, accept, multiple, hint) {
   const input = h('input', {type: 'file', name, accept, multiple});
   const list = h('div', {class: 'flist'});
   const hintEl = h('div', {class: 'hint'}, hint);
-  const zone = h('div', {class: 'drop'}, input, h('div', {}, h('b', {}, 'Choose files'), ' or drop them here'), hintEl, list);
+  const zone = h('div', {class: 'drop'}, input, h('div', {}, h('b', {}, multiple ? 'Choose files' : 'Choose a file'), multiple ? ' or drop them here' : ' or drop it here'), hintEl, list);
   const show = () => list.replaceChildren(...[...input.files].map(f => h('span', {}, f.name, ' - ', size(f.size))));
   zone.onclick = e => { if (e.target !== input) input.click(); };
   input.onchange = show;
@@ -41,7 +41,9 @@ function renderNew() {
   const csv = picker('files', '.csv,text/csv', true, 'CSV files - one per table (facts and dimensions). Large files are fine.');
   const img = picker('images', 'image/*', true, 'Optional: screenshots or sketches of the design you want.');
   const name = h('input', {type: 'text', placeholder: 'e.g. Retail performance 2026'});
-  const prompt = h('textarea', {rows: 6, placeholder: 'Who is it for, and what decisions should it support? e.g. "Show leadership whether we are on plan this year and why - by store, category and channel - where to act, and how customers are trending. Several pages, like the attached image."'});
+  const promptHint = 'Who is it for, and what decisions should it support? e.g. "Show leadership whether we are on plan this year and why - by store, category and channel - where to act, and how customers are trending. Several pages, like the attached image."';
+  const prompt = h('textarea', {rows: 6, placeholder: promptHint});
+  const promptLabel = h('label', {class: 'f'}, 'Describe it in your own words');
   const bar = h('div', {class: 'bar'}, h('i'));
   const goBtn = h('button', {class: 'btn primary', type: 'submit'}, icon('play'), 'Start - Relay plans first');
   const modelSel = h('select', {class: 'sel'}, modelOptions(CATALOG.default));
@@ -130,26 +132,42 @@ function renderNew() {
     whSel.replaceChildren(...whConns.map(c => h('option', {value: c.id}, `${c.name} - ${c.label}`)));
     drawTables();
   }).catch(() => {});
-  const MODES = [['upload', 'file', 'Upload my CSV files'], ...(connectorsOn ? [['warehouse', 'layers', 'From a warehouse']] : []), ['generate', 'spark', 'Generate demo data']];
+  // item 58: a DAWB hand-off - the folder DAWB writes after a lakehouse build (project.json, manifest.json, data/), as one
+  // .zip. Its plan comes with it: the dashboard waits at Confirm KPIs and Relay does not plan it again.
+  const zip = picker('handoff', '.zip,application/zip,application/x-zip-compressed', false, 'The hand-off folder as one .zip: project.json, manifest.json and data/ with the CSVs.');
+  const handoffPanel = h('div', {class: 'genpanel', style: 'display:none'},
+    h('div', {class: 'muted small', style: 'margin-bottom:10px'}, 'DAWB, the lakehouse builder, writes a hand-off after every build: the gold tables with their descriptions, and a proposed plan (KPIs, pages and visuals). '
+      + "D2D checks every file against the hand-off's manifest, then shows that plan at Confirm KPIs - Relay does not plan it again."),
+    zip.zone);
+  const MODES = [['upload', 'file', 'Upload my CSV files'], ...(connectorsOn ? [['warehouse', 'layers', 'From a warehouse']] : []), ['generate', 'spark', 'Generate demo data'],
+    ['handoff', 'folder', 'From a DAWB hand-off']];
   const modeBtns = MODES.map(([m, ic, t]) => h('button', {type: 'button', class: m === mode ? 'on' : '', onclick: () => setMode(m)}, icon(ic), t));
   const onRequest = connectorsOn ? null : h('div', {class: 'hint', style: 'margin-top:8px'},
     'Data in a warehouse or database (Google BigQuery, Snowflake and others)? PASDACS connects it for your organisation on request: ',
     h('a', {href: '#/connections'}, 'see Connections'), '.');
-  const startText = () => mode === 'generate' ? 'Start - Relay generates the data, then plans' : mode === 'warehouse' ? 'Start - pull the tables, then Relay plans' : 'Start - Relay plans first';
+  const startText = () => mode === 'generate' ? 'Start - Relay generates the data, then plans' : mode === 'warehouse' ? 'Start - pull the tables, then Relay plans'
+    : mode === 'handoff' ? "Import - confirm DAWB's plan next" : 'Start - Relay plans first';
+  const planNote = h('span', {}, 'Relay reads your data and proposes a plan for you to confirm first. Nothing is built before you agree.');
   function setMode(m) {
     mode = m;
     modeBtns.forEach((b, i) => b.classList.toggle('on', MODES[i][0] === m));
     genPanel.style.display = m === 'generate' ? '' : 'none';
     whPanel.style.display = m === 'warehouse' ? '' : 'none';
-    csv.zone.style.display = m === 'warehouse' ? 'none' : '';
+    handoffPanel.style.display = m === 'handoff' ? '' : 'none';
+    csv.zone.style.display = m === 'warehouse' || m === 'handoff' ? 'none' : '';
     csv.hint.textContent = m === 'generate' ? 'Optional: tables of your own to keep as they are (e.g. your product list) - Relay generates the rest around them.'
       : 'CSV files - one per table (facts and dimensions). Large files are fine.';
+    promptLabel.replaceChildren(...(m === 'handoff' ? ['Anything to add', h('small', {}, 'optional - the hand-off says what the dashboard should answer')] : ['Describe it in your own words']));
+    prompt.placeholder = m === 'handoff' ? 'e.g. "Leadership reads it on Monday mornings: lead with last week."' : promptHint;
+    name.placeholder = m === 'handoff' ? "The hand-off's name if left empty" : 'e.g. Retail performance 2026';
+    planNote.textContent = m === 'handoff' ? "D2D checks the hand-off against its manifest and shows DAWB's plan for you to confirm. Nothing is built before you agree."
+      : 'Relay reads your data and proposes a plan for you to confirm first. Nothing is built before you agree.';
     goBtn.lastChild.textContent = startText();
   }
   const form = h('form', {class: 'card formcard'},
     sect('1', 'What do you need?', null, h('label', {class: 'f'}, 'Dashboard name', h('small', {}, 'optional')), name,
-      h('label', {class: 'f'}, 'Describe it in your own words'), prompt),
-    sect('2', 'Your data', null, h('div', {class: 'dmode'}, modeBtns), onRequest, genPanel, whPanel, h('div', {style: 'margin-top:10px'}, csv.zone)),
+      promptLabel, prompt),
+    sect('2', 'Your data', null, h('div', {class: 'dmode'}, modeBtns), onRequest, genPanel, whPanel, handoffPanel, h('div', {style: 'margin-top:10px'}, csv.zone)),
     sect('3', 'Design reference', ' optional', h('div', {style: 'margin-top:10px'}, img.zone)),
     sect('4', 'Options', ' you can keep the defaults',
       houseBox,
@@ -162,18 +180,18 @@ function renderNew() {
         h('div', {}, h('small', {}, 'Palette from the brand'), palette),
         h('div', {}, h('small', {}, 'Background'), h('label', {class: 'chk'}, dark, h('span', {}, 'dark report'))))),
     h('div', {class: 'row', style: 'margin-top:22px'}, goBtn, h('span', {class: 'muted small'},
-      inOrg ? useLine : null,
-      'Relay reads your data and proposes a plan for you to confirm first. Nothing is built before you agree.')), bar);
+      inOrg ? useLine : null, planNote)), bar);
   form.onsubmit = e => {
     e.preventDefault();
-    if (!prompt.value.trim()) return toast(goBtn, 'Describe what you need.');
+    if (mode === 'handoff' && !zip.input.files.length) return toast(goBtn, 'Choose the hand-off .zip: the folder DAWB wrote, zipped.');
+    if (mode !== 'handoff' && !prompt.value.trim()) return toast(goBtn, 'Describe what you need.');
     if (mode === 'upload' && !csv.input.files.length) return toast(goBtn, 'Add at least one CSV file - or choose Generate demo data.');
     if (mode === 'generate' && !brief.value.trim()) return toast(goBtn, 'Describe the business the demo data should be about.');
     const picked = [...whTables.querySelectorAll('input:checked')].map(i => i.value);
     if (mode === 'warehouse' && !picked.length) return toast(goBtn, 'Pick at least one warehouse table.');
     const fd = new FormData();
     fd.append('name', name.value); fd.append('prompt', prompt.value); fd.append('model', modelSel.value); fd.append('look', look.value);
-    fd.append('data_mode', mode);
+    if (mode !== 'handoff') fd.append('data_mode', mode);
     if (mode === 'generate') { fd.append('data_brief', brief.value); fd.append('data_size', dsize.value); fd.append('data_months', dmonths.value); }
     if (mode === 'warehouse') { fd.append('connection_id', whSel.value); fd.append('tables', JSON.stringify(picked)); }
     fd.append('use_brand', houseUse.checked ? '1' : '0');
@@ -181,16 +199,20 @@ function renderNew() {
     if (dark.checked) fd.append('dark', '1');
     fd.append('custom_visuals', custom.value);
     fd.append('visuals_mode', visualsSel.value);
-    if (mode !== 'warehouse') for (const f of csv.input.files) fd.append('files', f);
+    if (mode === 'handoff') fd.append('handoff', zip.input.files[0]);
+    else if (mode !== 'warehouse') for (const f of csv.input.files) fd.append('files', f);
     for (const f of img.input.files) fd.append('images', f);
     bar.style.display = 'block'; goBtn.disabled = true; goBtn.lastChild.textContent = 'Uploading...';
-    upload('/api/projects', fd, p => { $('i', bar).style.width = (100 * p) + '%'; })
+    upload(mode === 'handoff' ? '/api/projects/import' : '/api/projects', fd, p => {
+      $('i', bar).style.width = (100 * p) + '%';
+      if (mode === 'handoff' && p >= 1) goBtn.lastChild.textContent = 'Checking the hand-off...';
+    })
       .then(r => { refreshList(); if (typeof refreshOrg === 'function') refreshOrg(true); location.hash = '#/p/' + r.id; })
       .catch(err => { goBtn.disabled = false; goBtn.lastChild.textContent = startText(); toast(goBtn, err.message); });
   };
   $('#main').replaceChildren(h('div', {class: 'page'},
     h('div', {class: 'crumbs'}, h('a', {href: '#/'}, 'Dashboards'), '>', 'New'),
-    h('h1', {}, 'New dashboard'), h('div', {class: 'muted', style: 'margin:4px 0 16px'}, 'Four short steps. Bring your CSVs, or let Relay generate demo data. Relay plans first - you confirm the KPIs before anything is built.'),
+    h('h1', {}, 'New dashboard'), h('div', {class: 'muted', style: 'margin:4px 0 16px'}, 'Four short steps. Bring your CSVs, let Relay generate demo data, or import a DAWB hand-off with its plan. You confirm the KPIs before anything is built.'),
     typeof ORG === 'function' && ORG().id && (ORG().credits || 0) < costOf('dashboard')       // D2D Relay: say it before the form is filled in
       ? h('div', {class: 'note warn row', style: 'gap:10px;flex-wrap:wrap'}, h('span', {style: 'flex:1;min-width:220px'},
           `Not enough credits for a new dashboard: it uses ${costOf('dashboard')} credits`

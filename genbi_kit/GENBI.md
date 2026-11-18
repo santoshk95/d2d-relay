@@ -260,7 +260,8 @@ connection yourself; an API source such as MFCS has no Power BI connector, so th
       - {name: Net Sales Amount, source: NET_AMOUNT, type: decimal, hidden: true}
 ```
 
-Types: `int`, `decimal`, `string`, `date`, `bool`. A column may carry a data category: `category: City`
+Types: `int`, `decimal`, `string`, `date`, `bool`. A column may carry a `description` (shown in Power BI's Data pane;
+request.md gives them for data that came from a hand-off). A column may carry a data category: `category: City`
 (Country, StateOrProvince, County, PostalCode, Place, Address, Continent, Latitude, Longitude, WebUrl, ImageUrl,
 Barcode) so maps geocode it and tables show links / images. Hide raw numeric/key columns and expose measures
 instead. Keys used in relationships must have the same type on both sides. Measures live in the

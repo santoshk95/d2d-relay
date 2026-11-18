@@ -460,8 +460,9 @@ async def _run(pid: str, kind: str, args: dict) -> None:
             await _plan(pid, args.get("feedback"), args.get("attachments"))
         elif kind == "build":
             chosen = chosen_visuals(store.project_dir(pid))
-            mode = store.load(pid).get("visuals_mode")
-            await _version(pid, "build", prompts.build(chosen, mode), None,
+            st = store.load(pid)
+            mode = st.get("visuals_mode")
+            await _version(pid, "build", prompts.build(chosen, mode, handoff=bool(st.get("handoff"))), None,
                            visuals=0 if mode == "builtin" else sum(v.get("decision") == "generate" for v in chosen))
         elif kind == "revise":
             st = store.load(pid)

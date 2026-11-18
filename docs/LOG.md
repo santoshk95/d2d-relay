@@ -1417,6 +1417,44 @@ stay uncommitted on purpose, identical to their backup branch).
     fix but a recreated web or admin loses it. **Going back:** delete the `RELAY_OTP_ON_SCREEN` line,
     `docker tag d2d-relay:b77f38e d2d-relay:latest` (kept), `git reset --keep b15d40b` in the deploy folder, then
     `docker compose up -d`. Not pushed.
+58. **A dashboard from a DAWB hand-off, with its plan** (2026-11-18). DAWB, the user's lakehouse builder, now writes a
+    D2D project after every lakehouse build: the data in and profiled, a plan proposed. Until now every New dashboard
+    had Relay plan from scratch, even when the CSVs came with a ready plan. The user's choices: the hand-off folder as
+    one .zip on New dashboard (no watched folder), DAWB adding shared date and store tables with relationships while
+    D2D takes either shape, and the price of any new dashboard. **From a DAWB hand-off** on New dashboard
+    (`POST /api/projects/import`, `webapp/app/handoff.py`) takes `project.json` (kind "d2d-project", format 1),
+    `data/*.csv` and `manifest.json`, zipped as the folder or as its files (Windows backslashes too). Before anything is
+    saved or charged it checks every file the manifest lists against its sha256, each CSV's columns in order and rows,
+    reads the data with D2D's own profile (`profile.md`, `profile.json`, as Relay's planning makes them), each
+    relationship's types and one-side keys (a value in every row, each once) and that no table reaches another along
+    two filter paths, and D2D's plan check; a problem is refused with what is wrong (the first six named), with no
+    credits used and nothing left behind (at most 2,000 files and 8 GB unpacked, `RELAY_HANDOFF_MAX_GB`). The
+    dashboard then waits at Confirm KPIs with DAWB's plan in `plan.yaml`: its KPIs (label = name; currency `\$#,0`,
+    percent `0.0%`, whole number `#,0`, or the KPI's own format string), pages, tables with role, grain and description,
+    relationships and note. A KPI with the name of a column, which Power BI refuses, becomes "Total ..." with its old
+    name as its label, and the KPIs that use it follow (strings and comments untouched). `request.md` tells the build
+    to keep the KPIs' DAX and the table and column names they use, to give tables and columns DAWB's descriptions, and
+    to treat DAWB's visuals, queries and 24-column grid as guidance, not as the report's layout (the build prompt says
+    so too, `prompts.HANDOFF`). DAWB's `project.json` and `manifest.json` are kept as written in `handoff/`. It costs
+    what a new dashboard costs (25 with Power BI's built-in visuals, 50 with custom visuals); the charge rides with the
+    first build, as a planned dashboard's does. The plan screen says "DAWB's plan", with a "From a DAWB hand-off" tag,
+    until Relay revises it. Columns now carry a `description` into Power BI's model (`report_builder`, GENBI.md).
+    `create_project`'s option parsing and request.md style sections moved, unchanged, into `_options` and
+    `_style_lines`, which the import shares. Agreed with the DAWB session by message: relationships written
+    `many_table[column] -> one_table[column]`, tables as names or `{name, role, grain}`, every column described, an
+    optional `format_string`, no KPI named like a column. DAWB regenerated its Pinecrest Markets example to match within
+    the hour (12 tables with `dim_date` and `dim_store`, 48,515 rows, 11 KPIs, 4 pages, 12 relationships), and it
+    imports as it is. Found while building: the first path check took any loop as two paths, which refused a star with
+    two shared dimensions; it now follows filter direction. Seen in the tests and left as it was (not this item): a
+    desktop window shrunk to 360 px keeps the wide sidebar state (`d2d.rail`), so its top bar scrolls sideways; a phone
+    opening the app at its own width does not. Tests: `item58_check` (76), the hand-off DAWB writes on this PC included
+    when it is there (`TEST_HANDOFF_DIR`); `sec_check`'s route list taken again (`POST /api/projects/import`). Every
+    suite passes on `d2d-relay:item58-test`: 1258 of 1259 in the full run, and the one failure, item 56's admin-portal
+    screen check, passed when run again on the same stack (62 of 62). It is a timing race in that check: the New
+    organisation dialog's own focus on its first field (30 ms after it opens) came while the browser was typing the
+    starting credits, so "30" went to the end of the name and the credits kept their default, 50. Fixed in the commit
+    after this one (item56_check and pay_ui_check wait for a dialog to settle before typing; 62 of 62 and 37 of 37,
+    five runs each). A comment in `auth.py` was tidied after the image was built. Not deployed.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
