@@ -243,10 +243,19 @@ with sync_playwright() as pw:
     out["meta"] = page.locator(".phead .meta").first.inner_text()
     page.click("button:has-text('New organisation')")
     page.wait_for_selector(".modal input[placeholder='name@company.com']", timeout=10000)
+    # Type only into a settled dialog: its starting credits show the default, and its own focus on the first field
+    # (modal() in 01-core.js, 30 ms after it opens) has run; a timer set later for longer runs after it. Playwright
+    # fills a field in two steps (focus it, then insert the text). Once in a full release run that focus came between
+    # the two for the credits: "30" went to the end of the name and the credits kept their default (50).
+    page.wait_for_function("() => (document.querySelector('.modal input[type=number]') || {}).value", timeout=10000)
+    page.evaluate("() => new Promise(done => setTimeout(done, 100))")
     out["dialog"] = page.locator(".modal").last.inner_text()
-    page.fill(".modal input[placeholder='For example: Acme Foods']", name)
-    page.fill(".modal input[placeholder='name@company.com']", owner)
-    page.fill(".modal input[type=number]", "30")
+    fields = {"name": "input[placeholder='For example: Acme Foods']", "owner": "input[placeholder='name@company.com']",
+              "credits": "input[type=number]"}
+    out["default"] = page.input_value(".modal " + fields["credits"])
+    for k, v in (("name", name), ("owner", owner), ("credits", "30")):
+        page.fill(".modal " + fields[k], v)
+    out["typed"] = {k: page.input_value(".modal " + sel) for k, sel in fields.items()}      # what Create sends
     page.screenshot(path="/tmp/item56-new-org.png")
     page.click(".modal button:has-text('Create')")
     page.wait_for_selector(f"td:has-text('{name}')", timeout=20000)
@@ -281,7 +290,8 @@ check("admin screen: Add someone (the person button) adds someone at the organis
 s, d = admin.get("/api/admin/orgs")
 mine = next((o for o in (d or {}).get("orgs", []) if o.get("name") == ui_org), {}) if isinstance(d, dict) else {}
 check("admin screen: ... the organisation exists with 30 credits, its owner and the person added: 2 people",
-      mine.get("credits") == 30 and (mine.get("owner") or {}).get("email") == ui_owner and mine.get("people") == 2, mine)
+      mine.get("credits") == 30 and (mine.get("owner") or {}).get("email") == ui_owner and mine.get("people") == 2,
+      {"typed": ua.get("typed"), "default": ua.get("default"), "listed": mine})
 ov = str(ua.get("overview"))
 check("admin screen: the Overview speaks of people added, not sign-ups (headers are shown in capitals)",
       "People" in ov and "ADDED" in ov.upper() and "signed up" not in ov.lower(), ov[:400])

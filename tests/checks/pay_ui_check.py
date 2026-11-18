@@ -48,15 +48,26 @@ with sync_playwright() as p:
     page.wait_for_timeout(300)
     card(page, "Credits").locator("button:has-text('Buy credits')").click()
     page.wait_for_selector(".modal .billform", timeout=15000)
+    # Type only into a settled dialog: modal() (01-core.js) focuses its first field, the legal name, 30 ms after it
+    # opens, and Playwright fills a field in two steps (focus it, then insert the text). Typed sooner, the address or the
+    # PIN could go to the end of the name instead, and Save would fail (item56_check's New organisation lost its "30"
+    # that way). A timer set later for longer runs after the dialog's own.
+    page.evaluate("() => new Promise(done => setTimeout(done, 100))")
     bf = page.locator(".modal .billform")
     out["billing_intro"] = page.locator(".modal .mbody p").first.inner_text()
     out["billing_name"] = bf.locator("input").first.input_value()
     bf.locator("textarea").fill("1 Test Road\nBengaluru")
     bf.locator("select").select_option("29")
     bf.locator("input[placeholder='6 digits']").fill("560001")
+    out["billing_typed"] = {"name": bf.locator("input").first.input_value(), "address": bf.locator("textarea").input_value(),
+                            "state": bf.locator("select").input_value(), "pin": bf.locator("input[placeholder='6 digits']").input_value()}
     page.locator(".modal [role=dialog]").screenshot(path="/tmp/pay-billing.png")
     bf.locator("button:has-text('Save billing details')").click()
-    page.wait_for_selector(".modal .pack", timeout=15000)
+    try:
+        page.wait_for_selector(".modal .pack", timeout=15000)
+    except Exception:                                   # say what was in the fields and what the dialog answered
+        raise SystemExit(f"Save billing details did not lead to the packs: the fields held {out['billing_typed']}; "
+                         f"the dialog says {page.locator('.modal .err-msg').all_inner_texts()}")
     m = page.locator(".modal")
     out["invoices_to"] = m.locator(".mbody div.small.muted").first.inner_text()
     out["no_refunds"] = m.locator(".mbody").inner_text()
