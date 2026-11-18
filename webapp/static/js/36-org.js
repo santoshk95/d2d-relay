@@ -180,7 +180,8 @@ function requestDialog(reason) {
 const LEDGER = r => r.kind === 'start' ? 'Starting credits'
   : r.kind === 'adjust' && r.what === 'purchase' ? 'Bought online' + (r.note ? ` - ${r.note}` : '')
   : r.kind === 'adjust' ? (r.delta > 0 ? 'Added by PASDACS' : 'Taken back by PASDACS') + (r.note ? ` - ${r.note}` : '')
-  : (r.kind === 'refund' ? 'Given back: ' : '') + (r.what === 'dashboard' ? 'new dashboard' : r.what === 'ask' ? 'Ask Relay questions' : 'change')
+  : (r.kind === 'refund' ? 'Given back: ' : '') + (r.what === 'dashboard' ? 'new dashboard' : r.what === 'ask' ? 'Ask Relay questions'
+    : r.what === 'review' ? 'semantic review' : 'change')
     + (r.note && r.kind === 'charge' ? ` - ${r.note}` : '');
 async function renderOrg() {
   const page = h('div', {class: 'page'});

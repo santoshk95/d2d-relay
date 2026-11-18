@@ -1272,6 +1272,47 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
     the deploy folder. Code `151f02e`; live since 09:29 IST (live idle): the tunnel was replaced in about a second and
     registered all 4 connections within 3 seconds (two in Bangalore, two in Mumbai), its new start-up checks all
     passed, no warnings or request errors, and the public site answers. Pushed at 09:32 IST on the user's "Yes, push".
+55. **Semantic Review: Power BI models checked against the organisation's KPI dictionary** (the user, 2026-11-17: "add
+    another feature which is semantic and dax reviewer in the existing environemnt by connecting via azure or
+    uploading pbix file, against the ontology/kpi definination any orgnaistion and flag any inconsisnet dax/formula
+    used which can have issues with the intent of one kpi one meaning/value, as analyzer"). A new screen for every
+    organisation, **Semantic Review** (`#/review`, under Ask Relay; `docs/d2d-relay.md`, "Semantic Review"): the
+    organisation's KPI dictionary (its ontology of KPIs: name, other names, definition, formula in words, reference
+    DAX, unit, aggregation, rules, time basis; added in the app, imported from CSV / Excel / YAML / JSON with a preview,
+    downloaded, or started from a review's measures), and reviews of up to 5 models at once: uploaded `.pbix` (read by
+    PBIXRay 0.15.5 in a process of its own, with limits), `.pbit`, `model.bim`, zipped Power BI projects (TMDL), or
+    models in the Power BI service through the organisation's own Entra app (Fabric getDefinition, the INFO.VIEW
+    functions when that is refused; Contributor is needed, as Power BI shows DAX only to identities that may change a
+    model). Every measure's DAX is read, expanded and written one canonical way (`genbi_kit/semreview`), so the rules
+    find a KPI calculated more than one way (in one model or across models), measures that do not compute what the
+    dictionary defines, the wrong aggregation, averages of ratios, YTD / LY / vs-budget variants not built on their
+    KPI, another year end, percentages not shown as such, visual titles naming another KPI, visuals adding up a
+    column a KPI measure covers, and DAX that gives a wrong or unstable number (references to nothing, CALCULATE around
+    a variable, SUMX without CALCULATE, ALL on a KPI, ids or rates added up by default ...). Claude then checks the
+    measures against the definitions in words (no tools, its answer checked; it sees definitions and DAX, never data),
+    and for service models the disagreeing measures' values are shown side by side. 10 credits a review
+    (`RELAY_CREDITS_REVIEW`; the price is my default, for the user to confirm), given back when a review does not
+    finish; the meaning check may run once more at no cost when the AI could not answer. Uploaded files are deleted as
+    soon as they are read; only metadata is kept. An independent review of the code (a separate agent, 2026-11-18)
+    found 14 problems, all fixed and covered by tests: a YAML alias bomb and a zip-bombed workbook in the dictionary
+    import, exponential work on deeply layered measures (31 levels of doubling references now take a moment; 3,000
+    measures 2 s), false "differs" when the dictionary's DAX uses the model's own measures, `Table[Measure]` and
+    `dt"..."` read as broken, a failed meaning retry that wiped a finished review, a malformed AI answer that failed the
+    review, "All" / "Overall" read as filler, Indian fiscal-year phrasing, a non-Latin review name breaking the CSV
+    download, and two start-up races. Tests: `item55_check` 90 and `item55_ui_check` 18 (the stack has stand-in
+    Microsoft APIs, `fake_powerbi.py`, on 127.0.0.1:8106; their people sign in from 203.0.113.x, as sign-in codes are
+    limited per address); every suite passes in both review modes, and `upgrade_check` 23 of 23 from live's
+    `b77f38e`. The real .pbix of the Global Ports dashboard (86 measures, 9 tables) is read in under a second with no
+    DAX finding. Committed in the work folder; **not deployed, not pushed**. Built as item 54 and renumbered 55: the
+    user turned the live app down meanwhile (item 54, 2026-11-17 23:26 IST, logged on the deploy folder's local branch
+    `turn-down-2026-11-17`) and intends to license D2D to client organisations rather than offer it to the public
+    (the user, 2026-11-18: "i have removed d2d from the live site, intent is to go license based for clients not to
+    public"), so there is no live site to deploy it to. Open for the user: the price (10 credits a review); the
+    privacy notice and the terms do not mention Semantic Review yet (Claude now also sees KPI definitions and DAX;
+    models can come from the customer's Power BI): for the lawyer, or the client licences, before any organisation
+    uses it. Open in engineering: the `.pbix` reader runs as the web app's user in the web container (limits and a
+    clean environment only); a job container of its own (no network, only the upload, like the AI builds) is the
+    next hardening.
 
 Clean-up of 2026-11-16 (the user asked for a marketing session's stopped test stack to be removed and everything
 cleaned): that stack from 2026-11-15 (two containers, four volumes and its network; no Claude login among them) is
@@ -1553,6 +1594,10 @@ Refunds: none (item 25); any made by hand on Razorpay are recorded.
 
 Done on 2026-11-12 (item 30): S10, S11, S15, S16, S17, P6, the AI engine's API (S4) and its network (S6). Left:
 
+- **Semantic Review's `.pbix` reader** (item 55): PBIXRay's native XPress9 code reads uploaded files in a process of its
+  own with memory, time and file limits and an empty environment, but as the web app's user inside the web container
+  (its files, its network). Next: run it as a job of the job runner (a container with no network that holds only the
+  upload), as the AI builds are.
 - **S4, the rest:** each build now runs in a container of its own (item 31); the Claude sign-in volume, with its run
   transcripts, is still shared by the jobs. A long-lived token (`claude setup-token`, the user's, once) would let each
   job run without the shared sign-in.

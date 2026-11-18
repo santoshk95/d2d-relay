@@ -35,8 +35,9 @@ stack.sh removes any earlier test stack with its volumes, empties `stack/test-pr
 on live), writes the settings to `stack/.env` (git-ignored), starts the stack, waits until web and admin are healthy and
 starts the stand-in Razorpay inside the web container. Then:
 
-- http://127.0.0.1:8103 is the public site, http://127.0.0.1:8104 the admin portal (info@pasdacs.com), and
-  127.0.0.1:8105 the stand-in Razorpay.
+- http://127.0.0.1:8103 is the public site, http://127.0.0.1:8104 the admin portal (info@pasdacs.com),
+  127.0.0.1:8105 the stand-in Razorpay, and 127.0.0.1:8106 the stand-in Microsoft sign-in, Fabric and Power BI APIs
+  for Semantic Review (item 55, `checks/fake_powerbi.py`, started by stack.sh like the stand-in Razorpay).
 - Nothing is emailed: sign-in codes are printed to the containers' logs (`docker logs d2d-relay-test-web`, lines
   `[otp] code for ...`).
 - The stand-in's keys are made up and look it (`rzp_live_D2DTESTSTACK01`, `stand-in-key-secret-not-real`). The key id
@@ -87,6 +88,8 @@ already running, `bash tests/run_all.sh <output name>` runs the suites alone.
 | `item50_check.py`: the admin portal's Overview (online now, sign-ups newest first, totals; not on the public site; its first page) | 19 |
 | `item51_check.py`: the sign-in code email in D2D's look (mail stubbed in the web and admin containers: who gets it, the code, plain characters, nothing fetched; in Chromium: 320 to 1280 px, dark mode) | 25 |
 | `item52_check.py`: the prototype's matrix per row header (first level, Auto expand, ROLLUP totals, no summed ratio), cut card text and the Display check, the DAX check's levels, Ask Relay's percentages and plurals (a seeded answer in Chromium, the snapshot) | 37 |
+| `item55_check.py`: Semantic Review: the KPI dictionary (one name one KPI, readable DAX, import preview and merge, CSV without formulas), reviews of model.bim, .pbit, a TMDL project, a live and a broken .pbix and the real .pbix of `TEST_REVIEW_PBIX` (skipped when it is not on the PC), what they find, credits and refunds, the meaning check's retry, Review again, who may do what, Power BI through the stand-in Microsoft APIs (`fake_powerbi.py`, 127.0.0.1:8106), a review cut off by a restart; its people sign in from 203.0.113.x (codes are limited per address); the cases of the independent review of 2026-11-18 (a YAML alias bomb, dictionary DAX using model measures, Table[Measure], dt"..." literals, 31 levels of doubling references, a non-Latin review name) | 90 |
+| `item55_ui_check.py`: Semantic Review in Chromium: the menu, a review from the file picker, the report's tabs, the dictionary and its Add dialog, phone width, dark mode, no failed requests (screenshots `sr-*.png`) | 18 |
 | **All, for item 52** (987 for 8029415; 962 for 22c7464; 943 for 1c841da; 935 for 777f30c; 858 for 01559b6 and a871751; 847 for baf70e5 and 2686fc4; 846 / 829 for d1882f7, 825 / 808 for 96ea48a, 788 / 771 for 189ccac, 747 / 730 for 334b493, 685 / 668 for 54f6ed7) | **1024** / not run |
 
 One suite by hand, with the stack running:

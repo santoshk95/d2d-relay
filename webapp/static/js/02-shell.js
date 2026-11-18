@@ -73,6 +73,7 @@ function navGroups(route) {          // D2D Relay: dashboards, Ask Relay, brandi
   const top = {id: 'top', label: '', items: [['#/d2d', 'chart', 'Dashboards', routeOn('#/') || on('#/d2d') || !!S.pid]]};
   if (me.builder !== false) top.items.push(['#/new', 'plus', 'New dashboard', on('#/new')]);
   top.items.push(['#/askd', 'spark', 'Ask Relay', on('#/askd')]);
+  top.items.push(['#/review', 'scale', 'Semantic Review', on('#/review')]);   // item 55: models against the KPI dictionary (40-review.js)
   top.items.push(['#/migration', 'swap', 'Migration D2D', route === '#/migration']);   // moving dashboards between BI tools (39-migration.js)
   const setup = [['#/org', 'building', 'Organisation', route === '#/org'],       // D2D Relay: owner, people, credits (36-org.js)
     ['#/branding', 'palette', 'Branding', on('#/branding')],
@@ -227,7 +228,9 @@ function route() {
   }
   if (!pid) document.title = 'D2D Relay';
   // D2D Relay: only these screens exist; anything else (old links, bookmarks) opens the dashboards list
-  const D2D_ROUTES = ['#/new', '#/d2d', '#/askd', '#/branding', '#/notifications', '#/connections', '#/p/', '#/org', '#/setup', '#/welcome', '#/migration'];
+  const D2D_ROUTES = ['#/new', '#/d2d', '#/askd', '#/branding', '#/notifications', '#/connections', '#/p/', '#/org', '#/setup', '#/welcome', '#/migration', '#/review'];
+  if (typeof srLeave === 'function' && !location.hash.startsWith('#/review')) srLeave();   // item 55: a review page stops polling when left
+  if (location.hash === '#/review' || location.hash.startsWith('#/review/')) return renderReview();   // Semantic Review (40-review.js)
   if (location.hash.startsWith('#/branding')) return renderBranding();
   if (location.hash === '#/org') return renderOrg();                               // D2D Relay: organisations and credits (36-org.js)
   if (location.hash === '#/welcome' || location.hash === '#/setup') return renderTour();   // the first-time tour (38-tour.js)

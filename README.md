@@ -51,7 +51,7 @@ Two helpers run on Windows next to them, because Power BI only runs there. Publi
 |---|---|
 | `webapp/` | the FastAPI app: `app/` (the API; D2D Relay's own parts are `edition.py`, `orgs.py`, `otp.py` and `portal.py`) and `static/` (the screens) |
 | `agent/` | the AI engine's service: Claude Code in a project folder, with the `genbi` toolkit |
-| `genbi_kit/` | the toolkit: definition schema (`GENBI.md`), data profiling, demo data, prototype, report builder, review gates, DAX checker and Power BI file maker clients, visual factory |
+| `genbi_kit/` | the toolkit: definition schema (`GENBI.md`), data profiling, demo data, prototype, report builder, review gates, DAX checker and Power BI file maker clients, visual factory, and Semantic Review's model readers and DAX rules (`semreview/`) |
 | `visuals/`, `visual-atlas/`, `visual-library/`, `custom_visuals/`, `visual_factory/` | Relay's custom Power BI visuals: sources, the Visual Atlas families, visuals built for earlier reports, packaged copies, and the kit the factory builds new ones with |
 | `Dockerfile`, `docker/`, `docker-compose.yml` | the image, its start-up (`relay_init.py`: one role per container), supervisor and tools (`relay_ctl.py`, `move-to-split.ps1`) |
 | `daxcheck/` | the Windows-side DAX checker |
@@ -74,10 +74,16 @@ Two helpers run on Windows next to them, because Power BI only runs there. Publi
    Power BI Desktop.
 
 A new organisation gets 50 starting credits once PASDACS has reviewed and approved it (PASDACS is emailed about every
-new organisation). A new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10, and
-Ask Relay 10 for up to 5 questions in a conversation.
+new organisation). A new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10,
+Ask Relay 10 for up to 5 questions in a conversation, and a Semantic Review 10.
 More credits come from PASDACS, which approves every request, or are bought online once PASDACS switches selling on
 (off on the live site until Razorpay activates the account).
+
+**Semantic Review** checks an organisation's Power BI semantic models (a `.pbix`, `.pbit`, `model.bim` or Power BI
+project, or models in the Power BI service through the organisation's own Entra app) against its KPI dictionary: one
+KPI, one meaning, one value. It flags every measure that calculates a KPI differently from the others or from the
+definition, and DAX that gives a wrong or unstable number, with what to change (10 credits a review;
+`docs/d2d-relay.md`, "Semantic Review").
 
 Someone new gets a short first-time tour: the brand, light or dark, the basics. **Migration D2D** moves dashboards
 from one BI tool to another (Cognos, Qlik, Looker, Tableau, Power BI and more); organisations ask PASDACS for it in

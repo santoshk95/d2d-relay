@@ -82,5 +82,9 @@ fi
 MSYS_NO_PATHCONV=1 docker cp ../checks/fake_razorpay.py d2d-relay-test-web:/tmp/fake_razorpay.py
 MSYS_NO_PATHCONV=1 docker exec -d -u relay -e FAKE_RZP_KEY_ID="$TEST_RZP_KEY_ID" -e FAKE_RZP_SECRET="$TEST_RZP_SECRET" \
   d2d-relay-test-web /usr/local/bin/python3 /tmp/fake_razorpay.py
+# item 55: the stand-in Microsoft sign-in, Fabric and Power BI APIs (Semantic Review's Power BI connection)
+MSYS_NO_PATHCONV=1 docker cp ../checks/fake_powerbi.py d2d-relay-test-web:/tmp/fake_powerbi.py
+MSYS_NO_PATHCONV=1 docker exec -d -u relay d2d-relay-test-web /usr/local/bin/python3 /tmp/fake_powerbi.py
 sleep 2
 echo "stand-in Razorpay: $(curl -s http://127.0.0.1:8105/_test/state)"
+echo "stand-in Microsoft APIs: $(curl -s http://127.0.0.1:8106/_test/state)"

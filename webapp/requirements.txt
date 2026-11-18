@@ -33,3 +33,11 @@ pypdf==5.1.0
 dulwich==1.2.21
 # consolidation: Integration analytics reads SFTP file drops on a real server (AWS Glue's boto3 already comes with pyathena)
 paramiko==3.5.1
+# item 55: Semantic Review reads a .pbix's model with PBIXRay (MIT; XPress9 is Microsoft's own MIT code), in a separate,
+# limited process (genbi_kit/semreview/pbix_read.py); pandas and numpy come with db-dtypes above
+pbixray==0.15.5
+xpress9==0.3.9
+xpress8==0.1.1
+xmhuffman==0.3.2
+kaitaistruct==0.11
+apsw==3.54.1.0

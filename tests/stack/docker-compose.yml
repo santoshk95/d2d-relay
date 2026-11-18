@@ -1,5 +1,6 @@
 # D2D Relay's test stack, never the live one: the layout of the repository's docker-compose.yml with its own names,
-# volumes and ports (127.0.0.1:8103 public site, 8104 admin portal, 8105 stand-in Razorpay), no mail (sign-in codes
+# volumes and ports (127.0.0.1:8103 public site, 8104 admin portal, 8105 stand-in Razorpay, 8106 stand-in Microsoft
+# APIs for Semantic Review), no mail (sign-in codes
 # are printed to the web and admin logs), no Claude sign-in unless TEST_CLAUDE_VOLUME names one, and a stand-in
 # Razorpay API (../checks/fake_razorpay.py, started inside the web container on port 9911 by stack.sh).
 # Start it with stack.sh (../README.md). stack.sh writes the settings to .env in this folder (git-ignored), so later
@@ -32,6 +33,12 @@ x-signin: &signin
   RELAY_TURNSTILE_SECRET: ${TEST_TURNSTILE_SECRET-1x0000000000000000000000000000000AA}
   # item 42: the installation's Anthropic API key (empty: the Claude login only); a real-Claude test sets it
   RELAY_ANTHROPIC_API_KEY: ${TEST_ANTHROPIC_API_KEY-}
+  # item 55: Semantic Review's Power BI connection talks to the stand-in Microsoft APIs (../checks/fake_powerbi.py, port
+  # 9912 in the web container, 127.0.0.1:8106 here); uploads up to 20 MB so the size limit can be tried
+  RELAY_ENTRA_LOGIN: ${TEST_ENTRA_LOGIN:-http://d2d-relay-test-web:9912/login}
+  RELAY_FABRIC_API: ${TEST_FABRIC_API:-http://d2d-relay-test-web:9912/fabric}
+  RELAY_POWERBI_API: ${TEST_POWERBI_API:-http://d2d-relay-test-web:9912/powerbi}
+  RELAY_REVIEW_MAX_MB: ${TEST_REVIEW_MAX_MB:-20}
 
 services:
   db:
@@ -68,6 +75,7 @@ services:
     ports:
       - "127.0.0.1:8103:8000"
       - "127.0.0.1:8105:9911"
+      - "127.0.0.1:8106:9912"                    # item 55: the stand-in Microsoft APIs (fake_powerbi.py)
     cap_add:                 # as the live web container (security audit S6)
       - NET_ADMIN
     depends_on:

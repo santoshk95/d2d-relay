@@ -1,6 +1,6 @@
-404-admin 54
+404-admin 55
 404-edition 330
-OPEN 114
+OPEN 136
 nonapi 19
 OPEN	DELETE	/api/askd/threads/{tid}	app.governance.api_delete_thread
 OPEN	DELETE	/api/branding/logo	app.branding.remove_logo
@@ -8,6 +8,9 @@ OPEN	DELETE	/api/connections/{cid}	app.data_routes.remove_connection
 OPEN	DELETE	/api/library/{name}	app.main.library_remove
 OPEN	DELETE	/api/org/people/{uid}	app.orgs.remove_person
 OPEN	DELETE	/api/projects/{pid}	app.governance.api_delete_project
+OPEN	DELETE	/api/semreview/kpis/{kid}	app.semreview.delete_kpi
+OPEN	DELETE	/api/semreview/pbi	app.semreview.pbi_remove
+OPEN	DELETE	/api/semreview/runs/{rid}	app.semreview.delete_run
 OPEN	GET	/api/askd/costs	app.askd_routes.ai_costs
 OPEN	GET	/api/askd/models	app.askd_routes.ask_models
 OPEN	GET	/api/askd/options	app.askd_routes.scope_options
@@ -54,6 +57,16 @@ OPEN	GET	/api/projects/{pid}/versions/{v}/gates	app.main.version_gates
 OPEN	GET	/api/projects/{pid}/visuals/{name}/preview	app.main.visual_preview
 OPEN	GET	/api/registry	app.registry.get_registry
 OPEN	GET	/api/registry/{mid}	app.registry.get_module
+OPEN	GET	/api/semreview	app.semreview.overview
+OPEN	GET	/api/semreview/kpis	app.semreview.list_kpis
+OPEN	GET	/api/semreview/kpis/export.csv	app.semreview.export_kpis_csv
+OPEN	GET	/api/semreview/kpis/export.yaml	app.semreview.export_kpis_yaml
+OPEN	GET	/api/semreview/kpis/template.csv	app.semreview.kpi_template
+OPEN	GET	/api/semreview/pbi	app.semreview.pbi_settings
+OPEN	GET	/api/semreview/pbi/workspaces	app.semreview.pbi_workspaces
+OPEN	GET	/api/semreview/pbi/workspaces/{wid}/models	app.semreview.pbi_models
+OPEN	GET	/api/semreview/runs/{rid}	app.semreview.get_run
+OPEN	GET	/api/semreview/runs/{rid}/findings.csv	app.semreview.findings_csv
 OPEN	GET	/api/tenancy/me	app.tenancy.api_me
 OPEN	PATCH	/api/connections/{cid}	app.data_routes.change_connection
 OPEN	PATCH	/api/org	app.orgs.rename_org
@@ -106,6 +119,13 @@ OPEN	POST	/api/projects/{pid}/versions/{v}/gates	app.main.run_version_gates
 OPEN	POST	/api/projects/{pid}/versions/{v}/label	app.main.version_label
 OPEN	POST	/api/projects/{pid}/visuals	app.main.set_visuals_mode
 OPEN	POST	/api/reviews/{pid}/{rid}	app.publishing_routes.decide
+OPEN	POST	/api/semreview/kpis	app.semreview.add_kpi
+OPEN	POST	/api/semreview/kpis/from-run	app.semreview.kpis_from_run
+OPEN	POST	/api/semreview/kpis/import	app.semreview.import_kpis
+OPEN	POST	/api/semreview/pbi/test	app.semreview.pbi_test
+OPEN	POST	/api/semreview/runs	app.semreview.start_run
+OPEN	POST	/api/semreview/runs/{rid}/again	app.semreview.run_again
+OPEN	POST	/api/semreview/runs/{rid}/meaning	app.semreview.meaning_again
 OPEN	POST	/api/tenancy/return	app.tenancy.api_return
 OPEN	POST	/api/tenancy/switch	app.tenancy.api_switch
 OPEN	PUT	/api/connections/{cid}/scope	app.data_routes.set_scope
@@ -116,6 +136,8 @@ OPEN	PUT	/api/me/tz	app.schedules.set_tz
 OPEN	PUT	/api/payments/billing	app.payments.save_billing
 OPEN	PUT	/api/projects/{pid}/extracts/schedule	app.data_routes.schedule_extracts
 OPEN	PUT	/api/projects/{pid}/shares	app.platform.set_shares
+OPEN	PUT	/api/semreview/kpis/{kid}	app.semreview.edit_kpi
+OPEN	PUT	/api/semreview/pbi	app.semreview.pbi_save
 nonapi	GET	/auth/brand	app.registry.get_brand_open
 nonapi	GET	/auth/connector/callback	app.data_routes.connection_signin_done
 nonapi	GET	/auth/github/callback	app.publishing_routes.github_callback

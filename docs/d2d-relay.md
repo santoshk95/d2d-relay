@@ -18,7 +18,7 @@ Only the Claude sign-in volume (`claude-api-auth`) is shared, so both apps use t
 | On this PC | public site http://127.0.0.1:8100, admin portal http://127.0.0.1:8102 |
 | Sign-in | a 6-digit code emailed (no passwords, no SSO): a business address joins its organisation, a free mail address gets a personal workspace (item 39); disposable mail refused |
 | Organisations | one per email domain, each in its own workspace; the first person creates and owns it |
-| Credits | 50 to start, more when PASDACS approves a request; a new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10, Ask Relay 10 for up to 5 questions (see "Organisations and credits") |
+| Credits | 50 to start, more when PASDACS approves a request; a new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10, Ask Relay 10 for up to 5 questions, a Semantic Review 10 (see "Organisations and credits") |
 | Platform admins | every **@pasdacs.com** address, on the admin portal only (every organisation, credits, connectors, requests) |
 
 ## Containers
@@ -46,7 +46,8 @@ as separate Linux users that cannot read each other's keys.
 `webapp/app/edition.py` is the one place that decides this.
 
 - **Kept:** Dashboards (D2D: plan -> KPIs -> prototype -> review -> Power BI file), the review gates and the Power BI engine
-  check, the visual library, sample data, Connections (connectors on request), Ask Relay, Branding, organisations
+  check, the visual library, sample data, Connections (connectors on request), Ask Relay, Semantic Review (item 55: Power
+  BI models against the organisation's KPI dictionary, see "Semantic Review"), Branding, organisations
   and credits, sharing a dashboard, and asking a colleague to review a version (the Review card on its Overview).
   There is no administration on the public site: every `/api/admin` path answers 404 there. PASDACS works on the
   admin portal (Organisations, Requests).
@@ -414,6 +415,78 @@ message.
    toolkit is `genbi_kit/migrate`: readers for Cognos and Qlik, the conversion to Power BI, and the proof that the
    numbers match).
 
+## Semantic Review
+
+One KPI, one meaning, one value (item 55): an organisation's Power BI semantic models checked against its own KPI
+dictionary. Every measure that calculates a KPI differently from the others, or not the way the organisation defined
+it, is flagged with what to change, and so is DAX that gives a wrong or unstable number. Self-service, for every
+organisation (personal workspaces too), in the sidebar under Ask Relay (`#/review`, `js/40-review.js`). Code:
+`webapp/app/semreview.py` (the API, the runs, credits), `webapp/app/semreview_pbi.py` (Power BI), `genbi_kit/semreview/`
+(reading models and DAX, the rules).
+
+**The KPI dictionary** (`#/review/kpis`, the organisation's ontology of KPIs): per KPI its name, other names (synonyms),
+definition, formula in words, reference DAX (other KPIs by `[name]`), unit, aggregation, the rules that are part of its
+meaning (for example `Status = Completed`) and time basis (for example "fiscal year ending 31 March", read as year end
+03-31). One name stands for one KPI: a name or synonym can belong to one KPI only, and reference DAX must be readable.
+People add KPIs in the app, import a file (CSV or Excel with a header row, the usual titles understood: KPI, Metric,
+Description, Calculation, Aliases ...; or YAML / JSON; a preview first, then merge or replace), download it (CSV,
+YAML) or a template, or pick measures of a review to start it. BI Devs and owners change it; everyone reads it.
+
+**A review** (`POST /api/semreview/runs`) reads up to 5 models (`RELAY_REVIEW_MAX_FILES`) at once and compares them
+with each other too:
+- files: `.pbix`, `.pbit`, `model.bim` (or a TMSL `.json`), a zipped Power BI project (`*.SemanticModel` with
+  `model.bim` or TMDL), up to 100 MB each (`RELAY_REVIEW_MAX_MB`; Cloudflare refuses bigger uploads anyway). A `.pbix`
+  over the limit can be saved as a template (`.pbit`, no data, small). A `.pbix` connected live to a model in the
+  service holds no model: the review says so.
+- models in the Power BI service, through the organisation's own Entra app (below).
+It uses 10 credits (`RELAY_CREDITS_REVIEW`), charged when it starts and given back when it does not finish (a file that
+cannot be read, a restart). Runs in the web app's background, at most 2 per organisation, one `.pbix` read at a time:
+1. **Read.** Metadata only: tables, columns (types, summarisation, formats), measures (DAX, formats, descriptions,
+   folders), relationships, calculation groups, and which visuals show which fields and with which titles (the report
+   part of a `.pbix`, `.pbit` or project). Never the data, Power Query or roles. Each uploaded file is deleted as soon
+   as it is read; its folder (`.semreview` under the organisation's projects folder, never in backups) after the review.
+   A `.pbix` model is XPress9-compressed: PBIXRay (MIT, pinned in `webapp/requirements.txt`) reads it in a process of
+   its own (`genbi_kit/semreview/pbix_read.py`: `python -I`, an empty environment, 3 GB of memory, 240 s of processor
+   time, 6 GB of spill file at most, its output at most 128 MB; `D2D_PBIX_READ_*`), because it is native code
+   reading a file someone uploaded. It still runs as the web app's user inside the web container (its files and
+   network): moving it into a job container of its own, with no network and only the upload, is the next hardening
+   (`docs/LOG.md`, Still open).
+2. **Check** (`genbi_kit/semreview/analyze.py`): each measure's DAX is read, its measure references and variables put in
+   place and written one canonical way (`dax.py`), so two formulas that compute the same thing compare equal (each
+   measure is worked out once, so deep chains of references stay fast). The dictionary's DAX is read in each model:
+   its `[KPI]` references are the dictionary's own definitions, any other `[name]` that model's measure or column. The
+   rules:
+   a KPI calculated more than one way (in one model or across models), a measure that does not compute what the
+   dictionary's DAX computes (with that DAX written for the model), the wrong aggregation, an average of ratios, a YTD /
+   LY / vs-budget variant not built on its KPI, another year end, a percentage not shown as one (or one KPI in
+   different formats), a visual titled with one KPI showing another, visuals that add up a column a KPI measure covers,
+   DAX that cannot be read or refers to something not in the model, CALCULATE around a variable, SUMX without
+   CALCULATE, ALL / REMOVEFILTERS on a KPI, two names for one number, a variant repeating its KPI's formula, ids /
+   years / rates that visuals add up by default, fixed numbers in a KPI, "/" instead of DIVIDE, both-way relationships,
+   and the dictionary's KPIs no model has and measures no KPI has.
+3. **Meaning** (when the dictionary has definitions in words): Claude, through the AI engine's chat lane with no tools
+   (`askd.ask_json`), judges each KPI's measures against its definition and says which measures in no KPI compute one;
+   its answer is checked before it is shown (only measures and KPIs it was given, plain text). It sees the KPI
+   definitions, the measures' DAX and the models' table and column names, never data. When it cannot run, the review is
+   complete without it and **Check meaning again** runs that step once more, at no cost.
+4. **Values** (Power BI service models): the value of each measure of a KPI that disagrees, over the whole model
+   (`EVALUATE ROW`), side by side.
+The report: KPIs with one meaning (x of y), findings by severity with what to do and the DAX to copy, the KPI table
+(each KPI's measures by version), every measure, the models; findings download as CSV (spreadsheet formulas
+neutralised). **Review again** reads the kept models against today's dictionary (no upload, 10 credits). A review is
+deleted by whoever ran it or an owner, with the models it kept; "Download my data" lists the reviews a person ran.
+
+**Power BI (Azure).** An owner enters the organisation's own Microsoft Entra app (tenant, client id, client secret; the
+secret encrypted with the workspace's secrets, never shown again). What the organisation sets up on its side, in the
+dialog: register an app with a client secret; in the Fabric admin portal allow service principals to use Fabric APIs
+(and the Execute queries REST API for the values); add the app to each workspace to review as **Contributor** (Power BI
+shows a model's DAX only to identities that may change it). D2D Relay only reads: workspaces and their semantic models
+(Fabric REST API), each model's definition (`getDefinition?format=TMSL`, a long-running operation followed only on the
+Fabric API's own host), else the INFO.VIEW functions (`executeQueries`), and the values. Ids must be GUIDs and the
+addresses are fixed (`D2D_ENTRA_LOGIN`, `D2D_FABRIC_API`, `D2D_POWERBI_API` exist for the test stack's stand-in,
+`tests/checks/fake_powerbi.py`). Not covered: Azure Analysis Services, models with an encrypted sensitivity label, and
+DirectLake models whose definition Fabric does not export.
+
 ## Text people read
 
 Everything D2D Relay shows, emails or writes into a Power BI file uses plain keyboard characters (the user's request
@@ -676,6 +749,9 @@ notice, `/privacy.html`, linked from the sign-in page, the profile menu and Orga
 | Dashboards: uploads, extracts, plan, versions, prototypes, Power BI files, activity log | `data\projects\.tenants\<organisation>\<dashboard>` | the owner, people it is shared with, the organisation's owners | until deleted | Delete on the dashboard page (its owner or an owner of the organisation) |
 | Ask Relay conversations | database | the person who asked | until deleted | Delete conversation in Ask Relay; deleting a dashboard deletes the conversations about it |
 | Ask Relay's answer cache | database | nobody (reused for the same question) | 7 days | nightly sweep; deleted with its conversation or dashboard |
+| Semantic Review (item 55): files uploaded for a review | `data\projects\.tenants\<organisation>\.semreview\<review>` (never in backups) | nobody | until read: seconds | deleted as soon as the model is read; the folder after the review; all of them when the site starts |
+| Semantic Review: the KPI dictionary, reviews (findings) and the models they read (metadata: names, DAX, formats; no data, Power Query or roles) | database: the organisation's schema | everyone in the organisation | until deleted | Delete on the review (whoever ran it or an owner); KPIs deleted one by one or replaced by an import |
+| Semantic Review's Power BI app secret | `secrets.enc` of the organisation, encrypted | nobody: the app uses it | while connected | Remove under Semantic Review > Connection (an owner) |
 | The AI engine's transcripts (Claude Code) | `claude-api-auth` volume, `/home/agent/.claude/projects` | PASDACS, on this PC | Ask Relay: deleted once the answer is given; dashboards: at most 7 days | deleted with the dashboard; nightly sweep; Claude Code's own `cleanupPeriodDays` (managed settings, which also switch auto-memory off) |
 | Audit trail, sign-in records, sign-in codes (hashed) | database | the person (Download my data); PASDACS | 1 year | nightly sweep |
 | Warehouse passwords and keys | `data\state\tenants\<organisation>\secrets.enc`, encrypted | nobody: the app uses them | while the connection exists | removing the connection |

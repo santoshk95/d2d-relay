@@ -6,6 +6,8 @@ Erasure
     Ask Relay conversations about that dashboard, notifications pointing at it, cached answers that used it, and the
     AI engine's own transcripts of its runs;
   - one Ask Relay conversation (DELETE /api/askd/threads/<id>; the person who asked);
+  - one Semantic Review (DELETE /api/semreview/runs/<id>; whoever ran it or an owner): its findings and the models it
+    read (metadata only). The files uploaded for a review are deleted as soon as they are read (semreview.py);
   - a whole organisation (PASDACS, on the owner's written request: `python -m app.governance erase-org`, see
     erase_org): its database schema, folders, secrets, visual library and AI transcripts. The credit history and
     its online payments (item 23) stay for the accounts, without names, email addresses or messages.
@@ -194,6 +196,8 @@ def my_data(u: dict) -> dict:
     audit = db.q("SELECT ts, action, object, detail FROM audit WHERE who = ? AND ts >= ? ORDER BY ts DESC LIMIT 5000", (uid, since))
     for a in audit:
         a["detail"] = _body(a["detail"] or "{}")
+    from . import semreview                         # item 55
+    reviews = semreview.my_reviews(uid)
     return {
         "about": "What D2D Relay (PASDACS) holds about you. Your dashboards' own files are downloaded from each dashboard; "
                  "write to the address in the privacy notice (/privacy.html) to correct or erase anything here.",
@@ -203,6 +207,7 @@ def my_data(u: dict) -> dict:
         "signed_in_now": db.q("SELECT created, expires, last_seen, ip, agent FROM sessions WHERE user_id = ? ORDER BY created DESC", (uid,)),
         "dashboards_you_own": owned,
         "ask_relay_conversations": convs,
+        "semantic_reviews_you_ran": reviews,
         "credit_requests": db.q("SELECT created, credits, message, status, decided, granted FROM relay.tn_credit_requests "
                                 "WHERE tenant_id = ? AND user_id = ? ORDER BY created", (db.tenant(), uid)),
         "credits_used": db.q("SELECT ts, kind, delta, what, project_name FROM relay.tn_credits WHERE tenant_id = ? AND user_id = ? "

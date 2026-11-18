@@ -19,7 +19,8 @@ Credits are pooled per organisation (relay.tn_orgs.credits); every change is a r
           "visuals"); a change (D2D_CREDITS_CHANGE, 10): asking Relay to revise the
           plan, a change request on a prototype, building a custom visual Relay suggested, an Ask Relay answer sent to
           a dashboard; Ask Relay (D2D_CREDITS_ASK, 10) for up to D2D_CREDITS_ASK_QUESTIONS (5) answered questions in
-          one conversation: charged at its 1st, 6th, 11th ... question (askd_routes.py)
+          one conversation: charged at its 1st, 6th, 11th ... question (askd_routes.py); a Semantic Review
+          (D2D_CREDITS_REVIEW, 10: semreview.py, item 55), given back when it does not finish
   refund  the run a charge paid for failed or was stopped before it delivered, so the credits come back (Retry charges
           again). A new dashboard is delivered with its first prototype (planning and building are both part of it);
           a change with its new plan or version; Ask Relay's credits with the answer.
@@ -87,6 +88,8 @@ COST = {"dashboard": int(os.environ.get("D2D_CREDITS_DASHBOARD") or 25), "change
 # custom / default plus custom)": COST["dashboard"] is a dashboard of Power BI's built-in visuals only, this one a
 # dashboard with custom visuals (mixed or relay)
 COST["dashboard_custom"] = max(int(os.environ.get("D2D_CREDITS_DASHBOARD_CUSTOM") or 50), COST["dashboard"])
+# item 55: a Semantic Review (semantic models checked against the organisation's KPI dictionary, semreview.py)
+COST["review"] = int(os.environ.get("D2D_CREDITS_REVIEW") or 10)
 ASK_QUESTIONS = int(os.environ.get("D2D_CREDITS_ASK_QUESTIONS") or 5)   # the Ask Relay questions COST["ask"] pays for
 
 
@@ -103,7 +106,7 @@ def dashboard_cost(visuals_mode: str | None) -> int:
 def custom_extra() -> int:
     """Item 44: what moving a dashboard paid at the built-in price to custom visuals uses, once (the difference)."""
     return COST["dashboard_custom"] - COST["dashboard"]
-WHAT = {"dashboard": "New dashboard", "change": "Change", "visuals": "Custom visuals"}
+WHAT = {"dashboard": "New dashboard", "change": "Change", "visuals": "Custom visuals", "review": "Semantic review"}
 CONTACT = (os.environ.get("D2D_CREDITS_CONTACT") or "info@pasdacs.com").strip()
 PLATFORM_EMAIL = (os.environ.get("D2D_OTP_EMAIL") or os.environ.get("D2D_ADMIN_EMAIL") or "").strip().lower()
 REQUESTS_PER_HOUR = 5
@@ -507,6 +510,7 @@ def _entry(tid: str, kind: str, delta: int, *, what: str | None = None, pid: str
 def _short(o: dict, what: str, n: int | None = None) -> str:
     n = COST.get(what, 0) if n is None else n
     uses = (f"Ask Relay uses {COST['ask']} credits for up to {ASK_QUESTIONS} questions" if what == "ask" else
+            f"A semantic review uses {n} credits" if what == "review" else
             f"Custom visuals on this dashboard use {n} more credits" if what == "visuals" else
             f"A new dashboard with custom visuals uses {n} credits" if what == "dashboard" and n > COST["dashboard"] else
             f"{'A new dashboard' if what == 'dashboard' else 'A change'} uses {n} credits")

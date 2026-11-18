@@ -34,6 +34,7 @@ from . import portal                                 # D2D Relay: the public sit
 from . import governance                             # item 22: erasure, "Download my data", retention
 from . import headers                                # security audit: security headers, the Range guard
 from . import payments                               # item 23: buying credits online with Razorpay
+from . import semreview                              # item 55: Semantic Review (models against the KPI dictionary)
 
 errors.install()                                # every traceback.print_exc() and thread crash reports Relay's own bugs (Relay Doctor)
 STATIC = Path(__file__).resolve().parent.parent / "static"
@@ -85,6 +86,10 @@ async def lifespan(_):
     except Exception:  # noqa: BLE001 - the cost report is not worth failing start-up for
         traceback.print_exc()
     worker.recover()
+    try:
+        semreview.recover()                     # item 55: reviews cut off by the restart end, their credits come back
+    except Exception:  # noqa: BLE001 - the site still starts; the log says why
+        traceback.print_exc()
     db.audit("app.start", db.INSTANCE, {"auth": auth.MODE}, "system")
     try:
         providers.write_gateway_config()
@@ -133,6 +138,7 @@ app.include_router(branding.router)            # D2D Relay: Branding (logo + des
 app.include_router(otp.router)                 # D2D Relay: sign-in with a one-time email code
 app.include_router(orgs.router)                # D2D Relay: organisations, credits and their requests, every organisation (admin portal)
 app.include_router(payments.router)            # D2D Relay: buying credits online with Razorpay (item 23)
+app.include_router(semreview.router)           # D2D Relay: Semantic Review, models against the KPI dictionary (item 55)
 edition.apply()                                # D2D Relay: keep dashboards, the visual library and BigQuery; switch the rest off
 
 

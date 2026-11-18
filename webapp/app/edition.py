@@ -1,7 +1,9 @@
 """D2D Relay (D2D: Data to Decision): the dashboard product of the Relay Platform by PASDACS, cut down from RELAY.
 
 What stays: Ask Relay (the `askd` module: questions about your data, answered with charts), Dashboards (describe -> plan -> KPIs -> prototype -> review -> Power BI file, .pbix), the visual library,
-CSV / flat-file uploads, and Connections. Platform administration is the admin portal's (portal.py), not the public site's.
+CSV / flat-file uploads, Connections, and Semantic Review (item 55, semreview.py: Power BI models checked against the
+organisation's KPI dictionary; its own /api/semreview, not RELAY's switched-off semantic layer at /api/semantic).
+Platform administration is the admin portal's (portal.py), not the public site's.
 
 Data: the public side takes CSV files (and demo data Relay generates). The warehouses and databases in CONNECTORS are
 listed for everyone, but each one is switched on per organisation by PASDACS, on request (orgs.py: relay.tn_orgs
