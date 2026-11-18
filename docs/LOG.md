@@ -1454,7 +1454,18 @@ stay uncommitted on purpose, identical to their backup branch).
     organisation dialog's own focus on its first field (30 ms after it opens) came while the browser was typing the
     starting credits, so "30" went to the end of the name and the credits kept their default, 50. Fixed in the commit
     after this one (item56_check and pay_ui_check wait for a dialog to settle before typing; 62 of 62 and 37 of 37,
-    five runs each). A comment in `auth.py` was tidied after the image was built. Not deployed.
+    five runs each). **Live, on this PC only, since 2026-11-18 14:29 IST**, on the user's "comit all and publish"
+    and their choice of both a push and a deploy: live was idle; the database was dumped first
+    (`data\backups\relay-db-20261118-085838.dump`); the deploy folder was fast-forwarded to `f754035` (no change to
+    the compose file, `config` or the PC helpers' scripts); web, admin and runner run `d2d-relay:f754035`, built from
+    the clean commit with the pinned Antigravity image, whose app and toolkit files match the tested image's but for
+    a comment in `auth.py`; the database container stays on item 57's image; the tunnel stays stopped
+    (`RELAY_OTP_ON_SCREEN=1` is kept). Checked afterwards: healthz 200 on both sites, the import refuses a request
+    without a sign-in (401), no errors in the logs, both PC helpers idle. Pushed: GitHub `main` is `f754035` (items 55
+    to 58, the item 54 log and the test fix; scanned first against the live `.env` and `tunnel.env`: only the Claude
+    volume's name matched, already public). **Going back** to item 57: `docker tag d2d-relay:item57-test2
+    d2d-relay:latest` (item 57 with its start-page fix, 1183 of 1183), `git reset --keep 1896c3a` in the deploy
+    folder, then `docker compose up -d --no-deps web admin runner`.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
