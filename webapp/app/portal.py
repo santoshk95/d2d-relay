@@ -1,14 +1,15 @@
 """D2D Relay: which site this process serves, set per container by D2D_PORTAL (RELAY_PORTAL in .env).
 
-  public  https://d2d.pasdacs.com (container d2d-relay-web): organisations sign in with a business email and
-          build dashboards. Nobody has platform powers here: every /api/admin path answers 404.
+  public  https://d2d.pasdacs.com (container d2d-relay-web): the people of the organisations PASDACS created sign in
+          with their email (item 56: nobody signs up) and build dashboards. Nobody has platform powers here: every
+          /api/admin path answers 404.
   admin   https://admin-d2d.pasdacs.com (container d2d-relay-admin): PASDACS only. Two locks, both required:
           1. Cloudflare Access in front of the hostname. Every request that comes through Cloudflare (it carries
              cf-connecting-ip) must bring Access's signed token (Cf-Access-Jwt-Assertion) for this application
              (D2D_ADMIN_ACCESS_TEAM, D2D_ADMIN_ACCESS_AUD) and for an address at an admin domain. Until those two
              settings are filled in, nothing gets through the tunnel: the portal works on this PC only.
-          2. The app's own email code, for addresses at D2D_ADMIN_DOMAINS (pasdacs.com) only. Everyone signed in
-             here is a platform admin. The session has its own cookie and kind ("otp-admin"), so a session from the
+          2. The app's own email code, for addresses at D2D_ADMIN_DOMAINS (pasdacs.com) only, with an account in the
+             platform's own workspace (item 56: a PASDACS owner adds them). Everyone signed in here is a platform admin. The session has its own cookie and kind ("otp-admin"), so a session from the
              public site is never accepted here, nor one from here there.
           The admin portal answers only the APIs in API (organisations, requests, payments, notifications, who am I); it runs
           no AI engine, no job queue and no schedules.
@@ -32,7 +33,7 @@ ACCESS_TEAM = _team if "." in _team or not _team else f"{_team}.cloudflareaccess
 ACCESS_AUD = (os.environ.get("D2D_ADMIN_ACCESS_AUD") or "").strip()
 # What the admin portal answers under /api (everything else there is 404)
 API = ("/api/me", "/api/registry", "/api/brand", "/api/notifications", "/api/admin/orgs", "/api/admin/requests",
-       "/api/admin/payments", "/api/admin/overview")     # item 50: who is online, who signed up
+       "/api/admin/payments", "/api/admin/overview")     # item 50: who is online, everyone with an account
 _jwks = None
 
 

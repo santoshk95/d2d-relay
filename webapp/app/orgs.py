@@ -2,18 +2,25 @@
 
 An organisation is a P17 tenant of its own (a client under the platform, docs/P17-tenancy.md): its own database schema
 and folders, so its dashboards, connections, branding, Ask Relay conversations and notifications are never seen by
-another organisation. People are matched to it by their email domain (otp.py): the first person from a business domain
-creates it and is its owner (the tenant's admin); everyone after them from that domain joins it as a BI Dev. The
-platform's own workspace (PASDACS, where the platform admin works) is an organisation too, for the platform admin's domain.
+another organisation.
 
-Personal workspaces (item 39, the user 2026-11-13: "allow gmail and all emails but no credits and request credit
-options, they can only buy online"): an address at a free mail domain (Gmail, Outlook, Yahoo ...: public_domains.is_free)
-gets an organisation of its own, personal = 1, whose `domain` is the full address (so nobody else ever matches it). It
-holds that one person only (no Add people), starts with no credits (no starting-credit request) and cannot use Request
-credits: it buys online (payments.py). A platform admin can still add credits by hand. Disposable mail cannot sign in.
+Nobody signs up (item 56, the user 2026-11-18: "Remove signup and bring login directly as internal team management"; D2D
+is licensed to client organisations, not offered to the public). PASDACS creates each organisation on the admin portal
+(Organisations, New organisation: create): its name, its main owner (a work address: the organisation is that email
+domain's, and only one organisation has a domain) and its starting credits. The owner is emailed and signs in with a
+code (otp.py). From then on the organisation's owners manage its people (Organisation, People: add, make owners or
+members, remove), and PASDACS can add someone too (a new owner, say). Only people added like that can sign in. The
+platform's own workspace (PASDACS, where the platform admin works) is an organisation too, for the platform admin's
+domain: its owners add PASDACS colleagues the same way, and those can then sign in to the admin portal.
+
+Personal workspaces (item 39, while anyone could sign up): a free mail address (Gmail, Outlook ...) got an organisation
+of its own, personal = 1, whose `domain` is the full address. No new one is made; the ones there keep working as they
+did: that one person only (no Add people), no Request credits (they buy online, payments.py), and PASDACS can still add
+credits by hand.
 
 Credits are pooled per organisation (relay.tn_orgs.credits); every change is a row in relay.tn_credits:
-  start   the starting credits (D2D_CREDITS_START, 50)
+  start   the starting credits PASDACS gives a new organisation (D2D_CREDITS_START, 50, unless it sets another number),
+          or, for an organisation from before item 56, the starting credits PASDACS approved
   charge  a new dashboard (D2D_CREDITS_DASHBOARD, 25, with Power BI's built-in visuals only; D2D_CREDITS_DASHBOARD_CUSTOM,
           50, with custom visuals: item 44, and a built-in one moved to custom visuals pays the difference once, what
           "visuals"); a change (D2D_CREDITS_CHANGE, 10): asking Relay to revise the
@@ -30,18 +37,13 @@ Free: confirming the plan, asking Relay to fix failed review gates, approving an
 carries the id of the charge it delivers (job args `charge`); worker.py gives it back when the run fails, is stopped,
 or is cut off by a restart.
 
-Starting credits are reviewed (the user's decision, 2026-11-11: no free credits at sign-up): a new organisation starts
-with none, and its "starting credits" request (purpose 'start', for START credits) waits for PASDACS, who is emailed
-about every new organisation with what helps to judge it (the owner, the network and country, other organisations
-from that network or on the same parent domain). Approving it (admin portal, Requests, or `python -m app.orgs approve`)
-adds the credits as starting credits; declining tells the owner why. D2D_CREDITS_START_REVIEW=0 adds them at once,
-as before.
+Before item 56 an organisation that signed up waited for PASDACS to approve its starting credits (a credit request of
+purpose 'start', item 27). None is made any more; approving or declining one still works the way it did.
 
-More credits come from PASDACS (against abuse: anyone with a business mailbox can sign up) or are bought online once
-PASDACS opens selling (payments.py). An organisation asks for them (Request credits: relay.tn_credit_requests, one
-pending request at a time, also emailed to PASDACS) or writes to PASDACS; a platform admin approves the request on the
-admin portal (the amount may differ) or declines it with a reason, and the organisation is told either way. A platform
-admin can also add or take back credits by hand.
+More credits come from PASDACS or are bought online once PASDACS opens selling (payments.py). An organisation asks for
+them (Request credits: relay.tn_credit_requests, one pending request at a time, also emailed to PASDACS) or writes to
+PASDACS; a platform admin approves the request on the admin portal (the amount may differ) or declines it with a
+reason, and the organisation is told either way. A platform admin can also add or take back credits by hand.
 The public site charges and refunds, the admin portal adds: every change is one database transaction (_entry).
 
 Connectors (relay.tn_orgs.connectors, a JSON list of connector kinds): the public side takes CSV files only. Every
@@ -69,19 +71,12 @@ from . import auth, db, edition, notify, portal, public_domains
 router = APIRouter()
 db.register_control_columns("tn_orgs", {"connectors": "TEXT NOT NULL DEFAULT '[]'"})   # the connectors switched on
 db.register_control_columns("tn_orgs", {"personal": "INTEGER NOT NULL DEFAULT 0"})       # item 39: one free-mail address
-# what a credit request is for: 'start' (a new organisation's starting credits, made at sign-up) or 'more' (asked for)
+# what a credit request is for: 'more' (asked for), or 'start' (before item 56: a new organisation's starting credits)
 db.register_control_columns("tn_credit_requests", {"purpose": "TEXT NOT NULL DEFAULT 'more'"})
 
-START = int(os.environ.get("D2D_CREDITS_START") or 50)    # a new organisation's starting credits; more come on request
-# 1 (default): a new organisation's starting credits wait for PASDACS's review; 0: they are added at sign-up
-START_REVIEW = (os.environ.get("D2D_CREDITS_START_REVIEW") or "1").strip().lower() not in ("0", "false", "no", "off")
+START = int(os.environ.get("D2D_CREDITS_START") or 50)    # a new organisation's starting credits (PASDACS may set others)
 IST = timezone(timedelta(hours=5, minutes=30))
 SECOND_LEVEL = {"co", "com", "org", "net", "ac", "gov", "edu", "ltd", "plc", "gen", "biz"}
-
-
-def reviews_new() -> bool:
-    """Whether a new organisation's starting credits wait for PASDACS (else they are added at sign-up)."""
-    return bool(START) and START_REVIEW
 COST = {"dashboard": int(os.environ.get("D2D_CREDITS_DASHBOARD") or 25), "change": int(os.environ.get("D2D_CREDITS_CHANGE") or 10),
         "ask": int(os.environ.get("D2D_CREDITS_ASK") or 10)}
 # item 44 (the user, 2026-11-14): "25 credits in dashboard is for default visual and 50 credits for custom visuals (fully
@@ -111,7 +106,7 @@ CONTACT = (os.environ.get("D2D_CREDITS_CONTACT") or "info@pasdacs.com").strip()
 PLATFORM_EMAIL = (os.environ.get("D2D_OTP_EMAIL") or os.environ.get("D2D_ADMIN_EMAIL") or "").strip().lower()
 REQUESTS_PER_HOUR = 5
 _lock = threading.RLock()                 # credits: one change at a time in this process (and each one transaction)
-_create_lock = threading.Lock()           # two people of a new domain signing up at once make one organisation
+_create_lock = threading.Lock()           # two creations for one domain at once make one organisation
 
 
 class NoCredits(Exception):
@@ -119,7 +114,10 @@ class NoCredits(Exception):
 
 
 class OrgError(Exception):
-    """Shown to the person as it is."""
+    """Shown to the person as it is, with its HTTP status."""
+    def __init__(self, text: str, status: int = 400):
+        super().__init__(text)
+        self.status = status
 
 
 # ---------------------------------------------------------------- domains and names
@@ -136,15 +134,16 @@ def public(email_or_domain: str) -> bool:
     return public_domains.is_public(domain_of(v))
 
 
-REFUSED_TEXT = ("Use an email address you keep: throw-away inboxes (Mailinator, temp mail and the like) cannot be used "
-                "for D2D Relay.")
-PERSONAL_PEOPLE_TEXT = ("A personal workspace is just you. To work with colleagues, sign in with your work email: your "
-                        "company gets an organisation of its own.")
+REFUSED_TEXT = ("Use an address the organisation keeps: throw-away inboxes (Mailinator, temp mail and the like) cannot be "
+                "used for D2D Relay.")
+FREE_TEXT = ("Use the organisation's work address: an address at a free mail service (Gmail, Outlook and the like) cannot own "
+             "an organisation.")
+PERSONAL_PEOPLE_TEXT = f"A personal workspace is just you. For an organisation with colleagues, write to {CONTACT}."
 PERSONAL_REQUEST_TEXT = "Personal workspaces buy credits online: use Buy credits."
 
 
 def refused(email: str) -> bool:
-    """A disposable (throw-away) mail address: it cannot sign in at all (never the platform admin's own address)."""
+    """A disposable (throw-away) mail address: it never gets an account (never the platform admin's own address)."""
     v = (email or "").strip().lower()
     if "@" in v and v == PLATFORM_EMAIL:
         return False
@@ -152,8 +151,8 @@ def refused(email: str) -> bool:
 
 
 def personal_address(email: str) -> bool:
-    """A free mail address (Gmail, Outlook, Yahoo ...): a personal workspace of its own, never an organisation by
-    domain (item 39). Never the platform admin's own address."""
+    """A free mail address (Gmail, Outlook, Yahoo ...): it cannot own an organisation (item 56; before it, item 39 gave
+    it a personal workspace). Never the platform admin's own address."""
     v = (email or "").strip().lower()
     if "@" in v and v == PLATFORM_EMAIL:
         return False
@@ -234,36 +233,41 @@ def init() -> None:
             db.run("INSERT OR REPLACE INTO relay.tn_meta (key, value) VALUES ('d2d_platform_connectors', ?)", (str(time.time()),))
 
 
-def create(name: str, email: str, person: str, seen: dict | None = None) -> tuple[str, str]:
-    """A new organisation for a new business domain: its tenant (schema, folders), its owner (the tenant's admin and a
-    BI Dev in its Default team) and its starting credits, or (reviews_new) its request for them, which PASDACS is
-    emailed to review. A free mail address gets a personal workspace instead (item 39): keyed by the full address, no
-    starting credits and no request; PASDACS hears of it through the sign-in alert. seen: where the sign-up came from
-    (signin_alerts.seen). Returns (tenant id, owner's user id). OrgError('exists') when another person of the domain
-    made it first (or, for a personal address, its workspace is already there)."""
+def create(name: str, email: str, person: str, credits: int | None = None, by: dict | None = None) -> tuple[str, str]:
+    """Item 56: PASDACS creates an organisation (the admin portal's Organisations): its tenant (schema, folders), its main
+    owner (the tenant's admin and a BI Dev in its Default team) and its starting credits (START unless PASDACS gives
+    another number; 0: none). The organisation is the owner's email domain's; only one organisation has a domain, and a
+    free mail or throw-away address cannot own one. by: the PASDACS person. Returns (tenant id, owner's user id);
+    OrgError when it cannot be made."""
     from . import tenancy
     email = (email or "").strip().lower()
     domain = domain_of(email)
-    personal = personal_address(email)
-    key = email if personal else domain                                 # tn_orgs.domain: unique; a personal one is the address
     name = " ".join((name or "").split())[:80]
     person = " ".join((person or "").split())[:120] or name_from(email)
+    n = START if credits is None else int(credits)
+    by = by or {}
     if len(name) < 2:
-        raise OrgError("Give your workspace a name." if personal else "Give your organisation a name.")
+        raise OrgError("Give the organisation a name.")
+    if not PEOPLE_EMAIL.match(email):
+        raise OrgError("Type the main owner's email address.")
     if refused(email):
         raise OrgError(REFUSED_TEXT)
+    if personal_address(email):
+        raise OrgError(FREE_TEXT)
+    if not 0 <= n <= 1_000_000:
+        raise OrgError("Starting credits: from 0 to 1,000,000.")
     with _create_lock:
         with db.use(db.PLATFORM):
-            if by_domain(key):
-                raise OrgError("exists")
+            o = by_domain(domain)
+            if o:
+                raise OrgError(f"@{domain} is already {o['name']} on D2D Relay: add the person there instead.", 409)
             if db.one("SELECT 1 AS x FROM relay.tn_accounts WHERE email = ?", (email,)):
-                raise OrgError("This email address already has an account. Sign in again.")
+                raise OrgError("This address already has a D2D Relay account.", 409)
             tid = tenancy._slug(name)                                   # noqa: SLF001 - the console's own id rule
-            now, uid = time.time(), "u-" + secrets.token_hex(6)
-            notes = f"D2D Relay personal workspace ({email})" if personal else f"D2D Relay organisation ({domain})"
+            now, uid, maker = time.time(), "u-" + secrets.token_hex(6), by.get("id") or "pasdacs"
             db.run("INSERT INTO relay.tn_tenants (id, kind, parent_id, name, edition, status, deployment, host, partner_access, region, "
                    "notes, created, created_by, updated, updated_by) VALUES (?, 'client', ?, ?, 'enterprise', 'active', 'shared', NULL, "
-                   "'open', NULL, ?, ?, 'signup', ?, 'signup')", (tid, db.PLATFORM, name, notes, now, now))
+                   "'open', NULL, ?, ?, ?, ?, ?)", (tid, db.PLATFORM, name, f"D2D Relay organisation ({domain})", now, maker, now, maker))
         try:
             db.init_tenant(tid)
             with db.use(tid):
@@ -272,9 +276,9 @@ def create(name: str, email: str, person: str, seen: dict | None = None) -> tupl
                 db.run("INSERT INTO memberships (user_id, team_id, role) VALUES (?, ?, 'dev')", (uid, db.DEFAULT_TEAM))
                 db.run("INSERT INTO relay.tn_accounts (user_id, email, home_tenant, created) VALUES (?, ?, ?, ?)", (uid, email, tid, now))
                 db.run("INSERT INTO relay.tn_orgs (tenant_id, name, domain, owner_id, credits, setup_done, created, created_by, personal) "
-                       "VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?)", (tid, name, key, uid, now, uid, 1 if personal else 0))
-                if START and not START_REVIEW and not personal:
-                    _entry(tid, "start", START, note="Starting credits", who={"id": uid, "name": person})
+                       "VALUES (?, ?, ?, ?, 0, 0, ?, ?, 0)", (tid, name, domain, uid, now, maker))
+                if n:
+                    _entry(tid, "start", n, note="Starting credits", who={"id": by.get("id"), "name": by.get("name") or "PASDACS"})
         except Exception:
             with db.use(db.PLATFORM):
                 for sql in ("DELETE FROM relay.tn_credits WHERE tenant_id = ?", "DELETE FROM relay.tn_orgs WHERE tenant_id = ?",
@@ -286,136 +290,8 @@ def create(name: str, email: str, person: str, seen: dict | None = None) -> tupl
                 traceback.print_exc()
             raise
     tenancy._invalidate()                                               # noqa: SLF001
-    seen = seen or {}
-    tenancy.ctl_audit("d2d.org_created", tid, tid, {"name": name, "domain": key, "personal": personal, "owner": email,
-                                                    "ip": seen.get("ip"), "country": seen.get("country")}, who=uid)
-    if reviews_new() and not personal:
-        try:
-            _start_request(tid, uid, name, domain, person, email, seen)
-        except Exception:  # noqa: BLE001 - the organisation exists; PASDACS can still add credits by hand
-            traceback.print_exc()
+    tenancy.ctl_audit("d2d.org_created", tid, tid, {"name": name, "domain": domain, "owner": email, "credits": n}, who=by.get("id"))
     return tid, uid
-
-
-# ---------------------------------------------------------------- a new organisation's starting credits, reviewed
-
-def _start_request(tid: str, uid: str, name: str, domain: str, person: str, email: str, seen: dict) -> str:
-    """The new organisation's starting credits wait for PASDACS: a pending request for START credits (purpose 'start'),
-    the platform admins told in the app, and PASDACS emailed (in the background: a sign-up never waits for mail)."""
-    from . import tenancy
-    rid = "crq-" + secrets.token_hex(6)
-    with db.use(db.PLATFORM):
-        db.run("INSERT INTO relay.tn_credit_requests (id, tenant_id, user_id, user_name, email, credits, message, status, created, purpose) "
-               "VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, 'start')",
-               (rid, tid, uid, person, email, START, "Starting credits for a new organisation", time.time()))
-    tenancy.ctl_audit("d2d.credit_request", tid, rid, {"credits": START, "purpose": "start", "email": email, "name": person},
-                      who=uid)
-    _tell_platform(f"New organisation: {name}", f"{person} ({email}) signed up @{domain}. Review its {START:,} starting credits.",
-                   "#/requests")
-    threading.Thread(target=_review_mail, args=(rid, tid, name, domain, person, email, seen), daemon=True,
-                     name="org-review-mail").start()
-    return rid
-
-
-def _review_signals(tid: str, domain: str, ip: str) -> list[tuple[str, str]]:
-    """What helps PASDACS judge a new organisation: sign-in codes and organisations from the same network, and other
-    organisations on the same parent domain (one company, or someone collecting starting credits with subdomains)."""
-    now, out = time.time(), []
-    with db.use(db.PLATFORM):
-        if ip:
-            codes = db.one("SELECT count(*) AS n FROM otp_codes WHERE ip = ? AND created > ?", (ip, now - 3600))["n"]
-            out.append(("Sign-in codes from this network, last hour", str(codes)))
-            same = []
-            for r in db.q("SELECT tenant_id, detail FROM relay.tn_audit WHERE action = 'd2d.org_created' AND ts > ? AND tenant_id != ?",
-                          (now - 30 * 86400, tid)):
-                try:
-                    d = json.loads(r["detail"] or "{}")
-                except ValueError:
-                    continue
-                if d.get("ip") == ip:
-                    at = f"personal, {d.get('domain')}" if d.get("personal") else f"@{d.get('domain') or '?'}"
-                    same.append(f"{d.get('name') or r['tenant_id']} ({at})")
-            out.append(("Organisations from this network, last 30 days", ", ".join(same[:10]) or "none"))
-        base = parent_domain(domain)
-        near = [f"{o['name']} (@{o['domain']})" for o in db.q("SELECT name, domain, personal FROM relay.tn_orgs WHERE tenant_id != ?", (tid,))
-                if not o["personal"] and (o["domain"] == base or o["domain"].endswith("." + base))]
-        out.append((f"Other organisations on {base}", ", ".join(near[:10]) or "none"))
-    return out
-
-
-def _review_mail(rid: str, tid: str, name: str, domain: str, person: str, email: str, seen: dict) -> None:
-    from . import otp
-    try:
-        rows = [("Organisation", name), ("Email domain", f"@{domain}"), ("Workspace id", tid), ("Owner", f"{person} <{email}>"),
-                ("Starting credits to approve", f"{START:,}"),
-                ("Signed up", datetime.fromtimestamp(seen.get("at") or time.time(), IST).strftime("%Y-%m-%d %H:%M IST")),
-                ("Network", (seen.get("ip") or "?") + (f" - {seen['country']}" if seen.get("country") else ""))]
-        rows += _review_signals(tid, domain, seen.get("ip") or "")
-        rows.append(("Browser", seen.get("agent") or "?"))
-        subject = f"D2D Relay: new organisation {name} (@{domain}), review its starting credits"
-        intro = (f"{name} signed up for D2D Relay. It has no credits until you approve its {START:,} starting credits; "
-                 "nothing is added before that.")
-        outro = ("Approve it (the credits are added at once and the owner is emailed) or decline it with the reason they are "
-                 "told, on the D2D Relay admin portal under Requests.")
-        if otp.configured():
-            sent = _to_pasdacs(subject, intro, rows, email, outro)
-        else:                                               # a test install: the log instead
-            print(f"[org-review] to {CONTACT}: {subject} | " + " | ".join(f"{k}: {v}" for k, v in rows), flush=True)
-            sent = False
-        with db.use(db.PLATFORM):
-            db.run("UPDATE relay.tn_credit_requests SET emailed = ? WHERE id = ?", (1 if sent else 0, rid))
-    except Exception:  # noqa: BLE001 - the request is on the admin portal either way
-        traceback.print_exc()
-
-
-# Item 32 (the user, 2026-11-12): everyone at an organisation's domain joins it, so an address an owner removed is kept
-# on the organisation's blocked list (its meta table: blocked:<address>) until an owner unblocks it or adds it back.
-# Deleting your own account does not block you.
-def is_blocked(tid: str, email: str) -> bool:
-    with db.use(tid):
-        return db.meta(f"blocked:{(email or '').strip().lower()}") is not None
-
-
-def block(email: str, by: str) -> None:
-    """In the organisation's own workspace (the request's)."""
-    db.set_meta(f"blocked:{(email or '').strip().lower()}", json.dumps({"when": time.time(), "by": by}))
-
-
-def unblock(email: str) -> bool:
-    return bool(db.run("DELETE FROM meta WHERE key = ?", (f"blocked:{(email or '').strip().lower()}",)))
-
-
-def blocked_list() -> list[dict]:
-    out = []
-    for r in db.q("SELECT key, value FROM meta WHERE key LIKE 'blocked:%' ORDER BY key"):
-        try:
-            v = json.loads(r["value"] or "{}")
-        except ValueError:
-            v = {}
-        out.append({"email": r["key"][len("blocked:"):], "when": v.get("when")})
-    return out
-
-
-def join(tid: str, email: str) -> str:
-    """A new person from an organisation's domain: a BI Dev in its Default team; the owner is told. Returns their id."""
-    email = (email or "").strip().lower()
-    o = row(tid)
-    with db.use(tid):
-        old = db.one("SELECT id FROM users WHERE lower(email) = ? AND home_tenant IS NULL", (email,))
-        if old:
-            db.run("INSERT OR IGNORE INTO relay.tn_accounts (user_id, email, home_tenant, created) VALUES (?, ?, ?, ?)",
-                   (old["id"], email, tid, time.time()))
-            return old["id"]
-        now, uid, name = time.time(), "u-" + secrets.token_hex(6), name_from(email)
-        db.run("INSERT INTO users (id, email, name, org_role, created) VALUES (?, ?, ?, 'member', ?)", (uid, email, name, now))
-        db.run("INSERT INTO memberships (user_id, team_id, role) VALUES (?, ?, 'dev')", (uid, db.DEFAULT_TEAM))
-        db.run("INSERT INTO relay.tn_accounts (user_id, email, home_tenant, created) VALUES (?, ?, ?, ?)", (uid, email, tid, now))
-        db.audit("org.joined", uid, {"email": email}, uid)
-        if o:
-            for oid in owner_ids():
-                notify.add(oid, "share", f"{name} joined {o['name']}",
-                           f"{email} signed in for the first time and joined your organisation. Credits are shared.", "#/org")
-    return uid
 
 
 def owner_ids() -> list[str]:
@@ -679,7 +555,7 @@ def _may_manage(u: dict, o: dict) -> bool:
 @router.get("/api/org")
 def get_org():
     """The person's organisation: its owners and people, credits and their history, credit requests. Owners also get
-    the people they removed (to add them back)."""
+    the people switched off earlier (to add them back)."""
     u, o = _must()
     everyone = db.q("SELECT id, name, email, org_role, active, last_login, created, deactivated FROM users WHERE home_tenant IS NULL "
                     "ORDER BY created")
@@ -687,13 +563,12 @@ def get_org():
         p["owner"], p["primary"] = p["org_role"] == "admin", p["id"] == o["owner_id"]
     people = [p for p in everyone if p["active"]]
     removed = [p for p in everyone if not p["active"] and not str(p["email"]).endswith("@deleted.invalid")] if _may_manage(u, o) else []
-    blocked = blocked_list() if _may_manage(u, o) else []
     dashboards = db.one("SELECT count(*) AS n FROM projects")["n"]
     rows = ledger(o["tenant_id"])
     can_open = auth.access_map(u, list({r["project_id"] for r in rows if r["project_id"]}))   # a private dashboard is named, not linked
     for r in rows:
         r["project_open"] = bool(r["project_id"]) and r["project_id"] in can_open
-    return {**me_info(u), "created": o["created"], "people": people, "removed": removed, "blocked": blocked, "dashboards": dashboards, "ledger": rows,
+    return {**me_info(u), "created": o["created"], "people": people, "removed": removed, "dashboards": dashboards, "ledger": rows,
             "may_manage": _may_manage(u, o), "requests": _requests_of(o["tenant_id"])}
 
 
@@ -737,57 +612,50 @@ def _person(uid: str) -> dict:
     return p
 
 
-def _invite_mail(email: str, name: str, by: dict, o: dict, role: str) -> bool:
-    """Tell a person they were added (best effort: they can sign in anyway, with their email address)."""
+def _invite_mail(email: str, name: str, by: dict, o: dict, role: str, main: bool = False) -> bool:
+    """Tell a person they were added (best effort: they can sign in anyway, with their email address). main: the main
+    owner of an organisation PASDACS has just created."""
     from . import identity, otp_mail
     url = identity.PUBLIC_URL or "D2D Relay"
-    lines = [f"Hello {name},", f"{by.get('name') or 'A colleague'} added you to {o['name']} on D2D Relay"
-             + (", as one of its owners." if role == "admin" else "."),
+    lines = [f"Hello {name},",
+             f"PASDACS set up {o['name']} on D2D Relay, with you as its main owner." if main else
+             f"{by.get('name') or 'A colleague'} added you to {o['name']} on D2D Relay" + (", as one of its owners." if role == "admin" else "."),
              "D2D Relay (D2D: Data to Decision, a Relay Platform product) turns your CSV files into checked Power BI dashboards.",
-             f"Sign in at {url} with {email}: we email you a 6-digit code, no password needed.",
+             f"Sign in at {url} with {email}: we email you a 6-digit code, no password needed."
+             + (" Then add your colleagues under Organisation, People: only the people added there can sign in." if main else ""),
              f"D2D Relay - a Relay Platform product by PASDACS - {CONTACT}"]
     try:
-        otp_mail.send(email, f"You were added to {o['name']} on D2D Relay", "".join(f"<p>{html.escape(x)}</p>" for x in lines),
-                      reply_to=by.get("email"))
+        otp_mail.send(email, f"{o['name']} is ready on D2D Relay" if main else f"You were added to {o['name']} on D2D Relay",
+                      "".join(f"<p>{html.escape(x)}</p>" for x in lines), reply_to=by.get("email"))
         return True
     except Exception:  # noqa: BLE001 - they can still sign in; the owner is told it was not emailed
         traceback.print_exc()
         return False
 
 
-class PersonAdd(BaseModel):
-    email: str = ""
-    role: str = "member"                # member | owner
-
-
-@router.post("/api/org/people")
-def add_person(body: PersonAdd):
-    """An owner adds someone from the organisation's own email domain (or adds back someone they removed), as a member
-    or an owner. They are emailed an invitation; they sign in with a code like everyone else."""
-    u, o = _must_owner()
+def _add(o: dict, email: str, role: str, by: dict) -> dict:
+    """Someone added to the organisation o, in its own workspace (db.use(o's tenant)), as a member or an owner, by one of
+    its owners or by PASDACS (item 56: besides PASDACS creating the organisation, the only way in). An address at the
+    organisation's domain that is in no other organisation; someone switched off earlier is back. They are emailed;
+    they sign in with a code (otp.py). Returns what the screens say about them."""
     if is_personal(o):                                          # item 39: a personal workspace is its one person
         raise HTTPException(403, PERSONAL_PEOPLE_TEXT)
-    email = (body.email or "").strip().lower()
-    role = {"owner": "admin", "member": "member"}.get((body.role or "member").strip().lower())
+    email = (email or "").strip().lower()
+    role = {"owner": "admin", "member": "member"}.get((role or "member").strip().lower())
     if not role:
         raise HTTPException(400, "The role is owner or member.")
     if not PEOPLE_EMAIL.match(email):
         raise HTTPException(400, "Type their email address.")
     if domain_of(email) != o["domain"]:
-        raise HTTPException(400, f"Only @{o['domain']} addresses can join {o['name']}.")
-    if db.one("SELECT count(*) AS n FROM audit WHERE action = 'org.person_added' AND who = ? AND ts > ?",
-              (u["id"], time.time() - 3600))["n"] >= PEOPLE_PER_HOUR:
-        raise HTTPException(429, f"You added {PEOPLE_PER_HOUR} people this hour. Add the others a little later.")
+        raise HTTPException(400, f"Only @{o['domain']} addresses can be added to {o['name']}.")
     acct = db.one("SELECT home_tenant FROM relay.tn_accounts WHERE email = ?", (email,))
     if acct and acct["home_tenant"] != o["tenant_id"]:
         raise HTTPException(409, "This address already belongs to another organisation on D2D Relay.")
     old = db.one("SELECT * FROM users WHERE lower(email) = ? AND home_tenant IS NULL", (email,))
     if old and old["active"]:
         raise HTTPException(409, f"{old['name']} is already in {o['name']}.")
-    if unblock(email):                                          # item 32: an owner adding them back lifts the block
-        db.audit("org.person_unblocked", None, {"by_adding": True}, u["id"])
     now = time.time()
-    if old:                                                     # someone an owner removed earlier: back in
+    if old:                                                     # someone switched off earlier: back in
         uid, name = old["id"], old["name"]
         db.run("UPDATE users SET active = 1, deactivated = NULL, deactivated_by = NULL, org_role = ? WHERE id = ?", (role, uid))
         db.run("INSERT OR IGNORE INTO memberships (user_id, team_id, role) VALUES (?, ?, 'dev')", (uid, db.DEFAULT_TEAM))
@@ -797,9 +665,26 @@ def add_person(body: PersonAdd):
         db.run("INSERT INTO users (id, email, name, org_role, created) VALUES (?, ?, ?, ?, ?)", (uid, email, name, role, now))
         db.run("INSERT INTO memberships (user_id, team_id, role) VALUES (?, ?, 'dev')", (uid, db.DEFAULT_TEAM))
         db.run("INSERT INTO relay.tn_accounts (user_id, email, home_tenant, created) VALUES (?, ?, ?, ?)", (uid, email, o["tenant_id"], now))
-    db.audit("org.person_added", uid, {"email": email, "role": role, "back": bool(old)}, u["id"])
-    invited = _invite_mail(email, name, u, o, role)
-    return {**get_org(), "added": {"id": uid, "name": name, "email": email, "back": bool(old), "invited": invited}}
+    db.audit("org.person_added", uid, {"email": email, "role": role, "back": bool(old)}, by.get("id"))
+    invited = _invite_mail(email, name, by, o, role)
+    return {"id": uid, "name": name, "email": email, "back": bool(old), "invited": invited}
+
+
+class PersonAdd(BaseModel):
+    email: str = ""
+    role: str = "member"                # member | owner
+
+
+@router.post("/api/org/people")
+def add_person(body: PersonAdd):
+    """An owner adds someone from the organisation's own email domain (or adds back someone switched off earlier), as a
+    member or an owner. They are emailed an invitation and sign in with a code; nobody else can sign in (item 56)."""
+    u, o = _must_owner()
+    if db.one("SELECT count(*) AS n FROM audit WHERE action = 'org.person_added' AND who = ? AND ts > ?",
+              (u["id"], time.time() - 3600))["n"] >= PEOPLE_PER_HOUR:
+        raise HTTPException(429, f"You added {PEOPLE_PER_HOUR} people this hour. Add the others a little later.")
+    added = _add(o, body.email, body.role, u)
+    return {**get_org(), "added": added}
 
 
 class PersonPatch(BaseModel):
@@ -830,32 +715,17 @@ def change_role(uid: str, body: PersonPatch):
 @router.delete("/api/org/people/{uid}")
 def remove_person(uid: str):
     """An owner removes someone (or leaves): the account is deleted at once (the user's decision, 2026-11-12;
-    governance.delete_person). Their dashboards stay with the organisation, held by the main owner and marked as made
-    by a former member. The main owner hands the main ownership over first."""
+    governance.delete_person), so they cannot sign in any more unless an owner adds them again, as a new person. Their
+    dashboards stay with the organisation, held by the main owner and marked as made by a former member. The main owner
+    hands the main ownership over first."""
     from . import governance
     u, o = _must_owner()
     p = _person(uid)
     if p["id"] == o["owner_id"]:
         raise HTTPException(409, f"{p['name']} is the main owner and cannot be removed. Hand the main ownership to someone else first.")
     governance.delete_person(uid, u["id"])
-    if uid == u["id"]:                                          # leaving: no block
+    if uid == u["id"]:                                          # leaving
         return {"signed_out": True}
-    block(p["email"], u["id"])                                  # item 32: they cannot rejoin until an owner unblocks them
-    db.audit("org.person_blocked", None, {}, u["id"])
-    return get_org()
-
-
-class Unblock(BaseModel):
-    email: str = ""
-
-
-@router.post("/api/org/unblock")
-def unblock_address(body: Unblock):
-    """An owner lifts the block on an address (item 32): it can join the organisation again, as a new person."""
-    u, o = _must_owner()
-    if not unblock(body.email):
-        raise HTTPException(404, "That address is not blocked.")
-    db.audit("org.person_unblocked", None, {}, u["id"])
     return get_org()
 
 
@@ -1111,8 +981,52 @@ def all_orgs():
                     "owner": owner, "people": people, "dashboards": dashboards, "created": o["created"], "last_login": last,
                     "status": t.get("status"), "platform": o["tenant_id"] == db.PLATFORM, "connectors": connectors_of(o["tenant_id"]),
                     "pending": _pending(o["tenant_id"])})
-    return {"orgs": out, "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": costs(), "start": START,
-            "review": reviews_new()}
+    return {"orgs": out, "catalogue": [{"kind": k, "label": connector_label(k)} for k in edition.CONNECTORS], "costs": costs(), "start": START}
+
+
+class NewOrg(BaseModel):
+    name: str = ""
+    email: str = ""                     # the main owner's work address
+    person: str = ""                    # the main owner's name (default: from the address)
+    credits: int | None = None          # starting credits (default START)
+
+
+@router.post("/api/admin/orgs")
+def new_org(body: NewOrg):
+    """Item 56: a platform admin creates an organisation with its main owner and starting credits (create); the owner is
+    emailed and signs in with a code, then adds the organisation's people."""
+    u = _admin()
+    try:
+        tid, uid = create(body.name, body.email, body.person, body.credits, by=u)
+    except OrgError as e:
+        raise HTTPException(e.status, str(e)) from None
+    o = row(tid)
+    with db.use(tid):
+        owner = db.one("SELECT name, email FROM users WHERE id = ?", (uid,))
+    invited = _invite_mail(owner["email"], owner["name"], {"name": "PASDACS", "email": CONTACT}, o, "admin", main=True)
+    return {**all_orgs(), "created": {"id": tid, "name": o["name"], "owner": owner, "invited": invited}}
+
+
+class AdminPerson(BaseModel):
+    email: str = ""
+    role: str = "member"                # member | owner
+
+
+@router.post("/api/admin/orgs/{tid}/people")
+def admin_add_person(tid: str, body: AdminPerson):
+    """Item 56: a platform admin adds someone to an organisation (a new owner when the owners have left, say), with the
+    same rules as its owners (_add); they are emailed and the owners are told."""
+    from . import tenancy
+    u = _admin()
+    o = row(tid)
+    if not o:
+        raise HTTPException(404, "No such organisation.")
+    with db.use(tid):
+        added = _add(o, body.email, body.role, {"id": u["id"], "name": "PASDACS", "email": CONTACT})
+    tenancy.ctl_audit("d2d.person_added", tid, added["id"], {"email": added["email"], "role": body.role}, who=u["id"])
+    _tell_owners(tid, f"PASDACS added {added['name']} to {o['name']}", f"{added['email']} can sign in now"
+                 + (", as an owner." if (body.role or "").strip().lower() == "owner" else ", as a member."), "#/org")
+    return {**all_orgs(), "added": added}
 
 
 ONLINE_S = 300                     # item 50: a public-site session seen within five minutes counts as online now
@@ -1122,8 +1036,8 @@ ONLINE_S = 300                     # item 50: a public-site session seen within 
 def overview():
     """Item 50 (the user, 2026-11-14: "can you put a small dashboard in the admin like live users and who are have signed
     up"): who is online now (a public-site session seen in the last ONLINE_S seconds; the admin portal's own sessions
-    never count), everyone who has signed up, newest first, and the totals. PASDACS's own workspace shows among the
-    online but is not a sign-up."""
+    never count), everyone with an account, newest first (since item 56 people are added, not signed up: `added` is when),
+    and the totals. PASDACS's own people show among the online but not in the list."""
     _admin()
     now = time.time()
     midnight = now - (now + 19800) % 86400             # today began at midnight, India time
@@ -1141,7 +1055,7 @@ def overview():
             continue
         for u in users:
             row = {"name": u["name"], "email": u["email"], "org": o["name"], "org_id": o["tenant_id"], "personal": is_personal(o),
-                   "platform": platform, "owner": u["id"] == o["owner_id"], "signed_up": u["created"], "last_login": u["last_login"],
+                   "platform": platform, "owner": u["id"] == o["owner_id"], "added": u["created"], "last_login": u["last_login"],
                    "last_seen": seen.get(u["id"]), "dashboards": made.get(u["id"], 0), "credits": o["credits"]}
             if row["last_seen"] and now - row["last_seen"] <= ONLINE_S:
                 online.append(row)
@@ -1153,9 +1067,9 @@ def overview():
             tot["dashboards"] += sum(made.values())
     tot["people"] = len(people)
     tot["online"] = sum(1 for r in online if not r["platform"])
-    tot["today"] = sum(1 for r in people if (r["signed_up"] or 0) >= midnight)
-    tot["week"] = sum(1 for r in people if (r["signed_up"] or 0) >= now - 7 * 86400)
-    people.sort(key=lambda r: r["signed_up"] or 0, reverse=True)
+    tot["today"] = sum(1 for r in people if (r["added"] or 0) >= midnight)
+    tot["week"] = sum(1 for r in people if (r["added"] or 0) >= now - 7 * 86400)
+    people.sort(key=lambda r: r["added"] or 0, reverse=True)
     online.sort(key=lambda r: r["last_seen"] or 0, reverse=True)
     return {"now": now, "online_minutes": ONLINE_S // 60, "totals": tot, "online": online, "people": people[:200]}
 

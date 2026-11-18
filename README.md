@@ -2,9 +2,10 @@
 
 D2D means **Data to Decision**: D2D Relay is a product of the **Relay Platform** by PASDACS.
 
-D2D Relay turns a company's CSV files into a checked Power BI dashboard. A person signs in with their email (a work
-address joins their company's organisation; a personal one gets a workspace of its own that buys its credits),
-uploads CSV files and describes the dashboard they need. D2D Relay plans it, agrees the KPIs with them, builds a
+D2D Relay turns a company's CSV files into a checked Power BI dashboard. It is licensed to client organisations, not
+offered to the public: nobody signs up. PASDACS creates each organisation with its main owner, the owners add their
+people, and a person signs in with their email (a one-time code), uploads CSV files and describes the dashboard they
+need. D2D Relay plans it, agrees the KPIs with them, builds a
 clickable prototype, checks every version (Power BI's own engine included) and hands over a Power BI file (.pbix)
 with its data.
 Each company is an organisation with its own workspace, people and credits; PASDACS runs the platform from its own
@@ -73,8 +74,8 @@ Two helpers run on Windows next to them, because Power BI only runs there. Publi
 5. **Publish:** a zip with the Power BI file (`<Report>.pbix`, the data inside) and its CSV files, ready to open in
    Power BI Desktop.
 
-A new organisation gets 50 starting credits once PASDACS has reviewed and approved it (PASDACS is emailed about every
-new organisation). A new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10,
+A new organisation gets 50 starting credits when PASDACS creates it (or the number PASDACS sets there). A new dashboard
+uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10,
 Ask Relay 10 for up to 5 questions in a conversation, and a Semantic Review 10.
 More credits come from PASDACS, which approves every request, or are bought online once PASDACS switches selling on
 (off on the live site until Razorpay activates the account).

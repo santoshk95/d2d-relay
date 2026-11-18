@@ -284,7 +284,7 @@ docker("exec", "-u", "root", c.WEB_C, "rm", "-rf", WORK, "/tmp/item52.png")
 # ---------------------------------------------------------------- Ask Relay: a seeded answer with a growth rate by city
 owner = c.Person(f"ana.ask@ask52{c.STAMP}.com")
 s, r = owner.sign_in("Ask 52 Test", "Ana Ask")
-check("ask: an organisation signs up", s == 200, (s, r))
+check("ask: an organisation is set up", s == 200, (s, r))
 owner.post("/api/me/tour", {"step": "done"})
 owner.post("/api/org/setup")
 me = owner.get("/api/me")[1]

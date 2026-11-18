@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
 # Every release suite against the running test stack (stack/stack.sh), one after another; the payment suites switch
 # selling on, so the older suites run first. bash tests/run_all.sh [<output name>]
-# Logs and screenshots go to tests/out/<output name>/ (git-ignored). The suites approve new organisations' starting
-# credits when the stack reviews them (D2D_TEST_APPROVE_START, read from the stack unless set).
+# Logs and screenshots go to tests/out/<output name>/ (git-ignored). Nobody signs up (item 56): the suites have PASDACS
+# create their organisations and people on the admin portal (d2d_checks.provision_account).
 set -u
 cd "$(dirname "$0")/checks"
 OUT=../out/${1:-latest}
 mkdir -p "$OUT"
 D2D_TEST_OUT=$(cd "$OUT" && { pwd -W 2>/dev/null || pwd; })     # a Windows path for Windows' Python under Git Bash
 export D2D_TEST_OUT
-if [ -z "${D2D_TEST_APPROVE_START:-}" ]; then
-  D2D_TEST_APPROVE_START=$(MSYS_NO_PATHCONV=1 docker exec d2d-relay-test-web printenv RELAY_CREDITS_START_REVIEW 2>/dev/null || echo 1)
-fi
-export D2D_TEST_APPROVE_START
 B=http://127.0.0.1:8103
 A=http://127.0.0.1:8104
 passed=0 total=0 failed=()
@@ -33,7 +29,7 @@ suite() {   # <suite> [<arguments after the two addresses>]
 
 suite d2d_checks connectors portal credits people production
 for s in gov_check gov_ui_check ask_credits_check review_fixes_check pay_check pay_ui_check \
-         sec_check item29_check tour_ui_check item30_check rename_check jobs_check accounts_check item34_check item35_check item36_check item37_check item38_check item39_check item40_check item42_check item44_check item45_check item46_check item48_check item49_check item50_check item51_check item52_check item55_check item55_ui_check; do
+         sec_check item29_check tour_ui_check item30_check rename_check jobs_check accounts_check item34_check item35_check item36_check item37_check item38_check item40_check item42_check item44_check item45_check item46_check item48_check item49_check item50_check item51_check item52_check item55_check item55_ui_check item56_check; do
   suite "$s"
 done
 echo "all suites: $passed of $total checks passed${failed[*]:+; suites with failures: ${failed[*]}}"

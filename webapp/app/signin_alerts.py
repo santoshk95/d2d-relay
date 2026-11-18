@@ -1,12 +1,11 @@
 """D2D Relay: PASDACS is emailed on every successful sign-in (the user's request of 2026-11-11, to watch for abuse).
 
 One email per sign-in, to D2D_SIGNIN_ALERTS_TO (default: the credits contact, info@pasdacs.com): who signed in, their
-organisation (and whether it was created just now, or they joined it just now), the site (public or admin portal),
-the network address and country Cloudflare saw, the browser, whether it is the person's first sign-in, the credits
-left, and how many sign-in codes that network asked for in the last hour (a new organisation whose starting credits
-PASDACS reviews gets its review email instead, orgs.py, with the same and more). The email goes out in the background:
-a sign-in never waits for it and never fails because of it. Sign-ins need a code, and codes are rate limited per
-address and per network (otp.py), so the alerts are rate limited too. D2D_SIGNIN_ALERTS=0 turns them off.
+organisation, the site (public or admin portal), the network address and country Cloudflare saw, the browser, whether
+it is the person's first sign-in, the credits left, and how many sign-in codes that network asked for in the last hour.
+Only people with an account sign in (item 56: PASDACS or an organisation's owner added them). The email goes out in the
+background: a sign-in never waits for it and never fails because of it. Sign-ins need a code, and codes are rate
+limited per address and per network (otp.py), so the alerts are rate limited too. D2D_SIGNIN_ALERTS=0 turns them off.
 Without mail (a test install) the alert is printed to the log instead ("[signin-alert] ...").
 """
 from __future__ import annotations
@@ -25,8 +24,7 @@ from . import db, orgs, portal
 ENABLED = os.environ.get("D2D_SIGNIN_ALERTS", "1").strip() not in ("0", "false", "no", "off")
 TO = (os.environ.get("D2D_SIGNIN_ALERTS_TO") or orgs.CONTACT).strip()
 IST = timezone(timedelta(hours=5, minutes=30))
-KINDS = {"signed_in": "signed in", "joined": "joined the organisation (their first sign-in)",
-         "created": "created a new organisation", "admin": "signed in to the admin portal"}
+KINDS = {"signed_in": "signed in", "admin": "signed in to the admin portal"}
 
 
 def seen(request: Request) -> dict:
@@ -38,19 +36,10 @@ def seen(request: Request) -> dict:
 
 
 def sign_in(tid: str, uid: str, kind: str, request: Request) -> None:
-    """Called once a session exists. Never raises; the email is sent from a background thread. A new organisation
-    whose starting credits PASDACS reviews gets no alert: its review email (orgs.py) says the same, and more. A new
-    personal workspace (item 39) has nothing to review, so its alert is how PASDACS hears of it."""
+    """Called once a session exists (kind: signed_in, or admin on the admin portal). Never raises; the email is sent
+    from a background thread."""
     if not ENABLED or not TO:
         return
-    if kind == "created" and orgs.reviews_new():
-        try:
-            with db.use(db.PLATFORM):
-                personal = orgs.is_personal(orgs.row(tid))
-        except Exception:  # noqa: BLE001 - an alert never stops a sign-in
-            personal = False
-        if not personal:
-            return
     try:
         threading.Thread(target=_send, args=(tid, uid, kind, seen(request)), daemon=True, name="signin-alert").start()
     except Exception:  # noqa: BLE001 - an alert never stops a sign-in
@@ -67,22 +56,11 @@ def _send(tid: str, uid: str, kind: str, seen: dict) -> None:
             codes = db.one("SELECT count(*) AS n FROM otp_codes WHERE ip = ? AND created > ?",
                            (seen["ip"], seen["at"] - 3600))["n"] if seen["ip"] else 0
         email, org = u.get("email") or "?", o.get("name") or tid
-        personal = orgs.is_personal(o)
-        if kind == "created" and personal:
-            subject = f"D2D Relay: new personal account {email}"
-        elif kind == "created":
-            subject = f"D2D Relay: new organisation {org} ({email})"
-        elif kind == "joined":
-            subject = f"D2D Relay: {email} joined {org}"
-        elif kind == "admin":
-            subject = f"D2D Relay admin portal sign-in: {email}"
-        else:
-            subject = f"D2D Relay sign-in: {email} ({org})"
+        subject = f"D2D Relay admin portal sign-in: {email}" if kind == "admin" else f"D2D Relay sign-in: {email} ({org})"
         when = datetime.fromtimestamp(seen["at"], IST).strftime("%Y-%m-%d %H:%M:%S IST")
         rows = [("Who", f"{u.get('name') or ''} <{email}>"),
                 ("Organisation", f"{org} ({orgs.where(o) if o else '?'})" + (" - the platform's own" if tid == db.PLATFORM else "")),
-                ("What", "created a personal workspace (no starting credits; it buys online)" if kind == "created" and personal
-                 else KINDS.get(kind, kind)),
+                ("What", KINDS.get(kind, kind)),
                 ("Role", "owner" if u.get("org_role") == "admin" else "member"),
                 ("First sign-in", "yes" if sessions <= 1 else f"no ({sessions} sessions on record)"),
                 ("When", when), ("Where", seen["site"]),

@@ -26,7 +26,7 @@ import gov_check as g  # noqa: E402
 check = c.check
 p = c.Person(f"pia.prices@price{c.STAMP}.com")
 s, r = p.sign_in("Prices Test", "Pia Prices")
-check("setup: an organisation signs up", s == 200, (s, r))
+check("setup: an organisation is set up", s == 200, (s, r))
 p.post("/api/me/tour", {"step": "done"})
 p.post("/api/org/setup")
 org = p.get("/api/me")[1].get("org") or {}

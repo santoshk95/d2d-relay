@@ -1,8 +1,9 @@
 """Test stack only: upgrading from the image live today to the release candidate, on the same database and folders.
 python -I -X utf8 upgrade_check.py <public> <admin> <old image> <new image>
-Starts the stack on the old image, makes an organisation with a dashboard and a credit request, switches the
-containers to the new image (volumes kept, as `docker compose up -d` does at a deploy), then checks the data and the
-new columns, and that a new sign-up gets the starting-credit review."""
+Starts the stack on the old image, makes an organisation with a dashboard and a credit request (the old image's own
+sign-up), switches the containers to the new image (volumes kept, as `docker compose up -d` does at a deploy), then
+checks the data and the new columns, that a starting-credit request from before the upgrade can still be approved, and
+that after it nobody signs up (item 56): an address without an account gets no code, and PASDACS creates organisations."""
 import json
 import os
 import subprocess
@@ -18,8 +19,9 @@ import d2d_checks as c  # noqa: E402
 STACK = os.path.join(HERE, "..", "stack")           # tests/stack: its compose file and the .env stack.sh wrote
 ENV = {**os.environ, **dict(x.strip().split("=", 1) for x in open(os.path.join(STACK, ".env"))
                             if "=" in x and not x.lstrip().startswith("#")),
-       "CODE_APP": "", "CODE_APP_AT": "", "CODE_STATIC": "", "CODE_STATIC_AT": "", "TEST_START_REVIEW": "1"}
+       "CODE_APP": "", "CODE_APP_AT": "", "CODE_STATIC": "", "CODE_STATIC_AT": ""}
 STAMP = str(int(time.time()))[-6:]
+REVIEWED = os.environ.get("OLD_HAS_PURPOSE") == "1"  # the old image reviews new organisations' starting credits (item 27 on)
 
 
 def compose(*args, image: str):
@@ -42,14 +44,32 @@ def psql(q: str) -> str:
                           capture_output=True, text=True).stdout.strip()
 
 
+def approve_start(email: str) -> None:
+    """The old image: PASDACS approves a new organisation's starting credits the way it did from the command line."""
+    rid = psql("SELECT id FROM relay.tn_credit_requests WHERE purpose = 'start' AND status = 'pending' AND email = '"
+               + email.replace("'", "''") + "'").split()
+    if rid:
+        subprocess.run(["docker", "exec", "-u", "relay", "-w", "/srv", c.WEB_C, "/opt/relay/bin/launch", "web", "python", "-m", "app.orgs",
+                        "approve", rid[0]], capture_output=True, text=True, check=True, encoding="utf-8", errors="replace")
+
+
+def org_of(p: c.Person) -> dict:
+    return (p.get("/api/me")[1] or {}).get("org") or {}
+
+
 compose("down", "-v", image=OLD)
 compose("up", "-d", image=OLD)
 c.check(f"upgrade: the stack starts on the live image ({OLD})", healthy())
 owner = c.Person(f"uma@upgrade{STAMP}.com")
-s, r = owner.sign_in(f"Upgrade {STAMP}", "Uma Owner")
-if os.environ.get("OLD_HAS_PURPOSE") == "1":         # the live image reviews new organisations: PASDACS approves Uma's first
-    c.approve_start(owner.email)
-c.check("old image: a new organisation signs up and gets its 50 at once", s == 200 and (owner.get("/api/me")[1].get("org") or {}).get("credits") == 50, (s, r))
+s, r = owner.sign_in(f"Upgrade {STAMP}", "Uma Owner", provision=False)   # the old image's own sign-up
+if REVIEWED:                                          # the live image reviews new organisations: PASDACS approves Uma's first
+    approve_start(owner.email)
+c.check("old image: a new organisation signs up and gets its 50 at once", s == 200 and org_of(owner).get("credits") == 50, (s, r))
+waiting = c.Person(f"pia@pending{STAMP}.com")
+if REVIEWED:                                          # an organisation whose starting credits are still waiting at the upgrade
+    s, r = waiting.sign_in(f"Pending {STAMP}", "Pia Pending", provision=False)
+    c.check("old image: a second organisation's starting credits wait for PASDACS", s == 200 and org_of(waiting).get("credits") == 0
+            and (org_of(waiting).get("pending_request") or {}).get("purpose") == "start", org_of(waiting))
 s, p = c.new_dashboard(owner)
 pid = (p or {}).get("id")
 c.check("old image: a dashboard is made (25 credits)", s == 200 and pid, (s, str(p)[:150]))
@@ -57,7 +77,7 @@ s, r = owner.post("/api/org/credit-request", {"credits": 100, "message": "Before
 rid = ((r or {}).get("request") or {}).get("id")
 c.check("old image: a credit request waits", s == 200 and rid, (s, r))
 cols = psql("SELECT count(*) FROM information_schema.columns WHERE table_schema = 'relay' AND table_name = 'tn_credit_requests' AND column_name = 'purpose'")
-if os.environ.get("OLD_HAS_PURPOSE") == "1":         # an old image from item 27 on already has it (72b71a1 and later)
+if REVIEWED:                                          # an old image from item 27 on already has it (72b71a1 and later)
     c.check("old image: the database already has the 'purpose' column (item 27 is live)", cols == "1", cols)
 else:
     c.check("old image: the database has no 'purpose' column yet", cols == "0", cols)
@@ -66,7 +86,7 @@ for _ in range(60):                                   # the test stack has no AI
         break
     time.sleep(2)
 time.sleep(2)
-before = (owner.get("/api/me")[1].get("org") or {}).get("credits")
+before = org_of(owner).get("credits")
 ledger_before = [(x["kind"], x["delta"]) for x in owner.get("/api/org")[1].get("ledger", [])]
 c.check("old image: the failed run's credits came back (start 50, charge -25, refund +25)",
         sorted(ledger_before) == sorted([("start", 50), ("charge", -25), ("refund", 25)]), ledger_before)
@@ -88,21 +108,34 @@ for table, col in (("tn_credit_requests", "purpose"), ("tn_payments", "billing")
                    ("tn_payments", "base_amount"), ("tn_orgs", "billing")):
     n = psql(f"SELECT count(*) FROM information_schema.columns WHERE table_schema = 'relay' AND table_name = '{table}' AND column_name = '{col}'")
     c.check(f"upgrade: the database gained {table}.{col}", n == "1", n)
+c.check("upgrade (item 56): the sign-up step's table is gone", psql("SELECT count(*) FROM information_schema.tables WHERE table_name = 'otp_signup'") == "0",
+        psql("SELECT table_schema FROM information_schema.tables WHERE table_name = 'otp_signup'"))
 adm = c.signed_in("info@pasdacs.com", c.ADMIN_BASE)
 s, r = adm.post(f"/api/admin/requests/{rid}/approve", {"credits": 100})
 s2, led = owner.get("/api/org")
-c.check("upgrade: approving the old request adds 100 as an adjustment", s == 200 and (owner.get("/api/me")[1].get("org") or {}).get("credits") == before + 100
+c.check("upgrade: approving the old request adds 100 as an adjustment", s == 200 and org_of(owner).get("credits") == before + 100
         and any(x["kind"] == "adjust" and x["delta"] == 100 for x in led.get("ledger", [])), (s, str(r)[:150]))
+if REVIEWED:
+    wid = (org_of(waiting).get("pending_request") or {}).get("id")
+    s, r = adm.post(f"/api/admin/requests/{wid}/approve", {"credits": 50})
+    s2, led = waiting.get("/api/org")
+    c.check("upgrade (item 56): starting credits still waiting from before can be approved, as starting credits",
+            s == 200 and org_of(waiting).get("credits") == 50 and any(x["kind"] == "start" and x["delta"] == 50 for x in (led or {}).get("ledger", [])),
+            (s, str(r)[:150]))
 s, me = owner.get("/api/me")
 c.check("upgrade (item 29): the tour is due for someone who started today, and recording it works",
         me.get("tour") is True and owner.post("/api/me/tour", {"step": "done"})[0] == 200 and owner.get("/api/me")[1].get("tour") is False, me.get("tour"))
 s, r = owner.post("/api/org/migration-request", {"source": ["qlik"], "target": ["powerbi", "looker"], "dashboards": 8, "message": "after the upgrade"})
 c.check("upgrade (item 29): a Migration D2D request works on the upgraded database", s == 200 and "sent" in (r or {}), (s, r))
 new = c.Person(f"nia@after{STAMP}.com")
-s, r = new.sign_in(f"After {STAMP}", "Nia")
-on = (new.get("/api/me")[1].get("org") or {})
-c.check("upgrade: a sign-up after the upgrade waits for PASDACS (0 credits, starting credits pending)",
-        s == 200 and on.get("credits") == 0 and (on.get("pending_request") or {}).get("purpose") == "start", on)
+t0 = time.time()
+s, r = new.post("/auth/otp/start", {"email": new.email}, headers={"cf-connecting-ip": new.ip})
+c.check("upgrade (item 56): after it nobody signs up: an address without an account gets no code", s == 200 and not c.code_now(c.WEB_C, new.email, t0),
+        (s, r))
+s, r = new.sign_in(f"After {STAMP}", "Nia", again=True)     # PASDACS creates the organisation first (d2d_checks.provision_account)
+on = org_of(new)
+c.check("upgrade (item 56): PASDACS creates an organisation; its owner signs in with 50 starting credits and nothing waiting",
+        s == 200 and on.get("credits") == 50 and not on.get("pending_request"), on)
 bad = [n for n, ok in c.RESULTS if not ok]
 print(f"\n{len(c.RESULTS) - len(bad)} of {len(c.RESULTS)} checks passed" + (f"; failed: {bad}" if bad else ""))
 sys.exit(len(bad))

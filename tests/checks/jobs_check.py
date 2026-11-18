@@ -67,7 +67,7 @@ def jobs_created(since: float) -> list[dict]:
 # ---------------------------------------------------------------- a build goes through a job container
 p = c.Person(f"jo.jobs@jobs{c.STAMP}.com")
 s, r = p.sign_in("Jobs Test", "Jo Jobs")
-check("setup: an organisation signs up", s == 200, (s, r))
+check("setup: an organisation is set up", s == 200, (s, r))
 before = (p.get("/api/me")[1].get("org") or {}).get("credits")
 t_made = time.time()
 s, d = c.new_dashboard(p)

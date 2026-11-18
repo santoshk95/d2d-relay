@@ -1,12 +1,15 @@
 """D2D Relay sign-in: a one-time code by email (D2D_AUTH=otp).
 
-Who may sign in (orgs.py):
-  - anyone with an address at a business domain. The first person from a domain names and creates their
-    organisation on the sign-in page and becomes its owner; everyone after them from that domain joins it;
-  - anyone with a free mail address (Gmail, Outlook, Yahoo ...: public_domains.is_free, item 39): they name and create
-    a personal workspace of their own, which nobody else joins; it buys its credits online;
-  - never an address at a disposable (throw-away) mail domain (public_domains.is_disposable);
+Who may sign in: only people with an account (item 56, the user 2026-11-18: "Remove signup and bring login directly as
+internal team management"; D2D is licensed to client organisations, not offered to the public). Nobody makes an
+account on the sign-in page:
+  - PASDACS creates each organisation with its main owner on the admin portal (Organisations, New organisation:
+    orgs.create), and can add people to it;
+  - an organisation's owners add their own people (Organisation, People, Add people: orgs.add_person);
   - D2D_OTP_EMAIL is the platform admin (the bootstrap admin of the platform's own workspace).
+An address without an account gets the same answer as one with an account, but no code: nobody can find out from the
+sign-in page which addresses have accounts. Its answer comes after about as long as sending a code takes, and the limits
+below count it like any other.
 
   D2D_OTP_FROM               the mailbox the code is sent from (default: D2D_OTP_EMAIL)
   D2D_OTP_MS_TENANT          Microsoft Entra tenant of that mailbox, and
@@ -22,9 +25,10 @@ both Cloudflare Turnstile keys set (RELAY_TURNSTILE_SITE_KEY, RELAY_TURNSTILE_SE
 shows Turnstile's widget, and /auth/otp/start needs its token, checked with Cloudflare (siteverify) before a code is
 made or sent; a token works once. Without the keys nothing changes. If Cloudflare cannot be asked, no code is sent.
 
-The admin portal (portal.py, D2D_PORTAL=admin) uses the same codes for addresses at the admin domains (pasdacs.com)
-only, without the bot check. There is no "create your organisation" step there: a PASDACS address without an account joins the platform's
-own workspace (PASDACS). Its sessions are of their own kind (portal.SESSION_KIND) and cookie (d2d_admin).
+The admin portal (portal.py, D2D_PORTAL=admin) uses the same codes, without the bot check, for addresses at the admin
+domains (pasdacs.com) with an account in the platform's own workspace (PASDACS): a PASDACS owner adds colleagues on the
+public site's Organisation page, like any organisation's owner. Its sessions are of their own kind (portal.SESSION_KIND)
+and cookie (d2d_admin).
 """
 from __future__ import annotations
 
@@ -46,6 +50,8 @@ from . import auth, code_email, db, identity, orgs, otp_mail, portal, signin_ale
 
 router = APIRouter()
 ADMIN_ONLY_TEXT = "Only PASDACS addresses can sign in to the D2D Relay admin portal."
+SENT_TEXT = "If {email} has a D2D Relay account, we sent it a sign-in code. It expires in 10 minutes."
+WRONG_TEXT = "That code is wrong or has expired. Ask for a new one."
 
 EMAIL = (os.environ.get("D2D_OTP_EMAIL") or "").strip().lower()
 SENDER = (os.environ.get("D2D_OTP_FROM") or EMAIL).strip()
@@ -58,10 +64,9 @@ GAP = 60
 PER_HOUR = 6
 PER_DAY = 20                            # security audit (S13): at most 100 guesses a day at one address's codes
 PER_IP_HOUR = 20
-SIGNUP_TTL = 1800                       # after the code: time to name the new organisation
-SIGNUP_COOKIE = "d2d_signup"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _lock = threading.Lock()
+_SENDING = {"s": 0.0}                   # how long sending a code took lately (seconds, a moving average)
 # Item 40: Cloudflare Turnstile on "Email me a code" (both keys, or off)
 TURNSTILE_SITE_KEY = (os.environ.get("D2D_TURNSTILE_SITE_KEY") or "").strip()
 TURNSTILE_SECRET = (os.environ.get("D2D_TURNSTILE_SECRET") or "").strip()
@@ -95,7 +100,7 @@ def _human(token: str, ip: str) -> bool | None:
         return False
     return not (j.get("action") and j["action"] != TURNSTILE_ACTION)
 
-db.register_schema("""-- D2D Relay: one-time sign-in codes (hash only) and the step after them for a new organisation
+db.register_schema("""-- D2D Relay: one-time sign-in codes (hash only)
 CREATE TABLE IF NOT EXISTS otp_codes (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL,
@@ -108,13 +113,8 @@ CREATE TABLE IF NOT EXISTS otp_codes (
   ip TEXT
 );
 CREATE INDEX IF NOT EXISTS otp_codes_email ON otp_codes (email, created);
-CREATE TABLE IF NOT EXISTS otp_signup (
-  token_hash TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  created REAL NOT NULL,
-  expires REAL NOT NULL,
-  used REAL
-);""")
+-- item 56: the step after the code that named a new organisation is gone with the sign-up, and its table with it
+DROP TABLE IF EXISTS otp_signup;""")
 
 
 def configured() -> bool:
@@ -150,6 +150,24 @@ def _mail(to: str, code: str) -> None:
     otp_mail.send(to, subject, html)
 
 
+def _known(email: str) -> bool:
+    """Whether a code goes to this address: it has an account (on the admin portal, one in PASDACS's own workspace), or
+    it is the platform admin's own address."""
+    if EMAIL and email == EMAIL:
+        return True
+    with db.use(db.PLATFORM):
+        acct = db.one("SELECT home_tenant FROM relay.tn_accounts WHERE email = ?", (email,))
+    return bool(acct) and (acct["home_tenant"] == db.PLATFORM or not portal.ADMIN)
+
+
+def _like_sending() -> None:
+    """For an address without an account: wait about as long as sending a code takes lately, so the answer's timing
+    does not tell the two apart (nothing to wait for when codes are only printed to the log)."""
+    s = _SENDING["s"] or (0.8 if configured() else 0.0)
+    if s > 0.01:
+        time.sleep(min(5.0, s * (0.85 + secrets.randbelow(300) / 1000)))
+
+
 class StartBody(BaseModel):
     email: str = ""
     turnstile: str = ""                     # item 40: the Turnstile widget's token, when the bot check is on
@@ -161,11 +179,6 @@ class VerifyBody(BaseModel):
     next: str = ""
 
 
-class OrgBody(BaseModel):
-    name: str = ""
-    person: str = ""
-
-
 @router.post("/auth/otp/start")
 def start(body: StartBody, request: Request):
     email = (body.email or "").strip().lower()
@@ -175,10 +188,6 @@ def start(body: StartBody, request: Request):
         with db.use(db.PLATFORM):
             db.audit("auth.otp_refused", None, {"ip": _ip(request), "reason": "admin portal", "domain": orgs.domain_of(email)}, "system")
         return _err(ADMIN_ONLY_TEXT, 403)
-    if orgs.refused(email):
-        with db.use(db.PLATFORM):
-            db.audit("auth.otp_refused", None, {"ip": _ip(request), "reason": "throw-away domain"}, "system")
-        return _err(orgs.REFUSED_TEXT)
     if turnstile_on():                               # item 40: a person, not a bot, before any code is made or sent
         human = _human(body.turnstile, _ip(request))
         if not human:
@@ -187,6 +196,7 @@ def start(body: StartBody, request: Request):
                          "system")
             return _err(BOT_TEXT if human is False else BOT_DOWN_TEXT, 403 if human is False else 503)
     now, ip = time.time(), _ip(request)
+    known = _known(email)
     with _lock, db.use(db.PLATFORM):
         recent = db.q("SELECT created FROM otp_codes WHERE email = ? AND created > ? ORDER BY created DESC", (email, now - 3600))
         if recent and now - recent[0]["created"] < GAP:
@@ -197,11 +207,18 @@ def start(body: StartBody, request: Request):
             return _err("Too many codes today for this address. Try again tomorrow, or write to info@pasdacs.com.", 429)
         if ip and db.one("SELECT count(*) AS n FROM otp_codes WHERE ip = ? AND created > ?", (ip, now - 3600))["n"] >= PER_IP_HOUR:
             return _err("Too many codes were asked for from this network this hour. Try again later.", 429)
+        # an address without an account gets a row too (its code is never sent), so the limits treat both alike
         code = f"{secrets.randbelow(1_000_000):06d}"
         salt = secrets.token_hex(8)
         db.run("UPDATE otp_codes SET used = ? WHERE email = ? AND used IS NULL", (now, email))      # one live code at a time
         db.run("INSERT INTO otp_codes (id, email, code_hash, salt, created, expires, ip) VALUES (?, ?, ?, ?, ?, ?, ?)",
                (secrets.token_hex(8), email, _hash(code, salt), salt, now, now + TTL, ip))
+    if not known:
+        _like_sending()
+        with db.use(db.PLATFORM):
+            db.audit("auth.otp_no_account", None, {"ip": ip, "domain": orgs.domain_of(email)}, "system")
+        return {"ok": True, "message": SENT_TEXT.format(email=email)}
+    t0 = time.monotonic()
     try:
         _mail(email, code)
     except Exception:  # noqa: BLE001 - the person is told the code could not be sent; the reason goes to the log
@@ -209,9 +226,11 @@ def start(body: StartBody, request: Request):
         with db.use(db.PLATFORM):
             db.run("UPDATE otp_codes SET used = ? WHERE email = ? AND used IS NULL", (time.time(), email))
         return _err("The code could not be sent. Try again in a minute; if it keeps failing, write to info@pasdacs.com.", 502)
+    took = time.monotonic() - t0
+    _SENDING["s"] = took if not _SENDING["s"] else 0.8 * _SENDING["s"] + 0.2 * took
     with db.use(db.PLATFORM):
         db.audit("auth.otp_sent", None, {"ip": ip, "domain": orgs.domain_of(email)}, "system")
-    return {"ok": True, "message": f"We sent a sign-in code to {email}. It expires in 10 minutes."}
+    return {"ok": True, "message": SENT_TEXT.format(email=email)}
 
 
 def _check_code(email: str, code: str, request: Request) -> bool:
@@ -228,22 +247,21 @@ def _check_code(email: str, code: str, request: Request) -> bool:
     return True
 
 
-def _signed_in(tid: str, uid: str, request: Request, next_hash: str, kind: str = "signed_in") -> JSONResponse:
+def _signed_in(tid: str, uid: str, request: Request, next_hash: str) -> JSONResponse:
     """A session in the person's own workspace; the cookie carries that workspace (identity.cookie_value). PASDACS is
     emailed about it (signin_alerts: in the background, never in the way of the sign-in)."""
     with db.use(tid):
         sid = identity.create_session(uid, portal.SESSION_KIND if portal.ADMIN else "otp", _ip(request), request.headers.get("user-agent", ""))
         value = identity.cookie_value(sid)
-    signin_alerts.sign_in(tid, uid, "admin" if portal.ADMIN else kind, request)
+    signin_alerts.sign_in(tid, uid, "admin" if portal.ADMIN else "signed_in", request)
     r = JSONResponse({"ok": True, "next": "/" + (next_hash if (next_hash or "").startswith("#/") else "")})
     r.set_cookie(identity.COOKIE, value, max_age=int(identity.SESSION_HOURS * 3600), httponly=True,
                  samesite="lax", secure=identity.SECURE_COOKIE, path="/")
-    r.delete_cookie(SIGNUP_COOKIE, path="/auth/otp/")
     return r
 
 
 def _account(email: str) -> tuple[str, dict] | JSONResponse | None:
-    """(tenant, person) of an existing account, a refusal, or None when the address has no account yet."""
+    """(tenant, person) of an existing account, a refusal, or None when the address has no account."""
     with db.use(db.PLATFORM):
         acct = db.one("SELECT user_id, home_tenant FROM relay.tn_accounts WHERE email = ?", (email,))
         if not acct and EMAIL and email == EMAIL:
@@ -267,118 +285,18 @@ def _account(email: str) -> tuple[str, dict] | JSONResponse | None:
 def verify(body: VerifyBody, request: Request):
     email = (body.email or "").strip().lower()
     code = re.sub(r"\D", "", body.code or "")
-    if len(code) != 6 or not EMAIL_RE.match(email) or orgs.refused(email) or not _check_code(email, code, request):
-        return _err("That code is wrong or has expired. Ask for a new one.")
-    if portal.ADMIN:
-        return _admin_signed_in(email, request, body.next)
+    if len(code) != 6 or not EMAIL_RE.match(email) or not _check_code(email, code, request):
+        return _err(WRONG_TEXT)
     found = _account(email)
     if isinstance(found, JSONResponse):
         return found
-    if found:
-        tid, u = found
-        return _signed_in(tid, u["id"], request, body.next)
-    o = None
-    if not orgs.personal_address(email):            # item 39: a free mail address never joins anyone by domain
-        with db.use(db.PLATFORM):
-            o = orgs.by_domain(orgs.domain_of(email))
-    if o:                                            # a colleague created the organisation: join it
-        if not auth.tenant_row(o["tenant_id"]):
-            return _err("Your organisation's account has been closed. Write to info@pasdacs.com.", 403)
-        if orgs.is_blocked(o["tenant_id"], email):   # item 32: an owner removed this address
-            return _err(f"An owner of {o['name']} removed this address. Ask one of its owners to add you back.", 403)
-        uid = orgs.join(o["tenant_id"], email)
-        return _signed_in(o["tenant_id"], uid, request, body.next or "#/d2d", "joined")
-    # the first person from this domain, or a personal address: they name the organisation or workspace next
-    # (POST /auth/otp/organisation)
-    token, now = secrets.token_urlsafe(32), time.time()
-    with db.use(db.PLATFORM):
-        db.run("INSERT INTO otp_signup (token_hash, email, created, expires) VALUES (?, ?, ?, ?)",
-               (hashlib.sha256(token.encode()).hexdigest(), email, now, now + SIGNUP_TTL))
-    r = JSONResponse({"ok": True, "organisation": _signup_info(email)})
-    r.set_cookie(SIGNUP_COOKIE, token, max_age=SIGNUP_TTL, httponly=True, samesite="lax", secure=identity.SECURE_COOKIE,
-                 path="/auth/otp/")
-    return r
-
-
-def _admin_signed_in(email: str, request: Request, next_hash: str) -> JSONResponse:
-    """The admin portal, after a right code: a PASDACS person in the platform's own workspace (a new address joins
-    PASDACS first). Anyone else is refused, whatever the code."""
-    if not portal.admin_email(email):
-        return _err(ADMIN_ONLY_TEXT, 403)
-    found = _account(email)
-    if isinstance(found, JSONResponse):
-        return found
-    if found:
-        tid, u = found
+    if not found:                       # no account: no code was ever sent, so only a lucky guess gets here
+        return _err(WRONG_TEXT)
+    tid, u = found
+    if portal.ADMIN:                    # the admin portal: PASDACS's own people only, whatever the code
+        if not portal.admin_email(email):
+            return _err(ADMIN_ONLY_TEXT, 403)
         if tid != db.PLATFORM:
             return _err("This address belongs to another organisation's workspace, not PASDACS's.", 403)
-        uid = u["id"]
-    else:
-        if orgs.is_blocked(db.PLATFORM, email):       # item 32: an owner of PASDACS removed this address
-            return _err("An owner of PASDACS removed this address. Ask one of its owners to add you back.", 403)
-        uid = orgs.join(db.PLATFORM, email)
-    return _signed_in(db.PLATFORM, uid, request, next_hash or "#/orgs")
-
-
-def _signup(request: Request) -> dict | None:
-    token = request.cookies.get(SIGNUP_COOKIE) or ""
-    if not token:
-        return None
-    with db.use(db.PLATFORM):
-        return db.one("SELECT * FROM otp_signup WHERE token_hash = ? AND used IS NULL AND expires > ?",
-                      (hashlib.sha256(token.encode()).hexdigest(), time.time()))
-
-
-@router.get("/auth/otp/organisation")
-def signup_pending(request: Request):
-    """The sign-in page after a reload: is a new organisation waiting for its name?"""
-    s = _signup(request)
-    if not s:
-        return {}                                    # nothing waiting (the usual case)
-    return _signup_info(s["email"])
-
-
-def _signup_info(email: str) -> dict:
-    """What the sign-in page needs to name a new organisation, or (item 39) a personal workspace: no starting credits,
-    it buys online."""
-    domain = orgs.domain_of(email)
-    if orgs.personal_address(email):
-        return {"email": email, "domain": domain, "personal": True, "suggested": orgs.name_from(email),
-                "person": orgs.name_from(email), "credits": 0, "credits_review": 0}
-    return {"email": email, "domain": domain, "personal": False, "suggested": orgs.suggested_name(domain),
-            "person": orgs.name_from(email), **_start_credits()}
-
-
-def _start_credits() -> dict:
-    """What the sign-up page says of a new organisation's credits: added at once (credits), or once PASDACS has
-    reviewed it (credits_review)."""
-    return {"credits": 0, "credits_review": orgs.START} if orgs.reviews_new() else {"credits": orgs.START, "credits_review": 0}
-
-
-@router.post("/auth/otp/organisation")
-def create_organisation(body: OrgBody, request: Request):
-    """The first person from a business domain names their organisation (or, item 39, a free mail address its personal
-    workspace): it is created, they own it, and they go on to the first-time setup (#/setup: the brand)."""
-    if portal.ADMIN:
-        return _err("Organisations are created on the public D2D Relay site.", 404)
-    s = _signup(request)
-    if not s:
-        return _err("This step has expired. Sign in again to get a new code.", 401)
-    kind = "created"
-    try:
-        tid, uid = orgs.create(body.name, s["email"], body.person, seen=signin_alerts.seen(request))
-    except orgs.OrgError as e:
-        if str(e) != "exists":
-            return _err(str(e))
-        if orgs.personal_address(s["email"]):        # item 39: a personal workspace is never joined
-            return _err("Your workspace could not be created. Sign in again, or write to info@pasdacs.com.", 409)
-        with db.use(db.PLATFORM):                    # a colleague was a moment quicker: join their organisation
-            o = orgs.by_domain(orgs.domain_of(s["email"]))
-        if not o:
-            return _err("Your organisation could not be created. Try again in a minute.", 409)
-        if orgs.is_blocked(o["tenant_id"], s["email"]):
-            return _err(f"An owner of {o['name']} removed this address. Ask one of its owners to add you back.", 403)
-        tid, uid, kind = o["tenant_id"], orgs.join(o["tenant_id"], s["email"]), "joined"
-    with db.use(db.PLATFORM):
-        db.run("UPDATE otp_signup SET used = ? WHERE token_hash = ?", (time.time(), s["token_hash"]))
-    return _signed_in(tid, uid, request, "#/setup" if kind == "created" else "#/d2d", kind)
+        return _signed_in(tid, u["id"], request, body.next or "#/orgs")
+    return _signed_in(tid, u["id"], request, body.next)

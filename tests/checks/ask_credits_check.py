@@ -16,7 +16,7 @@ import d2d_checks as c  # noqa: E402
 stamp = str(int(time.time()))[-6:]
 owner = c.Person(f"asha.owner@ask{stamp}.com")
 s, r = owner.sign_in("Ask Test", "Asha Owner")
-c.check("ask: a new organisation signs up with 50 credits", s == 200 and (owner.get("/api/me")[1].get("org") or {}).get("credits") == 50, (s, r))
+c.check("ask: a new organisation is set up with 50 credits", s == 200 and (owner.get("/api/me")[1].get("org") or {}).get("credits") == 50, (s, r))
 org = owner.get("/api/me")[1]["org"]
 
 

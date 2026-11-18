@@ -65,7 +65,7 @@ function navGroups(route) {          // D2D Relay: dashboards, Ask Relay, brandi
   const on = p => route.startsWith(p);
   const me = S.me || {};
   if (isAdminPortal()) return [{id: 'top', label: '', items: [   // the admin portal: every organisation and what they ask for
-    ['#/overview', 'chart', 'Overview', route === '#/overview' || route === '' || route === '#/'],   // item 50: online now, sign-ups
+    ['#/overview', 'chart', 'Overview', route === '#/overview' || route === '' || route === '#/'],   // item 50: online now, people
     ['#/orgs', 'layers', 'Organisations', route === '#/orgs'],
     ['#/requests', 'send', 'Requests', route === '#/requests'],
     ['#/payments', 'coin', 'Payments', route === '#/payments'],        // credits bought online (37-payments.js)

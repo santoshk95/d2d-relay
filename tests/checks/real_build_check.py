@@ -71,7 +71,7 @@ other.sign_in("Other Org", "Oz Other")
 s, od = c.new_dashboard(other)                     # another organisation's dashboard: its folder must never be in a job
 p = c.Person(f"rita.real@real{c.STAMP}.com")
 s, r = p.sign_in("Real Build", "Rita Real")
-check("setup: an organisation signs up", s == 200, (s, r))
+check("setup: an organisation is set up", s == 200, (s, r))
 s, d = c.new_dashboard(p)
 pid = (d or {}).get("id")
 check("setup: a dashboard is made; its plan run starts", s == 200 and pid, (s, str(d)[:150]))

@@ -189,13 +189,11 @@ check("needs: the stack has a Claude sign-in (TEST_CLAUDE_VOLUME=claude-api-auth
 if not all(ok for _, ok in c.RESULTS):
     print("\nnot started: see above")
     sys.exit(1)
-review = in_web("printenv RELAY_CREDITS_START_REVIEW")
-os.environ.setdefault("D2D_TEST_APPROVE_START", "1" if review != "0" else "0")
 
 # ---------------------------------------------------------------- an organisation with credits for three dashboards
 p = c.Person(f"eve.e2e@e2e{c.STAMP}.com")
 s, r = p.sign_in("End To End", "Eve E2E")
-check("setup: an organisation signs up", s == 200, (s, r))
+check("setup: an organisation is set up", s == 200, (s, r))
 p.post("/api/me/tour", {"step": "done"})
 p.post("/api/org/setup")
 s, r = p.post("/api/org/credit-request", {"credits": 150, "message": "end-to-end test"})

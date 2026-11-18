@@ -91,13 +91,7 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
       <button type="submit" id="codebtn">Sign in</button>
       <p class="fine"><a href="#" id="again">Resend code</a> or <a href="#" id="other">use a different email</a></p>
     </form>
-    <form id="orgform" style="display:grid;gap:10px" hidden>
-      <p class="muted" id="orglead"></p>
-      <div><label for="orgname">Organisation name</label><input id="orgname" name="orgname" autocomplete="organization" maxlength="80" required></div>
-      <div><label for="person">Your name</label><input id="person" name="person" autocomplete="name" maxlength="120" required></div>
-      <p class="fine" id="orgcredits"></p>
-      <button type="submit" id="orgbtn">Create organisation</button>
-    </form>
+    <p class="fine" id="who">D2D Relay accounts are set up by your organisation: no code? Ask its owner to add you, or write to <a href="mailto:info@pasdacs.com">info@pasdacs.com</a>.</p>
     <p class="fine" id="privacy">By continuing, you agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Notice</a>. <a href="contact.html">Need help?</a></p>
   </main>
 </div>
@@ -108,7 +102,9 @@ document.getElementById('brand').innerHTML = D2D_LOGO;
 const qs = new URLSearchParams(location.search), next = (qs.get('next') || '').startsWith('#/') ? qs.get('next') : '';
 const $ = id => document.getElementById(id);
 const show = (id, text) => { const e = $(id); e.textContent = text || ''; e.hidden = !text; };
-/* D2D Relay's admin portal (portal.js): PASDACS addresses only, no organisation step */
+/* item 56: nobody signs up. A code goes only to an address with an account (PASDACS creates each organisation with its
+   main owner, owners add their people); any other address gets the same answer and no code. The admin portal
+   (portal.js): PASDACS addresses with an account in PASDACS's own workspace. */
 const ADMIN = !!(window.D2D_PORTAL && D2D_PORTAL.portal === 'admin');
 if (ADMIN) {
   const domains = (D2D_PORTAL.admin_domains || ['pasdacs.com']).map(d => '@' + d).join(' or ');
@@ -119,6 +115,7 @@ if (ADMIN) {
   $('signin').textContent = 'Sign in to D2D Relay admin';
   $('lead').textContent = `For PASDACS staff. Use your ${domains} address.`;
   $('email').placeholder = 'name' + (D2D_PORTAL.admin_domains ? '@' + D2D_PORTAL.admin_domains[0] : '@pasdacs.com');
+  $('who').textContent = 'No code? A PASDACS owner adds colleagues under Organisation, People, on the D2D Relay site.';
   $('privacy').hidden = true;
 }
 if (qs.get('error')) show('error', qs.get('error'));
@@ -163,38 +160,10 @@ $('codeform').addEventListener('submit', async e => {
   e.preventDefault(); show('error'); $('codebtn').disabled = true;
   try {
     const j = await post('/auth/otp/verify', {email: $('email').value.trim(), code: $('code').value, next});
-    if (j.organisation) return orgStep(j.organisation);          // the first person from this domain names the organisation
     location.replace(j.next || '/');
   }
   catch (err) { show('error', err.message); $('codebtn').disabled = false; }
 });
-/* D2D Relay: the first person from a business domain creates its organisation (and owns it) */
-function orgStep(o) {
-  show('note'); show('error');
-  $('askform').hidden = true; $('codeform').hidden = true; $('orgform').hidden = false; $('botcheck').hidden = true;
-  $('signin').textContent = o.personal ? 'Create your workspace' : 'Create your organisation';
-  $('lead').hidden = true;
-  $('orglead').textContent = o.personal
-    ? 'A private workspace, just for you.'
-    : `You are the first from ${o.domain}. Colleagues who sign in with an @${o.domain} address will join your organisation.`;
-  document.querySelector('label[for=orgname]').textContent = o.personal ? 'Workspace name' : 'Organisation name';
-  $('orgbtn').textContent = o.personal ? 'Create workspace' : 'Create organisation';
-  $('orgname').value = $('orgname').value || o.suggested || '';
-  $('person').value = $('person').value || o.person || '';
-  $('orgcredits').textContent = o.personal
-    ? 'Credits are bought online when you need them.'
-    : o.credits_review
-    ? `Your ${o.credits_review} starting credits are added once PASDACS approves your organisation.`
-    : o.credits ? `It starts with ${o.credits} credits.`
-    : 'Credits are added by PASDACS on request.';
-  $('orgname').focus(); $('orgname').select();
-}
-$('orgform').addEventListener('submit', async e => {
-  e.preventDefault(); show('error'); $('orgbtn').disabled = true;
-  try { const j = await post('/auth/otp/organisation', {name: $('orgname').value.trim(), person: $('person').value.trim()}); location.replace(j.next || '/'); }
-  catch (err) { show('error', err.message); $('orgbtn').disabled = false; }
-});
-if (!ADMIN) fetch('/auth/otp/organisation', {credentials: 'same-origin'}).then(r => r.ok ? r.json() : null).then(o => { if (o && o.domain) orgStep(o); }).catch(() => {});
 /* Resend: straight away without the bot check; with it, back to the email step for a fresh check (a token works once) */
 $('again').addEventListener('click', e => {
   e.preventDefault();
@@ -204,7 +173,7 @@ $('again').addEventListener('click', e => {
 $('other').addEventListener('click', e => { e.preventDefault(); show('note'); show('error'); $('codeform').hidden = true; $('askform').hidden = false; $('email').focus(); });
 fetch('/auth/providers').then(r => r.json()).then(cfg => {
   if (cfg.mode !== 'otp' && cfg.mode !== 'sso') return location.replace('/');
-  if (!ADMIN && cfg.turnstile && $('orgform').hidden) botStart(cfg.turnstile);
+  if (!ADMIN && cfg.turnstile) botStart(cfg.turnstile);
 }).catch(() => {});
 </script>
 </body>

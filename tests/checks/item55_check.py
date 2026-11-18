@@ -96,16 +96,18 @@ def person(email: str):
 
 owner = person(f"rita.owner@review{STAMP}.com")
 s, r = owner.sign_in("Review Test", "Rita Owner")
-c.check("review: a new organisation signs up with 50 credits", s == 200 and credits(owner) == 50, (s, r))
+c.check("review: PASDACS creates an organisation with 50 credits; its owner signs in", s == 200 and credits(owner) == 50, (s, r))
 dev = person(f"dev.bi@review{STAMP}.com")
 s, r = dev.sign_in(person="Dev Bi")
-c.check("review: a colleague from the same domain joins it", s == 200 and dev.get("/api/me")[1]["org"]["name"] == "Review Test", (s, r))
+c.check("review: a colleague added to it signs in", s == 200 and dev.get("/api/me")[1]["org"]["name"] == "Review Test", (s, r))
 other = person(f"olga.owner@elsewhere{STAMP}.com")
 s, r = other.sign_in("Elsewhere", "Olga Owner")
-c.check("review: another organisation signs up", s == 200, (s, r))
-personal = person(f"pat.review{STAMP}@gmail.com")
-s, r = personal.sign_in(person="Pat")
-c.check("review: a personal workspace (free mail) signs in with no credits", s == 200 and credits(personal) == 0, (s, r))
+c.check("review: another organisation's owner signs in", s == 200, (s, r))
+broke = person(f"bo.broke@nocredit{STAMP}.com")
+s0, r0 = c.signed_in("info@pasdacs.com", c.ADMIN_BASE).post("/api/admin/orgs", {"name": "No Credit", "email": broke.email, "person": "Bo Broke",
+                                                                                 "credits": 0})
+s, r = broke.sign_in(provision=False)
+c.check("review: an organisation PASDACS created with no credits signs in", s0 == 200 and s == 200 and credits(broke) == 0, (s0, r0, s, r))
 
 anon = c.Person("nobody@example.com")
 s, _ = anon.get("/api/semreview")
@@ -182,7 +184,7 @@ c.check("runs: a file the review does not read is refused", s == 400 and "notes.
 before = credits(owner)
 s, r = form(owner, "/api/semreview/runs", {}, [("files", "huge.pbit", b"x" * (21 * 1024 * 1024))])
 c.check("runs: a file over the size limit is refused (413), nothing charged", s == 413 and "20 MB" in r["detail"] and credits(owner) == before, (s, r))
-s, r = form(personal, "/api/semreview/runs", {}, [("files", "sales.bim", json.dumps(SALES).encode())])
+s, r = form(broke, "/api/semreview/runs", {}, [("files", "sales.bim", json.dumps(SALES).encode())])
 c.check("runs: no credits, no review (402)", s == 402 and r.get("credits") is True, (s, r))
 
 files = [("files", "Sales model.bim", json.dumps(SALES).encode()), ("files", "Finance.pbit", pbit()), ("files", "Ops project.zip", pbip())]

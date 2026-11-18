@@ -1,6 +1,7 @@
 """Test stack only: item 40 (the user, 2026-11-13: "bot check add back"): Cloudflare Turnstile before a sign-in code is
-emailed, now that anyone can sign up (item 39). The stack runs with Cloudflare's published test keys, which pass any
-token; every other suite sends one (d2d_checks.Person). Here:
+emailed (added while anyone could sign up, item 39; since item 56 only addresses with an account get a code, and the
+check still keeps scripts from asking). The stack runs with Cloudflare's published test keys, which pass any token;
+every other suite sends one (d2d_checks.Person). Here:
 - the public sign-in page gets the site key and shows the widget; the admin portal neither shows nor asks for it;
 - no token: 403, no code, and the address's one-code-a-minute limit is not used up; a token: the code goes out;
 - Cloudflare saying no (its always-fail test key), Cloudflare out of reach, a token made for another action: no code;
@@ -46,6 +47,7 @@ check("sign-in page: the widget's place and Turnstile's loader are in it",
 # ---------------------------------------------------------------- no token, no code
 section("no token, no code")
 p = c.Person(f"nora.{S}@bots{S}.com")
+c.provision_account(p.email, f"Bots {S}")            # item 56: only an address with an account gets a code
 hdr = {"cf-connecting-ip": p.ip}
 t0 = time.time()
 s, r = p.post("/auth/otp/start", {"email": p.email, "turnstile": ""}, headers=hdr)
@@ -87,6 +89,8 @@ check("the web app has the check on (both keys)", out == "True True True", out)
 # ---------------------------------------------------------------- in Chromium
 section("the sign-in page in Chromium")
 email = f"pia.{S}@bots{S}.com"
+c.provision_account(email)                           # item 56: an account, so the code really goes out
+t3 = time.time()
 PLAY = r"""
 import json, sys
 from playwright.sync_api import sync_playwright
@@ -132,7 +136,8 @@ except (ValueError, IndexError):
 for w in (320, 1280):
     check(f"{w} px: the widget renders and gives its token", ui.get(f"widget_{w}") is True and ui.get(f"token_{w}") == "XXXX.DUMMY.TOKEN.XXXX", ui)
     check(f"{w} px: nothing sideways, no script errors", ui.get(f"sideways_{w}") is False and ui.get(f"errors_{w}") == [], ui)
-check("1280 px: Continue sends the code (the token went with it)", "We sent a sign-in code" in str(ui.get("note")) and not ui.get("error"), ui)
+check("1280 px: Continue sends the code (the token went with it)", "we sent it a sign-in code" in str(ui.get("note")) and not ui.get("error")
+      and bool(c.code_now(c.WEB_C, email, t3, wait=0)), ui)
 check("1280 px: the widget is reset for the next ask (a token works once)", ui.get("token_after") in ("", "XXXX.DUMMY.TOKEN.XXXX"), ui)
 check("1280 px: Resend code goes back to the email step for a fresh check", ui.get("resend_back") is True, ui)
 for w in (320, 1280):

@@ -588,16 +588,22 @@ def _init_control() -> None:
 
 def init_tenant(tid: str, bootstrap: bool = False) -> None:
     """Create or bring up to date one tenant's schema: every table, the columns added since, the default team and
-    the directory entries of its own people; the platform also gets the bootstrap admin. Idempotent."""
+    the directory entries of its own people; the platform also gets the bootstrap admin. Idempotent. On Postgres one
+    process at a time, under the advisory lock init() takes at start (D2D Relay, item 56: the admin portal creates an
+    organisation while the public site may set the same new tenant up on first use, _check_ready; CREATE ... IF NOT
+    EXISTS is not safe when two sessions run it at once)."""
     if tid != PLATFORM and (not TENANT_ID.match(tid) or tid in RESERVED_IDS):
         raise ValueError(f"Not a tenant id: {tid!r}")
     with _lock, use(tid):
         _initialising.add(tid)
+        locked = False
         try:
             if BACKEND == "postgres":
                 c = conn()
                 if _pg["tx"]:
                     raise RuntimeError("init_tenant inside a transaction")
+                c.execute("SELECT pg_advisory_lock(735105)")       # re-entrant: init() may hold it already
+                locked = True
                 sch = schema_of(tid)
                 if tid != PLATFORM:
                     c.execute(f'CREATE SCHEMA IF NOT EXISTS "{sch}"')
@@ -636,6 +642,11 @@ def init_tenant(tid: str, bootstrap: bool = False) -> None:
                 run("INSERT OR IGNORE INTO relay.tn_accounts (user_id, email, home_tenant, created) VALUES (?, ?, ?, ?)",
                     (u["id"], (u["email"] or "").lower(), tid, u["created"]))
         finally:
+            if locked:
+                try:
+                    conn().execute("SELECT pg_advisory_unlock(735105)")
+                except Exception:  # noqa: BLE001 - a broken connection has released it with its session
+                    pass
             _initialising.discard(tid)
         _ready.add(tid)
 

@@ -60,7 +60,7 @@ def dashboard(p, **form) -> tuple[str, dict]:
 # ---------------------------------------------------------------- the model's name
 p = c.Person(f"vi.visuals@vis{c.STAMP}.com")
 s, r = p.sign_in("Visuals Test", "Vi Visuals")
-check("setup: an organisation signs up", s == 200, (s, r))
+check("setup: an organisation is set up", s == 200, (s, r))
 p.post("/api/me/tour", {"step": "done"})                 # the first-time tour and the organisation's setup (its last
 p.post("/api/org/setup")                                 # step) stay out of the browser checks below
 s, cat = p.get("/api/models")

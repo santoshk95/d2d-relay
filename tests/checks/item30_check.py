@@ -67,7 +67,7 @@ check("legal: the privacy notice links the terms, refunds and contact", all(f'hr
 # ---------------------------------------------------------------- S15: RELAY's leftover routes are off
 p = c.Person(f"sam.sec@sec30{c.STAMP}.com")
 s, r = p.sign_in("Sec Thirty", "Sam Sec")
-check("setup: an organisation signs up", s == 200, (s, r))
+check("setup: an organisation is set up", s == 200, (s, r))
 for method, path in (("GET", "/api/me/ai"), ("PUT", "/api/me/ai"), ("GET", "/api/workspace"), ("POST", "/api/workspace/start"),
                      ("GET", "/api/workbench/items"), ("GET", "/api/validate/count"), ("POST", "/api/registry/d2d/interest")):
     s, r = p.call(method, path, {} if method in ("POST", "PUT") else None)

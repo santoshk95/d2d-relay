@@ -44,7 +44,8 @@ function renderTour() {
     o.id ? h('div', {class: 'card'}, h('h3', {}, o.is_owner ? `${o.name} is ready` : `You joined ${o.name}`),
       h('dl', {class: 'kv small'},
         h('dt', {}, 'Owner'), h('dd', {}, o.is_owner ? `you (${(S.me || {}).email || ''})` : (o.owner ? o.owner.name : '-')),
-        h('dt', {}, 'Who joins'), h('dd', {}, isPersonal(o) ? 'only you: this is a personal workspace' : `everyone who signs in with an @${o.domain} address`),
+        h('dt', {}, 'Who is in it'), h('dd', {}, isPersonal(o) ? 'only you: this is a personal workspace'
+          : o.is_owner ? `the people you add under Organisation, People (@${o.domain} addresses)` : `the people its owners add (@${o.domain} addresses)`),
         h('dt', {}, 'Credits'), h('dd', {}, o.credits ? `${credits(o.credits)} left`
           : isStart(o.pending_request) ? `none yet: PASDACS is reviewing ${o.name} and adds ${credits(o.pending_request.credits)} to start when it approves (you get an email)`
           : isPersonal(o) ? 'none yet: buy them online with Buy credits'

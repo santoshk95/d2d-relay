@@ -16,10 +16,10 @@ Only the Claude sign-in volume (`claude-api-auth`) is shared, so both apps use t
 | Public address | https://d2d.pasdacs.com (Cloudflare tunnel) |
 | Admin portal | https://admin-d2d.pasdacs.com: PASDACS only, behind Cloudflare Access and its own email code (see "Admin portal") |
 | On this PC | public site http://127.0.0.1:8100, admin portal http://127.0.0.1:8102 |
-| Sign-in | a 6-digit code emailed (no passwords, no SSO): a business address joins its organisation, a free mail address gets a personal workspace (item 39); disposable mail refused |
-| Organisations | one per email domain, each in its own workspace; the first person creates and owns it |
-| Credits | 50 to start, more when PASDACS approves a request; a new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10, Ask Relay 10 for up to 5 questions, a Semantic Review 10 (see "Organisations and credits") |
-| Platform admins | every **@pasdacs.com** address, on the admin portal only (every organisation, credits, connectors, requests) |
+| Sign-in | a 6-digit code emailed (no passwords, no SSO), for people with an account only: nobody signs up (item 56) |
+| Organisations | one per email domain, each in its own workspace; PASDACS creates each one with its main owner on the admin portal, and its owners add its people |
+| Credits | 50 to start (or what PASDACS sets), more when PASDACS approves a request; a new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10, Ask Relay 10 for up to 5 questions, a Semantic Review 10 (see "Organisations and credits") |
+| Platform admins | the **@pasdacs.com** people of PASDACS's own workspace, on the admin portal only (every organisation, its people, credits, connectors, requests) |
 
 ## Containers
 
@@ -201,13 +201,15 @@ Application Access Policies, scopes it to one mailbox:
 4. Wait 30 minutes to 2 hours (Exchange's cache), then sign in to D2D Relay to see a code arrive.
 
 Without a client secret the app sends delegated, as info@pasdacs.com itself (`relay-ctl` mail sign-in with a device
-code), and can only ever send from that mailbox. Keep the sign-in alerts and review emails a year: in Outlook on the
-web, a rule that moves them to their own folder, and the folder's retention policy set to "1 Year Delete".
+code), and can only ever send from that mailbox. Keep the sign-in alerts a year: in Outlook on the web, a rule that
+moves them to their own folder, and the folder's retention policy set to "1 Year Delete".
 
 ## Admin portal
 
-https://admin-d2d.pasdacs.com is PASDACS's own site: **Organisations** (every organisation, its credits and
-connectors), **Requests** (credits, connectors and Migration D2D that organisations asked for) and **Notifications**. It is a container
+https://admin-d2d.pasdacs.com is PASDACS's own site: **Overview** (who is online, everyone in the organisations),
+**Organisations** (every organisation, its credits and connectors; **New organisation** creates one with its main owner,
+**Add someone**, the person button on its row, adds someone to one: item 56, as nobody signs up), **Requests** (credits, connectors and Migration D2D that
+organisations asked for) and **Notifications**. It is a container
 of its own (`d2d-relay-admin`); the public site answers none of its APIs. Two locks, both required:
 
 1. **Cloudflare Access** in front of the hostname. The admin portal checks Access's signed token on every request that
@@ -216,8 +218,9 @@ of its own (`d2d-relay-admin`); the public site answers none of its APIs. Two lo
    from the tunnel, so it works on this PC only (http://127.0.0.1:8102). A request that does not come through
    Cloudflare is accepted only from this PC (the published port), never from another container on the Docker network
    (security audit S10); each refusal is in the admin container's log ("[portal] refused a request from ...").
-2. **The app's own email code**, for `RELAY_ADMIN_DOMAINS` addresses only (pasdacs.com). Every such address is a
-   platform admin there; a new one joins the PASDACS workspace on its first sign-in. Its sessions have their own
+2. **The app's own email code**, for `RELAY_ADMIN_DOMAINS` addresses only (pasdacs.com), and only those with an
+   account in PASDACS's own workspace (item 56): an owner of PASDACS adds a colleague on the public site
+   (Organisation, People), and from then on that colleague is a platform admin there. Its sessions have their own
    cookie and kind, so a session from the public site is not accepted there, and the other way round.
    `RELAY_ADMIN_EMAILS` (comma-separated), when set, narrows this to the addresses it names; name the same ones in the
    Cloudflare Access policy.
@@ -235,38 +238,45 @@ To open it through the internet (Cloudflare dashboard, once):
 
 ## Organisations and credits
 
-Anyone with an email address they keep can sign in. Disposable (throw-away) mail (Mailinator, temp mail, Yopmail ...)
-is refused; refuse more domains with `RELAY_PUBLIC_DOMAINS_EXTRA`, or treat a listed domain as a business with
-`RELAY_PUBLIC_DOMAINS_ALLOW` (comma-separated).
+**Nobody signs up** (item 56, the user, 2026-11-18: "Remove signup and bring login directly as internal team
+management"; D2D is licensed to client organisations, not offered to the public). Only people with an account can sign
+in, and accounts come from two places:
 
-- **A free mail address** (Gmail, Outlook, Yahoo, iCloud, Proton ...: `public_domains.FREE`; item 39, the user's
-  decision of 2026-11-13, "so i get larger base") gets a **personal workspace** of its own: it names it after the
-  code, nobody else ever joins it (no Add people), it has no starting credits and no Request credits, and it buys
-  credits online (Payments). PASDACS can still add credits by hand (Organisations, Credits), and is told of every new
-  personal account by the sign-in alert. On the admin portal it shows as Personal, with its address. Its row in
-  `relay.tn_orgs` has `personal = 1` and the full address as its `domain`, so nobody matches it by domain.
+- **PASDACS creates each organisation** on the admin portal (Organisations, **New organisation**): its name, its main
+  owner's work address and name, and its starting credits (50, `RELAY_CREDITS_START`, unless another number is set; 0
+  gives none). The organisation is that address's email domain, which only one organisation can have; a free mail
+  (Gmail, Outlook, Yahoo, iCloud, Proton ...: `public_domains.FREE`) or throw-away address (Mailinator, temp mail,
+  Yopmail ...) cannot own one (refuse more domains with `RELAY_PUBLIC_DOMAINS_EXTRA`, or treat a listed domain as a
+  business with `RELAY_PUBLIC_DOMAINS_ALLOW`, comma-separated). The main owner is emailed, signs in with a code and gets
+  the first-time tour (below), with the brand (logo, description, palette) as one of its steps, all of it skippable.
+  PASDACS can also add someone to any organisation (Organisations, **Add someone**: the person button on its row), as a
+  member or an owner, for instance a new owner when the owners have left; that organisation's owners are told.
+- **The organisation's owners add its people** (Organisation page, People, **Add people**): addresses at the
+  organisation's own domain, as members or owners; each gets an invitation email and signs in with a code.
 
-- **The first person from a domain** names their organisation after the code and becomes its main owner. They then
-  get the first-time tour (below), with the brand (logo, description, palette) as one of its steps, all of it
-  skippable. Everyone who signs in later from the same domain joins that organisation as a member, and the owners are
-  told.
-- **People** (Organisation page). An organisation can have several owners. Owners add people from the
-  organisation's own domain as members or owners (each gets an invitation email and signs in with a code), change
-  anyone's role, and remove people. **Removing someone deletes their account at once**, after a warning (the user's
-  decision of 2026-11-12; `governance.delete_person`): their name, email address, sign-ins, sessions, Ask Relay
-  conversations, notifications, tokens, connections (signed in as them) and schedules go, and the logs and accounting
-  records keep no name or address of theirs. Their work stays with the organisation: dashboards, saved visuals and
-  pages pass to the main owner, and a dashboard says it was made by a former member. **The address goes on the
-  organisation's blocked list** (item 32: everyone at the domain would otherwise join again): signing in with it is
-  refused ("An owner of ... removed this address"), until an owner unblocks it (People > Blocked) or adds the person
-  back, as a new person. Deleting your own account, or leaving, blocks nothing. The
-  main owner (PASDACS's contact and the one who does the first-time setup) cannot be removed or made a member; they
-  hand the main ownership to someone else first (Transfer ownership), staying an owner or not.
+An address without an account that asks for a code gets the same answer as one with an account ("If ... has a D2D
+Relay account, we sent it a sign-in code"), but no code, after about as long as sending one takes; the code limits
+count it the same way. So the sign-in page never tells anyone which addresses have accounts; the audit records it as
+`auth.otp_no_account`.
+
+- **People** (Organisation page). An organisation can have several owners. Owners add people, change anyone's role,
+  and remove people. **Removing someone deletes their account at once**, after a warning (the user's decision of
+  2026-11-12; `governance.delete_person`): their name, email address, sign-ins, sessions, Ask Relay conversations,
+  notifications, tokens, connections (signed in as them) and schedules go, and the logs and accounting records keep no
+  name or address of theirs. Their work stays with the organisation: dashboards, saved visuals and pages pass to the
+  main owner, and a dashboard says it was made by a former member. With the account gone they cannot sign in until an
+  owner adds them again, as a new person. The main owner (PASDACS's contact and the one who does the first-time setup)
+  cannot be removed or made a member; they hand the main ownership to someone else first (Transfer ownership), staying
+  an owner or not.
+- **Personal workspaces** (item 39, while anyone could sign up: a free mail address got a workspace of its own, which
+  bought its credits online). No new one is made; the ones there keep working as they did: that one person only (no
+  Add people), no Request credits, and PASDACS can still add credits by hand. On the admin portal they show as
+  Personal, with their address (`relay.tn_orgs.personal = 1`, the full address as `domain`).
 - **Delete my account** (Organisation > Your data): anyone but the main owner deletes their own account the same way,
   after typing DELETE; the owners are told. **Delete the organisation**: the main owner deletes it with everything in
   it (every dashboard, person, conversation, connection and the brand; the credits left are lost), after typing its
   name (`governance.erase_org`, the same as `python -m app.governance erase-org`). Payments and their GST invoices stay,
-  without names, as tax law requires. PASDACS is told; the domain can sign up again as a new organisation.
+  without names, as tax law requires. PASDACS is told, and can create it again later as a new organisation.
 - **Owners see every dashboard**, with who made it (Dashboards and each dashboard's page: "Created ... by ...").
 - **Each organisation is its own workspace.** Dashboards, connections, branding, Ask Relay conversations and people
   are never visible to another organisation. Inside one, each person's dashboards are private until shared; the owner
@@ -276,7 +286,7 @@ is refused; refuse more domains with `RELAY_PUBLIC_DOMAINS_EXTRA`, or treat a li
 
 | What | Credits |
 |---|---|
-| Start | 50 (`RELAY_CREDITS_START`), once PASDACS has reviewed and approved the new organisation (below); more are bought online (Payments, below) or come when PASDACS approves a request |
+| Start | 50 (`RELAY_CREDITS_START`), or what PASDACS sets when it creates the organisation; more are bought online (Payments, below) or come when PASDACS approves a request |
 | New dashboard (plan, KPIs and first prototype) with Power BI's built-in visuals only | 25 (`RELAY_CREDITS_DASHBOARD`) |
 | New dashboard with custom visuals: built-in first with custom where needed, or Relay custom visuals (item 44) | 50 (`RELAY_CREDITS_DASHBOARD_CUSTOM`) |
 | Moving a dashboard made with built-in visuals to custom visuals (its Details tab), once | the difference, 25 |
@@ -289,32 +299,17 @@ AI cost is still recorded on the server (the `usage` table); the screens show no
 Relay shows the credits a conversation used and the questions left in them; a question that gets no answer gives
 its credits back.
 
-**Starting credits are reviewed** (the user's decision of 2026-11-11: no free credits at sign-up). Anyone with a
-business mailbox can sign up, but a new organisation starts with none:
+**Starting credits** are given when PASDACS creates the organisation, as "Starting credits" in its history. (Before
+item 56 an organisation that signed up waited for PASDACS to approve them, item 27: a request marked "New
+organisation" under Requests. None is made any more; one still waiting is approved or declined like any request.)
 
-1. When the first person from a domain creates the organisation, a **starting credits** request for 50
-   (`RELAY_CREDITS_START`) is made for it, and info@pasdacs.com (`RELAY_CREDITS_CONTACT`) gets one email to review it
-   (Reply-To the owner): the organisation, its domain and workspace id, the owner, when, the network address and
-   country Cloudflare saw, sign-in codes from that network in the last hour, organisations created from the same
-   network in the last 30 days, other organisations on the same parent domain (`x1.example.com` and `x2.example.com`
-   are both on `example.com`), and the browser. Every PASDACS person also gets a notification. (This email replaces
-   the sign-in alert for a new organisation.)
-2. The owner sees "starting credits, waiting for PASDACS's review" (top bar, Dashboards, Organisation, the first-time
-   tour) and can set up the brand and invite colleagues meanwhile. A dashboard or Ask Relay question asked before the
-   answer is refused with that explanation.
-3. PASDACS answers it on the admin portal under **Requests** (it is marked "New organisation"): **Approve** adds the
-   credits at once as "Starting credits" (the amount can be changed) and emails the owner; **Decline** needs a reason,
-   which the owner is told in the app and by email. A declined organisation keeps working with no credits: it can
-   still ask for credits or buy them. The same from the command line, in the web container (it sends the emails):
+Credit requests can also be answered from the command line, in the web container (it sends the emails):
 
-   ```
-   docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.orgs requests
-   docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.orgs approve <request id> [credits] ["note"]
-   docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.orgs decline <request id> "<reason>"
-   ```
-
-`RELAY_CREDITS_START_REVIEW=0` adds the starting credits at sign-up instead, as before; `RELAY_CREDITS_START=0`
-gives none at all (no review request either).
+```
+docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.orgs requests
+docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.orgs approve <request id> [credits] ["note"]
+docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.orgs decline <request id> "<reason>"
+```
 
 **Getting more credits.** More are bought online once PASDACS opens selling (**Payments (Razorpay)**, below), or come
 when PASDACS approves a request (for invoices and bank transfers):
@@ -386,8 +381,8 @@ scanned by default.
 
 Someone new who opens the front page gets a short tour (`#/welcome`, `js/38-tour.js`), skippable at every step:
 
-1. **Welcome**: what Dashboards, Ask Relay and the brand are, and the organisation (owner, who joins, credits or the
-   starting-credit review).
+1. **Welcome**: what Dashboards, Ask Relay and the brand are, and the organisation (owner, who is in it: the people
+   its owners add, and its credits).
 2. **Your brand** (owners only): Branding inside the tour (logo, a few words, palettes). For a new organisation's main
    owner this is the organisation's first-time setup; skipping it is fine, Branding stays in the sidebar.
 3. **Light or dark**: Light, Dark or Match my device (follows the computer or phone, also when it changes). Kept in
@@ -640,8 +635,8 @@ and the subscription could never take over. Empty again = the subscription only.
 
 ## Bot check
 
-Since item 40 (the user, 2026-11-13: "bot check add back", once anyone could sign up) "Email me a code" on the public
-site can need Cloudflare Turnstile (`app/otp.py`, `login.html`): the widget sits under the form, and the server checks
+Since item 40 (the user, 2026-11-13: "bot check add back", while anyone could sign up; it still keeps scripts from
+asking for codes) "Email me a code" on the public site can need Cloudflare Turnstile (`app/otp.py`, `login.html`): the widget sits under the form, and the server checks
 its token with Cloudflare (siteverify) before a code is made or sent. A token works once (the page resets the widget
 after each ask). A missing or refused token gets 403 and no code; if Cloudflare cannot be asked, 503 and no code. The
 per-address and per-network limits below still apply. The admin portal never shows it.
@@ -660,13 +655,13 @@ The test stack runs with Cloudflare's published test keys (always pass: `1x00000
 
 ## Sign-in alerts
 
-Every successful sign-in sends info@pasdacs.com an email (`app/signin_alerts.py`): who, their organisation (and
-whether they created it or joined it just now), the public site or the admin portal, when (IST), the network address
+Every successful sign-in sends info@pasdacs.com an email (`app/signin_alerts.py`): who, their organisation, the
+public site or the admin portal, when (IST), the network address
 and country Cloudflare saw, the browser, whether it is their first sign-in, how many sign-in codes that network asked
 for in the last hour, and the organisation's credits. The email goes out in the background, so a sign-in never waits
 for it or fails because of it, and each one is in the audit log (`signin.alert`). Codes are rate limited per address
 and per network, so the alerts are too. To act on one: pause the organisation or switch the person off on the admin
-portal. A new organisation gets its review email instead (see "Starting credits are reviewed"), not a second alert.
+portal.
 
 - `RELAY_SIGNIN_ALERTS=0` turns them off; `RELAY_SIGNIN_ALERTS_TO` sends them to another address.
 - Without mail set up (a test install) the alert is written to the container's log instead: `[signin-alert] ...`.
@@ -786,7 +781,7 @@ Requests from people (India's DPDP Act 2023 and its Rules of 2025; most duties a
 
   It refuses while a dashboard run is in progress or waiting, and refuses the platform's own workspace. It drops the
   organisation's database schema, its folders, secrets, visual library and the AI engine's transcripts, removes its
-  people's accounts (they are signed out, and their addresses are free to sign up again), keeps the credit history
+  people's accounts (they are signed out, and their addresses are free to be added again), keeps the credit history
   and its payments without names, emails or messages, and records `d2d.org_erased`. The nightly backups hold it for
   14 more days.
 

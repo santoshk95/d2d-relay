@@ -1,7 +1,7 @@
-404-admin 55
+404-admin 57
 404-edition 330
-OPEN 136
-nonapi 19
+OPEN 135
+nonapi 17
 OPEN	DELETE	/api/askd/threads/{tid}	app.governance.api_delete_thread
 OPEN	DELETE	/api/branding/logo	app.branding.remove_logo
 OPEN	DELETE	/api/connections/{cid}	app.data_routes.remove_connection
@@ -98,7 +98,6 @@ OPEN	POST	/api/org/migration-request	app.orgs.migration_request
 OPEN	POST	/api/org/people	app.orgs.add_person
 OPEN	POST	/api/org/setup	app.orgs.setup_done
 OPEN	POST	/api/org/transfer	app.orgs.transfer_ownership
-OPEN	POST	/api/org/unblock	app.orgs.unblock_address
 OPEN	POST	/api/payments/order	app.payments.start
 OPEN	POST	/api/payments/verify	app.payments.verify
 OPEN	POST	/api/payments/webhook	app.payments.webhook
@@ -144,7 +143,6 @@ nonapi	GET	/auth/github/callback	app.publishing_routes.github_callback
 nonapi	GET	/auth/microsoft/callback	app.mailer.microsoft_done
 nonapi	GET	/auth/oidc/{pid}/callback	app.platform.oidc_callback
 nonapi	GET	/auth/oidc/{pid}/start	app.platform.oidc_start
-nonapi	GET	/auth/otp/organisation	app.otp.signup_pending
 nonapi	GET	/auth/providers	app.platform.sign_in_options
 nonapi	GET	/gallery	app.main.gallery
 nonapi	GET	/healthz	app.main.healthz
@@ -153,7 +151,6 @@ nonapi	GET	/portal.js	app.main.portal_js
 nonapi	POST	/auth/local	app.platform.local_sign_in
 nonapi	POST	/auth/logout	app.platform.sign_out
 nonapi	POST	/auth/observe/hook/{sid}	app.observe.api_hook
-nonapi	POST	/auth/otp/organisation	app.otp.create_organisation
 nonapi	POST	/auth/otp/start	app.otp.start
 nonapi	POST	/auth/otp/verify	app.otp.verify
 nonapi	POST	/auth/setup	app.platform.setup_password

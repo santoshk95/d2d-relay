@@ -291,7 +291,7 @@ def delete_person(uid: str, by: str) -> dict:
     dashboard says it was made by a former member. Their name, email, sign-ins, sessions, Ask Relay conversations,
     notifications, connections (signed in as them), schedules, tokens and settings go; logs and accounting records keep
     no name or address. The row itself stays, emptied, so nothing that refers to it breaks; the address is free again
-    (relay.tn_accounts), so it can sign up again, or be added back, as a new person.
+    (relay.tn_accounts), so an owner or PASDACS can add it back, as a new person.
     Runs in the organisation's own workspace (db.use / the request's tenant)."""
     from . import identity, orgs, secrets_store
     o = orgs.row(db.tenant())
@@ -341,8 +341,7 @@ def delete_person(uid: str, by: str) -> dict:
         tid = o["tenant_id"]
         db.run("DELETE FROM relay.tn_accounts WHERE user_id = ?", (uid,))       # the address is free again
         db.run("DELETE FROM relay.tn_access WHERE user_id = ?", (uid,))         # any guest access they had elsewhere
-        db.run("DELETE FROM otp_codes WHERE lower(email) = lower(?)", (email,))     # sign-in codes and sign-up steps live here
-        db.run("DELETE FROM otp_signup WHERE lower(email) = lower(?)", (email,))
+        db.run("DELETE FROM otp_codes WHERE lower(email) = lower(?)", (email,))     # their sign-in codes
         db.run("UPDATE relay.tn_credits SET user_name = NULL WHERE tenant_id = ? AND user_id = ?", (tid, uid))
         db.run("UPDATE relay.tn_credit_requests SET user_name = NULL, email = NULL, message = NULL WHERE tenant_id = ? AND user_id = ?",
                (tid, uid))
@@ -363,7 +362,6 @@ def sweep() -> dict:
         out["audit"] += db.run("DELETE FROM audit WHERE ts < ?", (logs,))
         out["answer_cache"] += db.run("DELETE FROM askd_cache WHERE created < ?", (cache,))
         out["signin_codes"] += db.run("DELETE FROM otp_codes WHERE created < ?", (logs,))
-        out["signin_codes"] += db.run("DELETE FROM otp_signup WHERE created < ?", (logs,))
     with db.use(db.PLATFORM):
         out["audit"] += db.run("DELETE FROM relay.tn_audit WHERE ts < ?", (logs,))
         # online checkouts never paid (item 23); paid ones are accounting records and stay

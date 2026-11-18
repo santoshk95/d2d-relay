@@ -83,7 +83,7 @@ def main():
     dom = f"gov{STAMP}.com"
     owner, member = c.Person(f"gina.owner@{dom}"), c.Person(f"mo.member@{dom}")
     s, r = owner.sign_in("Gov Test", "Gina Owner")
-    c.check("setup: an organisation signs up", s == 200, (s, r))
+    c.check("setup: an organisation is set up", s == 200, (s, r))
     s, r = member.sign_in()
     c.check("setup: a colleague joins it", s == 200, (s, r))
 
@@ -264,7 +264,7 @@ print(sorted(a), sorted(k), o, t)
     dom2 = f"erase{STAMP}.com"
     boss = c.Person(f"ed.boss@{dom2}")
     s, r = boss.sign_in("Erase Me", "Ed Boss")
-    c.check("erase: a second organisation signs up", s == 200, (s, r))
+    c.check("erase: a second organisation is set up", s == 200, (s, r))
     s, d2 = c.new_dashboard(boss)
     c.check("erase: it makes a dashboard", s == 200 and isinstance(d2, dict) and d2.get("id"), (s, d2))
     wait_idle(boss, d2["id"])

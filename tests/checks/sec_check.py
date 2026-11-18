@@ -1,10 +1,10 @@
 """Test stack only: security across sites, roles and organisations (the security audit of 2026-11-11).
 python -I -X utf8 sec_check.py http://127.0.0.1:8103 http://127.0.0.1:8104
 
-Anonymous access to every route; sign-in hardening; CSRF; session cookies tampered with across organisations and
-sites; owner / member / removed person; one organisation against another's dashboards, files, people, requests and
-payments; uploads and paths; security headers and the Range guard; the platform console off the public site; the
-starting-credit review (when the stack runs it). Never the live site.
+Anonymous access to every route; sign-in hardening (item 56: codes for accounts only, the same answer for any other
+address); CSRF; session cookies tampered with across organisations and sites; owner / member / removed person; one
+organisation against another's dashboards, files, people, requests and payments; uploads and paths; security headers
+and the Range guard; the platform console off the public site. Never the live site.
 """
 import json
 import os
@@ -58,26 +58,15 @@ def section(name: str) -> None:
     print(f"--- {name}", flush=True)
 
 
-def logs(container: str, since: float) -> str:
-    out = subprocess.run(["docker", "logs", "--since", str(int(since) - 2), container], capture_output=True, text=True,
-                         encoding="utf-8", errors="replace")
-    return out.stdout + out.stderr
-
-
 def sql(q: str) -> str:
     return subprocess.run(["docker", "exec", "-u", "postgres", c.DB_C, "psql", "-qtA", "-h", "/run/postgresql", "-d", "relay", "-c", q],
                           capture_output=True, text=True, check=True).stdout.strip()
 
 
-def sign_up(email: str, org: str, person: str, approve: bool = True) -> c.Person:
-    """A new person (and a new organisation for a new domain); review on: approve its starting credits unless asked not to."""
+def sign_up(email: str, org: str, person: str) -> c.Person:
+    """A new person, given an account by PASDACS (a new organisation for a new domain; item 56: nobody signs up)."""
     p = c.Person(email)
-    keep = os.environ.get("D2D_TEST_APPROVE_START")
-    os.environ["D2D_TEST_APPROVE_START"] = "1" if approve else "0"
-    try:
-        s, r = p.sign_in(org, person)
-    finally:
-        os.environ["D2D_TEST_APPROVE_START"] = keep or "0"
+    s, r = p.sign_in(org, person)
     check(f"setup: {email} signs in", s == 200, (s, r))
     return p
 
@@ -136,13 +125,28 @@ check("headers: one range still works (206)", s == 206 and len(t) == 10, (s, len
 
 # ---------------------------------------------------------------------------------------------------- sign-in
 section("sign-in hardening")
-for addr in ("someone@mailinator.com", "someone@yopmail.com", "someone@guerrillamail.com", "a@b"):
+s, r = c.Person("a@b").post("/auth/otp/start", {"email": "a@b"})
+check("sign-in: a@b is not an address (400)", s == 400, (s, r))
+# item 56: nobody signs up. An address without an account (throw-away or not) gets the answer an account gets, and no code
+known = c.Person(f"kim@known{STAMP}.com")
+c.provision_account(known.email, f"Known {STAMP}")
+t0 = time.time()
+sk, rk = known.post("/auth/otp/start", {"email": known.email}, headers={"cf-connecting-ip": known.ip})
+for addr in (f"someone{STAMP}@mailinator.com", f"someone{STAMP}@yopmail.com", f"nobody@unknown{STAMP}.com"):
+    t1 = time.time()
     s, r = c.Person(addr).post("/auth/otp/start", {"email": addr})
-    check(f"sign-in: {addr} is refused", s == 400, (s, r))
-# item 39: free mail (Gmail, Outlook, Yahoo ...) signs in to a personal workspace of its own (item39_check.py)
+    same = isinstance(r, dict) and isinstance(rk, dict) and r.get("message") == str(rk.get("message", "")).replace(known.email, addr)
+    check(f"sign-in: {addr.split('@')[1]} (no account) gets the same answer as an account, and no code",
+          s == sk == 200 and same and not c.code_now(c.WEB_C, addr, t1, wait=1), (s, r, rk))
+s, r = c.Person(f"nobody@unknown{STAMP}.com").post("/auth/otp/verify", {"email": f"nobody@unknown{STAMP}.com", "code": "123456"})
+check("sign-in: ... and any code for it is wrong (400)", s == 400 and "wrong" in str(detail(r)), (s, r))
+s, r = c.Person(f"nobody@unknown{STAMP}.com").post("/auth/otp/start", {"email": f"nobody@unknown{STAMP}.com"})
+check("sign-in: ... and the one-a-minute limit counts it like any address (429)", s == 429, (s, r))
+check("sign-in: the address with an account got its code", bool(c.code_from_logs(c.WEB_C, known.email, t0)), rk)
 s, r = c.Person(f"x@acme{STAMP}.com", A).post("/auth/otp/start", {"email": f"x@acme{STAMP}.com"})
 check("sign-in: the admin portal refuses an address outside PASDACS (403)", s == 403, (s, r))
 v = c.Person(f"vera@guess{STAMP}.com")
+c.provision_account(v.email, f"Guess {STAMP}")
 hdr = {"cf-connecting-ip": v.ip}
 t0 = time.time()
 s, r = v.post("/auth/otp/start", {"email": v.email}, headers=hdr)
@@ -155,8 +159,9 @@ for i in range(5):
     v.post("/auth/otp/verify", {"email": v.email, "code": wrong})
 s, r = v.post("/auth/otp/verify", {"email": v.email, "code": code})
 check("sign-in: after 5 wrong tries the right code no longer works", s == 400, (s, r))
-s, r = v.post("/auth/otp/organisation", {"name": "No Cookie", "person": "x"})
-check("sign-in: naming an organisation without the sign-up step is refused (401)", s == 401, (s, r))
+for method in ("GET", "POST"):
+    s, r = v.call(method, "/auth/otp/organisation", {"name": "No Cookie", "person": "x"} if method == "POST" else None)
+    check(f"sign-in: there is no sign-up step any more ({method} /auth/otp/organisation: 404 or 405, no such route)", s in (404, 405), (s, r))
 c.forget_codes(v.email)
 t0 = time.time()
 v.post("/auth/otp/start", {"email": v.email}, headers=hdr)
@@ -165,8 +170,9 @@ req = urllib.request.Request(P + "/auth/otp/verify", data=json.dumps({"email": v
                              headers={"Content-Type": "application/json"})
 with urllib.request.urlopen(req, timeout=60) as resp:
     setcookie = resp.headers.get_all("Set-Cookie") or []
-check("sign-in: the sign-up step's cookie is HttpOnly, SameSite=Lax and limited to /auth/otp/",
-      any("d2d_signup=" in x and "HttpOnly" in x and "samesite=lax" in x.lower() and "Path=/auth/otp/" in x for x in setcookie), setcookie)
+check("sign-in: the session cookie is HttpOnly and SameSite=Lax, and no sign-up cookie is set",
+      any("d2d_session=" in x and "HttpOnly" in x and "samesite=lax" in x.lower() for x in setcookie)
+      and not any("d2d_signup=" in x for x in setcookie), setcookie)
 s, r = v.post("/auth/otp/verify", {"email": v.email, "code": code})
 check("sign-in: a code works once", s == 400, (s, r))
 for i in range(20):
@@ -186,10 +192,6 @@ oa, ob = org_of(a1), org_of(b1)
 check("setup: Ann owns Alpha, Bob joined it as a member", oa.get("is_owner") and org_of(a2).get("id") == oa.get("id")
       and not org_of(a2).get("is_owner"), (oa, org_of(a2)))
 check("setup: Alpha and Beta are different workspaces", oa.get("id") and ob.get("id") and oa["id"] != ob["id"])
-if (oa.get("credits") or 0) < 50:
-    c.approve_start(a1.email)
-if (ob.get("credits") or 0) < 25:
-    c.approve_start(b1.email)
 s, pa1 = new_dashboard(a1, "Ann's private dashboard")
 s2, pa2 = new_dashboard(a2, "Bob's private dashboard")
 s3, pb1 = new_dashboard(b1, "Cat's dashboard")
@@ -262,9 +264,10 @@ s, r = a1.delete(f"/api/org/people/{dan_old}")
 check("owner: Ann removes Dan", s == 200, (s, r))
 s, r = dan.get("/api/me")
 check("removed: Dan's open session ends at once (401)", s == 401, (s, r))
-# items 31-32 (the user, 2026-11-12): removing deletes the account at once, and the address is blocked from joining again
-s, r = dan.sign_in(again=True)
-check("removed: Dan cannot sign in again: his address is blocked (403)", s == 403 and "removed this address" in str(detail(r)), (s, r))
+# item 31 (the user, 2026-11-12): removing deletes the account at once; item 56: with it gone, no code is sent to him
+time.sleep(4)                                   # the log is read from 2 s back: past the code he just signed in with
+s, r = dan.sign_in(again=True, provision=False)
+check("removed: Dan cannot sign in again: no code goes to his address any more", s == 0 and "no code" in str(r), (s, r))
 
 section("platform powers")
 for path in ("/api/admin/orgs", "/api/admin/requests", "/api/admin/payments", "/api/admin/audit", "/api/admin/secrets", "/api/admin/jobs"):
@@ -313,57 +316,6 @@ if paid:
     check("payments: another organisation's receipt answers 404", s == 404, (s, str(r)[:100]))
 s, r = a2.put("/api/payments/billing", {"name": "X", "address": "Y", "country": "India", "state": "29", "pin": "560001"})
 check("payments: a member cannot change the billing details (403)", s == 403, (s, r))
-
-# ---------------------------------------------------------------------------------------------------- starting credits
-section("starting credits (item 27)")
-t0 = time.time()
-dom_c = f"review{STAMP}.com"
-c1 = sign_up(f"cleo@{dom_c}", f"Review {STAMP}", "Cleo Owner", approve=False)
-oc = org_of(c1)
-REVIEW = (oc.get("pending_request") or {}).get("purpose") == "start"
-print(f"(this stack reviews starting credits: {REVIEW})")
-if not REVIEW:
-    check("review off: a new organisation starts with 50, nothing waits", oc.get("credits") == 50 and not oc.get("pending_request"), oc)
-else:
-    check("review: a new organisation starts with none; its 50 wait for PASDACS", oc.get("credits") == 0 and oc["pending_request"]["credits"] == 50, oc)
-    c2 = sign_up(f"cody@{dom_c}", None, None, approve=False)
-    check("review: a colleague who joins sees the same review", (org_of(c2).get("pending_request") or {}).get("purpose") == "start", org_of(c2))
-    s, r = new_dashboard(c1, "Too early")
-    check("review: a dashboard before the answer is refused, saying why (402)", s == 402 and "PASDACS is reviewing" in str(detail(r)), (s, r))
-    s, r = c1.post("/api/org/credit-request", {"credits": 100})
-    check("review: asking for more meanwhile says PASDACS is reviewing (409)", s == 409 and "reviewing" in str(detail(r)), (s, r))
-    rid = oc["pending_request"]["id"]
-    s, r = a1.post(f"/api/admin/requests/{rid}/approve", {"credits": 50})
-    check("review: an owner on the public site cannot approve it (404)", s == 404, (s, r))
-    s, r = adm.get("/api/admin/requests")
-    row = next((x for x in r.get("credits", []) if x["id"] == rid), {})
-    check("review: the admin portal lists it as a new organisation's starting credits", row.get("purpose") == "start" and row.get("status") == "pending", row)
-    s, r = adm.post(f"/api/admin/requests/{rid}/decline", {"note": ""})
-    check("review: declining needs a reason (400)", s == 400, (s, r))
-    s, r = adm.post(f"/api/admin/requests/{rid}/approve", {"credits": 40, "note": "Pilot"})
-    check("review: PASDACS approves 40 instead of 50", s == 200, (s, str(r)[:150]))
-    s, r = adm.post(f"/api/admin/requests/{rid}/approve", {"credits": 40})
-    check("review: approving twice is refused (409)", s == 409, (s, r))
-    o = org_of(c1)
-    s, led = c1.get("/api/org")
-    check("review: the owner has 40, as starting credits in the history", o.get("credits") == 40 and any(
-        x["kind"] == "start" and x["delta"] == 40 for x in led.get("ledger", [])), (o.get("credits"), led.get("ledger")))
-    s, n = c1.get("/api/notifications")
-    check("review: the owner is told in the app", "is approved" in json.dumps(n), str(n)[:200])
-    d1 = sign_up(f"dora@x1.{dom_c}", f"Sub {STAMP}", "Dora", approve=False)
-    log = logs(c.WEB_C, t0)
-    sub = [ln for ln in log.splitlines() if "[org-review]" in ln and f"x1.{dom_c}" in ln]
-    check("review: the review for a subdomain names the organisation on its parent domain",
-          bool(sub) and f"Review {STAMP} (@{dom_c})" in sub[-1].split(f"Other organisations on {dom_c}")[-1], sub[-1][:300] if sub else log[-300:])
-    check("review: no separate sign-in alert for a new organisation under review",
-          not [ln for ln in log.splitlines() if "[signin-alert]" in ln and "new organisation" in ln and dom_c in ln])
-    rid2 = org_of(d1)["pending_request"]["id"]
-    s, r = adm.post(f"/api/admin/requests/{rid2}/decline", {"note": "Please write to us first"})
-    check("review: PASDACS declines another, with a reason", s == 200, (s, str(r)[:150]))
-    s, n = d1.get("/api/notifications")
-    check("review: that owner is told why", "Please write to us first" in json.dumps(n), str(n)[:200])
-    s, r = d1.post("/api/org/credit-request", {"credits": 100, "message": "We wrote"})
-    check("review: after a decline the organisation can still ask for credits", s == 200, (s, r))
 
 bad = [n for n, ok in c.RESULTS if not ok]
 print(f"\n{len(c.RESULTS) - len(bad)} of {len(c.RESULTS)} checks passed" + (f"; failed: {bad}" if bad else ""))

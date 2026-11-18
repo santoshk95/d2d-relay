@@ -1359,6 +1359,37 @@ stay uncommitted on purpose, identical to their backup branch).
     before any organisation uses it. Open in engineering: the `.pbix` reader runs as the web app's user in the web
     container (limits and a clean environment only); a job container of its own (no network, only the upload, like
     the AI builds) is the next hardening.
+56. **Nobody signs up: PASDACS creates each organisation, its owners add its people** (the user, 2026-11-18: "Remove
+    signup and bring login directly as internal team management", after taking D2D off the live site to license it to
+    client organisations, item 54). The sign-in page is now only that: email, code, in. A code goes only to an address
+    with an account; any other address gets the same answer ("If ... has a D2D Relay account, we sent it a sign-in
+    code"), after about as long as sending one takes, and the code limits count it the same way, so the page never
+    tells anyone which addresses have accounts (the audit records `auth.otp_no_account`, with the domain only).
+    Accounts come from two places. **PASDACS creates each organisation** on the admin portal (Organisations, **New
+    organisation**: its name, its main owner's work address and name, and its starting credits, 50 unless another
+    number is set; one organisation a domain; no free mail or throw-away owner), and the main owner is emailed. **Its
+    owners add its people** (Organisation, People, as before). PASDACS can also add someone to any organisation
+    (Organisations, **Add someone**, the person button on its row: a new owner when the owners have left, say; the
+    owners are told). The admin portal now takes only pasdacs.com people with an account in PASDACS's own workspace (a
+    PASDACS owner adds colleagues on the public site), no longer every pasdacs.com address. Gone with the sign-up:
+    joining an organisation by email domain; the step that named a new organisation (`/auth/otp/organisation`, and
+    its table `otp_signup`, dropped at start); new personal workspaces for free mail (item 39; the two on live keep
+    working as they did); the blocked list of removed addresses (item 32: removing someone deletes their account, so
+    nothing is left to block); and the starting-credit review with its emails (item 27; a request from before that
+    is still waiting can be approved, as starting credits, and `RELAY_CREDITS_START_REVIEW` is ignored). The sign-in
+    alerts, the admin portal's Overview ("People", "Added"), the Organisation page, the tour, the README,
+    `.env.example` and `docs/d2d-relay.md` say so.
+    Found by the tests and fixed: creating an organisation on the admin portal could fail (500) when the public site
+    set the same new workspace up at that moment on first use, as two processes created its tables at once;
+    `db.init_tenant` now takes the advisory lock `db.init` takes at start. The admin portal's Organisations table
+    gained a person button rather than a third text button. Tests: one mode now (the starting-credit review was
+    the second); the suites have PASDACS create their organisations and people first
+    (`d2d_checks.provision_account`, in `Person.sign_in`); `item56_check` (62) replaces `item39_check`; `sec_check`,
+    `accounts_check`, `item50_check`, `item40_check` and `upgrade_check` follow the app. Every suite passes, 1160 of
+    1160 on the candidate image, and `upgrade_check` 27 of 27 from live's `b77f38e`.
+    Not changed: the privacy notice and the terms still describe joining by domain and personal workspaces; they are
+    the lawyer-reviewed pages, for the user and the lawyer to update with the client licences. Committed in the work
+    folder; not deployed (the app is off, item 54), not pushed.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
@@ -1518,7 +1549,9 @@ also takes the deploy folder to `7ecd8b4` first (`git reset --keep 7ecd8b4`) and
   `RELAY_ADMIN_EMAILS`).
 - **The old address** d2d-relay.pasdacs.com: done. The user removed its public hostname in Cloudflare; the name no
   longer resolves (checked 2026-11-12, ~13:30 IST). https://d2d.pasdacs.com is the only address.
-- **Social media and ads** (item 38's check, 2026-11-12; item 39, 2026-11-13). Since item 39 anyone can sign up: a
+- **Social media and ads** (item 38's check, 2026-11-12; item 39, 2026-11-13). Overtaken by items 54 and 56: the app
+  is off the public site and nobody signs up any more (PASDACS creates each licensed organisation); the rest of this
+  point is how it stood before. Since item 39 anyone can sign up: a
   work email joins its company's organisation (whose starting credits wait for PASDACS's review), a personal address
   (Gmail, Outlook, Yahoo ...) gets a personal workspace that buys its credits; throw-away inboxes stay refused.
   pasdacs.com and the social pack say so since the same evening; nothing has been posted yet (the user, 2026-11-13),

@@ -76,7 +76,7 @@ print(json.dumps(out))
 
 p = c.Person(f"una.ui@ui{c.STAMP}.com")
 s, r = p.sign_in("UI Gov", "Una Ui")
-c.check("ui: an organisation signs up", s == 200, (s, r))
+c.check("ui: an organisation is set up", s == 200, (s, r))
 s, d = c.new_dashboard(p)
 c.check("ui: it makes a dashboard", s == 200 and isinstance(d, dict) and d.get("id"), (s, d))
 pid, name = d["id"], d["name"]

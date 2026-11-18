@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
-# A fresh D2D Relay test stack, never the live one: bash tests/stack/stack.sh <starting-credit review: 0|1>
+# A fresh D2D Relay test stack, never the live one: bash tests/stack/stack.sh
 #   TEST_IMAGE        the image to test (required), e.g. d2d-relay:54f6ed7
 #   TEST_DB_PASSWORD  the test database's password (made up at random when not set)
 #   TEST_CLAUDE_VOLUME / TEST_CLAUDE_EXTERNAL   only for a real-Claude test: claude-api-auth and true, always together
 # Containers d2d-relay-test-db/-web/-admin/-runner; 127.0.0.1:8103 public site, 8104 admin portal, 8105 stand-in
-# Razorpay. Any earlier test stack is removed first, with its volumes. The settings are written to .env here
+# Razorpay, 8106 stand-in Microsoft APIs. Any earlier test stack is removed first, with its volumes. The settings are written to .env here
 # (git-ignored), so `docker compose -p d2d-relay-test ...` run in this folder later (down -v included) sees them too.
 set -euo pipefail
 cd "$(dirname "$0")"
-REVIEW=${1:-}
-case "$REVIEW" in 0|1) ;; *) echo "usage: TEST_IMAGE=d2d-relay:<tag> bash stack.sh <starting-credit review: 0|1>" >&2; exit 2 ;; esac
 : "${TEST_IMAGE:?set TEST_IMAGE to the image to test, e.g. d2d-relay:54f6ed7}"
 docker image inspect "$TEST_IMAGE" >/dev/null 2>&1 || { echo "stack.sh: no image $TEST_IMAGE on this PC" >&2; exit 2; }
 
@@ -40,7 +38,6 @@ fi
 
 export TEST_IMAGE TEST_CLAUDE_VOLUME TEST_CLAUDE_EXTERNAL
 export TEST_DB_PASSWORD=${TEST_DB_PASSWORD:-$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')}
-export TEST_START_REVIEW=$REVIEW
 # The stand-in Razorpay's keys: made up, and look it. The key id looks live so the live path runs.
 export TEST_RZP_KEY_ID=${TEST_RZP_KEY_ID:-rzp_live_D2DTESTSTACK01}
 export TEST_RZP_SECRET=${TEST_RZP_SECRET:-stand-in-key-secret-not-real}
@@ -57,7 +54,7 @@ docker compose -p d2d-relay-test down -v >/dev/null 2>&1 || true
 rm -rf ./test-projects && mkdir -p ./test-projects ./empty-app ./empty-static   # item 31: the projects folder is a bind, as on live
 {
   echo "# Written by stack.sh for the running test stack (git-ignored); docker compose reads it in this folder"
-  for v in TEST_IMAGE TEST_DB_PASSWORD TEST_START_REVIEW TEST_RZP_KEY_ID TEST_RZP_SECRET TEST_RZP_WEBHOOK TEST_RZP_API \
+  for v in TEST_IMAGE TEST_DB_PASSWORD TEST_RZP_KEY_ID TEST_RZP_SECRET TEST_RZP_WEBHOOK TEST_RZP_API \
            TEST_CLAUDE_VOLUME TEST_CLAUDE_EXTERNAL TEST_TURNSTILE_SITE_KEY TEST_TURNSTILE_SECRET TEST_ANTHROPIC_API_KEY; do
     echo "$v=${!v}"
   done
@@ -71,7 +68,7 @@ for _ in $(seq 1 90); do
   [ "$w" = healthy ] && [ "$a" = healthy ] && break
   sleep 5
 done
-echo "web=$w admin=$a image=$(docker inspect -f '{{.Config.Image}}' d2d-relay-test-web) review=$(MSYS_NO_PATHCONV=1 docker exec d2d-relay-test-web printenv RELAY_CREDITS_START_REVIEW)"
+echo "web=$w admin=$a image=$(docker inspect -f '{{.Config.Image}}' d2d-relay-test-web)"
 swept=$(docker logs d2d-relay-test-runner 2>&1 | grep 'removed a job left from before' || true)
 if [ -n "$swept" ]; then
   echo "WARNING: the test runner removed job containers when it started (a live build may have been stopped):" >&2

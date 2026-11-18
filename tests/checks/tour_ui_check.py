@@ -133,7 +133,7 @@ print(json.dumps(out))
 
 owner, member = c.Person(f"una.tour@tui{c.STAMP}.com"), c.Person(f"max.tour@tui{c.STAMP}.com")
 s, r = owner.sign_in("Tour UI", "Una Tour")
-c.check("ui: an organisation signs up", s == 200, (s, r))
+c.check("ui: an organisation is set up", s == 200, (s, r))
 s, r = member.sign_in()
 c.check("ui: a colleague joins it", s == 200, (s, r))
 ck = lambda p: next(k.value for k in p.jar if k.name == "d2d_session")      # noqa: E731

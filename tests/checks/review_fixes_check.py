@@ -11,7 +11,7 @@ BLOCKED = "That is not part of D2D Relay."
 stamp = str(int(time.time()))[-6:]
 owner = c.Person(f"olive.owner@review{stamp}.com")
 s, r = owner.sign_in("Review Test", "Olive Owner")
-c.check("a new organisation signs up", s == 200, (s, r))
+c.check("a new organisation is set up", s == 200, (s, r))
 s, r = owner.post("/api/reviews/no-such-dashboard/r-1234", {"decision": "approve", "comment": ""})
 c.check("a reviewer's answer reaches the app (not blocked)", s == 404 and c.detail_of(r) != BLOCKED, (s, r))
 s, r = owner.get("/api/reviews")

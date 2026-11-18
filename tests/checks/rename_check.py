@@ -22,7 +22,7 @@ def app_py(code: str) -> str:
 
 p = c.Person(f"rae.rename@ren{c.STAMP}.com")
 s, r = p.sign_in("Rename Review", "Rae Rename")
-check("setup: an organisation signs up", s == 200, (s, r))
+check("setup: an organisation is set up", s == 200, (s, r))
 s, reg = p.get("/api/registry")
 text = json.dumps(reg)
 check("rename: the module catalogue never says Ask D (D2D Relay reaches Ask Relay from its sidebar, not the catalogue)",

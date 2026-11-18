@@ -226,9 +226,9 @@ async function renderOrg() {
           h('b', {}, p.name + (p.id === (S.me || {}).id ? ' (you)' : '')), p.primary ? h('span', {class: 'tag acc', style: 'margin-left:6px'}, 'Main owner') : null,
           h('div', {class: 'small muted'}, p.email)))),
         h('p', {class: 'small muted'}, personal
-          ? 'A personal workspace is just you: nobody else joins it. To work with colleagues, sign in with your work email: your company gets an organisation of its own.'
+          ? `A personal workspace is just you: nobody else joins it. For an organisation with colleagues, write to ${d.contact || 'info@pasdacs.com'}.`
           : `Owners manage the people, the organisation's name and its credit requests, and can open every dashboard in it. `
-          + `Everyone who signs in with an @${d.domain} address joins ${d.name} as a member and shares its credits; each person's dashboards are private until they share them.`),
+          + `Only the people its owners add (@${d.domain} addresses) can sign in to ${d.name}; they share its credits, and each person's dashboards are private until they share them.`),
         d.is_primary && d.people.length > 1 ? h('button', {class: 'btn sm', type: 'button', onclick: () => transferDialog(d)}, icon('swap'), 'Transfer ownership') : null)),
     personal ? '' : peopleCard(d, th),          // '' not null: Element.append writes null as text
     h('div', {class: 'card'}, h('h3', {}, 'Credit history'),
@@ -288,14 +288,14 @@ function typedDelete(title, intro, items, after, word, okLabel, url, json) {
 function deleteAccountDialog(d) {
   typedDelete('Delete your account?', `Your account in ${d.name} is deleted at once, and this cannot be undone:`,
     ['your name, email address, sign-ins and settings', 'your Ask Relay conversations', 'your notifications'],
-    `The dashboards you made stay with ${d.name}: its main owner holds them, marked as made by a former member. You can sign up again later as a new person.`,
+    `The dashboards you made stay with ${d.name}: its main owner holds them, marked as made by a former member. An owner can add you again later, as a new person.`,
     'DELETE', 'Delete my account', '/api/me/delete', v => ({confirm: v}));
 }
 function deleteOrgDialog(d) {
   typedDelete(`Delete ${d.name}?`, `${d.name} is deleted at once, with everything in it, and this cannot be undone:`,
     ['every dashboard, its data and its Power BI files', `everyone in it (${d.people.length} ${d.people.length === 1 ? 'person' : 'people'}), their sign-ins and settings`,
      'Ask Relay conversations, connections and the brand', `the credits left (${Number(d.credits || 0).toLocaleString()})`],
-    'Payments and their GST invoices stay, without names, as tax law requires. Your email domain can sign up again later as a new organisation.',
+    'Payments and their GST invoices stay, without names, as tax law requires. PASDACS can set it up again later as a new organisation.',
     d.name, `Delete ${d.name}`, '/api/org/delete', v => ({confirm: v}));
 }
 /* ---------------- people: owners add people, make owners or members, remove and add back (app/orgs.py) ---------------- */
@@ -316,7 +316,7 @@ function peopleCard(d, th) {
       (self ? 'Your account is deleted at once: your name, email address, sign-ins and Ask Relay conversations. '
         : `${p.name}'s account is deleted at once: their name, email address, sign-ins and Ask Relay conversations. `)
       + `The dashboards ${self ? 'you' : 'they'} made stay with ${d.name}, held by the main owner and marked as made by a former member. `
-      + (self ? 'This cannot be undone.' : `This cannot be undone, and ${p.email} cannot join ${d.name} again unless an owner unblocks it or adds them back.`),
+      + (self ? 'This cannot be undone.' : `This cannot be undone, and ${p.email} cannot sign in again unless an owner adds them back.`),
       self ? 'Leave and delete' : 'Remove and delete'))
       act(() => api(`/api/org/people/${encodeURIComponent(p.id)}`, {method: 'DELETE'}), self ? null : `${p.name} removed`);
   }}, p.id === me ? 'Leave' : 'Remove') : null;
@@ -327,12 +327,6 @@ function peopleCard(d, th) {
       h('tbody', {}, d.people.map(p => h('tr', {}, h('td', {}, p.name + (p.id === me ? ' (you)' : '')), h('td', {}, p.email), h('td', {}, roleSel(p)),
         h('td', {class: 'n'}, when(p.created)), h('td', {class: 'n'}, p.last_login ? ago(p.last_login) : h('span', {class: 'muted'}, 'not yet')),
         h('td', {class: 'n'}, remove(p))))))),
-    (d.blocked || []).length ? h('details', {class: 'more', style: 'margin-top:10px'}, h('summary', {}, `Blocked (${d.blocked.length})`),
-      h('div', {class: 'small muted', style: 'margin:6px 0'}, `Addresses an owner removed: they cannot join ${d.name} again until you unblock them or add them back.`),
-      h('div', {class: 'stack', style: 'gap:6px'}, d.blocked.map(b => h('div', {class: 'row', style: 'gap:8px;flex-wrap:wrap'},
-        h('span', {}, h('b', {}, b.email), h('span', {class: 'small faint'}, b.when ? ` - removed ${when(b.when)}` : '')), h('span', {class: 'spacer'}),
-        h('button', {class: 'btn sm', type: 'button', onclick: () => act(() => api('/api/org/unblock', {json: {email: b.email}}), `${b.email} can join again`)}, 'Unblock')))))
-      : null,
     (d.removed || []).length ? h('details', {class: 'more', style: 'margin-top:10px'}, h('summary', {}, `Removed (${d.removed.length})`),
       h('div', {class: 'stack', style: 'gap:6px;margin-top:8px'}, d.removed.map(p => h('div', {class: 'row', style: 'gap:8px;flex-wrap:wrap'},
         h('span', {}, h('b', {}, p.name), ` - ${p.email}`, h('span', {class: 'small faint'}, ` - removed ${when(p.deactivated)}`)), h('span', {class: 'spacer'}),
@@ -345,7 +339,7 @@ function addPersonDialog(d) {
   const out = h('div', {role: 'status'});
   const ok = h('button', {class: 'btn primary', type: 'button'}, icon('plus'), 'Add');
   const m = modal(`Add people to ${d.name}`, h('div', {class: 'mbody'},
-    h('p', {class: 'muted small', style: 'margin-top:0'}, `@${d.domain} addresses only. They get an email; they sign in with a code like everyone else. Members build dashboards and share the credits; owners also manage the people.`),
+    h('p', {class: 'muted small', style: 'margin-top:0'}, `@${d.domain} addresses only. Only the people added here can sign in: they get an email, and sign in with a code. Members build dashboards and share the credits; owners also manage the people.`),
     h('label', {class: 'f', style: 'margin-top:0'}, 'Email addresses'), emails, h('label', {class: 'f'}, 'As'), role, out,
     h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, ok)));
   ok.onclick = async () => {
@@ -439,12 +433,63 @@ async function renderOrgs() {
       catch (e) { ok.disabled = false; err.textContent = e.message; }
     };
   };
+  /* item 56: nobody signs up. PASDACS creates each organisation with its main owner (emailed), who then adds the people */
+  const newOrgDialog = () => {
+    const name = h('input', {type: 'text', maxlength: 80, autocomplete: 'off', placeholder: 'For example: Acme Foods'});
+    const email = h('input', {type: 'email', autocomplete: 'off', placeholder: 'name@company.com'});
+    const person = h('input', {type: 'text', maxlength: 120, autocomplete: 'off', placeholder: 'Optional: from the address if empty'});
+    const start = h('input', {type: 'number', min: 0, max: 1000000, step: 1, value: d.start, style: 'max-width:160px'});
+    const err = h('div', {class: 'err-msg', role: 'alert'});
+    const ok = h('button', {class: 'btn primary', type: 'button'}, icon('plus'), 'Create');
+    const m = modal('New organisation', h('div', {class: 'mbody'},
+      h('p', {class: 'muted small', style: 'margin-top:0'}, 'The organisation is its main owner\'s email domain (one organisation a domain; '
+        + 'no free mail or throw-away addresses). The main owner is emailed, signs in with a code and adds the organisation\'s people.'),
+      h('label', {class: 'f', style: 'margin-top:0'}, 'Organisation name'), name,
+      h('label', {class: 'f'}, 'Main owner\'s email'), email,
+      h('label', {class: 'f'}, 'Main owner\'s name ', h('small', {}, 'optional')), person,
+      h('label', {class: 'f'}, 'Starting credits'), start,
+      h('div', {class: 'hint'}, `${costLine(d.costs)}.`), err,
+      h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, ok)));
+    ok.onclick = async () => {
+      ok.disabled = true; err.textContent = '';
+      try {
+        const r = await api('/api/admin/orgs', {json: {name: name.value, email: email.value, person: person.value,
+          credits: start.value === '' ? null : parseInt(start.value, 10)}});
+        m.remove();
+        notify(`${r.created.name} created` + (r.created.invited ? `: ${r.created.owner.email} was emailed` : `: not emailed, tell ${r.created.owner.email} to sign in`), 'ok');
+        renderOrgs();
+      } catch (e) { ok.disabled = false; err.textContent = e.message; }
+    };
+    name.focus();
+  };
+  const personDialog = o => {                 // PASDACS adds someone (a new owner when the owners have left, say)
+    const email = h('input', {type: 'email', autocomplete: 'off', placeholder: `name@${o.domain}`});
+    const role = h('select', {class: 'sel', style: 'max-width:200px'}, [['member', 'Member'], ['owner', 'Owner']].map(([v, t]) => h('option', {value: v}, t)));
+    const err = h('div', {class: 'err-msg', role: 'alert'});
+    const ok = h('button', {class: 'btn primary', type: 'button'}, icon('plus'), 'Add');
+    const m = modal(`Add someone to ${o.name}`, h('div', {class: 'mbody'},
+      h('p', {class: 'muted small', style: 'margin-top:0'}, `@${o.domain} addresses only. They are emailed and sign in with a code; the owners are told. `
+        + 'Owners usually add their own people under Organisation, People.'),
+      h('label', {class: 'f', style: 'margin-top:0'}, 'Email address'), email, h('label', {class: 'f'}, 'As'), role, err,
+      h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, ok)));
+    ok.onclick = async () => {
+      ok.disabled = true; err.textContent = '';
+      try {
+        const r = await api(`/api/admin/orgs/${encodeURIComponent(o.id)}/people`, {json: {email: email.value, role: role.value}});
+        m.remove();
+        notify(`${r.added.name} added to ${o.name}` + (r.added.invited ? ', invitation emailed' : ', not emailed: tell them to sign in'), 'ok');
+        renderOrgs();
+      } catch (e) { ok.disabled = false; err.textContent = e.message; }
+    };
+    email.focus();
+  };
   const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('div', {class: 'eyebrow'}, 'Platform'), h('h1', {}, 'Organisations'),
-      h('div', {class: 'meta'}, `Every organisation on D2D Relay, each in its own workspace. ${d.review ? `Each gets ${credits(d.start)} to start once you approve its sign-up (Requests)`
-        : d.start ? `Each starts with ${credits(d.start)}` : 'They start with no credits and get them when you approve a request'}; `
-        + `${costLine(d.costs)}. Organisations use CSV files until you switch a connector on.`))),
+      h('div', {class: 'meta'}, 'Every organisation on D2D Relay, each in its own workspace. Nobody signs up: you create each organisation '
+        + `with its main owner, who adds its people. ${d.start ? `Each starts with ${credits(d.start)} unless you set another number` : 'They start with no credits unless you set some'}; `
+        + `${costLine(d.costs)}. Organisations use CSV files until you switch a connector on.`)),
+      h('button', {class: 'btn primary', type: 'button', onclick: newOrgDialog}, icon('plus'), 'New organisation')),
     h('div', {class: 'card'}, h('div', {class: 'orgwrap'}, h('table', {class: 'utable'},
       th(['Organisation', 'Owner', 'Connectors', 'People', 'Dashboards', 'Credits used', 'Credits left', 'Last sign-in', ''], 3),
       h('tbody', {}, d.orgs.map(o => h('tr', {},
@@ -461,12 +506,15 @@ async function renderOrgs() {
           `asks for ${Number(o.pending.credits).toLocaleString()}`)) : null),
         h('td', {class: 'n'}, o.last_login ? ago(o.last_login) : '-'),
         h('td', {class: 'n'}, h('div', {class: 'row', style: 'gap:6px;justify-content:flex-end;flex-wrap:nowrap'},
+          isPersonal(o) ? null : h('button', {class: 'btn sm', type: 'button', title: `Add someone to ${o.name}`, 'aria-label': `Add someone to ${o.name}`,
+            onclick: () => personDialog(o)}, icon('user')),     // icon only: the row's three buttons fit the table
           h('button', {class: 'btn sm', type: 'button', onclick: () => connectorsDialog(o)}, icon('plug'), 'Connectors'),
           h('button', {class: 'btn sm', type: 'button', onclick: () => adjust(o)}, icon('plus'), 'Credits'))))))))),
     h('p', {class: 'small muted'}, 'What organisations ask for (credits, connectors) is under ', h('a', {href: '#/requests'}, 'Requests'), '.'));
 }
 
-/* ---------------- Overview (#/overview, the admin portal's first page): who is online now and who has signed up (item 50) */
+/* ---------------- Overview (#/overview, the admin portal's first page): who is online now and everyone with an account
+   (item 50; since item 56 people are added, not signed up) */
 async function renderOverview(again) {
   const y = again ? window.scrollY : 0;
   let d;
@@ -482,21 +530,21 @@ async function renderOverview(again) {
   const head = cols => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < 2 ? 'l' : null}, c))));
   const page = h('div', {class: 'page wide'},
     h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('div', {class: 'eyebrow'}, 'Platform'), h('h1', {}, 'Overview'),
-      h('div', {class: 'meta'}, `Who is on D2D Relay now and who has signed up. Online means seen in the last ${d.online_minutes} minutes; `
+      h('div', {class: 'meta'}, `Who is on D2D Relay now, and everyone in the organisations. Online means seen in the last ${d.online_minutes} minutes; `
         + 'the page refreshes itself every 30 seconds.'))),
     h('div', {style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px'},
       tile('Online now', t.online, 'people using the site'),
-      tile('Signed up', t.people, `${t.today} today, ${t.week} this week`),
+      tile('People', t.people, `${t.today} added today, ${t.week} this week`),
       tile('Workspaces', t.workspaces, `${t.business} business, ${t.personal} personal`),
       tile('Dashboards', t.dashboards, 'made by them')),
     h('div', {class: 'card'}, h('h3', {}, `Online now (${d.online.length})`),
       d.online.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, head(['Person', 'Workspace', 'Last seen']),
         h('tbody', {}, d.online.map(r => h('tr', {}, h('td', {}, who(r)), h('td', {}, where(r)), h('td', {class: 'n'}, ago(r.last_seen)))))))
         : h('div', {class: 'muted small'}, 'Nobody right now.')),
-    h('div', {class: 'card'}, h('h3', {}, `Signed up (${d.people.length})`),
+    h('div', {class: 'card'}, h('h3', {}, `People (${d.people.length})`),
       d.people.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'},
-        head(['Person', 'Workspace', 'Signed up', 'Last seen', 'Dashboards', 'Credits left']),
-        h('tbody', {}, d.people.map(r => h('tr', {}, h('td', {}, who(r)), h('td', {}, where(r)), h('td', {class: 'n'}, when(r.signed_up)),
+        head(['Person', 'Workspace', 'Added', 'Last seen', 'Dashboards', 'Credits left']),
+        h('tbody', {}, d.people.map(r => h('tr', {}, h('td', {}, who(r)), h('td', {}, where(r)), h('td', {class: 'n'}, when(r.added)),
           h('td', {class: 'n'}, r.last_seen ? ago(r.last_seen) : r.last_login ? ago(r.last_login) : '-'),
           h('td', {class: 'n'}, r.dashboards), h('td', {class: 'n'}, r.credits))))))
         : h('div', {class: 'muted small'}, 'Nobody yet.')));

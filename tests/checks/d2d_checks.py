@@ -4,7 +4,8 @@ python -I d2d_checks.py <public site> <admin portal> <group> [<group> ...]
     e.g. http://127.0.0.1:8103 http://127.0.0.1:8104 connectors portal
 
 Signs people in the real way: it asks for a code and reads it from the test container's log (the test stack has no
-mail, so RELAY_OTP_DEV_LOG=1 prints it there). Nothing is emailed. The code limits are real too: on the public site
+mail, so RELAY_OTP_DEV_LOG=1 prints it there). Nothing is emailed. Nobody signs up (item 56): a person without an
+account is first given one by PASDACS on the admin portal (provision_account), as PASDACS or an owner would. The code limits are real too: on the public site
 each person comes from an address of their own (cf-connecting-ip, as Cloudflare would send it), and forget_codes()
 clears a person's earlier codes in the test database before they sign in again within the minute.
 Each group prints one line per check and a summary; the exit code is the number of failures.
@@ -82,16 +83,43 @@ def code_from_logs(container: str, email: str, since: float) -> str | None:
     return None
 
 
-def approve_start(email: str) -> None:
-    """Item 27, review on (D2D_TEST_APPROVE_START=1): PASDACS approves a new organisation's starting credits the way
-    it does from the command line (python -m app.orgs approve), so the suites' "starts with 50" still holds."""
-    rid = subprocess.run(["docker", "exec", "-u", "postgres", DB_C, "psql", "-qtA", "-h", "/run/postgresql", "-d", "relay", "-c",
-                          "SELECT id FROM relay.tn_credit_requests WHERE purpose = 'start' AND status = 'pending' AND email = '"
-                          + email.replace("'", "''") + "'"], capture_output=True, text=True, check=True).stdout.split()
-    if rid:
-        subprocess.run(["docker", "exec", "-u", "relay", "-w", "/srv", os.environ.get("D2D_TEST_WEB", "d2d-relay-test-web"),
-                        "/opt/relay/bin/launch", "web", "python", "-m", "app.orgs", "approve", rid[0]],
-                       capture_output=True, text=True, check=True, encoding="utf-8", errors="replace")
+def code_now(container: str, email: str, since: float, wait: float = 2.0) -> str | None:
+    """The code the app printed for this address since `since`, looked for once after `wait` seconds (to show that none
+    was sent, without code_from_logs' ten seconds of looking)."""
+    time.sleep(wait)
+    out = subprocess.run(["docker", "logs", "--since", str(int(since) - 2), container], capture_output=True, text=True,
+                         encoding="utf-8", errors="replace")
+    found = re.findall(r"\[otp\] code for " + re.escape(email) + r": (\d{6})", out.stdout + out.stderr)
+    return found[-1] if found else None
+
+
+def has_account(email: str) -> bool:
+    """Test database only: whether the address has an account (relay.tn_accounts)."""
+    n = subprocess.run(["docker", "exec", "-u", "postgres", DB_C, "psql", "-qtA", "-h", "/run/postgresql", "-d", "relay", "-c",
+                        "SELECT count(*) FROM relay.tn_accounts WHERE email = '" + email.lower().replace("'", "''") + "'"],
+                       capture_output=True, text=True, check=True).stdout.strip()
+    return n not in ("", "0")
+
+
+def provision_account(email: str, org_name: str | None = None, person: str | None = None) -> None:
+    """Item 56: nobody signs up, so a test person without an account gets one the way it is done now, by PASDACS on the
+    admin portal: an address at an organisation's domain is added to it (Organisations, Person), and an address at a
+    new domain gets a new organisation with it as the main owner (New organisation; named org_name, or after the
+    domain). On an image from before item 56 the admin portal cannot do either; the old sign-up then happens in
+    Person.sign_in."""
+    if email.lower() == "info@pasdacs.com" or has_account(email):    # the platform admin always has one (and signs PASDACS in)
+        return
+    admin = signed_in("info@pasdacs.com", ADMIN_BASE)
+    domain = email.rsplit("@", 1)[-1].lower()
+    s, d = admin.get("/api/admin/orgs")
+    o = next((x for x in (d or {}).get("orgs", []) if x.get("domain") == domain), None) if isinstance(d, dict) else None
+    if o:
+        s, r = admin.post(f"/api/admin/orgs/{o['id']}/people", {"email": email, "role": "member"})
+    else:
+        name = org_name or " ".join(w.capitalize() for w in re.split(r"[-_]+", domain.split(".")[0]) if w)
+        s, r = admin.post("/api/admin/orgs", {"name": name, "email": email, "person": person or ""})
+    if s != 200:
+        print(f"(PASDACS could not give {email} an account: {s} {detail_of(r)})", flush=True)
 
 
 def forget_codes(email: str) -> None:
@@ -163,8 +191,13 @@ class Person:
         except ValueError:
             return status, raw.decode("utf-8", "replace")
 
-    def sign_in(self, org_name: str | None = None, person: str | None = None, again: bool = False):
-        """Ask for a code, read it from the container's log, sign in (and name a new organisation)."""
+    def sign_in(self, org_name: str | None = None, person: str | None = None, again: bool = False, provision: bool = True):
+        """Ask for a code, read it from the container's log and sign in. provision (item 56): an address without an
+        account is first given one by PASDACS (provision_account: org_name and person name a new organisation and its
+        main owner); without it, an address without an account gets no code. An image from before item 56 still names
+        a new organisation after the code (upgrade_check.py)."""
+        if provision:
+            provision_account(self.email, org_name, person)
         if again:
             forget_codes(self.email)
         hdr = {"cf-connecting-ip": self.ip} if self.ip else {}
@@ -176,10 +209,8 @@ class Person:
         if not code:
             return 0, "no code in the container log"
         s, r = self.post("/auth/otp/verify", {"email": self.email, "code": code, "next": "#/d2d"})
-        if s == 200 and isinstance(r, dict) and r.get("organisation"):
+        if s == 200 and isinstance(r, dict) and r.get("organisation"):      # an image from before item 56: the sign-up step
             s, r = self.post("/auth/otp/organisation", {"name": org_name or r["organisation"]["suggested"], "person": person or ""})
-            if s == 200 and os.environ.get("D2D_TEST_APPROVE_START") == "1":
-                approve_start(self.email)
         return s, r
 
 
@@ -308,20 +339,25 @@ def admin_portal():
     s, me = admin.get("/api/me")
     check("portal: ... as a platform admin on the admin portal", s == 200 and me.get("portal") == "admin" and (me.get("org") or {}).get("platform_admin") is True, me)
     staff = Person(f"ops{STAMP}@pasdacs.com", ADMIN_BASE)
-    s, r = staff.sign_in()
+    t0 = time.time()
+    s, r = staff.post("/auth/otp/start", {"email": staff.email})
+    check("portal: a @pasdacs.com address without an account gets the usual answer, but no code (item 56)",
+          s == 200 and "If " in str(r) and not code_now(ADMIN_C, staff.email, t0), (s, r))
+    s, r = staff.sign_in(again=True)          # PASDACS adds them to its own workspace first (provision_account)
     s2, me2 = staff.get("/api/me")
-    check("portal: any new @pasdacs.com address signs in and is an admin", s == 200 and (me2.get("org") or {}).get("platform_admin") is True, (s, r, me2))
+    check("portal: once added to PASDACS's workspace, a @pasdacs.com colleague signs in and is an admin",
+          s == 200 and (me2.get("org") or {}).get("platform_admin") is True, (s, r, me2))
     for path, want in (("/api/admin/orgs", 200), ("/api/admin/requests", 200), ("/api/notifications", 200), ("/api/projects", 404),
                        ("/api/connections", 404), ("/api/admin/audit", 404), ("/api/admin/backups", 404), ("/api/health", 404),
                        ("/api/org", 404), ("/api/askd/threads", 404)):
         s, r = admin.get(path)
         check(f"portal: admin portal GET {path} -> {want}", s == want, (s, detail_of(r)))
     s, r = admin.post("/auth/otp/organisation", {"name": "X", "person": "Y"})
-    check("portal: no organisation can be created on the admin portal", s == 404, (s, r))
+    check("portal: there is no sign-up step, not even on the admin portal (404 or 405: no such route)", s in (404, 405), (s, r))
 
     owner = Person(f"olga.owner@bravo{STAMP}.com")
     s, r = owner.sign_in("Bravo Test", "Olga Owner")
-    check("portal: an organisation still signs up on the public site", s == 200 and cookie(owner, "d2d_session"), (s, r))
+    check("portal: the owner of an organisation PASDACS created signs in on the public site", s == 200 and cookie(owner, "d2d_session"), (s, r))
     s, r = owner.get("/api/admin/orgs")
     check("portal: the public site has no admin APIs (404)", s == 404, (s, r))
     pub_admin = signed_in("info@pasdacs.com", BASE)
@@ -364,7 +400,7 @@ def credits_by_approval():
     dom = f"credit{STAMP}.com"
     owner, colleague = Person(f"cara.owner@{dom}"), Person(f"colin.colleague@{dom}")
     s, r = owner.sign_in("Credit Test", "Cara Owner")
-    check("credits: a new organisation signs up", s == 200, (s, r))
+    check("credits: PASDACS creates a new organisation and its owner signs in", s == 200, (s, r))
     s, me = owner.get("/api/me")
     org = me.get("org") or {}
     check("credits: it starts with 50 credits", org.get("credits") == 50 and org.get("pending_request") is None, org)
@@ -449,7 +485,7 @@ def people_management():
     dom = f"people{STAMP}.com"
     olivia, mark, nina = Person(f"olivia@{dom}"), Person(f"mark@{dom}"), Person(f"nina@{dom}")
     s, r = olivia.sign_in("People Test", "Olivia Owner")
-    check("people: an organisation signs up; Olivia is its main owner", s == 200, (s, r))
+    check("people: PASDACS creates an organisation with Olivia as its main owner; she signs in", s == 200, (s, r))
     s, me = olivia.get("/api/me")
     check("people: ... an owner, and the main one", (me.get("org") or {}).get("is_owner") and (me.get("org") or {}).get("is_primary"), me.get("org"))
     s, r = olivia.post("/api/org/people", {"email": f"mark@{dom}", "role": "member"})
@@ -528,6 +564,7 @@ def production():
         check(f"production: the sign-in page has no testing mode ({where})", s == 200 and "testbanner" not in str(page) and "test_code" not in str(page),
               str(page)[:120])
     p = Person(f"limit.one@limits{STAMP}.com")
+    provision_account(p.email, f"Limits {STAMP}")             # an account, so its codes are really sent (item 56)
     s, r = p.post("/auth/otp/start", {"email": p.email}, headers={"cf-connecting-ip": p.ip})
     s2, r2 = p.post("/auth/otp/start", {"email": p.email}, headers={"cf-connecting-ip": p.ip})
     check("production: one code a minute per address (429)", s == 200 and s2 == 429, (s, s2, r2))
@@ -540,10 +577,11 @@ def production():
     codes = [Person(f"net{i}.{STAMP}@limits{STAMP}.com").post("/auth/otp/start", {"email": f"net{i}.{STAMP}@limits{STAMP}.com"},
                                                                headers={"cf-connecting-ip": ip})[0] for i in range(21)]
     check("production: 20 codes an hour per network, then 429", codes[:20] == [200] * 20 and codes[20] == 429, codes)
-    s, r = Person("x").post("/auth/otp/start", {"email": f"someone.{STAMP}@mailinator.com"})
-    check("production: throw-away mail addresses are refused", s == 400, (s, r))
-    s, r = Person("x").post("/auth/otp/start", {"email": f"someone.{STAMP}@gmail.com"})
-    check("production: a free mail address gets a code (a personal workspace, item 39)", s == 200, (s, r))
+    for addr in (f"someone.{STAMP}@mailinator.com", f"someone.{STAMP}@gmail.com"):
+        t0 = time.time()
+        s, r = Person("x").post("/auth/otp/start", {"email": addr})
+        check(f"production: @{addr.split('@')[1]} (no account) gets the usual answer and no code (item 56: nobody signs up)",
+              s == 200 and not code_now(WEB_C, addr, t0, wait=1), (s, r))
 
 
 def rehearsal():

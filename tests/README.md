@@ -12,7 +12,7 @@ is mounted, never copied.
 | `stack/helpers.ps1` | The test stack's own DAX checker and Power BI file maker on this PC, for the end-to-end run |
 | `checks/` | The suites, the stand-in Razorpay API (`fake_razorpay.py`) and its checkout window (`rzp_stub.js`) |
 | `audit/` | `routes.py` and `routes-public.txt`: the public site's API routes, which `sec_check.py` tries without a session |
-| `run_release.sh` | A fresh stack, then every suite, in one review mode |
+| `run_release.sh` | A fresh stack, then every suite |
 | `run_all.sh` | Every suite against the running stack |
 | `out/` | Each run's logs and screenshots (git-ignored) |
 
@@ -23,13 +23,13 @@ checks run headless Chromium inside the test web container, so nothing else is i
 ## Starting the stack
 
 ```bash
-TEST_IMAGE=d2d-relay:54f6ed7 bash tests/stack/stack.sh 1
+TEST_IMAGE=d2d-relay:54f6ed7 bash tests/stack/stack.sh
 ```
 
 - `TEST_IMAGE` (required): the image to test.
 - `TEST_DB_PASSWORD`: the test database's password. When it is not set, stack.sh makes one up at random.
-- The argument is the starting-credit review: `1` (on, live's setting: PASDACS approves each new organisation's 50
-  starting credits) or `0` (off, `RELAY_CREDITS_START_REVIEW=0`). A release is checked in both modes.
+- Since item 56 there is one mode: nobody signs up, and a new organisation gets its starting credits when PASDACS
+  creates it. (Until then a release was checked twice, with the starting-credit review on and off.)
 
 stack.sh removes any earlier test stack with its volumes, empties `stack/test-projects` (the projects folder, a bind as
 on live), writes the settings to `stack/.env` (git-ignored), starts the stack, waits until web and admin are healthy and
@@ -39,7 +39,8 @@ starts the stand-in Razorpay inside the web container. Then:
   127.0.0.1:8105 the stand-in Razorpay, and 127.0.0.1:8106 the stand-in Microsoft sign-in, Fabric and Power BI APIs
   for Semantic Review (item 55, `checks/fake_powerbi.py`, started by stack.sh like the stand-in Razorpay).
 - Nothing is emailed: sign-in codes are printed to the containers' logs (`docker logs d2d-relay-test-web`, lines
-  `[otp] code for ...`).
+  `[otp] code for ...`). Only addresses with an account get one (item 56): the suites have PASDACS create their
+  organisations and people on the admin portal first (`d2d_checks.provision_account`, called by `Person.sign_in`).
 - The stand-in's keys are made up and look it (`rzp_live_D2DTESTSTACK01`, `stand-in-key-secret-not-real`). The key id
   starts with `rzp_live_` so the live path runs: selling needs a platform admin to switch it on, as on live.
 - The stack has no Claude sign-in: every AI run fails at once (and gives its credits back), which the suites expect.
@@ -52,45 +53,44 @@ until the live build ends. A test stack's own leftovers can be removed with `doc
 
 ## Running the suites
 
-A release check, each mode on a fresh stack:
+A release check, on a fresh stack:
 
 ```bash
-TEST_IMAGE=d2d-relay:54f6ed7 bash tests/run_release.sh 1
-TEST_IMAGE=d2d-relay:54f6ed7 bash tests/run_release.sh 0
+TEST_IMAGE=d2d-relay:54f6ed7 bash tests/run_release.sh
 ```
 
-Each prints one line per suite and a total; the logs are in `tests/out/<tag>-review-on` (or `-off`). With the stack
-already running, `bash tests/run_all.sh <output name>` runs the suites alone.
+It prints one line per suite and a total; the logs are in `tests/out/<tag>`. With the stack already running,
+`bash tests/run_all.sh <output name>` runs the suites alone.
 
-| Suite | Checks: review on / off |
+| Suite | Checks |
 |---|---|
-| `d2d_checks.py` (groups `connectors portal credits people production`) | 120 / 120 |
-| `gov_check.py` + `gov_ui_check.py` | 60 + 10 |
-| `ask_credits_check.py`, `review_fixes_check.py` | 14, 13 |
+| `d2d_checks.py` (groups `connectors portal credits people production`) | 121 |
+| `gov_check.py` + `gov_ui_check.py` | 61 + 11 |
+| `ask_credits_check.py`, `review_fixes_check.py` | 14, 14 |
 | `pay_check.py` + `pay_ui_check.py` | 114 + 37 |
-| `sec_check.py` | 131 / 114 |
-| `item29_check.py` + `tour_ui_check.py` | 34 + 28 |
-| `item30_check.py`, `rename_check.py` | 54, 8 |
-| `jobs_check.py`, `accounts_check.py` | 18, 45 |
-| `item34_check.py`: built-in visuals first, the model's name, each runner sweeping only its own stack | 32 |
+| `sec_check.py` | 116 |
+| `item29_check.py` + `tour_ui_check.py` | 34 + 29 |
+| `item30_check.py`, `rename_check.py` | 55, 9 |
+| `jobs_check.py`, `accounts_check.py` | 19, 48 |
+| `item34_check.py`: built-in visuals first, the model's name, each runner sweeping only its own stack | 33 |
 | `item35_check.py`: labels in the prototype of the built-in visuals gallery and in the rebuilt Atlas visuals | 9 |
 | `item36_check.py`: KPI names clear of their values in low tiles; measure titles in the prototype | 10 |
 | `item37_check.py`: a sunburst's labels on thin slices: none on another, each inside its own slice | 10 |
 | `item38_check.py`: share tags and image, robots.txt, no `./` or `../` past the sign-in check | 41 |
-| `item39_check.py`: personal workspaces for free mail (Gmail ...), throw-away mail refused, the Organisation page | 37 |
-| `item40_check.py`: the Turnstile bot check before a code (the stack runs Cloudflare's test keys; every suite sends a token), Resend code since item 41 | 22 |
+| `item40_check.py`: the Turnstile bot check before a code (the stack runs Cloudflare's test keys; every suite sends a token), Resend code since item 41 | 23 |
 | `item42_check.py`: the installation's API key first, its Claude sign-in as the backup, Ask Relay's fallback, no key in the AI engine | 11 |
 | `item44_check.py`: a dashboard's credits by its visuals (25 built-in, 50 custom), the difference once when moving to custom, Retry's charge, the screens | 37 |
-| `item45_check.py`: the queue shows an organisation its own jobs only (positions, /api/health), "In the queue", no Stop (button or API) | 15 |
+| `item45_check.py`: the queue shows an organisation its own jobs only (positions, /api/health), "In the queue", no Stop (button or API) | 16 |
 | `item46_check.py`: up to 3 jobs at once with stand-in jobs (never two of one dashboard, publishing one at a time), the AI engine's lanes, the Opus 5.5 defaults | 13 |
 | `item48_check.py`: a started build's credits and its free Retry, planning still refunded, nothing on screen or in the terms about credits coming back | 12 |
 | `item49_check.py`: the job runner's two-minute tidy of its own finished jobs, with stand-in containers (never a running job, never another stack's) | 8 |
-| `item50_check.py`: the admin portal's Overview (online now, sign-ups newest first, totals; not on the public site; its first page) | 19 |
+| `item50_check.py`: the admin portal's Overview (online now, everyone with an account newest first, totals; not on the public site; its first page) | 20 |
 | `item51_check.py`: the sign-in code email in D2D's look (mail stubbed in the web and admin containers: who gets it, the code, plain characters, nothing fetched; in Chromium: 320 to 1280 px, dark mode) | 25 |
-| `item52_check.py`: the prototype's matrix per row header (first level, Auto expand, ROLLUP totals, no summed ratio), cut card text and the Display check, the DAX check's levels, Ask Relay's percentages and plurals (a seeded answer in Chromium, the snapshot) | 37 |
-| `item55_check.py`: Semantic Review: the KPI dictionary (one name one KPI, readable DAX, import preview and merge, CSV without formulas), reviews of model.bim, .pbit, a TMDL project, a live and a broken .pbix and the real .pbix of `TEST_REVIEW_PBIX` (skipped when it is not on the PC), what they find, credits and refunds, the meaning check's retry, Review again, who may do what, Power BI through the stand-in Microsoft APIs (`fake_powerbi.py`, 127.0.0.1:8106), a review cut off by a restart; its people sign in from 203.0.113.x (codes are limited per address); the cases of the independent review of 2026-11-18 (a YAML alias bomb, dictionary DAX using model measures, Table[Measure], dt"..." literals, 31 levels of doubling references, a non-Latin review name) | 90 |
-| `item55_ui_check.py`: Semantic Review in Chromium: the menu, a review from the file picker, the report's tabs, the dictionary and its Add dialog, phone width, dark mode, no failed requests (screenshots `sr-*.png`) | 18 |
-| **All, for item 52** (987 for 8029415; 962 for 22c7464; 943 for 1c841da; 935 for 777f30c; 858 for 01559b6 and a871751; 847 for baf70e5 and 2686fc4; 846 / 829 for d1882f7, 825 / 808 for 96ea48a, 788 / 771 for 189ccac, 747 / 730 for 334b493, 685 / 668 for 54f6ed7) | **1024** / not run |
+| `item52_check.py`: the prototype's matrix per row header (first level, Auto expand, ROLLUP totals, no summed ratio), cut card text and the Display check, the DAX check's levels, Ask Relay's percentages and plurals (a seeded answer in Chromium, the snapshot) | 38 |
+| `item55_check.py`: Semantic Review: the KPI dictionary (one name one KPI, readable DAX, import preview and merge, CSV without formulas), reviews of model.bim, .pbit, a TMDL project, a live and a broken .pbix and the real .pbix of `TEST_REVIEW_PBIX` (skipped when it is not on the PC), what they find, credits and refunds, the meaning check's retry, Review again, who may do what, Power BI through the stand-in Microsoft APIs (`fake_powerbi.py`, 127.0.0.1:8106), a review cut off by a restart; its people sign in from 203.0.113.x (codes are limited per address); the cases of the independent review of 2026-11-18 (a YAML alias bomb, dictionary DAX using model measures, Table[Measure], dt"..." literals, 31 levels of doubling references, a non-Latin review name) | 91 |
+| `item55_ui_check.py`: Semantic Review in Chromium: the menu, a review from the file picker, the report's tabs, the dictionary and its Add dialog, phone width, dark mode, no failed requests (screenshots `sr-*.png`) | 19 |
+| `item56_check.py`: nobody signs up: an address without an account gets the usual answer and no code (and any code for it is wrong; the limits count it), the sign-up step gone, PASDACS creating an organisation (its rules, the owner's first sign-in and starting credits), owners adding and removing people, PASDACS adding someone (the owners told), the admin portal for PASDACS people with an account, the sign-in alert; in Chromium the sign-in page, New organisation and Add someone, the Overview, the Organisation page and the tour (screenshots `item56-*.png`); its people sign in from 192.0.2.x | 62 |
+| **All, for item 56**, one mode (before it, review on / off: 1132 / 1115 for item 55; 1024 / not run for item 52; 987 for 8029415; 962 for 22c7464; 943 for 1c841da; 935 for 777f30c; 858 for 01559b6 and a871751; 847 for baf70e5 and 2686fc4; 846 / 829 for d1882f7, 825 / 808 for 96ea48a, 788 / 771 for 189ccac, 747 / 730 for 334b493, 685 / 668 for 54f6ed7) | **1160** |
 
 One suite by hand, with the stack running:
 
@@ -107,8 +107,6 @@ suite prints a line per check and `N of M checks passed`; its exit code is the n
   live's database is loaded into the test stack; on a fresh stack its 2 checks fail by design.
 - Screenshots of the browser suites go to `tests/out`, or to the folder `D2D_TEST_OUT` names (run_all.sh sets it to the
   run's folder).
-- With the review on, set `D2D_TEST_APPROVE_START=1` when running a suite by hand, so new organisations get their
-  starting credits approved the way PASDACS does (`run_all.sh` reads the stack's mode itself).
 - In Git Bash, `docker exec` paths need `MSYS_NO_PATHCONV=1`. Python with the app's context runs inside the web
   container: `docker exec -i -u relay -w /srv d2d-relay-test-web /opt/relay/bin/launch web python -`, calling
   `db.init()` first.
@@ -150,7 +148,7 @@ the repository's copies on the test stack's own queues (and a data folder of the
 live's; live's keep running beside them.
 
 ```bash
-TEST_CLAUDE_VOLUME=claude-api-auth TEST_CLAUDE_EXTERNAL=true TEST_IMAGE=d2d-relay:<tag> bash tests/stack/stack.sh 1
+TEST_CLAUDE_VOLUME=claude-api-auth TEST_CLAUDE_EXTERNAL=true TEST_IMAGE=d2d-relay:<tag> bash tests/stack/stack.sh
 powershell -NoProfile -ExecutionPolicy Bypass -File tests/stack/helpers.ps1 start
 cd tests/checks
 python -I -X utf8 visuals_e2e_check.py http://127.0.0.1:8103 http://127.0.0.1:8104
@@ -181,11 +179,11 @@ MSYS_NO_PATHCONV=1 docker run --rm -v claude-api-auth:/c --entrypoint /bin/sh d2
 
 | Script | What it checks | How |
 |---|---|---|
-| `upgrade_check.py` | The image live runs today, then the release candidate on the same database and folders (23 checks) | `python -I -X utf8 upgrade_check.py <public> <admin> <old image> <new image>`, after stack.sh (it restarts the stack itself, review on, so the job-container rule applies). `OLD_HAS_PURPOSE=1` when the old image reviews new organisations (72b71a1 and later). Leave `D2D_TEST_APPROVE_START` unset: the suite approves what it needs itself |
-| `proto_sandbox_check.py` | A hostile prototype cannot act for the person viewing it, alone or framed in the app (23 checks) | `python -I -X utf8 proto_sandbox_check.py <public> <admin>` (with `D2D_TEST_APPROVE_START=1` on a stack with the review on) |
+| `upgrade_check.py` | The image live runs today, then the release candidate on the same database and folders (27 checks) | `python -I -X utf8 upgrade_check.py <public> <admin> <old image> <new image>`, after stack.sh (it restarts the stack itself, so the job-container rule applies). `OLD_HAS_PURPOSE=1` when the old image reviews new organisations (72b71a1 and later): the suite approves what it needs on the old image itself, and leaves one organisation's starting credits waiting, to approve after the upgrade |
+| `proto_sandbox_check.py` | A hostile prototype cannot act for the person viewing it, alone or framed in the app (23 checks) | `python -I -X utf8 proto_sandbox_check.py <public> <admin>` |
 | `access_check.py` | Cloudflare Access tokens on the admin portal, with a key made up here (10 checks) | Inside the admin container: `docker exec -i -u relay -w /srv d2d-relay-test-admin /opt/relay/bin/launch web python - < tests/checks/access_check.py` |
 | `guard_cases.py` | The AI engine's shell guard: 64 cases | On this PC, no stack: `python -I tests/checks/guard_cases.py agent/bash_guard.py` |
-| `rzp_real_check.py`, `rzp_real_ui.py` | Razorpay's real TEST mode (test keys move no money) | Razorpay TEST keys only, never live ones, in `tests/stack/.env.real` (git-ignored: `TEST_RZP_KEY_ID=rzp_test_...` and `TEST_RZP_SECRET=...`); start the stack with them: `set -a; . tests/stack/.env.real; set +a; TEST_RZP_API=https://api.razorpay.com/v1 TEST_IMAGE=d2d-relay:<tag> bash tests/stack/stack.sh 1`, then `python -I -X utf8 rzp_real_check.py <public> <admin>` and `rzp_real_ui.py <public> <admin> explore\|pay\|pay-usd\|fail\|closed-tab` |
+| `rzp_real_check.py`, `rzp_real_ui.py` | Razorpay's real TEST mode (test keys move no money) | Razorpay TEST keys only, never live ones, in `tests/stack/.env.real` (git-ignored: `TEST_RZP_KEY_ID=rzp_test_...` and `TEST_RZP_SECRET=...`); start the stack with them: `set -a; . tests/stack/.env.real; set +a; TEST_RZP_API=https://api.razorpay.com/v1 TEST_IMAGE=d2d-relay:<tag> bash tests/stack/stack.sh`, then `python -I -X utf8 rzp_real_check.py <public> <admin>` and `rzp_real_ui.py <public> <admin> explore\|pay\|pay-usd\|fail\|closed-tab` |
 
 ## Keeping the suite current
 

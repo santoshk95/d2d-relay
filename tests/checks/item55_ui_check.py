@@ -95,7 +95,7 @@ print(json.dumps(out))
 p = c.Person(f"una.review@srui{c.STAMP}.com")
 p.ip = "203.0.113.70"                         # an address of its own: a full run's suites share 198.51.100.10 ...
 s, r = p.sign_in("Review UI", "Una Review")
-c.check("ui: an organisation signs up", s == 200, (s, r))
+c.check("ui: an organisation is set up", s == 200, (s, r))
 p.post("/api/org/setup")                        # the first-time tour is done (the owner is not sent to #/welcome)
 p.post("/api/me/tour", {"step": "done"})
 s1, _ = p.post("/api/semreview/kpis", {"name": "Revenue", "synonyms": ["Net Sales"], "unit": "currency", "aggregation": "sum",

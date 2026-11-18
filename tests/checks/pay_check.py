@@ -135,7 +135,7 @@ def main():
     dom = f"pay{STAMP}.com"
     owner, member = c.Person(f"olive.owner@{dom}"), c.Person(f"max.member@{dom}")
     s, r = owner.sign_in("Pay Test", "Olive Owner")
-    c.check("setup: an organisation signs up", s == 200, (s, r))
+    c.check("setup: an organisation is set up", s == 200, (s, r))
     s, r = member.sign_in()
     c.check("setup: a colleague joins it", s == 200, (s, r))
     in_india(owner), in_india(member)                  # rupee flows below; dollar ones say ABROAD
@@ -210,7 +210,7 @@ def main():
     # a foreign organisation (billed in the United States): dollars outside India, rupees from India
     abroad = c.Person(f"ana.abroad@abroad{STAMP}.com")
     s, x = abroad.sign_in("Abroad Inc", "Ana Abroad")
-    c.check("setup: a foreign organisation signs up", s == 200, (s, x))
+    c.check("setup: a foreign organisation is set up", s == 200, (s, x))
     s, x = abroad.put("/api/payments/billing", BUYER_US, headers=ABROAD)
     c.check("billing: a foreign organisation gives its country", s == 200 and x["billing"]["country"] == "United States", (s, c.detail_of(x)))
     s, ru = abroad.get("/api/payments", headers=ABROAD)

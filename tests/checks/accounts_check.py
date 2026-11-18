@@ -1,6 +1,7 @@
 """Test stack only: item 31's accounts (the user, 2026-11-12): owners see every dashboard with who made it; Remove
 deletes a person at once (their work stays, held by the main owner, marked as made by a former member); Delete my
-account; the main owner deletes the whole organisation after typing its name.
+account; the main owner deletes the whole organisation after typing its name. Item 56: nobody joins by domain or signs
+up, so a removed person simply gets no code until an owner adds them again; PASDACS's own people the same.
 python -I -X utf8 accounts_check.py <public> <admin>"""
 import json
 import os
@@ -32,7 +33,7 @@ def wait_idle(p, pid):
 dom = f"acct{c.STAMP}.com"
 owner, mia, max_ = c.Person(f"ola.owner@{dom}"), c.Person(f"mia.member@{dom}"), c.Person(f"max.member@{dom}")
 s, r = owner.sign_in("Accounts Test", "Ola Owner")
-check("setup: an organisation signs up", s == 200, (s, r))
+check("setup: PASDACS creates an organisation and its owner signs in", s == 200, (s, r))
 mia.sign_in(person="Mia Member")
 max_.sign_in(person="Max Member")
 tid = sql(f"SELECT tenant_id FROM relay.tn_orgs WHERE domain = '{dom}'")
@@ -78,22 +79,20 @@ check("remove: she is not listed under Removed (nothing to add back)", not any("
       o.get("removed"))
 check("remove: the logs keep no address of hers", sql(f"SELECT count(*) FROM \"{schema}\".audit WHERE detail LIKE '%mia.member@{dom}%'") == "0")
 again = c.Person(f"mia.member@{dom}")
-s, r = again.sign_in()
-check("block: her address cannot join again: the owner removed it (403, saying so)", s == 403 and "removed this address" in str(c.detail_of(r)), (s, r))
+s, r = again.sign_in(provision=False)
+check("removed: her address gets no code any more, as her account is gone (item 56: nobody joins by domain)",
+      s == 0 and "no code" in str(r), (s, r))
 s, o = owner.get("/api/org")
-check("block: the owner sees it under Blocked", any(b.get("email") == f"mia.member@{dom}" for b in o.get("blocked", [])), o.get("blocked"))
-s, r = mia.get("/api/org")
-s, r = c.Person(f"zed.member@{dom}").sign_in()
-check("block: nobody else at the domain is affected", s == 200, (s, r))
-s, r = again.post("/api/org/unblock", {"email": f"mia.member@{dom}"})
-check("block: someone not signed in cannot unblock (401)", s == 401, (s, r))
+check("removed: there is no blocked list any more (nothing to unblock)", s == 200 and "blocked" not in o, sorted(o)[:30])
+s, r = c.Person(f"zed.member@{dom}").sign_in(provision=False)
+check("removed: someone at the domain whom nobody added gets no code either", s == 0 and "no code" in str(r), (s, r))
 s, r = owner.post("/api/org/unblock", {"email": f"mia.member@{dom}"})
-check("block: the owner unblocks her", s == 200 and not any(b.get("email") == f"mia.member@{dom}" for b in r.get("blocked", [])), (s, r))
-s, r = owner.post("/api/org/unblock", {"email": f"mia.member@{dom}"})
-check("block: unblocking twice says it is not blocked (404)", s == 404, (s, r))
-s, r = again.sign_in(again=True)
+check("removed: the old Unblock is gone (404 or 405: no such route)", s in (404, 405), (s, r))
+s, r = owner.post("/api/org/people", {"email": f"mia.member@{dom}", "role": "member"})
+check("removed: the owner adds her again", s == 200, (s, str(r)[:150]))
+s, r = again.sign_in(again=True, provision=False)
 s2, me = again.get("/api/me")
-check("block: unblocked, her address joins again as a new person", s == 200 and me.get("id") and me.get("id") != mia_id, (s, me.get("id")))
+check("removed: added again, she signs in as a new person", s == 200 and me.get("id") and me.get("id") != mia_id, (s, me.get("id")))
 
 ann = c.Person(f"ann.again@{dom}")
 ann.sign_in()
@@ -101,8 +100,7 @@ ann_id = sql(f"SELECT id FROM \"{schema}\".users WHERE email = 'ann.again@{dom}'
 s, r = owner.delete(f"/api/org/people/{ann_id}")
 check("remove: the owner removes Ann", s == 200, (s, str(r)[:120]))
 s, r = owner.post("/api/org/people", {"email": f"ann.again@{dom}", "role": "member"})
-check("remove: an owner can add a removed person's address back, as a new person (no clash), which lifts the block", s == 200
-      and not any(b.get("email") == f"ann.again@{dom}" for b in r.get("blocked", [])), (s, str(r)[:200]))
+check("remove: an owner can add a removed person's address back, as a new person (no clash)", s == 200, (s, str(r)[:200]))
 new_ann = sql(f"SELECT id FROM \"{schema}\".users WHERE email = 'ann.again@{dom}'")
 check("remove: the address added back is a new account", new_ann and new_ann != ann_id, (ann_id, new_ann))
 
@@ -115,8 +113,11 @@ s, r = max_.post("/api/me/delete", {"confirm": "DELETE"})
 check("self: Max deletes his own account (signed out)", s == 200 and r.get("signed_out"), (s, r))
 check("self: his session ended", max_.get("/api/me")[0] == 401)
 check("self: the owners are told", sql(f"SELECT count(*) FROM \"{schema}\".notifications WHERE title = 'Someone deleted their account'") != "0")
-s, r = max_.sign_in(again=True)
-check("self: deleting your own account blocks nothing: Max can join again as a new person", s == 200, (s, r))
+s, r = max_.sign_in(again=True, provision=False)
+check("self: with his account gone, Max gets no code any more", s == 0 and "no code" in str(r), (s, r))
+s, r = owner.post("/api/org/people", {"email": max_.email, "role": "member"})
+s2, r2 = max_.sign_in(again=True, provision=False)
+check("self: an owner can add him again, as a new person, and he signs in", s == 200 and s2 == 200, (s, s2, r2))
 
 # ---------------------------------------------------------------- the main owner deletes the organisation
 s, r = again.post("/api/org/delete", {"confirm": "Accounts Test"})
@@ -130,22 +131,26 @@ check("org: its workspace is gone", sql(f"SELECT count(*) FROM information_schem
 check("org: the owner's session is gone", owner.get("/api/me")[0] in (401, 403))
 check("org: PASDACS is told", sql("SELECT count(*) FROM public.notifications WHERE title = 'Accounts Test deleted itself'") != "0")
 s, r = c.Person(f"new.owner@{dom}").sign_in("Accounts Again", "New Owner")
-check("org: the domain can sign up again as a new organisation", s == 200, (s, r))
+check("org: PASDACS can create an organisation for the domain again", s == 200, (s, r))
 
-# ---------------------------------------------------------------- item 32's follow-up: PASDACS's own people and the admin portal
+# ---------------------------------------------------------------- PASDACS's own people and the admin portal (item 56)
 pasdacs = c.signed_in("info@pasdacs.com", c.BASE)
 pat = c.Person(f"pat.test{c.STAMP}@pasdacs.com")
-s, r = pat.sign_in()
-check("pasdacs: a PASDACS address joins PASDACS on the public site", s == 200, (s, r))
+t0 = time.time()
+s, r = pat.post("/auth/otp/start", {"email": pat.email}, headers={"cf-connecting-ip": pat.ip})
+check("pasdacs: a PASDACS address nobody added gets no code on the public site", s == 200 and not c.code_now(c.WEB_C, pat.email, t0), (s, r))
+s, r = pasdacs.post("/api/org/people", {"email": pat.email, "role": "member"})
+check("pasdacs: PASDACS's main owner adds them", s == 200, (s, str(r)[:150]))
+s, r = pat.sign_in(again=True, provision=False)
+check("pasdacs: added, they sign in on the public site", s == 200, (s, r))
+s, r = c.Person(pat.email, c.ADMIN_BASE).sign_in(again=True, provision=False)
+check("pasdacs: ... and on the admin portal", s == 200, (s, r))
 s, o = pasdacs.get("/api/org")
 pat_id = next((x["id"] for x in o.get("people", []) if x.get("email") == pat.email), None)
 s, r = pasdacs.delete(f"/api/org/people/{pat_id}")
-check("pasdacs: its main owner removes them (blocked)", s == 200 and any(b.get("email") == pat.email for b in r.get("blocked", [])),
-      (s, str(r)[:200]))
-s, r = c.Person(pat.email, c.ADMIN_BASE).sign_in()
-check("pasdacs: the removed address cannot sign in to the admin portal either (403)", s == 403 and "removed this address" in str(c.detail_of(r)),
-      (s, r))
-s, r = pasdacs.post("/api/org/unblock", {"email": pat.email})
-check("pasdacs: unblocked again (tidy)", s == 200, (s, str(r)[:120]))
+check("pasdacs: its main owner removes them", s == 200 and not any(x.get("email") == pat.email for x in r.get("people", [])), (s, str(r)[:200]))
+time.sleep(4)                                   # the log is read from 2 s back: past the code they just signed in with
+s, r = c.Person(pat.email, c.ADMIN_BASE).sign_in(again=True, provision=False)
+check("pasdacs: the removed address gets no code on the admin portal either", s == 0 and "no code" in str(r), (s, r))
 ok = sum(1 for _, x in c.RESULTS if x)
 print(f"{ok}/{len(c.RESULTS)} checks passed")

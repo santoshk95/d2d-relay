@@ -32,7 +32,7 @@ def in_web(code: str) -> str:
 dom = f"tour{STAMP}.com"
 owner, member = c.Person(f"tia.owner@{dom}"), c.Person(f"mo.member@{dom}")
 s, r = owner.sign_in("Tour Test", "Tia Owner")
-check("setup: an organisation signs up", s == 200, (s, r))
+check("setup: an organisation is set up", s == 200, (s, r))
 s, r = member.sign_in()
 check("setup: a colleague joins it", s == 200, (s, r))
 s, me = owner.get("/api/me")

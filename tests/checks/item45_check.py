@@ -27,7 +27,7 @@ b = c.Person(f"ben.queue@qb{c.STAMP}.com")
 s2, _ = b.sign_in("Queue B", "Ben Queue")
 ta = (a.get("/api/me")[1].get("org") or {}).get("id")
 tb = (b.get("/api/me")[1].get("org") or {}).get("id")
-check("setup: two organisations sign up", s1 == 200 and s2 == 200 and ta and tb and ta != tb, (s1, s2, ta, tb))
+check("setup: two organisations are set up", s1 == 200 and s2 == 200 and ta and tb and ta != tb, (s1, s2, ta, tb))
 
 # ---------------------------------------------------------------- the queue as each organisation sees it
 out = g.app(f"""
