@@ -209,7 +209,7 @@ async function refreshSys() {
 
 /* ---------------- routing ---------------- */
 const isHome = () => !S.pid && (location.hash === '' || location.hash === '#/' || location.hash === '#');
-const isDash = () => location.hash === '#/d2d';
+const isDash = () => location.hash === '#/d2d' || isHome();     // "/" shows the dashboards too (redrawn when the list arrives)
 function route() {
   const m = location.hash.match(/^#\/p\/([\w-]+)(?:\/(\w+))?/);
   const pid = m ? m[1] : null, tab = m && m[2] && TABS.some(t => t[0] === m[2]) ? m[2] : 'overview';

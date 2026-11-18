@@ -64,6 +64,7 @@ button:hover{background:var(--primary-2);transform:translateY(-1px);box-shadow:0
 .none{border:1px dashed var(--line-2);border-radius:8px;padding:14px;color:var(--ink-2);font-size:13px}
 details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
 .fine{font-size:12px;color:var(--ink-2)}
+.shown{font:700 30px/1.2 ui-monospace,Consolas,"Courier New",monospace;letter-spacing:.25em;text-align:center;padding:12px;border:1px dashed var(--accent);border-radius:8px;color:var(--ink)}
 .fine a{white-space:nowrap}
 @media (max-width:900px){.wrap{grid-template-columns:1fr}.hero{min-height:240px;padding:28px 20px}.form{padding:28px 20px}}
 </style>
@@ -87,6 +88,7 @@ details summary{cursor:pointer;color:var(--ink-2);font-size:12.5px}
       <button type="submit" id="askbtn">Continue</button>
     </form>
     <form id="codeform" style="display:grid;gap:10px" hidden>
+      <div id="shown" class="shown" aria-label="Your sign-in code" hidden></div>
       <div><label for="code">Sign-in code</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required></div>
       <button type="submit" id="codebtn">Sign in</button>
       <p class="fine"><a href="#" id="again">Resend code</a> or <a href="#" id="other">use a different email</a></p>
@@ -153,6 +155,9 @@ async function ask() {
   try {
     const j = await post('/auth/otp/start', {email: $('email').value.trim(), turnstile: BOT.token});
     show('note', j.message); $('askform').hidden = true; $('codeform').hidden = false; $('code').value = ''; $('code').focus();
+    /* item 57: on an install used on this computer only (RELAY_OTP_ON_SCREEN=1), the code comes back to be shown here */
+    $('shown').textContent = j.code || ''; $('shown').hidden = !j.code;
+    if (j.code) { $('code').value = j.code; $('codebtn').focus(); }
   } catch (e) { show('error', e.message); } finally { $('askbtn').disabled = false; botReset(); }
 }
 $('askform').addEventListener('submit', e => { e.preventDefault(); ask(); });
@@ -173,6 +178,7 @@ $('again').addEventListener('click', e => {
 $('other').addEventListener('click', e => { e.preventDefault(); show('note'); show('error'); $('codeform').hidden = true; $('askform').hidden = false; $('email').focus(); });
 fetch('/auth/providers').then(r => r.json()).then(cfg => {
   if (cfg.mode !== 'otp' && cfg.mode !== 'sso') return location.replace('/');
+  if (cfg.on_screen) $('lead').textContent = 'Enter your email. On this computer the sign-in code is shown here, not emailed.';
   if (!ADMIN && cfg.turnstile) botStart(cfg.turnstile);
 }).catch(() => {});
 </script>

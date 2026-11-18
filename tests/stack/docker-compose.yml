@@ -89,6 +89,9 @@ services:
       RELAY_ROLE: admin
       RELAY_DATABASE_URL: postgresql://relay_app:${TEST_DB_PASSWORD}@d2d-relay-test-db:5432/relay
       RELAY_PUBLIC_URL: http://127.0.0.1:8104
+      # item 57: the admin portal shows sign-in codes on its sign-in page to requests made on this PC (item57_check.py);
+      # the public site keeps them off, so its suites see the emailed path and the Turnstile widget
+      RELAY_OTP_ON_SCREEN: ${TEST_OTP_ON_SCREEN-1}
     volumes:
       - admin-data:/data
       - ${CODE_APP:-./empty-app}:${CODE_APP_AT:-/opt/unused-app}:ro

@@ -11,7 +11,8 @@ sign-in. The setup guide is `docs/d2d-relay.md`.
 
 **Turned down on 2026-11-17 (item 54).** The app is switched off: its five containers are stopped, not removed, and its
 data is kept. d2d.pasdacs.com is now a static page about D2D (how it works, a 79-second video, contact), served by a
-Cloudflare Worker from the PASDACS site repository (`d2d-page/`). The rest of this section describes the app as it ran.
+Cloudflare Worker from the PASDACS site repository (`d2d-page/`). Since 2026-11-18 the app runs again on this PC only,
+for client demos, with its tunnel removed (item 57). The rest of this section describes the app as it ran.
 
 - Live at https://d2d-relay.pasdacs.com, served through a Cloudflare tunnel (container `d2d-relay-tunnel`, token in the
   git-ignored `tunnel.env`). On the host PC it is http://127.0.0.1:8100.
@@ -1388,8 +1389,34 @@ stay uncommitted on purpose, identical to their backup branch).
     `accounts_check`, `item50_check`, `item40_check` and `upgrade_check` follow the app. Every suite passes, 1160 of
     1160 on the candidate image, and `upgrade_check` 27 of 27 from live's `b77f38e`.
     Not changed: the privacy notice and the terms still describe joining by domain and personal workspaces; they are
-    the lawyer-reviewed pages, for the user and the lawyer to update with the client licences. Committed in the work
-    folder; not deployed (the app is off, item 54), not pushed.
+    the lawyer-reviewed pages, for the user and the lawyer to update with the client licences. Committed as `64d2e28`;
+    running on the live install, on this PC only, since item 57; not pushed.
+57. **The sign-in code on the screen, for an install used on this PC only** (the user, 2026-11-18, for a client demo on
+    the live install once they had removed its Cloudflare tunnel: "add a option to show the otp in the screen itself as
+    all is local not in public"). With `RELAY_OTP_ON_SCREEN=1`, after Continue the sign-in page shows the account's code
+    in a box and fills it in, and asks for no Turnstile check (its widget only works on the public hostname), for a
+    request made on this PC only: from loopback or the Docker host (`portal.LOCAL`) with none of the headers a tunnel
+    or proxy adds (`cf-connecting-ip`, `x-forwarded-for`, `forwarded`, `x-real-ip`). Anything else gets the emailed
+    code with the bot check, as before; an address without an account still gets no code; each code shown is audited
+    (`auth.otp_shown`). Off by default (`.env.example`; `docs/d2d-relay.md`, "The code on the screen"). Found while
+    preparing the demo: the start page ("/") said "No dashboards yet" in a workspace with dashboards whenever their
+    list arrived after the page was drawn (since `8e4a862`); it now redraws when the list arrives, as `#/d2d` did
+    (`02-shell.js`). Tests: `item57_check` (23; the test stack turns the code on the screen on for its admin portal
+    only, so the public site's suites keep the emailed path and the Turnstile widget; its start-page check holds the
+    dashboard list back 1.5 s in Chromium and fails on the old `02-shell.js`); every suite passes, 1183 of 1183 on
+    `d2d-relay:item57-test2` (the start-page check was corrected to finish the owner's first-time tour first, then
+    rerun). **Live, on this PC only, since 2026-11-18 about 10:00 IST**, on the user's "use the live instance itself
+    as i have removed the cloudflare tunnel, so all will be local only": the database backed up first
+    (`data\backups\relay-db-20261118-042839.dump`), the deploy folder fast-forwarded to `64d2e28` (items 55 and 56),
+    web, admin, runner and the database (which had stayed on `8689305`'s image) on the tested image built from the work
+    folder with item 57 (`d2d-relay:latest`), `RELAY_OTP_ON_SCREEN=1` added to its `.env`, the tunnel left stopped, and
+    the two PC helpers started again. A client demo with sample data was then seeded into PASDACS's own workspace. The
+    start-page fix was copied into the running web and admin containers at about 10:10 IST; the image rebuilt with it
+    and tested, `d2d-relay:item57-test2`, waits for the user to put live on it
+    (`docker tag d2d-relay:item57-test2 d2d-relay:latest`, then `docker compose up -d`): until then a restart keeps the
+    fix but a recreated web or admin loses it. **Going back:** delete the `RELAY_OTP_ON_SCREEN` line,
+    `docker tag d2d-relay:b77f38e d2d-relay:latest` (kept), `git reset --keep b15d40b` in the deploy folder, then
+    `docker compose up -d`. Not pushed.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 

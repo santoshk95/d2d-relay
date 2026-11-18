@@ -653,6 +653,24 @@ To switch it on:
 The test stack runs with Cloudflare's published test keys (always pass: `1x00000000000000000000AA` and
 `1x0000000000000000000000000000000AA`); the suites send a token with every code they ask for (`d2d_checks.Person`).
 
+## The code on the screen
+
+Since item 57 (the user, 2026-11-18, for demos on the live install once its Cloudflare tunnel was removed: "add a
+option to show the otp in the screen itself as all is local not in public"), `RELAY_OTP_ON_SCREEN=1` lets an install
+that is used on this PC only skip the email: after Continue, the sign-in page shows the account's 6-digit code in a
+box and fills it in, so Sign in is one click, and it asks for no bot check (Turnstile's widget only works on the
+public hostname). It applies only to a request made on this PC (`otp.on_screen`): from its own addresses (loopback,
+the Docker host) with none of the headers a tunnel or proxy adds (`cf-connecting-ip`, `x-forwarded-for`,
+`forwarded`, `x-real-ip`). Anything else gets the emailed code, with the bot check, as always. An address without
+an account still gets the usual answer and no code. Each code shown is in the audit (`auth.otp_shown`). Both sites
+read it: http://127.0.0.1:8100 and the admin portal on http://127.0.0.1:8102. **Never with a tunnel or port
+forwarding to this PC**: anyone who reaches the app through something that adds none of those headers would get
+codes too. To switch it on or off: the line in the live `.env`, then `docker compose up -d --no-deps
+--force-recreate web admin`.
+
+The test stack switches it on for its admin portal only (`TEST_OTP_ON_SCREEN`, default 1), so the public site's
+suites keep the emailed path and the Turnstile widget; `item57_check.py` covers both.
+
 ## Sign-in alerts
 
 Every successful sign-in sends info@pasdacs.com an email (`app/signin_alerts.py`): who, their organisation, the

@@ -29,6 +29,12 @@ The admin portal (portal.py, D2D_PORTAL=admin) uses the same codes, without the 
 domains (pasdacs.com) with an account in the platform's own workspace (PASDACS): a PASDACS owner adds colleagues on the
 public site's Organisation page, like any organisation's owner. Its sessions are of their own kind (portal.SESSION_KIND)
 and cookie (d2d_admin).
+
+The code on the screen (item 57, the user 2026-11-18, for demos on the live install once its tunnel was removed: "add a
+option to show the otp in the screen itself as all is local not in public"): with D2D_OTP_ON_SCREEN=1 the sign-in page
+shows an account's code itself instead of emailing it, and asks for no bot check, but only for a request made on this
+PC: from its own addresses (portal.LOCAL: loopback, the Docker host) with no Cloudflare or proxy header. Anything else
+gets the emailed code as always. Off by default; only for an install nobody reaches from outside this PC.
 """
 from __future__ import annotations
 
@@ -51,7 +57,11 @@ from . import auth, code_email, db, identity, orgs, otp_mail, portal, signin_ale
 router = APIRouter()
 ADMIN_ONLY_TEXT = "Only PASDACS addresses can sign in to the D2D Relay admin portal."
 SENT_TEXT = "If {email} has a D2D Relay account, we sent it a sign-in code. It expires in 10 minutes."
+SHOWN_TEXT = "Your sign-in code is shown below (this D2D Relay is used on this computer only). It expires in 10 minutes."
 WRONG_TEXT = "That code is wrong or has expired. Ask for a new one."
+# item 57: the code on the sign-in page itself, for requests made on this PC only (on_screen)
+ON_SCREEN = (os.environ.get("D2D_OTP_ON_SCREEN") or "").strip().lower() in ("1", "true", "yes", "on")
+PROXY_HEADERS = ("cf-connecting-ip", "x-forwarded-for", "forwarded", "x-real-ip")
 
 EMAIL = (os.environ.get("D2D_OTP_EMAIL") or "").strip().lower()
 SENDER = (os.environ.get("D2D_OTP_FROM") or EMAIL).strip()
@@ -79,6 +89,14 @@ BOT_DOWN_TEXT = "The security check could not be confirmed. Please try again in 
 def turnstile_on() -> bool:
     """The public site asks for Turnstile's token when both keys are set; the admin portal never does."""
     return bool(TURNSTILE_SITE_KEY and TURNSTILE_SECRET) and not portal.ADMIN
+
+
+def on_screen(request: Request) -> bool:
+    """Item 57: whether this request gets its sign-in code on the screen (D2D_OTP_ON_SCREEN=1): only one made on this
+    PC, from its own addresses (portal.LOCAL), with none of the headers a tunnel or proxy adds."""
+    if not ON_SCREEN or any(request.headers.get(h) for h in PROXY_HEADERS):
+        return False
+    return (request.client.host if request.client else "") in portal.LOCAL
 
 
 def _human(token: str, ip: str) -> bool | None:
@@ -188,7 +206,8 @@ def start(body: StartBody, request: Request):
         with db.use(db.PLATFORM):
             db.audit("auth.otp_refused", None, {"ip": _ip(request), "reason": "admin portal", "domain": orgs.domain_of(email)}, "system")
         return _err(ADMIN_ONLY_TEXT, 403)
-    if turnstile_on():                               # item 40: a person, not a bot, before any code is made or sent
+    shown = on_screen(request)                       # item 57: on this PC, the code on the screen and no bot check
+    if turnstile_on() and not shown:                 # item 40: a person, not a bot, before any code is made or sent
         human = _human(body.turnstile, _ip(request))
         if not human:
             with db.use(db.PLATFORM):
@@ -218,6 +237,12 @@ def start(body: StartBody, request: Request):
         with db.use(db.PLATFORM):
             db.audit("auth.otp_no_account", None, {"ip": ip, "domain": orgs.domain_of(email)}, "system")
         return {"ok": True, "message": SENT_TEXT.format(email=email)}
+    if shown:                                        # item 57: shown on this PC's screen, not emailed
+        if DEV_LOG:
+            print(f"[otp] code for {email}: {code} (shown on screen, D2D_OTP_ON_SCREEN=1)", flush=True)
+        with db.use(db.PLATFORM):
+            db.audit("auth.otp_shown", None, {"ip": ip, "domain": orgs.domain_of(email)}, "system")
+        return {"ok": True, "message": SHOWN_TEXT, "code": code}
     t0 = time.monotonic()
     try:
         _mail(email, code)

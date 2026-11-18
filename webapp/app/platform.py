@@ -60,11 +60,13 @@ def _to_login(message: str) -> RedirectResponse:
 # ---------------------------------------------------------------- sign-in
 
 @router.get("/auth/providers")
-def sign_in_options():
+def sign_in_options(request: Request):
     out = {"mode": auth.MODE, "providers": identity.providers(public=True), "local": identity.local_enabled()}
     if auth.MODE == "otp":                             # D2D Relay item 40: the bot check's public site key (or none)
         from . import otp                              # late import (otp -> platform)
-        out["turnstile"] = otp.TURNSTILE_SITE_KEY if otp.turnstile_on() else ""
+        shown = otp.on_screen(request)                 # item 57: on this PC the code is shown, and no bot check
+        out["turnstile"] = otp.TURNSTILE_SITE_KEY if otp.turnstile_on() and not shown else ""
+        out["on_screen"] = shown
     t = auth.tenant_row(db.tenant())
     if t and t["kind"] != "platform":                  # P17: the workspace this sign-in page is for
         out["tenant"] = {"id": t["id"], "name": t["name"], "kind": t["kind"]}
