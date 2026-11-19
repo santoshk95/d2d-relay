@@ -11,6 +11,15 @@ An address without an account gets the same answer as one with an account, but n
 sign-in page which addresses have accounts. Its answer comes after about as long as sending a code takes, and the limits
 below count it like any other.
 
+Item 92 (the user, 2026-11-19: "they will create on their own as sign up and then i get notification and i will handle
+credits"): an organisation signs up itself again. A work address whose domain no organisation has yet (not free mail or
+a throw-away address, never on the admin portal) gets a code; the code makes its organisation (named from the domain,
+renamed on its Organisation page) with that person as main owner and no credits, and PASDACS is told (orgs.signed_up):
+an email to info@pasdacs.com, a starting-credits request under Requests on the admin portal, and a notification there.
+PASDACS approves the request with the credits it chooses. Colleagues are still added by the owners: an address at a
+domain that has an organisation gets the usual answer and no code. A free mail or throw-away address is told to use a
+work address. D2D_SIGNUP=0 closes sign-up again.
+
   D2D_OTP_FROM               the mailbox the code is sent from (default: D2D_OTP_EMAIL)
   D2D_OTP_MS_TENANT          Microsoft Entra tenant of that mailbox, and
   D2D_OTP_MS_CLIENT_ID       a public-client Entra app with delegated Mail.Send; the mailbox signs in once
@@ -172,6 +181,34 @@ PERSONAL_TEXT = ("D2D Relay is for organisations: personal workspaces are closed
                  "to info@pasdacs.com.")
 
 
+SIGNUP = (os.environ.get("D2D_SIGNUP") or "1").strip() != "0"      # item 92: organisations sign up themselves
+
+
+def _can_sign_up(email: str) -> bool:
+    """Item 92: a new organisation may sign up with this address: a work address (not free mail or throw-away), no
+    account yet, and a domain no organisation has; never on the admin portal."""
+    if not SIGNUP or portal.ADMIN or orgs.refused(email) or orgs.personal_address(email):
+        return False
+    with db.use(db.PLATFORM):
+        if db.one("SELECT 1 AS x FROM relay.tn_accounts WHERE email = ?", (email,)):
+            return False
+        return orgs.by_domain(orgs.domain_of(email)) is None
+
+
+def _sign_up(email: str) -> tuple[str, dict] | JSONResponse:
+    """Item 92: the code checked out for a new organisation's first person: make the organisation (no credits, its
+    name from the domain) with them as main owner, and tell PASDACS."""
+    try:
+        tid, uid = orgs.create(orgs.suggested_name(orgs.domain_of(email)), email, orgs.name_from(email), credits=0,
+                               by={"id": "signup", "name": "Sign-up"})
+    except orgs.OrgError as e:
+        return _err(str(e), e.status)
+    orgs.signed_up(tid, uid, email)
+    with db.use(tid):
+        u = db.one("SELECT * FROM users WHERE id = ?", (uid,))
+    return tid, u
+
+
 def _known(email: str) -> bool:
     """Whether a code goes to this address: it has an account (on the admin portal, one in PASDACS's own workspace), or
     it is the platform admin's own address. Item 83: never an account of a personal workspace (organisations only)."""
@@ -220,6 +257,11 @@ def start(body: StartBody, request: Request):
             return _err(BOT_TEXT if human is False else BOT_DOWN_TEXT, 403 if human is False else 503)
     now, ip = time.time(), _ip(request)
     known = _known(email)
+    if not known and not portal.ADMIN and orgs.personal_address(email):     # items 83 and 92: organisations only
+        return _err(PERSONAL_TEXT, 403)
+    if not known and not portal.ADMIN and orgs.refused(email):
+        return _err(orgs.REFUSED_TEXT, 403)
+    new = not known and _can_sign_up(email)                                  # item 92: a new organisation signs up
     with _lock, db.use(db.PLATFORM):
         recent = db.q("SELECT created FROM otp_codes WHERE email = ? AND created > ? ORDER BY created DESC", (email, now - 3600))
         if recent and now - recent[0]["created"] < GAP:
@@ -236,7 +278,7 @@ def start(body: StartBody, request: Request):
         db.run("UPDATE otp_codes SET used = ? WHERE email = ? AND used IS NULL", (now, email))      # one live code at a time
         db.run("INSERT INTO otp_codes (id, email, code_hash, salt, created, expires, ip) VALUES (?, ?, ?, ?, ?, ?, ?)",
                (secrets.token_hex(8), email, _hash(code, salt), salt, now, now + TTL, ip))
-    if not known:
+    if not known and not new:
         _like_sending()
         with db.use(db.PLATFORM):
             db.audit("auth.otp_no_account", None, {"ip": ip, "domain": orgs.domain_of(email)}, "system")
@@ -321,6 +363,10 @@ def verify(body: VerifyBody, request: Request):
     found = _account(email)
     if isinstance(found, JSONResponse):
         return found
+    if not found and _can_sign_up(email):   # item 92: the first person of a new organisation
+        found = _sign_up(email)
+        if isinstance(found, JSONResponse):
+            return found
     if not found:                       # no account: no code was ever sent, so only a lucky guess gets here
         return _err(WRONG_TEXT)
     tid, u = found

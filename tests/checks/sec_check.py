@@ -126,17 +126,23 @@ check("headers: one range still works (206)", s == 206 and len(t) == 10, (s, len
 section("sign-in hardening")
 s, r = c.Person("a@b").post("/auth/otp/start", {"email": "a@b"})
 check("sign-in: a@b is not an address (400)", s == 400, (s, r))
-# item 56: nobody signs up. An address without an account (throw-away or not) gets the answer an account gets, and no code
+# item 92: an organisation signs up. A throw-away address is told to use one the organisation keeps (403: it says nothing
+# about accounts); a work address at a domain no organisation has gets the answer an account gets, and a code (sign-up)
 known = c.Person(f"kim@known{STAMP}.com")
 c.provision_account(known.email, f"Known {STAMP}")
 t0 = time.time()
 sk, rk = known.post("/auth/otp/start", {"email": known.email}, headers={"cf-connecting-ip": known.ip})
-for addr in (f"someone{STAMP}@mailinator.com", f"someone{STAMP}@yopmail.com", f"nobody@unknown{STAMP}.com"):
+for addr in (f"someone{STAMP}@mailinator.com", f"someone{STAMP}@yopmail.com"):
     t1 = time.time()
     s, r = c.Person(addr).post("/auth/otp/start", {"email": addr})
-    same = isinstance(r, dict) and isinstance(rk, dict) and r.get("message") == str(rk.get("message", "")).replace(known.email, addr)
-    check(f"sign-in: {addr.split('@')[1]} (no account) gets the same answer as an account, and no code",
-          s == sk == 200 and same and not c.code_now(c.WEB_C, addr, t1, wait=1), (s, r, rk))
+    check(f"sign-in: {addr.split('@')[1]} (throw-away) is told to use an address the organisation keeps, and no code",
+          s == 403 and "throw-away" in str(detail(r)) and not c.code_now(c.WEB_C, addr, t1, wait=1), (s, r))
+addr = f"nobody@unknown{STAMP}.com"
+t1 = time.time()
+s, r = c.Person(addr).post("/auth/otp/start", {"email": addr})
+same = isinstance(r, dict) and isinstance(rk, dict) and r.get("message") == str(rk.get("message", "")).replace(known.email, addr)
+check("sign-in: a work address at a domain no organisation has gets the same answer as an account, and a code (item 92: sign-up)",
+      s == sk == 200 and same and bool(c.code_now(c.WEB_C, addr, t1)), (s, r, rk))
 s, r = c.Person(f"nobody@unknown{STAMP}.com").post("/auth/otp/verify", {"email": f"nobody@unknown{STAMP}.com", "code": "123456"})
 check("sign-in: ... and any code for it is wrong (400)", s == 400 and "wrong" in str(detail(r)), (s, r))
 s, r = c.Person(f"nobody@unknown{STAMP}.com").post("/auth/otp/start", {"email": f"nobody@unknown{STAMP}.com"})

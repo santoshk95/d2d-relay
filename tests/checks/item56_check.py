@@ -1,5 +1,6 @@
 """Test stack only: item 56 (the user, 2026-11-18: "Remove signup and bring login directly as internal team management";
-D2D is licensed to client organisations, not offered to the public). Nobody signs up:
+D2D is licensed to client organisations, not offered to the public), with item 92 (2026-11-19: a new organisation
+signs up itself, with no credits until PASDACS approves its starting credits). The rest of item 56 holds:
 - an address without an account gets the answer an account gets and no code; any code for it is wrong; the code limits
   count it the same way; PASDACS can see it was asked (auth.otp_no_account); the old sign-up step is gone;
 - PASDACS creates an organisation on the admin portal (its name, main owner and starting credits), with its rules; the
@@ -58,29 +59,69 @@ def browser(container: str, script: str, *args: str) -> dict:
 admin = c.signed_in("info@pasdacs.com", c.ADMIN_BASE)
 T0 = time.time()
 
-# ---------------------------------------------------------------- nobody signs up
-section("nobody signs up")
+# ---------------------------------------------------------------- item 92: a new organisation signs up; others get no code
+section("a new organisation signs up (item 92)")
 dom = f"lic{S}.com"
-ana = c.Person(f"ana@{dom}")                    # the main owner-to-be: no account yet
+ana = c.Person(f"ana@{dom}")                    # the main owner-to-be of the organisation PASDACS creates below
+sdom = f"signup{S}.com"
+sia = c.Person(f"sia.lead@{sdom}")
 t0 = time.time()
-s, r = ana.post("/auth/otp/start", {"email": ana.email}, headers={"cf-connecting-ip": ana.ip})
-check("no account: the usual answer", s == 200 and isinstance(r, dict)
-      and str(r.get("message", "")).startswith(f"If {ana.email} has a D2D Relay account, we sent it a sign-in code"), (s, r))
-check("no account: no code is sent", not c.code_now(c.WEB_C, ana.email, t0), "a code is in the log")
+s, r = sia.post("/auth/otp/start", {"email": sia.email}, headers={"cf-connecting-ip": sia.ip})
+check("sign-up: an address at a domain no organisation has gets the usual answer",
+      s == 200 and isinstance(r, dict) and str(r.get("message", "")).startswith(f"If {sia.email} has a D2D Relay account, we sent it a sign-in code"), (s, r))
+code = c.code_now(c.WEB_C, sia.email, t0)
+check("sign-up: ... and a code", bool(code), "no code in the log")
+s, r = sia.post("/auth/otp/verify", {"email": sia.email, "code": code or "000000"})
+check("sign-up: the code signs them in", s == 200 and isinstance(r, dict) and r.get("ok") is True, (s, r))
+so = org_of(sia)
+check("sign-up: their organisation is made, named from the domain, with them as its main owner",
+      so.get("domain") == sdom and so.get("is_owner") is True and len(str(so.get("name") or "")) >= 2, so)
+check("sign-up: no credits until PASDACS approves its starting credits", so.get("credits") == 0 and bool(so.get("pending_request")), so)
+s, d = admin.get("/api/admin/requests")
+req = next((x for x in (d or {}).get("credits", []) if x.get("org_name") == so.get("name")), {}) if isinstance(d, dict) else {}
+check("sign-up: PASDACS finds its starting credits waiting under Requests", req.get("status") == "pending" and req.get("credits") == 50, req)
+s, n = admin.get("/api/notifications")
+check("sign-up: ... and is told on the admin portal", "signed up" in json.dumps(n), str(n)[:300])
+s, r = admin.post(f"/api/admin/requests/{req.get('id')}/approve", {"credits": 30})
+check("sign-up: PASDACS approves it with the credits it chooses (30)", s == 200 and org_of(sia).get("credits") == 30, (s, detail(r), org_of(sia).get("credits")))
+SETUP_NAME = r"""
+import json, sys
+from playwright.sync_api import sync_playwright
+with sync_playwright() as pw:
+    b = pw.chromium.launch(args=["--no-sandbox"]); ctx = b.new_context(viewport={"width": 1366, "height": 900})
+    ctx.add_cookies([{"name": "d2d_session", "value": sys.argv[1], "url": "http://127.0.0.1:8000"}])
+    pg = ctx.new_page(); pg.goto("http://127.0.0.1:8000/#/setup?step=context"); pg.wait_for_selector("#su-orgname", timeout=20000)
+    pg.wait_for_timeout(600)
+    out = {"prefilled": pg.input_value("#su-orgname")}
+    pg.fill("#su-orgname", sys.argv[2]); pg.select_option("#su-ind", index=1)
+    pg.fill("#su-about", "A regional grocery chain with 40 stores selling fresh food and household goods.")
+    pg.click("#su-next"); pg.wait_for_timeout(2500)
+    out["name_after"] = pg.evaluate("fetch('/api/me').then(r => r.json()).then(j => j.org.name)")
+    print(json.dumps(out))
+"""
+un = browser(c.WEB_C, SETUP_NAME, c.cookie(sia, "d2d_session"), f"Sia Foods {S}")
+check("sign-up: the first person names the organisation in the setup's first step (prefilled from the domain)",
+      un.get("prefilled") == so.get("name") and un.get("name_after") == f"Sia Foods {S}", un)
+bea = c.Person(f"bea.{S}@{sdom}")
+t1 = time.time()
+s, r = bea.post("/auth/otp/start", {"email": bea.email}, headers={"cf-connecting-ip": bea.ip})
+check("no account at a domain that has an organisation: the usual answer and no code (its owners add people)",
+      s == 200 and not c.code_now(c.WEB_C, bea.email, t1, wait=1), (s, r))
 check("no account: PASDACS can see it was asked (auth.otp_no_account, no address kept)",
-      sql(f"SELECT count(*) FROM public.audit WHERE action = 'auth.otp_no_account' AND detail LIKE '%{dom}%' AND detail NOT LIKE '%ana@%'")
+      sql(f"SELECT count(*) FROM public.audit WHERE action = 'auth.otp_no_account' AND detail LIKE '%{sdom}%' AND detail NOT LIKE '%bea.%'")
       not in ("", "0"), sql("SELECT detail FROM public.audit WHERE action = 'auth.otp_no_account' ORDER BY ts DESC LIMIT 1"))
-s, r = ana.post("/auth/otp/verify", {"email": ana.email, "code": "123456"})
+s, r = bea.post("/auth/otp/verify", {"email": bea.email, "code": "123456"})
 check("no account: any code is wrong (400)", s == 400 and "wrong" in str(detail(r)), (s, r))
-s, r = ana.post("/auth/otp/start", {"email": ana.email}, headers={"cf-connecting-ip": ana.ip})
+s, r = bea.post("/auth/otp/start", {"email": bea.email}, headers={"cf-connecting-ip": bea.ip})
 check("no account: the one-code-a-minute limit counts it like any address (429)", s == 429, (s, r))
 for method in ("GET", "POST"):
-    s, r = ana.call(method, "/auth/otp/organisation", {"name": "Mine", "person": "Ana"} if method == "POST" else None)
-    check(f"the sign-up step is gone ({method} /auth/otp/organisation: 404 or 405, no such route)", s in (404, 405), (s, r))
-for addr in (f"gita.{S}@gmail.com", f"temp.{S}@mailinator.com"):
+    s, r = bea.call(method, "/auth/otp/organisation", {"name": "Mine", "person": "Bea"} if method == "POST" else None)
+    check(f"the old sign-up step is gone ({method} /auth/otp/organisation: 404 or 405, no such route)", s in (404, 405), (s, r))
+for addr, word in ((f"gita.{S}@gmail.com", "work address"), (f"temp.{S}@mailinator.com", "throw-away")):
     t1 = time.time()
     s, r = c.Person(addr).post("/auth/otp/start", {"email": addr})
-    check(f"no account at @{addr.split('@')[1]}: the usual answer and no code", s == 200 and not c.code_now(c.WEB_C, addr, t1, wait=1), (s, r))
+    check(f"no sign-up at @{addr.split('@')[1]}: told why (403), and no code", s == 403 and word in str(detail(r))
+          and not c.code_now(c.WEB_C, addr, t1, wait=1), (s, r))
 
 # ---------------------------------------------------------------- PASDACS creates an organisation
 section("PASDACS creates an organisation")
@@ -217,8 +258,8 @@ print(json.dumps(out))
 """
 ui = browser(c.WEB_C, PLAY_LOGIN, f"nobody.ui.{S}@unknown{S}.com")
 for w in (360, 1280):
-    check(f"sign-in page {w} px: no organisation step, and who sets accounts up", ui.get(f"orgform_{w}") == 0
-          and "set up by your organisation" in str(ui.get(f"who_{w}")), ui)
+    check(f"sign-in page {w} px: no organisation step, and who sets accounts up (item 92: the first person, then its owner)",
+          ui.get(f"orgform_{w}") == 0 and "sets up its workspace" in str(ui.get(f"who_{w}")) and "Its owner adds you" in str(ui.get(f"who_{w}")), ui)
     check(f"sign-in page {w} px: plain characters, nothing sideways, no script errors",
           ui.get(f"typo_{w}") == "" and ui.get(f"sideways_{w}") is False and ui.get(f"errors_{w}") == [], ui)
 check("sign-in page: an address without an account sees the usual note", "has a D2D Relay account, we sent it a sign-in code" in str(ui.get("note")), ui)
@@ -281,7 +322,8 @@ with sync_playwright() as pw:
 print(json.dumps(out))
 """
 ua = browser(c.ADMIN_C, PLAY_ADMIN, c.cookie(admin, "d2d_admin"), ui_org, ui_owner, ui_person)
-check("admin screen: Organisations says nobody signs up and PASDACS creates each organisation", "Nobody signs up" in str(ua.get("meta")), ua.get("meta") or ua)
+check("admin screen: Organisations says organisations sign up (their credits wait under Requests) or PASDACS creates them",
+      "Organisations sign up with a work address" in str(ua.get("meta")), ua.get("meta") or ua)
 check("admin screen: New organisation asks for the name, the main owner's email and name, and the starting credits",
       all(x in str(ua.get("dialog")) for x in ("Organisation name", "Main owner's email", "Main owner's name", "Starting credits")), ua.get("dialog") or ua)
 check("admin screen: Create closes the dialog and lists the new organisation", ua.get("modal_after_create") == 0, ua)

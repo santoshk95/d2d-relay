@@ -163,7 +163,7 @@ c.check("upgrade (item 29): a Migration D2D request works on the upgraded databa
 new = c.Person(f"nia@after{STAMP}.com")
 t0 = time.time()
 s, r = new.post("/auth/otp/start", {"email": new.email}, headers={"cf-connecting-ip": new.ip})
-c.check("upgrade (item 56): after it nobody signs up: an address without an account gets no code", s == 200 and not c.code_now(c.WEB_C, new.email, t0),
+c.check("upgrade (item 92): after it a new organisation can sign up: an address at a new domain gets a code", s == 200 and bool(c.code_now(c.WEB_C, new.email, t0)),
         (s, r))
 s, r = new.sign_in(f"After {STAMP}", "Nia", again=True)     # PASDACS creates the organisation first (d2d_checks.provision_account)
 on = org_of(new)

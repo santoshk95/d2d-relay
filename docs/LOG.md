@@ -1974,6 +1974,24 @@ committed.
         - The user to confirm Razorpay's live webhook is on.
         - The trial organisation and its credits: the user makes them on the admin portal (the user, 2026-11-19).
 
+92. **Organisations sign up again; the first person names theirs** (the user, 2026-11-19: "they will create on their own
+    as sign up and then i get notification and i will handle credits", "whoever first signs in org, they will put the
+    meta data of the organisation like name"; item 56's "nobody signs up" ends here, the rest of item 56 holds):
+    - **Who signs up** (`otp._can_sign_up`): a work address whose domain no organisation has gets a code. The code makes
+      the organisation (`orgs.create`, 0 credits, named from the domain) with that person as main owner.
+    - **PASDACS is told** (`orgs.signed_up`): a starting-credits request (purpose start, 50, any number on approval)
+      under the admin portal's Requests, an email to info@pasdacs.com, and a notification there.
+    - **Who does not:**
+      - Colleagues are still added by the owners: an address at a domain that has an organisation gets the usual answer
+        and no code.
+      - Free mail and throw-away addresses are told to use a work address (403; that says nothing about accounts).
+      - `RELAY_SIGNUP=0` closes sign-up again.
+    - **The first person names it:** the setup's first step (Your business) starts with Organisation name, prefilled
+      from the domain, saved with `PATCH /api/org`. The sign-in page says how it works.
+    - **Tests:** `item56_check.py` (70: the sign-up, Requests, the notification, approval with 30, the name in the setup,
+      a colleague with no code, Gmail and throw-away told why), `sec_check.py` (117) and `upgrade_check.py` updated;
+      item81 71/71, accounts 48/48, item60 41/41.
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)

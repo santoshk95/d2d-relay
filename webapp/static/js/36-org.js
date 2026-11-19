@@ -519,7 +519,8 @@ async function renderOrgs() {
   const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1'}, h('div', {class: 'eyebrow'}, 'Platform'), h('h1', {}, 'Organisations'),
-      h('div', {class: 'meta'}, 'Every organisation on D2D Relay, each in its own workspace. Nobody signs up: you create each organisation '
+      h('div', {class: 'meta'}, 'Every organisation on D2D Relay, each in its own workspace. Organisations sign up with a work address, and their '
+        + 'starting credits wait for you under Requests; you can also create one here '
         + `with its main owner, who adds its people. ${d.start ? `Each starts with ${credits(d.start)} unless you set another number` : 'They start with no credits unless you set some'}; `
         + `${costLine(d.costs)}. Organisations use CSV files until you switch a connector on.`)),
       h('button', {class: 'btn primary', type: 'button', onclick: newOrgDialog}, icon('plus'), 'New organisation')),

@@ -209,6 +209,10 @@ function suWizard(P0, ask, here) {
       + (P.proposal ? ', and the draft you have is dropped: you prepare it again next.' : '.')) : null);
   };
   indSel.onchange = drawInd;
+  // item 92 (the user, 2026-11-19: "whoever first signs in org, they will put the meta data of the organisation like
+  // name"): an organisation that signed up is named from its email domain until its owner names it here
+  const nameIn = h('input', {type: 'text', id: 'su-orgname', maxlength: '80', autocomplete: 'organization', value: ORG().name || '',
+    placeholder: 'e.g. FreshWay Markets'});
   const about = h('textarea', {id: 'su-about', rows: 4, maxlength: '3000', placeholder: 'e.g. A regional grocery chain with 220 stores in 3 states: fresh food, pharmacy and fuel, with home delivery and store pickup.'});
   about.value = C.about || '';
   const aboutCount = h('div', {class: 'hint'});
@@ -235,8 +239,10 @@ function suWizard(P0, ask, here) {
   const ctxValue = () => ({industry: indSel.value, about: about.value.trim(), brands: suSplit(brandsIn.value), regions: suSplit(regionsIn.value),
     currency: curSel.value, calendar: {kind: calSel.value, start_month: calSel.value === 'calendar' ? 1 : Number(monSel.value) || 1},
     audiences: [...audBoxes.filter(b => b.checked).map(b => b.value), ...suSplit(audOther.value)], priorities: prio.value.trim(), conventions: conv.value.trim()});
-  let ctxSaved = JSON.stringify(ctxValue());
-  const ctxBody = [savedLine, lbl('Industry', 'su-ind', 'its standard is where your setup starts'), indSel, indHint, indWarn,
+  const ctxState = () => JSON.stringify([nameIn.value.trim(), ctxValue()]);
+  let ctxSaved = ctxState();
+  const ctxBody = [savedLine, lbl('Organisation name', 'su-orgname', 'as your people and your reports should name it'), nameIn,
+    lbl('Industry', 'su-ind', 'its standard is where your setup starts'), indSel, indHint, indWarn,
     lbl('What the business does', 'su-about', 'what you sell, to whom, where'), about, aboutCount,
     h('div', {class: 'su-grid'}, h('div', {}, lbl('Brands or banners', 'su-brands', 'optional'), brandsIn), h('div', {}, lbl('Divisions or regions', 'su-regions', 'optional'), regionsIn)),
     h('div', {class: 'su-grid su-grid3'}, h('div', {}, lbl('Currency', 'su-cur'), curSel), h('div', {}, lbl('Fiscal calendar', 'su-cal'), calSel), monWrap),
@@ -246,10 +252,16 @@ function suWizard(P0, ask, here) {
     lbl('The questions and decisions that matter most', 'su-prio', 'optional'), prio,
     lbl('Naming conventions in your data', 'su-conv', 'optional: the abbreviations your columns use'), conv,
     h('div', {class: 'hint'}, 'Relay reads your columns with them: str_sls_amt is then a store\'s sales.')];
-  const ctxWhy = () => !indSel.value ? 'Choose your industry.' : about.value.trim().length < 20 ? 'Say what the business does in a sentence or two: at least 20 characters.' : '';
+  const ctxWhy = () => nameIn.value.trim().length < 2 ? 'Give your organisation its name.' : !indSel.value ? 'Choose your industry.' : about.value.trim().length < 20 ? 'Say what the business does in a sentence or two: at least 20 characters.' : '';
   async function saveContext() {
+    const name = nameIn.value.trim().replace(/\s+/g, ' ');
+    if (name && name !== (ORG().name || '')) {                       // item 92: renamed with the organisation's own PATCH
+      await api('/api/org', {method: 'PATCH', json: {name}});
+      if (S.me && S.me.org) S.me.org.name = name;
+      if (typeof renderOrgChip === 'function') renderOrgChip();
+    }
     P = await api('/api/org/profile/context', {method: 'PUT', json: ctxValue()});
-    ctxSaved = JSON.stringify(ctxValue()); suSync(P); drawInd();
+    ctxSaved = ctxState(); suSync(P); drawInd();
     const ap = P.applied;                // a new industry: its pack's terms and KPIs went into the ontology
     if (ap && ap.pack) notify(`${ap.pack}: ${suN((ap.terms || {}).added, 'business term')} and ${suN((ap.kpis || {}).added, 'KPI')} added to your ontology.`, 'ok');
     say('Your business is saved.');
@@ -560,7 +572,7 @@ function suWizard(P0, ask, here) {
 
   /* ---- the steps: what each needs before Next, what Next saves, how each is drawn */
   const STEP = {
-    context: {why: ctxWhy, needs: () => !st().context || JSON.stringify(ctxValue()) !== ctxSaved, save: saveContext, label: 'Save and go on',
+    context: {why: ctxWhy, needs: () => !st().context || ctxState() !== ctxSaved, save: saveContext, label: 'Save and go on',
       draw: () => { if (!bodies[0].childElementCount) { suFill(bodies[0], ctxBody); drawInd(); drawCount(); drawCal(); } }},
     prepare: {why: () => running() ? 'Wait for Relay Model to finish the draft.' : !P.proposal ? 'Let Relay Model draft it, or use the industry standard, to go on.' : '',
       needs: () => false, draw: () => { if (!bodies[1].childElementCount) suFill(bodies[1], prepBox); drawPrepare(); }},

@@ -1001,6 +1001,31 @@ class CreditRequest(BaseModel):
 
 
 @router.post("/api/org/credit-request")
+def signed_up(tid: str, uid: str, email: str) -> None:
+    """Item 92: an organisation signed up on the sign-in page (otp._sign_up). A starting-credits request (purpose start)
+    waits for PASDACS under Requests, which approves it with the credits it chooses; PASDACS is emailed and notified on
+    the admin portal. Never in the way of the sign-in: a failure here goes to the log."""
+    from . import tenancy
+    try:
+        o, person = row(tid) or {}, name_from(email)
+        name, domain = o.get("name") or tid, o.get("domain") or domain_of(email)
+        rid = "crq-" + secrets.token_hex(6)
+        db.run("INSERT INTO relay.tn_credit_requests (id, tenant_id, user_id, user_name, email, credits, message, status, created, purpose) "
+               "VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, 'start')",
+               (rid, tid, uid, person, email, START, "Signed up on the sign-in page", time.time()))
+        rows = [("Organisation", name), ("Email domain", domain), ("Workspace id", tid), ("Signed up by", f"{person} <{email}>"),
+                ("Credits now", "0"), ("Starting credits to approve", f"{START:,}, or any number you choose")]
+        sent = _to_pasdacs(f"D2D Relay: {name} signed up", "A new organisation signed up on D2D Relay. It has no credits until you "
+                           "approve its starting credits.", rows, email,
+                           "Approve it, with the credits you choose, or decline it on the D2D Relay admin portal, under Requests.")
+        db.run("UPDATE relay.tn_credit_requests SET emailed = ? WHERE id = ?", (1 if sent else 0, rid))
+        _tell_platform(f"{name} signed up", f"{person} ({email}) made {name} ({domain}); its starting credits wait for you under Requests.",
+                       "#/requests")
+        tenancy.ctl_audit("d2d.org_signed_up", tid, rid, {"domain": domain, "email": email, "sent": sent}, who=uid)
+    except Exception:  # noqa: BLE001
+        traceback.print_exc()
+
+
 def credit_request(body: CreditRequest):
     """Request credits: PASDACS approves every one (the admin portal's Requests). One pending request per organisation;
     it also goes to PASDACS by email, Reply-To the person, and to the platform admins' notifications."""
