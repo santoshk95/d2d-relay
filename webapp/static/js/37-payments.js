@@ -2,7 +2,9 @@
    Organisation page's Payments, and the admin portal's Payments (#/payments: the keys, what is on sale, every payment).
    The amount is always the server's; Razorpay's own window takes the card or UPI details, and the server checks the
    payment with Razorpay before any credits are added. Where the person is decides the currency (item 24, the server's
-   rule): rupees only in India, US dollars everywhere else once PASDACS sets dollar prices. ---------------- */
+   rule): rupees only in India, US dollars everywhere else once PASDACS sets dollar prices. Item 59 took buying online
+   away; item 85 brought it back next to Request credits (36-org.js): an organisation buys credits or asks PASDACS for
+   them. Only organisations sign in since item 83, so nothing here is for personal workspaces. ---------------- */
 
 /* an amount in the currency's smallest unit: ₹1,17,882 (Indian grouping) or $1,250; the minor part when there is one,
    or when asked */
@@ -100,7 +102,7 @@ async function buyDialog(reason) {
   if (d.billing_needed) {                           // asked once: they go on every GST invoice
     const bm = modal('Buy credits', h('div', {class: 'mbody'},
       reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
-      h('p', {style: reason ? null : 'margin-top:0'}, h('b', {}, isPersonal() ? 'First, your billing details. ' : 'First, your organisation\'s billing details. '),
+      h('p', {style: reason ? null : 'margin-top:0'}, h('b', {}, 'First, your organisation\'s billing details. '),
         'They go on its GST invoices. You give them once; owners can change them on the Organisation page.'),
       d.may_edit_billing ? billingForm(d.billing, () => { bm.remove(); buyDialog(reason); })
         : h('div', {class: 'note'}, 'An owner of your organisation adds them on the Organisation page. Ask one of them, or ask PASDACS (Request credits).')));
@@ -198,7 +200,7 @@ async function buyDialog(reason) {
     out,
     h('div', {class: 'row', style: 'justify-content:space-between;gap:12px;margin-top:12px;align-items:center;flex-wrap:wrap'},
       h('span', {class: 'small muted'}, cur === 'INR' ? 'Card, UPI, netbanking or wallet, through Razorpay. ' : 'By card, through Razorpay. ',
-        isPersonal() ? null : h('a', {href: '#', onclick: e => { e.preventDefault(); m.remove(); requestDialog(reason); }}, 'Ask PASDACS instead')),
+        h('a', {href: '#', onclick: e => { e.preventDefault(); m.remove(); requestDialog(reason); }}, 'Ask PASDACS instead')),
       d.can ? payBtn : null)));
 }
 
@@ -217,7 +219,33 @@ function billingDialog(b, then) {
     billingForm(b, () => { m.remove(); notify('Billing details saved', 'ok'); if (then) then(); })));
 }
 
-/* ---------------- the Organisation page's Payments and billing details (filled in after the page shows) ---------------- */
+/* ---------------- the Organisation page's Payments and billing details ---------------- */
+/* the organisation's payments (owners see all of them, others their own), each completed one with its GST invoice (a
+   receipt for one paid before invoices); o: {all, org, no_refunds, can} (/api/payments) */
+function paymentsCard(list, o) {
+  const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
+  return h('div', {class: 'card'}, h('h3', {}, 'Payments'),
+    h('div', {class: 'muted small', style: 'margin:-6px 0 8px'}, (o.all ? `Credits bought online for ${o.org}.` : 'Credits you bought online.')
+      + ' GST invoices open in a new tab, to print or save. ' + (o.no_refunds || '')),
+    list.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Who', 'Credits', 'Amount', 'Status', ''], 2),
+      h('tbody', {}, list.map(p => h('tr', {},
+        h('td', {}, when(p.paid || p.created), p.live ? null : h('span', {class: 'tag', style: 'margin-left:6px'}, 'Test')),
+        h('td', {}, p.user_name || '-'), h('td', {class: 'n'}, '+' + Number(p.credits).toLocaleString('en-IN')),
+        h('td', {class: 'n'}, money(p.amount, p.currency, true)), h('td', {}, payState(p), p.method ? h('span', {class: 'small muted'}, ` ${PAY_METHODS[p.method] || p.method}`) : null),
+        h('td', {class: 'n'}, p.status === 'paid' || p.status === 'refunded'
+          ? h('a', {href: `/api/payments/${encodeURIComponent(p.id)}/receipt`, target: '_blank', rel: 'noopener'}, p.invoice_no ? `Invoice ${p.invoice_no}` : 'Receipt') : null))))))
+      : h('div', {class: 'muted small'}, o.can ? 'None yet. Buy credits pays online, by card, UPI or netbanking.' : 'None yet.'));
+}
+
+/* the Payments card at once, from /api/org (its completed payments; null when there are none); fillPayments brings it
+   up to date from /api/payments (checkouts still waiting too) once that answers */
+function pastPayments(d) {
+  const list = d.payments || [];
+  return list.length ? paymentsCard(list, {all: d.is_owner, org: d.name}) : null;
+}
+
+/* filled in after the page shows: the Payments card from /api/payments (which first asks Razorpay about checkouts still
+   waiting), and the billing details for those who may change them */
 async function fillPayments(box, billBox) {
   let d;
   try { d = await api('/api/payments'); } catch (e) { return; }
@@ -231,18 +259,7 @@ async function fillPayments(box, billBox) {
         icon('edit'), d.billing && d.billing.name ? 'Change' : 'Add billing details'))));
   }
   if (!box.isConnected || (!d.payments.length && !d.on)) return;
-  const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
-  box.replaceChildren(h('div', {class: 'card'}, h('h3', {}, 'Payments'),
-    h('div', {class: 'muted small', style: 'margin:-6px 0 8px'}, (d.all ? `Credits bought online for ${d.org}.` : 'Credits you bought online.')
-      + ' GST invoices open in a new tab, to print or save. ' + (d.no_refunds || '')),
-    d.payments.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'Who', 'Credits', 'Amount', 'Status', ''], 2),
-      h('tbody', {}, d.payments.map(p => h('tr', {},
-        h('td', {}, when(p.paid || p.created), p.live ? null : h('span', {class: 'tag', style: 'margin-left:6px'}, 'Test')),
-        h('td', {}, p.user_name || '-'), h('td', {class: 'n'}, '+' + Number(p.credits).toLocaleString('en-IN')),
-        h('td', {class: 'n'}, money(p.amount, p.currency, true)), h('td', {}, payState(p), p.method ? h('span', {class: 'small muted'}, ` ${PAY_METHODS[p.method] || p.method}`) : null),
-        h('td', {class: 'n'}, p.status === 'paid' || p.status === 'refunded'
-          ? h('a', {href: `/api/payments/${encodeURIComponent(p.id)}/receipt`, target: '_blank', rel: 'noopener'}, p.invoice_no ? `Invoice ${p.invoice_no}` : 'Receipt') : null))))))
-      : h('div', {class: 'muted small'}, d.can ? 'None yet. Buy credits pays online, by card, UPI or netbanking.' : 'None yet.')));
+  box.replaceChildren(paymentsCard(d.payments, d));
 }
 
 /* ---------------- Payments (#/payments, the admin portal) ---------------- */

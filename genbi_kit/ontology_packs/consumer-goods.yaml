@@ -1,0 +1,456 @@
+# Industry pack: consumer goods (CPG and FMCG manufacturers selling through retailers). Business terms tag columns by name
+# (genbi_kit/ontology.py); KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields).
+name: Consumer goods
+order: 20
+description: Manufacturers of packaged food, drinks, home and personal care sold through retailers. Shipments and net sales, retailer sell-through, distribution, trade promotion, market share, forecast accuracy and service levels.
+questions:
+  - What were net sales and gross margin by brand last quarter, and how do they compare with last year?
+  - Which retailers have the highest trade spend as a percent of gross sales?
+  - How has our market share changed by category over the last 13 weeks?
+  - Which promotions delivered the best lift and return on spend this year?
+  - What is the forecast accuracy by brand and planning month, and where is the forecast biased?
+  - Which customers have an OTIF rate below target, and what is their case fill rate?
+
+terms:
+  # ---------------- measures: shipments and sales
+  - {name: Gross Sales, kind: measure, unit: currency, aggregation: sum, description: "Invoiced sales at list price before trade deductions.",
+     synonyms: [gross sls, gross revenue, gross invoice sales, gross invoiced sales, gsv, gross sales value, invoice gross]}
+  - {name: Net Sales, kind: measure, unit: currency, aggregation: sum, description: "Sales after trade spend, returns and damages (net sales value).",
+     synonyms: [net sls, net revenue, nsv, net sales value, net invoice sales, net turnover, net net sales, sales net]}
+  - {name: Sales, kind: measure, unit: currency, aggregation: sum, description: "Value of goods shipped to customers.",
+     synonyms: [sls, sale, sales amount, revenue, turnover, shipment sales, shipment value, invoiced sales, billing amount, billed sales, invoice amount]}
+  - {name: Shipment Cases, kind: measure, unit: count, aggregation: sum, description: "Cases shipped to customers.",
+     synonyms: [ship cases, cases shipped, shipped cases, shipment volume, shipments cases, billed cases, invoiced cases, case shipments, shipped qty cases]}
+  - {name: Shipment Units, kind: measure, unit: count, aggregation: sum, description: "Consumer units shipped to customers.",
+     synonyms: [ship units, units shipped, shipped units, shipment qty, shipped quantity, billed units, invoiced units, shipped eaches]}
+  - {name: Equivalized Volume, kind: measure, unit: number, aggregation: sum, description: "Volume restated to a standard unit (equivalized cases, kilograms or litres) so products can be added up.",
+     synonyms: [eq volume, equivalised volume, eq cases, standard cases, std cases, std units, standard units, equivalent units, volume kg, volume litres]}
+  - {name: Cost of Goods Sold, kind: measure, unit: currency, aggregation: sum, description: "Standard cost of the goods shipped.",
+     synonyms: [cogs, cost of sales, std cost total, standard cost amount, cost of goods, product cost]}
+  - {name: Gross Margin, kind: measure, unit: currency, aggregation: sum, description: "Net sales less the cost of goods sold.",
+     synonyms: [gross profit, gm dollars, margin dollars, gross margin amount, gp amount, gross margin value]}
+  - {name: Gross Margin %, kind: measure, unit: percent, aggregation: average, description: "Gross margin as a share of net sales, already worked out per row (weight it by net sales, never average it).",
+     synonyms: [gross margin pct, gm pct, gm percent, margin pct, gross margin rate, gm rate]}
+  # ---------------- measures: trade spend and promotion
+  - {name: Trade Spend, kind: measure, unit: currency, aggregation: sum, description: "Money given to retailers to sell the product - off-invoice, bill-back, scan and display allowances.",
+     synonyms: [trade spending, trade promotion spend, trade promo spend, tpm spend, trade investment, promo spend, promotion spend, trade funds, trade deductions, tpr spend, trade cost]}
+  - {name: Off Invoice Allowance, kind: measure, unit: currency, aggregation: sum, description: "Discount taken straight off the invoice.",
+     synonyms: [off invoice, oi allowance, off invoice discount, oi discount, invoice discount, oi amount]}
+  - {name: Bill Back Allowance, kind: measure, unit: currency, aggregation: sum, description: "Allowance paid to the retailer after the sale, against proof of performance.",
+     synonyms: [bill back, billback, bb allowance, scan allowance, scan back, scanback, accrual amount, deduction amount, claim payment]}
+  - {name: Returns and Damages, kind: measure, unit: currency, aggregation: sum, description: "Value of goods returned, damaged or unsaleable.",
+     synonyms: [returns, damages, unsaleables, unsaleable, damaged goods, returned goods, returns value, spoilage returns, swell allowance]}
+  - {name: Marketing Spend, kind: measure, unit: currency, aggregation: sum, description: "Consumer advertising and marketing spend.",
+     synonyms: [advertising spend, ad spend, a and p spend, media spend, consumer spend, brand spend, marketing cost, marketing investment]}
+  - {name: Baseline Units, kind: measure, unit: count, aggregation: sum, description: "Units that would have sold without the promotion.",
+     synonyms: [base units, baseline volume, base volume, baseline qty, non promo units]}
+  - {name: Incremental Units, kind: measure, unit: count, aggregation: sum, description: "Extra units sold because of the promotion.",
+     synonyms: [incremental volume, incr units, incr volume, uplift units, lift units, promo uplift]}
+  - {name: Promo Units, kind: measure, unit: count, aggregation: sum, description: "Units sold while on promotion.",
+     synonyms: [promoted units, promo volume, units on promo, promo qty, promo eaches]}
+  - {name: Promo Lift %, kind: measure, unit: percent, aggregation: average, description: "Extra volume of a promotion over baseline, worked out per row.",
+     synonyms: [lift pct, promo lift pct, uplift pct, lift percent, promo uplift pct, incremental pct]}
+  - {name: Promo Events, kind: measure, unit: count, aggregation: sum, description: "Promotion events run.",
+     synonyms: [number of promos, promo count, event count, events run, tactic count]}
+  # ---------------- measures: retailer sell-through, market and distribution
+  - {name: POS Sales, kind: measure, unit: currency, aggregation: sum, description: "Retailer point-of-sale sales dollars to consumers (sell-through, sell-out).",
+     synonyms: [pos sls, pos dollars, pos revenue, sell through sales, sell out sales, consumption sales, retail sales value, rsv, scan sales, epos sales, retailer sales, retailer pos sales]}
+  - {name: POS Units, kind: measure, unit: count, aggregation: sum, description: "Retailer point-of-sale units sold to consumers.",
+     synonyms: [pos qty, pos volume, sell through units, sell out units, consumption units, scan units, epos units, retailer units]}
+  - {name: Category Sales, kind: measure, unit: currency, aggregation: sum, description: "Sales of the whole category (all brands) in the market, the base for market share.",
+     synonyms: [market sales, total market sales, category dollars, category sales dollars, market dollars, total category sales, category value]}
+  - {name: Market Share %, kind: measure, unit: percent, aggregation: average, description: "Share of category sales, already worked out per row (never add or average it up).",
+     synonyms: [market share pct, mkt share pct, mkt share, dollar share pct, value share pct, share of market, share pct, volume share pct]}
+  - {name: Weighted Distribution %, kind: measure, unit: percent, aggregation: average, description: "Share of category sales in stores that carry the product (ACV weighted distribution).",
+     synonyms: [weighted distribution, acv distribution, acv weighted distribution, acv pct, wtd distribution, wd pct, wd, tdp weighted]}
+  - {name: Numeric Distribution %, kind: measure, unit: percent, aggregation: average, description: "Share of stores that carry the product.",
+     synonyms: [numeric distribution, nd pct, nd, numeric dist pct, store distribution pct]}
+  - {name: Stores Selling, kind: measure, unit: count, aggregation: average, description: "Stores that sold the product in the period.",
+     synonyms: [stores carrying, stores with sales, selling stores, store count selling, points of distribution, distribution points]}
+  - {name: Retailer On Hand Units, kind: measure, unit: count, aggregation: last, description: "Units in stock at the retailer at the end of the period.",
+     synonyms: [retailer inventory, retailer oh, retailer on hand, store on hand units, retailer stock units, store inventory units, customer inventory]}
+  - {name: Out of Stock Stores, kind: measure, unit: count, aggregation: sum, description: "Stores found out of stock of the product.",
+     synonyms: [oos stores, stores out of stock, stores oos, oos count, stockout stores]}
+  # ---------------- measures: forecast, orders and service
+  - {name: Forecast Cases, kind: measure, unit: count, aggregation: sum, description: "Forecast demand in cases.",
+     synonyms: [statistical forecast, stat forecast, consensus forecast, demand forecast, forecast qty, forecast volume, fcst cases, fcst qty, forecast units]}
+  - {name: Actual Demand Cases, kind: measure, unit: count, aggregation: sum, description: "Actual demand in cases, to compare with the forecast.",
+     synonyms: [actual demand, actual cases, actual volume, actual qty, actuals cases, demand actuals, actual shipments]}
+  - {name: Absolute Forecast Error, kind: measure, unit: count, aggregation: sum, description: "Forecast error with no sign (miss either way), in cases.",
+     synonyms: [abs forecast error, abs error, abs fcst error, absolute error, forecast error abs, abs deviation, forecast miss]}
+  - {name: Ordered Cases, kind: measure, unit: count, aggregation: sum, description: "Cases the customer ordered.",
+     synonyms: [order cases, cases ordered, order qty, ordered qty, ordered quantity, customer order qty, requested cases]}
+  - {name: Delivered Cases, kind: measure, unit: count, aggregation: sum, description: "Cases delivered against orders.",
+     synonyms: [cases delivered, delivered qty, delivered quantity, delivery qty, fulfilled cases, confirmed cases]}
+  - {name: Deliveries, kind: measure, unit: count, aggregation: sum, description: "Deliveries made to customers.",
+     synonyms: [delivery count, drops, drop count, number of deliveries, shipments count]}
+  - {name: OTIF Deliveries, kind: measure, unit: count, aggregation: sum, description: "Deliveries that arrived on time and in full.",
+     synonyms: [otif count, on time in full deliveries, otif drops, perfect deliveries, otif qualified]}
+  - {name: Inventory Value, kind: measure, unit: currency, aggregation: last, description: "Value of finished goods stock at the end of the period.",
+     synonyms: [inventory cost, stock value, fg inventory value, finished goods value, inventory dollars, inventory at cost]}
+  - {name: Inventory Cases, kind: measure, unit: count, aggregation: last, description: "Cases of finished goods in stock at the end of the period.",
+     synonyms: [on hand cases, stock cases, fg cases, inventory qty, inventory units, closing stock cases, soh cases]}
+  # ---------------- measures: prices
+  - {name: List Price, kind: measure, unit: currency, aggregation: average, description: "Price list price of a case or unit charged to the customer.",
+     synonyms: [wholesale price, price list, case price, list price per case, customer list price, invoice price, gross price]}
+  - {name: Shelf Price, kind: measure, unit: currency, aggregation: average, description: "Price paid by the shopper at the shelf.",
+     synonyms: [retail price, rsp, srp, consumer price, shelf retail, avg retail price, average shelf price, pos price]}
+  - {name: Unit Cost, kind: measure, unit: currency, aggregation: average, description: "Standard cost of one unit or case.",
+     synonyms: [standard cost, std cost, cost per unit, cost per case, case cost, product unit cost]}
+  - {name: Buying Households, kind: measure, unit: count, aggregation: distinct_count, description: "Households that bought the brand (consumer panel).",
+     synonyms: [buyer households, panel buyers, hh buyers, buyers, buying hh, purchasing households]}
+
+  # ---------------- keys
+  - {name: Product, kind: key, entity: Product, description: "Identifies an item (SKU).",
+     synonyms: [product id, product key, product code, product number, sku, sku id, sku code, material, material id, material number, material code, item id, item code, item number, gtin, ean, upc, article number]}
+  - {name: Customer, kind: key, entity: Customer, description: "Identifies a customer (retailer or distributor account).",
+     synonyms: [customer id, customer key, customer code, customer number, sold to, sold to id, sold to party, sold to number, account id, account number, retailer id, retailer code, distributor id, customer nbr]}
+  - {name: Ship To, kind: key, entity: Ship To, description: "Identifies the delivery point of an order.",
+     synonyms: [ship to id, ship to party, ship to number, ship to code, delivery point, delivery location id, drop point, consignee id]}
+  - {name: Store, kind: key, entity: Store, description: "Identifies a retailer's store (in retailer POS data).",
+     synonyms: [store id, store number, store code, store key, outlet id, outlet code, retail outlet id, location id, store nbr]}
+  - {name: Plant, kind: key, entity: Plant, description: "Identifies a factory or shipping plant.",
+     synonyms: [plant id, plant code, plant number, factory id, factory code, manufacturing site, site code]}
+  - {name: Warehouse, kind: key, entity: Warehouse, description: "Identifies a distribution centre or warehouse.",
+     synonyms: [warehouse id, warehouse code, dc id, dc code, dc number, distribution center, distribution centre, storage location, depot id]}
+  - {name: Order, kind: key, entity: Order, description: "Identifies a customer order.",
+     synonyms: [order id, order number, order key, sales order, sales order number, so number, customer po, po number, order nbr]}
+  - {name: Invoice, kind: key, entity: Invoice, description: "Identifies an invoice.",
+     synonyms: [invoice id, invoice number, invoice key, billing document, billing doc, bill number, billing number]}
+  - {name: Promotion, kind: key, entity: Promotion, description: "Identifies a trade promotion event.",
+     synonyms: [promo id, promotion id, promo number, promo code, event id, tactic id, deal id, offer id, trade plan id, funding id]}
+  - {name: Sales Rep, kind: key, entity: Sales Rep, description: "Identifies a sales representative or key account manager.",
+     synonyms: [sales rep id, salesperson id, rep id, kam id, account manager id, salesman id, sales force id]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The day a row belongs to.",
+     synonyms: [day, ship date, shipment date, invoice date, billing date, order date, transaction date, posting date, calendar date, delivery date, pos date, sales date]}
+  - {name: Week Ending Date, kind: date, entity: Date, description: "The last day of the sales week, as retailer POS data reports it.",
+     synonyms: [week end date, week ending, week end, we date, weekending, period end date, week end day]}
+  - {name: Fiscal Week, kind: date, entity: Date, synonyms: [fiscal wk, fw, fiscal week number, week number, week id, retail week]}
+  - {name: Fiscal Period, kind: date, entity: Date, synonyms: [fiscal month, period number, period id, fiscal period number, accounting period, posting period, fp]}
+  - {name: Fiscal Quarter, kind: date, entity: Date, synonyms: [fiscal qtr, fq, quarter number, quarter id]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, fiscal year number, year number]}
+  - {name: Promo Start Date, kind: date, entity: Date, description: "First day of a promotion.",
+     synonyms: [promotion start date, event start date, promo start, start date, in store start date, offer start date]}
+  - {name: Promo End Date, kind: date, entity: Date, description: "Last day of a promotion.",
+     synonyms: [promotion end date, event end date, promo end, end date, in store end date, offer end date]}
+
+  # ---------------- attributes: product hierarchy
+  - {name: Product Name, kind: attribute, entity: Product, synonyms: [sku name, sku description, item name, item description, material description, material name, product description, description]}
+  - {name: Brand, kind: attribute, entity: Product, description: "The consumer brand.",
+     synonyms: [brand name, brand description, brand desc, brand code, power brand, megabrand]}
+  - {name: Sub Brand, kind: attribute, entity: Product, synonyms: [subbrand, sub brand name, variant, line extension, product line, brand variant]}
+  - {name: Category, kind: attribute, entity: Product, description: "The product category the brand competes in.",
+     synonyms: [category name, product category, category description, cat name, market category, business category]}
+  - {name: Subcategory, kind: attribute, entity: Product, synonyms: [sub category, subcategory name, sub cat, segment, segment name, product segment, sector]}
+  - {name: Pack Size, kind: attribute, entity: Product, synonyms: [size, pack, pack description, size description, net content, content size, uom, unit of measure, package size, pack type]}
+  - {name: Flavor, kind: attribute, entity: Product, synonyms: [flavour, scent, variant name, taste, fragrance, shade]}
+  - {name: Item Status, kind: attribute, entity: Product, synonyms: [product status, sku status, lifecycle status, lifecycle stage, active flag, material status]}
+  # ---------------- attributes: customer, geography, channel, promotion
+  - {name: Customer Name, kind: attribute, entity: Customer, synonyms: [account name, retailer name, sold to name, customer description, customer desc, distributor name, retailer]}
+  - {name: Customer Group, kind: attribute, entity: Customer, description: "The key account or retail group a customer belongs to.",
+     synonyms: [key account, key account group, account group, customer hierarchy, retail group, parent customer, customer chain, chain name, trade group]}
+  - {name: Channel, kind: attribute, entity: Customer, description: "The route to market (modern trade, general trade, e-commerce).",
+     synonyms: [sales channel, distribution channel, channel name, trade channel, route to market, rtm, customer channel, retail channel]}
+  - {name: Region, kind: attribute, entity: Customer, synonyms: [region name, sales region, sales area, area, zone, territory, market]}
+  - {name: Country, kind: attribute, entity: Customer, synonyms: [country name, country code, nation, market country]}
+  - {name: State, kind: attribute, entity: Customer, synonyms: [state name, state code, province, st]}
+  - {name: City, kind: attribute, entity: Customer, synonyms: [city name, town, ship to city]}
+  - {name: Plant Name, kind: attribute, entity: Plant, synonyms: [plant description, factory name, site name, manufacturing site name]}
+  - {name: Promo Type, kind: attribute, entity: Promotion, description: "The kind of promotion mechanic (temporary price reduction, display, feature, bundle).",
+     synonyms: [promotion type, tactic, tactic type, promo mechanic, mechanic, offer type, deal type, event type, promo tactic]}
+  - {name: Promotion Name, kind: attribute, entity: Promotion, synonyms: [promo name, event name, promo description, event description, campaign name, offer name]}
+  - {name: Promo Flag, kind: attribute, entity: Promotion, description: "Whether the row was sold on promotion.",
+     synonyms: [on promo, promo, promo indicator, promotion flag, promoted flag, deal flag, promo ind]}
+
+kpis:
+  # ---------------- sales and margin
+  - name: Gross Sales
+    synonyms: [Gross Sales Value, GSV, Gross Revenue]
+    definition: Invoiced sales at list price before trade deductions, returns and damages.
+    formula: Sum of shipped quantity times list price
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Trade Spend
+    synonyms: [Trade Promotion Spend, Trade Investment, Trade Spending]
+    definition: Money given to retailers to sell the product - off-invoice discounts, bill-backs, scan and display allowances, listing fees.
+    formula: Off-invoice allowances + bill-back and scan allowances + other customer funding
+    unit: currency
+    aggregation: sum
+    domain: Trade
+  - name: Returns and Damages
+    synonyms: [Returns, Unsaleables, Damages]
+    definition: Value of goods returned, damaged or unsaleable at customers, credited to them.
+    formula: Sum of credits for returns, damages and unsaleables
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Net Sales
+    synonyms: [Net Sales Value, NSV, Net Revenue]
+    definition: Gross sales less trade spend, returns and damages - what the company keeps from its customers.
+    formula: Gross sales - Trade spend - Returns and damages
+    dax: '[Gross Sales] - [Trade Spend] - [Returns and Damages]'
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Trade Spend %
+    synonyms: [Trade Rate, Trade Spend % of Gross Sales, Trade Investment %]
+    definition: Trade spend as a share of gross sales.
+    formula: Trade spend / Gross sales
+    dax: DIVIDE ( [Trade Spend], [Gross Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Trade
+  - name: Net Sales LY
+    synonyms: [Net Sales Last Year, NSV LY]
+    definition: Net sales in the same period last year.
+    formula: Net sales for the same fiscal period one year earlier
+    unit: currency
+    aggregation: sum
+    time: fiscal year, same fiscal weeks last year
+    domain: Sales
+  - name: Net Sales Growth %
+    synonyms: [NSV Growth %, Net Sales vs LY %, YoY Net Sales Growth]
+    definition: Change in net sales against the same period last year.
+    formula: (Net sales - Net sales last year) / Net sales last year
+    dax: DIVIDE ( [Net Sales] - [Net Sales LY], [Net Sales LY] )
+    unit: percent
+    aggregation: ratio
+    domain: Sales
+  - name: Shipment Cases
+    synonyms: [Cases Shipped, Shipment Volume, Volume Shipped]
+    definition: Cases shipped to customers, net of returns.
+    formula: Sum of cases shipped - cases returned
+    unit: count
+    aggregation: sum
+    domain: Sales
+  - name: Net Sales per Case
+    synonyms: [Net Price per Case, Realized Price per Case, Net Revenue per Case]
+    definition: Net sales per case shipped (the price actually realized after trade).
+    formula: Net sales / Shipment cases
+    dax: DIVIDE ( [Net Sales], [Shipment Cases] )
+    unit: currency
+    aggregation: ratio
+    domain: Sales
+  - name: Cost of Goods Sold
+    synonyms: [COGS, Cost of Sales]
+    definition: Standard cost of the goods shipped, including manufacturing and inbound freight.
+    formula: Sum of shipped quantity times standard unit cost
+    unit: currency
+    aggregation: sum
+    domain: Margin
+  - name: Gross Margin
+    synonyms: [Gross Profit, Gross Margin $, GM $]
+    definition: Net sales less the cost of goods sold.
+    formula: Net sales - Cost of goods sold
+    dax: '[Net Sales] - [Cost of Goods Sold]'
+    unit: currency
+    aggregation: sum
+    domain: Margin
+  - name: Gross Margin %
+    synonyms: [GM %, Gross Margin Rate, Gross Profit %]
+    definition: Gross margin as a share of net sales.
+    formula: Gross margin / Net sales
+    dax: DIVIDE ( [Gross Margin], [Net Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Margin
+  # ---------------- sell-through, market share and distribution
+  - name: POS Sales
+    synonyms: [Retail Sales Value, RSV, Sell-Through Sales, Sell-Out Sales, Consumption Sales]
+    definition: Dollar sales to consumers at the retailers' registers, from retailer or syndicated point-of-sale data.
+    formula: Sum of retailer point-of-sale sales
+    unit: currency
+    aggregation: sum
+    domain: Sell-Through
+  - name: POS Units
+    synonyms: [Sell-Through Units, Consumption Units, Scan Units]
+    definition: Units sold to consumers at the retailers' registers.
+    formula: Sum of retailer point-of-sale units
+    unit: count
+    aggregation: sum
+    domain: Sell-Through
+  - name: POS Sales LY
+    synonyms: [POS Sales Last Year, RSV LY]
+    definition: Point-of-sale sales in the same period last year.
+    formula: POS sales for the same weeks one year earlier
+    unit: currency
+    aggregation: sum
+    time: same retail weeks last year
+    domain: Sell-Through
+  - name: POS Sales Growth %
+    synonyms: [POS Growth %, Consumption Growth %, RSV Growth %, POS vs LY %]
+    definition: Change in point-of-sale sales against the same period last year.
+    formula: (POS sales - POS sales last year) / POS sales last year
+    dax: DIVIDE ( [POS Sales] - [POS Sales LY], [POS Sales LY] )
+    unit: percent
+    aggregation: ratio
+    domain: Sell-Through
+  - name: Category Sales
+    synonyms: [Market Sales, Total Market Sales, Category Value]
+    definition: Point-of-sale sales of the whole category in the same markets and retailers (all brands).
+    formula: Sum of point-of-sale sales of every brand in the category
+    unit: currency
+    aggregation: sum
+    domain: Market Share
+  - name: Market Share %
+    synonyms: [Value Share, Dollar Share, Share of Market, Market Share]
+    definition: The brand's share of category point-of-sale sales in the same markets.
+    formula: POS sales / Category sales
+    dax: DIVIDE ( [POS Sales], [Category Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Market Share
+  - name: Weighted Distribution %
+    synonyms: [ACV Distribution, ACV Weighted Distribution, Weighted Distribution, ACV %]
+    definition: Share of category sales volume (ACV) sold in stores that carry the product.
+    formula: Category sales of the stores selling the product / Category sales of all stores in the universe
+    unit: percent
+    aggregation: custom
+    domain: Distribution
+  - name: Numeric Distribution %
+    synonyms: [Numeric Distribution, Store Distribution %]
+    definition: Share of all stores in the universe that carry the product.
+    formula: Stores selling the product / Stores in the universe
+    unit: percent
+    aggregation: custom
+    domain: Distribution
+  - name: Sales Velocity
+    synonyms: [Sales per Point of Distribution, SPPD, Rate of Sale, Velocity]
+    definition: Point-of-sale sales per point of weighted distribution - how fast the product sells where it is stocked.
+    formula: POS sales / Weighted distribution %
+    dax: DIVIDE ( [POS Sales], [Weighted Distribution %] )
+    unit: currency
+    aggregation: ratio
+    domain: Distribution
+  - name: Retailer Out of Stock %
+    synonyms: [OOS %, Out of Stock Rate, Store OOS %]
+    definition: Share of store checks where the product was out of stock.
+    formula: Store checks with the product out of stock / All store checks
+    unit: percent
+    aggregation: ratio
+    domain: Distribution
+  # ---------------- promotion
+  - name: Baseline Units
+    synonyms: [Baseline Volume, Base Units]
+    definition: Units that would have sold in the promotion weeks without the promotion (from the baseline model).
+    formula: Sum of modelled baseline units
+    unit: count
+    aggregation: sum
+    domain: Promotion
+  - name: Promoted Units
+    synonyms: [Promo Units, Promo Volume]
+    definition: Units actually sold in the weeks a promotion ran.
+    formula: Sum of units sold in promotion weeks
+    filters: [Promo flag = Yes]
+    unit: count
+    aggregation: sum
+    domain: Promotion
+  - name: Incremental Units
+    synonyms: [Incremental Volume, Promo Uplift Units]
+    definition: Extra units sold because of the promotion.
+    formula: Promoted units - Baseline units
+    dax: '[Promoted Units] - [Baseline Units]'
+    unit: count
+    aggregation: sum
+    domain: Promotion
+  - name: Promo Lift %
+    synonyms: [Promotion Lift, Promo Uplift %, Lift %]
+    definition: Extra volume of a promotion as a share of baseline volume.
+    formula: Incremental units / Baseline units
+    dax: DIVIDE ( [Incremental Units], [Baseline Units] )
+    unit: percent
+    aggregation: ratio
+    domain: Promotion
+  - name: Trade Promotion ROI
+    synonyms: [Promo ROI, TPM ROI, Promotion ROI]
+    definition: Return on the money spent on promotions - incremental gross profit after paying for the promotion.
+    formula: (Incremental gross profit - Promotion spend) / Promotion spend
+    unit: ratio
+    aggregation: custom
+    domain: Promotion
+  # ---------------- forecast and service
+  - name: Forecast Cases
+    synonyms: [Forecast Volume, Demand Forecast, Consensus Forecast]
+    definition: Forecast demand in cases, taken at the planning lag the business measures against.
+    formula: Sum of forecast cases at the measured lag
+    unit: count
+    aggregation: sum
+    time: measured at a fixed lag (for example 2 months before the demand month)
+    domain: Planning
+  - name: Actual Demand Cases
+    synonyms: [Actual Demand, Actual Volume]
+    definition: Actual demand in cases (orders or shipments, as the company plans against) for the same item, customer and period as the forecast.
+    formula: Sum of actual demand cases
+    unit: count
+    aggregation: sum
+    domain: Planning
+  - name: Absolute Forecast Error
+    synonyms: [Absolute Error, Abs Forecast Error]
+    definition: Sum of forecast misses with no sign, at the item and customer level, in cases.
+    formula: Sum of |Forecast cases - Actual demand cases| at item and customer level
+    unit: count
+    aggregation: sum
+    domain: Planning
+  - name: Forecast Accuracy %
+    synonyms: [FA %, Forecast Accuracy, 1 - WAPE]
+    definition: One minus the weighted absolute percentage error - how close the forecast is, at the item and customer level.
+    formula: 1 - Absolute forecast error / Actual demand cases
+    dax: 1 - DIVIDE ( [Absolute Forecast Error], [Actual Demand Cases] )
+    unit: percent
+    aggregation: ratio
+    domain: Planning
+  - name: Forecast Bias %
+    synonyms: [Bias %, Forecast Bias]
+    definition: Whether the forecast runs high (positive) or low (negative) overall.
+    formula: (Forecast cases - Actual demand cases) / Actual demand cases
+    dax: DIVIDE ( [Forecast Cases] - [Actual Demand Cases], [Actual Demand Cases] )
+    unit: percent
+    aggregation: ratio
+    domain: Planning
+  - name: Ordered Cases
+    synonyms: [Cases Ordered, Order Quantity]
+    definition: Cases the customers ordered (the quantity they asked for on the requested date).
+    formula: Sum of ordered cases
+    unit: count
+    aggregation: sum
+    domain: Service
+  - name: Delivered Cases
+    synonyms: [Cases Delivered, Fulfilled Cases]
+    definition: Cases delivered against the orders.
+    formula: Sum of delivered cases
+    unit: count
+    aggregation: sum
+    domain: Service
+  - name: Case Fill Rate %
+    synonyms: [Case Fill Rate, Fill Rate %, Order Fill Rate]
+    definition: Share of ordered cases that were delivered.
+    formula: Delivered cases / Ordered cases
+    dax: DIVIDE ( [Delivered Cases], [Ordered Cases] )
+    unit: percent
+    aggregation: ratio
+    domain: Service
+  - name: OTIF %
+    synonyms: [On-Time In-Full %, On Time In Full, OTIF Rate]
+    definition: Share of deliveries that arrived within the agreed window and with the full ordered quantity.
+    formula: Deliveries on time and in full / All deliveries
+    unit: percent
+    aggregation: ratio
+    domain: Service
+  # ---------------- inventory
+  - name: Inventory Value
+    synonyms: [Finished Goods Inventory, FG Inventory Value]
+    definition: Value of finished goods stock at the end of the period, at standard cost.
+    formula: Stock on hand times standard cost, at period end
+    unit: currency
+    aggregation: last
+    domain: Inventory
+  - name: Days of Inventory
+    synonyms: [DOI, Days Inventory on Hand, Days of Supply]
+    definition: How many days of sales the stock covers.
+    formula: Inventory value / Cost of goods sold x Days in the period
+    unit: duration
+    aggregation: custom
+    domain: Inventory

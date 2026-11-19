@@ -1,6 +1,6 @@
 /* ---------------- D2D Relay: the organisation and its credits (app/orgs.py): the chip in the top bar (organisation and
-   credits left), Organisation (#/org: owner, people, credits and their history), Request credits (Buy credits is in
-   37-payments.js), Migration D2D and Take the tour in its menu (38-tour.js, 39-migration.js), and Organisations for the
+   credits left), Organisation (#/org: owner, people, credits and their history), Request credits (the only way to more
+   credits since item 59; past payments are in 37-payments.js), Migration D2D and Take the tour in its menu (38-tour.js, 39-migration.js), and Organisations for the
    platform admins (#/orgs).
    Every rule is the server's; this file only shows it. ---------------- */
 ICONS.palette = ICONS.palette || 'M12 3a9 9 0 0 0 0 18c1 0 1.6-.7 1.6-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.3-4-7.8-9-7.8zM6.5 12.5h.01M8.5 8h.01M13 6.5h.01M17 9.5h.01';
@@ -20,10 +20,13 @@ const costTag = what => ORG().id && costOf(what) ? h('span', {class: 'cost'}, ` 
 const costLine = (c = ORG().costs || {}) => `a new dashboard uses ${c.dashboard || 0}`
   + (twoPrices(c) ? ` with Power BI's built-in visuals or ${c.dashboard_custom} with custom visuals` : '') + `, a change ${c.change || 0}`
   + (c.ask ? `, Ask Relay ${c.ask} for up to ${c.ask_questions || 5} questions` : '');
-/* item 39: a personal workspace (one free mail address, e.g. Gmail) buys its credits online and never asks PASDACS for them */
+/* item 39: a personal workspace (one free mail address, e.g. Gmail): just that person; it asks PASDACS for credits too */
 const isPersonal = (o = ORG()) => !!(o && o.personal);
-/* next to an organisation's name: @its domain, or a personal workspace's own address */
-const orgWhere = (o = ORG()) => isPersonal(o) ? `personal, ${o.domain}` : `@${o.domain}`;
+/* item 60: an organisation's email domains, its main one first */
+const orgDomains = (o = ORG()) => (o && o.domains && o.domains.length ? o.domains : o && o.domain ? [o.domain] : []);
+const atDomains = (o = ORG()) => orgDomains(o).map(d => '@' + d).join(', ');
+/* next to an organisation's name: @its domains, or a personal workspace's own address */
+const orgWhere = (o = ORG()) => isPersonal(o) ? `personal, ${o.domain}` : atDomains(o);
 
 /* ---------------- the chip in the top bar ---------------- */
 function renderOrgChip() {
@@ -45,11 +48,11 @@ function orgMenu(anchor) {
       h('div', {class: 'small muted'}, `credits left - ${costLine()}`),
       o.pending_request ? h('div', {class: 'small', style: 'margin-top:6px'}, h('span', {class: 'tag warn'}, 'Waiting for PASDACS'),
         ` ${Number(o.pending_request.credits).toLocaleString()} ${isStart(o.pending_request) ? 'starting credits, under review' : 'credits asked for'}`) : null),
-    (o.pay || {}).on ? h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); buyDialog(); }}, icon('coin'), h('span', {class: 'grow'}, 'Buy credits')) : null,
-    isPersonal(o) ? null : h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); requestDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Request credits')),
+    (o.pay || {}).on ? h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); buyDialog(); }}, icon('coin'), h('span', {class: 'grow'}, 'Buy credits')) : null,   // item 85
+    h('button', {class: 'pmitem', type: 'button', onclick: () => { closePopover(); requestDialog(); }}, icon('plus'), h('span', {class: 'grow'}, 'Request credits')),
     h('a', {class: 'pmitem', href: '#/org', onclick: closePopover}, icon('building'), h('span', {class: 'grow'}, isPersonal(o) ? 'Workspace and credit history' : 'Organisation, people and credit history')),
     h('a', {class: 'pmitem', href: '#/migration', onclick: closePopover}, icon('swap'), h('span', {class: 'grow'}, 'Migration D2D')),
-    h('a', {class: 'pmitem', href: '#/welcome', onclick: () => { closePopover(); TOUR.step = 0; }}, icon('spark'), h('span', {class: 'grow'}, 'Take the tour')),
+    h('a', {class: 'pmitem', href: '#/welcome', onclick: e => { closePopover(); if (location.hash === '#/welcome' && typeof coachStart === 'function') { e.preventDefault(); coachStart('welcome'); } }}, icon('spark'), h('span', {class: 'grow'}, 'Take the tour')),
     h('a', {class: 'pmitem', href: '/privacy.html', target: '_blank', rel: 'noopener', onclick: closePopover}, icon('shield'), h('span', {class: 'grow'}, 'Privacy notice')),
     h('a', {class: 'pmitem', href: '/terms.html', target: '_blank', rel: 'noopener', onclick: closePopover}, icon('book'), h('span', {class: 'grow'}, 'Terms, refunds and contact')),
   ], 'profile');
@@ -76,11 +79,12 @@ function creditsLine() {
     o.pending_request ? h('span', {class: 'tag warn'}, isStart(o.pending_request)
       ? `${Number(o.pending_request.credits).toLocaleString()} starting credits, waiting for PASDACS's review`
       : `${Number(o.pending_request.credits).toLocaleString()} credits asked for, waiting for PASDACS`) : null,
-    (o.pay || {}).on ? h('button', {class: 'btn sm ghost', type: 'button', onclick: () => buyDialog()}, icon('coin'), 'Buy credits')
-      : isPersonal(o) ? null : h('button', {class: 'btn sm ghost', type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'));
+    (o.pay || {}).on ? h('button', {class: 'btn sm ghost', type: 'button', onclick: () => buyDialog()}, icon('coin'), 'Buy credits') : null,   // item 85
+    h('button', {class: 'btn sm ghost', type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'));
 }
 
-/* More credits: Buy credits when PASDACS sells them online to this organisation (37-payments.js), else Request credits */
+/* More credits (item 85, the user: "let both options be"): Buy credits when PASDACS sells them online to this organisation
+   (37-payments.js; its dialog also points to Request credits), else Request credits (which points to buying when it is on) */
 function creditsDialog(reason) { return (ORG().pay || {}).on ? buyDialog(reason) : requestDialog(reason); }
 
 /* a new organisation's starting credits, waiting for PASDACS's review (orgs.py: purpose 'start') */
@@ -91,16 +95,6 @@ function requestDialog(reason) {
   const o = ORG(), me = S.me || {};
   if (!o.id) return;
   const contact = o.contact || 'info@pasdacs.com';
-  if (isPersonal(o)) {                          // item 39: a personal workspace buys; it does not ask PASDACS
-    if ((o.pay || {}).on) return buyDialog(reason);
-    const m = modal('Credits', h('div', {class: 'mbody'},
-      reason ? h('div', {class: 'note warn', style: 'margin-top:0'}, reason) : null,
-      h('p', {style: 'margin-top:0'}, 'Personal workspaces buy their credits online, and buying online is not open right now. '
-        + `Please write to ${contact}.`),
-      h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'},
-        h('button', {class: 'btn primary', type: 'button', onclick: () => m.remove()}, 'OK'))));
-    return;
-  }
   if (isStart(o.pending_request)) {            // a new organisation: PASDACS reviews it and adds its starting credits
     const p = o.pending_request;
     const m = modal('Starting credits', h('div', {class: 'mbody'},
@@ -181,7 +175,7 @@ const LEDGER = r => r.kind === 'start' ? 'Starting credits'
   : r.kind === 'adjust' && r.what === 'purchase' ? 'Bought online' + (r.note ? ` - ${r.note}` : '')
   : r.kind === 'adjust' ? (r.delta > 0 ? 'Added by PASDACS' : 'Taken back by PASDACS') + (r.note ? ` - ${r.note}` : '')
   : (r.kind === 'refund' ? 'Given back: ' : '') + (r.what === 'dashboard' ? 'new dashboard' : r.what === 'ask' ? 'Ask Relay questions'
-    : r.what === 'review' ? 'semantic review' : 'change')
+    : r.what === 'review' ? 'semantic review' : r.what === 'kpi' ? 'KPI change in words' : r.what === 'fix' ? 'review fixes' : 'change')
     + (r.note && r.kind === 'charge' ? ` - ${r.note}` : '');
 async function renderOrg() {
   const page = h('div', {class: 'page'});
@@ -197,9 +191,7 @@ async function renderOrg() {
     try { await api('/api/org', {method: 'PATCH', json: {name}}); notify('Renamed', 'ok'); await refreshOrg(true); renderOrg(); } catch (e) { notify(e.message, 'err'); }
   }}, icon('edit'), 'Rename') : null;
   const th = (cols, left) => h('thead', {}, h('tr', {}, cols.map((c, i) => h('th', {class: i < left ? 'l' : null}, c))));
-  const payBox = h('div'), billBox = h('div');   // credits bought online and the billing details (37-payments.js), filled in once fetched
-  fillPayments(payBox, billBox);
-  const personal = isPersonal(d);              // item 39: one free mail address; it buys, nobody joins it
+  const personal = isPersonal(d);              // item 39: one free mail address; nobody joins it
   page.append(
     h('div', {class: 'phead'}, h('div', {style: 'flex:1;min-width:0'}, h('div', {class: 'eyebrow'}, personal ? 'Personal workspace' : 'Organisation'),
       h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap'}, h('h1', {}, d.name), rename),
@@ -216,11 +208,10 @@ async function renderOrg() {
           d.costs.ask ? [h('dt', {}, 'Ask Relay'), h('dd', {}, `${credits(d.costs.ask)} for up to ${d.costs.ask_questions || 5} questions in a conversation`)] : null,
           h('dt', {}, 'Free'), h('dd', {}, 'Confirming the plan, fixing failed review gates, approving and publishing')),
         h('div', {class: 'row', style: 'margin-top:12px;gap:10px;flex-wrap:wrap'},
-          (d.pay || {}).on ? h('button', {class: 'btn primary', type: 'button', onclick: () => buyDialog()}, icon('coin'), 'Buy credits') : null,
-          personal ? null : h('button', {class: 'btn' + ((d.pay || {}).on ? '' : ' primary'), type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'),
-          h('span', {class: 'small muted'}, (personal ? ((d.pay || {}).on ? 'Buy a pack online (card, UPI, netbanking). '
-              : `Personal workspaces buy credits online, which is not open right now: write to ${d.contact || 'info@pasdacs.com'}. `)
-            : (d.pay || {}).on ? 'Buy a pack online (card, UPI, netbanking), or ask PASDACS. ' : 'PASDACS approves every request. ')))),
+          (d.pay || {}).on ? h('button', {class: 'btn primary', type: 'button', onclick: () => buyDialog()}, icon('coin'), 'Buy credits') : null,   // item 85
+          h('button', {class: 'btn' + ((d.pay || {}).on ? '' : ' primary'), type: 'button', onclick: () => requestDialog()}, icon('plus'), 'Request credits'),
+          h('span', {class: 'small muted'}, (d.pay || {}).on ? 'Buy a pack online (card, UPI, netbanking), or ask PASDACS: it approves every request.'
+            : 'PASDACS approves every request.'))),
       h('div', {class: 'card'}, h('h3', {}, 'Owners'),
         h('div', {class: 'stack', style: 'gap:6px'}, d.people.filter(p => p.owner).map(p => h('div', {},
           h('b', {}, p.name + (p.id === (S.me || {}).id ? ' (you)' : '')), p.primary ? h('span', {class: 'tag acc', style: 'margin-left:6px'}, 'Main owner') : null,
@@ -228,8 +219,9 @@ async function renderOrg() {
         h('p', {class: 'small muted'}, personal
           ? `A personal workspace is just you: nobody else joins it. For an organisation with colleagues, write to ${d.contact || 'info@pasdacs.com'}.`
           : `Owners manage the people, the organisation's name and its credit requests, and can open every dashboard in it. `
-          + `Only the people its owners add (@${d.domain} addresses) can sign in to ${d.name}; they share its credits, and each person's dashboards are private until they share them.`),
+          + `Only the people its owners add (${atDomains(d)} addresses) can sign in to ${d.name}; they share its credits, and each person's dashboards are private until they share them.`),
         d.is_primary && d.people.length > 1 ? h('button', {class: 'btn sm', type: 'button', onclick: () => transferDialog(d)}, icon('swap'), 'Transfer ownership') : null)),
+    personal || typeof setupOrgCard !== 'function' ? '' : setupOrgCard(),     // item 81: the business context (47-setup.js)
     personal ? '' : peopleCard(d, th),          // '' not null: Element.append writes null as text
     h('div', {class: 'card'}, h('h3', {}, 'Credit history'),
       d.ledger.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['When', 'What', 'Who', 'Dashboard', 'Credits', 'Left'], 4),
@@ -237,9 +229,9 @@ async function renderOrg() {
           h('td', {}, r.project_open ? h('a', {href: '#/p/' + r.project_id}, r.project_name || r.project_id) : r.project_name || '-'),
           h('td', {class: 'n delta' + (r.delta > 0 ? ' plus' : '')}, (r.delta > 0 ? '+' : '') + r.delta), h('td', {class: 'n'}, r.balance))))))
         : h('div', {class: 'muted small'}, 'Nothing yet.')),
-    payBox,
-    billBox,
-    personal ? '' : h('div', {class: 'card'}, h('h3', {}, 'Credit requests'),
+    ...(() => { const payBox = h('div', {}, pastPayments(d) || ''), billBox = h('div');   // item 85: payments and billing details (spread: native append)
+      fillPayments(payBox, billBox); return [payBox, billBox]; })(),
+    h('div', {class: 'card'}, h('h3', {}, 'Credit requests'),
       (d.requests || []).length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, th(['Asked', 'Who', 'Credits', 'Answer', ''], 2),
         h('tbody', {}, d.requests.map(r => h('tr', {}, h('td', {}, when(r.created)), h('td', {}, isStart(r) ? 'Starting credits' : r.user_name || '-'),
           h('td', {class: 'n'}, Number(r.credits).toLocaleString()), h('td', {}, requestState(r)),
@@ -248,6 +240,11 @@ async function renderOrg() {
                 try { await api(`/api/org/credit-request/${encodeURIComponent(r.id)}/withdraw`, {method: 'POST'}); await refreshOrg(true); renderOrg(); }
                 catch (e) { notify(e.message, 'err'); } }}, 'Withdraw') : null))))))
         : h('div', {class: 'muted small'}, 'None yet. PASDACS approves every credit request: use Request credits.')),
+    // item 70's Power BI service and GitHub settings are connectors since item 77: set up under Connections
+    h('div', {class: 'card'}, h('h3', {}, 'Deployment'),
+      h('p', {class: 'small muted', style: 'margin-top:0'}, 'Publishing dashboards to the Power BI service and CI/CD with GitHub are connectors: '
+        + 'your organisation\'s owners set them up under Connections, Deployment.'),
+      h('a', {class: 'btn sm', href: '#/connections'}, icon('plug'), 'Open Connections')),
     yourDataCard(d));
 }
 /* item 22: what D2D Relay holds about the person, and how it is removed (app/governance.py, /privacy.html) */
@@ -334,12 +331,12 @@ function peopleCard(d, th) {
       : null);
 }
 function addPersonDialog(d) {
-  const emails = h('textarea', {rows: 3, placeholder: `name@${d.domain}, one or more (one a line, or separated by commas)`});
+  const emails = h('textarea', {rows: 3, placeholder: `name@${d.domain}, one or more (one a line, or separated by commas)`});   // any of its domains (item 60)
   const role = h('select', {class: 'sel', style: 'max-width:200px'}, [['member', 'Member'], ['owner', 'Owner']].map(([v, t]) => h('option', {value: v}, t)));
   const out = h('div', {role: 'status'});
   const ok = h('button', {class: 'btn primary', type: 'button'}, icon('plus'), 'Add');
   const m = modal(`Add people to ${d.name}`, h('div', {class: 'mbody'},
-    h('p', {class: 'muted small', style: 'margin-top:0'}, `@${d.domain} addresses only. Only the people added here can sign in: they get an email, and sign in with a code. Members build dashboards and share the credits; owners also manage the people.`),
+    h('p', {class: 'muted small', style: 'margin-top:0'}, `${atDomains(d)} addresses only. Only the people added here can sign in: they get an email, and sign in with a code. Members build dashboards and share the credits; owners also manage the people.`),
     h('label', {class: 'f', style: 'margin-top:0'}, 'Email addresses'), emails, h('label', {class: 'f'}, 'As'), role, out,
     h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, ok)));
   ok.onclick = async () => {
@@ -439,14 +436,19 @@ async function renderOrgs() {
     const email = h('input', {type: 'email', autocomplete: 'off', placeholder: 'name@company.com'});
     const person = h('input', {type: 'text', maxlength: 120, autocomplete: 'off', placeholder: 'Optional: from the address if empty'});
     const start = h('input', {type: 'number', min: 0, max: 1000000, step: 1, value: d.start, style: 'max-width:160px'});
+    const others = h('input', {type: 'text', autocomplete: 'off', placeholder: 'Optional: e.g. example.com, example.org'});   // item 60
+    const industry = h('select', {class: 'sel'}, h('option', {value: ''}, 'Not now (the owner chooses)'),
+      (d.packs || []).map(p => h('option', {value: p.id}, p.name)));                                                       // item 61
     const err = h('div', {class: 'err-msg', role: 'alert'});
     const ok = h('button', {class: 'btn primary', type: 'button'}, icon('plus'), 'Create');
     const m = modal('New organisation', h('div', {class: 'mbody'},
-      h('p', {class: 'muted small', style: 'margin-top:0'}, 'The organisation is its main owner\'s email domain (one organisation a domain; '
-        + 'no free mail or throw-away addresses). The main owner is emailed, signs in with a code and adds the organisation\'s people.'),
+      h('p', {class: 'muted small', style: 'margin-top:0'}, 'The organisation is its main owner\'s email domain, plus any other domains its people use '
+        + '(one organisation a domain; no free mail or throw-away addresses). The main owner is emailed, signs in with a code and adds the organisation\'s people.'),
       h('label', {class: 'f', style: 'margin-top:0'}, 'Organisation name'), name,
       h('label', {class: 'f'}, 'Main owner\'s email'), email,
       h('label', {class: 'f'}, 'Main owner\'s name ', h('small', {}, 'optional')), person,
+      h('label', {class: 'f'}, 'Other email domains ', h('small', {}, 'optional, comma-separated: people with these addresses can be added too')), others,
+      h('label', {class: 'f'}, 'Industry ', h('small', {}, "its ontology starts with this pack's business terms and KPIs")), industry,
       h('label', {class: 'f'}, 'Starting credits'), start,
       h('div', {class: 'hint'}, `${costLine(d.costs)}.`), err,
       h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, ok)));
@@ -454,7 +456,8 @@ async function renderOrgs() {
       ok.disabled = true; err.textContent = '';
       try {
         const r = await api('/api/admin/orgs', {json: {name: name.value, email: email.value, person: person.value,
-          credits: start.value === '' ? null : parseInt(start.value, 10)}});
+          credits: start.value === '' ? null : parseInt(start.value, 10),
+          domains: others.value.split(/[\s,;]+/).map(x => x.trim()).filter(Boolean), industry: industry.value}});
         m.remove();
         notify(`${r.created.name} created` + (r.created.invited ? `: ${r.created.owner.email} was emailed` : `: not emailed, tell ${r.created.owner.email} to sign in`), 'ok');
         renderOrgs();
@@ -462,13 +465,43 @@ async function renderOrgs() {
     };
     name.focus();
   };
+  /* item 60: an organisation's email domains: its main one stays, others are added or taken away (people keep their accounts) */
+  const domainsDialog = o => {
+    const list = h('div', {class: 'stack', style: 'gap:6px'});
+    const err = h('div', {class: 'err-msg', role: 'alert'});
+    const fill = doms => list.replaceChildren(...doms.map((dm, i) => h('div', {class: 'row', style: 'gap:8px;align-items:center'},
+      h('span', {class: 'grow'}, '@' + dm, i === 0 ? h('span', {class: 'tag', style: 'margin-left:6px'}, 'Main') : null),
+      i === 0 ? null : h('button', {class: 'btn sm ghost', type: 'button', title: `Take @${dm} away from ${o.name}`, onclick: async e => {
+        const b = e.currentTarget; b.disabled = true; err.textContent = '';
+        try { const r = await api(`/api/admin/orgs/${encodeURIComponent(o.id)}/domains/${encodeURIComponent(dm)}`, {method: 'DELETE'});
+          const now = (r.orgs || []).find(x => x.id === o.id); fill(now ? now.domains : doms.filter(x => x !== dm)); changed = true; }
+        catch (x) { b.disabled = false; err.textContent = x.message; } }}, icon('x'), 'Remove'))));
+    let changed = false;
+    fill(orgDomains(o));
+    const add = h('input', {type: 'text', autocomplete: 'off', placeholder: 'e.g. example.org'});
+    const addBtn = h('button', {class: 'btn', type: 'button'}, icon('plus'), 'Add');
+    addBtn.onclick = async () => {
+      addBtn.disabled = true; err.textContent = '';
+      try { const r = await api(`/api/admin/orgs/${encodeURIComponent(o.id)}/domains`, {json: {domain: add.value}});
+        const now = (r.orgs || []).find(x => x.id === o.id); if (now) fill(now.domains); add.value = ''; changed = true; }
+      catch (x) { err.textContent = x.message; }
+      addBtn.disabled = false;
+    };
+    const m = modal(`Email domains of ${o.name}`, h('div', {class: 'mbody'},
+      h('p', {class: 'muted small', style: 'margin-top:0'}, `People with any of these addresses can be added to ${o.name}; each domain belongs to one organisation. `
+        + 'Taking a domain away keeps the people who already have accounts.'),
+      list, h('label', {class: 'f'}, 'Add a domain'), h('div', {class: 'row', style: 'gap:8px'}, add, addBtn), err,
+      h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'},
+        h('button', {class: 'btn primary', type: 'button', onclick: () => { m.remove(); if (changed) renderOrgs(); }}, 'Done'))));
+    add.focus();
+  };
   const personDialog = o => {                 // PASDACS adds someone (a new owner when the owners have left, say)
     const email = h('input', {type: 'email', autocomplete: 'off', placeholder: `name@${o.domain}`});
     const role = h('select', {class: 'sel', style: 'max-width:200px'}, [['member', 'Member'], ['owner', 'Owner']].map(([v, t]) => h('option', {value: v}, t)));
     const err = h('div', {class: 'err-msg', role: 'alert'});
     const ok = h('button', {class: 'btn primary', type: 'button'}, icon('plus'), 'Add');
     const m = modal(`Add someone to ${o.name}`, h('div', {class: 'mbody'},
-      h('p', {class: 'muted small', style: 'margin-top:0'}, `@${o.domain} addresses only. They are emailed and sign in with a code; the owners are told. `
+      h('p', {class: 'muted small', style: 'margin-top:0'}, `${atDomains(o)} addresses only. They are emailed and sign in with a code; the owners are told. `
         + 'Owners usually add their own people under Organisation, People.'),
       h('label', {class: 'f', style: 'margin-top:0'}, 'Email address'), email, h('label', {class: 'f'}, 'As'), role, err,
       h('div', {class: 'row', style: 'justify-content:flex-end;margin-top:12px'}, ok)));
@@ -496,7 +529,7 @@ async function renderOrgs() {
         h('td', {}, h('b', {}, o.name), o.platform ? h('span', {class: 'tag', style: 'margin-left:6px'}, 'Platform') : null,
           o.status && o.status !== 'active' ? h('span', {class: 'tag err', style: 'margin-left:6px'}, o.status) : null,
           isPersonal(o) ? h('span', {class: 'tag', style: 'margin-left:6px'}, 'Personal') : null,
-          h('div', {class: 'small muted'}, isPersonal(o) ? o.domain : '@' + o.domain)),
+          h('div', {class: 'small muted'}, isPersonal(o) ? o.domain : atDomains(o))),
         h('td', {}, o.owner ? [o.owner.name, h('div', {class: 'small muted'}, o.owner.email)] : '-'),
         h('td', {class: 'small', style: 'white-space:nowrap', title: (o.connectors || []).map(kindLabel).join(', ') || null},
           !(o.connectors || []).length ? h('span', {class: 'muted'}, 'CSV only') : o.connectors.length === d.catalogue.length ? `All ${o.connectors.length}`
@@ -507,7 +540,9 @@ async function renderOrgs() {
         h('td', {class: 'n'}, o.last_login ? ago(o.last_login) : '-'),
         h('td', {class: 'n'}, h('div', {class: 'row', style: 'gap:6px;justify-content:flex-end;flex-wrap:nowrap'},
           isPersonal(o) ? null : h('button', {class: 'btn sm', type: 'button', title: `Add someone to ${o.name}`, 'aria-label': `Add someone to ${o.name}`,
-            onclick: () => personDialog(o)}, icon('user')),     // icon only: the row's three buttons fit the table
+            onclick: () => personDialog(o)}, icon('user')),     // icon only: the row's buttons fit the table
+          isPersonal(o) ? null : h('button', {class: 'btn sm', type: 'button', title: `Email domains of ${o.name}`, 'aria-label': `Email domains of ${o.name}`,
+            onclick: () => domainsDialog(o)}, icon('globe')),   // item 60
           h('button', {class: 'btn sm', type: 'button', onclick: () => connectorsDialog(o)}, icon('plug'), 'Connectors'),
           h('button', {class: 'btn sm', type: 'button', onclick: () => adjust(o)}, icon('plus'), 'Credits'))))))))),
     h('p', {class: 'small muted'}, 'What organisations ask for (credits, connectors) is under ', h('a', {href: '#/requests'}, 'Requests'), '.'));

@@ -75,12 +75,29 @@ export function axisFormatter(format: string | undefined, units: number, decimal
 }
 function axisAuto(format: string | undefined, units: number, ticks: number[], top: number, culture?: string): (v: number) => string {
     const unit = units === 0 ? autoUnit(top) : Math.max(1, units), step = ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : top || 1;
-    /* a percent format shows the value × 100, so a 0.01 step needs no decimals */
-    const shown = format && /%/.test(format.replace(/\\./g, "").replace(/"[^"]*"/g, "")) ? step * 100 : step;
+    /* a percent format shows the value x 100, so a 0.01 step needs no decimals */
+    const scale = isPercent(format) ? 100 : 1, shown = step * scale;
     const cap = Math.max(0, Math.min(4, Math.ceil(-Math.log10(shown / unit) - 1e-9)));
     if (unit === 1 && cap === 0) return formatter(format, 1, null, top, culture);
     const cache = new Map<number, (v: number) => string>();
-    return (v: number) => { const p = fewest(Math.abs(v) / unit, cap); let f = cache.get(p); if (!f) { f = formatter(format, unit, p, top, culture); cache.set(p, f); } return f(v); };
+    /* the decimals a tick needs are counted on the number shown: 0.015 in a percent format shows as 1.5, so it gets
+       one decimal ("+1.5%", not a second "+2%" tick) */
+    return (v: number) => { const p = fewest(Math.abs(v) * scale / unit, cap); let f = cache.get(p); if (!f) { f = formatter(format, unit, p, top, culture); cache.set(p, f); } return f(v); };
+}
+/** does a format string show values as percentages (0.25 as 25%)? A quoted or escaped % does not count */
+export function isPercent(format: string | undefined): boolean { return !!format && /%/.test(format.replace(/\\./g, "").replace(/"[^"]*"/g, "")); }
+/**
+ * The change from a base (a target, last year) to a value, said the way people read it: between percentages the
+ * difference in points ("+1.9 pts", never "+75%" for 4.4% against 2.5%); between two positive numbers the % change
+ * ("-0.8%"); otherwise (a base of zero or below) the difference itself, signed ("+$1.2M"). "" when a value is missing.
+ */
+export function changeText(v: number, base: number, format: string | undefined, fmt: (x: number) => string): string {
+    if (!isFinite(v) || !isFinite(base)) return "";
+    const signed = (d: number, s: string) => (Number(s) === 0 ? s.replace(/^[-+]/, "") : d > 0 ? "+" + s : s);
+    if (isPercent(format)) { const d = (v - base) * 100; return signed(d, d.toFixed(Math.abs(d) > 0 && Math.abs(d) < 0.1 ? 2 : 1)) + " pts"; }
+    if (v > 0 && base > 0) { const d = (v / base - 1) * 100; return signed(d, d.toFixed(Math.abs(d) < 10 ? 1 : 0)) + "%"; }
+    const d = v - base, s = fmt(d);
+    return d > 0 && !/^[+]/.test(s) ? "+" + s : s;
 }
 /** formatter for category and series names (dates, numbers or text), blanks shown as (Blank) */
 export function nameFormatter(format: string | undefined, culture?: string): (v: powerbi.PrimitiveValue) => string {

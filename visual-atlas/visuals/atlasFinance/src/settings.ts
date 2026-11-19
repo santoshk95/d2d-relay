@@ -30,6 +30,9 @@ class CandleCard extends fs.SimpleCard {
     name = "candles"; displayName = "Candlestick";
     slices = [this.style, this.upColor, this.downColor, this.volume, this.movingAverage, this.maColor, this.minWidth];
 }
+/* auto: when the totals dwarf the changes (a year's sales and the departments' changes against last year) the axis
+   starts near the totals, so the changes can be seen; the total bars show a break */
+const WAXIS = [opt("auto", "Auto"), opt("zero", "Start at zero"), opt("fit", "Fit the changes")];
 class WaterfallCard extends fs.SimpleCard {
     startTotal = new fs.ToggleSwitch({ name: "startTotal", displayName: "First bar is a total", value: false });
     endTotal = new fs.ToggleSwitch({ name: "endTotal", displayName: "Total bar at the end", value: true });
@@ -40,8 +43,9 @@ class WaterfallCard extends fs.SimpleCard {
     totColor = new fs.ColorPicker({ name: "totColor", displayName: "Total color", value: { value: "" } });
     connectors = new fs.ToggleSwitch({ name: "connectors", displayName: "Connector lines", value: true });
     radius = new fs.NumUpDown({ name: "radius", displayName: "Corner radius", value: 3, options: range(0, 20) });
+    axis = new fs.ItemDropdown({ name: "axis", displayName: "Value axis", items: WAXIS, value: WAXIS[0] });
     name = "waterfall"; displayName = "Waterfall";
-    slices = [this.startTotal, this.endTotal, this.endLabel, this.subtotals, this.incColor, this.decColor, this.totColor, this.connectors, this.radius];
+    slices = [this.startTotal, this.endTotal, this.endLabel, this.subtotals, this.incColor, this.decColor, this.totColor, this.connectors, this.radius, this.axis];
 }
 class RibbonCard extends fs.SimpleCard {
     opacity = new fs.Slider({ name: "opacity", displayName: "Ribbon opacity (%)", value: 35, options: range(5, 100) });

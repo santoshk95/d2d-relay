@@ -1,8 +1,8 @@
 # D2D Relay's test stack, never the live one: the layout of the repository's docker-compose.yml with its own names,
 # volumes and ports (127.0.0.1:8103 public site, 8104 admin portal, 8105 stand-in Razorpay, 8106 stand-in Microsoft
-# APIs for Semantic Review), no mail (sign-in codes
-# are printed to the web and admin logs), no Claude sign-in unless TEST_CLAUDE_VOLUME names one, and a stand-in
-# Razorpay API (../checks/fake_razorpay.py, started inside the web container on port 9911 by stack.sh).
+# APIs for Semantic Review), no mail (sign-in codes are printed to the web and admin logs), no Claude sign-in unless
+# TEST_CLAUDE_VOLUME names one, and a stand-in Razorpay API (../checks/fake_razorpay.py, started inside the web container
+# on port 9911 by stack.sh; item 59 took it away with buying credits online, item 85 brought both back).
 # Start it with stack.sh (../README.md). stack.sh writes the settings to .env in this folder (git-ignored), so later
 # `docker compose -p d2d-relay-test ...` commands run IN THIS FOLDER see the same ones, `down -v` included. Never run
 # them from the repository root: the docker-compose.yml there is live's, and its volumes are live's.
@@ -22,9 +22,11 @@ x-signin: &signin
   RELAY_ADMIN_EMAIL: info@pasdacs.com
   RELAY_OTP_DEV_LOG: "1"
   RELAY_TEST_LOGIN: "1"
+  # the stand-in's made-up keys (stack.sh's; the same defaults here, so compose commands on a stack started before
+  # item 85, whose .env has none, still read this file)
   RELAY_RAZORPAY_KEY_ID: ${TEST_RZP_KEY_ID:-rzp_live_D2DTESTSTACK01}
-  RELAY_RAZORPAY_KEY_SECRET: ${TEST_RZP_SECRET:?}
-  RELAY_RAZORPAY_WEBHOOK_SECRET: ${TEST_RZP_WEBHOOK:?}
+  RELAY_RAZORPAY_KEY_SECRET: ${TEST_RZP_SECRET:-stand-in-key-secret-not-real}
+  RELAY_RAZORPAY_WEBHOOK_SECRET: ${TEST_RZP_WEBHOOK:-stand-in-webhook-secret-not-real}
   RELAY_RAZORPAY_API: ${TEST_RZP_API:-http://d2d-relay-test-web:9911/v1}
   RELAY_PAYMENTS_TEST_FOR: ${TEST_PAYMENTS_FOR:-platform}
   # item 40: the bot check, with Cloudflare's published test keys (they always pass); set them empty to turn it off
@@ -38,6 +40,9 @@ x-signin: &signin
   RELAY_FABRIC_API: ${TEST_FABRIC_API:-http://d2d-relay-test-web:9912/fabric}
   RELAY_POWERBI_API: ${TEST_POWERBI_API:-http://d2d-relay-test-web:9912/powerbi}
   RELAY_REVIEW_MAX_MB: ${TEST_REVIEW_MAX_MB:-20}
+  # item 70: pushing a dashboard's Power BI project to GitHub talks to the stand-in GitHub API (../checks/fake_github.py,
+  # started inside the web container on port 9913 by item70_check.py; no port on this PC)
+  RELAY_GITHUB_API: ${TEST_GITHUB_API:-http://d2d-relay-test-web:9913}
 
 services:
   db:
@@ -64,6 +69,9 @@ services:
       RELAY_ROLE: web
       RELAY_DATABASE_URL: postgresql://relay_app:${TEST_DB_PASSWORD}@d2d-relay-test-db:5432/relay
       RELAY_PUBLIC_URL: http://127.0.0.1:8103
+      # off for the suites (they read codes from the log); TEST_WEB_OTP_ON_SCREEN=1 shows them on the sign-in page, for a
+      # person trying the stack in a browser on this PC (item 57; an empty value is not passed on, so it stays off)
+      RELAY_OTP_ON_SCREEN: ${TEST_WEB_OTP_ON_SCREEN-}
     volumes:
       - web-data:/data
       - ./test-projects:/data/projects           # as live: the projects in a folder of their own (item 31's job runner)
@@ -73,7 +81,7 @@ services:
       - ${CODE_STATIC:-./empty-static}:${CODE_STATIC_AT:-/opt/unused-static}:ro
     ports:
       - "127.0.0.1:8103:8000"
-      - "127.0.0.1:8105:9911"
+      - "127.0.0.1:8105:9911"                    # the stand-in Razorpay (fake_razorpay.py)
       - "127.0.0.1:8106:9912"                    # item 55: the stand-in Microsoft APIs (fake_powerbi.py)
     cap_add:                 # as the live web container (security audit S6)
       - NET_ADMIN
@@ -89,6 +97,8 @@ services:
       RELAY_ROLE: admin
       RELAY_DATABASE_URL: postgresql://relay_app:${TEST_DB_PASSWORD}@d2d-relay-test-db:5432/relay
       RELAY_PUBLIC_URL: http://127.0.0.1:8104
+      # item 59: the public site's address, for links in emails the admin portal sends (as live's RELAY_SITE_URL)
+      RELAY_SITE_URL: http://127.0.0.1:8103
       # item 57: the admin portal shows sign-in codes on its sign-in page to requests made on this PC (item57_check.py);
       # the public site keeps them off, so its suites see the emailed path and the Turnstile widget
       RELAY_OTP_ON_SCREEN: ${TEST_OTP_ON_SCREEN-1}

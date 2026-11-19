@@ -91,7 +91,7 @@ export class Visual implements IVisual {
             this.model = readModel(dv, this.host);
             if (this.model) this.drillBar.afterUpdate(this.model.drill);
             if (!this.model) {
-                landing(this.root, "Atlas Columns", [
+                landing(this.root, "Relay Columns", [
                     this.loc("Landing_Line1", "Add a field to the Category axis and one or more Values to draw columns or bars."),
                     this.loc("Landing_Line2", "Add a hierarchy such as Year, Quarter and Month to drill down. Pick the chart type, look and palette in the Format pane.")]);
                 this.mount(); [this.back, this.scroller, this.over].forEach(n => (n.style.display = "none")); this.drillBar.draw(false, [], false);

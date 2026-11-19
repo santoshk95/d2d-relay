@@ -49,18 +49,22 @@ def _source(con, f: Path, cache: Path) -> str:
         return f"read_csv_auto({_lit(f)}, {opts})"
 
 
-def connect(workdir: Path, defn: dict | None = None) -> duckdb.DuckDBPyConnection:
+def connect(workdir: Path, defn: dict | None = None, full: bool = False) -> duckdb.DuckDBPyConnection:
+    """Views over the project's data (raw, and the model's when defn is given). A big table the dashboard is built on
+    a sample of (sampling.py, item 64) reads its sample, unless full (Ask Relay reads every row)."""
+    from . import sampling
     con = duckdb.connect()
     con.execute("SET autoinstall_known_extensions = false")
     con.execute("SET autoload_known_extensions = false")
     data = Path(workdir) / "data"
     cache = Path(workdir) / ".genbi" / "cache"
     sources = {}
+    sample = None if full else sampling.spec(workdir)
     csvs = sorted(data.glob("*.csv"))
     have = {raw_name(f) for f in csvs}
     for f in csvs + [t for t in sorted(data.glob("*.tsv")) if raw_name(t) not in have]:   # a TSV upload too, unless a CSV holds its name
         try:
-            source = _source(con, f, cache)
+            source = sampling.source(workdir, f, sample) or _source(con, f, cache)
             con.execute(f"CREATE OR REPLACE VIEW {_q(raw_name(f))} AS SELECT * FROM {source}")
             sources[f.name] = source
         except duckdb.Error as e:              # one unreadable file must not take the other views down
@@ -68,7 +72,7 @@ def connect(workdir: Path, defn: dict | None = None) -> duckdb.DuckDBPyConnectio
                   file=sys.stderr)
     for f in sorted(data.glob("*.parquet")):      # warehouse extracts (the app pulls them with the person's login)
         try:
-            source = f"read_parquet({_lit(f)})"
+            source = sampling.source(workdir, f, sample) or f"read_parquet({_lit(f)})"
             con.execute(f"CREATE OR REPLACE VIEW {_q(raw_name(f))} AS SELECT * FROM {source}")
             sources[f.name] = source
         except duckdb.Error as e:

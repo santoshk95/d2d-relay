@@ -64,7 +64,7 @@ class LabelsCard extends fs.SimpleCard {
     slices = [this.fontSize, this.color, this.showValues, this.displayUnits, this.decimals];
 }
 class ChordCard extends fs.SimpleCard {
-    padAngle = new fs.NumUpDown({ name: "padAngle", displayName: "Gap between arcs (°)", value: 2.6 });
+    padAngle = new fs.NumUpDown({ name: "padAngle", displayName: "Gap between arcs (degrees)", value: 2.6 });
     arcWidth = new fs.NumUpDown({ name: "arcWidth", displayName: "Arc width", value: 12 });
     ribbonOpacity = new fs.Slider({ name: "ribbonOpacity", displayName: "Ribbon opacity", value: 62, options: { minValue: { type: powerbi.visuals.ValidatorType.Min, value: 5 }, maxValue: { type: powerbi.visuals.ValidatorType.Max, value: 100 } } });
     name = "chord"; displayName = "Chord";

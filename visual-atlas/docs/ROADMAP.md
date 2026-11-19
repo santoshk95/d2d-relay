@@ -99,7 +99,7 @@ Both:
 ## How to add a family (checklist)
 
 1. `cd visuals && pbiviz new AtlasXyz && cd atlasXyz && npm i powerbi-visuals-utils-formattingutils@6.1.2` (add `powerbi-visuals-utils-dataviewutils@6.1.0` for fx).
-2. Fill `pbiviz.json` (displayName "Atlas Xyz", description, author "Visual Atlas" / atlas@example.com, supportUrl), add `assets/icon.png` (20×20) and `stringResources/en-US/resources.resjson`.
+2. Fill `pbiviz.json` (displayName "Relay Xyz" - people see it, so never "Atlas" -, description, author "RELAY by PASDACS" / info@pasdacs.com, supportUrl), add `assets/icon.png` (20×20) and `stringResources/en-US/resources.resjson`.
 3. Write `capabilities.json`, `src/settings.ts` (with `tidy()`), `src/model.ts`, `src/render.ts`, `src/visual.ts`. Start from Atlas Columns' visual.ts for the host wiring.
 4. Add `visuals/test/xyz_cases.js` (cover every chart type × look, dark, high contrast, highlights, landing page, edge cases) and a step in `scripts/test.sh`.
 5. `make build test`, then look at the screenshots and fix what you see.

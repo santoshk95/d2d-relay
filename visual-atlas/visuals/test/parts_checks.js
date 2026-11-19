@@ -39,7 +39,7 @@
     keepOtherVisuals: !!out.replace && out.replace[0] === 3 && out.replace[1] === true,
     partialHighlight: out.partial[0] !== out.partial[1] && q(nP - 1, '.mk.dim').length === 0,
     tooltip: has('tooltip', 'Share:'), select: has('select', 'Category=Bikes'), multiSelect: out.log.some(x => x[0] === 'select' && x[2] === true), contextMenu: has('context'),
-    legendSelects: has('select', 'Channel=Retail'), keyboard: has('select', 'series='), drill: out.log.filter(x => x[0] === 'drill').length === 4, drillNames: [...q(4, 'text')].some(t => / › /.test(t.textContent)),
+    legendSelects: has('select', 'Channel=Retail'), keyboard: has('select', 'series='), drill: out.log.filter(x => x[0] === 'drill').length === 4, drillNames: [...q(4, 'text')].some(t => / > /.test(t.textContent)),
     backgroundClears: has('clear') && out.dimAfterClear === 0, highlights: out.highlightDims > 0, other: /Other/.test(out.other), progress: /68%/.test(out.center),
     noLabelOverlap: out.labelOverlaps === 0, landing: !!cases[14].querySelector('.atl-landing'), noNaN: bad.length === 0,
     holeOnlyDonut: pie.some(x => /^Chart:/.test(x) && !/Inner radius/.test(x)) && dn.some(x => /Inner radius/.test(x))

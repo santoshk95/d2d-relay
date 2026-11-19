@@ -1,5 +1,5 @@
 /*
- * Drawing for Atlas Finance: candlestick (candles, OHLC bars or a close
+ * Drawing for Relay Finance: candlestick (candles, OHLC bars or a close
  * line, volume panel, moving average), waterfall (totals, subtotals,
  * breakdown, connectors), ribbon (ranked columns joined by ribbons) and
  * funnel (bars or tapered, percent of first or previous, conversion).
@@ -14,7 +14,7 @@ import { el, r1, textW, trunc } from "./common/look";
 import { mix, inkOn } from "./common/color";
 import { colorOr, val } from "./common/cards";
 import { domain, tickWidth, valueAxis, legend, LegendItem } from "./common/chart";
-import { labelFormatter, formatter } from "./common/util";
+import { labelFormatter, formatter, changeText, isPercent } from "./common/util";
 import TipItem = powerbi.extensibility.VisualTooltipDataItem;
 
 type C = Ctx<FinanceSettings, Model>;
@@ -135,22 +135,42 @@ export function render(c: C) {
         });
         const vals = steps.flatMap(st => [st.a, st.b]), wrap = needsTwo(steps.map(st => st.name), (W - pad * 2 - 40) / steps.length);
         const T = pad + (LB.show.value ? lbfs + 6 : 4), B = H - pad - (CA.show.value ? cfs + 8 + (wrap ? cfs + 2 : 0) : 0);
-        const d = domain(Math.min(...vals), Math.max(...vals), B - T, 44, VA, M.format, c.culture, true);
+        /* the axis fits the changes when the totals dwarf them (last year's $5.1bn and the departments' +$28M, -$4M):
+           "fit", or "auto" when the biggest change is under a tenth of the biggest total; total bars then show a break */
+        const tots = steps.filter(st => st.total), chg = steps.filter(st => !st.total), mode = val(WF.axis);
+        const bigTot = Math.max(0, ...tots.map(st => Math.abs(st.v))), bigChg = Math.max(0, ...chg.map(st => Math.abs(st.v)));
+        const fit = tots.length > 0 && chg.length > 0 && tots.every(st => st.v > 0) && (mode === "fit" || (mode === "auto" && bigChg < bigTot * 0.1));
+        const runs = steps.flatMap(st => (st.total ? [st.b] : [st.a, st.b])), rlo = Math.min(...runs), rhi = Math.max(...runs), span = (rhi - rlo) || Math.abs(rhi) * 0.1 || 1;
+        const d = fit ? domain(Math.max(0, rlo - span * 0.6), rhi, B - T, 44, VA, M.format, c.culture, false) : domain(Math.min(...vals), Math.max(...vals), B - T, 44, VA, M.format, c.culture, true);
         const L = pad + tickWidth(d, VA), R = W - pad - (look.is3d ? 6 : 0);
         const Y = (v: number) => B - (Math.max(d.lo, Math.min(d.hi, v)) - d.lo) / (d.hi - d.lo) * (B - T);
         valueAxis(root, d, Y, { L, R, T, B }, true, VA, GR, t);
         const step = (R - L) / steps.length, bw = Math.max(2, step * 0.66), rad = look.is3d ? 0 : s.waterfall.radius.value;
         const fmtL = labelFormatter(M.format, Number(LB.displayUnits.value) || 0, LB.decimals.value, Math.max(...vals.map(Math.abs)), c.culture), fmtT = formatter(M.format, 1, null, 0, c.culture);
+        /* a change of a rate is in points ("-0.3 pts"), a change of an amount signed ("+$28M"); totals as they are */
+        const pctFmt = isPercent(M.format), labelOf = (st: Step) => (st.total ? fmtL(st.v) : pctFmt ? changeText(st.v, 0, M.format, fmtL) : (st.v > 0 ? "+" : "") + fmtL(st.v));
+        const lbls: { k: number; text: string; x: number; y: number; w: number }[] = [];
         steps.forEach((st, k) => {
             const x = L + step * k + (step - bw) / 2, y0 = Y(Math.max(st.a, st.b)), h = Math.max(1, Math.abs(Y(st.a) - Y(st.b)));
             const col = t.hc ? t.ink : st.total ? tot : st.v >= 0 ? inc : dec, items = st.cells.map(x2 => x2.i);
             const g = el("g", { class: "mk" + (c.io.anyOn(items) || !items.length ? "" : " dim") }, marks);
             if (look.is3d) { el("path", { d: `M${r1(x)},${r1(y0)}l5,-3h${r1(bw)}l-5,3Z`, fill: look.top(col) }, g); el("path", { d: `M${r1(x + bw)},${r1(y0)}l5,-3v${r1(h)}l-5,3Z`, fill: look.side(col) }, g); }
             el("rect", { x: r1(x), y: r1(y0), width: r1(bw), height: r1(h), rx: r1(Math.min(rad, bw / 2, h / 2)), fill: t.hc ? (st.total ? t.ink : t.surface) : look.fill(col, "v"), stroke: t.hc ? t.ink : "none" }, g);
+            /* a total cut by the fitted axis: a slanted gap near its foot */
+            if (fit && st.total && h > 24) el("path", { d: `M${r1(x - 1)},${r1(B - 9)}L${r1(x + bw + 1)},${r1(B - 15)}V${r1(B - 11)}L${r1(x - 1)},${r1(B - 5)}Z`, fill: t.surface }, g);
             const tg: Target = { key: "w" + k, items, ids: st.cells.map(x2 => x2.id), tip: () => [{ displayName: st.total ? "Total" : "Change", value: (st.v > 0 && !st.total ? "+" : "") + fmtT(st.v), color: col }, { displayName: M.catTitle, value: st.name }, { displayName: "Running total", value: fmtT(st.b) }] };
             c.bind(g, tg);
             if (WF.connectors.value && k < steps.length - 1) { const yy = r1(Y(st.b)) + 0.5; el("line", { x1: r1(x + bw), x2: r1(x + step), y1: yy, y2: yy, stroke: mix(t.text, t.surface, 0.5), "stroke-width": 1, "stroke-dasharray": "2 2" }, root); }
-            if (LB.show.value) el("text", { x: r1(x + bw / 2), y: r1(y0 - 4), "text-anchor": "middle", "font-size": lbfs, fill: lbC, class: "lbl" }, labels, trunc((st.v > 0 && !st.total ? "+" : "") + fmtL(st.v), step + 4, lbfs));
+            if (LB.show.value) { const text = labelOf(st); lbls.push({ k, text, x: x + bw / 2, y: y0 - 4, w: textW(text, lbfs) }); }
+        });
+        /* labels whole or not at all (2026-11-19: 52 weeks read "-..." and a small tile ran "+$27.7M" into the start total):
+           totals first, then the biggest changes, each only where it overlaps no label already placed */
+        const placed: { l: number; r: number; t: number; b: number }[] = [];
+        lbls.slice().sort((a, b2) => Number(steps[b2.k].total) - Number(steps[a.k].total) || Math.abs(steps[b2.k].v) - Math.abs(steps[a.k].v) || a.k - b2.k).forEach(lb => {
+            const cx = Math.max(L + lb.w / 2, Math.min(W - pad - lb.w / 2, lb.x)), box = { l: cx - lb.w / 2 - 2, r: cx + lb.w / 2 + 2, t: lb.y - lbfs, b: lb.y + 3 };
+            if ((!steps[lb.k].total && lb.w > step * 2.2) || box.t < 0 || placed.some(p => p.l < box.r && box.l < p.r && p.t < box.b && box.t < p.b)) return;
+            placed.push(box);
+            el("text", { x: r1(cx), y: r1(lb.y), "text-anchor": "middle", "font-size": lbfs, fill: lbC, class: "lbl" }, labels, lb.text);
         });
         catLabels(steps.map((st, k) => ({ x: L + step * (k + 0.5), text: st.name, target: { key: "w" + k, items: st.cells.map(x => x.i), ids: st.cells.map(x => x.id), tip: () => [{ displayName: M.catTitle || "Step", value: st.name }] } })), B + cfs + 4, step - 4, wrap);
     }
@@ -219,7 +239,7 @@ export function render(c: C) {
             c.bind(g, { key: "i" + r.x.i, items: [r.x.i], ids: [r.x.id], tip: () => [{ displayName: M.catTitle, value: r.ct.name, color: col }, { displayName: M.series[0].name, value: fmtT(r.x.v) }, { displayName: "% of first", value: pct(r.x.v / first) }, { displayName: "% of previous", value: pct(prev ? r.x.v / prev : 0) }].concat(r.x.tips.map(tp => ({ displayName: tp.name, value: tp.value }))) });
             if (CA.show.value) c.io.bindLabel(el("text", { x: r1(L - 8), y: r1(y + bh / 2 + cfs * 0.35), "text-anchor": "end", "font-size": cfs, fill: cC, class: "ax" }, labels, trunc(r.ct.name, nameW - 10, cfs)), { key: "c:" + r.ct.key, items: r.ct.items, ids: r.ct.id ? [r.ct.id] : [], tip: () => [{ displayName: M.catTitle, value: r.ct.name }] });
             if (LB.show.value) {
-                const txt = content === "value" ? fmtL(r.x.v) : content === "percentFirst" ? pct(r.x.v / first) : content === "previous" ? `${fmtL(r.x.v)} · ${k ? pct(prev ? r.x.v / prev : 0) : "100%"}` : `${fmtL(r.x.v)} · ${pct(r.x.v / first)}`;
+                const txt = content === "value" ? fmtL(r.x.v) : content === "percentFirst" ? pct(r.x.v / first) : content === "previous" ? `${fmtL(r.x.v)} (${k ? pct(prev ? r.x.v / prev : 0) : "100%"})` : `${fmtL(r.x.v)} (${pct(r.x.v / first)})`;
                 /* a tapered stage is narrowest at its bottom edge */
                 const narrow = val(FN.shape) === "tapered" ? Math.min(w, rows[k + 1] ? Math.max(2, maxW * Math.max(0, rows[k + 1].x.v) / top) : w * 0.85) : w;
                 const inside = textW(txt, lbfs) + 8 < narrow;

@@ -18,9 +18,11 @@ over once when the main one fails with an authentication, quota, rate-limit or o
 
 The installation's own Anthropic API key (D2D Relay item 42, the user 2026-11-13: "claude api key ... as primary and
 personal as backup"): RELAY_ANTHROPIC_API_KEY (D2D_ANTHROPIC_API_KEY to the web app; never ANTHROPIC_API_KEY, which the
-AI engine would inherit for every run, so the backup could never run without it). When it is set, a person who has not
-chosen a provider of their own (claude_account with no token of their own: everyone on D2D Relay) runs on that key
-first, and the installation's Claude login (the subscription the AI engine is signed in with) is the backup.
+AI engine would inherit for every run, so the backup could never run without it). Since item 67 (the user, 2026-11-19:
+"internally switch the agent to use subscription from docker on opus 5.5 max") the installation's Claude login (the
+subscription the AI engine is signed in with, in Docker) runs first for a person who has not chosen a provider of their
+own (everyone on D2D Relay), and the key is the backup when the subscription fails with an authentication, limit or
+outage error. RELAY_AI_PRIMARY=api puts the key first again (item 42's order); without a key there is no backup.
 """
 import base64
 import hashlib
@@ -37,6 +39,7 @@ import yaml
 from . import db, secrets_store
 
 INSTALL_API_KEY = (os.environ.get("D2D_ANTHROPIC_API_KEY") or "").strip()       # item 42: the installation's API key
+AI_PRIMARY = "api" if (os.environ.get("D2D_AI_PRIMARY") or "subscription").strip().lower() == "api" else "subscription"   # item 67
 INSTALL_API_LABEL = "Anthropic API (this installation's key)"
 GATEWAY_URL = os.environ.get("D2D_LITELLM_URL", "http://litellm:4000")
 GATEWAY_DIR = Path(os.environ.get("D2D_LITELLM_DIR", "/data/llm"))
@@ -58,7 +61,8 @@ ROUTE_SECRETS = {"bedrock": ["aws_access_key_id", "aws_secret_access_key"], "azu
                  "vertex": ["service_account_json"], "anthropic": ["api_key"]}
 ALIAS = re.compile(r"^[a-z0-9][a-z0-9._-]{1,62}$")
 FAILOVER = re.compile(r"\b(401|403|429|529)\b|overloaded|rate.?limit|quota|credit balance|authenticat|invalid (x-)?api.?key|"
-                      r"unauthori[sz]ed|oauth token|ECONNREFUSED|ENOTFOUND|API Error: 5\d\d|Connection error", re.I)
+                      r"unauthori[sz]ed|oauth token|ECONNREFUSED|ENOTFOUND|API Error: 5\d\d|Connection error|"
+                      r"not logged in|please run /login|usage limit|limit reached", re.I)   # item 67: the subscription first
 _GATEWAY_SECRET_NAME = "llm_gateway_signing_key"
 
 
@@ -254,11 +258,17 @@ def gateway_token(uid: str, ttl_s: int) -> str:
 
 # ---------------------------------------------------------------- what a run gets
 
-def _install_key_first(uid: str | None, s: dict) -> bool:
-    """Item 42: the installation's API key runs first for a person with no provider of their own."""
-    if not INSTALL_API_KEY or s.get("kind", "claude_account") != "claude_account":
+def _install_default(uid: str | None, s: dict) -> bool:
+    """A person with no provider of their own: the installation's own login and key serve them."""
+    if s.get("kind", "claude_account") != "claude_account":
         return False
     return not (uid and secrets_store.get(f"user:{uid}", "claude_oauth_token"))
+
+
+def _install_key_first(uid: str | None, s: dict) -> bool:
+    """Item 42: the installation's API key runs first for a person with no provider of their own (only with
+    RELAY_AI_PRIMARY=api since item 67; by default the subscription runs first and the key is its backup)."""
+    return bool(INSTALL_API_KEY) and AI_PRIMARY == "api" and _install_default(uid, s)
 
 
 def run_config(uid: str | None, model: str, ttl_s: int, kind: str | None = None) -> dict:
@@ -316,6 +326,8 @@ def backup_kind(uid: str | None) -> str | None:
         return s["backup"] if s["backup"] != primary else None
     if primary == "anthropic_api" and s.get("kind", "claude_account") == "claude_account":
         return "claude_account"
+    if primary == "claude_account" and INSTALL_API_KEY and _install_default(uid, s):
+        return "anthropic_api"                              # item 67: the subscription first, the installation's key next
     b = _policy().get("backup")
     kind = {"claude_account": "claude_account", "anthropic_api": "anthropic_api", "enterprise": "enterprise"}.get(b) \
         or ("litellm" if b in ("bedrock", "azure_foundry", "vertex") else None)

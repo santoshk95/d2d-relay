@@ -14,7 +14,7 @@ import { FamilyVisual, Ctx } from "./common/family";
 const NAMES: Record<string, string> = { scatter: "Scatter chart", dotplot: "Dot plot", gantt: "Gantt chart" };
 
 export class Visual extends FamilyVisual<ScatterSettings, Model> {
-    protected readonly title = "Atlas Scatter";
+    protected readonly title = "Relay Scatter";
     protected readonly landingLines: [string, string] = [
         "Scatter: add a field to Values (details), and measures to X-axis and Y-axis (and Size for bubbles). Add a Play axis to animate.",
         "Gantt: add Task, Start date and End date (blank for a milestone), and optionally Legend (phase), Owner and % complete."];

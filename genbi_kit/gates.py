@@ -29,18 +29,20 @@ SCHEMAS = Path(__file__).resolve().parent / "schemas"
 LEVEL = {"fail": 3, "warn": 2, "info": 1}
 GATES = {   # id: (name, what it checks) - in the order a report passes them
     "kpis": ("Plan confirmed", "you confirmed the KPIs and their formulas"),
-    "definition": ("Report definition", "model, DAX references, visuals and fields (genbi validate)"),
+    "definition": ("Report definition", "model, DAX references, visuals and fields"),
     "prototype": ("Prototype", "every visual's query runs on your data"),
-    "custom_visuals": ("Custom visuals", "built from their current code and tested in a browser"),
+    "custom_visuals": ("Custom visuals", "built from their current code and tested"),
     "power_query": ("Power Query", "each table's load steps replayed on its CSV"),
     "data": ("Data loads cleanly", "values convert to their types; relationship keys are unique and found"),
-    "dax": ("DAX in Power BI's engine", "Power BI Desktop's engine evaluates every measure and visual query"),
-    "values": ("Values match the prototype", "Power BI's numbers and titles against the prototype SQL"),
+    "dax": ("DAX in Power BI's engine", "every measure and visual query checked by Power BI's own engine"),
+    "values": ("Values match the prototype", "Power BI's numbers and titles against the prototype's"),
     "pbir_schema": ("Report files", "Microsoft's PBIR JSON schemas"),
     "coherence": ("Report consistency", "pages, visuals, fields, custom visuals and themes all resolve"),
     "model_rules": ("Model best practices", "Microsoft's Best Practice Analyzer rules"),
     "report_rules": ("Report & accessibility", "titles, alt text, layout and contrast (WCAG 2.1)"),
-    "display": ("Display check", "every page drawn in a headless browser, labels read back"),
+    "display": ("Display check", "every page drawn and its labels read back"),
+    # item 68: Relay's ring-fenced review team (UI/UX, story, accuracy), after every check above
+    "team": ("Review team", "independent reviewers checked the design, the story and every number"),
     "approval": ("Approved by you", "you approved this prototype for Power BI"),
 }
 
@@ -1009,7 +1011,7 @@ def dax_gates(s: dict | None) -> list[dict]:
         why = (s or {}).get("reason") or "it did not run"
         return [gate("dax", skip=f"not checked: {why}"), gate("values", skip="needs the DAX check")]
     dax = gate("dax", s.get("problems") or [], ok=f"{_n(s['measures'], 'measure')} and {_n(s['visuals'], 'visual query')} "
-                                                   f"accepted (Power BI Desktop {s.get('engine') or ''})".replace(" )", ")"))
+                                                   "accepted by Power BI's own engine".replace(" )", ")"))
     if not s.get("compared"):
         return [dax, gate("values", skip="large tables were checked on a sample, so values are not compared")]
     return [dax, gate("values", [warn(x) for x in s.get("differences") or []],
@@ -1030,13 +1032,15 @@ def file_gates(d: Path, dd: dict, catalog: dict, visuals_dir: Path | None, con=N
             out = tmp
         name = next(out.glob("*.pbip")).stem
         rdir, sdir = out / f"{name}.Report", out / f"{name}.SemanticModel"
+        from . import sampling
+        ddir = d / sampling.SAMPLE_DIR if sampling.spec(d) else d / "data"     # item 64: the files the Power BI file loads
         try:
-            pq, tables = power_query(sdir, d / "data")
+            pq, tables = power_query(sdir, ddir)
         except Exception as e:  # noqa: BLE001
             pq, tables = gate("power_query", [fail(f"the check crashed: {e}")]), {}
         found = [pq]
-        for gid, fn in (("data", lambda: data(tables, d / "data", sdir, con)), ("pbir_schema", lambda: pbir_schema(rdir)),
-                        ("coherence", lambda: coherence(out, d / "data")),
+        for gid, fn in (("data", lambda: data(tables, ddir, sdir, con)), ("pbir_schema", lambda: pbir_schema(rdir)),
+                        ("coherence", lambda: coherence(out, ddir)),
                         ("model_rules", lambda: model_rules(sdir, rdir, con, texts)), ("report_rules", lambda: report_rules(rdir, sdir))):
             try:
                 found.append(fn())

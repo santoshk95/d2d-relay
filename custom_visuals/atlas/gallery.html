@@ -1,4 +1,4 @@
-<title>Power BI Visual Atlas</title>
+<title>Relay Visual</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Every built-in Power BI visual plus popular AppSource and build-your-own visuals, drawn live in every useful variation, re-themed to any brand color.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1152,9 +1152,9 @@ dialog.fm{box-shadow:0 40px 90px -24px color-mix(in srgb,var(--sh) 70%,transpare
 
 <header class="top">
   <div class="top-in">
-    <a class="brand" href="#top" aria-label="Visual Atlas, back to top">
-      <span class="brand-mark" aria-hidden="true"><span><i style="height:7px"></i><i style="height:12px"></i><i style="height:18px"></i></span></span>
-      <span><b>Visual Atlas</b><small>Power BI · every visual</small></span>
+    <a class="brand" href="#top" aria-label="Relay Visual, back to top">
+      <span class="brand-mark" aria-hidden="true" style="background:none;box-shadow:none;padding:0;width:34px;height:34px;display:inline-flex"><svg width="34" height="34" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="44" height="44" rx="11" fill="#111111"/><rect x="11.5" y="25" width="6.5" height="11" rx="1.8" fill="#FFFFFF"/><rect x="20.75" y="19" width="6.5" height="17" rx="1.8" fill="#FFFFFF"/><rect x="30" y="16" width="6.5" height="20" rx="1.8" fill="#00C48C"/><path d="M14.75 20.5C18 14.5 27.5 11.2 33.25 11.6" stroke="#00C48C" stroke-width="2.2" stroke-linecap="round"/><circle cx="33.25" cy="11.6" r="2.4" fill="#00C48C"/></svg></span>
+      <span><b>Relay Visual</b></span>
     </a>
     <label class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
@@ -1179,7 +1179,7 @@ dialog.fm{box-shadow:0 40px 90px -24px color-mix(in srgb,var(--sh) 70%,transpare
   <main>
     <section class="hero">
       <div class="hero-txt">
-        <p class="eyebrow"><span class="dot" aria-hidden="true"></span>Power BI visuals · built-in and AppSource · November 2026</p>
+        <p class="eyebrow"><span class="dot" aria-hidden="true"></span>Power BI visuals - built-in and AppSource - November 2026</p>
         <h1>Every Power BI visual, <span class="hl">in your brand</span></h1>
         <p class="lede">All <b id="l-std">48</b> built-in visuals and <b id="l-ext">36</b> popular AppSource and build-your-own visuals, drawn live in <b id="l-var">384</b> variations. Pick one brand color and every chart, ramp and accent re-themes itself. Switch between flat, soft and 3D, then drill, zoom and filter, or open any variation in focus mode.</p>
         <div class="figs">
@@ -1230,7 +1230,7 @@ dialog.fm{box-shadow:0 40px 90px -24px color-mix(in srgb,var(--sh) 70%,transpare
     <footer class="foot">
       <span>Independent reference, not affiliated with Microsoft. All figures are invented sample data.</span>
       <span>AppSource visuals come from Microsoft and third-party publishers; names, options and certification differ by publisher, and some tenants allow only certified visuals.</span>
-      <span>Built-in list checked against Microsoft Learn, November 2026 · Map geometry: Natural Earth (world-atlas), US Census (us-atlas)</span>
+      <span>Built-in list checked against Microsoft Learn, November 2026. Map geometry: Natural Earth and the US Census Bureau, simplified.</span>
     </footer>
   </main>
   <aside class="pane" id="pane" aria-label="Visualizations">
@@ -4633,15 +4633,16 @@ const BRAND=(()=>{
     try{localStorage.setItem('atlas-brand',JSON.stringify(state));}catch(e){}
   }
   /* Power BI report theme: palette, structural colors, text sizes and the look as container styles.
-     Built-in visuals take the container look (corners, shadow, border); the Atlas custom visuals also take the bar look. */
+     Built-in visuals take the container look (corners, shadow, border); the Relay custom visuals also take the bar look. */
   const SCHEMA='https://raw.githubusercontent.com/microsoft/powerbi-desktop-samples/main/Report%20Theme%20JSON%20Schema/reportThemeSchema-2.159.json';
   /* every Atlas custom visual: keep in sync with the pbiviz.json files in visuals/ (tools/mk_themes.js reads them from there) */
   const ATLAS_VISUALS=['atlasColumns9A01238C3D0249F7B4F9DFBEA84D3599','atlasCompare1934AF42622F4D63BF12168C02806AC8','atlasDistribution1C4252B29C654CC1BF16155962622408','atlasFinance8C601CA9CAF44ADCB6574FA21FDDE583','atlasFlowBA37FC4A61814B33BF815C11D35148B1','atlasGauges797C4E4189814B78AD7FCCDFF53CBC47','atlasHierarchy21AE4CB2A0F74216862D09F0C9A3BF2E','atlasLines36E69B273DB443A5AF8E62CB16DB4547','atlasPartsA0676FD0579D44EFB545170E4799ADC9','atlasProportion74F95B1AE3CB4D9195CC248A3EC140A4','atlasScatter0B23674C661C4797A349BBC2B0AD313A','atlasTextC961F02E238E426A825D8355E3503AA9','atlasTime657C41A78B0A405A998ADA36387448E9'];
   function themeObject(look,dark){
     look=['flat','soft','3d'].includes(look)?look:(['flat','soft','3d'].includes(state.look)?state.look:'soft');dark=!!dark;
     const T=tokens(dark),pal=dark?themed(true):palette(),U=c=>String(c).toUpperCase(),F=c=>({solid:{color:U(c)}});
-    const base=state.mode==='atlas'?'Visual Atlas':state.mode==='classic'?'Classic':state.mode==='custom'?'Custom brand':'Brand '+norm(state.brand).toUpperCase();
-    const name=`${base} · ${look==='3d'?'3D':look==='soft'?'Soft':'Flat'}${dark?' · Dark':''}`;
+    /* the name Power BI shows for the theme, in plain characters ("Relay - Soft - Dark") */
+    const base=state.mode==='atlas'?'Relay':'Relay - '+(state.mode==='classic'?'Classic':state.mode==='custom'?'Custom brand':'Brand '+norm(state.brand).toUpperCase());
+    const name=`${base} - ${look==='3d'?'3D':look==='soft'?'Soft':'Flat'}${dark?' - Dark':''}`;
     const surf=dark?T.surface:'#ffffff',radius={flat:4,soft:12,'3d':8}[look];
     const shadow=look==='flat'?{show:false}:{show:true,position:'Outer',preset:look==='3d'?'BottomRight':'Bottom',color:F(T.sh),
       transparency:dark?(look==='3d'?50:62):(look==='3d'?70:84),shadowBlur:look==='3d'?14:12,shadowDistance:look==='3d'?6:3,shadowSpread:0};
@@ -5153,7 +5154,7 @@ setTheme(store.get('atlas-theme')||(root.getAttribute('data-theme')||'auto'));
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(studioReady)syncStudio();});}catch(e){}
 
 /* ---------------- theme studio: brand color, palette, look ---------------- */
-const MODES=[['spectrum','Spectrum'],['analogous','Analogous'],['mono','Mono'],['atlas','Atlas'],['classic','Classic'],['custom','Custom']];
+const MODES=[['spectrum','Spectrum'],['analogous','Analogous'],['mono','Mono'],['atlas','Relay'],['classic','Classic'],['custom','Custom']];
 const sw=(t,n)=>`<div class="st-sw">${Array.from({length:n},(_,i)=>`<i style="--sw:var(--${t}${i+1})"></i>`).join('')}</div>`;
 function studioHTML(){
   return `<div class="st-h"><div><b>Theme studio</b><span>Every chart on the page reads its colors from these tokens.</span></div><button type="button" class="st-reset" data-sx="reset">Reset</button></div>

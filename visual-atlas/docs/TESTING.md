@@ -156,13 +156,25 @@ The checks cover:
 | parts | Parts | 17 | no overlapping outside labels, drill, progress ring, Other |
 | scatter | Scatter | 17 | drag zoom, play frame, Gantt header, milestones |
 
+## Retail pages (2026-11-19)
+
+`scripts/test.sh` also renders `retail_<prefix>_cases.js` for Gauges, Finance, Columns, Lines, Compare, Time, Parts,
+Proportion, Scatter, Hierarchy and Distribution on shared retail data (`retail_data.js`: a grocery and drug retailer with
+120 stores in 8 divisions, 12 departments, 52 fiscal weeks, a fiscal year of days; dollars up to billions, percentages,
+negative comps and variances, zeros, blanks, long store names) in light and dark, small and wide. `retail_checks.js` checks
+every case: no text on other text (a KPI name on its value, labels on each other), no text cut off at its drawing's edge,
+no NaN / undefined / Infinity / null, no value that is not zero shown as zero ($0M), no doubled units ($1.2MM), no
+number cut short ("$6..."), only plain keyboard characters, and a contrast of 3 or more (2.6 for 14px and up) against
+what is painted behind the text. Text scrolled out of view is left out of the overlap and contrast checks. A case can
+allow one check with "[allow overlap]" (or clip, contrast) in its title. `ONLY=retail` runs them all.
+
 ## Ready-made test report
 
 `make report` writes `release/report/Visual Atlas Test.pbip` and `release/VisualAtlasTest.zip`. It has three pages with every Atlas visual already bound to embedded sample data, plus the built-in clustered column for comparison. Open the `.pbip` in Power BI Desktop, select **Refresh**, and use **File › Save as** for a `.pbix`. If Desktop offers to upgrade the model to TMDL, either choice works. `python3 tools/validate_report.py "release/report/Visual Atlas Test.Report"` checks the report JSON against Microsoft's schemas (the schemas are cached in `tools/schema/pbir/`).
 
 ## Testing in real Power BI
 
-1. `make build`, then import `release/AtlasColumns.1.0.0.0.pbiviz` , `release/AtlasFlow.1.0.0.0.pbiviz` and `release/AtlasDistribution.1.0.0.0.pbiviz`. In Power BI Desktop, first enable **File › Options and settings › Options › Current file › Report settings › Develop a visual**, then in the Visualizations pane select **…** › **Import a visual from a file**.
+1. `make build`, then import the `release/Relay*.pbiviz` files (for example `release/RelayColumns.<version>.pbiviz`). In Power BI Desktop, first enable **File › Options and settings › Options › Current file › Report settings › Develop a visual**, then in the Visualizations pane select **…** › **Import a visual from a file**.
 2. Live development: run `pbiviz start` in the visual folder **natively** (not in Docker; it serves https://localhost:8080 and needs the pbiviz developer certificate trusted by your browser). Then add the Developer visual to a report in the Power BI service with developer mode on. Follow Microsoft's [environment setup](https://learn.microsoft.com/en-us/power-bi/developer/visuals/environment-setup) guide for the certificate and the service settings.
 3. Sample data for a quick report: the CSV files in `visuals/test/sample-data/` (made by `python3 tools/export_csv.py` from `data.json`):
    - `flow_*.csv`: Source, Target and value columns for Atlas Flow

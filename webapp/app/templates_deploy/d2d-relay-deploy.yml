@@ -1,0 +1,170 @@
+# D2D Relay deploy: publishes the Power BI projects (PBIP) that D2D Relay pushes to this repository to a Microsoft
+# Fabric / Power BI workspace, with Microsoft's fabric-cicd library (https://microsoft.github.io/fabric-cicd/).
+#
+# D2D Relay added this file once, with the first dashboard it pushed here, and never changes it again: adapt it to
+# the way your team works (environments, approvals, schedules).
+#
+# What it does
+#   On a push to the branch below that changes the D2D Relay folder, it finds the dashboards whose files changed and
+#   publishes the semantic model and the report of each (both, so the report always finds its model) to the workspace
+#   in the FABRIC_WORKSPACE_ID secret. Run it by hand (Actions, "D2D Relay deploy", Run workflow) to publish every
+#   dashboard in the folder.
+#
+# Layout: one folder per dashboard, in Fabric's Git format (a .platform file in each item folder)
+#   __D2D_FOLDER__/<dashboard>/<report>.pbip
+#   __D2D_FOLDER__/<dashboard>/<report>.SemanticModel/   definition.pbism, model.bim
+#   __D2D_FOLDER__/<dashboard>/<report>.Report/          definition.pbir, definition/ (pages and visuals), StaticResources/
+# D2D Relay replaces a dashboard's folder with each push: change a dashboard in D2D Relay, not here.
+#
+# What it needs
+#   Repository secrets (Settings, Secrets and variables, Actions):
+#     AZURE_TENANT_ID       your Microsoft Entra tenant id
+#     AZURE_CLIENT_ID       the application (client) id of an Entra app registration (a service principal)
+#     AZURE_CLIENT_SECRET   a client secret of that app
+#     FABRIC_WORKSPACE_ID   the id of the workspace to deploy to (the GUID after /groups/ in its address)
+#   In Fabric: the app added to that workspace as Contributor, Member or Admin, and the tenant setting "Service
+#   principals can use Fabric APIs" switched on for it (Fabric admin portal, Tenant settings, Developer settings).
+#
+# Data
+#   A semantic model deployed from its definition holds no data until it is refreshed in the service. The models
+#   D2D Relay builds from uploaded files read CSV files from the folder in their DataFolder parameter
+#   (C:\D2D Relay Data\<report>\data\ as pushed). For a refresh in the service, point it at a place the service can
+#   reach (through an on-premises data gateway, or files moved to SharePoint or OneLake), or move the model to your
+#   warehouse. A parameter.yml in the D2D Relay folder (next to the dashboards' folders) changes the parameter for each
+#   environment, for example:
+#
+#     find_replace:
+#       - find_value: 'C:\\D2D Relay Data\\'          # as written inside model.bim: every backslash twice
+#         replace_value:
+#           PROD: '\\\\fileserver\\bi\\d2d\\'
+#         item_type: "SemanticModel"
+#
+#   Then give the semantic model its data source sign-in in the service (its settings: data source credentials, or a
+#   gateway connection) and refresh it. A model on a warehouse needs only that sign-in.
+#
+# Test and production
+#   Copy the deploy job once per environment, give each a GitHub environment (Settings, Environments; required
+#   reviewers for production) and its own FABRIC_WORKSPACE_ID secret, and set FABRIC_ENVIRONMENT to the key used for
+#   it in parameter.yml.
+
+name: D2D Relay deploy
+
+on:
+  push:
+    branches: ["__D2D_BRANCH__"]
+    paths: ["__D2D_FOLDER__/**"]
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "all: every dashboard in the folder; changed: only the ones the last push changed"
+        type: choice
+        options: [all, changed]
+        default: all
+
+permissions:
+  contents: read                     # the workflow only reads this repository
+
+concurrency:                         # one deployment at a time; a newer push waits for the one running
+  group: d2d-relay-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  D2D_FOLDER: "__D2D_FOLDER__"       # where D2D Relay pushes the dashboards
+  FABRIC_ENVIRONMENT: "PROD"         # the environment key in parameter.yml (when there is one)
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # environment: production        # a GitHub environment: required reviewers, its own secrets
+    steps:
+      # Pin these actions to a commit SHA if your organisation requires it.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0             # the whole history, so the dashboards changed by a push can be found
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      # The fabric-cicd version this workflow was written for: read its changelog before moving to a newer one.
+      - name: Install fabric-cicd
+        run: python -m pip install --disable-pip-version-check "fabric-cicd==1.4.0" "azure-identity>=1.19,<2"
+
+      - name: Deploy to Fabric
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          FABRIC_WORKSPACE_ID: ${{ secrets.FABRIC_WORKSPACE_ID }}
+          SCOPE: ${{ github.event_name == 'workflow_dispatch' && inputs.scope || 'changed' }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          folder = Path(os.environ["D2D_FOLDER"])
+          if not folder.is_dir():
+              print(f"There is no {folder} folder in this commit: nothing to deploy.")
+              sys.exit(0)
+          missing = [n for n in ("AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET", "FABRIC_WORKSPACE_ID") if not os.environ.get(n)]
+          if missing:
+              sys.exit("Add these repository secrets first (Settings, Secrets and variables, Actions): " + ", ".join(missing))
+
+          # Every semantic model and report in the folder, by dashboard (its first folder level), named the way
+          # fabric-cicd names them: "<display name>.<type>", from each item's .platform file.
+          items = {}
+          for platform in sorted(folder.rglob(".platform")):
+              meta = json.loads(platform.read_text(encoding="utf-8")).get("metadata") or {}
+              if meta.get("type") in ("SemanticModel", "Report") and meta.get("displayName"):
+                  dashboard = platform.relative_to(folder).parts[0]
+                  items.setdefault(dashboard, []).append(f"{meta['displayName']}.{meta['type']}")
+
+          selected = None                  # None: every item in the folder
+          before = os.environ.get("BEFORE") or ""
+          if os.environ.get("SCOPE") == "changed" and before.strip("0"):
+              known = subprocess.run(["git", "cat-file", "-e", before + "^{commit}"], capture_output=True).returncode == 0
+              if known:
+                  diff = subprocess.run(["git", "diff", "--name-only", "-z", before, "HEAD", "--", str(folder)],
+                                        capture_output=True, text=True, check=True).stdout
+                  tops = {Path(p).relative_to(folder).parts[0] for p in diff.split("\0") if p}
+                  if "parameter.yml" not in tops:          # a changed parameter.yml: every dashboard again
+                      # Both items of each changed dashboard: a report deploys only with its model known.
+                      selected = sorted(i for d in tops for i in items.get(d, []))
+                      if not selected:
+                          print("No dashboard changed in this push (or only removed ones): nothing to deploy.")
+                          sys.exit(0)
+              else:
+                  print(f"{before} is not in this history (a forced push?): deploying every dashboard.")
+
+          from azure.identity import ClientSecretCredential
+          from fabric_cicd import FabricWorkspace, append_feature_flag, publish_all_items
+
+          if selected is not None:
+              # Deploying some items only is an experimental option of fabric-cicd: it is switched on here.
+              append_feature_flag("enable_experimental_features")
+              append_feature_flag("enable_items_to_include")
+          # Each dashboard's items go into a workspace folder named after its folder here. To keep them at the top of
+          # the workspace instead, remove the # at the start of the next line.
+          # append_feature_flag("disable_workspace_folder_publish")
+
+          workspace = FabricWorkspace(
+              workspace_id=os.environ["FABRIC_WORKSPACE_ID"],
+              environment=os.environ.get("FABRIC_ENVIRONMENT") or "PROD",
+              repository_directory=str(folder.resolve()),
+              item_type_in_scope=["SemanticModel", "Report"],
+              token_credential=ClientSecretCredential(os.environ["AZURE_TENANT_ID"], os.environ["AZURE_CLIENT_ID"],
+                                                      os.environ["AZURE_CLIENT_SECRET"]),
+          )
+          print("Deploying " + (", ".join(selected) if selected is not None else f"every dashboard in {folder}"))
+          if selected is None:
+              publish_all_items(workspace)
+          else:
+              publish_all_items(workspace, items_to_include=selected)
+          # unpublish_all_orphan_items(workspace) is left out on purpose: it would delete every semantic model and
+          # report in the workspace that is not in this folder, the ones made by hand included.
+          PY

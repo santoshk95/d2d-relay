@@ -14,7 +14,7 @@ import { val } from "./common/cards";
 const NAMES: Record<string, string> = { lollipop: "Lollipop chart", dot: "Dot plot", dumbbell: "Dumbbell chart", slope: "Slope chart", bump: "Bump chart", tornado: "Tornado chart", radar: "Radar chart" };
 
 export class Visual extends FamilyVisual<CompareSettings, Model> {
-    protected readonly title = "Atlas Compare";
+    protected readonly title = "Relay Compare";
     protected readonly landingLines: [string, string] = [
         "Add a field to Category and one or more measures to Values (two for a dumbbell, slope or tornado).",
         "Add a Legend to compare series. Pick lollipop, dot plot, dumbbell, slope, bump, tornado or radar in the Format pane."];

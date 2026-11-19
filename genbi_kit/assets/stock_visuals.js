@@ -4,19 +4,26 @@
    gradient colors - from the rows of its prototype SQL (one column per field, named after the field) and its
    Format-pane settings. Settings it does not draw are still written to the report: Power BI applies all of them.
    API: RelayStock.render(box, visual, ctx) where visual = {stock: {vt, renderer, fields, rows, format, sort},
-   header: {title, subtitle}} and ctx = {palette, card, border, radius, text, muted, font, frame, fmtNum}. */
+   header: {title, subtitle}} and ctx = {palette, card, border, radius, text, muted, font (the theme's font as a CSS
+   font list), frame, fmtNum, slicer (a slicer's state and actions, see slicer())}. */
 (function () {
   'use strict';
   const NS = 'http://www.w3.org/2000/svg', PT = 4 / 3;
   const UNITS = [[1e12, 'T'], [1e9, 'bn'], [1e6, 'M'], [1e3, 'K']];
   const GOOD = '#1AAB40', BAD = '#D64550', NEUTRAL = '#E6B700';
   let measureCtx = null, tip = null;
+  let FONT = '"Segoe UI", system-ui, sans-serif';           // the report theme's font (ctx.font), set by render()
 
   // ------------------------------------------------------------------ small helpers
   function measure(s, size, weight) {
     if (!measureCtx) measureCtx = document.createElement('canvas').getContext('2d');
-    measureCtx.font = `${weight || 400} ${size}px "Segoe UI", system-ui, sans-serif`;
+    measureCtx.font = `${weight || 400} ${size}px ${FONT}`;
     return measureCtx.measureText(String(s)).width;
+  }
+  // a font family from the Format pane (one name) in front of the theme's list
+  function family(name) {
+    const n = String(name || '').replace(/["'<>;{}\\]/g, '').trim();
+    return n ? `"${n}", ${FONT}` : FONT;
   }
   function el(tag, attrs, parent) {
     const e = document.createElementNS(NS, tag);
@@ -28,7 +35,7 @@
     o = o || {};
     const t = el('text', {x, y, 'font-size': o.size || 11, fill: o.color || '#605E5C', 'text-anchor': o.anchor || 'start',
       'dominant-baseline': o.base || 'central', 'font-weight': o.bold ? 600 : 400, 'font-style': o.italic ? 'italic' : null,
-      'text-decoration': o.underline ? 'underline' : null, 'font-family': o.font ? `${o.font}, "Segoe UI", sans-serif` : null,
+      'text-decoration': o.underline ? 'underline' : null, 'font-family': o.font ? family(o.font) : null,
       transform: o.rotate ? `rotate(${o.rotate} ${x} ${y})` : null}, parent);
     t.textContent = s;
     return t;
@@ -240,7 +247,7 @@
       h.style.cssText = `flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;font-size:${get('title', 'fontSize', 12) * PT}px;`
         + `color:${color(get('title', 'fontColor'), ctx, ctx.text)};font-weight:${get('title', 'bold', true) ? 600 : 400};`
         + `font-style:${get('title', 'italic', false) ? 'italic' : 'normal'};text-align:${get('title', 'alignment', 'left')};`
-        + `text-decoration:${get('title', 'underline', false) ? 'underline' : 'none'};font-family:${get('title', 'fontFamily', ctx.font)}, 'Segoe UI', sans-serif;`
+        + `text-decoration:${get('title', 'underline', false) ? 'underline' : 'none'};font-family:${family(get('title', 'fontFamily', null))};`
         + (get('title', 'background') ? `background:${color(get('title', 'background'), ctx, 'transparent')};` : '');
       card.appendChild(h);
     }
@@ -751,11 +758,14 @@
     const rows = item.rows, cat = fieldsOf(item, 'Category')[0], ser = fieldsOf(item, 'Series')[0];
     const xf = fieldsOf(item, 'X')[0], yf = fieldsOf(item, 'Y')[0], sf = fieldsOf(item, 'Size')[0];
     if (!xf || !yf) return note(svg, W, H, 'Needs measures on X and Y', ctx);
+    // One point per Details value, or per Legend value without Details; with both, one per Details value IN each Legend
+    // value (Power BI: "each category in each region"), never the Details values added up across the legend
     const keyCol = cat ? cat.col : ser ? ser.col : null;
-    const pts = (keyCol ? uniq(rows, keyCol) : [null]).map(k => {
-      const sel = keyCol ? rows.filter(r => String(r[keyCol]) === String(k)) : rows;
-      return {k, x: total(sel, xf.col), y: total(sel, yf.col), s: sf ? total(sel, sf.col) : null, ser: ser ? first(sel, ser.col) : null};
-    }).filter(p => p.x !== null && p.y !== null);
+    const keyOf = r => cat && ser ? JSON.stringify([String(r[cat.col]), String(r[ser.col])]) : String(r[keyCol]);
+    const groups = new Map();
+    if (keyCol) rows.forEach(r => { const k = keyOf(r); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
+    const pts = (keyCol ? [...groups.values()] : [rows]).map(sel => ({k: keyCol ? sel[0][keyCol] : null, x: total(sel, xf.col), y: total(sel, yf.col),
+      s: sf ? total(sel, sf.col) : null, ser: ser ? first(sel, ser.col) : null})).filter(p => p.x !== null && p.y !== null);
     const sers = ser ? uniq(rows, ser.col) : [];
     const colorOf = p => ser ? ctx.palette[sers.findIndex(s => String(s) === String(p.ser)) % ctx.palette.length] : color(get('dataPoint', 'fill', get('dataPoint', 'defaultColor')), ctx, ctx.palette[0]);
     const space = legend(svg, W, sers.map((s, i) => ({name: catLabel(s, ser), color: ctx.palette[i % ctx.palette.length]})), get, ctx, {title: ser ? ser.name : null, height: H});
@@ -781,13 +791,14 @@
     for (const p of pts.sort((a, b) => (b.s || 0) - (a.s || 0))) {
       const r = sf ? 4 + Math.sqrt(Math.abs(p.s || 0) / smax) * (18 + bubble / 4) : 5 + bubble / 10;
       const c = el('circle', {cx: sx(p.x), cy: sy(p.y), r, fill: colorOf(p), 'fill-opacity': get('fillPoint', 'style', 'Fill only') === 'Border only' ? 0 : 0.75, stroke: colorOf(p)}, svg);
-      hover(c, () => [[cat ? cat.name : ser ? ser.name : 'Point', catLabel(p.k, cat || ser)], [xf.name, num(p.x, xf.format, 1, null, null, ctx)], [yf.name, num(p.y, yf.format, 1, null, null, ctx)]].concat(sf ? [[sf.name, num(p.s, sf.format, 1, null, null, ctx)]] : []));
+      hover(c, () => [[cat ? cat.name : ser ? ser.name : 'Point', catLabel(p.k, cat || ser)]].concat(cat && ser ? [[ser.name, catLabel(p.ser, ser)]] : [],
+        [[xf.name, num(p.x, xf.format, 1, null, null, ctx)], [yf.name, num(p.y, yf.format, 1, null, null, ctx)]], sf ? [[sf.name, num(p.s, sf.format, 1, null, null, ctx)]] : []));
       if (labels && cat) {           // on the point's right, or its left when the visual has no room there
         const s = fit(catLabel(p.k, cat), 90, 10), onRight = sx(p.x) + r + 3 + measure(s, 10) <= W - 2;
         text(svg, onRight ? sx(p.x) + r + 3 : sx(p.x) - r - 3, sy(p.y), s, {size: 10, color: ctx.text, anchor: onRight ? 'start' : 'end'});
       }
     }
-    if (fieldsOf(item, 'Play')[0]) text(svg, W - 6, H - 6, '▶ play axis animates in Power BI', {size: 9, color: ctx.muted, anchor: 'end', base: 'auto'});
+    if (fieldsOf(item, 'Play')[0]) text(svg, W - 6, H - 6, 'Play axis: animates in Power BI', {size: 9, color: ctx.muted, anchor: 'end', base: 'auto'});
     return null;
   }
 
@@ -860,12 +871,16 @@
       });
       const below = vy + (lines.length - 1) * lh;          // the value's last line
       if (showLabel) text(g, ax, below + vSize * 0.72, fit(get('label', 'text', m.name), cw - 20, lSize), {size: lSize, color: color(get('label', 'fontColor'), ctx, ctx.muted), anchor});
+      // the reference labels start under the label, or (label off) right under the value: a hidden label leaves no gap
+      const refTop = below + (showLabel ? vSize * 0.72 + lSize * 1.6 : vSize * 0.5 + lSize * 1.1);
       refs.forEach((r, k) => {
-        const rv = first(rows, r.col), ry = below + vSize * 0.72 + lSize * (1.6 + k * 1.3);
+        const rv = first(rows, r.col), ry = refTop + k * lSize * 1.3, who = {measure: r.name};
         if (ry > ch - 6) return;
-        const title = get('referenceLabelTitle', 'titleText', r.name), rs = get('referenceLabelValue', 'valueFontSize', 9) * PT;
-        text(g, ax, ry, fit(`${title}: ${num(rv, r.format, get('referenceLabelValue', 'valueDisplayUnits', 0), get('referenceLabelValue', 'valuePrecision', null), undefined, ctx)}`, cw - 20, rs),
-          {size: rs, color: color(get('referenceLabelValue', 'valueFontColor'), ctx, ctx.muted), anchor});
+        // a reference's own settings (referenceLabelTitle / referenceLabelValue with for: "[Measure]"), else the visual's
+        const own = (obj, prop, d) => override(get, obj, prop, who) ?? get(obj, prop, d);
+        const title = own('referenceLabelTitle', 'titleText', r.name), rs = own('referenceLabelValue', 'valueFontSize', 9) * PT;
+        text(g, ax, ry, fit(`${title}: ${num(rv, r.format, own('referenceLabelValue', 'valueDisplayUnits', 0), own('referenceLabelValue', 'valuePrecision', null), undefined, ctx)}`, cw - 20, rs),
+          {size: rs, color: color(own('referenceLabelValue', 'valueFontColor'), ctx, ctx.muted), anchor});
       });
     });
     return null;
@@ -927,15 +942,23 @@
       el('path', {d: linePath(pts) + `L${W},${H}L0,${H}Z`, fill: col, 'fill-opacity': 1 - get('trendline', 'transparency', 80) / 100}, svg);
     }
     const size = get('indicator', 'fontSize', Math.min(28, H / 3.4 / PT)) * PT;
-    const icon = get('indicator', 'showIcon', true) && goal !== null ? (good ? '✓ ' : '! ') : '';
-    const t = text(svg, W / 2, H * 0.32, fit(icon + num(last.v, ind.format, get('indicator', 'indicatorDisplayUnits', 0), get('indicator', 'indicatorPrecision', null), undefined, ctx), W - 10, size, 600),
+    // Power BI's status icon left of the value: a check (good) or an exclamation mark (bad) in a circle
+    const icon = get('indicator', 'showIcon', true) && goal !== null && last.v !== null, r = size * 0.3, gap = icon ? 2 * r + 6 : 0;
+    const shownValue = fit(num(last.v, ind.format, get('indicator', 'indicatorDisplayUnits', 0), get('indicator', 'indicatorPrecision', null), undefined, ctx), W - 10 - gap, size, 600);
+    const cy = H * 0.32, t = text(svg, W / 2 + gap / 2, cy, shownValue,
       {size, color: color(get('indicator', 'fontColor'), ctx, goal === null ? ctx.text : col), anchor: 'middle', bold: true});
+    if (icon) {
+      const cx = W / 2 + gap / 2 - measure(shownValue, size, 600) / 2 - 6 - r;
+      el('circle', {cx, cy, r, fill: col}, svg);
+      el('path', {d: good ? `M${cx - r * 0.45},${cy + r * 0.02}l${r * 0.32},${r * 0.34}l${r * 0.6},${-r * 0.64}` : `M${cx},${cy - r * 0.48}v${r * 0.52}M${cx},${cy + r * 0.42}v0.1`,
+        fill: 'none', stroke: '#FFFFFF', 'stroke-width': Math.max(1.5, r * 0.26), 'stroke-linecap': 'round', 'stroke-linejoin': 'round'}, svg);
+    }
     hover(t, () => [[ind.name, num(last.v, ind.format, 1, null, null, ctx)]].concat(goal !== null ? [[goals[0].name, num(goal, goals[0].format, 1, null, null, ctx)]] : []));
     if (goal !== null && get('goals', 'showGoal', true)) {
-      const dist = (last.v - goal) / (Math.abs(goal) || 1);
+      const dist = last.v === null ? null : (last.v - goal) / (Math.abs(goal) || 1);
       const what = get('goals', 'distanceLabel', 'Percent');
-      const d = what === 'Value' ? num(last.v - goal, ind.format, 0, null, undefined, ctx) : (dist >= 0 ? '+' : '') + (dist * 100).toFixed(get('goals', 'labelPrecision', 1)) + '%';
-      text(svg, W / 2, H * 0.32 + size * 0.85, `${get('goals', 'goalText', 'Goal')}: ${num(goal, goals[0].format, 0, null, undefined, ctx)}` + (get('goals', 'showDistance', true) ? ` (${d})` : ''),
+      const d = dist === null ? null : what === 'Value' ? num(last.v - goal, ind.format, 0, null, undefined, ctx) : (dist >= 0 ? '+' : '') + (dist * 100).toFixed(get('goals', 'labelPrecision', 1)) + '%';
+      text(svg, W / 2, H * 0.32 + size * 0.85, `${get('goals', 'goalText', 'Goal')}: ${num(goal, goals[0].format, 0, null, undefined, ctx)}` + (get('goals', 'showDistance', true) && d !== null ? ` (${d})` : ''),
         {size: get('goals', 'fontSize', 9) * PT, color: color(get('goals', 'goalFontColor'), ctx, ctx.muted), anchor: 'middle'});
     }
     return null;
@@ -1083,37 +1106,72 @@
       ...(cf && colTotal ? vs.map(v => ({text: show(across([], v), v), num: true})) : [])] : null;
     htmlTable(body, item, ctx, get, head, out, totals);
   }
+  // Power BI's slicer in its style (list, tiles, dropdown). On the prototype page ctx.slicer makes it live: {values
+  // (labels), sel (selected indexes), single, text (the selection in words), note (why it cannot filter), enabled(i)
+  // (a click on it reaches a selection the page has results for), pick(i, event), canClear(), clear(), open(anchor)
+  // (the dropdown's list)}; without it the slicer lists the values of its rows.
   function slicer(body, item, ctx, get) {
-    const f = fieldsOf(item, 'Values')[0];
-    if (!f) return;
-    const values = uniq(item.rows, f.col).slice(0, 200);
+    const f = fieldsOf(item, 'Values')[0], api = ctx.slicer;
+    if (!f && !api) return;
+    const labels = api ? api.values : uniq(item.rows, f.col).slice(0, 200).map(v => catLabel(v, f));
+    const sel = api ? api.sel : [], live = !!api && !api.note;
     const mode = get('data', 'mode', 'VerticalList');
     const wrap = document.createElement('div');
     wrap.style.cssText = `position:absolute;inset:0;overflow:auto;font-size:${get('items', 'textSize', 10) * PT}px;color:${color(get('items', 'fontColor'), ctx, ctx.text)}`;
+    const add = (tag, cls, parent, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; parent.appendChild(e); return e; };
     if (get('header', 'show', true)) {
-      const h = document.createElement('div');
-      h.textContent = get('header', 'text', f.name);
-      h.style.cssText = `font-weight:600;margin-bottom:6px;color:${color(get('header', 'fontColor'), ctx, ctx.text)};font-size:${get('header', 'textSize', 10) * PT}px`;
-      wrap.appendChild(h);
+      const h = add('div', '', wrap);
+      h.style.cssText = `display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:600;margin-bottom:6px;color:${color(get('header', 'fontColor'), ctx, ctx.text)};font-size:${get('header', 'textSize', 10) * PT}px`;
+      add('span', '', h, get('header', 'text', f ? f.name : ''));
+      if (live && api.canClear()) {
+        const c = add('button', 'slc-clear', h, 'Clear');
+        c.type = 'button'; c.title = 'Clear the selection';
+        c.onclick = e => { e.stopPropagation(); api.clear(); };
+      }
     }
+    if (api && api.note) add('div', '', wrap, api.note).style.cssText = `font-size:11px;color:${ctx.muted};margin:0 0 6px`;
+    const state = idx => {
+      const on = sel.includes(idx), ok = !live || on || api.enabled(idx);
+      return {on, ok, cls: (on ? ' on' : '') + (ok ? '' : ' off')};
+    };
+    const wire = (node, idx, ok) => {
+      if (!live) return;
+      node.tabIndex = 0;
+      node.setAttribute('role', 'option');
+      node.setAttribute('aria-selected', sel.includes(idx) ? 'true' : 'false');
+      if (!ok) { node.setAttribute('aria-disabled', 'true'); node.title = 'Not computed for the prototype with your other selections'; }
+      node.onclick = e => api.pick(idx, e);
+      node.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); api.pick(idx, e); } };
+    };
     if (mode === 'Dropdown') {
-      const b = document.createElement('div');
-      b.textContent = 'All';
-      b.style.cssText = `border:1px solid ${ctx.border};border-radius:4px;padding:5px 8px;display:flex;justify-content:space-between`;
-      const a = document.createElement('span'); a.textContent = '⌄'; b.appendChild(a);
-      wrap.appendChild(b);
-    } else if (mode === 'HorizontalList') {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px';
-      values.forEach(v => { const t = document.createElement('span'); t.textContent = catLabel(v, f); t.style.cssText = `border:1px solid ${ctx.border};border-radius:4px;padding:4px 10px`; row.appendChild(t); });
-      wrap.appendChild(row);
-    } else if (mode === 'Between') {
-      const t = document.createElement('div');
-      t.textContent = `${catLabel(values[0], f)}  -  ${catLabel(values[values.length - 1], f)}`;
+      const b = add(live ? 'button' : 'div', 'slc-box', wrap);
+      b.style.cssText = `display:flex;justify-content:space-between;align-items:center;width:100%;box-sizing:border-box;border:1px solid ${ctx.border};border-radius:4px;padding:5px 8px;background:${ctx.card}`;
+      add('span', 'slc-val', b, api ? api.text : 'All');
+      add('span', 'slc-chev', b);
+      if (live) {
+        b.type = 'button';
+        b.setAttribute('data-slicer-open', '');
+        b.setAttribute('aria-haspopup', 'listbox');
+        b.onclick = e => { e.stopPropagation(); api.open(b); };
+      }
+    } else if (/^(Between|Before|After|Single|Relative)/.test(mode)) {
+      const t = add('div', '', wrap, labels.length ? `${labels[0]} - ${labels[labels.length - 1]}` : '');
       t.style.cssText = `border:1px solid ${ctx.border};border-radius:4px;padding:5px 8px`;
-      wrap.appendChild(t);
+    } else if (mode === 'HorizontalList') {
+      const row = add('div', '', wrap);
+      row.setAttribute('role', 'listbox');
+      labels.forEach((label, idx) => { const s = state(idx); wire(add('span', 'sl-tile' + s.cls, row, label), idx, s.ok); });
     } else {
-      values.forEach(v => { const r = document.createElement('div'); r.style.cssText = 'display:flex;align-items:center;gap:6px;padding:2px 0'; const box = document.createElement('span'); box.style.cssText = `width:12px;height:12px;border:1px solid ${ctx.muted};border-radius:2px;flex:none`; const t = document.createElement('span'); t.textContent = catLabel(v, f); r.append(box, t); wrap.appendChild(r); });
+      const list = add('div', '', wrap);
+      list.setAttribute('role', 'listbox');
+      labels.forEach((label, idx) => {
+        const s = state(idx), r = add('div', 'sl-item' + (api && api.single ? ' radio' : '') + s.cls, list);
+        r.style.padding = '3px 2px';
+        add('span', 'sl-mk', r);
+        add('span', '', r, label);
+        wire(r, idx, s.ok);
+      });
+      if (api && api.more) add('div', '', wrap, `The prototype lists the first ${labels.length} values.`).style.cssText = `font-size:11px;color:${ctx.muted};margin-top:4px`;
     }
     body.appendChild(wrap);
   }
@@ -1180,10 +1238,21 @@
 
   function render(box, v, ctx) {
     const item = v.stock;
+    if (ctx.font) FONT = ctx.font;
     const {body, get, title} = frame(box, v, ctx);
-    if (HTML[item.renderer]) { HTML[item.renderer](body, item, ctx, get); return; }
+    if (HTML[item.renderer]) {
+      if (item.renderer !== 'slicer' && (!item.rows || !item.rows.length)) {
+        const n = document.createElement('div');
+        n.textContent = 'No data';
+        n.style.cssText = `position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:${ctx.muted}`;
+        body.appendChild(n);
+        return;
+      }
+      HTML[item.renderer](body, item, ctx, get);
+      return;
+    }
     const W = Math.max(20, body.clientWidth), H = Math.max(20, body.clientHeight);
-    const svg = el('svg', {width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': title || item.vt, 'font-family': '"Segoe UI", system-ui, sans-serif'}, null);
+    const svg = el('svg', {width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': title || item.vt, 'font-family': FONT}, null);
     svg.style.display = 'block';
     svg.style.overflow = 'visible';
     body.appendChild(svg);

@@ -13,13 +13,21 @@ D2D_ENTRA_LOGIN=http://d2d-relay-test-web:9912/login, D2D_FABRIC_API=.../fabric,
        EVALUATE INFO.VIEW.MEASURES() / TABLES() / COLUMNS() / RELATIONSHIPS() for the Finance model, and
        EVALUATE ROW ( "v0", [Measure], ... ): fixed values; [Broken] makes the whole query fail (the app then asks one
        measure at a time)
-and, for the tests: GET /_test/state (calls by kind), POST /_test/reset.
+  item 70 (deployment), the Imports API:
+  POST /powerbi/v1.0/myorg/groups/<ws>/imports?datasetDisplayName=<name>.pbix&nameConflict=...   (multipart, a file)
+       Sales BI: 202 {"id"}; the same name again with Overwrite / CreateOrOverwrite keeps its dataset and report ids.
+       Operations: 401 PowerBINotAuthorizedException (the app is not a member there)
+  GET  /powerbi/v1.0/myorg/groups/<ws>/imports/<id>   Publishing at the first poll, then Succeeded with the dataset
+       and the report (webUrl on app.powerbi.com); Failed with an error for a name holding "Broken"
+and, for the tests: GET /_test/state (calls by kind), GET /_test/imports (each import: name, nameConflict, file name,
+bytes, the first bytes in base64), POST /_test/reset.
 """
 import base64
 import json
 import re
 import secrets
 import threading
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
@@ -58,11 +66,26 @@ FIN_TABLES = [{"ID": 1, "Name": "Fact Sales", "IsHidden": False, "Description": 
 FIN_COLUMNS = [{"Table": "Fact Sales", "Name": "Amount", "DataType": "Decimal", "SummarizeBy": "Sum", "IsHidden": False},
                {"Table": "Fact Sales", "Name": "Cost", "DataType": "Decimal", "SummarizeBy": "Sum", "IsHidden": False}]
 VALUES = {"Revenue": 1234567.5, "Total Revenue": 1300000, "COGS": 400000}
+IMPORTS: dict = {}                    # item 70: import id -> what was imported
+NAMES: dict = {}                      # (workspace, name) -> (dataset id, report id): an overwrite keeps them
 
 
 def bump(kind: str) -> None:
     with LOCK:
         STATE[kind] = STATE.get(kind, 0) + 1
+
+
+def multipart_file(body: bytes, ctype: str):
+    """(file name, bytes) of the first file in a multipart body, or None."""
+    m = re.search(r'boundary="?([^";]+)"?', ctype or "")
+    if not m:
+        return None
+    for part in body.split(b"--" + m.group(1).encode()):
+        head, sep, data = part.partition(b"\r\n\r\n")
+        fn = re.search(rb'filename="([^"]*)"', head)
+        if sep and fn:
+            return fn.group(1).decode("utf-8", "replace"), data[:-2] if data.endswith(b"\r\n") else data
+    return None
 
 
 class H(BaseHTTPRequestHandler):
@@ -83,6 +106,19 @@ class H(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length") or 0)
         return self.rfile.read(n) if n else b""
 
+    def upload(self) -> bytes:
+        """An import's body: by its length, or in chunks."""
+        if "chunked" not in (self.headers.get("Transfer-Encoding") or "").lower():
+            return self.body()
+        out = b""
+        while True:
+            n = int(self.rfile.readline().split(b";")[0].strip() or b"0", 16)
+            if not n:
+                self.rfile.readline()
+                return out
+            out += self.rfile.read(n)
+            self.rfile.readline()
+
     def authed(self) -> bool:
         tok = (self.headers.get("Authorization") or "").removeprefix("Bearer ").strip()
         if tok not in TOKENS:
@@ -96,8 +132,30 @@ class H(BaseHTTPRequestHandler):
         if p == "/_test/state":
             with LOCK:
                 return self.send(200, dict(STATE))
+        if p == "/_test/imports":
+            with LOCK:
+                return self.send(200, {"imports": [{k: v for k, v in i.items()} for i in IMPORTS.values()]})
         if not self.authed():
             return None
+        m = re.fullmatch(r"/powerbi/v1.0/myorg/groups/([0-9a-f-]{36})/imports/([0-9a-f-]{36})", p)
+        if m:
+            imp = IMPORTS.get(m.group(2))
+            if not imp or imp["workspace"] != m.group(1):
+                return self.send(404, {"error": {"code": "PowerBIEntityNotFound", "message": "Import not found"}})
+            bump("import_poll")
+            with LOCK:
+                imp["polls"] += 1
+            state = "Publishing" if imp["polls"] < 2 else "Failed" if "Broken" in imp["item"] else "Succeeded"
+            ws, ds, rp = imp["workspace"], imp["dataset"], imp["report"]
+            out = {"id": m.group(2), "name": imp["item"], "importState": state, "connectionType": "import", "source": "Upload",
+                   "createdDateTime": "2026-11-19T10:00:00Z", "updatedDateTime": "2026-11-19T10:00:05Z"}
+            if state == "Succeeded":
+                out["datasets"] = [{"id": ds, "name": imp["item"], "webUrl": f"https://app.powerbi.com/groups/{ws}/datasets/{ds}"}]
+                out["reports"] = [{"id": rp, "name": imp["item"], "datasetId": ds, "webUrl": f"https://app.powerbi.com/groups/{ws}/reports/{rp}",
+                                   "embedUrl": f"https://app.powerbi.com/reportEmbed?reportId={rp}&groupId={ws}"}]
+            if state == "Failed":
+                out["error"] = {"code": "PackageNotSupported", "details": "The stand-in does not import reports named Broken."}
+            return self.send(200, out)
         if p == "/fabric/v1/workspaces":
             bump("workspaces")
             return self.send(200, {"value": [{"id": WS_SALES, "displayName": "Sales BI", "type": "Workspace"},
@@ -131,6 +189,8 @@ class H(BaseHTTPRequestHandler):
         if p == "/_test/reset":
             with LOCK:
                 STATE.clear()
+                IMPORTS.clear()
+                NAMES.clear()
             return self.send(200, {"ok": True})
         m = re.fullmatch(r"/login/([^/]+)/oauth2/v2.0/token", p)
         if m:
@@ -143,6 +203,32 @@ class H(BaseHTTPRequestHandler):
             tok = "standin-" + secrets.token_hex(12)
             TOKENS[tok] = form.get("scope")
             return self.send(200, {"token_type": "Bearer", "expires_in": 3599, "access_token": tok})
+        m = re.fullmatch(r"/powerbi/v1.0/myorg/groups/([0-9a-f-]{36})/imports", p)
+        if m:                                 # item 70: read the whole upload before answering, whatever the answer
+            raw = self.upload()
+            if not self.authed():
+                return None
+            bump("import_create")
+            ws = m.group(1)
+            if ws == WS_OPS:
+                return self.send(401, {"error": {"code": "PowerBINotAuthorizedException", "pbi.error": {"code": "PowerBINotAuthorizedException"}}})
+            if ws != WS_SALES:
+                return self.send(404, {"error": {"code": "PowerBIEntityNotFound", "message": "Workspace not found"}})
+            qs = {k: v[0] for k, v in parse_qs(u.query).items()}
+            got = multipart_file(raw, self.headers.get("Content-Type") or "")
+            name = qs.get("datasetDisplayName") or ""
+            if not got or not name:
+                return self.send(400, {"error": {"code": "InvalidRequest", "message": "A file and datasetDisplayName are needed."}})
+            item = name[:-5] if name.lower().endswith(".pbix") else name
+            with LOCK:
+                ids = NAMES.get((ws, item)) if qs.get("nameConflict") in ("Overwrite", "CreateOrOverwrite") else None
+                if not ids:
+                    ids = NAMES[(ws, item)] = (str(uuid.uuid4()), str(uuid.uuid4()))
+                iid = str(uuid.uuid4())
+                IMPORTS[iid] = {"id": iid, "workspace": ws, "name": name, "item": item, "nameConflict": qs.get("nameConflict"),
+                                "filename": got[0], "bytes": len(got[1]), "head": base64.b64encode(got[1][:16]).decode(),
+                                "polls": 0, "dataset": ids[0], "report": ids[1]}
+            return self.send(202, {"id": iid})
         if not self.authed():
             return None
         m = re.fullmatch(r"/fabric/v1/workspaces/([0-9a-f-]{36})/semanticModels/([0-9a-f-]{36})/getDefinition", p)

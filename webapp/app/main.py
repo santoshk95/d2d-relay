@@ -33,9 +33,15 @@ from . import branding, edition, orgs, otp           # D2D Relay: the dashboard-
 from . import portal                                 # D2D Relay: the public site or the admin portal (D2D_PORTAL)
 from . import governance                             # item 22: erasure, "Download my data", retention
 from . import headers                                # security audit: security headers, the Range guard
-from . import payments                               # item 23: buying credits online with Razorpay
+from . import payments                               # item 23, item 59: past payments and their invoices (no selling)
 from . import semreview                              # item 55: Semantic Review (models against the KPI dictionary)
 from . import handoff                                # item 58: a new dashboard from a DAWB hand-off, with its plan
+from . import ontology, kpi_words                    # items 61 and 63: the ontology layer; a KPI changed in plain words
+from . import uploads as parts                       # item 64: big files arrive in parts (Cloudflare's 100 MB a request)
+from . import semreview_fix                          # item 65: Semantic Review findings fixed, credits shown first
+from . import newdash                                # item 71: the guided New dashboard's prefilled request
+from . import deploy                                 # item 70: publish to the Power BI service, push to GitHub (CI/CD)
+from . import orgsetup                               # item 81: the organisation's guided setup, mandatory before dashboards
 
 errors.install()                                # every traceback.print_exc() and thread crash reports Relay's own bugs (Relay Doctor)
 STATIC = Path(__file__).resolve().parent.parent / "static"
@@ -138,8 +144,15 @@ for _r in phases.ROUTERS:                      # P10 onwards: one router per pha
 app.include_router(branding.router)            # D2D Relay: Branding (logo + description -> palettes)
 app.include_router(otp.router)                 # D2D Relay: sign-in with a one-time email code
 app.include_router(orgs.router)                # D2D Relay: organisations, credits and their requests, every organisation (admin portal)
-app.include_router(payments.router)            # D2D Relay: buying credits online with Razorpay (item 23)
+app.include_router(payments.router)            # D2D Relay: past payments and their invoices (item 59: no selling)
 app.include_router(semreview.router)           # D2D Relay: Semantic Review, models against the KPI dictionary (item 55)
+app.include_router(ontology.router)            # D2D Relay: the ontology layer, industry packs, a dashboard's semantic model (item 61)
+app.include_router(kpi_words.router)           # D2D Relay: a KPI changed in plain words, 1 credit (item 63)
+app.include_router(parts.router)               # D2D Relay: uploads in parts, for files over Cloudflare's limit (item 64)
+app.include_router(semreview_fix.router)       # D2D Relay: Semantic Review fixes, TMDL and Tabular Editor scripts (item 65)
+app.include_router(newdash.router)             # D2D Relay: what to build, prefilled from the uploaded data (item 71)
+app.include_router(deploy.router)              # D2D Relay: Power BI service publishing and GitHub CI/CD (item 70)
+app.include_router(orgsetup.router)            # D2D Relay: the organisation's guided setup (item 81)
 edition.apply()                                # D2D Relay: keep dashboards, the visual library and BigQuery; switch the rest off
 
 
@@ -176,6 +189,20 @@ def _get(pid: str) -> dict:
         return store.load(pid)
     except (KeyError, FileNotFoundError):
         raise HTTPException(404, "Project not found")
+
+
+def _data_policy(raw: str) -> dict | None:
+    """Item 64, New dashboard's choice for big data: "auto" (sample tables over a few million rows), "sample" or "all",
+    optionally with the method (random | recent): {"mode", "method"} for project.json data_policy."""
+    try:
+        v = json.loads(raw) if (raw or "").strip().startswith("{") else {"mode": (raw or "").strip()}
+    except ValueError:
+        v = {}
+    mode = str((v or {}).get("mode") or "").lower()
+    if mode not in ("auto", "sample", "all"):
+        return None
+    method = str(v.get("method") or "random").lower()
+    return {"mode": mode, "method": method if method in ("random", "recent") else "random"}
 
 
 def _safe_name(name: str, default: str) -> str:
@@ -384,11 +411,121 @@ def _style(look: str, brand: str, palette: str, dark: str) -> dict:
 
 @app.get("/gallery", response_class=HTMLResponse)
 def gallery():
-    """The Visual Atlas gallery: every visual idea with its variants and a theme studio."""
+    """The visual gallery: every Relay visual with its variants and a theme studio. Item 86 (the user, 2026-11-19: "add
+    filters as well to browse visual library and block download options"): served view only to signed-in people: the
+    theme studio's Copy theme JSON and its JSON box are taken out, a Browse bar filters by kind (Power BI's built-in or
+    custom visuals) and category next to the gallery's own search, and typographic characters are made plain (curly
+    quotes stay: they sit inside the page's script strings)."""
     path = visuals_dir() / "atlas" / "gallery.html"
     if not path.exists():
-        raise HTTPException(404, "The Visual Atlas gallery is not installed.")
-    return FileResponse(path, media_type="text/html")
+        raise HTTPException(404, "The visual gallery is not installed.")
+    html = path.read_text(encoding="utf-8")
+    for fancy, plain in GALLERY_PLAIN.items():
+        html = html.replace(fancy, plain)
+    html += GALLERY_VIEW_ONLY_CSS + GALLERY_VIEW_ONLY_JS          # at the end: the gallery leaves out </head> and </body>
+    return HTMLResponse(html, headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"})
+
+
+GALLERY_PLAIN = {"\u00b7": "-", "\u2013": "-", "\u2014": "-", "\u2192": "->", "\u2022": "-", "\u2026": "..."}
+GALLERY_VIEW_ONLY_CSS = """<style id="d2d-view-only">
+.st-copy,.st-json{display:none!important}
+#pane,#pane-btn{display:none!important}
+.d2d-framed header.top,.d2d-framed section.hero,.d2d-framed section.intro{display:none!important}
+.d2d-framed section.cat{scroll-margin-top:12px}
+#top.layout{display:block!important}
+section.cat{scroll-margin-top:140px}
+.d2d-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 20px;padding:10px 12px;border:1px solid rgba(127,127,127,.35);border-radius:10px;position:sticky;top:61px;z-index:30;box-shadow:0 6px 16px -12px rgba(0,0,0,.35)}
+.d2d-filters button{font:inherit;padding:6px 12px;border-radius:8px;border:1px solid rgba(127,127,127,.5);background:transparent;color:inherit;cursor:pointer}
+.d2d-filters button:hover{border-color:currentColor}
+.d2d-filters b{margin-right:4px}
+.d2d-filters select{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid rgba(127,127,127,.5);background:transparent;color:inherit;max-width:100%}
+.d2d-filters option{color:#111;background:#fff}
+.d2d-filters .d2d-count{opacity:.75;font-size:.92em}
+</style>"""
+GALLERY_VIEW_ONLY_JS = """<script id="d2d-view-only-js">
+(function () {
+  // D2D's Relay Visual page frames this gallery and drives it (03-home.js renderVisualGallery): then the gallery's own
+  // header, introduction and Browse bar give way to D2D's toolbar; opened on its own, it keeps its Browse bar
+  var framed = false; try { framed = window.top !== window; } catch (e) { framed = true; }
+  if (framed) document.documentElement.classList.add('d2d-framed');
+  function sections() { return Array.prototype.slice.call(document.querySelectorAll('section.cat')); }
+  function isCustom(s) { return s.id.indexOf('cat-x') === 0; }
+  function headerButton(text) {
+    return Array.prototype.slice.call(document.querySelectorAll('header button')).filter(function (x) { return x.textContent.trim() === text; })[0];
+  }
+  window.d2dGallery = {
+    ready: function () { return sections().length > 0; },
+    categories: function (kind) {
+      return sections().filter(function (s) { return kind === 'all' || (kind === 'custom') === isCustom(s); })
+        .map(function (s) { var hd = s.querySelector('h2'); return [s.id, hd ? hd.textContent.trim() : s.id]; });
+    },
+    apply: function (kind, cat) {
+      var n = 0;
+      sections().forEach(function (s) {
+        var ok = (kind === 'all' || (kind === 'custom') === isCustom(s)) && (!cat || cat === s.id);
+        s.style.display = ok ? '' : 'none';
+        if (ok) n += s.querySelectorAll('article.vis').length;
+      });
+      return n;
+    },
+    jump: function (id) { var el = id ? document.getElementById(id) : sections()[0]; if (el && el.scrollIntoView) el.scrollIntoView({behavior: 'smooth', block: 'start'}); },
+    search: function (text) { var q = document.getElementById('q'); if (q) { q.value = text; q.dispatchEvent(new Event('input', {bubbles: true})); } },
+    press: function (text) { var btn = headerButton(text); if (btn) btn.click(); return !!btn; }      // Flat, Soft, 3D, Auto, Light, Dark
+  };
+  function start() {
+    if (framed) { document.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('svg, canvas')) e.preventDefault(); }); return; }
+    var tries = 0;
+    (function wait() {
+      var cats = document.querySelectorAll('section.cat');
+      if (!cats.length) { if (tries++ < 75) setTimeout(wait, 200); return; }
+      var bar = document.createElement('div'); bar.className = 'd2d-filters'; bar.setAttribute('role', 'search');
+      var label = document.createElement('b'); label.textContent = 'Browse';
+      var kind = document.createElement('select'); kind.setAttribute('aria-label', 'Kind of visual');
+      [['all', 'All visuals'], ['builtin', "Power BI's built-in visuals"], ['custom', 'Custom visuals']].forEach(function (o) {
+        var e = document.createElement('option'); e.value = o[0]; e.textContent = o[1]; kind.appendChild(e); });
+      var cat = document.createElement('select'); cat.setAttribute('aria-label', 'Category');
+      var any = document.createElement('option'); any.value = ''; any.textContent = 'Every category'; cat.appendChild(any);
+      var count = document.createElement('span'); count.className = 'd2d-count'; count.setAttribute('role', 'status');
+      var custom = function (s) { return s.id.indexOf('cat-x') === 0; };
+      function fill() {
+        var keep = cat.value; cat.length = 1;
+        Array.prototype.forEach.call(cats, function (s) {
+          if (kind.value !== 'all' && (kind.value === 'custom') !== custom(s)) return;
+          var hd = s.querySelector('h2'); var e = document.createElement('option'); e.value = s.id;
+          e.textContent = hd ? hd.textContent.trim() : s.id; cat.appendChild(e); });
+        cat.value = Array.prototype.some.call(cat.options, function (o) { return o.value === keep; }) ? keep : '';
+      }
+      function apply() {
+        var n = 0;
+        Array.prototype.forEach.call(cats, function (s) {
+          var ok = (kind.value === 'all' || (kind.value === 'custom') === custom(s)) && (!cat.value || cat.value === s.id);
+          s.style.display = ok ? '' : 'none';
+          if (ok) n += s.querySelectorAll('article.vis').length; });
+        count.textContent = n + (n === 1 ? ' visual' : ' visuals') + ' shown';
+      }
+      var first = cats[0];
+      function jump(el) { if (el && el.scrollIntoView) el.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+      kind.onchange = function () { fill(); apply(); jump(bar); };
+      cat.onchange = function () { apply(); jump(cat.value ? document.getElementById(cat.value) : bar); };
+      var reset = document.createElement('button'); reset.type = 'button'; reset.textContent = 'Reset';
+      reset.title = 'All visuals, every category, no search';
+      reset.onclick = function () {
+        kind.value = 'all'; fill(); cat.value = ''; apply();
+        var q = document.getElementById('q');
+        if (q && q.value) { q.value = ''; q.dispatchEvent(new Event('input', {bubbles: true})); }
+        jump(bar);
+      };
+      bar.appendChild(label); bar.appendChild(kind); bar.appendChild(cat); bar.appendChild(reset); bar.appendChild(count);
+      first.parentNode.insertBefore(bar, first); fill(); apply();
+      function paint() { var c = getComputedStyle(document.body).backgroundColor; bar.style.background = c && c !== 'rgba(0, 0, 0, 0)' ? c : '#f1f5fa'; }
+      paint(); new MutationObserver(paint).observe(document.documentElement, {attributes: true, attributeFilter: ['class', 'data-mode', 'data-theme', 'data-look', 'style']});
+      new MutationObserver(paint).observe(document.body, {attributes: true, attributeFilter: ['class', 'style']});
+    })();
+    document.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('svg, canvas')) e.preventDefault(); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>"""
 
 
 DATA_SIZES = {"small": "about 5,000 rows in the biggest table", "medium": "about 50,000 rows in the biggest table",
@@ -397,7 +534,10 @@ DATA_SIZES = {"small": "about 5,000 rows in the biggest table", "medium": "about
 
 def _options(model, custom_visuals, visuals_mode, look, brand, palette, dark, use_brand) -> tuple[str, str, str, dict]:
     """A new dashboard's choices on the form (New dashboard, and item 58's import of a hand-off): the AI model, custom
-    visuals, the visuals and the visual style."""
+    visuals, the visuals and the visual style. The style is the organisation's brand, mandatory since 2026-11-19
+    (branding.require_style: no brand, no new dashboard, with a 400 that says where to set it): its palette, look, dark
+    and fonts. The form may still change the look, ask for a dark report or give this one dashboard its own colour
+    (`brand` + `palette`); the fonts are always the brand's. `use_brand` no longer switches the brand off."""
     model = _model(model)
     custom_visuals = custom_visuals.strip().lower() or "ask"
     if custom_visuals not in POLICIES:
@@ -411,24 +551,52 @@ def _options(model, custom_visuals, visuals_mode, look, brand, palette, dark, us
     if visuals_mode == "builtin":
         custom_visuals = "never"          # a report of Power BI's built-in visuals only gets no new custom visual
     style = _style(look.strip().lower(), brand.strip(), palette.strip().lower(), dark.strip().lower())
-    house = branding.chosen_style() if isinstance(use_brand, str) and use_brand.strip() in ("1", "true", "on") and not brand.strip() else None
-    if house:                                   # D2D Relay: the palette chosen under Branding (the form's own look wins)
-        style = {**house, **{k: v for k, v in style.items() if k in ("look", "dark")}}
-    return model, custom_visuals, visuals_mode, style
+    orgsetup.require_setup()                    # item 81: an owner finishes the organisation's setup first (400 until then)
+    house = branding.require_style()            # D2D Relay: the organisation's brand (the form's own look and dark win)
+    if style.get("accent"):                     # this dashboard's own colour: a palette made from it, the brand's fonts
+        house = {k: v for k, v in house.items() if k not in ("colors", "brand_name")}
+    return model, custom_visuals, visuals_mode, {**house, **style}
 
 
 def _style_lines(style: dict, custom_visuals: str, visuals_mode: str) -> list[str]:
-    """request.md's visual style, custom visuals and visuals sections."""
+    """request.md's visual style (the organisation's brand, fonts included), custom visuals and visuals sections."""
     lines = []
     if style:
         lines += ["", "## Visual style (put these in definition.yaml `theme`)", ""]
+        lines += ["The organisation's brand, set under Branding: keep it in every version (CLAUDE.md, Report theme).", ""] \
+            if style.get("font") else []
         lines += [f"- look: {style['look']} ({LOOKS[style['look']]})"] if style.get("look") else []
         lines += [f"- accent: \"{style['accent']}\" (the brand color), palette: {style['palette']}"] if style.get("accent") else []
         lines += [f"- colors: [{', '.join(chr(34) + c + chr(34) for c in style['colors'])}] (the brand palette \"{style.get('brand_name', '')}\", in this order)"] if style.get("colors") else []
         lines += ["- dark: true (dark report background)"] if style.get("dark") else []
+        lines += [f"- font: \"{style['font']}\" (the brand's font: every text in the report)"] if style.get("font") else []
+        lines += [f"- styles: {branding.title_style(style['heading_font'])} (the brand's heading font on every visual title; "
+                  "keep any other theme.styles next to it)"] if style.get("heading_font") else []
     lines += ["", "## Custom visuals", "", f"- Custom visuals: {custom_visuals} - {POLICIES[custom_visuals]}"]
     lines += ["", "## Visuals", "", _visuals_line(visuals_mode)]
     return lines
+
+
+class DraftPay(BaseModel):
+    stage: str = "data"                          # "data" (going on from Your data) or "visuals" (from Visuals)
+    name: str = ""
+    visuals_mode: str = "builtin"
+
+
+@app.get("/api/new-dashboard/credits")
+def new_dashboard_credits():
+    """Item 90: what the person's new dashboard has paid in its steps so far (an open draft), and the prices."""
+    d = orgs.draft_open(auth.who())
+    return {"base": bool(d), "custom": bool(d.get("custom")), "since": d.get("ts"), "costs": orgs.costs()}
+
+
+@app.post("/api/new-dashboard/credits")
+def new_dashboard_pay(body: DraftPay):
+    """Item 90: going on from Your data takes the new dashboard's credits (built-in visuals); going on from Visuals
+    with custom visuals takes the difference. Once each per draft; not given back. 402 when the balance is too low."""
+    if body.stage not in ("data", "visuals"):
+        raise HTTPException(400, "Unknown step.")
+    return orgs.draft_pay(auth.who(), body.stage, body.name, body.visuals_mode)
 
 
 @app.post("/api/projects")
@@ -437,11 +605,14 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
                          custom_visuals: str = Form("ask"), data_mode: str = Form("upload"), data_brief: str = Form(""),
                          data_size: str = Form("medium"), data_months: int = Form(12),
                          connection_id: str = Form(""), tables: str = Form(""), visuals_mode: str = Form("builtin"),
-                         use_brand: str = Form("1"),
+                         use_brand: str = Form("1"), uploads: str = Form(""), data_policy: str = Form(""),
                          files: list[UploadFile] = File(default=[]), images: list[UploadFile] = File(default=[])):
     prompt = prompt.strip()
     model, custom_visuals, visuals_mode, style = _options(model, custom_visuals, visuals_mode, look, brand, palette, dark, use_brand)
-    files, images = _check_uploads(files, images)
+    big = parts.as_files(uploads, "files") + parts.as_files(uploads, "images")      # item 64: files that came in parts
+    files, images = _check_uploads(files + [f for f in big if Path(f.filename).suffix.lower() == ".csv"],
+                                   images + [f for f in big if Path(f.filename).suffix.lower() != ".csv"])
+    policy = _data_policy(data_policy)
     generate, warehouse = data_mode == "generate", data_mode == "warehouse"
     picked = []
     if warehouse:                      # tables the person configured on one of their own connections
@@ -467,7 +638,10 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
     if not files and not generate and not warehouse:
         raise HTTPException(400, "Upload at least one CSV file - or connect a warehouse, or generate demo data.")
     cost = orgs.dashboard_cost(visuals_mode)    # item 44: 25 with Power BI's built-in visuals, 50 with custom visuals
-    orgs.require("dashboard", n=cost)           # D2D Relay: before anything is saved
+    pre = orgs.draft_open(auth.who())           # item 90: what the steps took already; only custom visuals may be due
+    due = cost if not pre else 0 if visuals_mode == "builtin" or pre.get("custom") else orgs.custom_extra()
+    if due:
+        orgs.require("dashboard", n=due)        # D2D Relay: before anything is saved
 
     title = name.strip() or (" ".join(data_brief.split()[:5]).rstrip(".,;:").title() if generate
                              else picked[0]["object"].split(".")[-1].replace("_", " ").title() if warehouse
@@ -480,6 +654,8 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
     except BaseException:
         shutil.rmtree(d, ignore_errors=True)
         raise
+    finally:
+        parts.discard(uploads, big)
     saved = [{"name": s["name"], "bytes": s["bytes"]} for s in staged if s["kind"] == "data"]
     pics = [s["name"] for s in staged if s["kind"] == "image"]
 
@@ -508,11 +684,13 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
     (d / "request.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     store.save({"id": pid, "name": title, "prompt": prompt, "model": model, "style": style, "created": time.time(),
-                "custom_visuals": custom_visuals, "visuals_mode": visuals_mode, "custom_paid": visuals_mode != "builtin",
+                "custom_visuals": custom_visuals, "visuals_mode": visuals_mode,
+                "custom_paid": visuals_mode != "builtin" or bool(pre.get("custom")),
                 **({"data": data} if data else {}),
                 **({"warehouse": {"connection_id": conn["id"], "kind": conn["kind"], "name": conn["name"], "tables": picked}}
                    if warehouse else {}),
-                "status": "queued", "files": saved, "images": pics, "versions": [], "runs": [], "job": None, "error": None})
+                "status": "queued", "files": saved, "images": pics, "versions": [], "runs": [], "job": None, "error": None,
+                **({"data_policy": policy} if policy else {})})
     db.add_project(pid, auth.who() or db.ADMIN_ID)
     db.audit("project.create", pid, {"name": title, "data": "generate" if generate else "warehouse" if warehouse else "upload",
                                      "model": model}, auth.who())
@@ -521,7 +699,14 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
         store.update(pid, credit_charge=cid)
         return worker.enqueue(pid, "data" if generate else "extract" if warehouse else "plan", **orgs.job_args(cid))
     try:
-        orgs.paid("dashboard", pid, title, first_run, None if visuals_mode == "builtin" else "custom visuals", n=cost)
+        if pre:                                 # item 90: paid in the steps; the first run keeps it (kept: no give-back)
+            if due:
+                orgs.charge("visuals", pid, title, "custom visuals", n=due)
+            store.update(pid, credit_charge=pre["base"])
+            worker.enqueue(pid, "data" if generate else "extract" if warehouse else "plan", charge=pre["base"], kept=True)
+            orgs.draft_use(auth.who(), pid, title)
+        else:
+            orgs.paid("dashboard", pid, title, first_run, None if visuals_mode == "builtin" else "custom visuals", n=cost)
     except orgs.NoCredits:
         shutil.rmtree(d, ignore_errors=True)
         db.run("DELETE FROM projects WHERE id = ?", (pid,))
@@ -530,25 +715,34 @@ async def create_project(prompt: str = Form(...), name: str = Form(""), model: s
 
 
 @app.post("/api/projects/import")
-async def import_project(bundle: UploadFile = File(..., alias="handoff"), name: str = Form(""), prompt: str = Form(""),
+async def import_project(bundle: UploadFile | None = File(None, alias="handoff"), name: str = Form(""), prompt: str = Form(""),
                          model: str = Form(""), look: str = Form(""), brand: str = Form(""), palette: str = Form(""),
                          dark: str = Form(""), custom_visuals: str = Form("ask"), visuals_mode: str = Form("builtin"),
-                         use_brand: str = Form("1"), images: list[UploadFile] = File(default=[])):
+                         use_brand: str = Form("1"), uploads: str = Form(""), images: list[UploadFile] = File(default=[])):
     """Item 58 (the user, 2026-11-18): a new dashboard from a DAWB hand-off, the folder DAWB wrote as one .zip. It is
     checked against its manifest before anything is saved or charged (handoff.stage) and waits at Confirm KPIs with
     DAWB's plan: Relay does not plan it again. It costs what any new dashboard costs (the user's choice)."""
     model, custom_visuals, visuals_mode, style = _options(model, custom_visuals, visuals_mode, look, brand, palette, dark, use_brand)
-    if not (bundle.filename or "").lower().endswith(".zip"):
+    if bundle is None or not bundle.filename:                       # item 64: a big zip came in parts
+        came = parts.as_files(uploads, "handoff")
+        bundle = came[0] if came else None
+    if bundle is None or not (bundle.filename or "").lower().endswith(".zip"):
         raise HTTPException(400, "Choose the hand-off folder as one .zip file.")
-    _, images = _check_uploads([], images)
+    _, images = _check_uploads([], images + parts.as_files(uploads, "images"))      # item 71: design images in parts too
     cost = orgs.dashboard_cost(visuals_mode)    # item 44: 25 with Power BI's built-in visuals, 50 with custom visuals
-    orgs.require("dashboard", n=cost)           # before anything is saved
+    pre = orgs.draft_open(auth.who())           # item 90: what the steps took already
+    due = cost if not pre else 0 if visuals_mode == "builtin" or pre.get("custom") else orgs.custom_extra()
+    if due:
+        orgs.require("dashboard", n=due)        # before anything is saved
     root = store.root()
     handoff.sweep(root)
     token = secrets.token_hex(6)
     staging, upload = root / f".import-{token}", root / f".import-{token}.zip"
     try:
-        await _save_upload(bundle, upload, handoff.MAX_BYTES)
+        try:
+            await _save_upload(bundle, upload, handoff.MAX_BYTES)
+        finally:
+            parts.discard(uploads, [bundle])                        # item 64: the parts are not needed any more
         h = await asyncio.to_thread(handoff.stage, upload, staging)
     except handoff.HandoffError as e:
         shutil.rmtree(staging, ignore_errors=True)
@@ -580,7 +774,7 @@ async def import_project(bundle: UploadFile = File(..., alias="handoff"), name: 
         (d / "request.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
         store.save({"id": pid, "name": title, "prompt": handoff.prompt_text(h, added), "model": model, "style": style,
                     "created": time.time(), "custom_visuals": custom_visuals, "visuals_mode": visuals_mode,
-                    "custom_paid": visuals_mode != "builtin",
+                    "custom_paid": visuals_mode != "builtin" or bool(pre.get("custom")),
                     "handoff": {"from": h["product"], "release": h["release"], "run": h["run"], "made": h["made"],
                                 "zip": _safe_name(bundle.filename, "handoff.zip"), "tables": len(h["files"]),
                                 "rows": h["rows"], "relationships": len(h["keys"]), "renamed": h["renamed"]},
@@ -602,12 +796,23 @@ async def import_project(bundle: UploadFile = File(..., alias="handoff"), name: 
     def keep(cid: str | None) -> dict:          # the charge rides with the first build, as a new dashboard's does
         return store.update(pid, credit_charge=cid)
     try:
-        orgs.paid("dashboard", pid, title, keep, f"{h['product']} hand-off" + ("" if visuals_mode == "builtin" else ", custom visuals"),
-                  n=cost)
+        if pre:                                 # item 90: paid in the steps
+            if due:
+                orgs.charge("visuals", pid, title, "custom visuals", n=due)
+            keep(pre["base"])
+            orgs.draft_use(auth.who(), pid, title)
+        else:
+            orgs.paid("dashboard", pid, title, keep, f"{h['product']} hand-off" + ("" if visuals_mode == "builtin" else ", custom visuals"),
+                      n=cost)
     except orgs.NoCredits:
         shutil.rmtree(d, ignore_errors=True)
         db.run("DELETE FROM projects WHERE id = ?", (pid,))
         raise
+    try:                                        # items 61 and 64: the semantic model of the hand-off's data, with business terms
+        await asyncio.to_thread(worker.read_data, pid, False)
+        await asyncio.to_thread(ontology.mark_plan_kpis, pid)
+    except Exception:  # noqa: BLE001 - the plan screen falls back to the plan's own model
+        traceback.print_exc()
     return store.load(pid)
 
 
@@ -696,6 +901,8 @@ def get_project(pid: str):
         _today_names(gs)
     st["visuals"] = {"proposals": worker.chosen_visuals(d) if st.get("plan_rounds") else [],
                      "built": vfactory.status(d) if (d / "visuals").is_dir() else []}
+    if st.get("status") == "awaiting_kpis":                  # item 73: what the person approves before confirming
+        st["approval_items"] = ontology.approval_items(st)
     return st                                   # D2D Relay: no host_dir, the server's folders are not the client's
 
 
@@ -761,6 +968,7 @@ class KpiReview(BaseModel):
     kpis: list[dict]
     feedback: str = ""
     visuals: dict[str, str] = {}    # custom visual name -> generate | available
+    approved: list[str] = []        # item 73: the ids of the gaps, assumptions and deviations the person approved
 
 
 def _decide(plan: dict, decisions: dict[str, str]) -> list[str]:
@@ -793,7 +1001,7 @@ def _kpi_changes(before: list[dict], after: list[dict]) -> list[str]:
 
 @app.post("/api/projects/{pid}/kpis")
 async def review_kpis(pid: str, payload: str = Form(...), files: list[UploadFile] = File(default=[]),
-                      images: list[UploadFile] = File(default=[])):
+                      images: list[UploadFile] = File(default=[]), uploads: str = Form("")):
     """payload: JSON {action: confirm|revise, kpis, feedback}; files/images may come with a revise request."""
     try:
         body = KpiReview(**json.loads(payload))
@@ -804,7 +1012,9 @@ async def review_kpis(pid: str, payload: str = Form(...), files: list[UploadFile
         raise HTTPException(409, f"The plan is not waiting for review (status: {st['status']}).")
     if body.action not in ("confirm", "revise"):
         raise HTTPException(400, "Unknown action")
-    files, images = _check_uploads(files, images)
+    big = parts.as_files(uploads, "files") + parts.as_files(uploads, "images")       # item 64
+    files, images = _check_uploads(files + [f for f in big if f.filename.lower().endswith(".csv")],
+                                   images + [f for f in big if not f.filename.lower().endswith(".csv")])
     if body.action == "confirm" and (files or images):
         raise HTTPException(400, "New files change the plan: use \"Ask Relay to revise the plan\" so you can review the KPIs again.")
     feedback = body.feedback.strip()
@@ -812,6 +1022,12 @@ async def review_kpis(pid: str, payload: str = Form(...), files: list[UploadFile
         raise HTTPException(400, "Tell Relay what to change in the plan, or attach files.")
     if body.action == "revise":
         orgs.require("change")                  # D2D Relay: a revised plan is a change
+    if body.action == "confirm":                # item 73: every gap, assumption and deviation approved, one by one
+        wanted = {i["id"]: i for i in ontology.approval_items(st)}
+        missing = [i for k, i in wanted.items() if k not in set(body.approved or [])]
+        if missing:
+            raise HTTPException(400, f"Approve each gap, assumption and difference from your KPI dictionary first ({len(missing)} left): "
+                                     + "; ".join(i["text"][:80] for i in missing[:3]))
     d = store.project_dir(pid)
     plan = definition.load(d / "plan.yaml")
     kpis = []
@@ -828,7 +1044,10 @@ async def review_kpis(pid: str, payload: str = Form(...), files: list[UploadFile
     problems = checks.plan(plan)
     if problems:
         raise HTTPException(400, "; ".join(problems[:4]))
-    added = await _attach(st, files, images)
+    try:
+        added = await _attach(st, files, images)
+    finally:
+        parts.discard(uploads, big)
     (d / "plan.yaml").write_text(yaml.safe_dump(plan, sort_keys=False, allow_unicode=True, width=110), encoding="utf-8")
     if body.action == "revise":
         request = feedback or "Use the attached files in the plan."
@@ -840,6 +1059,10 @@ async def review_kpis(pid: str, payload: str = Form(...), files: list[UploadFile
             "\n\n(Direct KPI edits, already saved in plan.yaml:\n" + "\n".join(changes) + ")" if changes else ""), **orgs.job_args(cid)),
             note="Plan revision")
     else:
+        approved = ontology.approval_items(st)
+        if approved:                            # item 73: what the person accepted, for the build and the record
+            store.update(pid, approvals={"items": approved, "by": (auth.current.get() or {}).get("name"), "when": time.time()})
+            store.note(pid, "The person approved these before the build", "\n".join(f"- {i['kind']}: {i['text']}" for i in approved))
         summary = "\n".join(f"- **{k['name']}** ({k['label']}): `{k['dax']}` format `{k['format']}`" for k in kpis)
         store.note(pid, "KPIs confirmed by the user", summary + ("\n\nChanges the user made:\n" + "\n".join(changes) if changes else "")
                    + ("\n\nCustom visuals, as the user chose:\n" + "\n".join(chosen) if chosen else "")
@@ -870,13 +1093,16 @@ def _failed_gates(d: Path, v: int) -> list[str]:
 
 @app.post("/api/projects/{pid}/feedback")
 async def feedback(pid: str, text: str = Form(""), version: int | None = Form(None), fix_gates: str = Form(""),
-                   files: list[UploadFile] = File(default=[]), images: list[UploadFile] = File(default=[])):
+                   files: list[UploadFile] = File(default=[]), images: list[UploadFile] = File(default=[]),
+                   uploads: str = Form("")):
     """A change request on a prototype version, optionally with new CSVs (more or updated data) and images.
     fix_gates=1: fix what failed in the version's review gates (D2D Relay: free; the request is written here)."""
     st = _get(pid)
     if st["status"] not in ("awaiting_review", "done", "error") or not st["versions"]:
         raise HTTPException(409, f"There is no prototype to change right now (status: {st['status']}).")
-    files, images = _check_uploads(files, images)
+    big = parts.as_files(uploads, "files") + parts.as_files(uploads, "images")       # item 64
+    files, images = _check_uploads(files + [f for f in big if f.filename.lower().endswith(".csv")],
+                                   images + [f for f in big if not f.filename.lower().endswith(".csv")])
     d = store.project_dir(pid)
     latest = st["versions"][-1]["v"]
     base = version or latest
@@ -895,7 +1121,10 @@ async def feedback(pid: str, text: str = Form(""), version: int | None = Form(No
     src = d / "versions" / f"v{base}" / "definition.yaml"
     if base != latest and not src.exists():
         raise HTTPException(400, "Unknown version")
-    added = await _attach(st, files, images)
+    try:
+        added = await _attach(st, files, images)
+    finally:
+        parts.discard(uploads, big)
     request = text or "Use the attached files where they improve the report."
     if base != latest:
         shutil.copy2(src, d / "definition.yaml")
@@ -1005,7 +1234,20 @@ WHO = {"user": "You", "app": "Relay", "error": "Relay", "say": "Relay", "start":
 STAGE_NAMES = {"plan": "Plan", "build": "Build", "revise": "Change request", "pbi": "Power BI"}
 
 
+def _scrub(text: str) -> str:
+    """Item 74: what the exported log shows names Relay Model, never the AI's vendor or the visuals' old name (as the
+    Activity tab shows it, brandSay in 07-tabs.js)."""
+    text = re.sub(r"\bClaude Code\b", "Relay Model", text)
+    text = re.sub(r"\bClaude\b", "Relay Model", text)
+    return re.sub(r"\b[Aa]tlas", lambda m: "Relay" if m.group(0)[0] == "A" else "relay", text)
+
+
 def _event_text(e: dict) -> str:
+    text = _event_text_raw(e)
+    return text if e.get("kind") == "user" else _scrub(text)          # the person's own words stay as they wrote them
+
+
+def _event_text_raw(e: dict) -> str:
     kind = e.get("kind")
     if kind == "start":
         return "Started working" + (f" ({worker.model_labels().get(e['model'], e['model'])})" if e.get("model") else "")
@@ -1047,7 +1289,7 @@ def activity_export(pid: str, fmt: str = "md", detail: str = "summary", tz: int 
                         headers={"Content-Disposition": f'attachment; filename="{stem} activity.csv"'})
     lines = [f"# Activity log - {st['name']}", "",
              f"Exported {time.strftime('%Y-%m-%d %H:%M', time.gmtime(time.time() - tz * 60))} - {len(events)} events - "
-             + ("every step the agent took" if detail == "all" else "summary (the agent's individual tool steps left out)"), ""]
+             + ("every step Relay Model took" if detail == "all" else "summary (Relay Model's individual steps left out)"), ""]
     stage = None
     for e in events:
         if e.get("stage") and e.get("stage") != stage:

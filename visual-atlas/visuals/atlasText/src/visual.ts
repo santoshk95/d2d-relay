@@ -11,7 +11,7 @@ import { render } from "./render";
 import { FamilyVisual, Ctx } from "./common/family";
 
 export class Visual extends FamilyVisual<TextSettings, Model> {
-    protected readonly title = "Atlas Text";
+    protected readonly title = "Relay Text";
     protected readonly landingLines: [string, string] = [
         "Add words, phrases or free text (comments, reviews) to Text. Add a Weight such as Mentions, or leave it empty to count words.",
         "Add a Topic or a Color value (for example Sentiment) to color the words. Pick word cloud or ranked words in the Format pane."];

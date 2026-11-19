@@ -75,6 +75,13 @@ release/                last built artifacts (pbiviz, themes, gallery html, scre
 
 ## Rules for this codebase
 
+- **People see Relay, never "Atlas"** (D2D Relay's rule, 19 Nov 2026): display names ("Relay Columns"), start screens,
+  Format pane, tooltips, theme names and the package files (`Relay<Family>.<version>.pbiviz`, named by
+  `scripts/build.sh` from the display name). "atlas" stays only in folders, code, the pbiviz `name` and the GUIDs. Text
+  people read uses plain keyboard characters: three dots (`MORE`), ">" in paths, "to" in ranges, no middle dots.
+- Retail pages (`visuals/test/retail_*`, `docs/TESTING.md`) draw the families with a grocery retailer's data and check
+  every case for overlapping, cut-off and faint text and bad numbers; add a case there for each retail-facing change.
+
 - **Shared code lives in `visuals/common/`.** Never edit `visuals/*/src/common/*` or `visuals/*/style/atlas.less` directly; they are overwritten by `sync.sh`.
 - **Certification-friendly code** (so the visuals could be certified later):
   - Build DOM with `document.createElementNS` / `createElement` + `textContent` (helper `el()` in `common/look.ts`). No `innerHTML`, no HTML strings, no `eval`.

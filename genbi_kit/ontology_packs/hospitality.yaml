@@ -1,0 +1,483 @@
+# Industry pack: hospitality (hotels and restaurants). Business terms tag columns by name (genbi_kit/ontology.py);
+# KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields).
+name: Hotels and restaurants
+order: 55
+description: Hotels, resorts and restaurant groups. Rooms, occupancy, ADR and RevPAR, bookings and cancellations, channel mix, covers, average check, food and beverage cost, labor and prime cost.
+questions:
+  - What were occupancy, ADR and RevPAR by property last month, and how do they compare with the same month last year?
+  - Which booking channels bring the most room revenue, and what is the commission cost of each?
+  - What is the cancellation and no-show rate by market segment and by lead time?
+  - What was the average check and the covers by restaurant and by day part this week?
+  - Which restaurants have food cost above 32 percent of food sales, and what is their waste?
+  - How is labor cost as a percent of sales trending by outlet?
+
+terms:
+  # ---------------- measures: rooms
+  - {name: Rooms Available, kind: measure, unit: count, aggregation: sum, description: "Room nights the hotel could sell (rooms in inventory times nights, out-of-order rooms taken out).",
+     synonyms: [room nights available, available room nights, available rooms, rooms inventory, room inventory, rooms in inventory, saleable rooms, rooms capacity, room capacity, inventory rooms, rooms avail, rns available, total rooms available, available room count]}
+  - {name: Rooms Sold, kind: measure, unit: count, aggregation: sum, description: "Room nights sold (occupied rooms), complimentary and house use not included.",
+     synonyms: [room nights sold, room nights, occupied rooms, rooms occupied, paid room nights, rooms sold count, rns sold, sold room nights, occupied room nights, rooms booked, paid occupied rooms, room nights occupied]}
+  - {name: Room Revenue, kind: measure, unit: currency, aggregation: sum, description: "Revenue from room sales, taxes and service charges not included.",
+     synonyms: [rooms revenue, room rev, rooms rev, lodging revenue, accommodation revenue, room sales, rooms sales, room income, net room revenue, room revenue net, rate revenue, rooms income]}
+  - {name: Food and Beverage Revenue, kind: measure, unit: currency, aggregation: sum, description: "Hotel revenue from restaurants, bars, banquets and room service.",
+     synonyms: [fb revenue, f and b revenue, food and beverage sales, fnb revenue, f&b revenue, fb sales, food beverage revenue, banquet revenue, restaurant revenue, outlet revenue, dining revenue, f b revenue, catering revenue]}
+  - {name: Other Revenue, kind: measure, unit: currency, aggregation: sum, description: "Hotel revenue from spa, parking, meeting rooms, retail and other services.",
+     synonyms: [other operated revenue, ancillary revenue, spa revenue, parking revenue, other income, misc revenue, miscellaneous revenue, other departments revenue, ancillary income, extras revenue, other rev]}
+  - {name: Total Revenue, kind: measure, unit: currency, aggregation: sum, description: "All revenue of the property.",
+     synonyms: [total hotel revenue, total rev, revenue, total sales, gross revenue, net revenue, total property revenue, total operating revenue, all revenue, total income]}
+  - {name: Gross Operating Profit, kind: measure, unit: currency, aggregation: sum, description: "Revenue less departmental and undistributed operating expenses (before fees, taxes and fixed charges).",
+     synonyms: [gop, gop amount, gross operating income, operating profit, house profit, gop dollars, hotel gop, departmental profit, gross operating profit amount]}
+  - {name: Arrivals, kind: measure, unit: count, aggregation: sum, description: "Guest stays that began in the period (check-ins).",
+     synonyms: [check ins, checkins, check in count, arrival count, guest arrivals, stays, stay count, number of stays, arriving guests, arriving reservations, checked in]}
+  - {name: Guests, kind: measure, unit: count, aggregation: sum, description: "Guests staying (adults and children).",
+     synonyms: [guest count, number of guests, guests in house, guest nights, total guests, pax, pax count, persons, adults and children, occupants]}
+  - {name: Reservations, kind: measure, unit: count, aggregation: sum, description: "Bookings made in the period.",
+     synonyms: [bookings, booking count, reservation count, number of bookings, reservations made, bookings made, new bookings, reservations received, confirmations, bookings received]}
+  - {name: Cancellations, kind: measure, unit: count, aggregation: sum, description: "Bookings cancelled before arrival.",
+     synonyms: [cancelled bookings, canceled bookings, cancel count, cancellation count, cancelled reservations, canceled reservations, bookings cancelled, cancels, cancelled count]}
+  - {name: No Shows, kind: measure, unit: count, aggregation: sum, description: "Bookings where the guest did not arrive and did not cancel.",
+     synonyms: [no show count, noshows, no show bookings, guest no shows, no show reservations, no show rooms, no show nights, did not arrive]}
+  - {name: Direct Bookings, kind: measure, unit: count, aggregation: sum, description: "Bookings made straight with the hotel (own website, phone, walk-in).",
+     synonyms: [direct reservations, direct booking count, direct channel bookings, brand dot com bookings, website bookings, own website bookings, direct sales bookings, direct bookings count]}
+  - {name: Booking Commission, kind: measure, unit: currency, aggregation: sum, description: "Commission paid to online travel agencies, GDS and other channels.",
+     synonyms: [ota commission, commission, commissions, channel commission, distribution cost, agent commission, travel agent commission, commission expense, channel fees, booking fees, booking cost, ota fees, commission paid]}
+  - {name: Booking Lead Time, kind: measure, unit: duration, aggregation: average, description: "Days between booking and arrival.",
+     synonyms: [lead time, lead days, lead time days, days in advance, advance booking days, booking window, days before arrival, days to arrival, advance purchase days, book ahead days]}
+  - {name: Length of Stay, kind: measure, unit: duration, aggregation: average, description: "Nights a guest stays per booking.",
+     synonyms: [los, length of stay nights, nights stayed, stay length, number of nights, nights, stay nights, nights per stay, duration of stay, avg los]}
+  - {name: Guest Satisfaction Score, kind: measure, unit: number, aggregation: average, description: "Guest review or survey score (the platform's own scale).",
+     synonyms: [review score, guest score, guest rating, satisfaction score, nps, nps score, csat, csat score, rating, overall rating, reputation score, guest review score, tripadvisor score]}
+  - {name: ADR, kind: measure, unit: currency, aggregation: average, description: "Average daily rate already worked out per row (weight it by rooms sold, never average it).",
+     synonyms: [average daily rate, average room rate, avg daily rate, avg rate, average rate, arr, room rate, daily rate, rate per night, nightly rate]}
+  - {name: Occupancy %, kind: measure, unit: percent, aggregation: average, description: "Share of available rooms sold, already worked out per row (never average it).",
+     synonyms: [occupancy, occupancy pct, occupancy rate, occ pct, occ, occupancy percent, room occupancy, occupancy percentage, occ rate]}
+  - {name: RevPAR, kind: measure, unit: currency, aggregation: average, description: "Revenue per available room already worked out per row (never add or average it up).",
+     synonyms: [rev par, revenue per available room, revpar amount, revenue per avail room, rev per available room, room revpar]}
+  # ---------------- measures: restaurants
+  - {name: Restaurant Sales, kind: measure, unit: currency, aggregation: sum, description: "Net sales of a restaurant or outlet (after discounts, taxes excluded).",
+     synonyms: [net sales, sales, outlet sales, restaurant revenue net, net revenue restaurant, store sales, pos sales, net food and beverage sales, net outlet sales, sales amount, restaurant net sales, location sales]}
+  - {name: Food Sales, kind: measure, unit: currency, aggregation: sum, description: "Sales of food.",
+     synonyms: [food revenue, food sales amount, kitchen sales, food income, food net sales, food category sales, dining food sales, food rev]}
+  - {name: Beverage Sales, kind: measure, unit: currency, aggregation: sum, description: "Sales of drinks (soft drinks, wine, beer, spirits, coffee).",
+     synonyms: [beverage revenue, bar sales, drinks sales, drink sales, bev sales, beverage rev, beverage income, liquor sales, alcohol sales, wine sales, bar revenue]}
+  - {name: Food Cost, kind: measure, unit: currency, aggregation: sum, description: "Cost of the food used (opening stock plus purchases less closing stock).",
+     synonyms: [food cogs, cost of food, food cost of sales, food purchases, food usage cost, cost of food sold, theoretical food cost, actual food cost, food costs, food usage]}
+  - {name: Beverage Cost, kind: measure, unit: currency, aggregation: sum, description: "Cost of the drinks used.",
+     synonyms: [beverage cogs, cost of beverage, bev cost, bar cost, drinks cost, beverage cost of sales, cost of drinks, beverage purchases, beverage usage cost, liquor cost, pour cost]}
+  - {name: Food Waste, kind: measure, unit: currency, aggregation: sum, description: "Cost of food thrown away (spoilage, prep waste, plate waste, spills).",
+     synonyms: [waste, waste cost, spoilage, wastage, food wastage, waste amount, waste value, spoilage cost, throwaway, discarded food, food loss, kitchen waste]}
+  - {name: Covers, kind: measure, unit: count, aggregation: sum, description: "Guests served (people who ate or drank).",
+     synonyms: [cover count, guests served, diners, number of covers, customers served, customer count, guest covers, headcount served, seated guests, patrons]}
+  - {name: Checks, kind: measure, unit: count, aggregation: sum, description: "Bills (tickets) issued to guests.",
+     synonyms: [check count, number of checks, tickets, ticket count, orders, order count, bills, bill count, transactions, transaction count, receipts, tabs, guest checks]}
+  - {name: Seats, kind: measure, unit: count, aggregation: average, description: "Seats available for guests.",
+     synonyms: [seat count, seating capacity, number of seats, seats available, capacity, seat capacity, available seats, total seats, restaurant seats]}
+  - {name: Comps and Discounts, kind: measure, unit: currency, aggregation: sum, description: "Value of free items and price reductions given to guests.",
+     synonyms: [comps, comp amount, discounts, discount amount, voids and comps, promo discounts, complimentary amount, comp value, staff meals, price reductions, discounted amount]}
+  - {name: Ticket Time, kind: measure, unit: duration, aggregation: average, description: "Minutes from order to the food being ready or served.",
+     synonyms: [ticket time minutes, ticket minutes, service time, order to serve time, kitchen time, ticket speed, time to serve, prep time, food ready time, avg ticket time, kds time, speed of service]}
+  - {name: Labor Cost, kind: measure, unit: currency, aggregation: sum, description: "Wages, benefits and payroll cost.",
+     synonyms: [labour cost, payroll, payroll cost, wages, labor dollars, staff cost, salaries and wages, labor expense, labor amount, wage cost, personnel cost]}
+  - {name: Labor Hours, kind: measure, unit: number, aggregation: sum, description: "Hours worked by staff.",
+     synonyms: [labour hours, hours worked, worked hours, scheduled hours, paid hours, staff hours, labor hrs, man hours, clocked hours, shift hours]}
+
+  # ---------------- keys
+  - {name: Property, kind: key, entity: Property, description: "Identifies a hotel or resort.",
+     synonyms: [property id, property code, property number, property key, hotel id, hotel code, hotel number, hotel key, resort id, resort code, site id, site code, propid, unit id, entity id, lodging id]}
+  - {name: Outlet, kind: key, entity: Outlet, description: "Identifies a restaurant, bar or store.",
+     synonyms: [outlet id, outlet code, outlet number, restaurant id, restaurant code, restaurant number, store id, store number, store code, venue id, location id, location code, unit number, revenue center id, site number]}
+  - {name: Reservation, kind: key, entity: Reservation, description: "Identifies a booking.",
+     synonyms: [reservation id, reservation number, reservation key, booking id, booking number, booking ref, booking reference, confirmation number, confirmation code, confirmation id, res id, res number, folio number, folio id, itinerary number, pnr]}
+  - {name: Guest, kind: key, entity: Guest, description: "Identifies a guest (profile or loyalty member).",
+     synonyms: [guest id, guest number, guest key, guest profile id, profile id, guest profile, customer id, loyalty number, loyalty id, member id, member number, membership number, guest code, rewards number]}
+  - {name: Room, kind: key, entity: Room, description: "Identifies a room.",
+     synonyms: [room id, room number, room no, room key, room code, room nbr, unit number room, suite number, room assignment]}
+  - {name: Check, kind: key, entity: Check, description: "Identifies one restaurant check (bill).",
+     synonyms: [check id, check number, check no, check key, ticket id, ticket number, order id, order number, bill number, bill id, receipt number, receipt id, transaction id, tab id, sales id]}
+  - {name: Menu Item, kind: key, entity: Menu Item, description: "Identifies a dish or drink on the menu.",
+     synonyms: [menu item id, item id, item code, item number, plu, plu code, plu number, product id, product code, sku, recipe id, dish id, menu id, pos item id]}
+  - {name: Employee, kind: key, entity: Employee, description: "Identifies a staff member.",
+     synonyms: [employee id, employee number, emp id, staff id, staff number, server id, worker id, associate id, team member id, user id, cashier id, waiter id]}
+  - {name: Rate Plan, kind: key, entity: Rate Plan, description: "Identifies a rate plan or package.",
+     synonyms: [rate plan id, rate plan code, rate code, rate id, rate key, package code, package id, rate plan key, price plan code, offer code, promo code]}
+  - {name: Company, kind: key, entity: Company, description: "Identifies a corporate account or travel agency.",
+     synonyms: [company id, company code, corporate id, corporate account id, account id, account number, agency id, agency code, travel agent id, ta id, iata number, iata code, contract id, group id, block id]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The business day a row belongs to.",
+     synonyms: [day, business date, stay date, night date, calendar date, report date, reporting date, service date, trading date, sales date, transaction date, posting date, night]}
+  - {name: Arrival Date, kind: date, entity: Date, description: "The day the guest checks in.",
+     synonyms: [check in date, checkin date, check in, arrival, arrival dt, checked in date, stay start date, start date, check in dt, date of arrival, arrive date]}
+  - {name: Departure Date, kind: date, entity: Date, description: "The day the guest checks out.",
+     synonyms: [check out date, checkout date, check out, departure, departure dt, checked out date, stay end date, end date, check out dt, date of departure, depart date]}
+  - {name: Booking Date, kind: date, entity: Date, description: "The day the booking was made.",
+     synonyms: [reservation date, booked date, booking created date, created date, booked on, reservation created date, date booked, made date, booking dt, book date, creation date, booking timestamp]}
+  - {name: Cancellation Date, kind: date, entity: Date, synonyms: [cancelled date, canceled date, cancel date, cancelled on, cancellation dt, date cancelled, cancel dt]}
+  - {name: Week, kind: date, entity: Date, synonyms: [week number, week id, calendar week, iso week, week start date, week ending, fiscal week, week of year]}
+  - {name: Month, kind: date, entity: Date, synonyms: [month name, reporting month, month year, year month, yyyymm, stay month, calendar month]}
+  - {name: Fiscal Period, kind: date, entity: Date, synonyms: [fiscal month, period number, period id, accounting period, fiscal period number, fp, period]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, financial year, financial year number, year number]}
+
+  # ---------------- attributes
+  - {name: Property Name, kind: attribute, entity: Property, synonyms: [hotel name, resort name, property, hotel, property description, hotel description, site name, lodging name]}
+  - {name: Brand, kind: attribute, entity: Property, synonyms: [brand name, hotel brand, chain, chain name, flag, franchise brand, concept, concept name, restaurant brand, banner, collection]}
+  - {name: Property Type, kind: attribute, entity: Property, synonyms: [hotel type, property class, property category, star rating, hotel class, hotel category, service level, scale, management type, ownership type]}
+  - {name: Outlet Name, kind: attribute, entity: Outlet, synonyms: [restaurant name, restaurant, store name, venue name, outlet, outlet description, location name, unit name, site name outlet, revenue center name]}
+  - {name: Outlet Type, kind: attribute, entity: Outlet, synonyms: [outlet category, venue type, outlet class, restaurant type, restaurant format, format, outlet format, concept type, service style, revenue center type]}
+  - {name: Room Type, kind: attribute, entity: Room, synonyms: [room category, room class, room type code, room type name, accommodation type, room name, suite type, unit type, bed type, room kind]}
+  - {name: Market Segment, kind: attribute, entity: Reservation, description: "Who the guest is - transient, corporate, group, leisure, wholesale.",
+     synonyms: [segment, guest segment, market code, customer segment, segment name, business segment, market segment code, travel purpose, trip purpose, source segment, segmentation, demand segment]}
+  - {name: Booking Channel, kind: attribute, entity: Reservation, description: "Where the booking came from (own website, phone, OTA, GDS, walk-in).",
+     synonyms: [channel, channel name, source, booking source, reservation source, distribution channel, sales channel, source code, channel code, origin, booking origin, sub channel, source of business]}
+  - {name: Rate Plan Name, kind: attribute, entity: Rate Plan, synonyms: [rate name, rate description, package name, rate plan, rate category, rate type, offer name, promotion name, package description]}
+  - {name: Reservation Status, kind: attribute, entity: Reservation, synonyms: [booking status, status, res status, stay status, reservation state, folio status, confirmation status, booking state]}
+  - {name: Cancellation Reason, kind: attribute, entity: Reservation, synonyms: [cancel reason, cancellation code, cancel code, reason for cancellation, cancellation type, cancel reason code]}
+  - {name: Guest Country, kind: attribute, entity: Guest, synonyms: [nationality, country of origin, guest nationality, source country, origin country, country of residence, guest origin, market country]}
+  - {name: Loyalty Tier, kind: attribute, entity: Guest, synonyms: [loyalty level, member tier, membership level, loyalty status, tier, loyalty program tier, elite status, member status, rewards tier]}
+  - {name: Region, kind: attribute, entity: Property, synonyms: [region name, sales region, market, market name, area, territory, zone, district, cluster, geo region]}
+  - {name: Country, kind: attribute, entity: Property, synonyms: [country name, country code, nation, property country]}
+  - {name: City, kind: attribute, entity: Property, synonyms: [city name, town, destination, property city, location city]}
+  - {name: State, kind: attribute, entity: Property, synonyms: [state name, state code, province, st]}
+  - {name: Day Part, kind: attribute, entity: Check, description: "Breakfast, lunch, dinner, late night.",
+     synonyms: [daypart, meal period, meal, meal period name, service period, shift period, daypart name, dining period, service session, session]}
+  - {name: Service Mode, kind: attribute, entity: Check, description: "Dine-in, takeaway, delivery, room service.",
+     synonyms: [order type, order channel, dining option, service type, dine in or takeaway, order mode, fulfillment type, fulfilment type, delivery mode, ordering channel]}
+  - {name: Menu Item Name, kind: attribute, entity: Menu Item, synonyms: [item name, dish name, menu item, item description, product name, plu name, recipe name, item desc, dish]}
+  - {name: Menu Category, kind: attribute, entity: Menu Item, synonyms: [item category, menu group, category, category name, product category, item group, family group, major group, sales category, menu section, course]}
+  - {name: Payment Method, kind: attribute, entity: Check, synonyms: [payment type, tender, tender type, payment mode, tender name, pay type, paid by, form of payment, card type]}
+  - {name: Revenue Center, kind: attribute, entity: Property, description: "Department earning the revenue - rooms, food and beverage, spa.",
+     synonyms: [department, department name, revenue department, revenue category, revenue type, profit center, operating department, revenue group, department code]}
+
+kpis:
+  # ---------------- rooms performance
+  - name: Rooms Available
+    synonyms: [Room Nights Available, Available Room Nights, Room Inventory]
+    definition: Room nights the hotel could sell - rooms in inventory times nights, with rooms out of order for renovation taken out.
+    formula: Sum over nights of sellable rooms
+    unit: count
+    aggregation: sum
+    domain: Rooms
+  - name: Rooms Sold
+    synonyms: [Room Nights Sold, Occupied Rooms, Paid Room Nights]
+    definition: Room nights sold to paying guests, complimentary and house-use rooms not counted.
+    formula: Count of paid room nights
+    unit: count
+    aggregation: sum
+    domain: Rooms
+  - name: Occupancy %
+    synonyms: [Occupancy Rate, Occupancy, Occ %]
+    definition: Share of available rooms that were sold.
+    formula: Rooms sold / Rooms available
+    dax: DIVIDE ( [Rooms Sold], [Rooms Available] )
+    unit: percent
+    aggregation: ratio
+    domain: Rooms
+  - name: Room Revenue
+    synonyms: [Rooms Revenue, Lodging Revenue, Room Sales]
+    definition: Revenue from room sales, net of taxes and service charges, no-show and cancellation fees included.
+    formula: Sum of room charges
+    unit: currency
+    aggregation: sum
+    domain: Rooms
+  - name: ADR
+    synonyms: [Average Daily Rate, Average Room Rate]
+    definition: Room revenue earned per room sold.
+    formula: Room revenue / Rooms sold
+    dax: DIVIDE ( [Room Revenue], [Rooms Sold] )
+    unit: currency
+    aggregation: ratio
+    domain: Rooms
+  - name: RevPAR
+    synonyms: [Revenue per Available Room, Rev PAR]
+    definition: Room revenue per available room - ADR times occupancy.
+    formula: Room revenue / Rooms available
+    dax: DIVIDE ( [Room Revenue], [Rooms Available] )
+    unit: currency
+    aggregation: ratio
+    domain: Rooms
+  - name: Food and Beverage Revenue
+    synonyms: [F&B Revenue, FB Revenue, Food and Beverage Sales]
+    definition: Hotel revenue from restaurants, bars, banquets and room service.
+    formula: Sum of food and beverage outlet revenue
+    unit: currency
+    aggregation: sum
+    domain: Revenue
+  - name: Other Revenue
+    synonyms: [Other Operated Revenue, Ancillary Revenue]
+    definition: Hotel revenue from spa, parking, meeting rooms, retail and other services.
+    formula: Sum of revenue from other operated departments
+    unit: currency
+    aggregation: sum
+    domain: Revenue
+  - name: Total Revenue
+    synonyms: [Total Hotel Revenue, Total Property Revenue]
+    definition: All revenue of the property.
+    formula: Room revenue + Food and beverage revenue + Other revenue
+    dax: '[Room Revenue] + [Food and Beverage Revenue] + [Other Revenue]'
+    unit: currency
+    aggregation: sum
+    domain: Revenue
+  - name: TRevPAR
+    definition: Total revenue per available room.
+    formula: Total revenue / Rooms available
+    dax: DIVIDE ( [Total Revenue], [Rooms Available] )
+    unit: currency
+    aggregation: ratio
+    domain: Revenue
+  - name: Gross Operating Profit
+    synonyms: [GOP, Gross Operating Income, House Profit]
+    definition: Total revenue less departmental and undistributed operating expenses, before management fees, property taxes, insurance and fixed charges.
+    formula: Total revenue - Departmental expenses - Undistributed operating expenses
+    unit: currency
+    aggregation: sum
+    domain: Profitability
+  - name: GOP Margin %
+    synonyms: [GOP %, Gross Operating Profit Margin, GOP Flow-Through]
+    definition: Gross operating profit as a share of total revenue.
+    formula: Gross operating profit / Total revenue
+    dax: DIVIDE ( [Gross Operating Profit], [Total Revenue] )
+    unit: percent
+    aggregation: ratio
+    domain: Profitability
+  - name: GOPPAR
+    synonyms: [Gross Operating Profit per Available Room]
+    definition: Gross operating profit per available room.
+    formula: Gross operating profit / Rooms available
+    dax: DIVIDE ( [Gross Operating Profit], [Rooms Available] )
+    unit: currency
+    aggregation: ratio
+    domain: Profitability
+  # ---------------- bookings and channels
+  - name: Reservations
+    synonyms: [Bookings, Reservations Made, Booking Count]
+    definition: Bookings made in the period (by booking date), each reservation counted once however many nights.
+    formula: Count of distinct reservations by booking date
+    unit: count
+    aggregation: distinct_count
+    time: by booking date
+    domain: Bookings
+  - name: Cancellations
+    synonyms: [Cancelled Bookings, Cancelled Reservations]
+    definition: Bookings cancelled before arrival.
+    formula: Count of reservations with status = Cancelled
+    unit: count
+    aggregation: distinct_count
+    domain: Bookings
+  - name: Cancellation Rate %
+    synonyms: [Cancellation %, Cancel Rate]
+    definition: Share of bookings that were cancelled.
+    formula: Cancellations / Reservations
+    dax: DIVIDE ( [Cancellations], [Reservations] )
+    unit: percent
+    aggregation: ratio
+    domain: Bookings
+  - name: No Shows
+    synonyms: [No Show Count, Guest No Shows]
+    definition: Bookings where the guest did not arrive and did not cancel.
+    formula: Count of reservations with status = No show
+    unit: count
+    aggregation: distinct_count
+    domain: Bookings
+  - name: No Show Rate %
+    synonyms: [No-Show %, No Show %]
+    definition: Share of bookings that were no shows.
+    formula: No shows / Reservations
+    dax: DIVIDE ( [No Shows], [Reservations] )
+    unit: percent
+    aggregation: ratio
+    domain: Bookings
+  - name: Arrivals
+    synonyms: [Check-Ins, Stays, Number of Stays]
+    definition: Guest stays that began in the period.
+    formula: Count of reservations with an arrival date in the period
+    unit: count
+    aggregation: distinct_count
+    time: by arrival date
+    domain: Bookings
+  - name: Average Length of Stay
+    synonyms: [ALOS, Average LOS, Average Nights per Stay]
+    definition: Average nights per stay.
+    formula: Rooms sold / Arrivals
+    dax: DIVIDE ( [Rooms Sold], [Arrivals] )
+    unit: duration
+    aggregation: ratio
+    domain: Bookings
+  - name: Average Booking Lead Time
+    synonyms: [Booking Lead Time, Booking Window, Lead Days]
+    definition: Average days between booking and arrival.
+    formula: Average of (arrival date - booking date) in days
+    unit: duration
+    aggregation: average
+    domain: Bookings
+  - name: Direct Bookings
+    synonyms: [Direct Reservations, Website Bookings]
+    definition: Bookings made straight with the hotel - own website, app, phone, email and walk-in.
+    formula: Count of reservations with a direct channel
+    filters: [Booking channel in Direct, Website, App, Phone, Walk-in]
+    unit: count
+    aggregation: distinct_count
+    domain: Distribution
+  - name: Direct Booking Share %
+    synonyms: [Direct Share, Direct Mix %, Direct Channel Share]
+    definition: Share of bookings made directly.
+    formula: Direct bookings / Reservations
+    dax: DIVIDE ( [Direct Bookings], [Reservations] )
+    unit: percent
+    aggregation: ratio
+    domain: Distribution
+  - name: Booking Commission
+    synonyms: [OTA Commission, Channel Commission, Distribution Cost]
+    definition: Commission and fees paid to online travel agencies, GDS and other channels.
+    formula: Sum of commissions on commissionable bookings
+    unit: currency
+    aggregation: sum
+    domain: Distribution
+  - name: Distribution Cost %
+    synonyms: [Commission % of Room Revenue, Cost of Distribution %, Channel Cost %]
+    definition: Booking commission as a share of room revenue.
+    formula: Booking commission / Room revenue
+    dax: DIVIDE ( [Booking Commission], [Room Revenue] )
+    unit: percent
+    aggregation: ratio
+    domain: Distribution
+  - name: Guest Satisfaction Score
+    synonyms: [Review Score, Guest Rating, Guest Score]
+    definition: Average guest review or survey score on the platform's scale.
+    formula: Average of review scores
+    unit: number
+    aggregation: average
+    domain: Guest
+  # ---------------- restaurants
+  - name: Restaurant Sales
+    synonyms: [Net Sales, Outlet Sales, Restaurant Net Sales]
+    definition: Sales of a restaurant or outlet after discounts and comps, taxes and tips excluded.
+    formula: Gross sales - Discounts and comps
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Covers
+    synonyms: [Guests Served, Cover Count, Diners]
+    definition: Guests served (each person who ate or drank counts once per visit).
+    formula: Sum of guests on checks
+    unit: count
+    aggregation: sum
+    domain: Sales
+  - name: Checks
+    synonyms: [Check Count, Tickets, Orders, Transactions]
+    definition: Bills issued to guests, split checks counted as one when from the same table.
+    formula: Count of distinct checks
+    unit: count
+    aggregation: distinct_count
+    domain: Sales
+  - name: Average Check
+    synonyms: [Average Check Value, Average Ticket, Average Bill]
+    definition: Restaurant sales per check.
+    formula: Restaurant sales / Checks
+    dax: DIVIDE ( [Restaurant Sales], [Checks] )
+    unit: currency
+    aggregation: ratio
+    domain: Sales
+  - name: Spend per Cover
+    synonyms: [Average Spend per Guest, Per Head Spend, Average Cover Spend]
+    definition: Restaurant sales per cover.
+    formula: Restaurant sales / Covers
+    dax: DIVIDE ( [Restaurant Sales], [Covers] )
+    unit: currency
+    aggregation: ratio
+    domain: Sales
+  - name: Seats
+    synonyms: [Seat Count, Seating Capacity]
+    definition: Seats available to guests, average over the period.
+    formula: Average of seats in service
+    unit: count
+    aggregation: average
+    domain: Sales
+  - name: Seat Turnover
+    synonyms: [Seat Turns, Table Turns, Covers per Seat]
+    definition: How many times each seat is used - covers per seat, for the period measured (usually per service or per day).
+    formula: Covers / Seats
+    dax: DIVIDE ( [Covers], [Seats] )
+    unit: ratio
+    aggregation: ratio
+    domain: Sales
+  - name: Food Sales
+    synonyms: [Food Revenue, Kitchen Sales]
+    definition: Sales of food.
+    formula: Sum of food category sales
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Food Cost
+    synonyms: [Food COGS, Cost of Food Sold, Food Usage]
+    definition: Cost of the food used - opening stock plus purchases less closing stock.
+    formula: Opening food stock + Food purchases - Closing food stock
+    unit: currency
+    aggregation: sum
+    domain: Cost
+  - name: Food Cost %
+    synonyms: [Food Cost Percentage, Food COGS %, Cost of Food %]
+    definition: Food cost as a share of food sales.
+    formula: Food cost / Food sales
+    dax: DIVIDE ( [Food Cost], [Food Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Cost
+  - name: Beverage Sales
+    synonyms: [Beverage Revenue, Bar Sales, Drinks Sales]
+    definition: Sales of drinks.
+    formula: Sum of beverage category sales
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Beverage Cost
+    synonyms: [Beverage COGS, Cost of Beverage, Pour Cost]
+    definition: Cost of the drinks used - opening stock plus purchases less closing stock.
+    formula: Opening beverage stock + Beverage purchases - Closing beverage stock
+    unit: currency
+    aggregation: sum
+    domain: Cost
+  - name: Beverage Cost %
+    synonyms: [Beverage Cost Percentage, Pour Cost %, Bar Cost %]
+    definition: Beverage cost as a share of beverage sales.
+    formula: Beverage cost / Beverage sales
+    dax: DIVIDE ( [Beverage Cost], [Beverage Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Cost
+  - name: Labor Cost
+    synonyms: [Labour Cost, Payroll, Staff Cost]
+    definition: Wages, benefits and payroll taxes of the staff.
+    formula: Sum of wages, benefits and payroll taxes
+    unit: currency
+    aggregation: sum
+    domain: Cost
+  - name: Labor Cost %
+    synonyms: [Labor % of Sales, Labour Cost %, Payroll %]
+    definition: Labor cost as a share of restaurant sales.
+    formula: Labor cost / Restaurant sales
+    dax: DIVIDE ( [Labor Cost], [Restaurant Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Cost
+  - name: Prime Cost %
+    synonyms: [Prime Cost Ratio, Prime Cost Percentage]
+    definition: Food, beverage and labor cost together as a share of restaurant sales. Under 60 to 65% is the usual target.
+    formula: (Food cost + Beverage cost + Labor cost) / Restaurant sales
+    dax: DIVIDE ( [Food Cost] + [Beverage Cost] + [Labor Cost], [Restaurant Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Cost
+  - name: Food Waste
+    synonyms: [Waste, Spoilage, Wastage]
+    definition: Cost of food thrown away - spoilage, prep waste, plate waste and spills.
+    formula: Sum of recorded waste at cost
+    unit: currency
+    aggregation: sum
+    domain: Cost
+  - name: Average Ticket Time
+    synonyms: [Ticket Time, Speed of Service, Average Service Time]
+    definition: Average minutes from the order being taken to the food ready or served.
+    formula: Average of (food ready time - order time) in minutes
+    unit: duration
+    aggregation: average
+    domain: Operations

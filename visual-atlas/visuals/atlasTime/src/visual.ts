@@ -16,7 +16,7 @@ import { AdvancedFilter, IAdvancedFilter } from "powerbi-models";
 const NAMES: Record<string, string> = { calendar: "Calendar heatmap", heatgrid: "Heat grid", stream: "Stream graph", timeline: "Timeline slicer" };
 
 export class Visual extends FamilyVisual<TimeSettings, Model> {
-    protected readonly title = "Atlas Time";
+    protected readonly title = "Relay Time";
     protected readonly landingLines: [string, string] = [
         "Add a date (or a time field such as Hour) to Time and a measure to Values.",
         "Add Rows for a heat grid or a Legend for a stream graph. Pick calendar, heat grid, stream or timeline slicer in the Format pane."];

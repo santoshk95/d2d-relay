@@ -1,0 +1,65 @@
+/* D2D Relay: a dashboard's semantic model, the ontology screen and KPI changes in words (items 61-64) */
+.semcard-box h3 svg{vertical-align:-3px}
+.semdiawrap{margin:12px 0 4px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);overflow-x:auto}
+.semdia{display:block;width:100%;min-width:560px;height:auto}
+.semdia .semnode rect{fill:var(--surface);stroke:var(--line-2);stroke-width:1.2}
+.semdia .semnode.fact rect{stroke:var(--accent);stroke-width:1.8}
+.semdia .semnode.date rect{stroke-dasharray:4 3}
+.semdia .semname{font:600 13px var(--font);fill:var(--ink)}
+.semdia .semsub{font:11px var(--font);fill:var(--muted)}
+.semdia .semline{fill:none;stroke:var(--line-2);stroke-width:1.6}
+.semdia .semline.byterm{stroke:var(--accent);stroke-dasharray:5 4}
+.semdia .semkey{font:10.5px var(--mono);fill:var(--muted)}
+.semdia .semcard{font:600 11px var(--font);fill:var(--muted)}
+.semcallouts{margin:8px 0 4px;padding-left:18px}
+.semcallouts li{margin:3px 0}
+.semtables{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.semtable{border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px;background:var(--surface)}
+.semtable summary{cursor:pointer;list-style-position:outside}
+.semtable[open] summary{margin-bottom:8px}
+.semcols td{vertical-align:middle}
+.semsel{max-width:230px;padding:4px 8px;font-size:12.5px}
+.semchip{display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--surface-3);color:var(--ink-2);white-space:nowrap}
+.semchip small{font-weight:500;opacity:.8}
+.semchip.k-measure{background:var(--accent-tint);color:var(--accent)}
+.semchip.k-key{background:var(--warn-tint);color:var(--warn)}
+.semchip.k-date{background:var(--ok-tint);color:var(--ok)}
+/* a plan KPI: dictionary badge and "change it in words" */
+.kpi .kw{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.kpi .kw .kw-in{flex:1 1 260px;min-width:0;padding:6px 9px;font-size:13px}
+.kpi .kw .kw-out{flex-basis:100%}
+.kpi .kw .kw-out:empty{display:none}
+.kpi.kw-done{box-shadow:0 0 0 2px var(--ring);transition:box-shadow .3s}
+/* the ontology screen */
+.ontotabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 14px;flex-wrap:wrap}
+.ontotabs a{padding:8px 12px;border-bottom:2px solid transparent;color:var(--ink-2);text-decoration:none;font-weight:600;font-size:13.5px}
+.ontotabs a.on{border-color:var(--accent);color:var(--ink)}
+.packgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.pack{border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:6px}
+.pack.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.pack .pd{font-size:12.5px;color:var(--ink-2);flex:1}
+.termrow td{vertical-align:top}
+.termrow .syn{display:flex;flex-wrap:wrap;gap:4px}
+.termrow .syn span{font:11.5px var(--mono);background:var(--surface-3);border-radius:4px;padding:0 5px;color:var(--ink-2)}
+.trybox{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.trybox input{flex:1 1 240px;min-width:0}
+.tryres{margin-top:10px;display:flex;flex-direction:column;gap:4px}
+@media (max-width:700px){.semsel{max-width:150px}.kpi .kw .kw-in{flex-basis:100%}}
+/* items 68 and 73: review and approve (the plan), Relay's team on a version */
+.apcard .apgroup{margin:8px 0 10px}
+.apcard .apgh{margin-bottom:6px}
+.apitem{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);margin-bottom:6px;background:var(--surface);cursor:pointer;font-size:13.5px;line-height:1.4}
+.apitem input{margin-top:3px}
+.apitem.k-deviation{border-left:3px solid var(--warn)}
+.apitem.k-gap{border-left:3px solid var(--err)}
+.apitem.k-assumption{border-left:3px solid var(--line-2)}
+.apitem:has(input:checked){background:var(--ok-tint);border-color:var(--ok)}
+.teamcard .teamrows{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.teamrow{display:grid;grid-template-columns:28px 150px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface)}
+.teamrow .ti{display:inline-flex;width:26px;height:26px;border-radius:50%;align-items:center;justify-content:center;background:var(--surface-3);color:var(--ink-2)}
+.teamrow.t-ok .ti{background:var(--ok-tint);color:var(--ok)}
+.teamrow.t-warn .ti{background:var(--warn-tint);color:var(--warn)}
+.teamrow .tt{color:var(--ink-2);min-width:0}
+.teambox{padding:6px 12px 10px 48px}
+.teamdet ul{margin:4px 0 8px;padding-left:18px}
+@media (max-width:700px){.teamrow{grid-template-columns:28px minmax(0,1fr) auto}.teamrow .tt{grid-column:2/4}}

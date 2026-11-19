@@ -450,6 +450,30 @@
           "type": {
             "numeric": true
           }
+        },
+        "min": {
+          "type": {
+            "text": true
+          }
+        },
+        "max": {
+          "type": {
+            "text": true
+          }
+        },
+        "mid": {
+          "type": {
+            "text": true
+          }
+        },
+        "midColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
         }
       }
     },

@@ -25,6 +25,15 @@ import struct
 
 NAME = (os.environ.get("D2D_PORTAL") or "public").strip().lower()
 ADMIN = NAME == "admin"
+
+
+def site() -> str:
+    """The public site's address, for links in emails from either portal (item 59: the client trial runs at
+    demo.pasdacs.com): D2D_SITE_URL (the admin portal gets the public site's address there, docker-compose.yml), else the
+    public site's own D2D_PUBLIC_URL, else https://d2d.pasdacs.com. The admin portal's own address is never it: nobody
+    but PASDACS signs in there."""
+    own = "" if ADMIN else os.environ.get("D2D_PUBLIC_URL", "")
+    return (os.environ.get("D2D_SITE_URL") or own or "https://d2d.pasdacs.com").strip().rstrip("/")
 ADMIN_DOMAINS = [d.strip().lower().lstrip("@") for d in (os.environ.get("D2D_ADMIN_DOMAINS") or "pasdacs.com").split(",") if d.strip()]
 SESSION_KIND = "otp-admin"                  # identity.create_session's provider for admin-portal sessions
 COOKIE = "d2d_admin" if ADMIN else "d2d_session"

@@ -43,6 +43,68 @@ def out_path(name: str) -> str:
     return os.path.join(OUT, name)
 
 
+# New dashboard is a guided flow since 2026-11-19 (webapp/static/js/04-new.js): six steps, one on the screen at a time
+# (0 Name, 1 Your data, 2 What to build, 3 Theme, 4 Visuals, 5 Check and start); each file goes up as soon as it is
+# picked. Python for the browser scripts that run in the test web container: put it in front of a script
+# (input=c.ND_FLOW + PLAY) and call nd_* with its Playwright page.
+ND_FLOW = r'''
+ND_SHOWN = "form.formcard.nd section.nd-step:not([hidden])"
+ND_NOTE = {}                       # what the walk saw: "suggested" (Relay prefilled What to build from the data)
+
+
+def nd_step(page, i, timeout=30000):
+    """Wait until step i (0-5) is the one on the screen."""
+    page.wait_for_selector(f"{ND_SHOWN} #nd-h{i}", timeout=timeout)
+
+
+def nd_next(page, i=None):
+    """Next (or, on the last step, Start); i: wait for that step to show."""
+    page.click("form.formcard.nd .nd-nav button[type=submit]")
+    if i is not None:
+        nd_step(page, i)
+
+
+def nd_open(page, base="http://127.0.0.1:8000"):
+    page.goto(base + "/#/new")
+    page.wait_for_selector("#nd-name", timeout=30000)
+    if page.locator("button:has-text('Start again')").count():      # a draft left in this tab: start from nothing
+        page.click("button:has-text('Start again')")
+        page.wait_for_selector("#nd-name", timeout=30000)
+    nd_step(page, 0)
+
+
+def nd_upload(page, accept_prefix, path, name):
+    """Pick a file in the shown step's drop zone (its input accepts accept_prefix ...) and wait until it is up."""
+    page.set_input_files(f"{ND_SHOWN} input[type=file][accept^='{accept_prefix}']", path)
+    page.wait_for_function("n => [...document.querySelectorAll('.nd-files .nd-fr')].some(r => r.textContent.includes(n) && r.textContent.includes('uploaded'))",
+                           arg=name, timeout=60000)
+
+
+def nd_to_visuals(page, name, csv_path=None, zip_path=None, prompt=None):
+    """From the Name step to the Visuals step: the name, the data (a CSV, or a DAWB hand-off .zip), what to build (the
+    suggested request, or `prompt`), the theme (the organisation's brand, set before)."""
+    page.fill("#nd-name", name)
+    nd_next(page, 1)
+    if zip_path:
+        page.click(".dmode button:has-text('From a DAWB hand-off')")
+        nd_upload(page, ".zip", zip_path, zip_path.rsplit("/", 1)[-1])
+    else:
+        nd_upload(page, ".csv", csv_path, csv_path.rsplit("/", 1)[-1])
+    nd_next(page, 2)
+    if not zip_path:
+        try:                                                                       # Relay's suggestion, from the data
+            page.wait_for_function("() => (document.querySelector('#nd-prompt') || {}).value", timeout=30000)
+            ND_NOTE["suggested"] = True
+        except Exception:  # noqa: BLE001 - the walk goes on with words of its own; the suite may check ND_NOTE
+            ND_NOTE["suggested"] = False
+        if prompt or not ND_NOTE["suggested"]:
+            page.fill("#nd-prompt", prompt or "Sales by region and month")
+    nd_next(page, 3)
+    page.wait_for_selector(f"{ND_SHOWN} .nd-theme", timeout=30000)                   # the brand, ready
+    nd_next(page, 4)
+'''
+
+
 # A JavaScript function for Chromium (item 37): given a visual's box on a prototype page, its sunburst labels (the
 # rotated lines that share one transform) that lie on another label or leave their own slice. Each label's corners come
 # from its lines' boxes in their own coordinates, taken to the page by the text's screen matrix; two labels overlap
@@ -112,7 +174,8 @@ def provision_account(email: str, org_name: str | None = None, person: str | Non
     admin = signed_in("info@pasdacs.com", ADMIN_BASE)
     domain = email.rsplit("@", 1)[-1].lower()
     s, d = admin.get("/api/admin/orgs")
-    o = next((x for x in (d or {}).get("orgs", []) if x.get("domain") == domain), None) if isinstance(d, dict) else None
+    # item 60: an organisation may have several email domains (its main one is "domain", all of them "domains")
+    o = next((x for x in (d or {}).get("orgs", []) if domain in (x.get("domains") or [x.get("domain")])), None) if isinstance(d, dict) else None
     if o:
         s, r = admin.post(f"/api/admin/orgs/{o['id']}/people", {"email": email, "role": "member"})
     else:
@@ -122,10 +185,215 @@ def provision_account(email: str, org_name: str | None = None, person: str | Non
         print(f"(PASDACS could not give {email} an account: {s} {detail_of(r)})", flush=True)
 
 
+def in_app(code: str, container: str | None = None, env: dict | None = None, timeout: int = 300) -> str:
+    """Python inside the test web container (or `container`) with the app's settings, db.init() done first (as _db);
+    env: extra variables for that one run, set before anything is imported (launch gives a part exactly its own
+    environment, so `docker exec -e` would not reach it). Returns what it printed, stdout and stderr together."""
+    head = f"import os\nos.environ.update({dict((str(k), str(v)) for k, v in (env or {}).items())!r})\n" if env else ""
+    r = subprocess.run(["docker", "exec", "-i", "-u", "relay", "-w", "/srv", container or WEB_C, "/opt/relay/bin/launch", "web",
+                        "python", "-"], input=head + "from app import db as _db\n_db.init()\n" + code, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", timeout=timeout, env={**os.environ, "MSYS_NO_PATHCONV": "1"})
+    return (r.stdout + r.stderr).strip()
+
+
+def last_json(out: str):
+    """The JSON a seeding script printed last ({} when there is none)."""
+    for line in reversed((out or "").splitlines()):
+        try:
+            v = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(v, (dict, list)):
+            return v
+    return {}
+
+
+# Item 59: credits are no longer bought online, so a past payment is seeded straight into relay.tn_payments the way
+# payments.py made them (amounts in paise or cents; a paid one's GST invoice issued by invoices.issue, which takes the
+# next number of its series: D2D/<fy>/ for live keys, TEST/<fy>/ for test keys).
+_SEED_PAYMENT = r'''
+import json, secrets, time
+from app import db, invoices, orgs
+a = json.loads(ARGS_JSON)
+o = orgs.row(a["tenant"])
+with db.use(a["tenant"]):
+    u = db.one("SELECT id, name, email FROM users WHERE lower(email) = ?", (a["email"].lower(),))
+cur, credits = a.get("currency", "INR"), int(a.get("credits", 100))
+price = int(a.get("price") or credits * (10000 if cur == "INR" else 100))
+gst = int(a.get("gst") if a.get("gst") is not None else (price * 18 // 100 if cur == "INR" else 0))
+now = time.time() - float(a.get("ago", 3600))
+status, live = a.get("status", "paid"), 1 if a.get("live") else 0
+bill = a.get("billing") or {"name": o["name"] + " Private Limited", "address": "1 Test Road, Indiranagar", "country": "India",
+                             "state": "29", "pin": "560038", "gstin": ""}
+r = {"id": "pay-" + secrets.token_hex(8), "tenant_id": o["tenant_id"], "org_name": o["name"], "user_id": u["id"], "user_name": u["name"],
+     "email": u["email"], "credits": credits, "price": price, "gst": gst, "amount": price + gst, "currency": cur, "live": live,
+     "status": status, "order_id": "order_" + secrets.token_hex(7).upper(),
+     "payment_id": None if status == "failed" else "pay_" + secrets.token_hex(7).upper(), "method": "upi",
+     "error": "The bank declined the payment" if status == "failed" else None, "refunded": int(a.get("refunded") or 0),
+     "created": now - 60, "paid": now if status in ("paid", "refunded") else None, "updated": now, "billing": json.dumps(bill),
+     "invoice_no": None, "invoice": None}
+seller = {"gst": 18, "invoice": {"name": "PASDACS Stand-in Private Limited", "address": "2 Seller Street\nBengaluru", "state": "29",
+                                 "pin": "560001", "gstin": "29ABCDE1234F1Z5", "sac": "998314", "prefix": "D2D", "lut": "",
+                                 "description": "D2D Relay credits"}}
+with db.use(db.PLATFORM):
+    with db.transaction():
+        if a.get("invoice", True) and status in ("paid", "refunded"):
+            inv = invoices.issue({**r, "billing": bill}, seller, now, {"id": r["payment_id"], "method": "upi"})
+            r["invoice"], r["invoice_no"] = json.dumps(inv), inv["no"]
+        cols = list(r)
+        db.run(f"INSERT INTO relay.tn_payments ({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})", tuple(r[k] for k in cols))
+print(json.dumps({"id": r["id"], "invoice_no": r["invoice_no"], "amount": r["amount"], "user_id": u["id"], "fy": invoices.fiscal_year(now)}))
+'''
+
+
+def seed_payment(tenant: str, email: str, **kw) -> dict:
+    """Item 59: a payment made before buying online was removed, as relay.tn_payments holds it: paid by `email` in the
+    organisation `tenant`, in rupees (Rs 100 a credit and 18% GST) unless currency="USD"; live=True for live keys (else
+    test keys), invoice=False for one paid before invoices, status "failed" for a checkout never completed, credits,
+    ago (seconds). Returns {"id", "invoice_no", "amount", "user_id", "fy"} ({} when it could not be seeded)."""
+    out = in_app(_SEED_PAYMENT.replace("ARGS_JSON", repr(json.dumps({"tenant": tenant, "email": email, **kw}))))
+    got = last_json(out)
+    if not got.get("id"):
+        print(f"(could not seed a payment: {out[-400:]})", flush=True)
+    return got
+
+
+# A dashboard's folder seeded straight into an organisation's projects folder (items 62 and 64): its CSVs, project.json
+# (by default waiting at Confirm KPIs, with no plan: nothing runs it) and its row in the database, then the data read as
+# the worker reads it before Relay plans (worker.read_data: the organisation's ontology into ontology.json and
+# ontology.md, a sample of big tables by data_policy, the profile with every column's business term).
+_SEED_PROJECT = r'''
+import json, time
+from app import db, store, worker
+a = json.loads(ARGS_JSON)
+with db.use(a["tenant"]):
+    uid = db.one("SELECT id FROM users WHERE lower(email) = ?", (a["email"].lower(),))["id"]
+    pid = store.new_id(a["name"])
+    d = store.ROOT / pid
+    (d / "data").mkdir(parents=True)
+    for name, text in a["files"].items():
+        (d / "data" / name).write_text(text, encoding="utf-8")
+    worker.refresh_guide(d)
+    (d / "request.md").write_text("# " + a["name"] + "\n\n## What the user asked for\n\n" + a["prompt"] + "\n", encoding="utf-8")
+    st = {"id": pid, "name": a["name"], "prompt": a["prompt"], "model": "", "style": {}, "created": time.time(),
+          "custom_visuals": "never", "visuals_mode": "builtin", "custom_paid": False, "status": a.get("status") or "awaiting_kpis",
+          "files": [{"name": n, "bytes": len(t.encode())} for n, t in a["files"].items()], "images": [], "versions": [],
+          "runs": [], "job": None, "error": None}
+    if a.get("policy"):
+        st["data_policy"] = a["policy"]
+    store.save(st)
+    db.add_project(pid, uid)
+    out = {"id": pid}
+    if a.get("read", True):
+        view = worker.read_data(pid, bool(a.get("announce")))
+        out["tables"] = len((view or {}).get("tables") or [])
+print(json.dumps(out))
+'''
+
+
+def seed_project(tenant: str, email: str, name: str, files: dict[str, str], prompt: str = "Sales by store and week",
+                 env: dict | None = None, **kw) -> dict:
+    """A dashboard of `email` in `tenant` from CSV texts {file name: text}, its data read (read=False: not; announce=True:
+    the activity log says what was read; policy={"mode", "method"}: project.json data_policy). env: variables for that
+    run only (GENBI_SAMPLE_ROWS, GENBI_SAMPLE_OVER ...). Returns {"id", "tables"} ({} when it could not be seeded)."""
+    args = {"tenant": tenant, "email": email, "name": name, "files": files, "prompt": prompt, **kw}
+    out = in_app(_SEED_PROJECT.replace("ARGS_JSON", repr(json.dumps(args))), env=env)
+    got = last_json(out)
+    if not got.get("id"):
+        print(f"(could not seed a dashboard: {out[-600:]})", flush=True)
+    return got
+
+
+def read_data(tenant: str, pid: str, env: dict | None = None, announce: bool = False) -> str:
+    """worker.read_data again for a seeded dashboard (its data read as before planning); what it printed."""
+    return in_app(f"""
+import json
+from app import db, worker
+with db.use({tenant!r}):
+    v = worker.read_data({pid!r}, {announce!r})
+print(json.dumps({{"tables": len((v or {{}}).get("tables") or [])}}))
+""", env=env)
+
+
+# A small DAWB hand-off (item 58's format 1): a new dashboard from it waits at Confirm KPIs with its plan at once, no
+# Claude needed, which items 62 to 73 use to get a dashboard whose plan waits for the person.
+MINI_DATA = {"dim_store": "store_id,store_name,region_name\n1,North Main,East\n2,South Side,East\n3,West End,West\n",
+             "sales_daily": "sale_date,store_id,channel,orders,net_sales\n2026-11-01,1,store,10,100.50\n2026-11-01,2,online,4,80.00\n"
+                            "2026-11-02,1,store,12,130.25\n2026-11-02,3,store,7,70.00\n2026-11-03,2,online,5,95.75\n"
+                            "2026-11-03,3,store,9,88.10\n"}
+MINI_COLS = {"dim_store": [("store_id", "whole number", "Store number"), ("store_name", "text", "Store name"), ("region_name", "text", "Region")],
+             "sales_daily": [("sale_date", "date", "Trading day"), ("store_id", "whole number", "Store; joins to dim_store"),
+                             ("channel", "text", "store or online"), ("orders", "whole number", "Orders placed"),
+                             ("net_sales", "decimal", "Sales after discounts, USD")]}
+MINI_KPIS = [{"name": "Net sales", "dax": "SUM(sales_daily[net_sales])", "description": "Sales after discounts, USD", "format": "currency"},
+             {"name": "Order count", "dax": "SUM(sales_daily[orders])", "description": "Orders placed", "format": "whole number"},
+             {"name": "Average order", "dax": "DIVIDE([Net sales], [Order count])", "description": "Net sales per order, USD", "format": "currency"}]
+
+
+def mini_handoff(name: str) -> bytes:
+    """A DAWB hand-off folder as one .zip (POST /api/projects/import, field "handoff"), named `name`."""
+    import hashlib
+    import io
+    import zipfile
+    sha = lambda b: hashlib.sha256(b).hexdigest()                       # noqa: E731
+    rows = {t: len([x for x in text.splitlines()[1:] if x.strip()]) for t, text in MINI_DATA.items()}
+    project = {"kind": "d2d-project", "format": 1, "name": name, "made_by": {"product": "DAWB", "release": "T-1", "at": "2026-11-19 06:00 UTC"},
+               "description": "How the stores sell, by channel.", "audience": "Store leaders",
+               "inputs": [{"file": f"data/{t}.csv", "table": t, "description": f"The {t} table", "rows": rows[t],
+                           "columns": [{"name": n, "type": ty, "description": d} for n, ty, d in MINI_COLS[t]]} for t in MINI_DATA],
+               "plan": {"model": {"tables": [{"name": "dim_store", "role": "dimension", "grain": "one row per store"},
+                                             {"name": "sales_daily", "role": "fact", "grain": "one row per day, store and channel"}],
+                                  "relationships": ["sales_daily[store_id] -> dim_store[store_id]"]},
+                        "kpis": json.loads(json.dumps(MINI_KPIS)),
+                        "pages": [{"name": "Overview", "purpose": "How the stores sell", "visuals": [
+                            {"title": "Net sales", "visual": "card", "query": "SELECT SUM(net_sales) FROM sales_daily", "x": 0, "y": 0, "w": 6, "h": 4}]}],
+                        "grid": {"columns": 24}}}
+    files = {f"data/{t}.csv": text.encode() for t, text in MINI_DATA.items()}
+    files["README.md"] = b"# A test hand-off\n"
+    files["project.json"] = json.dumps(project, indent=2).encode()
+    listed = {p: ({"rows": rows[p[5:-4]], "sha256": sha(b), "columns": {n: ty for n, ty, _ in MINI_COLS[p[5:-4]]}} if p.startswith("data/")
+                  else {"sha256": sha(b)}) for p, b in files.items()}
+    files["manifest.json"] = json.dumps({"run": "2026-11-19T060000Z", "release": "T-1", "files": listed, "rows": sum(rows.values())}).encode()
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for p, b in files.items():
+            z.writestr(f"mini/{p}", b)
+    return buf.getvalue()
+
+
+def import_handoff(p: "Person", name: str, **fields):
+    """A new dashboard from mini_handoff(name): (status, answer); it waits at Confirm KPIs (25 credits, built-in visuals)."""
+    boundary = "----d2dimport" + str(time.time_ns())
+    parts = [f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode()
+             for k, v in {"visuals_mode": "builtin", **fields}.items()]
+    parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="handoff"; filename="mini.zip"\r\nContent-Type: application/zip\r\n\r\n'.encode()
+                 + mini_handoff(name) + b"\r\n")
+    req = urllib.request.Request(p.base + "/api/projects/import", data=b"".join(parts) + f"--{boundary}--\r\n".encode(), method="POST",
+                                 headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+    try:
+        with p.http.open(req, timeout=180) as r:
+            raw, status = r.read(), r.status
+    except urllib.error.HTTPError as e:
+        raw, status = e.read(), e.code
+    try:
+        return status, json.loads(raw or b"null")
+    except ValueError:
+        return status, raw.decode("utf-8", "replace")
+
+
 def forget_codes(email: str) -> None:
     """Test database only: forget this address's earlier codes, so it may ask again within the minute."""
     subprocess.run(["docker", "exec", "-u", "postgres", DB_C, "psql", "-q", "-h", "/run/postgresql", "-d", "relay", "-c",
                     "DELETE FROM otp_codes WHERE email = '" + email.replace("'", "''") + "'"], capture_output=True, check=True)
+
+
+def setup_flag(email: str, reset: bool = False) -> str:
+    """Test database only: the old first-time setup flag (relay.tn_orgs.setup_done: /api/me setup_needed, the tour) of
+    the address's organisation, "0" or "1" ("" when it has none); reset: set it back to 0."""
+    org = "(SELECT home_tenant FROM relay.tn_accounts WHERE email = '" + email.lower().replace("'", "''") + "')"
+    q = f"UPDATE relay.tn_orgs SET setup_done = 0 WHERE tenant_id = {org}" if reset else f"SELECT setup_done FROM relay.tn_orgs WHERE tenant_id = {org}"
+    return subprocess.run(["docker", "exec", "-u", "postgres", DB_C, "psql", "-qtA", "-h", "/run/postgresql", "-d", "relay", "-c", q],
+                          capture_output=True, text=True).stdout.strip()
 
 
 class Person:
@@ -191,11 +459,14 @@ class Person:
         except ValueError:
             return status, raw.decode("utf-8", "replace")
 
-    def sign_in(self, org_name: str | None = None, person: str | None = None, again: bool = False, provision: bool = True):
+    def sign_in(self, org_name: str | None = None, person: str | None = None, again: bool = False, provision: bool = True,
+                brand: bool = True):
         """Ask for a code, read it from the container's log and sign in. provision (item 56): an address without an
         account is first given one by PASDACS (provision_account: org_name and person name a new organisation and its
         main owner); without it, an address without an account gets no code. An image from before item 56 still names
-        a new organisation after the code (upgrade_check.py)."""
+        a new organisation after the code (upgrade_check.py). brand: an owner gives an organisation without a brand a
+        standard palette (ensure_brand) and finishes its setup the plain way (ensure_setup, item 81); False leaves both
+        to the suite."""
         if provision:
             provision_account(self.email, org_name, person)
         if again:
@@ -211,7 +482,55 @@ class Person:
         s, r = self.post("/auth/otp/verify", {"email": self.email, "code": code, "next": "#/d2d"})
         if s == 200 and isinstance(r, dict) and r.get("organisation"):      # an image from before item 56: the sign-up step
             s, r = self.post("/auth/otp/organisation", {"name": org_name or r["organisation"]["suggested"], "person": person or ""})
+        if s == 200 and brand and self.base == BASE:
+            self.ensure_brand()
+            self.ensure_setup()
         return s, r
+
+    def ensure_brand(self) -> None:
+        """Since 2026-11-19 a new dashboard needs its organisation's brand (branding.require_style: a 400 until an owner
+        sets one under Branding). An owner signing in to an organisation with no brand yet picks the first standard
+        palette, as an owner would before starting dashboards. A member (who may not change it), an organisation that
+        has one, or an image without the rule ("ready" not in GET /api/branding) is left as it is."""
+        s, b = self.get("/api/branding")
+        if s == 200 and isinstance(b, dict) and b.get("may_edit") and b.get("ready") is False:
+            s, r = self.post("/api/branding/choose", {"index": 0, "standard": True})
+            if s != 200:
+                print(f"({self.email} could not set the organisation's brand: {s} {detail_of(r)})", flush=True)
+
+    def ensure_setup(self) -> None:
+        """Since item 81 a new organisation's owners finish a guided setup (GET /api/org/profile) before its first
+        dashboard, DAWB import or Semantic Review (each a 400 until then). An owner signing in to an organisation whose
+        setup is not done finishes it the plain way, without any AI, so the organisation stays as it was before item 81:
+        industry general (it applies no pack), the industry standard's proposal, its understanding accepted as it is, no
+        KPIs and no business terms taken (an empty accept), then Finish (the brand is ensure_brand's, called first).
+        Finish also marks the old first-time setup done (relay.tn_orgs.setup_done: /api/me setup_needed, the tour); that
+        flag is put back as it was, as the owner had not done the tour. A member (can_edit false), an organisation that
+        is done (finished, from before item 81, or a personal workspace) or an image without the setup (404) is left as
+        it is (item81_check.py signs in with brand=False and walks the setup itself)."""
+        s, p = self.get("/api/org/profile")
+        if s == 404 or (s == 200 and isinstance(p, dict) and (p.get("status") == "done" or not p.get("can_edit"))):
+            return
+        if s != 200 or not isinstance(p, dict):
+            print(f"({self.email} could not read the organisation's setup: {s} {detail_of(p)})", flush=True)
+            return
+        was = setup_flag(self.email)
+        context = {"industry": "general", "about": "An organisation of the D2D Relay release checks, set up the plain way.",
+                   "brands": [], "regions": [], "currency": "USD", "calendar": {"kind": "calendar", "start_month": 1},
+                   "audiences": [a for a in p.get("audiences") or [] if isinstance(a, str)][:1], "priorities": "", "conventions": ""}
+        s, r = self.put("/api/org/profile/context", context)
+        if s == 200:
+            s, r = self.post("/api/org/profile/standard")
+        if s == 200:
+            proposal = (r.get("proposal") if isinstance(r, dict) else None) or {}
+            s, r = self.put("/api/org/profile/understanding", proposal.get("understanding") or {"summary": context["about"]})
+        for path, body in (("kpis", {"accept": []}), ("terms", {"accept": []}), ("done", {})):
+            if s == 200:
+                s, r = self.post(f"/api/org/profile/{path}", body)
+        if s != 200:
+            print(f"({self.email} could not finish the organisation's setup: {s} {detail_of(r)})", flush=True)
+        elif was == "0":
+            setup_flag(self.email, reset=True)
 
 
 _signed: dict[tuple[str, str], "Person"] = {}
@@ -408,8 +727,9 @@ def credits_by_approval():
     check("credits: ... with a 'starting credits' line of 50 in its history",
           s == 200 and any(x["kind"] == "start" and x["delta"] == 50 for x in o.get("ledger", [])), o.get("ledger"))
     check("credits: the prices: 25 a dashboard (50 with custom visuals, item 44), 10 a change, 10 for up to 5 Ask Relay questions, "
-          "10 a Semantic Review (item 55)",
-          (org.get("costs") or {}) == {"dashboard": 25, "dashboard_custom": 50, "change": 10, "ask": 10, "ask_questions": 5, "review": 10},
+          "10 a Semantic Review (item 55), 1 a KPI changed in words (item 63), 1 a review finding fixed (item 65)",
+          (org.get("costs") or {}) == {"dashboard": 25, "dashboard_custom": 50, "change": 10, "ask": 10, "ask_questions": 5, "review": 10,
+                                       "kpi": 1, "fix": 1},
           org.get("costs"))
     admin0 = signed_in("info@pasdacs.com", ADMIN_BASE)
     s, r = admin0.post(f"/api/admin/orgs/{org.get('id')}/credits", {"credits": -50, "note": "Test: back to none"})

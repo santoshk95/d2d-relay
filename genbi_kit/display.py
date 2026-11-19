@@ -59,12 +59,13 @@ READ = r"""async () => {
 SKIP = {"pageNavigator", "slicer", "textbox"}
 
 
-def check(html: Path, timeout_s: int = 120) -> dict:
-    """The display gate for one prototype HTML file."""
+def check(html: Path, timeout_s: int = 120, shots: Path | None = None) -> dict:
+    """The display gate for one prototype HTML file. shots: also save a full-page PNG of every page there
+    (page-1.png ...), for Relay's UI/UX reviewer (item 68)."""
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        return gate("display", skip="no headless browser here (Playwright is in the agent image)")
+        return gate("display", skip="the page drawing check is not available here")
     errors: list[str] = []
     with sync_playwright() as p:
         browser = p.chromium.launch(args=OFFLINE_ARGS)
@@ -76,6 +77,18 @@ def check(html: Path, timeout_s: int = 120) -> dict:
             offline(page, own)
             page.goto(own, wait_until="load", timeout=timeout_s * 1000)
             res = page.evaluate(READ)
+            if shots and not res.get("error"):
+                shots = Path(shots)
+                shots.mkdir(parents=True, exist_ok=True)
+                for old in shots.glob("page-*.png"):
+                    old.unlink(missing_ok=True)
+                for i in range(len(res.get("pages") or [])):
+                    try:
+                        page.evaluate(f"() => {{ current = {i}; draw(); }}")
+                        page.wait_for_timeout(300)
+                        page.screenshot(path=str(shots / f"page-{i + 1}.png"), full_page=True)
+                    except Exception as e:  # noqa: BLE001 - a missing picture never fails the gate
+                        print(f"display: page {i + 1} could not be photographed: {str(e)[:120]}", flush=True)
         finally:
             browser.close()
     if res.get("error"):

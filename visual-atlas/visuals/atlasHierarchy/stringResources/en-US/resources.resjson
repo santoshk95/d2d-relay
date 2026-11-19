@@ -10,7 +10,7 @@
   "Role_Values": "Size",
   "Role_Values_Desc": "The value that sizes tiles, segments and circles.",
   "Role_Color": "Color value",
-  "Role_Color_Desc": "Optional. Colors items on a gradient (for example Margin %) when Color rules › Color by is Color value.",
+  "Role_Color_Desc": "Optional. Colors items on a gradient (for example Margin %) when Color rules > Color by is Color value.",
   "Role_Tooltips": "Tooltips",
   "Landing_Line1": "Add one or more fields to Levels (for example Category, Subcategory, Product) and a measure to Size.",
   "Landing_Line2": "For an org chart, use ID and Parent ID instead of Levels. Pick treemap, sunburst, circle packing or org chart in the Format pane.",

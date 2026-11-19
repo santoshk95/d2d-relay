@@ -1,5 +1,5 @@
 /*
- * Drawing for Atlas Time: calendar heatmap (year of weeks, or month
+ * Drawing for Relay Time: calendar heatmap (year of weeks, or month
  * pages), heat grid and punch card, stream graph (wiggle, silhouette,
  * stacked, 100%) and a timeline slicer that filters the report.
  */
@@ -11,7 +11,7 @@ import { Target } from "./common/interact";
 import { el, r1, textW, trunc } from "./common/look";
 import { mix, inkOn } from "./common/color";
 import { colorOr, val } from "./common/cards";
-import { legend, LegendItem } from "./common/chart";
+import { legend, LegendItem, parseNum } from "./common/chart";
 import { labelFormatter, formatter } from "./common/util";
 import TipItem = powerbi.extensibility.VisualTooltipDataItem;
 
@@ -35,14 +35,22 @@ export function render(c: C, tl: TimelineIO) {
     const sh = look.shadow(), marks = el("g", sh ? { filter: sh } : {}, root), labels = el("g", {}, root);
     /* sequential color for a value between lo and hi (optionally in steps) */
     const quant = val(SC.mode) === "quantile";
+    /* the Format pane can fix either end, and a middle value (a 95% in-stock target, 0% comp) makes the scale diverge:
+       low color below it, high color above it, the middle color at it */
+    const uLo = parseNum(SC.min.value), uHi = parseNum(SC.max.value), midV = parseNum(SC.mid.value), hasMid = isFinite(midV) && !quant;
+    const lowD = t.hc ? t.surface : hasMid ? colorOr(SC.lowColor, "#d64550") : low, midC = t.hc ? mix(t.ink, t.surface, 0.5) : colorOr(SC.midColor, mix(t.text, t.surface, 0.9));
     /* by value: position between lo and hi; by rank: share of values below (one spike no longer washes out the rest) */
     const scale = (lo: number, hi: number, all?: number[]) => {
+        if (isFinite(uLo)) lo = uLo;
+        if (isFinite(uHi)) hi = uHi;
+        if (hasMid) { lo = Math.min(lo, midV); hi = Math.max(hi, midV); }
         const sorted = (all || []).slice().sort((a, b) => a - b);
         const rank = (v: number) => { let a = 0, b = sorted.length; while (a < b) { const md = (a + b) >> 1; if (sorted[md] < v) a = md + 1; else b = md; } return sorted.length > 1 ? a / (sorted.length - 1) : 1; };
         return (v: number) => {
-        let k = quant && sorted.length ? rank(v) : hi > lo ? (v - lo) / (hi - lo) : 1; k = Math.max(0, Math.min(1, k));
+        let k = quant && sorted.length ? rank(v) : hasMid ? (v <= midV ? (midV > lo ? (v - lo) / (midV - lo) : 1) * 0.5 : 0.5 + (hi > midV ? (v - midV) / (hi - midV) : 1) * 0.5) : hi > lo ? (v - lo) / (hi - lo) : 1;
+        k = Math.max(0, Math.min(1, k));
         if (steps > 0) k = Math.min(steps - 1, Math.floor(k * steps)) / Math.max(1, steps - 1);
-        return mix(low, high, k);
+        return hasMid ? (k <= 0.5 ? mix(lowD, midC, k * 2) : mix(midC, high, (k - 0.5) * 2)) : mix(low, high, k);
         };
     };
     const note = (text: string) => el("text", { x: r1(W / 2), y: r1(H / 2), "text-anchor": "middle", "font-size": 12, fill: t.text, class: "note" }, root, trunc(text, W - 16, 12));
@@ -137,9 +145,15 @@ export function render(c: C, tl: TimelineIO) {
             const k = rk + "\u001f" + ck, l = cell.get(k) || []; l.push(p); cell.set(k, l);
         });
         const tot = (k: string) => (cell.get(k) || []).reduce((a, p) => a + p.total, 0), all = [...cell.keys()].map(tot);
-        const lo = Math.min(0, ...all), hi = Math.max(...all), col = scale(lo, hi, all), punch = val(s.heatgrid.shape) === "circle";
-        const nameW = CA.show.value ? Math.min(W * 0.3, Math.max(...rowKeys.map(k => textW(rowName.get(k) as string, cfs)))) + 8 : 0, colH = CA.show.value ? cfs + 8 : 0;
-        const L = pad + nameW, T = pad, R = W - pad, B = H - pad - colH;
+        /* colors run from the lowest to the highest cell, as in the calendar (2026-11-19: from zero, in-stock rates of
+           93% and 98% looked the same); circles are sized from zero */
+        const lo = Math.min(...all), hi = Math.max(...all), col = scale(lo, hi, all), punch = val(s.heatgrid.shape) === "circle";
+        /* a row is at least a line of text high: many rows (120 stores) scroll instead of writing over each other */
+        const colH = CA.show.value ? cfs + 8 : 0, minRow = CA.show.value ? cfs + 3 : 4, need = pad * 2 + colH + rowKeys.length * minRow, tall = need > H + 0.5;
+        if (tall) c.grow(W, need);
+        const Wd = tall ? W - SCROLLBAR : W, Hd = tall ? need : H;
+        const nameW = CA.show.value ? Math.min(Wd * 0.3, Math.max(...rowKeys.map(k => textW(rowName.get(k) as string, cfs)))) + 8 : 0;
+        const L = pad + nameW, T = pad, R = Wd - pad, B = Hd - pad - colH;
         const cw = (R - L) / colKeys.length, ch = (B - T) / rowKeys.length, skip = Math.max(1, Math.ceil((Math.max(...colKeys.map(k => textW(colName.get(k) as string, cfs))) + 6) / cw));
         rowKeys.forEach((rk, i) => {
             if (CA.show.value) c.io.bindLabel(el("text", { x: r1(L - 6), y: r1(T + ch * i + ch / 2 + cfs * 0.35), "text-anchor": "end", "font-size": cfs, fill: cC, class: "ax" }, labels, trunc(rowName.get(rk) as string, nameW - 8, cfs)), group("r" + rk, m.points.filter(p => (m.hasRows ? String(p.rowRaw) : "") === rk), [[m.hasRows ? m.rowsName : "Row", rowName.get(rk) as string]]));
@@ -244,21 +258,22 @@ export function render(c: C, tl: TimelineIO) {
         /* header: the selected range and a clear button */
         const first = periods.find(inRange), last = [...periods].reverse().find(inRange);
         const fmtP = (p: { label: string; group: string }) => (p.group ? `${p.label} ${p.group}` : p.label);
-        el("text", { x: r1(pad), y: r1(pad + cfs + 2), "font-size": cfs + 1, fill: t.text, class: "ttl" }, labels, first && last ? (first === last ? fmtP(first) : `${fmtP(first)} – ${fmtP(last)}`) : c.msg("All_Periods", "All periods"));
+        el("text", { x: r1(pad), y: r1(pad + cfs + 2), "font-size": cfs + 1, fill: t.text, class: "ttl" }, labels, first && last ? (first === last ? fmtP(first) : `${fmtP(first)} to ${fmtP(last)}`) : c.msg("All_Periods", "All periods"));
         if (range) {
             const bx = Math.min(W, pad + plotW) - 16, cg = el("g", { class: "lg", style: "cursor:pointer" }, root);
             el("rect", { class: "hit", x: r1(bx - 4), y: r1(pad), width: 18, height: 18, rx: 4, fill: mix(t.text, t.surface, 0.92) }, cg);
             el("path", { d: `M${r1(bx)},${r1(pad + 4)}l10,10M${r1(bx + 10)},${r1(pad + 4)}l-10,10`, stroke: t.text, "stroke-width": 1.6, "stroke-linecap": "round" }, cg);
             cg.addEventListener("click", ev => { ev.stopPropagation(); tl.apply(null); });
         }
-        let lastGroup = "";
+        let lastGroup = "", groupEnd = -Infinity;
         periods.forEach((p, k) => {
             const x = pad + cw * k, inside = inRange(p), items = p.rows.flatMap(r => r.cells.filter(z => z).map(z => (z as TCell).i));
             const g = el("g", { class: "mk" + (c.io.anyOn(items) || !items.length ? "" : " dim"), style: "cursor:pointer" }, marks);
             el("rect", { x: r1(x + 1), y: r1(T), width: r1(cw - 2), height: r1(B - T), rx: 3, fill: inside ? mix(sel, t.surface, 0.8) : mix(t.text, t.surface, 0.95) }, g);
             if (barArea > 4 && tot[k] > 0) { const h = Math.max(1, (B - T - 4) * tot[k] / mx); el("rect", { x: r1(x + cw * 0.22), y: r1(B - h), width: r1(cw * 0.56), height: r1(h), rx: 2, fill: inside || !range ? (look.flat ? sel : look.fill(sel, "v")) : mix(t.text, t.surface, 0.7) }, g); }
             el("text", { x: r1(x + cw / 2), y: r1(B + cfs + 4), "text-anchor": "middle", "font-size": cfs, fill: inside ? t.ink : cC, class: inside ? "ttl" : "ax" }, labels, trunc(p.label, cw - 2, cfs));
-            if (p.group && p.group !== lastGroup) { el("text", { x: r1(x + 2), y: r1(B + cfs * 2 + 8), "font-size": Math.max(6, cfs - 1), fill: t.text, class: "ttl" }, labels, p.group); if (k > 0) el("line", { x1: r1(x) + 0.5, x2: r1(x) + 0.5, y1: r1(T), y2: r1(B + cfs * 2 + 8), stroke: t.grid }, root); lastGroup = p.group; }
+            /* a month name only where the one before has ended ("Jan 2025" of one week ran into "Feb 2025") */
+            if (p.group && p.group !== lastGroup) { const gfs = Math.max(6, cfs - 1); if (x + 2 > groupEnd + 6) { el("text", { x: r1(x + 2), y: r1(B + cfs * 2 + 8), "font-size": gfs, fill: t.text, class: "ttl" }, labels, p.group); groupEnd = x + 2 + textW(p.group, gfs); } if (k > 0) el("line", { x1: r1(x) + 0.5, x2: r1(x) + 0.5, y1: r1(T), y2: r1(B + cfs * 2 + 8), stroke: t.grid }, root); lastGroup = p.group; }
             /* click picks a period, shift-click extends the range, clicking the only selected period clears */
             g.addEventListener("click", ev => {
                 ev.stopPropagation();

@@ -1,5 +1,5 @@
 /*
- * Drawing for Atlas Proportion: Mekko, waffle, pictogram, aster plot,
+ * Drawing for Relay Proportion: Mekko, waffle, pictogram, aster plot,
  * rose (polar area) and Venn, from the shared category × series matrix.
  */
 import powerbi from "powerbi-visuals-api";
@@ -11,7 +11,7 @@ import { el, r1, textW, trunc } from "./common/look";
 import { mix, inkOn } from "./common/color";
 import { colorOr, val } from "./common/cards";
 import { legend, LegendItem, nice } from "./common/chart";
-import { labelFormatter, formatter } from "./common/util";
+import { labelFormatter, formatter, isPercent } from "./common/util";
 import TipItem = powerbi.extensibility.VisualTooltipDataItem;
 
 type C = Ctx<ProportionSettings, Model>;
@@ -241,7 +241,10 @@ export function render(c: C) {
     }
     function aster() {
         const RD = s.radial, scores = m.cats.map((_, ci) => m.grid[ci][0]), weights = m.cats.map((_, ci) => (m.byMeasure && S >= 2 && m.grid[ci][1] ? Math.max(0, (m.grid[ci][1] as Cell).v) : 1));
-        const wsum = weights.reduce((a, b) => a + b, 0) || 1, mx = RD.maxScore.value > 0 ? RD.maxScore.value : Math.max(...scores.map(x => (x ? x.v : 0)));
+        /* scores that are rates (0.91 shown as 91%) are out of 100%, not out of the default 100 (2026-11-19: in-stock rates
+           drew no petals) */
+        const rates = isPercent(m.format) && scores.every(x => !x || x.v <= 1.5) && RD.maxScore.value === 100;
+        const wsum = weights.reduce((a, b) => a + b, 0) || 1, mx = rates ? 1 : RD.maxScore.value > 0 ? RD.maxScore.value : Math.max(...scores.map(x => (x ? x.v : 0)));
         const labW = CA.show.value ? Math.min(BW * 0.22, Math.max(...m.cats.map(x => textW(x.name, cfs)))) : 0;
         const R = Math.max(10, Math.min((BW - 2 * labW - 20) / 2, (BH - 2 * cfs - 16) / 2)), cx = box.l + BW / 2, cy = box.t + BH / 2, hole = R * RD.hole.value / 100;
         let a = 0;
@@ -284,7 +287,15 @@ export function render(c: C) {
                 c.bind(g, cellT(x, x.v / (tots[ci] || 1)));
             });
             if (CA.show.value) outsideLabel(cx, cy, R, (a0 + a1) / 2, trunc(ct.name, labW + 6, cfs), labels, ct);
-            if (LB.show.value && tots[ci] > 0) { const mid = (a0 + a1) / 2, rr = rad(tots[ci]) + lbfs * 0.9; if (rr < R + 2) el("text", { x: r1(cx + Math.sin(mid) * rr), y: r1(cy - Math.cos(mid) * rr + lbfs * 0.35), "text-anchor": "middle", "font-size": lbfs, fill: lbC, class: "lbl" }, labels, fmtV(tots[ci])); }
+            /* the value inside its wedge, near the outer edge, where it fits; never out among the category names
+               (2026-11-19: "$362M" on "P12") */
+            if (LB.show.value && tots[ci] > 0) {
+                const mid = (a0 + a1) / 2, top = rad(tots[ci]), txt = fmtV(tots[ci]), col = stacked ? t.surface : !stacked && RD.shadeByValue.value ? mix(c.colorOf(m.cats[0]), t.surface, 0.65 * (1 - tots[ci] / mx)) : cellColor(m.grid[ci][0] as Cell);
+                /* the whole text box inside the wedge: its reach along the radius and across the wedge at this angle */
+                const w = textW(txt, lbfs), sx = Math.abs(Math.sin(mid)), sy = Math.abs(Math.cos(mid)), radial = sx * w / 2 + sy * lbfs * 0.6, across = sy * w / 2 + sx * lbfs * 0.6;
+                const rc = top - radial - 2;
+                if (rc - radial > hole + 2 && across <= rc * Math.sin(span / 2) - 1) el("text", { x: r1(cx + Math.sin(mid) * rc), y: r1(cy - Math.cos(mid) * rc + lbfs * 0.35), "text-anchor": "middle", "font-size": lbfs, fill: t.hc ? t.ink : stacked ? lbC : inkOn(col), class: stacked ? "lbl" : "lbl in" }, labels, txt);
+            }
         });
     }
 

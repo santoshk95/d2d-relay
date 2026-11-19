@@ -4,8 +4,9 @@
 #   TEST_DB_PASSWORD  the test database's password (made up at random when not set)
 #   TEST_CLAUDE_VOLUME / TEST_CLAUDE_EXTERNAL   only for a real-Claude test: claude-api-auth and true, always together
 # Containers d2d-relay-test-db/-web/-admin/-runner; 127.0.0.1:8103 public site, 8104 admin portal, 8105 stand-in
-# Razorpay, 8106 stand-in Microsoft APIs. Any earlier test stack is removed first, with its volumes. The settings are written to .env here
-# (git-ignored), so `docker compose -p d2d-relay-test ...` run in this folder later (down -v included) sees them too.
+# Razorpay (item 59 took it away with buying credits online, item 85 brought both back), 8106 stand-in Microsoft APIs.
+# Any earlier test stack is removed first, with its volumes. The settings are written to .env here (git-ignored), so
+# `docker compose -p d2d-relay-test ...` run in this folder later (down -v included) sees them too.
 set -euo pipefail
 cd "$(dirname "$0")"
 : "${TEST_IMAGE:?set TEST_IMAGE to the image to test, e.g. d2d-relay:54f6ed7}"

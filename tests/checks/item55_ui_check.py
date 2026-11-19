@@ -1,8 +1,9 @@
 """Test stack only: item 55's screens in a real browser (headless Chromium inside the test web container).
 
 python -I item55_ui_check.py <public> <admin>
-Semantic Review in the menu; a new review from two files chosen with the file picker; the report (findings with the
-KPI that is calculated two ways, the KPI table, the measures, the models); the KPI dictionary and its Add dialog; a
+Semantic Review in the menu; a new review the guided way (since 2026-11-19: 1 Your KPIs, 2 Your models from the file
+picker, 3 Check and start); the report's stages (Findings with the KPI that is calculated two ways, Check with the KPI
+table, Read with the measures and the models); the KPI dictionary and its Add dialog; a
 phone-width page without sideways scrolling; dark mode; no script errors. Screenshots go to the run's folder:
 sr-home.png, sr-report.png, sr-kpis-tab.png, sr-dictionary.png, sr-add-kpi.png, sr-phone.png, sr-dark.png.
 """
@@ -35,31 +36,47 @@ with sync_playwright() as p:
     out["menu"] = page.locator("#nav a[href='#/review']").inner_text()
     page.click("#nav a[href='#/review']")
     page.wait_for_selector("text=One KPI, one meaning, one value", timeout=20000)
-    out["home_text"] = page.locator("#main").inner_text()[:1500]
-    page.screenshot(path="/tmp/sr-home.png", full_page=True)
-    page.set_input_files(".drop input[type=file]", ["/tmp/sr54/Sales model.bim", "/tmp/sr54/Finance.pbit"])
-    out["picked"] = page.locator(".flist.attached").inner_text()
-    page.fill("input[placeholder^='For example: Sales and Finance']", "Browser review")
-    page.click("button:has-text('Start review')")
-    page.wait_for_function("location.hash.startsWith('#/review/sr-')", timeout=30000)
-    page.wait_for_selector("text=Findings (", timeout=90000)
+    # the guided start (2026-11-19): 1 Your KPIs, 2 Your models, 3 Check and start
+    page.wait_for_selector("#rvnext", timeout=20000)
     page.wait_for_timeout(500)
-    out["report_text"] = page.locator("#main").inner_text()[:4000]
+    out["home_text"] = page.locator("#main").inner_text()[:2500]
+    page.screenshot(path="/tmp/sr-home.png", full_page=True)
+    page.click("#rvnext")
+    page.wait_for_selector("#rvdrop", timeout=10000)
+    page.set_input_files(".drop input[type=file]", ["/tmp/sr54/Sales model.bim", "/tmp/sr54/Finance.pbit"])
+    page.wait_for_selector(".rvlist", timeout=10000)
+    out["picked"] = page.locator(".rvlist").inner_text()
+    page.click("#rvnext")
+    page.wait_for_selector("#rvname", timeout=10000)
+    out["start_text"] = page.locator(".rvcard").inner_text()[:2500]
+    page.fill("#rvname", "Browser review")
+    page.click("#rvstart")
+    page.wait_for_function("location.hash.startsWith('#/review/sr-')", timeout=30000)
+    page.wait_for_selector("#rvst-findings.sel", timeout=90000)
+    page.wait_for_timeout(800)
+    out["report_text"] = page.locator("#main").inner_text()[:5000]
     page.screenshot(path="/tmp/sr-report.png", full_page=True)
     page.click("button.chip:has-text('High')")
-    out["high_cards"] = page.locator(".srfind").count()
-    out["high_all_high"] = page.locator(".srfind:not(.sev-high)").count() == 0
-    first = page.locator(".srfind").first
+    page.wait_for_timeout(300)
+    out["high_cards"] = page.locator("details.srfind").count()
+    out["high_all_high"] = page.locator("details.srfind:not(.sev-high)").count() == 0
+    first = page.locator("details.srfind").first
+    first.locator("summary").first.click()
     if first.locator("button:has-text('Show the DAX')").count():
         first.locator("button:has-text('Show the DAX')").click()
         out["dax_shown"] = first.locator("pre.srdax").first.is_visible()
-    page.click(".tabs a:has-text('KPIs')")
-    page.wait_for_selector(".srtable", timeout=10000)
-    out["kpi_tab"] = page.locator("#main .srtable").inner_text()[:1500]
+    out["what_to_do"] = "What to do" in page.locator("#main").inner_text()
+    page.click("#rvst-check")
+    page.wait_for_selector("#rvpanel .srtable", timeout=10000)
+    out["kpi_tab"] = page.locator("#rvpanel .srtable").inner_text()[:1500]
     page.screenshot(path="/tmp/sr-kpis-tab.png", full_page=True)
-    page.click(".tabs a:has-text('Measures')")
-    out["measure_rows"] = page.locator("#main .srtable tbody tr").count()
-    page.click(".tabs a:has-text('Models')")
+    page.click("#rvst-read")
+    page.wait_for_selector("#rvsub-measures", timeout=10000)
+    page.click("#rvsub-measures")
+    page.wait_for_timeout(500)
+    out["measure_rows"] = page.locator("#rvpanel .srtable tbody tr").count()
+    page.click("#rvsub-models")
+    page.wait_for_selector(".srmodels", timeout=10000)
     out["models_text"] = page.locator(".srmodels").inner_text()[:600]
     page.evaluate("location.hash = '#/review/kpis'")
     page.wait_for_selector("h1:has-text('KPI dictionary')", timeout=15000)
@@ -83,8 +100,9 @@ with sync_playwright() as p:
     dp = dark.new_page()
     dp.goto("http://127.0.0.1:8000/#/review")
     dp.wait_for_selector("text=One KPI, one meaning, one value", timeout=20000)
+    dp.click("#rvtab-list")                            # the reviews are under their own tab
     dp.click("table.srtable tbody tr.srrow")
-    dp.wait_for_selector("text=Findings (", timeout=20000)
+    dp.wait_for_selector("#rvst-findings.sel", timeout=20000)
     dp.wait_for_timeout(500)
     out["dark"] = dp.evaluate("document.documentElement.dataset.theme || ''")
     dp.screenshot(path="/tmp/sr-dark.png", full_page=False)
@@ -120,9 +138,14 @@ else:
     o = json.loads(res.stdout.strip().splitlines()[-1])
     print(json.dumps({k: (v[:300] if isinstance(v, str) else v) for k, v in o.items()}, indent=1))
     c.check("ui: Semantic Review is in the menu", o["menu"].strip() == "Semantic Review", o["menu"])
-    c.check("ui: the page says what it does, with the price and the dictionary", "Start review" in o["home_text"] and "10 credits" in o["home_text"]
-            and "KPI dictionary" in o["home_text"] and "2\nKPIs defined" in o["home_text"], o["home_text"][:600])
+    # the guided start since 2026-11-19: step 1 is the KPI dictionary ("KPIs in your dictionary"), the price on step 3
+    c.check("ui: the page says what it does; its first step is the KPI dictionary, the price on the steps",
+            "One KPI, one meaning, one value" in o["home_text"] and "10 credits" in o["home_text"] and "KPI dictionary" in o["home_text"]
+            and "2\nKPIs in your dictionary" in o["home_text"], o["home_text"][:600])
     c.check("ui: the file picker lists both files", "Sales model.bim" in o["picked"] and "Finance.pbit" in o["picked"], o["picked"])
+    c.check("ui: Check and start says what is read and its price before anything is charged",
+            "Nothing is charged until you start it" in o.get("start_text", "") and "10 credits" in o.get("start_text", "")
+            and "Sales model.bim" in o.get("start_text", ""), o.get("start_text", "")[:600])
     c.check("ui: the review opens its report when done", "Revenue is calculated 2 different ways" in o["report_text"]
             and "KPIs with one meaning" in o["report_text"], o["report_text"][:800])
     c.check("ui: the meaning check's absence is said, with a retry", "Check meaning again" in o["report_text"], "")
@@ -136,7 +159,7 @@ else:
     c.check("ui: no sideways scrolling at phone width", o["phone_overflow"] <= 1, o["phone_overflow"])
     c.check("ui: dark mode follows the system", o["dark"] == "dark", o["dark"])
     c.check("ui: no script errors and no failed requests", not o["errors"], o["errors"][:5])
-    c.check("ui: a fix is advice in words, with its DAX apart to copy", "What to do" in o["report_text"], "")
+    c.check("ui: a fix is advice in words, with its DAX apart to copy", o.get("what_to_do") is True, "")
     for f in ("sr-home.png", "sr-report.png", "sr-kpis-tab.png", "sr-dictionary.png", "sr-add-kpi.png", "sr-phone.png", "sr-dark.png"):
         subprocess.run(["docker", "cp", f"{c.WEB_C}:/tmp/{f}", c.out_path(f)], check=False, env={**os.environ, "MSYS_NO_PATHCONV": "1"})
 bad = [n for n, ok in c.RESULTS if not ok]

@@ -6,7 +6,7 @@ module.exports = ({ E, num, bool, color }) => ({
     { displayName: 'Parent ID', displayNameKey: 'Role_Parent', name: 'parentId', kind: 'Grouping', description: 'For an org chart: the ID of the manager or parent node. Empty for the top.', descriptionKey: 'Role_Parent_Desc' },
     { displayName: 'Label', displayNameKey: 'Role_Label', name: 'label', kind: 'Grouping', description: 'For an org chart: the name shown on each card (defaults to the ID).', descriptionKey: 'Role_Label_Desc' },
     { displayName: 'Size', displayNameKey: 'Role_Values', name: 'values', kind: 'Measure', description: 'The value that sizes tiles, segments and circles.', descriptionKey: 'Role_Values_Desc' },
-    { displayName: 'Color value', displayNameKey: 'Role_Color', name: 'colorValue', kind: 'Measure', description: 'Optional. Colors items on a gradient (for example Margin %) when Colors › Color by is Value.', descriptionKey: 'Role_Color_Desc' },
+    { displayName: 'Color value', displayNameKey: 'Role_Color', name: 'colorValue', kind: 'Measure', description: 'Optional. Colors items on a gradient (for example Margin %) when Colors > Color by is Value.', descriptionKey: 'Role_Color_Desc' },
     { displayName: 'Tooltips', displayNameKey: 'Role_Tooltips', name: 'tooltips', kind: 'Measure' }
   ],
   mappings: [{

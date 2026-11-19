@@ -1,0 +1,488 @@
+# Industry pack: e-commerce (online retail and marketplaces). Business terms tag columns by name (genbi_kit/ontology.py);
+# KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields).
+name: E-commerce
+order: 25
+description: Online stores and marketplaces. Traffic and sessions, conversion rate, orders and average order value, discounts and returns, cart and checkout abandonment, marketing efficiency, customer acquisition and repeat purchase, delivery.
+questions:
+  - What was the conversion rate by traffic channel and device last week?
+  - How has average order value changed by customer type and by category this quarter?
+  - Where do shoppers drop off - add to cart, checkout or payment - and how has cart abandonment moved?
+  - What is the return rate by category and by return reason, and what do returns cost us?
+  - Which marketing channels have the best return on ad spend and the lowest customer acquisition cost?
+  - What share of this month's customers are repeat buyers, by acquisition month?
+
+terms:
+  # ---------------- measures: traffic and funnel
+  - {name: Sessions, kind: measure, unit: count, aggregation: sum, description: "Visits to the site or app (a visit ends after 30 minutes of no activity).",
+     synonyms: [session count, visits, visit count, number of sessions, total sessions, site visits, web sessions, traffic, app sessions, sessions total, user sessions, engaged sessions]}
+  - {name: Visitors, kind: measure, unit: count, aggregation: distinct_count, description: "Distinct people (browsers or devices) who visited.",
+     synonyms: [unique visitors, users, unique users, visitor count, distinct visitors, uv, active users, total users, new users, cookie count, devices, unique devices]}
+  - {name: Page Views, kind: measure, unit: count, aggregation: sum, description: "Pages viewed.",
+     synonyms: [pageviews, page view count, views, screen views, page impressions, pages viewed, total page views, screenviews, product page views, pdp views]}
+  - {name: Session Duration, kind: measure, unit: duration, aggregation: average, description: "Time spent in a session (seconds).",
+     synonyms: [session length, avg session duration, average session duration, time on site, visit duration, session time, engagement time, time spent, session seconds, duration seconds]}
+  - {name: Bounce Rate %, kind: measure, unit: percent, aggregation: average, description: "Share of sessions that left after one page, already worked out per row.",
+     synonyms: [bounce rate, bounce pct, bounce percent, bounces rate, single page sessions rate, exit rate, bounce percentage]}
+  - {name: Conversion Rate %, kind: measure, unit: percent, aggregation: average, description: "Share of sessions that ended in an order, already worked out per row (weight it by sessions, never average it).",
+     synonyms: [conversion rate, conversion pct, cvr, cr pct, conversion percent, session conversion rate, order conversion rate, conv rate, purchase conversion rate, site conversion rate]}
+  - {name: Carts Created, kind: measure, unit: count, aggregation: sum, description: "Carts started (sessions with at least one add to cart).",
+     synonyms: [add to carts, add to cart, adds to cart, atc, atc count, cart additions, carts, cart count, carts started, sessions with cart, add to basket, basket adds, items added to cart, cart sessions]}
+  - {name: Checkouts Started, kind: measure, unit: count, aggregation: sum, description: "Shoppers who began checkout.",
+     synonyms: [checkout starts, checkouts, begin checkout, checkout initiated, checkouts initiated, checkout count, initiated checkouts, checkout sessions, started checkouts, proceed to checkout]}
+  # ---------------- measures: orders and revenue
+  - {name: Orders, kind: measure, unit: count, aggregation: sum, description: "Orders placed and paid (or confirmed).",
+     synonyms: [order count, number of orders, total orders, orders placed, purchases, transactions, transaction count, purchase count, orders completed, paid orders, order volume]}
+  - {name: Gross Sales, kind: measure, unit: currency, aggregation: sum, description: "Value of goods ordered at full price before discounts, taxes and shipping.",
+     synonyms: [gross revenue, gross merchandise value, gmv, gross order value, gross sls, gross product sales, gross demand, demand revenue, list price sales, merchandise sales, gross order amount]}
+  - {name: Discounts, kind: measure, unit: currency, aggregation: sum, description: "Price reductions from coupons, promotions and markdowns.",
+     synonyms: [discount, discount amount, discounts given, coupon amount, coupon discount, promo discount, promotion amount, markdown, voucher amount, total discount, price reductions, promo code discount]}
+  - {name: Net Sales, kind: measure, unit: currency, aggregation: sum, description: "Order value after discounts and refunds, taxes and shipping not included.",
+     synonyms: [net revenue, net sls, revenue, sales, total sales, net order value, net merchandise sales, net product sales, order revenue, net sales amount, sales amount, product revenue]}
+  - {name: Refunds, kind: measure, unit: currency, aggregation: sum, description: "Money paid back to customers for returns and cancellations.",
+     synonyms: [refund amount, refunded amount, returns value, return value, returned revenue, refund value, total refunds, return amount, credit notes, refunds issued, money back]}
+  - {name: Units Sold, kind: measure, unit: count, aggregation: sum, description: "Items ordered.",
+     synonyms: [units, quantity, qty, quantity sold, units ordered, items sold, items ordered, item count, order quantity, order qty, line quantity, quantity ordered, total units, product quantity]}
+  - {name: Returned Units, kind: measure, unit: count, aggregation: sum, description: "Items sent back by customers.",
+     synonyms: [returns, return quantity, return qty, units returned, items returned, returned quantity, returned items, return units, returned qty, rma units, return count]}
+  - {name: Cost of Goods Sold, kind: measure, unit: currency, aggregation: sum, description: "Purchase or production cost of the items sold.",
+     synonyms: [cogs, cost of sales, product cost, cost of goods, item cost total, merchandise cost, landed cost total, cost amount, total product cost, cost of products sold]}
+  - {name: Shipping Cost, kind: measure, unit: currency, aggregation: sum, description: "What the store pays carriers to deliver orders.",
+     synonyms: [freight cost, delivery cost, shipping expense, fulfillment shipping cost, carrier cost, postage cost, shipping spend, outbound shipping cost, courier cost, delivery expense, shipping charges paid]}
+  - {name: Shipping Revenue, kind: measure, unit: currency, aggregation: sum, description: "Shipping fees charged to customers.",
+     synonyms: [shipping fee, shipping fees, shipping charged, delivery fee, delivery fees, shipping income, shipping collected, shipping paid by customer, handling fee]}
+  - {name: Tax, kind: measure, unit: currency, aggregation: sum, description: "Sales tax or VAT charged on orders (not part of sales).",
+     synonyms: [taxes, tax amount, sales tax, vat, gst, tax collected, total tax, order tax, tax charged]}
+  - {name: Price, kind: measure, unit: currency, aggregation: average, description: "Selling price of one item.",
+     synonyms: [unit price, item price, selling price, list price, product price, price per unit, sale price, retail price, current price, line price]}
+  - {name: Product Rating, kind: measure, unit: number, aggregation: average, description: "Average review rating of products (stars).",
+     synonyms: [rating, review rating, star rating, average rating, avg rating, review score, product score, customer rating, stars, avg review score]}
+  # ---------------- measures: marketing
+  - {name: Marketing Spend, kind: measure, unit: currency, aggregation: sum, description: "Money spent on advertising and acquisition.",
+     synonyms: [ad spend, advertising spend, marketing cost, ad cost, media spend, paid media spend, campaign spend, campaign cost, marketing expense, advertising cost, cost, spend, ads spend, acquisition spend]}
+  - {name: Impressions, kind: measure, unit: count, aggregation: sum, description: "Times an ad was shown.",
+     synonyms: [impression count, ad impressions, impr, views served, ad views, total impressions, impressions served, ads shown]}
+  - {name: Clicks, kind: measure, unit: count, aggregation: sum, description: "Clicks on ads.",
+     synonyms: [click count, ad clicks, link clicks, total clicks, clicks on ads, paid clicks, number of clicks, click throughs]}
+  - {name: Attributed Revenue, kind: measure, unit: currency, aggregation: sum, description: "Revenue credited to a campaign or channel by the attribution model.",
+     synonyms: [attributed sales, campaign revenue, channel revenue, ad revenue, conversion value, attributed order value, ad attributed revenue, revenue attributed, campaign sales, purchase conversion value, attributed gmv]}
+  # ---------------- measures: customers and fulfillment
+  - {name: Customers, kind: measure, unit: count, aggregation: distinct_count, description: "Distinct customers who ordered.",
+     synonyms: [customer count, active customers, buyers, unique customers, unique buyers, purchasing customers, ordering customers, shoppers, number of customers, distinct customers, paying customers]}
+  - {name: New Customers, kind: measure, unit: count, aggregation: distinct_count, description: "Customers whose first order was in the period.",
+     synonyms: [new buyers, first time customers, first time buyers, new customer count, first order customers, new shoppers, acquired customers, customers new, new purchasers]}
+  - {name: Repeat Customers, kind: measure, unit: count, aggregation: distinct_count, description: "Customers who ordered in the period and had ordered before.",
+     synonyms: [returning customers, repeat buyers, returning buyers, repeat customer count, repeat purchasers, existing customers, returning shoppers, retained customers, repeat shoppers]}
+  - {name: Cancelled Orders, kind: measure, unit: count, aggregation: sum, description: "Orders cancelled before delivery.",
+     synonyms: [canceled orders, order cancellations, cancellations, cancelled order count, cancel count, orders cancelled, canceled order count]}
+  - {name: Delivered Orders, kind: measure, unit: count, aggregation: sum, description: "Orders delivered to the customer.",
+     synonyms: [orders delivered, delivered order count, deliveries, fulfilled orders, completed deliveries, shipped orders delivered, orders fulfilled]}
+  - {name: Delivery Days, kind: measure, unit: duration, aggregation: average, description: "Days from order to delivery.",
+     synonyms: [delivery time, delivery lead time, days to deliver, order to delivery days, shipping days, transit days, delivery duration, fulfillment days, days to delivery, delivery tat, order to door days]}
+  - {name: Stock Units, kind: measure, unit: count, aggregation: last, description: "Units in stock at the end of the period.",
+     synonyms: [inventory, inventory units, stock on hand, on hand units, available stock, stock quantity, available quantity, inventory quantity, units in stock, stock level, soh]}
+
+  # ---------------- keys
+  - {name: Customer, kind: key, entity: Customer, description: "Identifies a customer (account).",
+     synonyms: [customer id, customer key, customer number, customer code, user id, account id, buyer id, shopper id, member id, client id, cust id, customer uuid, registered user id, contact id]}
+  - {name: Visitor, kind: key, entity: Visitor, description: "Identifies a browser or device before sign-in.",
+     synonyms: [visitor id, anonymous id, cookie id, device id, browser id, fullvisitorid, user pseudo id, ga client id, session user id, idfa, advertising id]}
+  - {name: Session, kind: key, entity: Session, description: "Identifies one visit.",
+     synonyms: [session id, session key, visit id, visit number, session number, visit key, ga session id, session token, sid, web session id]}
+  - {name: Order, kind: key, entity: Order, description: "Identifies an order.",
+     synonyms: [order id, order number, order no, order key, order ref, order reference, purchase id, transaction id, checkout id, invoice number, order code, sales order id, confirmation number]}
+  - {name: Product, kind: key, entity: Product, description: "Identifies a product or variant (SKU).",
+     synonyms: [product id, product key, product code, product number, sku, sku id, sku code, variant id, item id, item number, item code, asin, gtin, upc, ean, listing id, offer id, style id, article id]}
+  - {name: Cart, kind: key, entity: Cart, description: "Identifies a shopping cart.",
+     synonyms: [cart id, cart key, cart token, basket id, basket key, basket token, bag id, cart number, shopping cart id]}
+  - {name: Campaign, kind: key, entity: Campaign, description: "Identifies a marketing campaign.",
+     synonyms: [campaign id, campaign key, campaign code, ad campaign id, ad group id, adgroup id, ad id, creative id, utm campaign id, promotion id, flight id, line item id]}
+  - {name: Return, kind: key, entity: Return, description: "Identifies a return request.",
+     synonyms: [return id, return number, return key, rma, rma number, rma id, refund id, return request id, return authorization, return reference, return ticket id]}
+  - {name: Shipment, kind: key, entity: Shipment, description: "Identifies a delivery.",
+     synonyms: [shipment id, shipment number, tracking number, tracking id, tracking code, awb, awb number, waybill number, parcel id, package id, consignment id, delivery id, fulfillment id, fulfilment id]}
+  - {name: Seller, kind: key, entity: Seller, description: "Identifies a marketplace seller or brand partner.",
+     synonyms: [seller id, seller code, seller key, merchant id, merchant code, vendor id, vendor code, supplier id, partner id, brand partner id, store id seller, shop id, supplier code]}
+  - {name: Coupon, kind: key, entity: Coupon, description: "Identifies a discount code.",
+     synonyms: [coupon id, coupon code, promo code, promotion code, voucher code, voucher id, discount code, discount id, offer code, gift card code, referral code]}
+  - {name: Payment, kind: key, entity: Payment, description: "Identifies a payment attempt.",
+     synonyms: [payment id, payment key, payment reference, payment ref, payment token, charge id, gateway transaction id, payment intent id, stripe charge id, razorpay payment id, txn ref]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The day a row belongs to.",
+     synonyms: [day, calendar date, report date, reporting date, event date, activity date, transaction date, business date, snapshot date, traffic date, session day, created date, created at, timestamp]}
+  - {name: Order Date, kind: date, entity: Date, description: "The day the order was placed.",
+     synonyms: [order placed date, purchase date, order created date, order created at, ordered at, placed at, order dt, order timestamp, order datetime, purchase timestamp, order time, placed date]}
+  - {name: Session Date, kind: date, entity: Date, synonyms: [visit date, session start, session start time, session start date, visit start time, session day date, visit timestamp, session timestamp]}
+  - {name: Ship Date, kind: date, entity: Date, synonyms: [shipped date, shipped at, dispatch date, dispatched at, fulfillment date, fulfilment date, shipment date, handover date, pickup date]}
+  - {name: Delivery Date, kind: date, entity: Date, synonyms: [delivered date, delivered at, arrival date, received date, delivery dt, delivered on, date delivered, delivery timestamp]}
+  - {name: Return Date, kind: date, entity: Date, synonyms: [returned date, returned at, return requested date, return created date, return request date, refund date, refunded at, return dt]}
+  - {name: Signup Date, kind: date, entity: Date, synonyms: [registration date, registered date, account created date, joined date, sign up date, customer created date, user created at, account creation date]}
+  - {name: First Order Date, kind: date, entity: Date, synonyms: [first purchase date, first order, acquisition date, customer since date, first order at, first purchase, initial order date, first transaction date]}
+  - {name: Cohort Month, kind: date, entity: Date, description: "The month a customer first ordered - the group they are followed in.",
+     synonyms: [cohort, cohort date, cohort period, acquisition month, first order month, cohort year month, vintage month, first purchase month, signup month]}
+  - {name: Week, kind: date, entity: Date, synonyms: [week number, week id, calendar week, iso week, week start date, week of year, week ending]}
+  - {name: Month, kind: date, entity: Date, synonyms: [month name, reporting month, month year, year month, yyyymm, order month, calendar month]}
+  - {name: Fiscal Period, kind: date, entity: Date, synonyms: [fiscal month, period number, period id, accounting period, fiscal period number, fp]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, financial year, financial year number, year number]}
+
+  # ---------------- attributes
+  - {name: Product Name, kind: attribute, entity: Product, synonyms: [item name, product title, title, product description, item description, sku name, variant name, listing title, name, product desc]}
+  - {name: Category, kind: attribute, entity: Product, synonyms: [product category, category name, department, product type, primary category, category l1, top category, merchandise category, vertical, product group]}
+  - {name: Subcategory, kind: attribute, entity: Product, synonyms: [sub category, subcategory name, category l2, secondary category, product subtype, class, product subcategory, sub cat]}
+  - {name: Brand, kind: attribute, entity: Product, synonyms: [brand name, manufacturer, vendor brand, label, brand title, make, maker]}
+  - {name: Seller Name, kind: attribute, entity: Seller, synonyms: [merchant name, vendor name, supplier name, shop name, store name, partner name, seller, merchant, brand partner name]}
+  - {name: Customer Name, kind: attribute, entity: Customer, synonyms: [buyer name, customer full name, shopper name, account name, user name, client name]}
+  - {name: Customer Type, kind: attribute, entity: Customer, description: "New or returning customer for the order.",
+     synonyms: [new or returning, new vs returning, buyer type, customer status, repeat flag, new customer flag, returning flag, customer cohort type, first time or repeat, customer lifecycle]}
+  - {name: Customer Segment, kind: attribute, entity: Customer, synonyms: [segment, rfm segment, loyalty tier, customer tier, customer group, customer class, value segment, loyalty segment, customer category, member tier]}
+  - {name: Traffic Channel, kind: attribute, entity: Session, description: "How the visitor arrived (organic search, paid search, email, social, direct, referral).",
+     synonyms: [channel, marketing channel, default channel group, channel group, acquisition channel, traffic source type, source medium group, channel grouping, traffic type, medium group]}
+  - {name: Source, kind: attribute, entity: Session, synonyms: [utm source, traffic source, referrer, referral source, session source, first touch source, campaign source, source name, referrer name, site source]}
+  - {name: Medium, kind: attribute, entity: Session, synonyms: [utm medium, traffic medium, campaign medium, session medium, marketing medium, cpc or organic]}
+  - {name: Campaign Name, kind: attribute, entity: Campaign, synonyms: [campaign, utm campaign, campaign title, ad campaign name, ad group name, adgroup name, creative name, ad name, promotion name, campaign description]}
+  - {name: Device Category, kind: attribute, entity: Session, description: "Mobile, desktop or tablet.",
+     synonyms: [device, device type, device class, platform, device name, desktop or mobile, device segment, form factor, os, operating system, browser]}
+  - {name: Landing Page, kind: attribute, entity: Session, synonyms: [landing page path, entry page, page path, first page, landing url, page url, landing page url, start page, entrance page, page title]}
+  - {name: Sales Channel, kind: attribute, entity: Order, description: "Where the order was placed (website, app, marketplace).",
+     synonyms: [order channel, order source, store, storefront, marketplace, sales platform, site, app or web, order platform, shop channel, ecommerce channel, order origin]}
+  - {name: Order Status, kind: attribute, entity: Order, synonyms: [status, fulfillment status, fulfilment status, order state, delivery status, order stage, shipment status, financial status, order condition]}
+  - {name: Fulfillment Method, kind: attribute, entity: Order, synonyms: [shipping method, delivery method, delivery option, shipping option, fulfilment method, fulfillment type, shipping service, delivery type, carrier, courier, click and collect flag]}
+  - {name: Payment Method, kind: attribute, entity: Payment, synonyms: [payment type, payment mode, payment gateway, tender type, pay method, payment option, card type, wallet type, payment instrument, cod flag]}
+  - {name: Return Reason, kind: attribute, entity: Return, synonyms: [return reason code, reason for return, return cause, refund reason, return category, return type, return code, rma reason]}
+  - {name: Country, kind: attribute, entity: Customer, synonyms: [country name, country code, shipping country, billing country, ship to country, geo country, nation, market]}
+  - {name: Region, kind: attribute, entity: Customer, synonyms: [region name, sales region, state, state name, province, state code, shipping state, area, territory, zone]}
+  - {name: City, kind: attribute, entity: Customer, synonyms: [city name, town, shipping city, ship to city, billing city, delivery city, geo city]}
+  - {name: Currency, kind: attribute, entity: Order, synonyms: [currency code, order currency, presentment currency, billing currency, ccy, iso currency, shop currency]}
+
+kpis:
+  # ---------------- traffic and conversion
+  - name: Sessions
+    synonyms: [Visits, Site Sessions, Web Sessions, Traffic]
+    definition: Visits to the site or app. A session ends after 30 minutes without activity or at midnight; internal and bot traffic excluded.
+    formula: Count of distinct sessions
+    unit: count
+    aggregation: distinct_count
+    domain: Traffic
+  - name: Unique Visitors
+    synonyms: [Visitors, Users, Unique Users]
+    definition: Distinct browsers or devices that visited in the period.
+    formula: Distinct count of visitor ids
+    unit: count
+    aggregation: distinct_count
+    domain: Traffic
+  - name: Orders
+    synonyms: [Order Count, Number of Orders, Purchases]
+    definition: Orders placed and paid, cancelled orders included (cancellations are reported separately).
+    formula: Count of distinct orders
+    unit: count
+    aggregation: distinct_count
+    time: by order date
+    domain: Sales
+  - name: Conversion Rate %
+    synonyms: [Conversion Rate, CVR, Session Conversion Rate, Order Conversion Rate]
+    definition: Share of sessions that ended in an order.
+    formula: Orders / Sessions
+    dax: DIVIDE ( [Orders], [Sessions] )
+    unit: percent
+    aggregation: ratio
+    domain: Traffic
+  - name: Carts Created
+    synonyms: [Add to Carts, Add-to-Cart Sessions, Carts Started]
+    definition: Carts started - sessions with at least one item added to the cart.
+    formula: Count of distinct carts with an add-to-cart event
+    unit: count
+    aggregation: distinct_count
+    domain: Funnel
+  - name: Add-to-Cart Rate %
+    synonyms: [ATC Rate, Cart Rate, Session to Cart %]
+    definition: Share of sessions that added an item to the cart.
+    formula: Carts created / Sessions
+    dax: DIVIDE ( [Carts Created], [Sessions] )
+    unit: percent
+    aggregation: ratio
+    domain: Funnel
+  - name: Checkouts Started
+    synonyms: [Checkout Starts, Begin Checkout, Initiated Checkouts]
+    definition: Shoppers who began the checkout.
+    formula: Count of distinct sessions with a begin-checkout event
+    unit: count
+    aggregation: distinct_count
+    domain: Funnel
+  - name: Cart Abandonment Rate %
+    synonyms: [Cart Abandonment, Abandoned Cart Rate, Cart Abandonment %]
+    definition: Share of carts that did not end in an order.
+    formula: 1 - Orders / Carts created
+    dax: 1 - DIVIDE ( [Orders], [Carts Created] )
+    unit: percent
+    aggregation: ratio
+    domain: Funnel
+  - name: Checkout Abandonment Rate %
+    synonyms: [Checkout Abandonment, Checkout Drop-Off %]
+    definition: Share of started checkouts that did not end in an order.
+    formula: 1 - Orders / Checkouts started
+    dax: 1 - DIVIDE ( [Orders], [Checkouts Started] )
+    unit: percent
+    aggregation: ratio
+    domain: Funnel
+  # ---------------- revenue and margin
+  - name: Gross Sales
+    synonyms: [Gross Merchandise Value, GMV, Gross Revenue, Gross Demand]
+    definition: Value of goods ordered at full price, before discounts, returns, taxes and shipping.
+    formula: Sum of unit price times quantity ordered
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Discounts
+    synonyms: [Discount Amount, Promo Discounts, Coupon Discounts]
+    definition: Price reductions given through coupons, promotions and markdowns.
+    formula: Sum of discounts applied to orders
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Order Revenue
+    synonyms: [Net Order Value, Revenue before Returns, Ordered Revenue]
+    definition: Value of goods ordered after discounts, before refunds. Taxes and shipping are not included.
+    formula: Gross sales - Discounts
+    dax: '[Gross Sales] - [Discounts]'
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Refunds
+    synonyms: [Refund Amount, Refunded Revenue]
+    definition: Money paid back to customers for returns and cancellations.
+    formula: Sum of refunds issued
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Net Revenue
+    synonyms: [Net Sales, Revenue, Total Revenue]
+    definition: Order revenue after refunds - what the store keeps from the goods sold.
+    formula: Order revenue - Refunds
+    dax: '[Order Revenue] - [Refunds]'
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Average Order Value
+    synonyms: [AOV, Average Basket Value, Average Order Size]
+    definition: Order revenue per order.
+    formula: Order revenue / Orders
+    dax: DIVIDE ( [Order Revenue], [Orders] )
+    unit: currency
+    aggregation: ratio
+    domain: Sales
+  - name: Units Sold
+    synonyms: [Units, Items Sold, Units Ordered]
+    definition: Items ordered, before returns.
+    formula: Sum of quantity ordered
+    unit: count
+    aggregation: sum
+    domain: Sales
+  - name: Units per Order
+    synonyms: [Items per Order, Average Basket Size, UPO]
+    definition: Items ordered per order.
+    formula: Units sold / Orders
+    dax: DIVIDE ( [Units Sold], [Orders] )
+    unit: number
+    aggregation: ratio
+    domain: Sales
+  - name: Revenue per Session
+    synonyms: [RPS, Revenue per Visit, Sales per Session]
+    definition: Order revenue per session.
+    formula: Order revenue / Sessions
+    dax: DIVIDE ( [Order Revenue], [Sessions] )
+    unit: currency
+    aggregation: ratio
+    domain: Traffic
+  - name: Discount Rate %
+    synonyms: [Discount %, Discount Share, Markdown Rate]
+    definition: Discounts as a share of gross sales.
+    formula: Discounts / Gross sales
+    dax: DIVIDE ( [Discounts], [Gross Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Sales
+  - name: Cost of Goods Sold
+    synonyms: [COGS, Cost of Sales, Product Cost]
+    definition: Purchase or production cost of the items sold, returned items taken out.
+    formula: Sum of units sold times unit cost, less cost of units returned to stock
+    unit: currency
+    aggregation: sum
+    domain: Margin
+  - name: Gross Margin
+    synonyms: [Gross Profit, Gross Margin $, Product Margin]
+    definition: Net revenue less cost of goods sold, before shipping, payment fees and marketing.
+    formula: Net revenue - Cost of goods sold
+    dax: '[Net Revenue] - [Cost of Goods Sold]'
+    unit: currency
+    aggregation: sum
+    domain: Margin
+  - name: Gross Margin %
+    synonyms: [GM %, Gross Margin Rate, Gross Profit %]
+    definition: Gross margin as a share of net revenue.
+    formula: Gross margin / Net revenue
+    dax: DIVIDE ( [Gross Margin], [Net Revenue] )
+    unit: percent
+    aggregation: ratio
+    domain: Margin
+  - name: Shipping Cost
+    synonyms: [Delivery Cost, Outbound Shipping Cost, Freight Cost]
+    definition: What the store pays carriers to deliver orders, free-shipping orders included.
+    formula: Sum of carrier charges for outbound shipments
+    unit: currency
+    aggregation: sum
+    domain: Fulfillment
+  - name: Shipping Cost % of Revenue
+    synonyms: [Shipping Cost %, Delivery Cost %, Shipping as % of Sales]
+    definition: Shipping cost as a share of order revenue.
+    formula: Shipping cost / Order revenue
+    dax: DIVIDE ( [Shipping Cost], [Order Revenue] )
+    unit: percent
+    aggregation: ratio
+    domain: Fulfillment
+  # ---------------- returns and fulfillment
+  - name: Returned Units
+    synonyms: [Units Returned, Items Returned, Returns]
+    definition: Items sent back by customers, by return date.
+    formula: Sum of quantity returned
+    unit: count
+    aggregation: sum
+    time: by return date
+    domain: Returns
+  - name: Return Rate %
+    synonyms: [Returns Rate, Return %, Product Return Rate]
+    definition: Returned units as a share of units sold. Measure it on orders old enough for returns to have come in.
+    formula: Returned units / Units sold
+    dax: DIVIDE ( [Returned Units], [Units Sold] )
+    unit: percent
+    aggregation: ratio
+    domain: Returns
+  - name: Cancelled Orders
+    synonyms: [Canceled Orders, Order Cancellations]
+    definition: Orders cancelled before delivery.
+    formula: Count of orders with status = Cancelled
+    unit: count
+    aggregation: distinct_count
+    domain: Fulfillment
+  - name: Order Cancellation Rate %
+    synonyms: [Cancellation Rate, Cancellation %, Order Cancel Rate]
+    definition: Share of orders cancelled.
+    formula: Cancelled orders / Orders
+    dax: DIVIDE ( [Cancelled Orders], [Orders] )
+    unit: percent
+    aggregation: ratio
+    domain: Fulfillment
+  - name: Average Delivery Days
+    synonyms: [Delivery Time, Average Delivery Time, Order to Delivery Days]
+    definition: Average days from order to delivery for delivered orders.
+    formula: Average of (delivery date - order date) in days
+    unit: duration
+    aggregation: average
+    domain: Fulfillment
+  # ---------------- marketing
+  - name: Marketing Spend
+    synonyms: [Ad Spend, Advertising Spend, Paid Media Spend, Marketing Cost]
+    definition: Money spent on advertising and acquisition (media, agency fees and affiliate payouts).
+    formula: Sum of marketing and advertising costs
+    unit: currency
+    aggregation: sum
+    domain: Marketing
+  - name: Impressions
+    synonyms: [Ad Impressions, Impression Count]
+    definition: Times an ad was shown.
+    formula: Sum of ad impressions
+    unit: count
+    aggregation: sum
+    domain: Marketing
+  - name: Clicks
+    synonyms: [Ad Clicks, Click Count]
+    definition: Clicks on ads.
+    formula: Sum of ad clicks
+    unit: count
+    aggregation: sum
+    domain: Marketing
+  - name: Click-Through Rate %
+    synonyms: [CTR, CTR %, Click Rate]
+    definition: Share of ad impressions that were clicked.
+    formula: Clicks / Impressions
+    dax: DIVIDE ( [Clicks], [Impressions] )
+    unit: percent
+    aggregation: ratio
+    domain: Marketing
+  - name: Cost per Click
+    synonyms: [CPC, Average CPC]
+    definition: Marketing spend per click.
+    formula: Marketing spend / Clicks
+    dax: DIVIDE ( [Marketing Spend], [Clicks] )
+    unit: currency
+    aggregation: ratio
+    domain: Marketing
+  - name: Attributed Revenue
+    synonyms: [Campaign Revenue, Ad Revenue, Conversion Value]
+    definition: Revenue credited to a campaign or channel by the attribution model in use.
+    formula: Sum of order revenue credited to campaigns
+    unit: currency
+    aggregation: sum
+    time: attribution window as agreed (for example 7-day click)
+    domain: Marketing
+  - name: ROAS
+    synonyms: [Return on Ad Spend, Return on Advertising Spend, Ad ROAS]
+    definition: Attributed revenue for each unit of marketing spend.
+    formula: Attributed revenue / Marketing spend
+    dax: DIVIDE ( [Attributed Revenue], [Marketing Spend] )
+    unit: ratio
+    aggregation: ratio
+    domain: Marketing
+  # ---------------- customers
+  - name: Active Customers
+    synonyms: [Customers, Buyers, Unique Customers, Ordering Customers]
+    definition: Distinct customers who placed at least one order in the period.
+    formula: Distinct count of customers with an order
+    unit: count
+    aggregation: distinct_count
+    domain: Customers
+  - name: New Customers
+    synonyms: [New Buyers, First-Time Customers, First Time Buyers]
+    definition: Customers whose first ever order was in the period.
+    formula: Distinct count of customers with first order date in the period
+    unit: count
+    aggregation: distinct_count
+    time: by first order date
+    domain: Customers
+  - name: Repeat Customers
+    synonyms: [Returning Customers, Repeat Buyers, Returning Buyers]
+    definition: Customers who ordered in the period and had ordered before.
+    formula: Distinct count of customers with an order and an earlier first order date
+    unit: count
+    aggregation: distinct_count
+    domain: Customers
+  - name: Repeat Purchase Rate %
+    synonyms: [Repeat Rate, Repeat Customer Rate, Returning Customer Rate]
+    definition: Share of active customers who are repeat customers.
+    formula: Repeat customers / Active customers
+    dax: DIVIDE ( [Repeat Customers], [Active Customers] )
+    unit: percent
+    aggregation: ratio
+    domain: Customers
+  - name: Customer Acquisition Cost
+    synonyms: [CAC, Cost per New Customer, Cost per Acquisition]
+    definition: Marketing spend for each new customer.
+    formula: Marketing spend / New customers
+    dax: DIVIDE ( [Marketing Spend], [New Customers] )
+    unit: currency
+    aggregation: ratio
+    domain: Customers
+  - name: Revenue per Customer
+    synonyms: [Average Revenue per Customer, ARPC, Revenue per Active Customer]
+    definition: Net revenue for each active customer.
+    formula: Net revenue / Active customers
+    dax: DIVIDE ( [Net Revenue], [Active Customers] )
+    unit: currency
+    aggregation: ratio
+    domain: Customers
+  - name: Average Product Rating
+    synonyms: [Average Rating, Review Rating, Star Rating]
+    definition: Average review rating of the products, in stars.
+    formula: Average of review ratings
+    unit: number
+    aggregation: average
+    domain: Customers

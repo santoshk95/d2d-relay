@@ -407,6 +407,53 @@ case (3, 4, 11, 14, 16), the checks sunburstLabelsApart (separating axes on each
 sunburstLabelsInside (every corner in its own slice's fill), plus thinSlicesKeepBigLabels; against the old code the
 first two fail. Atlas Hierarchy 1.0.7.0, built offline as in section 18.
 
+## 21. Relay names everywhere, and visuals ready for a grocery retailer (19 Nov 2026)
+
+D2D Relay's rule: every custom visual is a Relay visual, and "Atlas" is never shown to anyone. The display names already
+read "Relay Columns" and so on, but the start screens (landing titles and the SVG's aria-label) still said "Atlas
+Columns", the packages were named `Atlas*.pbiviz`, the shared CSS carried an "Atlas" comment and the gallery page said
+"Visual Atlas". Now the start screens say Relay, the packages are `Relay<Family>.<version>.pbiviz` (what
+`scripts/build.sh` names them from the display name; D2D Relay's `genbi_kit/atlas.py` and `tools/mk_report.py` read both
+names, the newest version of a family wins), the themes are "Relay - Soft" and so on, the gallery is "Relay visuals" and
+`tools/scaffold.py` gives a new family the RELAY by PASDACS author. Folder, class and visual names and the GUIDs stay.
+
+Text people read uses plain keyboard characters: a shortened label ends with three dots (`MORE` in `common/look.ts`),
+drilled names and paths use ">", ranges in tooltips "to", and the Gauges and Finance labels lost their middle dots.
+
+For a US grocery and drug retailer's BI team (the trial customer), the retail KPIs and pages were mapped to the families
+and drawn with retail-like data (`visuals/test/retail_*`, see TESTING.md). What was missing or wrong, now built or fixed:
+
+- **Gauges**: a Comparison (last year) well: cards, KPIs, gauges, multi-row cards, the ticker and the leaderboard show
+  the change against it next to the change against the target ("-0.8% vs plan  +3.2% vs LY"; Format pane Target and
+  status: Target is called / Comparison is called). A change is said as people read it (`changeText` in
+  `common/util.ts`): points between percentages (+1.9 pts, where a comp % against its goal read "+75%"), % between
+  positive amounts, else the difference. Status colors are darkened for text (`readable` in `common/color.ts`; amber
+  on white was 2.3:1). New chart type **leaderboard**: ranked rows with rank, name, a bar with the target marked, the
+  value, the changes and a sparkline; order by value or by the change against the target or the comparison, top N;
+  100+ rows scroll. Bullets scroll too instead of squeezing 120 stores into 3 px rows. A card's
+  name sits below its value's descent ("$0" reached the name), the liquid fill's "of" line below the percent, and a
+  multi-row card never cuts a number short ("$6..."): two columns with smaller numbers, then without the target amount.
+- **Finance**: waterfall value labels are whole or not shown (52 weeks read "-..."), placed totals first and never on
+  each other; the value axis fits the changes when the totals dwarf them (`waterfall.axis` auto, zero, fit; a slanted
+  break marks the cut totals), so a $5.1bn bridge shows its +$28M and -$4M steps; a rate's steps read in points; the
+  funnel's "18.4M (100%)".
+- **Time**: heat grid colors run from the lowest to the highest cell (in-stock rates of 93% and 98% looked alike), an
+  optional middle value and color make the scale diverge (in-stock around 95%, comp around 0), the ends can be fixed;
+  rows scroll; the timeline's month names no longer run together.
+- **Common**: an axis in a percent format counted its decimals on the raw value, so +1% and +1.5% ticks both read
+  "+1%" (and shrink 3% and 3.5% both "3%").
+- **Columns**: slanted category labels end inside the visual, and a horizontal axis's end ticks stay inside ("100%").
+- **Compare**: a negative lollipop's label gets room on its side (it ran into the category name), and a tornado has as
+  many ticks as its labels have room for.
+- **Parts**: outside labels stay below the legend and the smallest give way when they cannot all fit, the center total
+  is in its own unit ($4.99bn, not $4,990M), and a share that is not zero reads "<0.1%", not "0.0%".
+- **Proportion**: an aster of rates is out of 100% (in-stock rates drew no petals), and the rose's values sit inside
+  their wedges (they ran into the period names).
+- **Lines**: data labels are whole or not shown and never on each other.
+
+Every family's third version part went up (common code changed), GUIDs unchanged, built offline with the pinned
+toolchain; every mock-host check passes, and the retail pages pass their checks.
+
 ## Decisions to keep
 
 - One `.pbiviz` per family, with a chart-type switch.

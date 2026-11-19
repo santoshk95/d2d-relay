@@ -42,6 +42,14 @@ export function luminance(hex: string): number { const [r, g, b] = hex2rgb(hex).
 export function contrast(a: string, b: string): number { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
 /** text color (white or near-black) that reads best on a fill */
 export const inkOn = (hex: string) => (contrast(hex, "#ffffff") >= contrast(hex, "#141414") * 0.82 ? "#ffffff" : "#141414");
+/** a color for text on a surface: the same hue, darkened (or lightened on a dark surface) until it reads (contrast >= min).
+ *  Status colors such as amber (#d9a400) are too light for text on white as they are. */
+export function readable(hex: string, surface: string, min = 3.6): string {
+    if (contrast(hex, surface) >= min) return hex;
+    const toward = luminance(surface) > 0.4 ? "#000000" : "#ffffff";
+    for (let k = 1; k <= 10; k++) { const c = mix(hex, toward, k * 0.08); if (contrast(c, surface) >= min) return c; }
+    return mix(hex, toward, 0.8);
+}
 
 /* ---- separation checks: OKLab distance under normal vision and protan/deutan simulation (Machado 2009) ---- */
 const CVD = [[[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]], [[0.367322, 0.860646, -0.227968], [0.280085, 0.672501, 0.047413], [-0.01182, 0.04294, 0.968881]]];

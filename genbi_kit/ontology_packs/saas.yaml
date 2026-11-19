@@ -1,0 +1,451 @@
+# Industry pack: software and subscriptions (SaaS). Business terms tag columns by name (genbi_kit/ontology.py);
+# KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields).
+name: Software and subscriptions
+order: 45
+description: SaaS and subscription businesses. Recurring revenue (MRR and ARR) and its movements, churn and net revenue retention, customer acquisition cost and lifetime value, trials, activation, product usage and pipeline.
+questions:
+  - How did MRR move last month - new, expansion, contraction and churn?
+  - What is our net revenue retention by customer segment and by plan?
+  - What is the customer acquisition cost and the CAC payback period by acquisition channel?
+  - Which cohorts have the lowest retention after 6 months?
+  - What share of trials convert to paying customers, and what share of signups activate?
+  - How many monthly active users do we have by plan, and what is daily to monthly stickiness?
+
+terms:
+  # ---------------- measures: recurring revenue
+  - {name: MRR, kind: measure, unit: currency, aggregation: last, description: "Monthly recurring revenue - the value of active subscriptions, normalised to one month, at the end of the period.",
+     synonyms: [monthly recurring revenue, mrr amount, recurring revenue, monthly recurring, current mrr, closing mrr, ending mrr, subscription mrr, normalized mrr, mrr usd, monthly revenue run rate]}
+  - {name: ARR, kind: measure, unit: currency, aggregation: last, description: "Annual recurring revenue - MRR times 12 (or the annualised contract value).",
+     synonyms: [annual recurring revenue, arr amount, annualized recurring revenue, annualised recurring revenue, current arr, closing arr, ending arr, annual run rate, run rate revenue, annualized revenue]}
+  - {name: Opening MRR, kind: measure, unit: currency, aggregation: last, description: "MRR at the start of the period.",
+     synonyms: [beginning mrr, starting mrr, mrr start, mrr opening, opening recurring revenue, bop mrr, prior period mrr, previous mrr, mrr beginning of period]}
+  - {name: New MRR, kind: measure, unit: currency, aggregation: sum, description: "MRR from customers who started paying in the period.",
+     synonyms: [new business mrr, new customer mrr, new logo mrr, mrr new, new subscription mrr, new mrr amount, new business revenue mrr, new arr]}
+  - {name: Expansion MRR, kind: measure, unit: currency, aggregation: sum, description: "Extra MRR from existing customers (upgrades, more seats, add-ons).",
+     synonyms: [upsell mrr, upgrade mrr, expansion revenue, expansion mrr amount, cross sell mrr, add on mrr, upsell revenue, mrr expansion, expansion arr, seat expansion mrr]}
+  - {name: Contraction MRR, kind: measure, unit: currency, aggregation: sum, description: "MRR lost from existing customers who downgraded but stayed.",
+     synonyms: [downgrade mrr, downsell mrr, contraction revenue, mrr contraction, contraction mrr amount, downgrade revenue, contraction arr, seat reduction mrr]}
+  - {name: Churned MRR, kind: measure, unit: currency, aggregation: sum, description: "MRR lost from customers who cancelled.",
+     synonyms: [churn mrr, mrr churn, cancelled mrr, canceled mrr, lost mrr, churned revenue, churned mrr amount, churned arr, cancellation mrr]}
+  # ---------------- measures: revenue and cost
+  - {name: Recognized Revenue, kind: measure, unit: currency, aggregation: sum, description: "Revenue booked in the period under revenue recognition rules.",
+     synonyms: [revenue recognized, recognised revenue, subscription revenue, total revenue, revenue, rev rec, revenue amount, gaap revenue, earned revenue, net revenue, sales]}
+  - {name: Billings, kind: measure, unit: currency, aggregation: sum, description: "Amounts invoiced to customers in the period.",
+     synonyms: [billing, billed amount, invoiced amount, invoice amount, invoice total, total billings, amount billed, calculated billings, gross billings]}
+  - {name: Bookings, kind: measure, unit: currency, aggregation: sum, description: "Contract value signed in the period (annual or total contract value).",
+     synonyms: [new bookings, total bookings, acv, annual contract value, tcv, total contract value, contract value, deal value, booked amount, closed won amount, deal amount, opportunity amount]}
+  - {name: Cost of Revenue, kind: measure, unit: currency, aggregation: sum, description: "Cost of delivering the service - hosting, support, payment fees.",
+     synonyms: [cogs, cost of goods sold, cost of sales, cost of service, hosting cost, infrastructure cost, cost to serve, cost of subscription revenue, service delivery cost]}
+  - {name: Sales and Marketing Spend, kind: measure, unit: currency, aggregation: sum, description: "Cost of winning customers - marketing programs, sales salaries and commissions.",
+     synonyms: [sales and marketing expense, s and m spend, sm spend, sales marketing spend, acquisition spend, marketing spend, sales spend, cac spend, acquisition cost, customer acquisition spend, go to market spend, gtm spend, paid media spend]}
+  - {name: Discount Amount, kind: measure, unit: currency, aggregation: sum, description: "Discounts given on subscriptions.",
+     synonyms: [discount, discounts, promo discount, coupon amount, discount given, price discount, discounted amount, coupon discount]}
+  # ---------------- measures: customers and users
+  - {name: Active Customers, kind: measure, unit: count, aggregation: last, description: "Paying customers at the end of the period.",
+     synonyms: [paying customers, customers, customer count, active accounts, paying accounts, active subscriptions, subscribers, active subscribers, total customers, active orgs, active tenants, live customers, active logos, logos]}
+  - {name: Opening Customers, kind: measure, unit: count, aggregation: last, description: "Paying customers at the start of the period.",
+     synonyms: [beginning customers, starting customers, customers at start, opening accounts, opening customer count, bop customers, opening subscribers, previous customers]}
+  - {name: New Customers, kind: measure, unit: count, aggregation: sum, description: "Customers who started paying in the period.",
+     synonyms: [new logos, new accounts, new paying customers, new subscribers, customers added, new customer count, new subscriptions, customer adds, new business customers, gross adds]}
+  - {name: Churned Customers, kind: measure, unit: count, aggregation: sum, description: "Customers who cancelled in the period.",
+     synonyms: [cancelled customers, canceled customers, lost customers, lost logos, churned logos, churned accounts, churn count, cancellations, churned subscribers, customer churn count, customers lost]}
+  - {name: Seats, kind: measure, unit: count, aggregation: last, description: "Licensed seats (users paid for).",
+     synonyms: [licensed seats, seat count, purchased seats, paid seats, licenses, license count, number of seats, user licenses, seats purchased, seat quantity, subscription quantity]}
+  - {name: Monthly Active Users, kind: measure, unit: count, aggregation: distinct_count, description: "Distinct users who used the product in the month.",
+     synonyms: [mau, mau count, monthly users, active users monthly, active users, users active 30 days, 30 day active users, monthly active, mau users]}
+  - {name: Daily Active Users, kind: measure, unit: count, aggregation: average, description: "Average distinct users who used the product on a day.",
+     synonyms: [dau, dau count, daily users, active users daily, average dau, avg dau, users per day, daily active, dau users]}
+  - {name: Signups, kind: measure, unit: count, aggregation: sum, description: "New accounts created (free, trial or paid).",
+     synonyms: [sign ups, signup count, registrations, new signups, registered users, accounts created, new registrations, account signups, users registered, sign up count]}
+  - {name: Activated Accounts, kind: measure, unit: count, aggregation: sum, description: "New accounts that reached the activation milestone.",
+     synonyms: [activations, activated users, activated customers, activated signups, activation count, aha moment users, activated trials, accounts activated, active signups]}
+  - {name: Trials Started, kind: measure, unit: count, aggregation: sum, description: "Free trials begun.",
+     synonyms: [trials, trial count, trial starts, new trials, trials begun, trial signups, free trials, trial starts count, trials created, started trials]}
+  - {name: Trials Converted, kind: measure, unit: count, aggregation: sum, description: "Trials that became paid subscriptions.",
+     synonyms: [trial conversions, converted trials, trial to paid, trials to paid, paid conversions, trial converts, trials won, converted to paid, conversions]}
+  - {name: Support Tickets, kind: measure, unit: count, aggregation: sum, description: "Support requests raised by customers.",
+     synonyms: [tickets, ticket count, support cases, cases, support requests, tickets created, tickets opened, help desk tickets, support volume]}
+  - {name: NPS Score, kind: measure, unit: number, aggregation: average, description: "Net promoter score survey result, already worked out per row.",
+     synonyms: [nps, net promoter score, nps rating, nps value, promoter score, survey nps, nps survey score, csat, csat score]}
+  - {name: Deals Won, kind: measure, unit: count, aggregation: sum, description: "Sales opportunities closed as won.",
+     synonyms: [won deals, closed won, closed won deals, opportunities won, wins, deals closed won, won opportunities, closed won count, won count]}
+  - {name: Deals Lost, kind: measure, unit: count, aggregation: sum, description: "Sales opportunities closed as lost.",
+     synonyms: [lost deals, closed lost, closed lost deals, opportunities lost, losses, deals closed lost, lost opportunities, closed lost count, lost count]}
+  - {name: Leads, kind: measure, unit: count, aggregation: sum, description: "New leads generated.",
+     synonyms: [lead count, new leads, leads generated, mqls, marketing qualified leads, sqls, sales qualified leads, inbound leads, leads created, number of leads]}
+  - {name: Days to Activate, kind: measure, unit: duration, aggregation: average, description: "Days from signup to the activation milestone.",
+     synonyms: [time to activate, time to value, days to value, days to activation, activation days, days to first value, ttv, onboarding days, onboarding time]}
+
+  # ---------------- keys
+  - {name: Customer, kind: key, entity: Customer, description: "Identifies the paying customer (company or account).",
+     synonyms: [customer id, customer key, customer number, account id, account number, account key, org id, organization id, organisation id, tenant id, workspace id, company id, client id, stripe customer id, billing account id, crm account id]}
+  - {name: User, kind: key, entity: User, description: "Identifies a person using the product.",
+     synonyms: [user id, user key, user number, member id, contact id, person id, end user id, seat id, profile id, uid, login id, visitor id, anonymous id]}
+  - {name: Subscription, kind: key, entity: Subscription, description: "Identifies a subscription (a customer's contract for a plan).",
+     synonyms: [subscription id, subscription key, subscription number, sub id, contract id, contract number, agreement id, order form id, license id, entitlement id, stripe subscription id]}
+  - {name: Plan, kind: key, entity: Plan, description: "Identifies a plan, price or product.",
+     synonyms: [plan id, plan code, plan key, price id, product id, product code, sku, sku code, offering id, package id, rate plan id, tier id, edition id]}
+  - {name: Invoice, kind: key, entity: Invoice, description: "Identifies an invoice.",
+     synonyms: [invoice id, invoice number, invoice no, invoice key, bill id, billing id, charge id, transaction id, payment id, receipt id]}
+  - {name: Opportunity, kind: key, entity: Opportunity, description: "Identifies a sales opportunity or deal.",
+     synonyms: [opportunity id, opp id, opportunity key, deal id, deal number, deal key, sales opportunity id, pipeline id, crm deal id, quote id, opportunity number]}
+  - {name: Lead, kind: key, entity: Lead, description: "Identifies a lead.",
+     synonyms: [lead id, lead key, lead number, prospect id, lead ref, inquiry id, enquiry id, marketing lead id, crm lead id]}
+  - {name: Ticket, kind: key, entity: Ticket, description: "Identifies a support ticket.",
+     synonyms: [ticket id, ticket number, ticket no, ticket key, case id, case number, support case id, request id, issue id, conversation id]}
+  - {name: Sales Rep, kind: key, entity: Sales Rep, description: "Identifies the salesperson or account executive.",
+     synonyms: [sales rep id, rep id, owner id, account owner id, ae id, account executive id, sdr id, csm id, opportunity owner id, salesperson id, user owner id]}
+  - {name: Campaign, kind: key, entity: Campaign, description: "Identifies a marketing campaign.",
+     synonyms: [campaign id, campaign key, campaign code, utm campaign, campaign number, ad campaign id, program id, promo code id, offer id]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The day a row belongs to.",
+     synonyms: [day, calendar date, report date, reporting date, snapshot date, event date, activity date, usage date, as of date, transaction date, created date, created at, timestamp]}
+  - {name: Signup Date, kind: date, entity: Date, description: "The day the account was created.",
+     synonyms: [sign up date, signup dt, registration date, registered date, account created date, account creation date, created on, joined date, join date, first seen date, user created date]}
+  - {name: Trial Start Date, kind: date, entity: Date, synonyms: [trial started date, trial begin date, trial start, trial created date, trial start dt, free trial start date]}
+  - {name: Trial End Date, kind: date, entity: Date, synonyms: [trial ended date, trial end, trial expiry date, trial expires at, trial end dt, trial expiration date]}
+  - {name: Subscription Start Date, kind: date, entity: Date, description: "The day paid service started.",
+     synonyms: [start date, subscription start, subscription started date, contract start date, paid start date, activation date, service start date, first payment date, go live date, conversion date, customer since date]}
+  - {name: Cancellation Date, kind: date, entity: Date, description: "The day the subscription ended or was cancelled.",
+     synonyms: [cancelled date, canceled date, cancel date, churn date, churned date, subscription end date, end date, termination date, contract end date, ended at, canceled at, cancelled at]}
+  - {name: Renewal Date, kind: date, entity: Date, synonyms: [renewal due date, next renewal date, renew date, renewal dt, term end date, next billing date, current period end]}
+  - {name: Invoice Date, kind: date, entity: Date, synonyms: [billing date, bill date, invoice created date, invoiced date, invoice dt, charge date, payment date, paid date]}
+  - {name: Close Date, kind: date, entity: Date, synonyms: [closed date, deal close date, expected close date, opportunity close date, won date, closed won date, close dt]}
+  - {name: Cohort Month, kind: date, entity: Date, description: "The month a customer or user started - the group they are followed in.",
+     synonyms: [cohort, cohort date, cohort period, signup month, acquisition month, cohort year month, vintage month, first month]}
+  - {name: Month, kind: date, entity: Date, synonyms: [month name, reporting month, month start, month year, year month, yyyymm, revenue month, billing month]}
+  - {name: Fiscal Quarter, kind: date, entity: Date, synonyms: [fiscal qtr, fq, financial quarter, quarter number, reporting quarter]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, financial year, financial year number, year number]}
+
+  # ---------------- attributes
+  - {name: Plan Name, kind: attribute, entity: Plan, synonyms: [plan, plan tier, pricing tier, tier, edition, package, package name, product name, plan description, offering name, subscription plan, license type]}
+  - {name: Billing Period, kind: attribute, entity: Subscription, description: "Monthly, quarterly or annual billing.",
+     synonyms: [billing cycle, billing frequency, billing interval, billing term, term length, contract term, subscription term, payment frequency, interval, billing type, monthly or annual]}
+  - {name: Subscription Status, kind: attribute, entity: Subscription, description: "Trialing, active, past due, cancelled.",
+     synonyms: [status, subscription state, account status, customer status, lifecycle stage, contract status, billing status, subscription stage, license status, plan status]}
+  - {name: Customer Name, kind: attribute, entity: Customer, synonyms: [company name, account name, organization name, organisation name, org name, client name, tenant name, workspace name, customer company, business name]}
+  - {name: Customer Segment, kind: attribute, entity: Customer, description: "Company size or tier (SMB, mid-market, enterprise).",
+     synonyms: [segment, customer size, company size, account size, customer tier, account tier, size band, employee band, market segment, customer type, account segment, smb or enterprise]}
+  - {name: Industry, kind: attribute, entity: Customer, synonyms: [industry name, vertical, sector, customer industry, industry vertical, business type, naics, sic code]}
+  - {name: Country, kind: attribute, entity: Customer, synonyms: [country name, country code, billing country, customer country, nation, geo country, ip country]}
+  - {name: Region, kind: attribute, entity: Customer, synonyms: [region name, sales region, geo, geography, territory, market, area, theater, emea apac]}
+  - {name: Acquisition Channel, kind: attribute, entity: Customer, description: "Where the customer came from (paid search, organic, referral, outbound).",
+     synonyms: [channel, lead source, source, acquisition source, signup source, utm source, utm medium, referral source, marketing channel, traffic source, attribution channel, first touch source, medium]}
+  - {name: Campaign Name, kind: attribute, entity: Campaign, synonyms: [campaign, campaign description, utm campaign name, program name, ad campaign name, promo name]}
+  - {name: MRR Movement Type, kind: attribute, entity: Subscription, description: "What changed the MRR (new, expansion, contraction, churn, reactivation).",
+     synonyms: [movement type, mrr change type, mrr category, change type, mrr movement, movement category, revenue movement type, subscription change type, mrr bridge category]}
+  - {name: Churn Reason, kind: attribute, entity: Subscription, synonyms: [cancellation reason, cancel reason, reason for leaving, churn category, churn cause, loss reason, offboarding reason, cancel survey reason, voluntary or involuntary]}
+  - {name: User Role, kind: attribute, entity: User, synonyms: [role, user type, role name, job title, persona, seat type, permission level, access level, admin flag]}
+  - {name: Deal Stage, kind: attribute, entity: Opportunity, synonyms: [stage, stage name, pipeline stage, opportunity stage, sales stage, funnel stage, deal status, opportunity status, forecast category]}
+  - {name: Sales Rep Name, kind: attribute, entity: Sales Rep, synonyms: [owner name, account owner, account executive, ae name, rep name, opportunity owner, salesperson name, csm name, customer success manager]}
+  - {name: Currency, kind: attribute, entity: Invoice, synonyms: [currency code, billing currency, invoice currency, ccy, iso currency]}
+  - {name: Ticket Category, kind: attribute, entity: Ticket, synonyms: [ticket type, ticket priority, issue type, issue category, case type, case category, support category, topic, request type]}
+
+kpis:
+  # ---------------- recurring revenue
+  - name: MRR
+    synonyms: [Monthly Recurring Revenue, Recurring Revenue, Closing MRR]
+    definition: Value of active subscriptions normalised to one month, at the end of the period. Annual contracts are divided by 12, one-time fees, usage overage and services are excluded.
+    formula: Sum of monthly value of active subscriptions
+    unit: currency
+    aggregation: last
+    domain: Recurring Revenue
+  - name: ARR
+    synonyms: [Annual Recurring Revenue, Annualized Recurring Revenue, Annual Run Rate]
+    definition: MRR annualised.
+    formula: MRR x 12
+    dax: '[MRR] * 12'
+    unit: currency
+    aggregation: last
+    domain: Recurring Revenue
+  - name: Opening MRR
+    synonyms: [Beginning MRR, MRR at Start, Starting MRR]
+    definition: MRR at the start of the period (the closing MRR of the previous period).
+    formula: MRR at the end of the previous period
+    unit: currency
+    aggregation: last
+    domain: Recurring Revenue
+  - name: New MRR
+    synonyms: [New Business MRR, New Logo MRR]
+    definition: MRR from customers who started paying in the period.
+    formula: Sum of MRR of subscriptions that started in the period
+    unit: currency
+    aggregation: sum
+    domain: Recurring Revenue
+  - name: Expansion MRR
+    synonyms: [Upsell MRR, Upgrade MRR, Expansion Revenue]
+    definition: Extra MRR from existing customers - upgrades, extra seats and add-ons.
+    formula: Sum of MRR increases on customers that were also customers at the start of the period
+    unit: currency
+    aggregation: sum
+    domain: Recurring Revenue
+  - name: Contraction MRR
+    synonyms: [Downgrade MRR, Downsell MRR]
+    definition: MRR lost from existing customers who downgraded and stayed.
+    formula: Sum of MRR decreases on customers still active at period end
+    unit: currency
+    aggregation: sum
+    domain: Recurring Revenue
+  - name: Churned MRR
+    synonyms: [MRR Churn, Cancelled MRR, Lost MRR]
+    definition: MRR lost from customers who cancelled in the period.
+    formula: Sum of MRR of customers who cancelled in the period
+    unit: currency
+    aggregation: sum
+    domain: Recurring Revenue
+  - name: Net New MRR
+    synonyms: [Net New ARR, Net MRR Movement, Net MRR Change]
+    definition: Net change in MRR in the period.
+    formula: New MRR + Expansion MRR - Contraction MRR - Churned MRR
+    dax: '[New MRR] + [Expansion MRR] - [Contraction MRR] - [Churned MRR]'
+    unit: currency
+    aggregation: sum
+    domain: Recurring Revenue
+  - name: MRR Growth %
+    synonyms: [MRR Growth Rate, Monthly Growth Rate, ARR Growth %]
+    definition: Net new MRR as a share of opening MRR.
+    formula: Net new MRR / Opening MRR
+    dax: DIVIDE ( [Net New MRR], [Opening MRR] )
+    unit: percent
+    aggregation: ratio
+    domain: Recurring Revenue
+  - name: Gross Revenue Retention %
+    synonyms: [GRR, GRR %, Gross Dollar Retention, Gross MRR Retention]
+    definition: Share of opening MRR kept after churn and contraction, expansion not counted. It cannot exceed 100%.
+    formula: (Opening MRR - Contraction MRR - Churned MRR) / Opening MRR
+    dax: DIVIDE ( [Opening MRR] - [Contraction MRR] - [Churned MRR], [Opening MRR] )
+    unit: percent
+    aggregation: ratio
+    domain: Retention
+  - name: Net Revenue Retention %
+    synonyms: [NRR, NRR %, Net Dollar Retention, NDR, Net MRR Retention]
+    definition: Share of opening MRR kept after churn, contraction and expansion, from the same customers, new customers not counted. Above 100% means existing customers grow.
+    formula: (Opening MRR + Expansion MRR - Contraction MRR - Churned MRR) / Opening MRR
+    dax: DIVIDE ( [Opening MRR] + [Expansion MRR] - [Contraction MRR] - [Churned MRR], [Opening MRR] )
+    unit: percent
+    aggregation: ratio
+    domain: Retention
+  # ---------------- customers
+  - name: Active Customers
+    synonyms: [Paying Customers, Customers, Active Accounts]
+    definition: Customers with an active paid subscription at the end of the period; free and trial accounts not counted.
+    formula: Count of distinct customers with an active paid subscription
+    unit: count
+    aggregation: last
+    domain: Customers
+  - name: Opening Customers
+    synonyms: [Beginning Customers, Customers at Start]
+    definition: Paying customers at the start of the period.
+    formula: Active customers at the end of the previous period
+    unit: count
+    aggregation: last
+    domain: Customers
+  - name: New Customers
+    synonyms: [New Logos, New Paying Customers]
+    definition: Customers who started paying in the period.
+    formula: Count of customers with their first paid subscription in the period
+    unit: count
+    aggregation: sum
+    domain: Customers
+  - name: Churned Customers
+    synonyms: [Lost Customers, Lost Logos, Cancelled Customers]
+    definition: Customers whose last paid subscription ended in the period.
+    formula: Count of customers who cancelled in the period
+    unit: count
+    aggregation: sum
+    domain: Customers
+  - name: Customer Churn Rate %
+    synonyms: [Logo Churn, Logo Churn Rate, Churn Rate %, Customer Churn %]
+    definition: Share of the opening customers who cancelled in the period (monthly when measured over a month).
+    formula: Churned customers / Opening customers
+    dax: DIVIDE ( [Churned Customers], [Opening Customers] )
+    unit: percent
+    aggregation: ratio
+    domain: Retention
+  - name: ARPA
+    synonyms: [Average Revenue per Account, ARPU, Average Revenue per User, Average MRR per Customer]
+    definition: MRR for each active customer.
+    formula: MRR / Active customers
+    dax: DIVIDE ( [MRR], [Active Customers] )
+    unit: currency
+    aggregation: ratio
+    domain: Customers
+  # ---------------- profitability and unit economics
+  - name: Recognized Revenue
+    synonyms: [Revenue, Total Revenue, Subscription Revenue, GAAP Revenue]
+    definition: Revenue booked in the period under revenue recognition rules (subscriptions spread over the term).
+    formula: Sum of recognized revenue
+    unit: currency
+    aggregation: sum
+    domain: Financials
+  - name: Cost of Revenue
+    synonyms: [COGS, Cost of Goods Sold, Cost of Subscription Revenue]
+    definition: Cost of delivering the service - hosting, customer support and onboarding, payment fees.
+    formula: Sum of hosting, support, onboarding and payment-processing cost
+    unit: currency
+    aggregation: sum
+    domain: Financials
+  - name: Gross Margin
+    synonyms: [Gross Profit, Gross Margin $]
+    definition: Recognized revenue less cost of revenue.
+    formula: Recognized revenue - Cost of revenue
+    dax: '[Recognized Revenue] - [Cost of Revenue]'
+    unit: currency
+    aggregation: sum
+    domain: Financials
+  - name: Gross Margin %
+    synonyms: [GM %, Subscription Gross Margin, Gross Profit %]
+    definition: Gross margin as a share of recognized revenue.
+    formula: Gross margin / Recognized revenue
+    dax: DIVIDE ( [Gross Margin], [Recognized Revenue] )
+    unit: percent
+    aggregation: ratio
+    domain: Financials
+  - name: Sales and Marketing Spend
+    synonyms: [S&M Spend, Sales and Marketing Expense, Acquisition Spend, GTM Spend]
+    definition: Cost of winning new customers - marketing programs, sales salaries, commissions and tools.
+    formula: Sum of sales and marketing expenses
+    unit: currency
+    aggregation: sum
+    domain: Unit Economics
+  - name: Customer Acquisition Cost
+    synonyms: [CAC, Blended CAC, Cost per New Customer]
+    definition: Sales and marketing spend for each new customer.
+    formula: Sales and marketing spend / New customers
+    dax: DIVIDE ( [Sales and Marketing Spend], [New Customers] )
+    unit: currency
+    aggregation: ratio
+    domain: Unit Economics
+  - name: Customer Lifetime Value
+    synonyms: [LTV, CLV, CLTV, Customer LTV]
+    definition: Gross margin a customer is expected to bring over its life - ARPA times gross margin % divided by the customer churn rate (monthly figures).
+    formula: ARPA x Gross margin % / Customer churn rate
+    dax: DIVIDE ( [ARPA] * [Gross Margin %], [Customer Churn Rate %] )
+    unit: currency
+    aggregation: ratio
+    time: monthly ARPA and monthly churn rate
+    domain: Unit Economics
+  - name: LTV to CAC Ratio
+    synonyms: [LTV:CAC, LTV/CAC, LTV to CAC]
+    definition: How many times the lifetime value covers the cost of winning the customer. Three or more is the usual target.
+    formula: Customer lifetime value / Customer acquisition cost
+    dax: DIVIDE ( [Customer Lifetime Value], [Customer Acquisition Cost] )
+    unit: ratio
+    aggregation: ratio
+    domain: Unit Economics
+  - name: CAC Payback Months
+    synonyms: [CAC Payback Period, Payback Period, Months to Recover CAC]
+    definition: Months of gross margin from a new customer needed to repay the cost of winning it.
+    formula: Customer acquisition cost / (ARPA x Gross margin %)
+    dax: DIVIDE ( [Customer Acquisition Cost], [ARPA] * [Gross Margin %] )
+    unit: duration
+    aggregation: ratio
+    time: months, with monthly ARPA
+    domain: Unit Economics
+  # ---------------- funnel and product usage
+  - name: Signups
+    synonyms: [Sign-Ups, New Signups, Registrations]
+    definition: New accounts created in the period (free, trial or paid).
+    formula: Count of distinct accounts created
+    unit: count
+    aggregation: distinct_count
+    domain: Funnel
+  - name: Activated Accounts
+    synonyms: [Activations, Activated Users]
+    definition: New accounts that reached the product's activation milestone (the key first action) within the activation window.
+    formula: Count of new accounts that completed the activation event
+    unit: count
+    aggregation: distinct_count
+    domain: Funnel
+  - name: Activation Rate %
+    synonyms: [Signup to Activation %, Activation %]
+    definition: Share of signups that activated.
+    formula: Activated accounts / Signups
+    dax: DIVIDE ( [Activated Accounts], [Signups] )
+    unit: percent
+    aggregation: ratio
+    domain: Funnel
+  - name: Trials Started
+    synonyms: [Trials, New Trials, Trial Starts]
+    definition: Free trials begun in the period.
+    formula: Count of distinct trials started
+    unit: count
+    aggregation: distinct_count
+    domain: Funnel
+  - name: Trials Converted
+    synonyms: [Trial Conversions, Converted Trials, Trial to Paid]
+    definition: Trials that became paid subscriptions.
+    formula: Count of trials that turned into a paid subscription
+    unit: count
+    aggregation: distinct_count
+    domain: Funnel
+  - name: Trial Conversion Rate %
+    synonyms: [Trial to Paid %, Trial Conversion %, Free Trial Conversion]
+    definition: Share of trials that became paying customers (trials that have run their full length).
+    formula: Trials converted / Trials started
+    dax: DIVIDE ( [Trials Converted], [Trials Started] )
+    unit: percent
+    aggregation: ratio
+    domain: Funnel
+  - name: Monthly Active Users
+    synonyms: [MAU, Monthly Users, Active Users]
+    definition: Distinct users who did a qualifying action in the product in the month.
+    formula: Distinct count of users with a qualifying event in the last 30 days
+    unit: count
+    aggregation: distinct_count
+    time: calendar month or rolling 30 days
+    domain: Usage
+  - name: Daily Active Users
+    synonyms: [DAU, Daily Users]
+    definition: Average number of distinct users active on a day.
+    formula: Average over days of distinct users with a qualifying event
+    unit: count
+    aggregation: average
+    domain: Usage
+  - name: Stickiness %
+    synonyms: [DAU to MAU Ratio, DAU/MAU, Product Stickiness]
+    definition: How many of the monthly users come back on an average day.
+    formula: Daily active users / Monthly active users
+    dax: DIVIDE ( [Daily Active Users], [Monthly Active Users] )
+    unit: percent
+    aggregation: ratio
+    domain: Usage
+  - name: Deals Won
+    synonyms: [Won Deals, Closed Won, Opportunities Won]
+    definition: Sales opportunities closed as won in the period.
+    formula: Count of opportunities with stage = Closed won
+    unit: count
+    aggregation: sum
+    time: by close date
+    domain: Sales
+  - name: Deals Lost
+    synonyms: [Lost Deals, Closed Lost, Opportunities Lost]
+    definition: Sales opportunities closed as lost in the period.
+    formula: Count of opportunities with stage = Closed lost
+    unit: count
+    aggregation: sum
+    time: by close date
+    domain: Sales
+  - name: Win Rate %
+    synonyms: [Close Rate, Deal Win Rate, Opportunity Win Rate]
+    definition: Share of closed opportunities that were won.
+    formula: Deals won / (Deals won + Deals lost)
+    dax: DIVIDE ( [Deals Won], [Deals Won] + [Deals Lost] )
+    unit: percent
+    aggregation: ratio
+    domain: Sales
+  - name: Support Tickets
+    synonyms: [Tickets, Support Cases, Support Requests]
+    definition: Support requests raised by customers in the period.
+    formula: Count of distinct tickets created
+    unit: count
+    aggregation: distinct_count
+    domain: Customer Success
+  - name: NPS
+    synonyms: [Net Promoter Score, NPS Score]
+    definition: Percent of promoters (scores 9 and 10) minus percent of detractors (scores 0 to 6), from survey answers.
+    formula: "Share of promoters - Share of detractors, in percent points"
+    unit: number
+    aggregation: custom
+    domain: Customer Success

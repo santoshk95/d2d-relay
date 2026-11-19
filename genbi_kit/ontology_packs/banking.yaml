@@ -1,0 +1,470 @@
+# Industry pack: banking and lending. Business terms tag columns by name (genbi_kit/ontology.py);
+# KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields).
+name: Banking and lending
+order: 60
+description: Retail, commercial and digital banks and lenders. Loans and disbursements, deposits and CASA, interest margin, non-performing loans, provisions, cost-to-income, cards, branches and capital.
+questions:
+  - What is the gross NPA percent by loan product and by branch, and how has it moved over the last 12 months?
+  - Which branches have the lowest CASA ratio, and what is their deposit growth?
+  - How has net interest margin changed this year compared with last year?
+  - What were loan disbursements by product and region this quarter?
+  - Which loan buckets are moving into 30 or more days past due?
+  - What share of transactions is digital, by customer segment?
+
+terms:
+  # ---------------- measures: loans
+  - {name: Loan Balance, kind: measure, unit: currency, aggregation: last, description: "Principal still owed on loans at the end of the period (outstanding, gross advances).",
+     synonyms: [outstanding balance, outstanding principal, principal outstanding, loan outstanding, principal os, loan os, advances, gross advances, gross loans, loan book, total advances, current balance, principal balance, outstanding amount, loan portfolio]}
+  - {name: Disbursement Amount, kind: measure, unit: currency, aggregation: sum, description: "Money paid out to borrowers in the period.",
+     synonyms: [disbursed amount, disbursement, disbursements, amount disbursed, loan disbursed, loan disbursement, disbursed principal, new lending, originations amount, loan originations, disbursal]}
+  - {name: Sanctioned Amount, kind: measure, unit: currency, aggregation: sum, description: "Loan limit or amount approved.",
+     synonyms: [sanction amount, sanctioned limit, approved amount, approved limit, sanction limit, credit limit, loan limit, facility amount, limit amount, loan amount approved, loan amount]}
+  - {name: Overdue Amount, kind: measure, unit: currency, aggregation: last, description: "Installments and interest unpaid after their due date.",
+     synonyms: [past due amount, arrears, arrears amount, overdue balance, overdue principal, amount overdue, delinquent amount, delinquent balance, past due balance, amount past due, overdue emi]}
+  - {name: Days Past Due, kind: measure, unit: duration, aggregation: max, description: "Number of days the oldest unpaid installment is overdue.",
+     synonyms: [dpd, dpd days, days overdue, overdue days, days in arrears, arrears days, delinquency days, past due days, max dpd, days late]}
+  - {name: NPA Balance, kind: measure, unit: currency, aggregation: last, description: "Outstanding on loans classified as non-performing.",
+     synonyms: [npa amount, npa outstanding, gross npa, npl balance, npl amount, non performing balance, non performing loans, npl outstanding, npa principal, impaired loans, stage 3 balance, stage 3 exposure, defaulted balance, npa]}
+  - {name: Provision Amount, kind: measure, unit: currency, aggregation: sum, description: "Money set aside for expected loan losses.",
+     synonyms: [provisions, provision, loan loss provision, provision expense, llp, provision for loan losses, impairment charge, ecl provision, provisioning amount, credit loss expense, impairment allowance, provision held]}
+  - {name: Write Off Amount, kind: measure, unit: currency, aggregation: sum, description: "Loan balances removed from the books as uncollectable.",
+     synonyms: [write off, write offs, written off amount, charge off, charge offs, charged off amount, writeoff amount, principal written off, loss amount, technical write off]}
+  - {name: Recovery Amount, kind: measure, unit: currency, aggregation: sum, description: "Money collected on loans already written off or in default.",
+     synonyms: [recovery, recoveries, recovered amount, recovery from written off, collection amount, post write off recovery, amount recovered, recovery collections]}
+  - {name: Loans, kind: measure, unit: count, aggregation: sum, description: "Number of loan accounts.",
+     synonyms: [loan count, number of loans, loan accounts, loan account count, active loans, loans outstanding count, loan numbers, advance accounts]}
+  - {name: Interest Rate, kind: measure, unit: percent, aggregation: average, description: "Rate charged on a loan (or paid on a deposit), per year.",
+     synonyms: [rate of interest, roi, lending rate, loan rate, interest rate pct, coupon rate, annual rate, apr, nominal rate, contract rate, deposit rate, effective interest rate, eir]}
+  - {name: Loan to Value, kind: measure, unit: percent, aggregation: average, description: "Loan as a share of the value of the asset it finances, per loan.",
+     synonyms: [ltv, ltv ratio, ltv pct, loan to value ratio, ltv percent, loan to value pct, collateral coverage ratio]}
+  - {name: Credit Score, kind: measure, unit: number, aggregation: average, description: "Borrower score from a credit bureau or internal model.",
+     synonyms: [bureau score, cibil score, fico score, credit bureau score, risk score, scorecard score, behaviour score, behavior score, application score, pd score, internal score]}
+  # ---------------- measures: income and cost
+  - {name: Interest Income, kind: measure, unit: currency, aggregation: sum, description: "Interest earned on loans and investments.",
+     synonyms: [interest earned, interest revenue, interest on loans, interest on advances, interest received, loan interest income, total interest income, interest accrued income]}
+  - {name: Interest Expense, kind: measure, unit: currency, aggregation: sum, description: "Interest paid on deposits and borrowings.",
+     synonyms: [interest paid, interest cost, interest on deposits, cost of funds amount, interest on borrowings, deposit interest expense, funding cost, interest charged]}
+  - {name: Net Interest Income, kind: measure, unit: currency, aggregation: sum, description: "Interest income less interest expense.",
+     synonyms: [nii, net interest revenue, net interest earnings, net interest, nii amount, interest margin amount]}
+  - {name: Fee Income, kind: measure, unit: currency, aggregation: sum, description: "Income from fees and commissions - not from interest.",
+     synonyms: [non interest income, fees and commissions, fee and commission income, commission income, processing fee income, service charges income, noninterest income, other income, fee revenue, fees, processing fee, charges income]}
+  - {name: Operating Expense, kind: measure, unit: currency, aggregation: sum, description: "Cost of running the bank - staff, premises, technology.",
+     synonyms: [operating expenses, opex, operating cost, non interest expense, noninterest expense, overheads, staff cost, admin expense, general and admin expense, cost of operations]}
+  - {name: Net Profit, kind: measure, unit: currency, aggregation: sum, description: "Profit after provisions and tax.",
+     synonyms: [net income, profit after tax, pat, net earnings, profit for the year, bottom line, net profit amount, earnings]}
+  # ---------------- measures: balance sheet and capital
+  - {name: Deposit Balance, kind: measure, unit: currency, aggregation: last, description: "Money customers hold in deposit accounts at the end of the period.",
+     synonyms: [deposits, total deposits, deposit amount, deposit outstanding, deposits outstanding, account balance, closing balance, ledger balance, available balance, customer deposits, deposit book, eod balance]}
+  - {name: Current Account Balance, kind: measure, unit: currency, aggregation: last, description: "Balances in current (checking) accounts.",
+     synonyms: [current deposits, ca balance, ca deposits, current account deposits, checking balance, demand deposits, current account amount, ca amount, current balance amount, checking deposits]}
+  - {name: Savings Account Balance, kind: measure, unit: currency, aggregation: last, description: "Balances in savings accounts.",
+     synonyms: [savings deposits, sa balance, sb balance, sa deposits, sb deposits, savings account deposits, savings balance, savings account amount, savings bank balance]}
+  - {name: Term Deposit Balance, kind: measure, unit: currency, aggregation: last, description: "Balances in term (fixed) deposits.",
+     synonyms: [fixed deposits, fd balance, td balance, time deposits, term deposits, fd amount, fixed deposit balance, term deposit amount, cd balance, recurring deposit balance, rd balance]}
+  - {name: Earning Assets, kind: measure, unit: currency, aggregation: average, description: "Assets that earn interest - loans, investments, balances with other banks.",
+     synonyms: [average earning assets, interest earning assets, iea, earning assets average, avg earning assets, productive assets, interest bearing assets]}
+  - {name: Total Assets, kind: measure, unit: currency, aggregation: average, description: "Everything the bank owns (average balance sheet size).",
+     synonyms: [average assets, average total assets, avg total assets, balance sheet size, assets, asset base, total balance sheet]}
+  - {name: Risk Weighted Assets, kind: measure, unit: currency, aggregation: last, description: "Assets weighted by their credit, market and operational risk.",
+     synonyms: [rwa, rwa amount, risk weighted exposure, risk weighted amount, total rwa, rwa total, credit rwa]}
+  - {name: Regulatory Capital, kind: measure, unit: currency, aggregation: last, description: "Tier 1 and tier 2 capital counted by the regulator.",
+     synonyms: [total capital, tier 1 capital, tier1 capital, tier 2 capital, capital funds, eligible capital, capital base, cet1 capital, own funds, net worth]}
+  # ---------------- measures: customers, cards and channels
+  - {name: Accounts, kind: measure, unit: count, aggregation: sum, description: "Number of customer accounts.",
+     synonyms: [account count, number of accounts, accounts open, open accounts, deposit accounts, total accounts, active accounts, account numbers count]}
+  - {name: Accounts Opened, kind: measure, unit: count, aggregation: sum, description: "New accounts opened in the period.",
+     synonyms: [new accounts, accounts opened count, openings, account openings, new account count, new customers accounts, accounts acquired, accounts added]}
+  - {name: Customers, kind: measure, unit: count, aggregation: distinct_count, description: "Distinct customers of the bank.",
+     synonyms: [customer count, number of customers, active customers, unique customers, total customers, customer base, customers active, distinct customers]}
+  - {name: Cards, kind: measure, unit: count, aggregation: last, description: "Cards in issue (credit, debit, prepaid).",
+     synonyms: [card count, cards issued, cards in force, active cards, cards active, number of cards, cards outstanding, cards live, cif cards]}
+  - {name: Card Spend, kind: measure, unit: currency, aggregation: sum, description: "Value of purchases made on cards.",
+     synonyms: [card spending, card purchase value, card sales volume, card volume, card turnover, card transaction value, purchase volume, spend volume, pos spend, card usage amount]}
+  - {name: Transactions, kind: measure, unit: count, aggregation: sum, description: "Customer transactions (all channels).",
+     synonyms: [transaction count, txn count, number of transactions, txns, total transactions, transaction volume, txn volume, no of txns, payment count]}
+  - {name: Digital Transactions, kind: measure, unit: count, aggregation: sum, description: "Transactions made on mobile, internet banking, UPI and cards online.",
+     synonyms: [digital txns, digital transaction count, online transactions, mobile transactions, internet transactions, upi transactions, digital volume, electronic transactions, e channel transactions, digital txn count]}
+  - {name: Branches, kind: measure, unit: count, aggregation: last, description: "Branches open.",
+     synonyms: [branch count, number of branches, branches open, branch network, outlets, branches count, no of branches]}
+
+  # ---------------- keys
+  - {name: Customer, kind: key, entity: Customer, description: "Identifies a customer (customer information file).",
+     synonyms: [customer id, customer number, customer key, customer code, customer no, cif, cif number, cif id, cust id, client id, party id, borrower id, customer nbr, ucic, relationship id]}
+  - {name: Account, kind: key, entity: Account, description: "Identifies a deposit or other customer account.",
+     synonyms: [account id, account number, account no, account key, acct number, acct no, acct id, account code, a c number, account nbr, iban, savings account number, deposit account number]}
+  - {name: Loan, kind: key, entity: Loan, description: "Identifies a loan or credit facility.",
+     synonyms: [loan id, loan number, loan account, loan account number, loan account id, loan key, loan no, facility id, facility number, contract id, contract number, agreement number, agreement id, lan]}
+  - {name: Branch, kind: key, entity: Branch, description: "Identifies a branch.",
+     synonyms: [branch id, branch code, branch number, branch key, branch no, sol id, sol code, ifsc, ifsc code, outlet code, office code, branch nbr, sort code]}
+  - {name: Product, kind: key, entity: Product, description: "Identifies a banking product or scheme.",
+     synonyms: [product id, product code, product key, product number, scheme code, scheme id, product type code, loan product code, gl code, product nbr]}
+  - {name: Card, kind: key, entity: Card, description: "Identifies a card (use the token or id, never the card number).",
+     synonyms: [card id, card key, card token, card reference, card ref number, card account number, card account id, plastic id, card nbr]}
+  - {name: Transaction, kind: key, entity: Transaction, description: "Identifies one transaction.",
+     synonyms: [transaction id, txn id, transaction number, txn number, transaction ref, txn ref, reference number, utr, utr number, rrn, payment id, journal id, voucher number, transaction key]}
+  - {name: Application, kind: key, entity: Application, description: "Identifies a loan or account application.",
+     synonyms: [application id, application number, application no, app id, lead id, lead number, proposal number, proposal id, case id, los id]}
+  - {name: Relationship Manager, kind: key, entity: Relationship Manager, description: "Identifies the banker who manages the customer.",
+     synonyms: [rm id, rm code, relationship manager id, officer id, officer code, banker id, employee id, sales officer id, agent id, dsa id, relationship officer id]}
+  - {name: Collateral, kind: key, entity: Collateral, description: "Identifies an asset pledged against a loan.",
+     synonyms: [collateral id, collateral number, security id, security number, asset id, mortgage id, collateral key, pledge id, charge id]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The day a row (such as a daily balance) belongs to.",
+     synonyms: [day, calendar date, as of date, as at date, reporting date, report date, business date, snapshot date, eod date, cob date, balance date, data date]}
+  - {name: Transaction Date, kind: date, entity: Date, synonyms: [txn date, posting date, value date, booking date, transaction dt, txn dt, entry date, trade date, post date]}
+  - {name: Disbursement Date, kind: date, entity: Date, synonyms: [disbursal date, disbursed date, loan start date, origination date, funding date, drawdown date, loan disbursement date, first disbursement date]}
+  - {name: Application Date, kind: date, entity: Date, synonyms: [application dt, applied date, sanction date, approval date, lead date, login date, request date, proposal date]}
+  - {name: Maturity Date, kind: date, entity: Date, synonyms: [maturity dt, loan end date, end date, expiry date, closing date, due for maturity date, tenure end date, term end date]}
+  - {name: Account Open Date, kind: date, entity: Date, synonyms: [opening date, account opening date, account opened date, open date, account start date, onboarding date, customer since date, kyc date, activation date]}
+  - {name: Due Date, kind: date, entity: Date, synonyms: [installment due date, emi due date, payment due date, next due date, repayment date, due dt, billing due date]}
+  - {name: Month, kind: date, entity: Date, synonyms: [month name, reporting month, month end, month end date, month year, year month, yyyymm]}
+  - {name: Fiscal Quarter, kind: date, entity: Date, synonyms: [fiscal qtr, fq, financial quarter, quarter number, reporting quarter]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, financial year, financial year number, year number, reporting year]}
+
+  # ---------------- attributes
+  - {name: Branch Name, kind: attribute, entity: Branch, synonyms: [branch, branch description, branch desc, outlet name, office name, branch location, sol name, centre name]}
+  - {name: Region, kind: attribute, entity: Branch, synonyms: [region name, zone, zone name, circle, circle name, area, area name, cluster, cluster name, market, division]}
+  - {name: State, kind: attribute, entity: Branch, synonyms: [state name, state code, province, st]}
+  - {name: City, kind: attribute, entity: Branch, synonyms: [city name, town, branch city, centre, population group]}
+  - {name: Product Name, kind: attribute, entity: Product, synonyms: [product description, product desc, scheme name, scheme description, loan product, product title]}
+  - {name: Product Type, kind: attribute, entity: Product, description: "Loan or deposit product class (home loan, auto loan, personal loan, business loan, savings, term deposit).",
+     synonyms: [loan type, product category, product group, product class, facility type, loan category, loan purpose, portfolio, asset class, product line, scheme type]}
+  - {name: Account Type, kind: attribute, entity: Account, synonyms: [account category, account class, account kind, account product, deposit type, savings or current, acct type, ac type]}
+  - {name: Account Status, kind: attribute, entity: Account, synonyms: [acct status, account state, account condition, dormant flag, dormancy status, active status, account standing]}
+  - {name: Loan Status, kind: attribute, entity: Loan, synonyms: [loan state, loan stage, facility status, loan account status, contract status, repayment status, loan condition]}
+  - {name: DPD Bucket, kind: attribute, entity: Loan, description: "Days-past-due band (0, 1-30, 31-60, 61-90, 90+).",
+     synonyms: [dpd band, dpd range, delinquency bucket, delinquency band, aging bucket, ageing bucket, arrears bucket, overdue bucket, past due bucket, sma bucket, dpd category]}
+  - {name: Asset Classification, kind: attribute, entity: Loan, description: "Standard, substandard, doubtful or loss (or stage 1, 2, 3).",
+     synonyms: [asset class code, asset category, asset quality, npa classification, loan classification, ifrs stage, ifrs9 stage, stage, risk classification, irac class, performing status]}
+  - {name: NPA Flag, kind: attribute, entity: Loan, description: "Whether the loan is non-performing.",
+     synonyms: [npa indicator, npa ind, npa status, npl flag, npl indicator, non performing flag, default flag, defaulted flag, impaired flag, is npa]}
+  - {name: Customer Name, kind: attribute, entity: Customer, synonyms: [client name, borrower name, account holder name, customer full name, party name, account name]}
+  - {name: Customer Segment, kind: attribute, entity: Customer, description: "Retail, SME, corporate, wealth.",
+     synonyms: [segment, segment name, customer type, customer category, customer class, client segment, business segment, customer group, customer tier, banking segment]}
+  - {name: Industry, kind: attribute, entity: Customer, synonyms: [industry name, sector, industry sector, nic code, sector name, borrower industry, economic sector, business sector]}
+  - {name: Collateral Type, kind: attribute, entity: Collateral, synonyms: [security type, collateral category, collateral class, asset type, secured or unsecured, security category, collateral description]}
+  - {name: Channel, kind: attribute, entity: Transaction, description: "Where the customer transacted (branch, ATM, mobile, internet, UPI).",
+     synonyms: [transaction channel, txn channel, channel name, delivery channel, channel code, mode, payment mode, origination channel, source channel, sales channel]}
+  - {name: Transaction Type, kind: attribute, entity: Transaction, synonyms: [txn type, transaction category, txn category, debit credit, dr cr, dr cr indicator, transaction code, txn code, entry type, transaction nature]}
+  - {name: Card Type, kind: attribute, entity: Card, synonyms: [card category, card product, card class, credit or debit, card variant, card network, card scheme, card tier]}
+  - {name: Risk Rating, kind: attribute, entity: Customer, synonyms: [credit rating, credit grade, risk grade, rating, risk band, risk category, internal rating, pd grade, risk bucket, rating grade]}
+  - {name: Interest Rate Type, kind: attribute, entity: Loan, synonyms: [rate type, fixed or floating, fixed floating, rate basis, interest type, floating flag, reference rate type, pricing type]}
+  - {name: Relationship Manager Name, kind: attribute, entity: Relationship Manager, synonyms: [rm name, officer name, banker name, relationship officer, sales officer name, agent name, dsa name]}
+
+kpis:
+  # ---------------- loans and asset quality
+  - name: Gross Loans
+    synonyms: [Gross Advances, Loan Book, Loan Portfolio, Loans Outstanding]
+    definition: Principal outstanding on all loans at the end of the period, before provisions.
+    formula: Sum of loan principal outstanding at period end
+    unit: currency
+    aggregation: last
+    domain: Lending
+  - name: Disbursements
+    synonyms: [Loan Disbursements, New Lending, Originations]
+    definition: Loan money paid out to borrowers in the period.
+    formula: Sum of amounts disbursed
+    unit: currency
+    aggregation: sum
+    time: by disbursement date
+    domain: Lending
+  - name: Active Loans
+    synonyms: [Loan Accounts, Number of Loans]
+    definition: Loan accounts with an outstanding balance at the end of the period.
+    formula: Count of loan accounts with principal outstanding
+    unit: count
+    aggregation: distinct_count
+    domain: Lending
+  - name: Delinquent Balance
+    synonyms: [Overdue Loans, 30+ DPD Balance, Past Due Balance]
+    definition: Outstanding principal on loans 30 or more days past due.
+    formula: Sum of principal outstanding where days past due >= 30
+    filters: [Days past due >= 30]
+    unit: currency
+    aggregation: last
+    domain: Asset Quality
+  - name: Delinquency Rate %
+    synonyms: [30+ DPD %, Delinquency %, Past Due Rate]
+    definition: Share of the loan book that is 30 or more days past due.
+    formula: Delinquent balance / Gross loans
+    dax: DIVIDE ( [Delinquent Balance], [Gross Loans] )
+    unit: percent
+    aggregation: ratio
+    domain: Asset Quality
+  - name: Gross NPA
+    synonyms: [Gross NPL, Non-Performing Loans, NPA Balance, Gross Non-Performing Assets]
+    definition: Outstanding on loans classified non-performing - 90 or more days past due, or as the regulator defines.
+    formula: Sum of principal outstanding where the loan is non-performing
+    filters: [NPA flag = Yes]
+    unit: currency
+    aggregation: last
+    domain: Asset Quality
+  - name: Gross NPA %
+    synonyms: [Gross NPA Ratio, GNPA %, NPL Ratio, NPL %, Non-Performing Loan Ratio]
+    definition: Gross non-performing loans as a share of gross loans.
+    formula: Gross NPA / Gross loans
+    dax: DIVIDE ( [Gross NPA], [Gross Loans] )
+    unit: percent
+    aggregation: ratio
+    domain: Asset Quality
+  - name: NPA Provisions
+    synonyms: [Provisions Held Against NPAs, NPA Provision Held, Loan Loss Reserve on NPAs]
+    definition: Provisions held against non-performing loans at the end of the period.
+    formula: Sum of loan loss provisions on non-performing loans
+    unit: currency
+    aggregation: last
+    domain: Asset Quality
+  - name: Net NPA
+    synonyms: [Net NPL, Net Non-Performing Assets]
+    definition: Gross non-performing loans less the provisions held against them.
+    formula: Gross NPA - NPA provisions
+    dax: '[Gross NPA] - [NPA Provisions]'
+    unit: currency
+    aggregation: last
+    domain: Asset Quality
+  - name: Net NPA %
+    synonyms: [Net NPA Ratio, NNPA %, Net NPL Ratio]
+    definition: Net non-performing loans as a share of gross loans net of NPA provisions.
+    formula: Net NPA / (Gross loans - NPA provisions)
+    dax: DIVIDE ( [Net NPA], [Gross Loans] - [NPA Provisions] )
+    unit: percent
+    aggregation: ratio
+    domain: Asset Quality
+  - name: Provision Coverage Ratio %
+    synonyms: [PCR, Provision Coverage, NPA Coverage Ratio]
+    definition: Share of gross non-performing loans covered by provisions.
+    formula: NPA provisions / Gross NPA
+    dax: DIVIDE ( [NPA Provisions], [Gross NPA] )
+    unit: percent
+    aggregation: ratio
+    domain: Asset Quality
+  - name: Provisions
+    synonyms: [Loan Loss Provisions, Provision Expense, Impairment Charge, Credit Loss Expense]
+    definition: Charge to the income statement for expected loan losses in the period.
+    formula: Sum of provisions charged to the income statement
+    unit: currency
+    aggregation: sum
+    domain: Profitability
+  # ---------------- income and profit
+  - name: Interest Income
+    synonyms: [Interest Earned, Interest Revenue]
+    definition: Interest earned on loans and investments in the period.
+    formula: Sum of interest accrued on loans and investments
+    unit: currency
+    aggregation: sum
+    domain: Profitability
+  - name: Interest Expense
+    synonyms: [Interest Paid, Interest Cost]
+    definition: Interest paid on deposits and borrowings in the period.
+    formula: Sum of interest accrued on deposits and borrowings
+    unit: currency
+    aggregation: sum
+    domain: Profitability
+  - name: Net Interest Income
+    synonyms: [NII, Net Interest Revenue]
+    definition: Interest income less interest expense.
+    formula: Interest income - Interest expense
+    dax: '[Interest Income] - [Interest Expense]'
+    unit: currency
+    aggregation: sum
+    domain: Profitability
+  - name: Average Earning Assets
+    synonyms: [Interest Earning Assets, Average IEA]
+    definition: Average balance of assets that earn interest over the period (loans, investments, balances with other banks).
+    formula: Average of daily earning assets
+    unit: currency
+    aggregation: average
+    domain: Profitability
+  - name: Net Interest Margin %
+    synonyms: [NIM, NIM %, Net Interest Margin]
+    definition: Net interest income as a share of average earning assets, annualised when the period is shorter than a year.
+    formula: Net interest income / Average earning assets
+    dax: DIVIDE ( [Net Interest Income], [Average Earning Assets] )
+    unit: percent
+    aggregation: ratio
+    time: annualised for periods shorter than a year
+    domain: Profitability
+  - name: Fee Income
+    synonyms: [Non-Interest Income, Fees and Commissions, Noninterest Income]
+    definition: Income from fees and commissions, not from interest.
+    formula: Sum of fee and commission income
+    unit: currency
+    aggregation: sum
+    domain: Profitability
+  - name: Total Operating Income
+    synonyms: [Operating Income, Total Income, Net Revenue]
+    definition: Net interest income plus fee income.
+    formula: Net interest income + Fee income
+    dax: '[Net Interest Income] + [Fee Income]'
+    unit: currency
+    aggregation: sum
+    domain: Profitability
+  - name: Operating Expense
+    synonyms: [Operating Expenses, Opex, Non-Interest Expense]
+    definition: Cost of running the bank - staff, premises and technology - before provisions.
+    formula: Sum of staff, premises, technology and other operating costs
+    unit: currency
+    aggregation: sum
+    domain: Profitability
+  - name: Cost to Income Ratio %
+    synonyms: [Cost-to-Income Ratio, Efficiency Ratio, CIR]
+    definition: Operating expense as a share of total operating income - lower is better.
+    formula: Operating expense / Total operating income
+    dax: DIVIDE ( [Operating Expense], [Total Operating Income] )
+    unit: percent
+    aggregation: ratio
+    domain: Profitability
+  - name: Net Profit
+    synonyms: [Net Income, Profit After Tax, PAT]
+    definition: Profit after operating expense, provisions and tax.
+    formula: Total operating income - Operating expense - Provisions - Tax
+    unit: currency
+    aggregation: sum
+    domain: Profitability
+  - name: Average Total Assets
+    synonyms: [Average Assets, Total Assets]
+    definition: Average size of the balance sheet over the period.
+    formula: Average of daily total assets
+    unit: currency
+    aggregation: average
+    domain: Profitability
+  - name: Return on Assets %
+    synonyms: [ROA, ROA %, Return on Average Assets]
+    definition: Net profit as a share of average total assets, annualised when the period is shorter than a year.
+    formula: Net profit / Average total assets
+    dax: DIVIDE ( [Net Profit], [Average Total Assets] )
+    unit: percent
+    aggregation: ratio
+    time: annualised for periods shorter than a year
+    domain: Profitability
+  # ---------------- deposits and customers
+  - name: Total Deposits
+    synonyms: [Deposits, Deposit Balance, Customer Deposits]
+    definition: Money customers hold in all deposit accounts at the end of the period.
+    formula: Sum of closing balances of current, savings and term deposit accounts
+    unit: currency
+    aggregation: last
+    domain: Deposits
+  - name: Current Account Deposits
+    synonyms: [Current Deposits, CA Balance, Demand Deposits]
+    definition: Balances in current (checking) accounts at the end of the period.
+    formula: Sum of closing balances of current accounts
+    unit: currency
+    aggregation: last
+    domain: Deposits
+  - name: Savings Account Deposits
+    synonyms: [Savings Deposits, SA Balance, SB Balance]
+    definition: Balances in savings accounts at the end of the period.
+    formula: Sum of closing balances of savings accounts
+    unit: currency
+    aggregation: last
+    domain: Deposits
+  - name: CASA Deposits
+    synonyms: [CASA Balance, Current and Savings Deposits, CASA]
+    definition: Current plus savings account balances - the low-cost deposits.
+    formula: Current account deposits + Savings account deposits
+    dax: '[Current Account Deposits] + [Savings Account Deposits]'
+    unit: currency
+    aggregation: last
+    domain: Deposits
+  - name: CASA Ratio %
+    synonyms: [CASA %, CASA Share, CASA Ratio]
+    definition: Share of total deposits held in current and savings accounts.
+    formula: CASA deposits / Total deposits
+    dax: DIVIDE ( [CASA Deposits], [Total Deposits] )
+    unit: percent
+    aggregation: ratio
+    domain: Deposits
+  - name: Credit Deposit Ratio %
+    synonyms: [CD Ratio, Loan to Deposit Ratio, LDR, Credit-Deposit Ratio]
+    definition: Gross loans as a share of total deposits.
+    formula: Gross loans / Total deposits
+    dax: DIVIDE ( [Gross Loans], [Total Deposits] )
+    unit: percent
+    aggregation: ratio
+    domain: Deposits
+  - name: Active Customers
+    synonyms: [Customers, Customer Count, Customer Base]
+    definition: Distinct customers with at least one active account or a transaction in the last 12 months.
+    formula: Distinct count of customers with an active product
+    unit: count
+    aggregation: distinct_count
+    domain: Customers
+  - name: Accounts Opened
+    synonyms: [New Accounts, Account Openings]
+    definition: New accounts opened in the period.
+    formula: Count of accounts with an opening date in the period
+    unit: count
+    aggregation: sum
+    time: by account open date
+    domain: Customers
+  # ---------------- cards, channels and capital
+  - name: Active Cards
+    synonyms: [Cards in Force, Cards Active, Cards in Issue]
+    definition: Cards that were used at least once in the last 90 days.
+    formula: Count of cards with a transaction in the last 90 days
+    unit: count
+    aggregation: distinct_count
+    time: rolling 90 days
+    domain: Cards
+  - name: Card Spend
+    synonyms: [Card Spending, Card Purchase Volume, Card Turnover]
+    definition: Value of purchases made on cards (cash withdrawals excluded).
+    formula: Sum of card purchase transactions
+    unit: currency
+    aggregation: sum
+    domain: Cards
+  - name: Spend per Active Card
+    synonyms: [Average Card Spend, Card Spend per Card]
+    definition: Card spend for each active card.
+    formula: Card spend / Active cards
+    dax: DIVIDE ( [Card Spend], [Active Cards] )
+    unit: currency
+    aggregation: ratio
+    domain: Cards
+  - name: Total Transactions
+    synonyms: [Transactions, Transaction Volume, Transaction Count]
+    definition: Customer transactions across all channels.
+    formula: Count of customer transactions
+    unit: count
+    aggregation: sum
+    domain: Channels
+  - name: Digital Transactions
+    synonyms: [Digital Txns, Online Transactions]
+    definition: Transactions made on mobile, internet banking, UPI and online card payments.
+    formula: Count of transactions where the channel is digital
+    filters: [Channel in Mobile, Internet, UPI, Online card]
+    unit: count
+    aggregation: sum
+    domain: Channels
+  - name: Digital Transaction Share %
+    synonyms: [Digital Share, Digital Adoption Rate, Digital Penetration %]
+    definition: Share of transactions made on digital channels.
+    formula: Digital transactions / Total transactions
+    dax: DIVIDE ( [Digital Transactions], [Total Transactions] )
+    unit: percent
+    aggregation: ratio
+    domain: Channels
+  - name: Regulatory Capital
+    synonyms: [Total Capital, Capital Funds, Tier 1 and Tier 2 Capital]
+    definition: Tier 1 plus tier 2 capital counted by the regulator.
+    formula: Tier 1 capital + Tier 2 capital
+    unit: currency
+    aggregation: last
+    domain: Capital
+  - name: Risk Weighted Assets
+    synonyms: [RWA, Total RWA]
+    definition: Assets and off-balance exposures weighted by credit, market and operational risk.
+    formula: Sum of exposures times risk weights
+    unit: currency
+    aggregation: last
+    domain: Capital
+  - name: Capital Adequacy Ratio %
+    synonyms: [CAR, CRAR, Capital to Risk-Weighted Assets Ratio, Total Capital Ratio]
+    definition: Regulatory capital as a share of risk weighted assets.
+    formula: Regulatory capital / Risk weighted assets
+    dax: DIVIDE ( [Regulatory Capital], [Risk Weighted Assets] )
+    unit: percent
+    aggregation: ratio
+    domain: Capital

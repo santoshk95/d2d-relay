@@ -45,7 +45,7 @@ function publishCard(st) {
   card.append(h('div', {class: 'row'}, h('h3', {style: 'margin:0'}, 'Publish & share'), h('span', {class: 'spacer'}),
       h('button', {class: 'btn', onclick: exp('pdf')}, icon('download'), 'PDF'), h('button', {class: 'btn', onclick: exp('png')}, icon('download'), 'PNG')),
     last.v ? h('div', {class: 'small muted', style: 'margin-top:8px'}, `Published v${last.v} ${ago(last.when)}` + (last.review ? ' - reviewed and approved' : '')
-      + ((last.github || []).length ? ` - on GitHub: ` : '')) : h('div', {class: 'small muted', style: 'margin-top:8px'}, 'PDF and PNG draw the prototype in a headless browser. Approving a version gives you the Power BI file (.pbix) to download; Relay does not publish to the Power BI Service.'),
+      + ((last.github || []).length ? ` - on GitHub: ` : '')) : h('div', {class: 'small muted', style: 'margin-top:8px'}, 'PDF and PNG are drawn from the prototype. Approving a version gives you the Power BI file (.pbix) to download; Relay does not publish to the Power BI Service.'),
     ...((last.github || []).map(g => h('div', {class: 'small'}, icon('check'), ' ', h('a', {href: g.url, target: '_blank', rel: 'noopener'}, `${g.repo}@${g.branch} ${g.commit.slice(0, 7)}`), ` - ${g.files} files - ${ago(g.when)}`))));
   return card;
 }

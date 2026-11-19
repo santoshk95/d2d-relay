@@ -52,6 +52,7 @@ HOUSE_SYSTEM = ("You are {label}, the AI model built into Relay by PASDACS. If a
                 "behind you, say you are {label}; do not name any other model or AI company.")
 # item 47: the models Claude Code picks by itself for its small background tasks (Haiku unless told) and its subagents
 # follow a house model's run too, so a Relay run uses claude-opus-5-5 for every request it makes
+EFFORTS = ("low", "medium", "high", "xhigh", "max")      # Claude Code's --effort levels (item 67)
 HELPER_MODEL_ENV = ("ANTHROPIC_DEFAULT_HAIKU_MODEL", "ANTHROPIC_SMALL_FAST_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL",
                     "ANTHROPIC_DEFAULT_OPUS_MODEL", "CLAUDE_CODE_SUBAGENT_MODEL")
 
@@ -144,10 +145,13 @@ async def only_the_web_app(request, call_next):
     return await call_next(request)
 
 
-LANES = ("build", "chat")
+LANES = ("build", "chat", "review")
 # Item 46 (the user, 2026-11-14: "Add parallel builds"): the build lane takes D2D_BUILD_PARALLEL runs at once (each build
 # runs in a job container of its own, item 31; the web app's worker never sends more), the chat lane one at a time
-CAPACITY = {"build": max(1, int(os.environ.get("D2D_BUILD_PARALLEL") or 3)), "chat": 1}
+CAPACITY = {"build": max(1, int(os.environ.get("D2D_BUILD_PARALLEL") or 3)), "chat": 1,
+            # item 68: Relay's reviewers (UI/UX, story, accuracy, analyst) check each plan and version in runs of their
+            # own, read-only, beside the builds
+            "review": max(1, int(os.environ.get("D2D_REVIEW_PARALLEL") or 4))}
 slots = {lane: asyncio.Semaphore(CAPACITY[lane]) for lane in LANES}
 active: dict[str, list[float]] = {lane: [] for lane in LANES}   # lane -> when each of its running runs started (phase 8)
 RUN_STATS: dict[tuple, list] = {}                  # (runner, lane, outcome) -> [count, seconds]
@@ -175,6 +179,8 @@ class Run(BaseModel):
     env: dict[str, str] = {}
     # a subset of TOOLS for this run; [] = no tools at all (Ask Relay: the web app runs every query itself)
     tools: list[str] | None = None
+    # item 67: Claude Code's effort level for the run (low, medium, high, xhigh, max; None: the CLI's default)
+    effort: str | None = None
 
 
 PROVIDER_ENV = {"ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL", "CLAUDE_CODE_OAUTH_TOKEN",
@@ -182,7 +188,10 @@ PROVIDER_ENV = {"ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL
                 "ANTHROPIC_DEFAULT_OPUS_MODEL", "ANTHROPIC_CUSTOM_HEADERS"}
 # P16 (AI SDLC): the repository credential `genbi repo` uses, injected by the web app per run, never written to disk;
 # P17: GENBI_LIBRARY = the run's tenant's visual library (a folder inside this container's library mount)
-TOOLKIT_ENV = {"GENBI_REPO_TOKEN", "GENBI_REPO_USER", "GENBI_LIBRARY"}
+TOOLKIT_ENV = {"GENBI_REPO_TOKEN", "GENBI_REPO_USER", "GENBI_LIBRARY", "GENBI_READONLY"}
+# item 68: what a reviewer may run in the shell: reading commands only (genbi sql refuses writing statements with
+# GENBI_READONLY=1, which the web app sets for every review run)
+REVIEW_SHELL = ["Bash(genbi sql:*)", "Bash(genbi catalog:*)", "Bash(genbi validate:*)"]
 
 
 def _library_ok(value: str) -> bool:
@@ -383,6 +392,8 @@ class ClaudeCodeRunner(Runner):
         args = ["claude", "-p", "--output-format", "stream-json", "--verbose", "--model", real,
                 "--max-turns", str(run.max_turns), "--permission-mode", "acceptEdits",
                 *LOCKDOWN, *_tool_args(run)]
+        if run.effort in EFFORTS:                 # item 67: the web app's effort level (builds: max)
+            args += ["--effort", run.effort]
         system = "\n\n".join(x for x in (run.system, HOUSE_SYSTEM.format(label=house.get("label") or model) if house else None) if x)
         if system:
             args += ["--append-system-prompt", system]
@@ -435,7 +446,11 @@ def _tool_args(run: "Run") -> list[str]:
     if run.tools is None:
         allowed = list(TOOLS)
     else:
+        # a subset never has the shell, except a reviewer's (item 68: `genbi sql` to check the numbers; bash_guard still
+        # allows one genbi command, and the web app puts back any file a reviewer changed)
         allowed = [t for t in run.tools if t in TOOLS and not t.startswith("Bash")]
+        if run.lane == "review" and "Bash(genbi:*)" in run.tools:
+            allowed += REVIEW_SHELL
     builtin = list(dict.fromkeys(t.split("(")[0] for t in allowed))      # Bash(genbi:*) -> Bash
     args = ["--tools", ",".join(builtin)]
     if allowed:
@@ -491,6 +506,7 @@ def metrics():
 class Display(BaseModel):
     workdir: str
     file: str = "prototype/index.html"
+    shots: str | None = None          # item 68: also a PNG of every page, into this folder of the project (the UI/UX review)
 
 
 @app.post("/display-check")
@@ -499,8 +515,13 @@ def display_check(req: Display):
     path = (ROOT / req.workdir / req.file).resolve()
     if ROOT not in path.parents or not path.is_file():
         raise HTTPException(400, "file must be an existing prototype inside a project folder")
+    shots = None
+    if req.shots:
+        shots = (ROOT / req.workdir / req.shots).resolve()
+        if (ROOT / req.workdir).resolve() not in shots.parents:
+            raise HTTPException(400, "shots must be a folder inside the project folder")
     from genbi_kit import display
-    return display.check(path)
+    return display.check(path, shots=shots)
 
 
 @app.post("/runs")

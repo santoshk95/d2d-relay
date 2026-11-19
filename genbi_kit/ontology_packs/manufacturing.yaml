@@ -1,0 +1,478 @@
+# Industry pack: manufacturing (plants and production lines). Business terms tag columns by name (genbi_kit/ontology.py);
+# KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields).
+name: Manufacturing
+order: 40
+description: Plants, lines and machines. Production output, OEE with availability, performance and quality, yield, scrap, downtime, throughput, maintenance, cost per unit, labor and safety.
+questions:
+  - What was OEE by line last week, and which of availability, performance or quality pulled it down?
+  - Which machines had the most unplanned downtime this month, and what were the top reasons?
+  - What is the scrap rate by product and by shift over the last 12 weeks?
+  - How does production compare with plan by plant this month?
+  - What are the mean time between failures and the mean time to repair for each machine?
+  - How is cost per good unit changing by product family?
+
+terms:
+  # ---------------- measures: output and quality
+  - {name: Units Produced, kind: measure, unit: count, aggregation: sum, description: "All units the line made, good and bad (total count).",
+     synonyms: [produced qty, production qty, production quantity, produced quantity, total count, total units, units made, production volume, output units, total produced, prod qty, parts produced, units manufactured]}
+  - {name: Good Units, kind: measure, unit: count, aggregation: sum, description: "Units that passed quality first time, with no rework.",
+     synonyms: [good qty, good quantity, good count, good parts, conforming units, accepted units, units ok, ok qty, first pass units, good pieces, acceptable units]}
+  - {name: Scrap Units, kind: measure, unit: count, aggregation: sum, description: "Units thrown away as defective.",
+     synonyms: [scrap qty, scrap quantity, scrapped units, scrap count, rejected units, rejects, reject qty, reject count, bad units, defective scrap, scrapped qty, waste units]}
+  - {name: Rework Units, kind: measure, unit: count, aggregation: sum, description: "Units sent back to be repaired and checked again.",
+     synonyms: [rework qty, rework quantity, reworked units, rework count, repaired units, reprocessed units, rework pieces]}
+  - {name: Planned Units, kind: measure, unit: count, aggregation: sum, description: "Units the production schedule asked for.",
+     synonyms: [plan qty, planned qty, planned quantity, scheduled qty, target units, schedule qty, order qty, target quantity, production plan units, scheduled quantity]}
+  - {name: Input Quantity, kind: measure, unit: number, aggregation: sum, description: "Material put into the process (the start of the yield).",
+     synonyms: [input qty, material input, raw material input, consumed qty, consumed quantity, material consumed, charged qty, input weight, feed quantity, units started, started qty]}
+  - {name: Output Quantity, kind: measure, unit: number, aggregation: sum, description: "Good product that came out of the process.",
+     synonyms: [output qty, process output, finished qty, finished quantity, yield quantity, confirmed qty, confirmed yield, output weight, delivered to stock]}
+  - {name: Units Inspected, kind: measure, unit: count, aggregation: sum, description: "Units checked by quality control.",
+     synonyms: [inspected qty, inspected units, inspection qty, sample size, samples tested, tested units, checked units, lot size inspected]}
+  - {name: Defective Units, kind: measure, unit: count, aggregation: sum, description: "Inspected units with at least one defect.",
+     synonyms: [defective qty, defective count, defect units, nonconforming units, non conforming units, failed units, rejected inspected units, ncr units]}
+  - {name: Defects, kind: measure, unit: count, aggregation: sum, description: "Defects found (a unit may have several).",
+     synonyms: [defect count, defects found, number of defects, defect qty, nonconformances, nonconformities, quality defects]}
+  - {name: Yield %, kind: measure, unit: percent, aggregation: average, description: "Good output as a share of input, already worked out per row (weight it by input, never average it).",
+     synonyms: [yield pct, yield percent, yield rate, process yield, process yield pct, first pass yield, fpy, fpy pct, rolled throughput yield]}
+  - {name: OEE %, kind: measure, unit: percent, aggregation: average, description: "Overall equipment effectiveness already worked out per row (never average it).",
+     synonyms: [oee, oee pct, oee percent, oee score, overall equipment effectiveness, oee rate, equipment effectiveness]}
+  - {name: Availability %, kind: measure, unit: percent, aggregation: average, description: "Share of planned time the machine ran, already worked out per row.",
+     synonyms: [availability, availability pct, availability rate, oee availability, uptime pct, availability percent, machine availability]}
+  - {name: Performance %, kind: measure, unit: percent, aggregation: average, description: "Speed against the ideal rate, already worked out per row.",
+     synonyms: [performance, performance pct, performance rate, oee performance, speed efficiency, performance efficiency, speed pct]}
+  - {name: Quality %, kind: measure, unit: percent, aggregation: average, description: "Good units as a share of all units, already worked out per row.",
+     synonyms: [quality, quality pct, quality rate, oee quality, good rate, quality yield, quality percent]}
+  # ---------------- measures: time and speed
+  - {name: Planned Production Time, kind: measure, unit: duration, aggregation: sum, description: "Minutes the line was scheduled to run (shift time less planned breaks).",
+     synonyms: [planned time, planned run time, scheduled time, scheduled minutes, planned minutes, shift minutes, loading time, available time, planned production minutes, scheduled production time, calendar time]}
+  - {name: Run Time, kind: measure, unit: duration, aggregation: sum, description: "Minutes the line was actually running.",
+     synonyms: [runtime, running time, operating time, run minutes, uptime, machine run time, actual run time, productive time, up time, operating minutes, production time]}
+  - {name: Downtime, kind: measure, unit: duration, aggregation: sum, description: "Minutes the line stopped during planned production time (breakdowns, changeovers, waiting).",
+     synonyms: [down time, downtime minutes, stop time, stoppage time, stop minutes, stoppage minutes, unplanned downtime, machine downtime, idle time, loss time, lost time minutes]}
+  - {name: Planned Downtime, kind: measure, unit: duration, aggregation: sum, description: "Minutes stopped on purpose (planned maintenance, breaks, no demand).",
+     synonyms: [planned stop time, planned stops, scheduled downtime, planned down time, planned maintenance time, planned stoppage, scheduled stop minutes]}
+  - {name: Changeover Time, kind: measure, unit: duration, aggregation: sum, description: "Minutes to switch the line from one product to the next.",
+     synonyms: [changeover minutes, changeover, change over time, setup time, set up time, setup minutes, changeover duration, product change time, cip time]}
+  - {name: Ideal Cycle Time, kind: measure, unit: duration, aggregation: average, description: "Fastest time to make one unit (seconds or minutes per unit).",
+     synonyms: [ideal cycle, standard cycle time, std cycle time, design cycle time, ideal ct, takt time, standard time per unit, ideal time per unit, rated cycle time]}
+  - {name: Actual Cycle Time, kind: measure, unit: duration, aggregation: average, description: "Time it actually took to make one unit.",
+     synonyms: [cycle time, actual cycle, actual ct, measured cycle time, average cycle time, avg cycle time, observed cycle time]}
+  - {name: Throughput Rate, kind: measure, unit: number, aggregation: average, description: "Units made per hour while running.",
+     synonyms: [throughput, units per hour, uph, output rate, line speed, production rate, run rate, parts per hour, rate per hour, speed]}
+  - {name: Repair Time, kind: measure, unit: duration, aggregation: sum, description: "Hours or minutes spent repairing breakdowns.",
+     synonyms: [repair minutes, repair hours, time to repair, ttr, corrective maintenance time, breakdown time, repair duration, fix time, maintenance downtime]}
+  # ---------------- measures: maintenance, cost, labor, energy, safety
+  - {name: Breakdowns, kind: measure, unit: count, aggregation: sum, description: "Unplanned equipment failures.",
+     synonyms: [breakdown count, failures, failure count, number of failures, machine failures, equipment failures, stoppages, unplanned stops, breakdown events, fault count]}
+  - {name: Maintenance Work Orders, kind: measure, unit: count, aggregation: sum, description: "Maintenance jobs raised.",
+     synonyms: [maintenance orders, maintenance jobs, wo count, work order count, mro orders, maintenance tickets, maintenance requests]}
+  - {name: PM Work Orders Scheduled, kind: measure, unit: count, aggregation: sum, description: "Preventive maintenance jobs due in the period.",
+     synonyms: [pm scheduled, planned maintenance scheduled, pm orders due, pm due, preventive maintenance due, pm planned count, scheduled pm]}
+  - {name: PM Work Orders Completed On Time, kind: measure, unit: count, aggregation: sum, description: "Preventive maintenance jobs finished by their due date.",
+     synonyms: [pm completed on time, pm on time, pm completed, preventive maintenance completed, pm done on time, pm closed on time]}
+  - {name: Maintenance Cost, kind: measure, unit: currency, aggregation: sum, description: "Parts, labor and contractor cost of maintenance.",
+     synonyms: [maintenance spend, maintenance expense, repair cost, mro cost, maintenance parts cost, maintenance labor cost, upkeep cost]}
+  - {name: Production Cost, kind: measure, unit: currency, aggregation: sum, description: "Material, labor and overhead cost of what was made.",
+     synonyms: [manufacturing cost, cost of production, conversion cost, total production cost, product cost, standard cost total, actual cost, order cost, cost of manufacture]}
+  - {name: Scrap Cost, kind: measure, unit: currency, aggregation: sum, description: "Cost of the scrapped units.",
+     synonyms: [scrap value, scrap loss, cost of scrap, cost of poor quality, copq, scrap expense, waste cost, rework cost]}
+  - {name: Material Cost, kind: measure, unit: currency, aggregation: sum, description: "Cost of the materials used.",
+     synonyms: [raw material cost, material spend, component cost, bom cost, materials consumed cost, direct material cost]}
+  - {name: Labor Hours, kind: measure, unit: number, aggregation: sum, description: "Hours worked by production staff.",
+     synonyms: [labour hours, hours worked, direct labor hours, direct labour hours, man hours, worked hours, operator hours, labor hrs, paid hours]}
+  - {name: Labor Cost, kind: measure, unit: currency, aggregation: sum, description: "Wages and payroll cost of production staff.",
+     synonyms: [labour cost, direct labor cost, direct labour cost, payroll cost, wages, labor dollars, operator cost]}
+  - {name: Energy Consumed, kind: measure, unit: number, aggregation: sum, description: "Electricity or fuel energy used (usually kilowatt hours).",
+     synonyms: [energy consumption, energy kwh, kwh, kilowatt hours, power consumption, electricity used, energy use, energy usage, power usage]}
+  - {name: Lost Time Injuries, kind: measure, unit: count, aggregation: sum, description: "Injuries that kept a worker from work for a day or more.",
+     synonyms: [lti, lti count, lost time incidents, lost time accidents, lost workday cases, lwc, reportable injuries, injury count, safety incidents]}
+
+  # ---------------- keys
+  - {name: Plant, kind: key, entity: Plant, description: "Identifies a factory or production site.",
+     synonyms: [plant id, plant code, plant number, plant key, factory id, factory code, site id, site code, werks, facility id, mill id]}
+  - {name: Production Line, kind: key, entity: Production Line, description: "Identifies a production line or work center.",
+     synonyms: [line id, line code, line number, line key, work center, work centre, work center id, workcenter, wc id, arbpl, cell id, area id, production line id]}
+  - {name: Machine, kind: key, entity: Machine, description: "Identifies a machine or piece of equipment.",
+     synonyms: [machine id, machine code, machine number, equipment id, equipment code, equipment number, asset id, asset number, asset tag, asset code, equipment key, device id, tag number, functional location]}
+  - {name: Product, kind: key, entity: Product, description: "Identifies the product made (finished item).",
+     synonyms: [product id, product code, product key, product number, sku, sku code, part number, part nbr, part id, item number, item code, item id, material number, material id, material code, matnr, article number]}
+  - {name: Component, kind: key, entity: Component, description: "Identifies a raw material or component used.",
+     synonyms: [component id, component code, component number, raw material id, raw material code, bom component, bom item, ingredient id, input material, material component]}
+  - {name: Work Order, kind: key, entity: Work Order, description: "Identifies a production order (the job to make a quantity).",
+     synonyms: [work order id, work order number, work order no, wo number, wo id, production order, production order number, process order, job number, job id, order number, aufnr, manufacturing order, mo number, shop order]}
+  - {name: Batch, kind: key, entity: Batch, description: "Identifies a batch or lot.",
+     synonyms: [batch id, batch number, batch no, batch code, lot number, lot id, lot no, lot code, charge number, charg, heat number, serial number]}
+  - {name: Maintenance Order, kind: key, entity: Maintenance Order, description: "Identifies a maintenance job.",
+     synonyms: [maintenance order id, maintenance order number, maintenance wo, maintenance work order id, mwo number, notification number, service order, repair order, pm order, ticket number]}
+  - {name: Operator, kind: key, entity: Operator, description: "Identifies the worker who ran the machine.",
+     synonyms: [operator id, operator code, employee id, employee number, worker id, badge number, staff id, technician id]}
+  - {name: Supplier, kind: key, entity: Supplier, description: "Identifies a material supplier.",
+     synonyms: [supplier id, supplier code, supplier number, vendor id, vendor code, vendor number, lifnr]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The production day a row belongs to.",
+     synonyms: [day, production date, posting date, business date, calendar date, shift date, report date, transaction date, work date, run date]}
+  - {name: Week, kind: date, entity: Date, synonyms: [week number, week id, production week, calendar week, iso week, wk number, fiscal week]}
+  - {name: Month, kind: date, entity: Date, synonyms: [month name, production month, month year, year month, yyyymm]}
+  - {name: Event Start Time, kind: date, entity: Date, description: "When an event (run, stop, job) started.",
+     synonyms: [start time, start datetime, start timestamp, event start, stop start time, downtime start, begin time, started at, start date time]}
+  - {name: Event End Time, kind: date, entity: Date, description: "When an event (run, stop, job) ended.",
+     synonyms: [end time, end datetime, end timestamp, event end, stop end time, downtime end, finish time, ended at, end date time]}
+  - {name: Work Order Start Date, kind: date, entity: Date, synonyms: [order start date, production start date, job start date, scheduled start date, basic start date, release date]}
+  - {name: Work Order End Date, kind: date, entity: Date, synonyms: [order end date, completion date, production end date, job end date, finish date, scheduled finish date, basic finish date, due date]}
+  - {name: Fiscal Period, kind: date, entity: Date, synonyms: [fiscal month, period number, period id, accounting period, posting period, fp]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, fiscal year number, financial year, year number]}
+
+  # ---------------- attributes
+  - {name: Plant Name, kind: attribute, entity: Plant, synonyms: [factory name, site name, plant description, facility name, plant desc]}
+  - {name: Production Line Name, kind: attribute, entity: Production Line, synonyms: [line name, line description, work center name, work centre name, cell name, line desc, area name]}
+  - {name: Machine Name, kind: attribute, entity: Machine, synonyms: [equipment name, equipment description, asset name, machine description, machine desc, equipment desc]}
+  - {name: Machine Type, kind: attribute, entity: Machine, synonyms: [equipment type, equipment class, asset class, machine class, machine category, asset type, equipment category]}
+  - {name: Product Name, kind: attribute, entity: Product, synonyms: [item name, item description, part name, part description, material description, product description, sku description, description]}
+  - {name: Product Family, kind: attribute, entity: Product, synonyms: [product group, product line, product category, family, material group, item group, product type, category]}
+  - {name: Shift, kind: attribute, entity: Date, description: "The work shift (A, B, C or day, night).",
+     synonyms: [shift name, shift code, shift id, work shift, crew, shift pattern, shift number]}
+  - {name: Downtime Reason, kind: attribute, entity: Machine, description: "Why the line stopped.",
+     synonyms: [stop reason, stoppage reason, downtime cause, stop cause, reason code, fault code, downtime code, loss reason, stop code, delay reason, failure cause]}
+  - {name: Downtime Category, kind: attribute, entity: Machine, synonyms: [stop category, downtime type, stop type, loss category, loss type, loss class, planned or unplanned, downtime class]}
+  - {name: Defect Type, kind: attribute, entity: Product, synonyms: [defect code, defect category, defect name, defect description, nonconformance type, ncr type, quality issue, fault type, defect class]}
+  - {name: Scrap Reason, kind: attribute, entity: Product, synonyms: [scrap code, scrap cause, scrap category, reject reason, reject code, waste reason, scrap type]}
+  - {name: Work Order Status, kind: attribute, entity: Work Order, synonyms: [order status, job status, production order status, wo status, status, release status, order state]}
+  - {name: Maintenance Type, kind: attribute, entity: Maintenance Order, description: "Preventive, corrective, predictive or inspection work.",
+     synonyms: [maintenance category, wo type, work order type, order type, maintenance class, pm type, activity type, maintenance activity type]}
+  - {name: Priority, kind: attribute, entity: Maintenance Order, synonyms: [priority code, job priority, urgency, criticality, order priority, priority level]}
+  - {name: Operator Name, kind: attribute, entity: Operator, synonyms: [worker name, employee name, technician name, staff name, crew member]}
+  - {name: Supplier Name, kind: attribute, entity: Supplier, synonyms: [vendor name, supplier description, vendor description]}
+  - {name: Region, kind: attribute, entity: Plant, synonyms: [region name, plant region, manufacturing region, area region, zone, country, location]}
+  - {name: Unit of Measure, kind: attribute, entity: Product, synonyms: [uom, base unit, base uom, measure unit, unit, meins]}
+
+kpis:
+  # ---------------- output and quality
+  - name: Units Produced
+    synonyms: [Total Count, Production Volume, Total Units, Production Quantity]
+    definition: All units the line made in the period, good and defective.
+    formula: Sum of produced quantities from production confirmations
+    unit: count
+    aggregation: sum
+    domain: Production
+  - name: Good Units
+    synonyms: [Good Count, Good Quantity, Conforming Units]
+    definition: Units that passed quality at the first check, with no rework.
+    formula: Units produced - Scrap units - Rework units
+    dax: '[Units Produced] - [Scrap Units] - [Rework Units]'
+    unit: count
+    aggregation: sum
+    domain: Production
+  - name: Scrap Units
+    synonyms: [Scrap Quantity, Rejected Units, Scrapped Units]
+    definition: Units thrown away as defective.
+    formula: Sum of scrapped quantities
+    unit: count
+    aggregation: sum
+    domain: Quality
+  - name: Rework Units
+    synonyms: [Rework Quantity, Reworked Units]
+    definition: Units sent back for repair and checked again.
+    formula: Sum of quantities sent to rework
+    unit: count
+    aggregation: sum
+    domain: Quality
+  - name: Scrap Rate %
+    synonyms: [Scrap %, Scrap Rate, Reject Rate %]
+    definition: Scrap units as a share of all units produced.
+    formula: Scrap units / Units produced
+    dax: DIVIDE ( [Scrap Units], [Units Produced] )
+    unit: percent
+    aggregation: ratio
+    domain: Quality
+  - name: Planned Units
+    synonyms: [Planned Quantity, Production Plan, Scheduled Quantity]
+    definition: Units the production schedule asked for in the period.
+    formula: Sum of planned order quantities due in the period
+    unit: count
+    aggregation: sum
+    domain: Production
+  - name: Plan Attainment %
+    synonyms: [Schedule Attainment, Schedule Adherence %, Production vs Plan %, Plan Adherence]
+    definition: Good units as a share of the units planned.
+    formula: Good units / Planned units
+    dax: DIVIDE ( [Good Units], [Planned Units] )
+    unit: percent
+    aggregation: ratio
+    domain: Production
+  - name: Input Quantity
+    synonyms: [Material Input, Quantity Started]
+    definition: Material or units put into the process.
+    formula: Sum of quantities fed into the process
+    unit: number
+    aggregation: sum
+    domain: Yield
+  - name: Output Quantity
+    synonyms: [Process Output, Good Output]
+    definition: Good product that came out of the process.
+    formula: Sum of good quantities confirmed to stock
+    unit: number
+    aggregation: sum
+    domain: Yield
+  - name: Process Yield %
+    synonyms: [Yield %, Yield, Material Yield %]
+    definition: Good output as a share of input, in the same unit of measure.
+    formula: Output quantity / Input quantity
+    dax: DIVIDE ( [Output Quantity], [Input Quantity] )
+    unit: percent
+    aggregation: ratio
+    domain: Yield
+  - name: Units Inspected
+    synonyms: [Inspected Quantity, Sample Size]
+    definition: Units checked by quality control.
+    formula: Sum of inspected units
+    unit: count
+    aggregation: sum
+    domain: Quality
+  - name: Defective Units
+    synonyms: [Defective Quantity, Nonconforming Units]
+    definition: Inspected units with at least one defect.
+    formula: Count of inspected units that failed
+    unit: count
+    aggregation: sum
+    domain: Quality
+  - name: Defect Rate %
+    synonyms: [Defective Rate, Reject Rate, Fraction Defective]
+    definition: Defective units as a share of units inspected.
+    formula: Defective units / Units inspected
+    dax: DIVIDE ( [Defective Units], [Units Inspected] )
+    unit: percent
+    aggregation: ratio
+    domain: Quality
+  - name: Defects per Million Units
+    synonyms: [PPM, Defective PPM, Parts per Million Defective]
+    definition: Defective units for every million units inspected.
+    formula: Defective units / Units inspected x 1,000,000
+    dax: DIVIDE ( [Defective Units], [Units Inspected] ) * 1000000
+    unit: number
+    aggregation: ratio
+    domain: Quality
+  # ---------------- OEE and time
+  - name: Planned Production Time
+    synonyms: [Planned Time, Scheduled Time, Loading Time]
+    definition: Minutes the line was scheduled to run - shift time less planned breaks and planned stops.
+    formula: Shift minutes - Planned breaks - Planned downtime
+    unit: duration
+    aggregation: sum
+    domain: OEE
+  - name: Downtime
+    synonyms: [Unplanned Downtime, Stop Time, Stoppage Time]
+    definition: Minutes the line was stopped during planned production time - breakdowns, changeovers, material waits and minor stops.
+    formula: Sum of stop minutes inside planned production time
+    unit: duration
+    aggregation: sum
+    domain: OEE
+  - name: Run Time
+    synonyms: [Operating Time, Running Time, Uptime]
+    definition: Minutes the line was running.
+    formula: Planned production time - Downtime
+    dax: '[Planned Production Time] - [Downtime]'
+    unit: duration
+    aggregation: sum
+    domain: OEE
+  - name: Availability %
+    synonyms: [OEE Availability, Availability Rate, Machine Availability]
+    definition: Share of planned production time that the line was running (the availability factor of OEE).
+    formula: Run time / Planned production time
+    dax: DIVIDE ( [Run Time], [Planned Production Time] )
+    unit: percent
+    aggregation: ratio
+    domain: OEE
+  - name: Downtime %
+    synonyms: [Downtime Rate, Unplanned Downtime %]
+    definition: Downtime as a share of planned production time.
+    formula: Downtime / Planned production time
+    dax: DIVIDE ( [Downtime], [Planned Production Time] )
+    unit: percent
+    aggregation: ratio
+    domain: OEE
+  - name: Ideal Run Time
+    synonyms: [Standard Run Time, Ideal Production Time]
+    definition: Minutes the units produced should have taken at the ideal cycle time.
+    formula: Sum of units produced times ideal cycle time
+    unit: duration
+    aggregation: sum
+    domain: OEE
+  - name: Performance %
+    synonyms: [OEE Performance, Performance Rate, Speed Efficiency]
+    definition: Speed against the ideal rate while running (the performance factor of OEE), capped at 100%.
+    formula: Ideal run time / Run time
+    dax: DIVIDE ( [Ideal Run Time], [Run Time] )
+    unit: percent
+    aggregation: ratio
+    domain: OEE
+  - name: Quality %
+    synonyms: [OEE Quality, Quality Rate, First Pass Yield %, FPY %, First Pass Yield]
+    definition: Good units as a share of all units produced (the quality factor of OEE; first pass yield).
+    formula: Good units / Units produced
+    dax: DIVIDE ( [Good Units], [Units Produced] )
+    unit: percent
+    aggregation: ratio
+    domain: OEE
+  - name: OEE %
+    synonyms: [OEE, Overall Equipment Effectiveness, OEE Score]
+    definition: Overall equipment effectiveness - the share of planned time spent making good units at the ideal speed.
+    formula: Availability x Performance x Quality
+    dax: '[Availability %] * [Performance %] * [Quality %]'
+    unit: percent
+    aggregation: ratio
+    domain: OEE
+  - name: Throughput per Run Hour
+    synonyms: [Units per Hour, UPH, Throughput Rate, Line Speed]
+    definition: Units produced for each hour the line was running.
+    formula: Units produced / Run time in hours
+    dax: DIVIDE ( [Units Produced], [Run Time] ) * 60
+    unit: number
+    aggregation: ratio
+    domain: Production
+  - name: Changeover Time
+    synonyms: [Changeover Minutes, Setup Time]
+    definition: Minutes spent switching the line from one product to the next.
+    formula: Sum of changeover minutes
+    unit: duration
+    aggregation: sum
+    domain: OEE
+  # ---------------- cost, labor, energy
+  - name: Production Cost
+    synonyms: [Manufacturing Cost, Cost of Production, Conversion Cost]
+    definition: Material, labor and overhead cost of the units produced.
+    formula: Material cost + Direct labor cost + Manufacturing overhead
+    unit: currency
+    aggregation: sum
+    domain: Cost
+  - name: Cost per Good Unit
+    synonyms: [Unit Cost, Cost per Unit, Manufacturing Cost per Unit]
+    definition: Production cost for each good unit made.
+    formula: Production cost / Good units
+    dax: DIVIDE ( [Production Cost], [Good Units] )
+    unit: currency
+    aggregation: ratio
+    domain: Cost
+  - name: Scrap Cost
+    synonyms: [Cost of Scrap, Cost of Poor Quality, Scrap Value]
+    definition: Cost of the units scrapped (materials and the work already put in).
+    formula: Scrapped quantity times standard cost
+    unit: currency
+    aggregation: sum
+    domain: Cost
+  - name: Scrap Cost %
+    synonyms: [Scrap Cost % of Production Cost, Cost of Scrap %]
+    definition: Scrap cost as a share of production cost.
+    formula: Scrap cost / Production cost
+    dax: DIVIDE ( [Scrap Cost], [Production Cost] )
+    unit: percent
+    aggregation: ratio
+    domain: Cost
+  - name: Labor Hours
+    synonyms: [Direct Labor Hours, Hours Worked, Man Hours]
+    definition: Hours worked by production staff.
+    formula: Sum of hours booked to production orders
+    unit: number
+    aggregation: sum
+    domain: Labor
+  - name: Labor Productivity
+    synonyms: [Units per Labor Hour, Output per Labor Hour]
+    definition: Good units made for each labor hour.
+    formula: Good units / Labor hours
+    dax: DIVIDE ( [Good Units], [Labor Hours] )
+    unit: ratio
+    aggregation: ratio
+    domain: Labor
+  - name: Energy Consumed
+    synonyms: [Energy Consumption, Energy Use, Electricity Used]
+    definition: Energy used by production, in kilowatt hours.
+    formula: Sum of metered energy
+    unit: number
+    aggregation: sum
+    domain: Energy
+  - name: Energy per Good Unit
+    synonyms: [Energy Intensity, Specific Energy Consumption, kWh per Unit]
+    definition: Energy used for each good unit made.
+    formula: Energy consumed / Good units
+    dax: DIVIDE ( [Energy Consumed], [Good Units] )
+    unit: ratio
+    aggregation: ratio
+    domain: Energy
+  # ---------------- maintenance and safety
+  - name: Breakdowns
+    synonyms: [Failures, Equipment Failures, Breakdown Count]
+    definition: Unplanned equipment failures that stopped production.
+    formula: Count of corrective maintenance events that stopped the machine
+    unit: count
+    aggregation: sum
+    domain: Maintenance
+  - name: Repair Time
+    synonyms: [Time to Repair, Corrective Maintenance Time]
+    definition: Time spent repairing breakdowns, from the stop to the machine running again.
+    formula: Sum of repair minutes of breakdowns
+    unit: duration
+    aggregation: sum
+    domain: Maintenance
+  - name: MTBF
+    synonyms: [Mean Time Between Failures, Mean Time Between Breakdowns]
+    definition: Average running time between two failures.
+    formula: Run time / Breakdowns
+    dax: DIVIDE ( [Run Time], [Breakdowns] )
+    unit: duration
+    aggregation: ratio
+    domain: Maintenance
+  - name: MTTR
+    synonyms: [Mean Time to Repair, Mean Time to Restore]
+    definition: Average time to repair a failure.
+    formula: Repair time / Breakdowns
+    dax: DIVIDE ( [Repair Time], [Breakdowns] )
+    unit: duration
+    aggregation: ratio
+    domain: Maintenance
+  - name: Maintenance Cost
+    synonyms: [Maintenance Spend, Maintenance Expense, Repair Cost]
+    definition: Parts, labor and contractor cost of maintenance work.
+    formula: Sum of costs booked to maintenance orders
+    unit: currency
+    aggregation: sum
+    domain: Maintenance
+  - name: PM Work Orders Scheduled
+    synonyms: [Preventive Maintenance Due, PM Due]
+    definition: Preventive maintenance jobs due in the period.
+    formula: Count of preventive maintenance orders with a due date in the period
+    filters: [Maintenance type = Preventive]
+    unit: count
+    aggregation: sum
+    domain: Maintenance
+  - name: PM Work Orders Completed On Time
+    synonyms: [PM Completed On Time, Preventive Maintenance Completed on Time]
+    definition: Preventive maintenance jobs finished by their due date.
+    formula: Count of preventive maintenance orders completed on or before their due date
+    filters: [Maintenance type = Preventive]
+    unit: count
+    aggregation: sum
+    domain: Maintenance
+  - name: PM Compliance %
+    synonyms: [Preventive Maintenance Compliance, PM Schedule Compliance]
+    definition: Share of due preventive maintenance jobs completed on time.
+    formula: PM work orders completed on time / PM work orders scheduled
+    dax: DIVIDE ( [PM Work Orders Completed On Time], [PM Work Orders Scheduled] )
+    unit: percent
+    aggregation: ratio
+    domain: Maintenance
+  - name: Lost Time Injuries
+    synonyms: [LTIs, Lost Time Incidents]
+    definition: Work injuries that kept a person away from work for at least one day or shift.
+    formula: Count of recordable injuries with lost days
+    unit: count
+    aggregation: sum
+    domain: Safety
+  - name: Lost Time Injury Frequency Rate
+    synonyms: [LTIFR, LTI Rate, Lost Time Frequency Rate]
+    definition: Lost time injuries for every million hours worked.
+    formula: Lost time injuries / Hours worked x 1,000,000
+    dax: DIVIDE ( [Lost Time Injuries], [Labor Hours] ) * 1000000
+    unit: number
+    aggregation: ratio
+    domain: Safety

@@ -96,7 +96,7 @@ async function mbStart() {
         NEW.mode !== 'rules_only' ? seg([['live', 'Live AI calls'], ['batch', 'Batch AI calls']], NEW.calls, v => { NEW.calls = v; draw(); }, 'AI calls') : null,
         h('span', {class: 'spacer'})),
       h('div', {class: 'row', style: 'margin-top:10px'}, h('span', {class: 'small muted', style: 'min-width:150px'}, 'Target visuals'),
-        seg([['relay', 'Visual Atlas visuals'], ['builtin', "Power BI's built-in visuals"]], NEW.visuals, v => { NEW.visuals = v; draw(); }, 'Target visuals'),
+        seg([['relay', 'Relay visuals'], ['builtin', "Power BI's built-in visuals"]], NEW.visuals, v => { NEW.visuals = v; draw(); }, 'Target visuals'),
         h('span', {class: 'small muted'}, NEW.visuals === 'builtin' ? 'Nothing embedded: standard Power BI charts, cards and tables with their formatting - for tenants that block custom visuals.'
           : 'Designed visuals in the report theme, embedded in each report.'),
         h('span', {class: 'spacer'}),

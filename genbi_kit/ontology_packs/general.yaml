@@ -1,0 +1,195 @@
+# Industry pack: general business (item 61). The terms most data uses, whatever the industry; it also tags columns for
+# an organisation that has not chosen an industry yet (ontology.default_terms).
+name: General business
+order: 90
+description: The business terms and KPIs most companies share - sales, orders, customers, products, cost, profit, people - for any industry.
+questions:
+  - What were total sales by month this year compared with last year?
+  - Which 10 customers bought the most this quarter?
+  - Which products have the highest gross margin percent?
+  - How many orders did we get each week, and what was the average order value?
+  - Which region grew fastest this year?
+
+terms:
+  # ---------------- measures
+  - {name: Sales, kind: measure, unit: currency, aggregation: sum, description: "Value of what was sold.",
+     synonyms: [sls, sale, sales amount, sales value, revenue, rev, turnover, income, sales dollars, total sales, invoice amount, billed amount, gross amount]}
+  - {name: Net Sales, kind: measure, unit: currency, aggregation: sum, description: "Sales after discounts and returns.",
+     synonyms: [net sls, net revenue, net amount, sales net, net invoice amount]}
+  - {name: Quantity, kind: measure, unit: count, aggregation: sum, description: "Units sold, ordered or moved.",
+     synonyms: [qty, units, unit qty, quantity sold, units sold, volume, pieces, item count]}
+  - {name: Cost, kind: measure, unit: currency, aggregation: sum, description: "Cost of what was sold or bought.",
+     synonyms: [cost amount, total cost, cogs, cost of goods sold, cost of sales, expense, expenses, spend, spending]}
+  - {name: Gross Profit, kind: measure, unit: currency, aggregation: sum, description: "Sales less cost.",
+     synonyms: [gross margin, margin, profit, margin amount, gm, gp, profit amount]}
+  - {name: Gross Margin %, kind: measure, unit: percent, aggregation: average, description: "Margin as a share of sales, worked out per row.",
+     synonyms: [gross margin pct, margin pct, margin percent, gm pct, profit margin pct]}
+  - {name: Discount, kind: measure, unit: currency, aggregation: sum, description: "Price reductions given.",
+     synonyms: [discounts, discount amount, markdown, rebate, price reduction]}
+  - {name: Tax, kind: measure, unit: currency, aggregation: sum, description: "Tax charged on top of the price.",
+     synonyms: [tax amount, vat, gst, sales tax, tax collected]}
+  - {name: Shipping Cost, kind: measure, unit: currency, aggregation: sum, synonyms: [freight, freight cost, shipping, shipping amount, delivery cost, delivery fee]}
+  - {name: Price, kind: measure, unit: currency, aggregation: average, synonyms: [unit price, list price, selling price, rate, price per unit]}
+  - {name: Unit Cost, kind: measure, unit: currency, aggregation: average, synonyms: [cost per unit, standard cost, item cost]}
+  - {name: Budget, kind: measure, unit: currency, aggregation: sum, synonyms: [budget amount, plan amount, planned amount, target amount, forecast amount]}
+  - {name: Headcount, kind: measure, unit: count, aggregation: last, synonyms: [fte, ftes, employees count, staff count, head count]}
+  - {name: Hours, kind: measure, unit: number, aggregation: sum, synonyms: [hours worked, worked hours, labor hours, billable hours, time spent]}
+  - {name: Duration Days, kind: measure, unit: duration, aggregation: average, synonyms: [days, lead time, cycle time, days to close, days open, age days, tat, turnaround time]}
+  - {name: Score, kind: measure, unit: number, aggregation: average, synonyms: [rating, satisfaction, csat, nps score, survey score]}
+  # ---------------- keys
+  - {name: Customer, kind: key, entity: Customer, synonyms: [customer id, customer key, customer nbr, customer number, customer code, client id, account id, account number, cust id, buyer id]}
+  - {name: Product, kind: key, entity: Product, synonyms: [product id, product key, product code, item id, item code, item nbr, sku, part number, part nbr, material id, material number, article id]}
+  - {name: Order, kind: key, entity: Order, synonyms: [order id, order nbr, order number, order key, sales order, so number, po number, purchase order]}
+  - {name: Invoice, kind: key, entity: Invoice, synonyms: [invoice id, invoice nbr, invoice number, bill id, bill number, document number]}
+  - {name: Employee, kind: key, entity: Employee, synonyms: [employee id, emp id, employee nbr, staff id, worker id, person id]}
+  - {name: Supplier, kind: key, entity: Supplier, synonyms: [supplier id, vendor id, vendor nbr, vendor code, supplier code]}
+  - {name: Location, kind: key, entity: Location, synonyms: [location id, site id, branch id, store id, store number, store nbr, store no, store code, branch number, site number, office id, plant id, warehouse id, facility id]}
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, synonyms: [day, order date, invoice date, transaction date, txn date, posting date, created date, created at, event date, sale date, ship date]}
+  - {name: Month, kind: date, entity: Date, synonyms: [month name, period, month year, year month, yyyymm]}
+  - {name: Year, kind: date, entity: Date, synonyms: [calendar year, fiscal year, fy, yr]}
+  - {name: Quarter, kind: date, entity: Date, synonyms: [qtr, fiscal quarter, calendar quarter]}
+  # ---------------- attributes
+  - {name: Customer Name, kind: attribute, entity: Customer, synonyms: [client name, account name, company name, buyer name]}
+  - {name: Customer Segment, kind: attribute, entity: Customer, synonyms: [segment, customer type, customer group, tier, industry]}
+  - {name: Product Name, kind: attribute, entity: Product, synonyms: [item name, item description, product description, description, material description]}
+  - {name: Category, kind: attribute, entity: Product, synonyms: [product category, category name, product group, product line, family, product family]}
+  - {name: Subcategory, kind: attribute, entity: Product, synonyms: [sub category, subcategory name, product subgroup]}
+  - {name: Brand, kind: attribute, entity: Product, synonyms: [brand name, make]}
+  - {name: Region, kind: attribute, entity: Location, synonyms: [region name, sales region, territory, area, zone]}
+  - {name: Country, kind: attribute, entity: Location, synonyms: [country name, country code, nation]}
+  - {name: State, kind: attribute, entity: Location, synonyms: [state name, province, county]}
+  - {name: City, kind: attribute, entity: Location, synonyms: [city name, town]}
+  - {name: Channel, kind: attribute, entity: Order, synonyms: [sales channel, order channel, source, order source]}
+  - {name: Status, kind: attribute, synonyms: [order status, stage, status name, current status]}
+  - {name: Department, kind: attribute, entity: Employee, synonyms: [dept, department name, function, business unit, cost center, cost centre]}
+  - {name: Payment Method, kind: attribute, entity: Order, synonyms: [payment type, tender, payment mode]}
+
+kpis:
+  - name: Revenue
+    synonyms: [Sales, Total Sales, Total Revenue]
+    definition: Value of what was sold in the period.
+    formula: Sum of sales amounts
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Revenue LY
+    synonyms: [Sales LY, Revenue Last Year]
+    definition: Revenue in the same period last year.
+    formula: Revenue for the same period one year earlier
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Revenue Growth %
+    synonyms: [Sales Growth %, YoY Growth %, Revenue vs LY %]
+    definition: Change in revenue against the same period last year.
+    formula: (Revenue - Revenue last year) / Revenue last year
+    dax: DIVIDE ( [Revenue] - [Revenue LY], [Revenue LY] )
+    unit: percent
+    aggregation: ratio
+    domain: Sales
+  - name: Cost of Sales
+    synonyms: [COGS, Cost of Goods Sold]
+    definition: Cost of what was sold.
+    formula: Sum of costs of the items sold
+    unit: currency
+    aggregation: sum
+    domain: Profit
+  - name: Gross Profit
+    synonyms: [Gross Margin, Margin]
+    definition: Revenue less the cost of sales.
+    formula: Revenue - Cost of sales
+    dax: '[Revenue] - [Cost of Sales]'
+    unit: currency
+    aggregation: sum
+    domain: Profit
+  - name: Gross Margin %
+    synonyms: [GM %, Margin %, Gross Profit %]
+    definition: Gross profit as a share of revenue.
+    formula: Gross profit / Revenue
+    dax: DIVIDE ( [Gross Profit], [Revenue] )
+    unit: percent
+    aggregation: ratio
+    domain: Profit
+  - name: Orders
+    synonyms: [Order Count, Number of Orders]
+    definition: Orders placed in the period.
+    formula: Count of distinct orders
+    unit: count
+    aggregation: distinct_count
+    domain: Sales
+  - name: Average Order Value
+    synonyms: [AOV, Average Order Size, Revenue per Order]
+    definition: Revenue per order.
+    formula: Revenue / Orders
+    dax: DIVIDE ( [Revenue], [Orders] )
+    unit: currency
+    aggregation: ratio
+    domain: Sales
+  - name: Units Sold
+    synonyms: [Quantity Sold, Units]
+    definition: Units sold in the period.
+    formula: Sum of quantities sold
+    unit: count
+    aggregation: sum
+    domain: Sales
+  - name: Average Selling Price
+    synonyms: [ASP, Revenue per Unit]
+    definition: Revenue per unit sold.
+    formula: Revenue / Units sold
+    dax: DIVIDE ( [Revenue], [Units Sold] )
+    unit: currency
+    aggregation: ratio
+    domain: Sales
+  - name: Active Customers
+    synonyms: [Customers, Customer Count, Unique Customers]
+    definition: Distinct customers who bought in the period.
+    formula: Distinct count of customers with an order
+    unit: count
+    aggregation: distinct_count
+    domain: Customers
+  - name: Revenue per Customer
+    synonyms: [Average Revenue per Customer, ARPC]
+    definition: Revenue per active customer.
+    formula: Revenue / Active customers
+    dax: DIVIDE ( [Revenue], [Active Customers] )
+    unit: currency
+    aggregation: ratio
+    domain: Customers
+  - name: Discount %
+    synonyms: [Discount Rate, Markdown %]
+    definition: Discounts as a share of revenue before discounts.
+    formula: Discounts / (Revenue + Discounts)
+    unit: percent
+    aggregation: ratio
+    domain: Sales
+  - name: Budget
+    synonyms: [Plan, Target]
+    definition: Planned revenue for the period.
+    formula: Sum of budget amounts
+    unit: currency
+    aggregation: sum
+    domain: Planning
+  - name: Revenue vs Budget %
+    synonyms: [Budget Attainment %, Plan Achievement %, Variance to Budget %]
+    definition: Revenue against budget.
+    formula: (Revenue - Budget) / Budget
+    dax: DIVIDE ( [Revenue] - [Budget], [Budget] )
+    unit: percent
+    aggregation: ratio
+    domain: Planning
+  - name: Headcount
+    synonyms: [Employees, FTE]
+    definition: People employed at the end of the period.
+    formula: Count of active employees at period end
+    unit: count
+    aggregation: last
+    domain: People
+  - name: Revenue per Employee
+    synonyms: [Sales per Employee]
+    definition: Revenue per person employed.
+    formula: Revenue / Headcount
+    dax: DIVIDE ( [Revenue], [Headcount] )
+    unit: currency
+    aggregation: ratio
+    domain: People

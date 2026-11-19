@@ -138,8 +138,8 @@ try:
     vers = json.loads(r.stdout.strip().splitlines()[-1])
 except (ValueError, IndexError):
     vers = {"error": (r.stdout + r.stderr)[-300:]}
-check("atlas: the image ships the rebuilt visuals (Compare 1.0.7.0, Finance 1.0.7.0, Columns 1.0.9.0)",
-      vers == {"atlasCompare": "1.0.7.0", "atlasFinance": "1.0.7.0", "atlasColumns": "1.0.9.0"}, vers)
+check("atlas: the image ships the rebuilt visuals (Compare 1.0.8.0, Finance 1.0.8.0, Columns 1.0.10.0; rebuilt 2026-11-19 as Relay<Family>)",
+      vers == {"atlasCompare": "1.0.8.0", "atlasFinance": "1.0.8.0", "atlasColumns": "1.0.10.0"}, vers)
 docker("exec", "-u", "root", c.WEB_C, "rm", "-rf", WORK, "/tmp/item35-labels.png")
 
 bad = [n for n, ok in c.RESULTS if not ok]

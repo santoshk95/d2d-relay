@@ -4,7 +4,8 @@ tests into the repo, the job runner's start-up sweep limited to its own stack.
 - a new dashboard uses Power BI's built-in visuals unless it asks for mixed or relay (custom); older dashboards stay relay;
 - the New dashboard form offers built-in, mixed, custom in that order, built-in chosen, Custom visuals off with it and
   back to its own choice when another is picked; the dashboard page's switch in the same order;
-- the model is "Relay Model powered by Claude" in the model list, on a dashboard's Details tab and on Branding;
+- the model is "Relay Model" in the model list, on a dashboard's Details tab and on Branding (it was "Relay Model
+  powered by Claude" until item 70, 2026-11-19, which keeps the AI behind it confidential: its note names no maker);
 - the job runner removes only its own stack's job containers when it starts; another stack's are left alone.
 Screenshots go to the run's folder (tests/out/<run>): item34-new.png, item34-details.png.
 python -I -X utf8 item34_check.py <public> <admin>"""
@@ -22,7 +23,7 @@ import gov_check as g  # noqa: E402
 
 check = c.check
 RUNNER = os.environ.get("D2D_TEST_RUNNER", "d2d-relay-test-runner")
-NAME = "Relay Model powered by Claude"
+NAME = "Relay Model"                    # item 70: "Relay Model powered by Claude" until 2026-11-19
 
 
 def docker(*args: str, timeout: int = 120) -> subprocess.CompletedProcess:
@@ -67,8 +68,9 @@ s, cat = p.get("/api/models")
 models = (cat or {}).get("models") or []
 check(f"model: the only model offered is called {NAME}", s == 200 and [(m.get("id"), m.get("label")) for m in models] == [("relay", NAME)],
       [(m.get("id"), m.get("label")) for m in models])
-check("model: it is the default, and its note says it is powered by Claude", (cat or {}).get("default") == "relay"
-      and "powered by Claude" in str((models[0] if models else {}).get("note")), ((cat or {}).get("default"), models[:1]))
+check("model: it is the default, and its note keeps the AI behind it confidential (item 70: no Claude in it)",
+      (cat or {}).get("default") == "relay" and models and (models[0] or {}).get("note") and "Claude" not in str(models[0].get("note")),
+      ((cat or {}).get("default"), models[:1]))
 
 # ---------------------------------------------------------------- which visuals a new dashboard uses
 pid1, st1 = dashboard(p)
@@ -107,23 +109,25 @@ with sync_playwright() as pw:
     page = ctx.new_page()
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
-    page.goto("http://127.0.0.1:8000/#/new")
-    page.wait_for_selector("select[aria-label='Visuals']", timeout=20000)
-    page.wait_for_timeout(800)
-    vis = page.locator("select[aria-label='Visuals']")
-    cv = page.locator("label.f:has-text('Custom visuals') + select")
-    out["options"] = vis.evaluate("s => [...s.options].map(o => [o.value, o.textContent])")
-    out["chosen"] = vis.input_value()
-    out["custom_builtin"] = [cv.input_value(), cv.is_disabled()]
-    out["hint_builtin"] = vis.evaluate("s => s.nextElementSibling ? s.nextElementSibling.textContent : ''")
-    page.locator(".sect:has(select[aria-label='Visuals'])").screenshot(path="/tmp/item34-new.png")
-    vis.select_option("mixed")
-    out["custom_mixed"] = [cv.input_value(), cv.is_disabled()]
+    # New dashboard, the guided way (2026-11-19): name, a CSV, the request Relay suggests, the brand, then Visuals
+    with open("/tmp/item34-sales.csv", "w") as f:
+        f.write("month,region,sales\n2026-01,North,120\n2026-02,North,135\n2026-01,South,98\n2026-02,South,101\n")
+    nd_open(page)
+    nd_to_visuals(page, "Visuals check", csv_path="/tmp/item34-sales.csv")
+    cards = page.locator(f"{ND_SHOWN} label.nd-card")
+    cv = page.locator("#nd-custom")
+    out["options"] = cards.evaluate_all("xs => xs.map(x => x.querySelector('input').value)")
+    out["chosen"] = page.locator("input[name=nd-visuals]:checked").get_attribute("value")
+    out["custom_builtin_shown"] = cv.is_visible()
+    out["hint_builtin"] = cards.first.inner_text()
+    page.locator(ND_SHOWN).screenshot(path="/tmp/item34-new.png")
+    page.click(f"{ND_SHOWN} label.nd-card:has(input[value=mixed])")
+    out["custom_mixed"] = [cv.input_value(), cv.is_visible()]
     cv.select_option("auto")
-    vis.select_option("builtin")
-    out["custom_back_builtin"] = [cv.input_value(), cv.is_disabled()]
-    vis.select_option("relay")
-    out["custom_relay"] = [cv.input_value(), cv.is_disabled()]
+    page.click(f"{ND_SHOWN} label.nd-card:has(input[value=builtin])")
+    out["custom_back_builtin_shown"] = cv.is_visible()
+    page.click(f"{ND_SHOWN} label.nd-card:has(input[value=mixed])")
+    out["custom_remembered"] = cv.input_value()
     page.goto(f"http://127.0.0.1:8000/#/p/{pid}/details")
     page.wait_for_selector("dt:text-is('AI model')", timeout=20000)
     out["model_details"] = page.locator("dt:text-is('AI model') + dd").inner_text()
@@ -138,7 +142,7 @@ with sync_playwright() as pw:
 print(json.dumps(out))
 """
 cookie = next(k.value for k in p.jar if k.name == "d2d_session")
-res = subprocess.run(["docker", "exec", "-i", c.WEB_C, "python3", "-", cookie, pid3], input=PLAY, capture_output=True, text=True,
+res = subprocess.run(["docker", "exec", "-i", c.WEB_C, "python3", "-", cookie, pid3], input=c.ND_FLOW + PLAY, capture_output=True, text=True,
                      encoding="utf-8", errors="replace", timeout=240)
 try:
     o = json.loads(res.stdout.strip().splitlines()[-1])
@@ -147,13 +151,15 @@ except (ValueError, IndexError):
 if not check("ui: the browser checks ran", bool(o), res.stderr[-600:]):
     print(res.stderr[-3000:], flush=True)
 if o:
-    check("ui: New dashboard offers built-in, then mixed, then custom", [v for v, _ in o["options"]] == ["builtin", "mixed", "relay"], o["options"])
+    # the guided New dashboard (2026-11-19) offers two choices on its Visuals step; all-custom (relay) only by the API
+    check("ui: New dashboard's Visuals step offers built-in, then built-in plus custom", o["options"] == ["builtin", "mixed"], o["options"])
     check("ui: Power BI's built-in visuals are chosen by default", o["chosen"] == "builtin", o["chosen"])
-    check("ui: with built-in, Custom visuals is off (only the available visuals)", o["custom_builtin"] == ["never", True], o["custom_builtin"])
-    check("ui: built-in's note says nothing is embedded", "Nothing embedded" in o["hint_builtin"], o["hint_builtin"])
-    check("ui: mixed turns Custom visuals back on, at its default (ask me)", o["custom_mixed"] == ["ask", False], o["custom_mixed"])
-    check("ui: back to built-in turns it off again; custom remembers the choice made (auto)",
-          o["custom_back_builtin"] == ["never", True] and o["custom_relay"] == ["auto", False], (o["custom_back_builtin"], o["custom_relay"]))
+    check("ui: with built-in, nothing is asked about custom visuals (only the available visuals)", o["custom_builtin_shown"] is False,
+          o["custom_builtin_shown"])
+    check("ui: built-in's card says nothing is embedded", "nothing embedded" in o["hint_builtin"].lower(), o["hint_builtin"])
+    check("ui: built-in plus custom asks when to build custom visuals, at its default (ask me)", o["custom_mixed"] == ["ask", True], o["custom_mixed"])
+    check("ui: back to built-in hides it again; the choice made is remembered (auto)",
+          o["custom_back_builtin_shown"] is False and o["custom_remembered"] == "auto", (o["custom_back_builtin_shown"], o["custom_remembered"]))
     check(f"ui: a dashboard's Details tab names the AI model {NAME}", o["model_details"].strip() == NAME, o["model_details"])
     check("ui: the dashboard page's Visuals switch is in the same order", o["switch_options"] == ["builtin", "mixed", "relay"], o["switch_options"])
     check(f"ui: Branding says {NAME} makes the palettes", f"{NAME} turns them into report palettes" in o["branding"], o["branding"][:300])

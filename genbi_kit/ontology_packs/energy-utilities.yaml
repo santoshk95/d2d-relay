@@ -1,0 +1,437 @@
+# Industry pack: energy and utilities (electricity, gas and water suppliers, distributors and generators). Business terms tag columns by name (genbi_kit/ontology.py);
+# KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields).
+name: Energy and utilities
+order: 75
+description: Electricity, gas and water utilities. Consumption and customers, billing and collections, distribution losses, outages with SAIDI and SAIFI, meters, generation and capacity, complaints.
+questions:
+  - What are the AT&C losses by division and feeder this month, and how have they moved over the last 12 months?
+  - Which feeders have the highest SAIDI and SAIFI this quarter, and what caused the outages?
+  - What is the collection efficiency by customer category and by region?
+  - How much electricity was billed per customer by tariff category last month?
+  - What is our renewable share of net generation by plant type, and how does it compare with last year?
+  - How many smart meters have we installed, and what share of meters are read successfully each month?
+
+terms:
+  # ---------------- measures: consumption and supply
+  - {name: Energy Consumption, kind: measure, unit: number, aggregation: sum, description: "Energy a customer used, as the meter recorded it (kilowatt hours).",
+     synonyms: [consumption, kwh consumed, kwh, units consumed, consumption kwh, usage kwh, energy used, energy usage, metered consumption, metered kwh, meter consumption, electricity consumption, energy kwh, usage, total consumption, consumed units, cons kwh]}
+  - {name: Units Billed, kind: measure, unit: number, aggregation: sum, description: "Energy charged to customers on bills (kilowatt hours sold).",
+     synonyms: [billed units, billed kwh, energy billed, units sold, energy sold, kwh billed, billed consumption, billed energy, units billed kwh, billing units, sold units, chargeable units, kwh sold]}
+  - {name: Energy Input, kind: measure, unit: number, aggregation: sum, description: "Energy put into the network (bought or received) before losses.",
+     synonyms: [units input, input energy, energy purchased, units purchased, energy received, energy supplied, net input, input units, energy at feeder input, feeder input energy, power purchased, units received, energy imported]}
+  - {name: Peak Demand, kind: measure, unit: number, aggregation: max, description: "Highest power drawn at any moment in the period (megawatts or kilowatts).",
+     synonyms: [maximum demand, max demand, peak load, peak mw, maximum load, md kw, md kva, peak kw, peak demand mw, highest demand, demand peak, peak power, max load mw]}
+  - {name: Sanctioned Load, kind: measure, unit: number, aggregation: last, description: "Load a customer is allowed to draw (connected load, kilowatts).",
+     synonyms: [connected load, contract demand, contracted load, contract load, sanctioned demand, sanctioned kw, connected kw, approved load, load kw, contract demand kva, authorised load]}
+  - {name: Water Supplied, kind: measure, unit: number, aggregation: sum, description: "Water put into the network (cubic metres or kilolitres).",
+     synonyms: [water input, water produced, water production, system input volume, siv, water distributed, water into network, water pumped, water delivered, bulk supply volume, water supplied m3]}
+  - {name: Water Billed, kind: measure, unit: number, aggregation: sum, description: "Water charged to customers on bills.",
+     synonyms: [billed water, water sold, billed volume, water consumption billed, billed water volume, billed kl, billed m3, metered billed volume, authorised billed consumption, water billed m3]}
+  - {name: Gas Volume, kind: measure, unit: number, aggregation: sum, description: "Natural gas delivered or consumed (cubic metres, therms or MMBtu).",
+     synonyms: [gas consumption, gas used, gas delivered, gas usage, therms, mmbtu, gas units, gas m3, gas kwh, gas volume m3, gas supplied]}
+  # ---------------- measures: customers and meters
+  - {name: Customers Served, kind: measure, unit: count, aggregation: last, description: "Customers connected to the network at the end of the period.",
+     synonyms: [customers, customer count, connections, active connections, consumers, consumer count, number of customers, total customers, total consumers, services, active customers, metered customers, accounts, customer base, premises served]}
+  - {name: New Connections, kind: measure, unit: count, aggregation: sum, description: "New supply connections given in the period.",
+     synonyms: [new customers, connections given, new connection count, new services, new consumers, connections released, new supply connections, service connections added, connections added, new meters connected]}
+  - {name: Meters Installed, kind: measure, unit: count, aggregation: last, description: "Meters in service at the end of the period.",
+     synonyms: [meters, meter count, number of meters, meters in service, installed meters, total meters, active meters, meters deployed, meter base]}
+  - {name: Smart Meters, kind: measure, unit: count, aggregation: last, description: "Smart (remotely read) meters in service.",
+     synonyms: [smart meter count, ami meters, amr meters, smart meters installed, smart meters deployed, remote read meters, advanced meters, smart meters in service, prepaid smart meters]}
+  - {name: Meters Read, kind: measure, unit: count, aggregation: sum, description: "Meters read successfully in the period.",
+     synonyms: [meter reads, reads, successful reads, actual reads, meters read count, reads obtained, read count, valid reads, readings obtained, successful meter reads]}
+  - {name: Meters Scheduled for Reading, kind: measure, unit: count, aggregation: sum, description: "Meters that were due to be read in the period.",
+     synonyms: [scheduled reads, meters due, meters due for reading, reads scheduled, planned reads, reads expected, meters to read, expected reads, scheduled meter reads, reads due]}
+  # ---------------- measures: money
+  - {name: Billed Amount, kind: measure, unit: currency, aggregation: sum, description: "Amount charged to customers on bills (energy, fixed and other charges).",
+     synonyms: [billing amount, bill amount, revenue billed, billed revenue, net bill amount, total bill, demand amount, invoice amount, invoiced amount, energy charges, bill value, bill total, gross bill amount]}
+  - {name: Collections, kind: measure, unit: currency, aggregation: sum, description: "Money received from customers against bills.",
+     synonyms: [collected amount, payments received, payment amount, amount collected, bill collections, receipts, cash collected, revenue collected, collection amount, paid amount, payments, amount paid]}
+  - {name: Arrears, kind: measure, unit: currency, aggregation: last, description: "Unpaid bills at the end of the period.",
+     synonyms: [outstanding amount, outstanding dues, overdue amount, outstanding receivables, receivables, dues, pending dues, arrear amount, unpaid amount, overdue dues, closing arrears, total outstanding, past due amount, ageing amount]}
+  - {name: Fuel Cost, kind: measure, unit: currency, aggregation: sum, description: "Cost of fuel burned to generate power (coal, gas, oil).",
+     synonyms: [fuel expense, fuel spend, coal cost, gas cost, fuel purchase cost, generation fuel cost, fuel charges, fuel and power cost, variable fuel cost, fuel bill]}
+  - {name: Tariff Rate, kind: measure, unit: currency, aggregation: average, description: "Price per unit of energy (per kilowatt hour or cubic metre).",
+     synonyms: [rate per unit, price per kwh, tariff, energy rate, unit rate, tariff per unit, rate per kwh, energy charge rate, energy price, rate, price per unit, tariff amount]}
+  # ---------------- measures: generation and capacity
+  - {name: Net Generation, kind: measure, unit: number, aggregation: sum, description: "Energy a plant sent to the grid (generated less its own use), in megawatt hours.",
+     synonyms: [net generation mwh, net energy generated, net output, net mwh, net electricity generated, generation net, net energy sent out, ex bus generation, sent out energy, net production]}
+  - {name: Gross Generation, kind: measure, unit: number, aggregation: sum, description: "Energy a plant generated before its own use.",
+     synonyms: [gross generation mwh, gross energy generated, generation, generated energy, energy generated, generation mwh, gross output, gross mwh, total generation, production mwh, electricity generated]}
+  - {name: Renewable Generation, kind: measure, unit: number, aggregation: sum, description: "Energy from renewable sources (solar, wind, hydro, biomass).",
+     synonyms: [renewable energy, renewable mwh, green generation, clean generation, solar generation, wind generation, hydro generation, re generation, renewable output, renewable energy generated, re mwh]}
+  - {name: Installed Capacity, kind: measure, unit: number, aggregation: last, description: "Power the plants can produce at best (megawatts).",
+     synonyms: [capacity mw, installed mw, nameplate capacity, rated capacity, generating capacity, plant capacity, installed capacity mw, available capacity, capacity, declared capacity, dc capacity]}
+  - {name: CO2 Emissions, kind: measure, unit: number, aggregation: sum, description: "Carbon dioxide emitted by generation or operations (tonnes).",
+     synonyms: [co2, co2e, co2 tonnes, carbon emissions, emissions, ghg emissions, carbon dioxide, emission tonnes, scope 1 emissions, carbon output]}
+  # ---------------- measures: reliability and service
+  - {name: Customer Interruptions, kind: measure, unit: count, aggregation: sum, description: "Customers who lost supply, counted once for each outage (customers affected).",
+     synonyms: [customers interrupted, customers affected, ci, customer outages, interrupted customers, customers impacted, affected customers, customers without supply, customers off supply, ci count, customers out]}
+  - {name: Customer Minutes Interrupted, kind: measure, unit: duration, aggregation: sum, description: "Minutes of lost supply summed over all customers affected (customers affected times outage minutes).",
+     synonyms: [cmi, customer minutes lost, customer minutes interruption, customer interruption minutes, cml, customer hours interrupted, interruption minutes, customer minutes off supply, customer minutes out]}
+  - {name: Outages, kind: measure, unit: count, aggregation: sum, description: "Supply interruption events.",
+     synonyms: [outage count, number of outages, interruptions, interruption count, outage events, power cuts, power cut count, supply interruptions, faults, fault count, incidents, tripping count, trippings]}
+  - {name: Outage Duration, kind: measure, unit: duration, aggregation: average, description: "Minutes from the start of an outage until supply was restored.",
+     synonyms: [outage minutes, outage duration minutes, interruption duration, duration of interruption, outage length, restoration duration, time off supply, downtime minutes, outage hours, restoration time minutes, time to restore, mttr]}
+  - {name: Complaints, kind: measure, unit: count, aggregation: sum, description: "Customer complaints raised.",
+     synonyms: [complaint count, number of complaints, tickets, ticket count, grievances, service complaints, complaints received, complaints registered, consumer complaints, cases raised]}
+
+  # ---------------- keys
+  - {name: Customer, kind: key, entity: Customer, description: "Identifies a customer account.",
+     synonyms: [customer id, customer number, customer key, customer code, consumer id, consumer number, consumer no, con id, account id, account number, account no, service number, service no, ca number, contract account, ivrs number, k number, sc number]}
+  - {name: Meter, kind: key, entity: Meter, description: "Identifies a meter.",
+     synonyms: [meter id, meter number, meter no, meter key, meter serial number, meter serial, msn, meter code, device id, device number, meter nbr, ami id, mpan, mprn, meter point id]}
+  - {name: Service Point, kind: key, entity: Service Point, description: "Identifies the supply point or premises.",
+     synonyms: [service point id, premise id, premises id, premise number, connection id, connection number, supply point id, service connection id, installation id, installation number, site id, location id, property id, connection key]}
+  - {name: Feeder, kind: key, entity: Feeder, description: "Identifies a distribution feeder.",
+     synonyms: [feeder id, feeder code, feeder number, feeder key, feeder no, 11kv feeder, 33kv feeder, circuit id, circuit number, line id, distribution line id]}
+  - {name: Substation, kind: key, entity: Substation, description: "Identifies a substation.",
+     synonyms: [substation id, substation code, sub station id, ss id, ss code, substation number, grid id, gss id, switching station id, node id, zone substation id]}
+  - {name: Transformer, kind: key, entity: Transformer, description: "Identifies a distribution transformer.",
+     synonyms: [transformer id, transformer number, transformer code, dtr id, dtr code, dt id, dt code, dt number, transformer key, transformer asset id, pole transformer id]}
+  - {name: Power Plant, kind: key, entity: Power Plant, description: "Identifies a generating plant or unit.",
+     synonyms: [plant id, plant code, plant number, station id, station code, generating unit id, unit id, generator id, power station id, power plant id, generation asset id, site code]}
+  - {name: Outage, kind: key, entity: Outage, description: "Identifies a supply interruption event.",
+     synonyms: [outage id, outage number, outage key, interruption id, interruption number, incident id, incident number, fault id, fault number, event id, trouble ticket id, work order number]}
+  - {name: Bill, kind: key, entity: Bill, description: "Identifies a bill.",
+     synonyms: [bill id, bill number, bill no, bill key, invoice id, invoice number, invoice no, billing id, bill reference, document number, statement id]}
+  - {name: Tariff, kind: key, entity: Tariff, description: "Identifies a tariff or rate class.",
+     synonyms: [tariff id, tariff code, tariff key, tariff number, rate class id, rate code, rate schedule id, rate plan id, rate plan code, category code, tariff category code]}
+  - {name: Complaint, kind: key, entity: Complaint, description: "Identifies a customer complaint.",
+     synonyms: [complaint id, complaint number, complaint no, complaint key, ticket id, ticket number, grievance id, case id, case number, request id, service request id, sr number]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The day a row belongs to.",
+     synonyms: [day, calendar date, report date, reporting date, business date, snapshot date, activity date, event date, interval date, usage date, supply date]}
+  - {name: Billing Month, kind: date, entity: Date, description: "The month a bill covers.",
+     synonyms: [bill month, billing period, bill period, billing cycle month, consumption month, billing month year, bill cycle, billing cycle, cycle month, billed month, bill year month]}
+  - {name: Bill Date, kind: date, entity: Date, synonyms: [billing date, invoice date, bill generation date, bill issue date, bill dt, statement date, bill generated date, issue date]}
+  - {name: Due Date, kind: date, entity: Date, synonyms: [bill due date, payment due date, last date of payment, due dt, payable by date, pay by date]}
+  - {name: Payment Date, kind: date, entity: Date, synonyms: [paid date, receipt date, collection date, payment dt, received date, payment received date, transaction date, pay date]}
+  - {name: Reading Date, kind: date, entity: Date, synonyms: [meter reading date, read date, reading dt, meter read date, read at, reading timestamp, last read date, interval start]}
+  - {name: Connection Date, kind: date, entity: Date, synonyms: [service start date, activation date, connected date, supply start date, energisation date, energization date, connection dt, date of connection, start date, customer since date]}
+  - {name: Outage Start Time, kind: date, entity: Date, description: "When supply was lost.",
+     synonyms: [outage start, interruption start, interruption start time, fault start time, outage begin time, outage started at, tripping time, power off time, outage start date, start time]}
+  - {name: Outage End Time, kind: date, entity: Date, description: "When supply was restored.",
+     synonyms: [outage end, interruption end, interruption end time, restoration timestamp, restored time, restoration date, power restored time, outage ended at, supply restored time, end time, outage end date]}
+  - {name: Month, kind: date, entity: Date, synonyms: [month name, reporting month, month year, year month, yyyymm, calendar month, period month]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, financial year, financial year number, year number, regulatory year, tariff year]}
+
+  # ---------------- attributes
+  - {name: Customer Category, kind: attribute, entity: Customer, description: "Residential, commercial, industrial, agricultural.",
+     synonyms: [consumer category, customer class, consumer class, customer type, consumer type, category, customer segment, segment, sector, customer group, class of service, consumer group, user category]}
+  - {name: Tariff Category, kind: attribute, entity: Tariff, synonyms: [tariff name, tariff plan, tariff class, rate class, rate category, rate schedule, rate plan, tariff description, tariff group, rate name, tariff type]}
+  - {name: Service Type, kind: attribute, entity: Service Point, description: "Electricity, gas or water.",
+     synonyms: [utility type, commodity, commodity type, energy type, service line, utility, supply type, fuel type, product type, service]}
+  - {name: Supply Voltage, kind: attribute, entity: Service Point, synonyms: [voltage level, voltage, connection voltage, voltage class, supply level, voltage kv, voltage category, phase]}
+  - {name: Meter Type, kind: attribute, entity: Meter, synonyms: [meter category, meter class, meter kind, meter technology, smart or conventional, prepaid or postpaid meter, meter model, meter make, metering type, meter phase]}
+  - {name: Meter Status, kind: attribute, entity: Meter, synonyms: [meter state, meter condition, meter working status, meter health, meter reading status, read status, reading status, meter fault status]}
+  - {name: Connection Status, kind: attribute, entity: Customer, synonyms: [account status, customer status, service status, supply status, connection state, disconnection status, active flag, consumer status, connection condition]}
+  - {name: Division, kind: attribute, entity: Service Point, description: "Distribution division (below circle and region).",
+     synonyms: [division name, distribution division, subdivision, sub division, circle, circle name, zone, zone name, section, section name, depot, area office, operating unit]}
+  - {name: Region, kind: attribute, entity: Service Point, synonyms: [region name, utility region, operating region, territory, area, cluster, service area, discom region, network region]}
+  - {name: District, kind: attribute, entity: Service Point, synonyms: [district name, county, borough, locality, municipality, ward, village, taluka]}
+  - {name: City, kind: attribute, entity: Service Point, synonyms: [city name, town, premise city, service city]}
+  - {name: State, kind: attribute, entity: Service Point, synonyms: [state name, state code, province, st]}
+  - {name: Feeder Name, kind: attribute, entity: Feeder, synonyms: [feeder description, feeder desc, line name, circuit name, feeder label, feeder title]}
+  - {name: Feeder Type, kind: attribute, entity: Feeder, synonyms: [feeder category, area type, urban or rural, feeder class, feeder segment, feeder nature, industrial feeder flag, agriculture feeder flag]}
+  - {name: Substation Name, kind: attribute, entity: Substation, synonyms: [substation, substation description, sub station name, ss name, grid name, gss name, station name]}
+  - {name: Plant Name, kind: attribute, entity: Power Plant, synonyms: [power plant name, power station, power station name, generating station, generation station name, plant description, unit name, plant desc]}
+  - {name: Generation Source, kind: attribute, entity: Power Plant, description: "Coal, gas, nuclear, hydro, solar, wind.",
+     synonyms: [plant type, fuel source, energy source, generation type, fuel, source type, technology, generation technology, primary fuel, source, power source, resource type]}
+  - {name: Outage Cause, kind: attribute, entity: Outage, synonyms: [interruption cause, fault cause, cause of outage, outage reason, cause code, fault type, fault category, outage category, reason, cause, root cause]}
+  - {name: Outage Type, kind: attribute, entity: Outage, description: "Planned or unplanned.",
+     synonyms: [interruption type, planned or unplanned, planned flag, outage class, scheduled flag, outage nature, interruption class, outage status, forced or planned]}
+  - {name: Payment Mode, kind: attribute, entity: Bill, synonyms: [payment channel, payment method, payment type, collection channel, paid through, payment source, mode of payment, collection mode, tender type]}
+  - {name: Complaint Category, kind: attribute, entity: Complaint, synonyms: [complaint type, ticket category, ticket type, issue type, grievance category, complaint reason, complaint nature, service request type, complaint subject]}
+  - {name: Customer Name, kind: attribute, entity: Customer, synonyms: [consumer name, account name, account holder name, client name, customer full name, bill name]}
+
+kpis:
+  # ---------------- customers, consumption, losses
+  - name: Customers Served
+    synonyms: [Customers, Consumers, Active Connections, Number of Customers]
+    definition: Customers with a supply connection at the end of the period, disconnected accounts not counted.
+    formula: Count of distinct customer connections in service at period end
+    unit: count
+    aggregation: last
+    domain: Customers
+  - name: New Connections
+    synonyms: [New Customers, Connections Given, New Services]
+    definition: New supply connections given in the period.
+    formula: Count of connections with a connection date in the period
+    unit: count
+    aggregation: sum
+    time: by connection date
+    domain: Customers
+  - name: Energy Input
+    synonyms: [Energy Purchased, Input Energy, Units Input]
+    definition: Energy put into the distribution network in the period (bought from generators, received from the grid or generated), in kilowatt hours.
+    formula: Sum of energy received at input points
+    unit: number
+    aggregation: sum
+    domain: Losses
+  - name: Units Billed
+    synonyms: [Energy Billed, Energy Sold, Billed Units]
+    definition: Energy charged to customers on bills in the period, in kilowatt hours.
+    formula: Sum of billed units
+    unit: number
+    aggregation: sum
+    domain: Billing
+  - name: Billing Efficiency %
+    synonyms: [Billing Efficiency, Energy Billed %]
+    definition: Share of the energy input that was billed.
+    formula: Units billed / Energy input
+    dax: DIVIDE ( [Units Billed], [Energy Input] )
+    unit: percent
+    aggregation: ratio
+    domain: Losses
+  - name: Distribution Loss %
+    synonyms: [Distribution Losses, T&D Loss %, Network Loss %]
+    definition: Share of the energy input that was lost or not billed - technical losses in wires and transformers plus theft and unbilled use.
+    formula: 1 - Units billed / Energy input
+    dax: 1 - DIVIDE ( [Units Billed], [Energy Input] )
+    unit: percent
+    aggregation: ratio
+    domain: Losses
+  - name: Average Consumption per Customer
+    synonyms: [Consumption per Customer, Units per Customer, kWh per Customer]
+    definition: Units billed for each customer served.
+    formula: Units billed / Customers served
+    dax: DIVIDE ( [Units Billed], [Customers Served] )
+    unit: number
+    aggregation: ratio
+    domain: Billing
+  - name: Peak Demand
+    synonyms: [Maximum Demand, Peak Load, Max Demand]
+    definition: Highest power drawn at any moment in the period.
+    formula: Maximum of the demand readings in the period
+    unit: number
+    aggregation: max
+    domain: Demand
+  # ---------------- billing and collections
+  - name: Billed Amount
+    synonyms: [Revenue Billed, Billing Amount, Demand Raised]
+    definition: Amount charged to customers on bills in the period - energy, fixed, fuel adjustment and other charges, taxes excluded.
+    formula: Sum of bill amounts
+    unit: currency
+    aggregation: sum
+    domain: Billing
+  - name: Collections
+    synonyms: [Revenue Collected, Payments Received, Bill Collections]
+    definition: Money received from customers in the period against bills.
+    formula: Sum of payments received
+    unit: currency
+    aggregation: sum
+    domain: Billing
+  - name: Collection Efficiency %
+    synonyms: [Collection Efficiency, Collection Rate, Revenue Collection %]
+    definition: Share of billed amount collected in the period.
+    formula: Collections / Billed amount
+    dax: DIVIDE ( [Collections], [Billed Amount] )
+    unit: percent
+    aggregation: ratio
+    domain: Billing
+  - name: AT&C Loss %
+    synonyms: [ATC Loss, AT&C Losses, Aggregate Technical and Commercial Loss]
+    definition: Aggregate technical and commercial loss - the share of input energy for which no money was collected.
+    formula: 1 - (Billing efficiency x Collection efficiency)
+    dax: 1 - [Billing Efficiency %] * [Collection Efficiency %]
+    unit: percent
+    aggregation: ratio
+    domain: Losses
+  - name: Arrears
+    synonyms: [Outstanding Dues, Receivables, Overdue Amount]
+    definition: Unpaid bills at the end of the period.
+    formula: Sum of billed amounts less payments, for bills past due
+    unit: currency
+    aggregation: last
+    domain: Billing
+  - name: Average Billing Rate
+    synonyms: [Average Tariff, Revenue per Unit, Average Realization per Unit Billed]
+    definition: Billed amount per unit billed.
+    formula: Billed amount / Units billed
+    dax: DIVIDE ( [Billed Amount], [Units Billed] )
+    unit: currency
+    aggregation: ratio
+    domain: Billing
+  # ---------------- generation
+  - name: Installed Capacity
+    synonyms: [Capacity, Nameplate Capacity, Generating Capacity]
+    definition: Maximum power the plants can produce, in megawatts, at the end of the period.
+    formula: Sum of rated capacity of units in service
+    unit: number
+    aggregation: last
+    domain: Generation
+  - name: Net Generation
+    synonyms: [Net Energy Generated, Net Output, Net MWh]
+    definition: Energy sent to the grid after plant own use, in megawatt hours.
+    formula: Gross generation - Auxiliary consumption
+    unit: number
+    aggregation: sum
+    domain: Generation
+  - name: Capacity Factor %
+    synonyms: [Plant Load Factor, PLF, Capacity Utilization Factor, CUF]
+    definition: Net generation as a share of what the installed capacity could have produced running all hours of the period.
+    formula: Net generation / (Installed capacity x Hours in the period)
+    unit: percent
+    aggregation: custom
+    domain: Generation
+  - name: Renewable Generation
+    synonyms: [Renewable Energy, Green Generation, Clean Energy Generated]
+    definition: Net generation from renewable sources - solar, wind, hydro and biomass.
+    formula: Net generation where source is renewable
+    filters: [Generation source in Solar, Wind, Hydro, Biomass]
+    unit: number
+    aggregation: sum
+    domain: Generation
+  - name: Renewable Share %
+    synonyms: [Renewable Mix, Renewable Penetration, Share of Renewables]
+    definition: Renewable generation as a share of net generation.
+    formula: Renewable generation / Net generation
+    dax: DIVIDE ( [Renewable Generation], [Net Generation] )
+    unit: percent
+    aggregation: ratio
+    domain: Generation
+  - name: Fuel Cost
+    synonyms: [Fuel Expense, Fuel Spend, Coal and Gas Cost]
+    definition: Cost of fuel burned to generate power.
+    formula: Sum of fuel consumed times fuel price
+    unit: currency
+    aggregation: sum
+    domain: Generation
+  - name: Fuel Cost per MWh
+    synonyms: [Fuel Cost per Unit Generated, Variable Cost per MWh]
+    definition: Fuel cost for each megawatt hour of net generation.
+    formula: Fuel cost / Net generation
+    dax: DIVIDE ( [Fuel Cost], [Net Generation] )
+    unit: currency
+    aggregation: ratio
+    domain: Generation
+  # ---------------- reliability
+  - name: Customer Interruptions
+    synonyms: [Customers Interrupted, Customers Affected]
+    definition: Customers who lost supply, counted once for each sustained outage (usually longer than 3 minutes).
+    formula: Sum over outages of customers affected
+    unit: count
+    aggregation: sum
+    domain: Reliability
+  - name: Customer Minutes Interrupted
+    synonyms: [CMI, Customer Minutes Lost]
+    definition: Total minutes of lost supply summed over customers - customers affected times outage minutes for every outage.
+    formula: Sum over outages of customers affected x outage minutes
+    unit: duration
+    aggregation: sum
+    domain: Reliability
+  - name: Outages
+    synonyms: [Outage Count, Interruptions, Power Cuts]
+    definition: Supply interruption events in the period.
+    formula: Count of distinct outage events
+    unit: count
+    aggregation: distinct_count
+    domain: Reliability
+  - name: SAIFI
+    synonyms: [System Average Interruption Frequency Index, Interruption Frequency]
+    definition: How many interruptions the average customer had in the period.
+    formula: Customer interruptions / Customers served
+    dax: DIVIDE ( [Customer Interruptions], [Customers Served] )
+    unit: ratio
+    aggregation: ratio
+    domain: Reliability
+  - name: SAIDI
+    synonyms: [System Average Interruption Duration Index, Interruption Duration per Customer]
+    definition: How many minutes of lost supply the average customer had in the period.
+    formula: Customer minutes interrupted / Customers served
+    dax: DIVIDE ( [Customer Minutes Interrupted], [Customers Served] )
+    unit: duration
+    aggregation: ratio
+    domain: Reliability
+  - name: CAIDI
+    synonyms: [Customer Average Interruption Duration Index, Average Restoration Time]
+    definition: Average minutes to restore supply to an affected customer.
+    formula: Customer minutes interrupted / Customer interruptions
+    dax: DIVIDE ( [Customer Minutes Interrupted], [Customer Interruptions] )
+    unit: duration
+    aggregation: ratio
+    domain: Reliability
+  # ---------------- meters, complaints, water
+  - name: Meters Installed
+    synonyms: [Meters in Service, Meter Count, Total Meters]
+    definition: Meters in service at the end of the period.
+    formula: Count of meters in service
+    unit: count
+    aggregation: last
+    domain: Metering
+  - name: Smart Meters
+    synonyms: [Smart Meters Installed, AMI Meters, Smart Meter Count]
+    definition: Smart meters (remotely read) in service at the end of the period.
+    formula: Count of smart meters in service
+    unit: count
+    aggregation: last
+    domain: Metering
+  - name: Smart Meter Penetration %
+    synonyms: [Smart Meter Share, AMI Penetration, Smart Meter Coverage]
+    definition: Share of meters that are smart meters.
+    formula: Smart meters / Meters installed
+    dax: DIVIDE ( [Smart Meters], [Meters Installed] )
+    unit: percent
+    aggregation: ratio
+    domain: Metering
+  - name: Meters Read
+    synonyms: [Successful Reads, Meter Reads, Actual Reads]
+    definition: Meters read with a valid reading in the period.
+    formula: Count of meters with a valid actual reading
+    unit: count
+    aggregation: sum
+    domain: Metering
+  - name: Meters Scheduled for Reading
+    synonyms: [Scheduled Reads, Meters Due for Reading]
+    definition: Meters due to be read in the period.
+    formula: Count of meters on the reading schedule
+    unit: count
+    aggregation: sum
+    domain: Metering
+  - name: Meter Read Success %
+    synonyms: [Meter Read Rate, Read Success Rate, Meter Reading Efficiency]
+    definition: Share of scheduled meters read successfully.
+    formula: Meters read / Meters scheduled for reading
+    dax: DIVIDE ( [Meters Read], [Meters Scheduled for Reading] )
+    unit: percent
+    aggregation: ratio
+    domain: Metering
+  - name: Complaints
+    synonyms: [Customer Complaints, Complaint Count, Grievances]
+    definition: Customer complaints raised in the period.
+    formula: Count of distinct complaints
+    unit: count
+    aggregation: distinct_count
+    domain: Service
+  - name: Complaints per 1000 Customers
+    synonyms: [Complaint Rate, Complaints per Thousand Customers]
+    definition: Complaints raised for every 1,000 customers served.
+    formula: Complaints / Customers served x 1,000
+    dax: DIVIDE ( [Complaints], [Customers Served] ) * 1000
+    unit: number
+    aggregation: ratio
+    domain: Service
+  - name: Water Supplied
+    synonyms: [Water Input, System Input Volume, Water Produced]
+    definition: Water put into the distribution network, in cubic metres.
+    formula: Sum of metered water leaving treatment works and bulk sources
+    unit: number
+    aggregation: sum
+    domain: Water
+  - name: Water Billed
+    synonyms: [Billed Water, Water Sold, Billed Volume]
+    definition: Water charged to customers on bills, in cubic metres.
+    formula: Sum of billed water volume
+    unit: number
+    aggregation: sum
+    domain: Water
+  - name: Non-Revenue Water %
+    synonyms: [NRW, NRW %, Non Revenue Water, Water Loss %]
+    definition: Share of the water supplied that earns no revenue - leaks, theft, metering errors and unbilled use.
+    formula: 1 - Water billed / Water supplied
+    dax: 1 - DIVIDE ( [Water Billed], [Water Supplied] )
+    unit: percent
+    aggregation: ratio
+    domain: Water

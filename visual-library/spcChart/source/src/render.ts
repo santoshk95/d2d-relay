@@ -83,7 +83,7 @@ export function render(c: C) {
         const out: TipItem[] = m.levelNames.map((nm, j) => ({ displayName: nm, value: m.cats[ci].path[j] }));
         const v = sr.v[ci];
         if (!isNaN(v)) out.push({ displayName: sr.name, value: fmtT(v), color: col });
-        out.push({ displayName: "Centre line", value: fmtT(cen(ci)) }, { displayName: "Control limits", value: `${fmtT(lcl(ci))} – ${fmtT(ucl(ci))}` });
+        out.push({ displayName: "Centre line", value: fmtT(cen(ci)) }, { displayName: "Control limits", value: `${fmtT(lcl(ci))} to ${fmtT(ucl(ci))}` });
         if (!isNaN(v)) out.push({ displayName: "Status", value: ooc.has(ci) ? (v > ucl(ci) ? "Above upper limit" : "Below lower limit") : run.has(ci) ? "Run of 8 on one side" : "In control", color: ooc.has(ci) ? alarm : undefined });
         const ix = sr.cells[ci]; if (ix >= 0) m.cells[ix].tips.forEach(tp => out.push({ displayName: tp.name, value: tp.value }));
         return out;

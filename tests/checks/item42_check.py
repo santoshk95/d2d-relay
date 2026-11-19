@@ -1,8 +1,10 @@
 """Test stack only: item 42 (the user, 2026-11-13: "claude api key ... as primary and personal as backup"). Inside the
 test web container (no AI call is made, no key is real):
 - without RELAY_ANTHROPIC_API_KEY nothing changes: the installation's Claude login, no backup;
-- with it: every run's main provider is the key (as the run's own ANTHROPIC_API_KEY), and the backup is the
-  installation's Claude login (no credential passed, so the AI engine's own sign-in answers);
+- with it, since item 67 (2026-11-19, "use subscription ... on opus 5.5 max"): the installation's Claude login first and
+  the key as its backup; with RELAY_AI_PRIMARY=api (item 42's order) the key is the run's main provider (as its own
+  ANTHROPIC_API_KEY) and the backup is the installation's Claude login (no credential passed, so the AI engine's own
+  sign-in answers);
 - Ask Relay falls back once on an authentication, credit, rate-limit or outage error, with an ai.fallback record; any
   other error is not retried; a failed answer (ok false) with such an error falls back too;
 - the AI engine never holds the key itself (it would then answer every run with it, and the backup could not work).
@@ -44,6 +46,13 @@ m = p.run_config(None, 'sonnet', 60)
 out['none'] = {'kind': m['kind'], 'env': sorted(m['env']), 'provider': m['provider'], 'backup': p.backup_kind(None),
                'key_set': bool(p.INSTALL_API_KEY)}
 p.INSTALL_API_KEY = 'sk-ant-item42-not-a-real-key'
+for who in (None, 'u-item42-nobody'):                # item 67's default: the subscription first, the key its backup
+    m = p.run_config(who, 'sonnet', 60)
+    b = p.run_config(who, 'sonnet', 60, kind=p.backup_kind(who))
+    out['sub ' + str(who)] = {'primary': p.AI_PRIMARY, 'kind': m['kind'], 'env': sorted(m['env']), 'provider': m['provider'],
+                              'backup': p.backup_kind(who), 'backup_key': b['env'].get('ANTHROPIC_API_KEY') == p.INSTALL_API_KEY,
+                              'backup_provider': b['provider']}
+p.AI_PRIMARY = 'api'                                 # RELAY_AI_PRIMARY=api: item 42's order, the key first
 for who in (None, 'u-item42-nobody'):
     m = p.run_config(who, 'sonnet', 60)
     b = p.run_config(who, 'sonnet', 60, kind=p.backup_kind(who))
@@ -53,14 +62,20 @@ for who in (None, 'u-item42-nobody'):
 print(json.dumps(out))
 """))
 none = r.get("none") or {}
+for who in ("None", "u-item42-nobody"):
+    x = r.get("sub " + who) or {}
+    check(f"key set, by default since item 67 ({'no owner' if who == 'None' else 'a person'}): the installation's Claude login runs first "
+          "(no credential), the key is its backup (as the run's ANTHROPIC_API_KEY)",
+          x.get("primary") == "subscription" and x.get("kind") == "claude_account" and x.get("env") == [] and x.get("backup") == "anthropic_api"
+          and x.get("backup_key") is True and x.get("backup_provider") == "Anthropic API (this installation's key)", x)
 check("no key: the installation's Claude login, no credential passed, no backup (as before)",
       none.get("key_set") is False and none.get("kind") == "claude_account" and none.get("env") == [] and none.get("backup") is None, r)
 for who in ("None", "u-item42-nobody"):
     x = r.get(who) or {}
-    check(f"key set ({'no owner' if who == 'None' else 'a person with no provider of their own'}): the key runs first, as the run's ANTHROPIC_API_KEY",
+    check(f"key set, RELAY_AI_PRIMARY=api ({'no owner' if who == 'None' else 'a person with no provider of their own'}): the key runs first, as the run's ANTHROPIC_API_KEY",
           x.get("kind") == "anthropic_api" and x.get("key_is_install_key") is True and x.get("other_env") == []
           and x.get("provider") == "Anthropic API (this installation's key)", x)
-    check(f"key set ({'no owner' if who == 'None' else 'a person'}): the backup is the installation's Claude login (no credential)",
+    check(f"key set, RELAY_AI_PRIMARY=api ({'no owner' if who == 'None' else 'a person'}): the backup is the installation's Claude login (no credential)",
           x.get("backup") == "claude_account" and x.get("backup_env") == [] and x.get("backup_provider") == "Claude (this installation's login)", x)
 
 print("\n== Ask Relay falls back once")
@@ -68,11 +83,12 @@ r = as_json(in_app("""
 import asyncio, json, time
 from app import askd, db, providers as p
 p.INSTALL_API_KEY = 'sk-ant-item42-not-a-real-key'
+p.AI_PRIMARY = 'api'                               # item 42's order (RELAY_AI_PRIMARY=api); item 67's default is checked after
 t0 = time.time()                                   # this run's records only (a rerun on the same stack adds more)
 u = {'id': 'u-item42-asker'}
 calls = []
 def fake(script):
-    async def run(u, prompt, session, workdir, system, cfg):
+    async def run(u, prompt, session, workdir, system, cfg, *more, **kw):     # more: the lane since item 68
         calls.append(cfg['provider'])
         step = script[len(calls) - 1]
         if isinstance(step, Exception):
@@ -93,6 +109,14 @@ with db.use(db.PLATFORM):
         except askd.AskError as e:
             out[name] = {'error': str(e)[:80], 'calls': list(calls)}
     out['audits'] = db.one("SELECT count(*) AS n FROM audit WHERE action = 'ai.fallback' AND who = 'u-item42-asker' AND ts >= ?", (t0,))['n']
+    p.AI_PRIMARY = 'subscription'                  # item 67's default: the login first, the key answers once when it fails
+    calls.clear()
+    askd._claude_run = fake([askd.AskError('API Error: 429 {"error":{"type":"rate_limit_error","message":"usage limit reached"}}'), {'text': 'OK'}])
+    try:
+        res = asyncio.run(askd._claude(u, 'Reply OK', None, '/tmp', model='sonnet', system='x'))
+        out['sub'] = {'provider': res.get('provider'), 'fallback': bool(res.get('fallback')), 'calls': list(calls)}
+    except askd.AskError as e:
+        out['sub'] = {'error': str(e)[:80], 'calls': list(calls)}
 print(json.dumps(out))
 """))
 key, login = "Anthropic API (this installation's key)", "Claude (this installation's login)"
@@ -106,6 +130,9 @@ check("Ask Relay: any other error is not retried (one call, the error shown)",
 check("Ask Relay: a good answer from the key stays the key's (no fallback)",
       (r.get("fine") or {}).get("calls") == [key] and (r.get("fine") or {}).get("fallback") is False, r.get("fine") or r)
 check("Ask Relay: each fallback leaves an ai.fallback record", r.get("audits") == 2, r.get("audits"))
+check("Ask Relay, item 67's default: the Claude login at its limit is answered once more on the installation's key",
+      (r.get("sub") or {}).get("calls") == [login, key] and (r.get("sub") or {}).get("fallback") is True
+      and (r.get("sub") or {}).get("provider") == key, r.get("sub") or r)
 
 print("\n== the AI engine never holds the key itself")
 pid = subprocess.run(["docker", "exec", c.WEB_C, "pgrep", "-u", "agent", "-o", "-f", "server"], capture_output=True, text=True).stdout.strip()

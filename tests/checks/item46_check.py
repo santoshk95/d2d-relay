@@ -3,7 +3,8 @@ Item 46, the user: "Add parallel builds" (and "power bi pbix file will be sequen
 machine"):
 - the worker runs up to PARALLEL (3) jobs at once, never two of one dashboard, oldest first;
 - publishing (pbi, pbix: Power BI on this PC) runs one at a time, outside the three AI slots;
-- the AI engine takes 3 runs in the build lane and 1 in the chat lane, and says so on /health.
+- the AI engine takes 3 runs in the build lane and 1 in the chat lane (and, since item 68, 4 in the review lane), and says
+  so on /health.
 Item 47, the user: "in API use opus 5.5 as default and same in personal as well dont use any other model for Relay
 Model powered by claude":
 - the web app's default model and Ask Relay's are the Relay Model; the AI engine's default too;
@@ -106,8 +107,10 @@ try:
     h = json.loads(eng.stdout)
 except ValueError:
     h = {}
-check("engine: the build lane takes 3 runs at once, the chat lane 1", h.get("capacity") == {"build": 3, "chat": 1}, h.get("capacity"))
-check("engine: it says how many run now (none here) and is not busy", h.get("runs") == {"build": 0, "chat": 0} and h.get("busy") is False,
+# item 68 (2026-11-19) added the review team's own lane: 4 reviewers at once
+check("engine: the build lane takes 3 runs at once, the chat lane 1, the review lane 4 (item 68)", h.get("capacity") == {"build": 3, "chat": 1, "review": 4},
+      h.get("capacity"))
+check("engine: it says how many run now (none here) and is not busy", h.get("runs") == {"build": 0, "chat": 0, "review": 0} and h.get("busy") is False,
       (h.get("runs"), h.get("busy")))
 
 # ---------------------------------------------------------------- item 47: one model, Claude Opus 5.5
@@ -118,6 +121,7 @@ from app import worker, askd
 house = json.loads(worker.CATALOG.with_name("house-models.json").read_text(encoding="utf-8"))["models"]
 cat = json.loads(worker.CATALOG.read_text(encoding="utf-8"))
 print(json.dumps({"default": worker.DEFAULT_MODEL, "ask": askd.models_for("u-item46")["default"],
+                  "offered": [x["id"] for x in worker.house_models()],
                   "targets": {m["id"]: m.get("target") for m in house}, "catalog": cat.get("default"),
                   "fallback": worker.FALLBACK["default"]}))
 """)
@@ -126,8 +130,9 @@ try:
 except (ValueError, IndexError):
     m = {}
 check("model: new dashboards and Ask Relay both use the Relay Model", m.get("default") == "relay" and m.get("ask") == "relay", m or out[-400:])
-check("model: the Relay Model is served by claude-opus-5-5, and it is the only house model", m.get("targets") == {"relay": "claude-opus-5-5"},
-      m.get("targets"))
+check("model: the Relay Model is served by claude-opus-5-5; the only other house model is the review team's (item 68: relay-review, "
+      "claude-sonnet-5-5), never offered in a picker", m.get("targets") == {"relay": "claude-opus-5-5", "relay-review": "claude-sonnet-5-5"}
+      and m.get("offered") == ["relay"], (m.get("targets"), m.get("offered")))
 check("model: the catalog's own default and the last fallback are claude-opus-5-5", m.get("catalog") == "claude-opus-5-5"
       and m.get("fallback") == "claude-opus-5-5", (m.get("catalog"), m.get("fallback")))
 

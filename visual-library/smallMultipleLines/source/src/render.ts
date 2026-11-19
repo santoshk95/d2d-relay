@@ -66,7 +66,7 @@ export function render(c: C) {
         /* small panels: thin the ticks until the labels have room */
         while (d.ticks.length > 2 && (B - T) / (d.ticks.length - 1) < VA.fontSize.value + 8) d.ticks = d.ticks.filter((_, k2) => k2 % 2 === 0);
         const last = p.pts[p.pts.length - 1];
-        const lab1 = !isNaN(last.v) ? fmtL(last.v) + (isNaN(ratio) ? "" : " · " + Math.round(ratio * 100) + "%") : "";
+        const lab1 = !isNaN(last.v) ? fmtL(last.v) + (isNaN(ratio) ? "" : " (" + Math.round(ratio * 100) + "%)") : "";
         const lab2 = m.hasComp && !isNaN(last.p) ? m.plan.name.toLowerCase() + " " + fmtL(last.p) : "";
         const labW = LB.show.value ? Math.max(textW(lab1, lfs), textW(lab2, lfs * 0.92)) + 8 : 4;
         const L = px + tickWidth(d, VA), R = px + pw - Math.min(labW, pw * 0.42);

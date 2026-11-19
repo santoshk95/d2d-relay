@@ -5,7 +5,7 @@ page, drawn by the image's `genbi prototype` and looked at in Chromium:
   Clothing 4.9%, Accessories 3.7%, their channels 2.5% and less): no label on another, every label inside its own
   slice, and the big slices still labelled;
 - the same sunburst in a small tile;
-- the image ships Relay Hierarchy 1.0.7.0.
+- the image ships Relay Hierarchy 1.0.8.0 (rebuilt 2026-11-19).
 python -I -X utf8 item37_check.py <public> <admin>"""
 import json
 import os
@@ -106,7 +106,7 @@ subprocess.run(["docker", "cp", f"{c.WEB_C}:/tmp/item37.png", c.out_path("item37
 
 r = docker("exec", "-i", "-u", "agent", "-e", "PYTHONPATH=/opt/genbi", c.WEB_C, "/usr/local/bin/python3", "-P", "-", input_text=(
     "from genbi_kit import atlas\nprint(atlas.catalog()['atlasHierarchy'].get('version'))\n"))
-check("sunburst: the image ships Relay Hierarchy 1.0.7.0", r.stdout.strip() == "1.0.7.0", (r.stdout + r.stderr)[-200:])
+check("sunburst: the image ships Relay Hierarchy 1.0.8.0", r.stdout.strip() == "1.0.8.0", (r.stdout + r.stderr)[-200:])
 docker("exec", "-u", "root", c.WEB_C, "rm", "-rf", WORK, "/tmp/item37.png")
 
 bad = [n for n, ok in c.RESULTS if not ok]

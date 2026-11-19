@@ -337,14 +337,14 @@ def evaluate(s: dict, rule_fn=None) -> dict:
         if rule not in was:
             log("ops.alert", "error" if a["severity"] == "critical" else "warn", rule=rule, text=a["text"])
             db.audit("ops.alert", rule, {"severity": a["severity"], "text": a["text"]}, "system")
-            notify.add_many(_admins(), "ops", f"{'Problem' if a['severity'] == 'critical' else 'Warning'}: {a['text'][:120]}", a["text"], "#/admin/monitoring")
+            notify.add_many(_admins(), "platform", f"{'Problem' if a['severity'] == 'critical' else 'Warning'}: {a['text'][:120]}", a["text"], "#/admin/monitoring")
             _webhook(f"D2D ({db.INSTANCE}) {a['severity']}: {a['text']}")
     for rule, a in was.items():
         if rule not in now:
             mins = round((s["time"] - a["since"]) / 60)
             log("ops.resolved", rule=rule, minutes=mins)
             db.audit("ops.resolved", rule, {"minutes": mins}, "system")
-            notify.add_many(_admins(), "ops", f"Resolved after {mins} min: {a['text'][:110]}", "", "#/admin/monitoring")
+            notify.add_many(_admins(), "platform", f"Resolved after {mins} min: {a['text'][:110]}", "", "#/admin/monitoring")
             _webhook(f"D2D ({db.INSTANCE}) resolved after {mins} min: {a['text']}")
     db.set_meta("ops_alerts", json.dumps(keep))
     return keep

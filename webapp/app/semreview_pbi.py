@@ -138,7 +138,7 @@ def _error(r: httpx.Response, what: str) -> PbiError:
 def token(scope: str = FABRIC_SCOPE) -> str:
     s = settings()
     if not s:
-        raise PbiError("Connect Power BI first: an owner enters your Entra app under Semantic Review.")
+        raise PbiError("Connect Power BI first: an owner enters your Entra app under Connections, Power BI service (or Semantic Review).")
     key = (db.tenant(), s["tenant"], s["client_id"], scope)
     with _lock:
         hit = _tokens.get(key)
@@ -146,7 +146,7 @@ def token(scope: str = FABRIC_SCOPE) -> str:
             return hit[0]
     secret = secrets_store.get("org", SECRET)
     if not secret:
-        raise PbiError("The app's client secret is missing: an owner enters it again under Semantic Review.")
+        raise PbiError("The app's client secret is missing: an owner enters it again under Connections, Power BI service (or Semantic Review).")
     try:
         with _client() as c:
             r = c.post(f"{LOGIN}/{s['tenant']}/oauth2/v2.0/token",

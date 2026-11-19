@@ -13,12 +13,12 @@ Only the Claude sign-in volume (`claude-api-auth`) is shared, so both apps use t
 
 | | |
 |---|---|
-| Public address | https://d2d.pasdacs.com (Cloudflare tunnel) |
+| Public address | https://d2d.pasdacs.com (Cloudflare tunnel) until the app was turned down (item 54; a static page there since 2026-11-17); the next deploy serves a client trial at https://demo.pasdacs.com (see "Deployment") |
 | Admin portal | https://admin-d2d.pasdacs.com: PASDACS only, behind Cloudflare Access and its own email code (see "Admin portal") |
 | On this PC | public site http://127.0.0.1:8100, admin portal http://127.0.0.1:8102 |
 | Sign-in | a 6-digit code emailed (no passwords, no SSO), for people with an account only: nobody signs up (item 56) |
-| Organisations | one per email domain, each in its own workspace; PASDACS creates each one with its main owner on the admin portal, and its owners add its people |
-| Credits | 50 to start (or what PASDACS sets), more when PASDACS approves a request; a new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10, Ask Relay 10 for up to 5 questions, a Semantic Review 10 (see "Organisations and credits") |
+| Organisations | each in its own workspace, with one or more email domains of its own (item 60); PASDACS creates each one with its main owner on the admin portal, and its owners add its people |
+| Credits | 50 to start (or what PASDACS sets), more only from PASDACS, a request it approves or credits it adds by hand (nothing is sold online since item 59); a new dashboard uses 25 with Power BI's built-in visuals or 50 with custom visuals, a change 10, Ask Relay 10 for up to 5 questions, a Semantic Review 10, a KPI changed in words 1, a Semantic Review fix 1 a finding (see "Organisations and credits") |
 | Platform admins | the **@pasdacs.com** people of PASDACS's own workspace, on the admin portal only (every organisation, its people, credits, connectors, requests) |
 
 ## Containers
@@ -47,7 +47,8 @@ as separate Linux users that cannot read each other's keys.
 
 - **Kept:** Dashboards (D2D: plan -> KPIs -> prototype -> review -> Power BI file), the review gates and the Power BI engine
   check, the visual library, sample data, Connections (connectors on request), Ask Relay, Semantic Review (item 55: Power
-  BI models against the organisation's KPI dictionary, see "Semantic Review"), Branding, organisations
+  BI models against the organisation's KPI dictionary, see "Semantic Review"), the Ontology (item 61: business terms,
+  industry packs and the KPI dictionary, see "Ontology"), Branding, organisations
   and credits, sharing a dashboard, and asking a colleague to review a version (the Review card on its Overview).
   There is no administration on the public site: every `/api/admin` path answers 404 there. PASDACS works on the
   admin portal (Organisations, Requests).
@@ -208,8 +209,10 @@ moves them to their own folder, and the folder's retention policy set to "1 Year
 
 https://admin-d2d.pasdacs.com is PASDACS's own site: **Overview** (who is online, everyone in the organisations),
 **Organisations** (every organisation, its credits and connectors; **New organisation** creates one with its main owner,
-**Add someone**, the person button on its row, adds someone to one: item 56, as nobody signs up), **Requests** (credits, connectors and Migration D2D that
-organisations asked for) and **Notifications**. It is a container
+its other email domains and its industry, **Add someone**, the person button on its row, adds someone to one: item 56, as
+nobody signs up; the globe button on its row changes its email domains: item 60), **Requests** (credits, connectors and
+Migration D2D that organisations asked for), **Payments** (past payments and their GST invoices, read only since item
+59) and **Notifications**. It is a container
 of its own (`d2d-relay-admin`); the public site answers none of its APIs. Two locks, both required:
 
 1. **Cloudflare Access** in front of the hostname. The admin portal checks Access's signed token on every request that
@@ -244,15 +247,27 @@ in, and accounts come from two places:
 
 - **PASDACS creates each organisation** on the admin portal (Organisations, **New organisation**): its name, its main
   owner's work address and name, and its starting credits (50, `RELAY_CREDITS_START`, unless another number is set; 0
-  gives none). The organisation is that address's email domain, which only one organisation can have; a free mail
+  gives none). The organisation is that address's email domain, which only one organisation can have, plus any **Other
+  email domains** its people use (item 60, below); a free mail
   (Gmail, Outlook, Yahoo, iCloud, Proton ...: `public_domains.FREE`) or throw-away address (Mailinator, temp mail,
   Yopmail ...) cannot own one (refuse more domains with `RELAY_PUBLIC_DOMAINS_EXTRA`, or treat a listed domain as a
-  business with `RELAY_PUBLIC_DOMAINS_ALLOW`, comma-separated). The main owner is emailed, signs in with a code and gets
-  the first-time tour (below), with the brand (logo, description, palette) as one of its steps, all of it skippable.
+  business with `RELAY_PUBLIC_DOMAINS_ALLOW`, comma-separated). **Industry** picks the industry pack its ontology starts
+  from (item 61, "Ontology"; "Not now" leaves the choice to the owners). The main owner is emailed, signs in with a
+  code and gets the first-time tour (below), with the brand (logo, description, palette) as one of its steps, all of
+  it skippable.
   PASDACS can also add someone to any organisation (Organisations, **Add someone**: the person button on its row), as a
   member or an owner, for instance a new owner when the owners have left; that organisation's owners are told.
-- **The organisation's owners add its people** (Organisation page, People, **Add people**): addresses at the
-  organisation's own domain, as members or owners; each gets an invitation email and signs in with a code.
+- **The organisation's owners add its people** (Organisation page, People, **Add people**): addresses at any of the
+  organisation's email domains, as members or owners; each gets an invitation email and signs in with a code.
+- **Several email domains** (item 60: one organisation for a company whose people use more than one domain). Besides
+  the main domain it was created with, an organisation can have up to 19 more (`relay.tn_org_domains`; 20 in all,
+  `orgs.MAX_DOMAINS`), each belonging to one organisation only, none a free mail or throw-away service's. PASDACS
+  gives them on the admin portal: **Other email domains** on New organisation (comma-separated), or later the globe
+  button on its row (**Email domains of ...**: add one, or remove one; `POST /api/admin/orgs/<id>/domains`,
+  `DELETE /api/admin/orgs/<id>/domains/<domain>`). The owners are told when one is added. The main domain stays;
+  taking another away keeps the accounts made with it, and nobody new can be added with it. The organisation shows
+  every domain (`@a.com, @b.com`) on its page, the tour and the admin portal; the audit has `d2d.org_domain_added` and
+  `d2d.org_domain_removed`. A personal workspace has no domains to add.
 
 An address without an account that asks for a code gets the same answer as one with an account ("If ... has a D2D
 Relay account, we sent it a sign-in code"), but no code, after about as long as sending one takes; the code limits
@@ -269,8 +284,9 @@ count it the same way. So the sign-in page never tells anyone which addresses ha
   cannot be removed or made a member; they hand the main ownership to someone else first (Transfer ownership), staying
   an owner or not.
 - **Personal workspaces** (item 39, while anyone could sign up: a free mail address got a workspace of its own, which
-  bought its credits online). No new one is made; the ones there keep working as they did: that one person only (no
-  Add people), no Request credits, and PASDACS can still add credits by hand. On the admin portal they show as
+  bought its credits online). No new one is made; the ones there keep working: that one person only (no
+  Add people), and since item 59 they ask for credits with Request credits like any organisation; PASDACS can still
+  add credits by hand. On the admin portal they show as
   Personal, with their address (`relay.tn_orgs.personal = 1`, the full address as `domain`).
 - **Delete my account** (Organisation > Your data): anyone but the main owner deletes their own account the same way,
   after typing DELETE; the owners are told. **Delete the organisation**: the main owner deletes it with everything in
@@ -286,13 +302,16 @@ count it the same way. So the sign-in page never tells anyone which addresses ha
 
 | What | Credits |
 |---|---|
-| Start | 50 (`RELAY_CREDITS_START`), or what PASDACS sets when it creates the organisation; more are bought online (Payments, below) or come when PASDACS approves a request |
+| Start | 50 (`RELAY_CREDITS_START`), or what PASDACS sets when it creates the organisation; more come only when PASDACS approves a request or adds them by hand (nothing is sold online since item 59) |
 | New dashboard (plan, KPIs and first prototype) with Power BI's built-in visuals only | 25 (`RELAY_CREDITS_DASHBOARD`) |
 | New dashboard with custom visuals: built-in first with custom where needed, or Relay custom visuals (item 44) | 50 (`RELAY_CREDITS_DASHBOARD_CUSTOM`) |
 | Moving a dashboard made with built-in visuals to custom visuals (its Details tab), once | the difference, 25 |
 | A change: revise the plan, a change request, building a suggested custom visual, an Ask Relay answer sent to a dashboard | 10 (`RELAY_CREDITS_CHANGE`) |
 | Ask Relay: up to 5 answered questions in one conversation (`RELAY_CREDITS_ASK_QUESTIONS`), charged at its 1st, 6th, 11th ... question | 10 (`RELAY_CREDITS_ASK`) |
-| Confirming the plan, fixing failed review gates, approving and publishing, brand palettes | free |
+| A Semantic Review of up to 5 models, or Review again | 10 (`RELAY_CREDITS_REVIEW`) |
+| A KPI changed in plain words: a plan's KPI at Confirm KPIs, or a KPI dictionary entry (item 63); given back when nothing changes | 1 (`RELAY_CREDITS_KPI`) |
+| Semantic Review fixes (item 65), shown before anything is charged; given back for a fix that does not check out | 1 a finding (`RELAY_CREDITS_FIX`) |
+| Confirming the plan, fixing failed review gates, approving and publishing, brand palettes, Relay's review team (item 68), tagging a column with a business term, the ontology | free |
 
 A request without enough credits is refused before anything starts, with the balance in the message. Every
 AI cost is still recorded on the server (the `usage` table); the screens show no tokens and no cost breakdown. Ask
@@ -311,8 +330,9 @@ docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m a
 docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.orgs decline <request id> "<reason>"
 ```
 
-**Getting more credits.** More are bought online once PASDACS opens selling (**Payments (Razorpay)**, below), or come
-when PASDACS approves a request (for invoices and bank transfers):
+**Getting more credits.** Only from PASDACS (item 59, the user, 2026-11-19: "remove payment all and have only as
+request credits"; buying online is gone, "Payments (removed, item 59)"): PASDACS approves a request, or adds credits by
+hand. Every organisation and personal workspace has Request credits:
 
 1. Someone in the organisation clicks **Request credits** (top-bar chip, Organisation, Dashboards, or the message
    when credits run short), picks an amount and adds a message. One request can wait at a time; the person who asked,
@@ -337,16 +357,20 @@ pasdacs.com's DNS is on Cloudflare, so no port is opened on this PC.
    Advanced Certificate Manager).
 3. Create `tunnel.env` next to `docker-compose.yml` with one line, `TUNNEL_TOKEN=<token>`. Git ignores this file, and
    the app container never sees it.
-4. Set `RELAY_PUBLIC_URL=https://d2d.pasdacs.com` in `.env` (the address in emails, invitations and the webhook shown
-   on the admin portal), run `docker compose --profile tunnel up -d`, then open https://d2d.pasdacs.com.
+4. Set `RELAY_PUBLIC_URL=https://d2d.pasdacs.com` in `.env` (the address in emails and invitations), run
+   `docker compose --profile tunnel up -d`, then open https://d2d.pasdacs.com. Since item 59 every email from either
+   site names the public site's address (`portal.site()`: invitations, approvals, the sign-in code email's footer):
+   the admin portal gets it as `RELAY_SITE_URL`, which `docker-compose.yml` takes from `RELAY_PUBLIC_URL`; the admin
+   portal's own address is never used in an email, as nobody but PASDACS signs in there.
 
 Cloudflare provides the certificate. pasdacs.com sends HSTS includeSubDomains, so the address must be https, and it
 is. Optional extra lock: a Cloudflare Access policy (email one-time PIN for the same address) in front of the hostname.
 
 **Changing the address** (as on 2026-11-12, from `d2d-relay.pasdacs.com` to `d2d.pasdacs.com`): add the new public
 hostname to the same tunnel and keep the old one, set `RELAY_PUBLIC_URL` and restart web and admin
-(`docker compose up -d --no-deps web admin`), change Razorpay's webhook to the new address, and later, if wanted, a
-Cloudflare redirect rule from the old address to the new one. People sign in again on the new address (a sign-in
+(`docker compose up -d --no-deps web admin`), add the new hostname to the Turnstile widget ("Bot check"), and later,
+if wanted, a Cloudflare redirect rule from the old address to the new one (there is no Razorpay webhook to move since
+item 59). People sign in again on the new address (a sign-in
 belongs to one address), and links in emails already sent keep working while the old hostname stays.
 
 The old address is being retired (the user, 2026-11-12): delete its public hostname in Cloudflare (Zero Trust ->
@@ -426,12 +450,16 @@ meaning (for example `Status = Completed`) and time basis (for example "fiscal y
 People add KPIs in the app, import a file (CSV or Excel with a header row, the usual titles understood: KPI, Metric,
 Description, Calculation, Aliases ...; or YAML / JSON; a preview first, then merge or replace), download it (CSV,
 YAML) or a template, or pick measures of a review to start it. BI Devs and owners change it; everyone reads it.
+Since item 61 it is part of the organisation's ontology (also at `#/ontology/kpis`, "Ontology"): industry packs add
+KPIs to it, new dashboards plan their KPIs from it, and an entry can be changed in plain words (the wand button, 1
+credit, "Changing a KPI in words").
 
 **A review** (`POST /api/semreview/runs`) reads up to 5 models (`RELAY_REVIEW_MAX_FILES`) at once and compares them
 with each other too:
 - files: `.pbix`, `.pbit`, `model.bim` (or a TMSL `.json`), a zipped Power BI project (`*.SemanticModel` with
-  `model.bim` or TMDL), up to 100 MB each (`RELAY_REVIEW_MAX_MB`; Cloudflare refuses bigger uploads anyway). A `.pbix`
-  over the limit can be saved as a template (`.pbit`, no data, small). A `.pbix` connected live to a model in the
+  `model.bim` or TMDL), up to 500 MB each since item 64 (`RELAY_REVIEW_MAX_MB`; files over 4 MB go up in parts, past
+  Cloudflare's 100 MB a request: "Large data"). A `.pbix` over the limit can be saved as a template (`.pbit`, no data,
+  small). A `.pbix` connected live to a model in the
   service holds no model: the review says so.
 - models in the Power BI service, through the organisation's own Entra app (below).
 It uses 10 credits (`RELAY_CREDITS_REVIEW`), charged when it starts and given back when it does not finish (a file that
@@ -470,6 +498,32 @@ The report: KPIs with one meaning (x of y), findings by severity with what to do
 (each KPI's measures by version), every measure, the models; findings download as CSV (spreadsheet formulas
 neutralised). **Review again** reads the kept models against today's dictionary (no upload, 10 credits). A review is
 deleted by whoever ran it or an owner, with the models it kept; "Download my data" lists the reviews a person ran.
+
+**Fixing the findings** (item 65, the user, 2026-11-19: "semantic review should be action as well rather than showing
+only finding, it should be able to fix and suggest credits for consumption"; `webapp/app/semreview_fix.py`). A finished
+review shows **Fix the findings** with what fixing uses before anything is charged: how many findings can be fixed in
+the model's measures, how many with the DAX the review's rules already wrote, and the credits, 1 a finding
+(`RELAY_CREDITS_FIX`): all of them, or only the high ones. **Pick all**, **Only the high ones** or **Choose findings**
+(a box on each fixable finding), then **Fix N** (BI Devs and owners; up to 60 at a time;
+`POST /api/semreview/runs/<id>/fixes`). The credits are charged, then in the web app's background:
+- a finding the rules already wrote the fix for (the dictionary's definition written for the model, DIVIDE instead of
+  "/", a ratio of sums ...) is ready as it is;
+- the others are written by Relay through the AI engine's chat lane with no tools (`askd.ask_json`, 15 findings a
+  request): it sees the findings, the measures' DAX, the model's table, column and measure names and the dictionary's
+  entries, never data. A KPI no model has gets a new measure, in the table that holds most of the model's measures;
+- every fix is checked against the model the review kept before it is kept: readable DAX (Semantic Review's parser),
+  only tables, columns and measures the model has, no measure that refers to itself. A fix that does not check out
+  gives its credit back (`orgs.give_back_part`); if the work stops, all of them come back.
+Findings about visuals (titles, visuals that add up a column), relationships and calculation groups have no measure
+to fix and are fixed in the report by hand; measures in no KPI go to the dictionary instead. The **Fixes** tab shows
+each fixed measure with its DAX now and fixed (copy), who wrote it (the review's rules or Relay), and what could not be
+fixed, and downloads per model a **TMDL** script (Power BI Desktop: View > TMDL view, paste, Apply; or Fabric and
+Tabular Editor 3; `fixes.tmdl`), a **Tabular Editor** C# script (`fixes.csx`) and all fixes as **CSV** (`fixes.csv`,
+spreadsheet formulas neutralised). The uploaded model files are never kept, so D2D Relay cannot write a fixed `.pbix`:
+the scripts apply the fixes to the person's own model. To check the fixed model, review it as a new review (upload it
+again, or pick it in the Power BI service): **Review again** re-reads what this review kept (`kind: stored`), without
+the fixes, although the Fixes tab says "save and Review again". Kept in the review (`semreview_runs.fixes`), deleted
+with it; audited as `semreview.fixes`.
 
 **Power BI (Azure).** An owner enters the organisation's own Microsoft Entra app (tenant, client id, client secret; the
 secret encrypted with the workspace's secrets, never shown again). What the organisation sets up on its side, in the
@@ -514,6 +568,289 @@ in definition.yaml since item 58) and treats DAWB's visuals, queries and grid as
 DAWB's `project.json` and `manifest.json` as written, in `handoff/`. The plan screen says "DAWB's plan" until Relay
 revises it; from Confirm KPIs on, the dashboard is like any other.
 
+## Ontology
+
+The organisation's business vocabulary, so Relay reads any of its data the same way (item 61, the user, 2026-11-19:
+"ontology layer as well where we bring default ontology and kpi as per industry and user can also configure and
+change"). In the sidebar under Semantic Review (`#/ontology`, `js/42-ontology.js`). Code: `genbi_kit/ontology.py`
+(terms, tagging columns, the agent's guide), `genbi_kit/ontology_packs/*.yaml` (the industry packs),
+`webapp/app/ontology.py` (the organisation's copy, its API, a dashboard's files).
+
+- **Business terms** (`#/ontology/terms`): what the columns of the organisation's data mean. A term has a name (Sales),
+  a kind (measure, key, date or attribute), what it belongs to (Store, Product, Customer ...), for a measure its unit
+  and how it adds up, a family (Net Sales and Digital Sales are both Sales: shown together, never added up) and its
+  other names in columns (sls, sales_amt, net_sls ...). Up to 1,500 terms with 40 other names each, in the
+  organisation's own schema (`onto_terms`). One name tags one kind of column: a name or other name that two terms of
+  one kind share is refused.
+- **The KPI dictionary** (`#/ontology/kpis`): the one Semantic Review checks models against ("Semantic Review"), which
+  new dashboards now plan their KPIs from.
+- **Industry packs**: an industry's business terms, its usual KPIs (definition, formula in words, and reference DAX for
+  a KPI built from other KPIs) and example questions for Ask Relay. 13 ship: Grocery and retail, Consumer goods,
+  E-commerce, Healthcare, Manufacturing, Software and subscriptions, Supply chain and logistics, Hotels and
+  restaurants, Banking and lending, Insurance, Telecom, Energy and utilities, and General business (69 to 80 terms and
+  38 to 55 KPIs each; General business 41 and 17). **Look inside** shows a pack; **Use it** (BI Devs and owners) adds
+  what the organisation does not have yet and keeps what it has, unless "use the pack's version" is ticked; a KPI
+  whose name belongs to another of its KPIs is left out. PASDACS can apply one when it creates the organisation (New
+  organisation, **Industry**), or later in the web container (pack ids: `grocery-retail`, `consumer-goods`,
+  `ecommerce` ..., as `packs` lists them):
+
+  ```
+  docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.ontology packs
+  docker exec -u relay -w /srv d2d-relay-web /opt/relay/bin/launch web python -m app.ontology apply <workspace id> <pack id>
+  ```
+
+  Until an organisation has terms of its own, its columns are tagged with General business's.
+
+**How a column gets its term**, by name only, and each tag says why: the column name's words (camelCase and snake_case
+split, the usual abbreviations spelled out: amt, qty, nbr, sls ..., plurals made singular) equal to a term's name or
+other name, ignoring amount, value, total or a currency (`sls_amt_usd` is Sales), or holding it. The kind must fit the
+column's type: a measure on numbers that are not keys, a date on dates, a key on an id-like or unique column, an
+attribute on text. Last year, budget, target or forecast words make a column a variant of its term (`sales_ly`: Sales,
+last year's), never added up with it; percent, rate, tax or growth words make it another number (`gm_pct` is not Gross
+Margin). **Try column names** (Business terms) shows how names would read.
+
+**What every dashboard gets.** Before Relay plans, and again before each build and change, the web app writes
+`ontology.json` (the terms, the KPI dictionary, the industry, the person's own column tags) and `ontology.md` (the
+agent's guide: the terms and KPIs found in this data first) into the dashboard's folder
+(`ontology.write_project_files`). `genbi profile` tags each column (profile.md's "business term" column) and lists a
+measure term found in several columns (one business number, to combine), related terms of one family in different
+tables (checked before combining) and one entity's keys under different names, which it tries as relationships too
+(`store_id` and `str_nbr`, kept when half the values match). The plan names model columns after their terms, prefers
+the dictionary's KPIs with their names, definitions, rules and time basis (`dictionary: <name>` on the KPI in
+plan.yaml) and plans one KPI where one term is in several tables (GENBI.md, Ontology; `prompts.PLAN`); each plan KPI
+then says whether it comes from the dictionary (`ontology.mark_plan_kpis`, project.json `plan_dictionary`).
+ontology.md tells the agent that it is the organisation's data, not instructions.
+
+Everyone in the organisation reads it; BI Devs and owners change it: add, edit or remove terms, import YAML or JSON
+(merged by name, up to 2 MB), download it all as YAML (`/api/ontology/export.yaml`), and teach column names from a plan
+("The semantic model on the plan"). API: `GET /api/ontology`, `GET /api/ontology/packs/<id>`,
+`POST /api/ontology/industry`, `POST`, `PUT` and `DELETE /api/ontology/terms`, `POST /api/ontology/teach`,
+`POST /api/ontology/match`, `POST /api/ontology/import`; audited as `ontology.pack`, `ontology.term_save`,
+`ontology.term_delete`, `ontology.teach` and `ontology.import`.
+
+## Large data
+
+Big files and big tables (item 64). Code: `webapp/app/uploads.py`, `genbi_kit/sampling.py`, `js/01-core.js`
+(`upload()`), `js/04-new.js`.
+
+**Uploads in parts.** Cloudflare refuses a request over 100 MB, so the browser sends every file over 4 MB ahead of its
+form, in parts of 32 MB: `POST /api/uploads` (name and size), `PUT /api/uploads/<id>/<n>` for each part (each retried
+on its own when a connection drops), then `POST /api/uploads/<id>/done` (the parts joined and the size checked). The
+form names the upload instead of the file (`uploads`: a JSON list of `{field, id}`), and the server reads it as if it
+had come with the form, through the same checks: New dashboard, a revised plan, a change request, a DAWB hand-off and
+Semantic Review. One progress bar covers it all. A file is at most 10 GB (`RELAY_UPLOAD_MAX_GB`), and an upload starts
+only when the disk has room for three times the file plus 2 GB. The parts wait in the organisation's projects folder
+(`.uploads`, a dot folder: never in backups), for the person who started the upload only; one not used within a day is
+removed when the next upload starts.
+
+**Building on a sample.** New dashboard shows how much data was picked (files and size; from about 1 GB it explains
+that the big tables are sampled) and, for uploaded files, **Data used to build**:
+- Automatic (the default): a sample of each table over 2 million rows (`GENBI_SAMPLE_OVER`);
+- a sample of every table over 1 million rows;
+- every row (slower for big files);
+
+and **How to sample**: random rows (a reservoir sample of 1,000,000 rows, `GENBI_SAMPLE_ROWS`, with a fixed seed: the
+same rows every time, the whole date range and the mix of stores and products kept, totals smaller by the share
+sampled) or the most recent rows by the table's first date column (exact totals for the latest weeks, a shorter
+history; random when the table has no date column). Credits do not depend on the size. Smaller tables (stores,
+products) are always used in full, so every key in a sample finds its row.
+
+Before planning, the worker takes the sample once (`worker.read_data`, `sampling.prepare`): `sample.json`, the samples
+in `.genbi/cache/<file>.sample.parquet`, and `data_sample/` (the samples as CSV, the other tables beside them). Every
+build step then reads the sample: `genbi profile` and `genbi sql`, the prototype, the review gates and the DAX check
+(which samples on its own as well). profile.md, the activity and the plan screen say which tables are a sample (x of y
+rows), and the agent is told that totals are the sample's (GENBI.md, Large data). Ask Relay always answers from every
+row (`data.connect(full=True)`). The report's DataFolder points at `data_sample/` and the file gates check those
+files; as the code stands, the Power BI file maker on this PC is still handed the full `data` folder (`pbix.py`), so
+the .pbix it makes is refreshed with every row, although New dashboard says the Power BI file loads the sample (see
+the code).
+
+Semantic Review takes files up to 500 MB each, as they go up in parts.
+
+## The semantic model on the plan
+
+The dashboard shows its semantic model while Relay reads the data and on the plan (item 62; `js/41-semantic.js`,
+`css/semantic.css`; `GET /api/projects/<id>/semantic`, `ontology.semantic_view`). Before planning, the worker reads
+the data first (`worker.read_data`: the ontology's files, the sample of big tables, the profile with every column's
+term), keeps how much was read (project.json `data_size`) and when (`semantic_ready`), and says what it found in the
+activity ("Read your data: N tables, X of Y columns matched to your ontology, Z likely relationships"). The
+**Semantic model** card is then on the Overview while Relay plans, and on the plan screen in place of the plan's table
+list:
+- how many columns matched a business term, the industry (or "General business terms"), how many KPIs come from the
+  KPI dictionary, and a link to the ontology;
+- how much data is used: all of it, or which tables are a sample ("Large data");
+- a diagram: the plan's tables and relationships once there is a plan (before it, the files and the relationships
+  found in them), facts in the middle and the tables they point to on either side, `*` and `1` at the ends of each
+  line with its key; a relationship found through a business term is drawn differently;
+- what the terms showed: a term in several columns (one number, combined), related terms in different tables (checked
+  before combining), one entity's keys under different names (linked);
+- each table, folded: its columns with their type, unique or not, and business term (why it was given, a variant,
+  "(yours)" for a person's own).
+
+While the plan waits at Confirm KPIs, a column's term can be changed, or set to none, and **Save the tags** keeps them
+(free; `PUT /api/projects/<id>/semantic`): project.json `semantic_overrides`, the profile made again, ontology.json
+written again, and the build uses them. BI Devs and owners can also teach the ontology (ticked by default): the column
+name becomes another name of that term (`POST /api/ontology/teach`; the organisation's own copy of a General business
+term when it has none), so the next data with that column is tagged on its own. A dashboard from a DAWB hand-off gets
+the same card: its data is read with the ontology when it is imported.
+
+## Changing a KPI in words
+
+Item 63 (the user, 2026-11-19: "each kpi can be fixed or change by natural language as well each 1 credit";
+`webapp/app/kpi_words.py`). 1 credit a change (`RELAY_CREDITS_KPI`), in two places:
+- **A plan's KPI**, while the plan waits at Confirm KPIs: under each KPI card, a line ("exclude returns", "make it
+  weekly") and **Change**, or **Fix it** (the DAX made valid and doing what the description says;
+  `POST /api/projects/<id>/kpis/change`). Relay rewrites that KPI's name, label, description, DAX and format, starting
+  from the card as shown (edits not saved yet included), and saves it into plan.yaml at once. Each card says whether
+  its KPI comes from the KPI dictionary, differs from it ("Approvals before the build") or is new. A KPI added on the
+  screen is not in the plan yet: it is edited by hand.
+- **A KPI dictionary entry** (the wand button in the KPI dictionary, under Ontology or Semantic Review; BI Devs and
+  owners; `POST /api/semreview/kpis/<id>/change`): its name, other names, definition, formula, reference DAX, unit,
+  aggregation, rules or time basis.
+
+The credit is charged before Relay is asked and given back when nothing changes: Relay cannot be reached, it says the
+data cannot do it, or its answer does not check out. The answer is checked before it is saved: plain text, DAX that
+the plan's own lint and Semantic Review's parser can read, only the planned model's tables, no other KPI's name; for
+the dictionary, its own rules (one name, one KPI). Relay answers through the AI engine's chat lane with no tools
+(`askd.ask_json`): it sees the KPI, the other KPIs' names and DAX, the data's tables and columns with their business
+terms, and the dictionary entries close to it, never data rows. A plan change goes into the activity and request.md;
+both kinds are audited (`kpi.words`, `kpi.words_dictionary`).
+
+## Approvals before the build
+
+Item 73 (the user, 2026-11-19: "data needs to be reviewed and let them know if any gaps or assumptions made ... any
+deviation or assumption or calculation needs to be approved"; `ontology.approval_items`, `KpiReview.approved` in
+`main.py`, `js/45-team.js`). The plan now lists its `assumptions:` (how Relay read the data or the request: which
+column is the sales amount, a currency, a date basis, a filter) and `gaps:` (what the request or the KPI dictionary
+asks for that this data cannot give), and the analyst review ("Relay's review team") adds its own and every KPI that
+differs from the dictionary. At Confirm KPIs, **Review and approve** lists them in three groups (Different from your
+KPI dictionary, Gaps, Assumptions), each saying where it came from (the plan or the analyst review), with a box to tick
+and **Approve all**. **Confirm & build prototype** stays off until every one is approved, and the server refuses a
+confirmation that leaves one out (400, with how many are left). Not approving one means saying what to change and
+**Ask Relay to revise the plan** (a change, 10 credits), which brings a new list. What was approved is kept with the
+dashboard (project.json `approvals`: the items, who, when) and written into request.md for the build ("The person
+approved these before the build"). A plan with nothing to approve says so.
+
+## Relay's review team
+
+Item 68 (the user, 2026-11-19: "a multi agent where there is a developer, analyst, qa and ui/ux, story agent" and
+"always there should be a ring fenced agents review on each thing prepared and approved before coming to end users.
+always a multi model to ensure what comes out is 100% accurate and interactive and business ready";
+`worker.team_review`, `prompts.REVIEW_*`, `js/45-team.js`). The analyst plans and the developer builds (the usual
+runs), QA is the review gates, and then independent reviewers check each plan and each version before the person
+sees it:
+
+| Reviewer | When | What it checks | Model |
+|---|---|---|---|
+| Analyst review | each plan, before Confirm KPIs | every KPI can be computed from this data; a KPI the dictionary has matches its definition, formula, rules and time basis (else a deviation); gaps; assumptions; the model (one filter path, keys unique on the one side) | the second |
+| UI/UX review | each version | a picture of every prototype page: layout, hierarchy, the right chart, readable labels and formats, the brand palette and the theme's font, titles, slicers, contrast | the builder's |
+| Story review | each version | the pages tell a story in order, each answers its purpose, titles and text in business words, KPI cards with context, names from the dictionary | the second |
+| Accuracy review | each version | each KPI's headline value by its own SQL against the prototype and Power BI's values (more than 0.5% apart is a must), DAX against the definitions, totals across visuals | the second |
+
+- Each reviewer is a run of its own: a fresh session that never saw the build, in the AI engine's own `review` lane (4
+  at once, `D2D_REVIEW_PARALLEL`; relay-init does not pass that setting to the AI engine yet, and a reviewer that
+  finds the lane full does not wait but shows as could not run), up to 40 turns and 20 minutes; a version's three run
+  side by side. Reviewers only read: the runs ask for Read, Glob, Grep and read-only
+  `genbi` commands, but the AI engine gives a run that names its tools no shell (`_tool_args` in `agent/server.py`),
+  so as the code stands they read files only (see the code). Anything a reviewer changed anyway is put back afterwards
+  (the fence: plan.yaml, definition.yaml, the prototype, request.md, the ontology and profile files, sample.json), and
+  the version says so.
+- Each answers in JSON: approve or fix, a summary, what it checked, and issues marked **must** or **should** (the
+  analyst also lists gaps, assumptions and deviations: "Approvals before the build").
+- A **must** goes back for one fix round: the analyst's to the plan (the plan checks run again and the analyst looks
+  once more); the version reviewers' to the developer, then the gates run again and those reviewers look once more. If
+  the fixed version fails the gates, the version before the fixes is kept.
+- A version is reviewed only once it passed the gates. The UI/UX reviewer reads a full-page picture of each prototype
+  page (`.review/shots/page-N.png`, taken by the Display check: `display.check(shots=)`), the accuracy reviewer Power
+  BI's values from the DAX check (`.review/values.json`).
+- The **Review team** gate, after the Display check: passed when every reviewer approved; a warning for each must still
+  open and for a reviewer that could not run (approval stays possible); skipped when the team did not run. A reviewer
+  that cannot run never stops the build.
+- On screen: the plan's **Review and approve** card, and under each version **Relay's team on this version**:
+  Developer, QA (the gates), then each reviewer with what it asked for, its suggestions and what it checked.
+- No credits. `RELAY_REVIEW_MODELS` (default `relay,relay-review`): the UI/UX reviewer uses the first, the others the
+  second ("The AI's login and effort"). `RELAY_TEAM_REVIEW=off` (then recreate web) switches the team off.
+
+## Ask Relay
+
+Questions about the organisation's data in plain words (`#/askd`; `js/14-askd.js`, `css/askd.css`; `app/askd.py`,
+`app/askd_routes.py`). The app runs every query itself, read-only and on every row (a dashboard built on a sample
+too); the AI only writes the answer around the rows, with no tools, in the AI engine's chat lane. 10 credits pay for
+up to 5 answered questions in one conversation ("Organisations and credits").
+
+The page since item 66 (the user, 2026-11-19: "ask relay should be able to have more better ui and navigations"):
+- **Your conversations**, on the left: **New question**, a search (Ctrl+K), pinned ones first, then Today, Yesterday,
+  This week, This month and Earlier; each can be pinned, renamed (`PATCH /api/askd/threads/<id>`) or deleted. Pins,
+  the data last chosen and the side panel's tab are kept in that browser only.
+- **The conversation**, in the middle, under its own header: its name, what it asks about (all my data or one
+  dashboard, fixed once it starts), when it started and how many questions, **Jump to a question** once there are two,
+  rename and delete. Below it, the question box ("/" goes there; Enter asks, Shift+Enter starts a new line) and a
+  meter of the questions left in the credits paid.
+- **A side panel**: **Ideas** (the example questions of the organisation's industry packs, then questions from its
+  dashboards' KPIs; a click puts one in the box, its send button asks it at once), **KPIs** (the KPI dictionary and the
+  dashboards' KPIs, with a search) and **Data** (all my data, or one dashboard); `GET /api/askd/options` gives them.
+- A new question opens on a welcome card with the same ideas and a tip on what to ask. On a phone the conversations
+  and the panel open over the page (Esc closes them).
+
+## Also in this release
+
+- **A guided New dashboard** (item 71; the user, 2026-11-19: "title first and then data is uploaded and then what needs
+  to done or built is prefilled and user can change it and confirm and it will be a guided way rather then all visible
+  and one step is done then the next shows"): six steps, one on the screen at a time (`webapp/static/js/04-new.js`,
+  `css/newdash.css`): **Name**, **Your data** (each file goes up in parts as soon as it is picked, with its progress,
+  Cancel, Try again and Remove; the data size and the sample choice; demo data, warehouse tables and DAWB hand-offs as
+  before), **What to build** (prefilled by `POST /api/projects/suggest`, `webapp/app/newdash.py`: the tables, each
+  column's business term and the KPI dictionary's KPIs the data supports; no AI, no credits, seconds even for a 5 GB
+  file), **Theme** (the organisation's brand; it blocks until there is one, and an owner can set it in the step),
+  **Visuals** (two choices only: Power BI's built-in visuals, or built-in plus custom; a dashboard's Details tab offers
+  the same two, and one made with Relay custom visuals only keeps its own) and **Check and start** (every choice and its
+  credits). The draft, uploads included, is kept in the browser's session storage, so leaving for Branding and coming
+  back resumes it.
+- **A brand every dashboard must have** (item 72; the user: "prototype and theme needs to be set mandate before
+  starting so its a step for branding and maintaining across the reporting and including fonts family";
+  `webapp/app/branding.py`, `35-branding.js`): a palette (made by the Relay Model from the logo and a description, or
+  one of three standard ones) and a font family (a body font and an optional heading font, from the fonts Power BI's
+  Format pane lists, `POST /api/branding/fonts`). New dashboard and a DAWB import are refused (400) until the
+  organisation has one; only its owners change it; the first-time tour's brand step cannot be skipped by an owner;
+  `#/branding?return=new` goes back to New dashboard. request.md carries the fonts (`font`, and a heading font through
+  the theme's `styles`), the build keeps them in every version, and the prototype draws in them.
+- **"Relay Model" wording** (item 74; the user: "instead of mentioned like power bi desktop and running all show it
+  more confidential like relay model is working, is churning data, identity and context it with the data and dashboard
+  being built"): what people read says "Relay Model is reading your data", "... checking every number", "...
+  packaging your Power BI file" and the like, never Power BI Desktop, this PC, the DAX checker, queues or the AI's
+  vendor; a run that stops gets a plain message (`worker.friendly`), the full text staying in the server's log. The
+  model's name on the screens is "Relay Model" (`config/house-models.json`; it was "Relay Model powered by Claude").
+- **A guided Semantic Review** (item 75; the user: "same with semantic or existing review, uploaded or connection
+  established and then a review and guide way on what is configured and fixes as well"; `40-review.js`,
+  `css/review.css`): a new review in three steps (**Your KPIs**: what the dictionary holds, or continue without KPIs to
+  compare models only; **Your models**: files or Power BI service models; **Check and start**: what is read, metadata
+  only, and the credits), and each review as stages (Read, Check, Meaning, Values, Findings, Fix, Apply and review again)
+  under a **What was configured** summary. After fixes, **Review the fixed models** starts a new review of the fixed
+  files or the same Power BI models read fresh; **Review again** reads the kept models against today's dictionary.
+- **The custom visuals say Relay** (item 69; the user: "review the custom visual i think its calling atlas visual, it
+  should be relay and also review all custom visual possible or used in any way in retail specific and build all have
+  it ready and tested"): every customer-visible "Atlas" is gone (each visual's empty-state title in Power BI, the
+  package files, now `Relay<Family>.<version>.pbiviz`, the theme names, the gallery); the 13 families were rebuilt with
+  their GUIDs unchanged and their versions raised; a retail set was added and tested (`visual-atlas/visuals/test/retail_*`:
+  120 stores, 8 divisions, 52 weeks, billions, negative comps, blanks and long names, light and dark, checked for
+  overlaps, cut text, NaN, "$0M", doubled units and contrast): the gauges' Comparison (last year) role and a
+  leaderboard, and fixes to the waterfall, bullet, heat grid, calendar, columns, donut, lollipop and timeline. The one
+  retail chart without its own visual is a Pareto (a Lines combo with a cumulative-percent measure does it).
+- **The prototype's filters work like Power BI's** (item 76; the user: "the prototype filters and other dont work as
+  expecting"; `genbi_kit/prototype.py`, `assets/prototype_page.js`, `assets/stock_visuals.js`, GENBI.md "Prototype SQL
+  patterns"). A slicer or report filter now filters the model the way Power BI does (the sliced table, then the tables
+  on the many side of its relationships), and each visual's SQL is written for the rows the slicers let through, like a
+  DAX measure (`all_dates."T"` lifts the date slicers for last year's numbers, `main."T"` ignores every slicer). The
+  page opens at the report's default selection; `genbi prototype` works out the selections a reviewer is likely to make
+  (each slicer's values, then pairs, deeper) within a time and size budget (`GENBI_PROTOTYPE_SECONDS` 20,
+  `GENBI_PROTOTYPE_BYTES` 12 MB), and a value outside it is greyed with the reason: the page never shows numbers it did
+  not compute. Single select, Ctrl+click for several, Clear, Reset to default, keyboard; "No data" for a selection with
+  no rows; no Infinity or NaN from a division by zero. Prototypes written the old way (the default year in the SQL) draw
+  as before, with a badge when the selection moves. The theme's fonts are used (body, and the heading font for titles),
+  and the Relay visuals get the brand's font in Power BI too (`atlas.theme_defaults`). The DAX check compares at the
+  default selection (`prototype.records(con, sql, dd)`). Click to cross-filter, drill and sort are not in the prototype
+  (they are in the Power BI file).
+
 ## Text people read
 
 Everything D2D Relay shows, emails or writes into a Power BI file uses plain keyboard characters (the user's request
@@ -548,122 +885,77 @@ it. The source files and rules are in `branding/pasdacs/assets/D2D` (README ther
 - Partner (white-label) workspaces are unchanged: their own logo, and "Powered by PASDACS Relay" with the PASDACS mark.
 - The old RELAY files (`relay-mark.svg`, `relay-logo*.svg`, `icons/relay-*.png`) stay for apps installed before.
 
-## Payments (Razorpay)
+## Payments (removed, item 59)
 
-**On the live site, buying is off until Razorpay activates the account** (the user's decision of 2026-11-12): the
-test keys are parked as comments in `.env`, so everyone sees Request credits only. Going live is the steps under
-"Buying credits online is off on live" in the work log (`docs/LOG.md`, "Still open"): the live keys in `.env`, a live webhook, a restart, then
-the invoice details, GST and Sell credits online on the admin portal. Without keys the screens never show Buy credits.
+Nothing is sold online any more (item 59, the user, 2026-11-19: "remove payment all and have only as request credits";
+D2D is licensed to client organisations). More credits come only from PASDACS: Request credits, which every
+organisation and personal workspace has, approved on the admin portal, or credits added by hand ("Organisations and
+credits"). `app/payments.py` no longer talks to Razorpay: no checkout, no webhook (`/api/payments/webhook` is gone and
+needs a sign-in like the rest of the API), no billing details, no selling settings, and no Buy credits anywhere.
+Razorpay keys left in an install's `.env` are ignored; Razorpay's own account and its webhook were not touched.
 
-Organisations buy credit packs online (`app/payments.py`, `js/37-payments.js`). The amount is always the server's;
-Razorpay's own window takes the card, UPI, netbanking or wallet details (they never reach D2D Relay); the credits are
-added once Razorpay has captured the payment, by whichever of these comes first, and only once:
+What stays, as accounting records (tax law asks for eight years):
+- `relay.tn_payments`, one row per checkout made while credits were sold, each paid one with its GST invoice
+  (`app/invoices.py`), and PASDACS's invoice details as they were (`relay.tn_meta`, `d2d_payments`); "Bought online"
+  stays in the credit history.
+- **Organisation page** (`js/37-payments.js`): **Past payments**, only for an organisation that bought credits online
+  before, each with its invoice (or receipt, for one paid before invoices) to print or save
+  (`GET /api/payments/<id>/receipt`); owners see all of them, others their own.
+- **Admin portal, Payments** (read only): every past payment with its organisation, who paid, the credits, amount,
+  status, invoice and Razorpay's ids, the real ones' totals, and **Invoices for GST returns**: a financial year's
+  invoices as CSV for the accountant (`/api/admin/payments/invoices.csv?fy=26-27`; test invoices only when asked).
+- Checkouts never paid are still deleted after a year (the nightly sweep); an erased organisation's payments stay
+  without names; each person's own payments are in Download my data.
 
-- the checkout's answer: Razorpay's signature is checked with the key secret, and the payment is fetched from
-  Razorpay (its order, amount and currency must match; one that is only authorised is captured);
-- the webhook (`https://d2d.pasdacs.com/api/payments/webhook`, no sign-in, signed with the webhook secret);
-- a look at Razorpay when the organisation's Organisation page opens, or **Check** on the admin portal (checkouts of
-  the last two days still waiting: a tab closed before the answer came back).
+How selling worked (from item 23: Razorpay's checkout and webhook, GST invoices, rupees in India and dollars
+elsewhere, test and live keys) is in this guide's git history before item 59 and in the work log (`docs/LOG.md`,
+"Selling credits online"). The terms of service, the refund and cancellation policy and the privacy notice still
+describe buying online and Razorpay: they are the lawyer-reviewed pages, for the user and the lawyer to update ("Legal
+pages").
 
-**Setting it up**
+## The AI's login and effort
 
-1. Razorpay Dashboard, test mode first -> Account & Settings -> API keys -> generate. In `.env` (never in commits):
-   `RELAY_RAZORPAY_KEY_ID` and `RELAY_RAZORPAY_KEY_SECRET`.
-2. Razorpay Dashboard -> Account & Settings -> Webhooks -> Add new webhook: the URL above; a secret (a long random
-   string, the same one in `.env` as `RELAY_RAZORPAY_WEBHOOK_SECRET`); the events `payment.captured`, `order.paid`,
-   `payment.failed` and `refund.processed`. In test mode Razorpay asks for an OTP: 754081.
-3. Restart web and admin so they read the keys: `docker compose up -d --no-deps web admin`.
-4. Admin portal -> **Payments**: the packs (credits, a price in whole rupees and, for buyers outside India, one in
-   whole US dollars), GST added on top of rupee prices (0: none added, the price is what people pay), a note under
-   the rupee prices, who may buy (each organisation's owners, or everyone in it), and **Sell credits online**. The
-   page also shows which keys are in use, the webhook URL, and the takings in each currency.
+(Until item 67 this section was "The AI's Claude account".)
 
-**GST invoices** (`app/invoices.py`). Every payment that adds credits gets a numbered tax invoice, issued in the same
-database transaction that marks it paid: `PREFIX/YY-YY/00001` (one series per financial year, April to March, at most
-16 characters, consecutive and never reused; test-key payments get `TEST/...` invoices, marked as tests, so the real
-series starts clean). It carries PASDACS's legal name, address, state, PIN and GSTIN, the buyer's billing details,
-the place of supply, the SAC code, the taxable value and the tax: CGST and SGST (UTGST in a union territory without a
-legislature) when the buyer's state is PASDACS's, otherwise IGST. Dollar sales to buyers abroad are exports of
-services: zero-rated under a Letter of Undertaking (its ARN on the admin portal), else IGST included in the dollar
-price; the rupee value is the one Razorpay converted at. The buyer gets the invoice by email and on Organisation ->
-Payments -> Invoice (printable); PASDACS gets a copy, and **Payments -> Tax invoices -> invoices 20YY-YY (CSV)** gives
-a year's invoices for the GST returns (GSTR-1).
-
-- **PASDACS's details** go on the admin portal: Payments -> Tax invoices (legal name, address, state, PIN, GSTIN, SAC
-  code, invoice prefix, LUT ARN, description), and the GST rate with whether rupee prices include GST or have it
-  added. With live keys, selling stays shut until they are complete. Have the accountant confirm the SAC code and
-  rate.
-- **The buyer's billing details** are asked for once, in Buy credits, before the first purchase: the legal name and
-  address, and in India the state and PIN, or a GSTIN (which gives the state and lets the buyer claim the GST
-  back); outside India the country. Owners change them on the Organisation page (Billing details); invoices already
-  issued keep theirs.
-- **No refunds:** credits are not refundable (Buy credits, the invoices and the Payments card say so). A refund made
-  on the Razorpay Dashboard anyway (say, for a duplicate payment) is still recorded and PASDACS is told; issuing a
-  credit note for it is PASDACS's.
-
-**Currencies.** Where the buyer is decides, by the country Cloudflare gives each request (`cf-ipcountry`; nobody can
-set it through Cloudflare): **rupees only in India, US dollars everywhere else**, also where Cloudflare cannot tell
-the country (and on this PC itself). An organisation whose billing address is in India pays in rupees wherever its
-people are (GST follows the billing address). The server offers and accepts only that currency, so the dollar price,
-which carries no GST, is not open to buyers in India. A pack without a dollar price is not sold outside India; with no
-dollar prices at all, everyone pays in rupees. GST and the note under the prices are shown in India only. Dollar
-buyers pay by card. Test keys take dollar orders as they are; with live keys, dollars need Razorpay's international
-payments switched on for the account (Razorpay Dashboard -> Account & Settings -> International payments). Whether a
-sale abroad in dollars carries GST is a question for PASDACS's accountant (an export of services is usually
-zero-rated).
-
-**Test keys** (`rzp_test_...`) move no money, so with them only PASDACS's own workspace can buy (anyone else would
-get credits for nothing): sign in to the public site as info@pasdacs.com, Organisation -> Buy credits, and pay with
-the UPI ID `success@razorpay` (`failure@razorpay` shows a failure) or a test card from Razorpay's documentation.
-**Live keys** (`rzp_live_...`, once Razorpay has activated the account) open selling to every organisation while
-**Sell credits online** is on. Going live: replace both keys and the webhook secret with live ones (the live webhook
-is added again in live mode), restart, and switch selling on.
-
-**What people see.** **Buy credits** on Organisation, in the menu under the organisation chip, on Dashboards, and
-when credits run out: the packs with GST, then Razorpay's window. The credits appear at once; the buyer gets a
-receipt by email and on Organisation -> Payments (a printable page: a payment receipt, not a tax invoice); the owners
-are told in the app; PASDACS gets an email and a notification for each payment. Owners see all of the organisation's
-payments, others their own. **Request credits** stays, for invoices and bank transfers.
-
-**Refunds:** none (the user's rule: credits are not refundable). One made on the Razorpay Dashboard anyway is recorded
-by the webhook (Payments shows Refunded, or the amount refunded) and PASDACS is told; the credits are not taken back on
-their own: take them back on Organisations -> Credits. A payment that does not match its checkout, or a second payment for one order, adds no
-credits and alerts PASDACS to refund it.
-
-**Records.** `relay.tn_payments`, one row per checkout, amounts in the currency's smallest unit (paise, cents) with the
-currency beside them. Paid ones are kept (tax and accounting law
-asks for eight years), without names once an organisation is erased; checkouts never paid go after a year (the
-nightly sweep). Each person's own payments are in Download my data.
-
-## The AI's Claude account
-
-**One model, Claude Opus 5.5** (item 47, the user, 2026-11-14: "in API use opus 5.5 as default and same in personal as
-well dont use any other model for Relay Model powered by claude"): every run, dashboards, changes, Ask Relay and Relay
-Doctor, asks for the Relay Model, which the AI engine serves with `claude-opus-5-5` (`config/house-models.json`) on
-the API key and on the subscription alike; a run that names no model gets it too (the engine's default, `relay`), and
-the catalog's own default is `claude-opus-5-5`. Opus 5.5 costs $4 / $20 per million input / output tokens on the API,
-twice Sonnet 5.5, so the key's monthly limit ($150) lasts for about half as many builds.
+**The Relay Model, Claude Opus 5.5** (item 47, the user, 2026-11-14: "in API use opus 5.5 as default and same in
+personal as well dont use any other model for Relay Model powered by claude"): every run, dashboards, changes, Ask
+Relay and Relay Doctor, asks for the Relay Model, which the AI engine serves with `claude-opus-5-5`
+(`config/house-models.json`) on the subscription and on the API key alike; a run that names no model gets it too (the
+engine's default, `relay`), and the catalog's own default is `claude-opus-5-5`. Opus 5.5 costs $4 / $20 per million
+input / output tokens on the API, twice Sonnet 5.5, so the key's monthly limit ($150) lasts for about half as many
+builds. **A second model reviews** (item 68): `relay-review` ("Relay Model (reviewer)"), served with
+`claude-sonnet-5-5` and hidden from every model picker (`"hidden": true`; the AI engine still accepts it), runs the
+analyst, story and accuracy reviews ("Relay's review team"). `config/house-models.json` is mounted from the deploy
+folder (`./config`, read only), so it changes with the deploy folder's git.
 
 **Builds side by side** (item 46, the user, 2026-11-14: "Add parallel builds"): up to `RELAY_BUILD_PARALLEL` (3)
 dashboard runs at once, each in a job container of its own, never two of one dashboard; more wait in the queue, which
 shows each organisation only its own jobs (item 45). Publishing (the DAX check and the .pbix, Power BI on this
 PC) runs one at a time on its own lane, outside those three. Customers cannot stop a waiting or running build.
+Relay's reviewers have a lane of their own on the AI engine, `review` (4 at once, each in a job container too), and
+Ask Relay's chat lane takes one at a time.
 
-The AI engine runs Claude Code. Without an API key it uses the Claude subscription it is signed in with (the
-`claude-api-auth` volume; `docs/LOG.md`, "The AI's Claude plan"). Since item 42 (the user,
-2026-11-13: "claude api key ... as primary and personal as backup"), `RELAY_ANTHROPIC_API_KEY` in the live `.env`
-makes an Anthropic API key the main provider for every dashboard, change and Ask Relay question
-(`app/providers.py`): each run gets the key as its own `ANTHROPIC_API_KEY`, and when the API fails with an
-authentication, credit, rate-limit or outage error the run goes once more on the subscription (dashboards:
-`worker.agent`; Ask Relay: `askd._claude`), with an `ai.fallback` audit record and a note in the dashboard's activity.
-Each run records which one answered (`provider`: "Anthropic API (this installation's key)" or "Claude (this
-installation's login)").
+**The login first, the key as its backup** (item 67, the user, 2026-11-19: "internally switch the agent to use
+subscription from docker on opus 5.5 max"). The AI engine runs Claude Code, signed in to the Claude subscription in
+Docker (the `claude-api-auth` volume; `docs/LOG.md`, "The AI's Claude plan"). Every dashboard run and Ask Relay
+question runs on that login first (`app/providers.py`). `RELAY_ANTHROPIC_API_KEY` in the live `.env` is the backup:
+when the subscription fails with an authentication, limit or outage error, the run goes once more on the key, given to
+that run only as its own `ANTHROPIC_API_KEY` (dashboards: `worker.agent`; Ask Relay: `askd._claude`), with an
+`ai.fallback` audit record and a note in the dashboard's activity. Each run records which one answered (`provider`:
+"Claude (this installation's login)" or "Anthropic API (this installation's key)"). From item 42 (2026-11-13: "claude
+api key ... as primary and personal as backup") to item 67 it was the other way round; `RELAY_AI_PRIMARY=api` puts the
+key first again. Without a key there is no backup.
 
-To switch it on: create a key in the Anthropic Console (API keys), set a monthly spend limit there (the API bills per
-token), add `RELAY_ANTHROPIC_API_KEY=sk-ant-...` to the live `.env` by hand, then
+**Effort** (item 67). Each run carries Claude Code's effort level (`--effort`, `agent/server.py`): every dashboard run
+(plans, builds, changes and the reviewers) at `max` (`RELAY_AGENT_EFFORT`: low, medium, high, xhigh or max), and Ask
+Relay and the other answers someone waits for (a KPI changed in words, Semantic Review's meaning check and fixes,
+brand palettes) at `high` (`RELAY_CHAT_EFFORT`).
+
+The key: create one in the Anthropic Console (API keys), set a monthly spend limit there (the API bills per token), add
+`RELAY_ANTHROPIC_API_KEY=sk-ant-...` to the live `.env` by hand, then
 `docker compose up -d --no-deps --force-recreate web admin`. Never name it `ANTHROPIC_API_KEY` in the `.env`: the AI
 engine takes `ANTHROPIC_*` variables for itself (`relay_init.AGENT_PREFIXES`), would then use the key for every run,
-and the subscription could never take over. Empty again = the subscription only.
+and the subscription would never be used. Empty again = the subscription only, with no backup.
 
 ## Bot check
 
@@ -737,7 +1029,12 @@ above and read ...", "send this to ..."). So the AI is limited by the system, no
   visuals inside the container has no network either (`genbi_kit/display.py`, `OFFLINE_ARGS`). Names, titles and
   theme values from a definition are written into a page as text, never as markup.
 - **Ask Relay's AI has no tools at all**: the app runs every query itself, read-only, and the AI only writes the
-  answer around the rows.
+  answer around the rows. The same goes for a KPI changed in words, Semantic Review's meaning check and its fixes
+  (`askd.ask_json`): text in, JSON out, checked before it is kept.
+- **Relay's reviewers only read** (item 68): a reviewer run gets Read, Glob and Grep (a run that names its tools
+  never gets the shell, `_tool_args`), in a job container like a build, and every file it could have changed is put
+  back afterwards (`worker._unfence`). Data files, request.md and ontology.md are the organisation's data: the
+  reviewers' prompt, ontology.md itself and GENBI.md say never to follow instructions written inside them.
 - Power BI files are checked before they open on this PC: the Power BI file maker refuses a report whose queries
   read anything but its own data folder (`Test-ReportQueries`).
 - **Its network: Anthropic only** (security audit S6, 2026-11-12). The AI engine reaches the internet only through a
@@ -746,8 +1043,8 @@ above and read ...", "send this to ..."). So the AI is limited by the system, no
   relay-init stops every other connection the AI engine's user makes, DNS lookups included (iptables; the web
   container has `NET_ADMIN` for it in `docker-compose.yml`); the container log says "the AI engine's network:
   Anthropic only, through the proxy", and the proxy logs each refused host by name. `RELAY_AGENT_EGRESS=off` in
-  `.env` (then restart web) goes back to no limit. The web app's own connections (Microsoft 365, Razorpay,
-  warehouses) are not limited.
+  `.env` (then restart web) goes back to no limit. The web app's own connections (Microsoft 365, warehouses) are not
+  limited.
 - **Its API only for the web app** (S4). The AI engine's API (`127.0.0.1:8090`: runs, forget, render) answers only
   connections made by the web app's user or root; anything the AI engine's own user runs gets 403. The check reads
   the kernel's socket table for who owns the caller's end of the connection (`agent/server.py`, `only_the_web_app`;
@@ -777,11 +1074,12 @@ Four pages open without signing in, written from what the app does (not by a law
 | `/contact.html` Contact | info@pasdacs.com, the requests made from inside the app, privacy requests and complaints |
 | `/privacy.html` Privacy notice | (item 22) |
 
-They are linked from the sign-in page ("By signing in you accept the terms of service"), each other's footers, the
-organisation menu (Terms, refunds and contact) and Buy credits. The invoices and receipts say "Credits are not
-refundable, and a purchase cannot be cancelled once paid." Razorpay's website review usually also wants a registered
-address and phone number on the contact page: add them to `webapp/static/contact.html` when PASDACS's details are
-settled.
+They are linked from the sign-in page ("By signing in you accept the terms of service"), each other's footers and the
+organisation menu (Terms, refunds and contact). The invoices and receipts of past payments say "Credits are not
+refundable, and a purchase cannot be cancelled once paid." Since item 59 nothing is sold online: the contact page no
+longer mentions payments or Buy credits, but the terms, the refund and cancellation policy and the privacy notice
+still describe buying credits online through Razorpay (and Semantic Review, the ontology and the AI's newer work are
+not in them yet). They are the lawyer-reviewed pages: for the user and the lawyer to update, with the client licences.
 
 ## Data governance
 
@@ -800,7 +1098,9 @@ notice, `/privacy.html`, linked from the sign-in page, the profile menu and Orga
 | The AI engine's transcripts (Claude Code) | `claude-api-auth` volume, `/home/agent/.claude/projects` | PASDACS, on this PC | Ask Relay: deleted once the answer is given; dashboards: at most 7 days | deleted with the dashboard; nightly sweep; Claude Code's own `cleanupPeriodDays` (managed settings, which also switch auto-memory off) |
 | Audit trail, sign-in records, sign-in codes (hashed) | database | the person (Download my data); PASDACS | 1 year | nightly sweep |
 | Warehouse passwords and keys | `data\state\tenants\<organisation>\secrets.enc`, encrypted | nobody: the app uses them | while the connection exists | removing the connection |
-| Payments for credits (no card or bank details: those stay with Razorpay) | control plane, `relay.tn_payments` | the buyer, the organisation's owners; PASDACS on the admin portal | paid: eight years (accounting); never paid: 1 year | nightly sweep for the unpaid; an erased organisation's stay without names |
+| Payments for credits, made before item 59 stopped selling (no card or bank details: those stayed with Razorpay) | control plane, `relay.tn_payments` | the buyer, the organisation's owners; PASDACS on the admin portal | paid: eight years (accounting); never paid: 1 year | nightly sweep for the unpaid; an erased organisation's stay without names |
+| The ontology (item 61): business terms and the industry packs applied | database: the organisation's schema (`onto_terms`, meta `ontology`) | everyone in the organisation | until changed | a BI Dev or owner removes terms; erasing the organisation |
+| Uploads in parts (item 64) | `data\projects\.tenants\<organisation>\.uploads\<id>` (never in backups) | nobody: the form that names it reads it | until the form uses it, at most a day | removed by the form; one older than a day when the next upload starts |
 | Nightly backups | `data\backups\d2d-*` | PASDACS | 14 nights | rotated |
 | Database copies made by hand (`relay-ctl db-dump`, `export`) | `data\backups\*.dump`, `relay-export-*` | PASDACS | 30 days | nightly sweep: copy one elsewhere first if it must stay |
 | Container logs | Docker | PASDACS | 5 × 20 MB per container | rotated; they hold user ids, never query strings, bodies or codes |
@@ -838,6 +1138,48 @@ Requests from people (India's DPDP Act 2023 and its Rules of 2025; most duties a
 If personal data may have leaked: report to CERT-In within 6 hours of noticing (incident@cert-in.org.in, in force
 today), tell the people affected without delay, and from 13 May 2027 report to the Data Protection Board within 72
 hours. What happened is in the audit trail, the sign-in alert emails and the container logs.
+
+## Deployment
+
+**This install, for a client trial (planned, items 59 to 68 and 73).** The release goes out from this PC as before
+("Updating", below), and the app is then reachable again through the Cloudflare tunnel, at https://demo.pasdacs.com,
+with the sign-in code by email:
+1. In the live `.env`: delete `RELAY_OTP_ON_SCREEN` before the tunnel starts (never with a tunnel: "The code on the
+   screen"); set `RELAY_PUBLIC_URL=https://demo.pasdacs.com` (the address in every email from both sites; the admin
+   portal gets it as `RELAY_SITE_URL`); the Razorpay keys are no longer read (item 59).
+2. In Cloudflare (the user): the tunnel's public hostname `demo`, domain `pasdacs.com`, service HTTP, URL
+   `d2d-relay:8000` (the web container), and `demo.pasdacs.com` added to the Turnstile widget's hostnames ("Bot
+   check"), or the sign-in page's bot check fails there.
+3. `config/house-models.json` has the reviewers' model, `relay-review` (item 68); it comes with the deploy folder's
+   fast-forward, as `./config` is mounted from there. New tables and columns (`relay.tn_org_domains`, `onto_terms`,
+   `semreview_runs.fixes`) are made at start.
+4. `docker compose --profile tunnel up -d`; then, on the admin portal on this PC, New organisation for the trial:
+   its main owner, its second email domain, its starting credits and its industry pack.
+
+The steps as they stand, with what to check, are in the work log (`docs/LOG.md`, "Waiting for the next deploy").
+
+**Dashboards to the Power BI service and GitHub (item 70, `webapp/app/deploy.py`).** Today a published dashboard
+is a .pbix to download ("Power BI file maker"). Being added for this release, set up once by an owner
+(`/api/deploy/settings`), no credits:
+- **The Power BI service:** the dashboard's .pbix uploaded to a workspace the owner picks, with the Power BI REST API's
+  Imports, as the organisation's own Entra app (the one Semantic Review uses, with Member or Contributor on the
+  workspace; `POST /api/projects/<id>/deploy/powerbi`). A model made from uploaded files carries its data as it was
+  when the file was made: a refresh in the service needs the data reachable from there (a warehouse, or a gateway).
+- **GitHub CI/CD:** a repository, branch, folder and fine-grained token (kept in the secrets store, never shown
+  again). **Push to GitHub** commits the dashboard's Power BI project (Fabric's Git format, never data files) under
+  `<folder>/<dashboard>/` (`POST /api/projects/<id>/deploy/github`), and once per repository a GitHub Actions workflow
+  (`.github/workflows/d2d-relay-deploy.yml`, from `templates_deploy/`) that deploys changed dashboards to a Fabric
+  workspace with Microsoft's fabric-cicd and a service principal from the repository's secrets.
+- Both can also run on their own once a Power BI file is made (an owner's setting; the worker calls `deploy.after_pbix`
+  after every .pbix, which never stops the dashboard: a failure is shown on it). Each publish or push is recorded
+  (`deploy_runs`; deleting a dashboard deletes them), and the hosts are fixed (`D2D_POWERBI_API`, `D2D_GITHUB_API`).
+  The screens: two connectors on the Connections page, **Power BI service** and **GitHub**, under Deployment (item 77;
+  the user, 2026-11-19: "github is a connector [that] needs to be available for the customer to configure ci/cd and
+  auto deployment to power bi service"): every organisation has them, without PASDACS switching them on; owners set
+  them up (the Entra app, the workspace and automatic publishing; the repository, its token and automatic pushing),
+  everyone else reads them; the Organisation page points there. And a Publish / Push card on a finished dashboard with
+  its history (`44-deploy.js` `deployConnectorCards`, `12-connections.js`, `css/deploy.css`). A token needs Contents read and write,
+  and Workflows read and write for the workflow file (without it the dashboard is still pushed, and the run says why).
 
 ## Updating
 

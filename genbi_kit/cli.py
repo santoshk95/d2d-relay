@@ -1,4 +1,4 @@
-"""`genbi` - the command line the Claude agent uses inside a project folder.
+"""`genbi` - the command line Relay Model uses inside a project folder.
 
     genbi profile                      profile data/*.csv -> profile.md (tables, keys, relationships)
     genbi datagen [--check]            demo data: the tables of datagen.yaml -> data/*.csv (datagen.py)
@@ -8,7 +8,7 @@
     genbi build --data-folder PATH     write the Power BI project to powerbi/
     genbi daxcheck                     every measure and visual query evaluated in Power BI's own engine
     genbi gates [--no-dax]             every review gate the app runs before review and publishing (gates.py)
-    genbi catalog [type ...]           the visuals (Gen BI, Visual Atlas, visual library, this project's own):
+    genbi catalog [type ...]           the visuals (Relay visuals, Relay visual families, visual library, this project's own):
                                        chart types, field wells, format options
     genbi visual new|edit|build|test|list|source ...   build a new custom visual (see vfactory.py)
     genbi read <path> [...]            what an attachment says: docx, xlsx/csv, pptx, pdf, images, video frames,
@@ -17,6 +17,7 @@
     genbi doc build|check [doc.yaml]   a document from YAML -> .docx + HTML twin + check.json
     genbi repo clone|index|branch|status|commit|diff|log|scan|push   git through the toolkit for AI SDLC (repo.py; P16)
 """
+import re
 import argparse
 import json
 import os
@@ -55,7 +56,12 @@ def cmd_profile(_):
     print(profile(CWD))
 
 
+READ_ONLY_SQL = re.compile(r"^\s*(?:--[^\n]*\n\s*|/\*.*?\*/\s*)*(select|with|describe|summarize|show|explain|values|table|from)\b", re.I | re.S)
+
+
 def cmd_sql(args):
+    if os.environ.get("GENBI_READONLY") == "1" and (not READ_ONLY_SQL.match(args.query or "") or ";" in (args.query or "").strip().rstrip(";")):
+        sys.exit("genbi sql is read-only here: one SELECT (or WITH ... SELECT, DESCRIBE, SUMMARIZE) at a time.")
     defn = None
     if (CWD / "definition.yaml").exists():
         try:
@@ -261,7 +267,7 @@ def cmd_catalog(args):
         print("\nPower BI's own visuals: `genbi catalog pbi` lists them (pbi.cardVisual, pbi.clusteredColumnChart, pbi.lineChart, "
               "pbi.donutChart, pbi.pivotTable, ... - 31 types)")
         fields = lambda v: ", ".join(f"{r}{'*' if any(r in g for g in v['required']) else ''}" for r in v["roles"])
-        print("\nVisual Atlas visuals (type + chart; Power BI container with title/subtitle; see `genbi catalog <type>`):")
+        print("\nRelay visual families (type + chart; Power BI container with title/subtitle; see `genbi catalog <type>`):")
         for name, v in cat.items():
             if v.get("origin") == "atlas":
                 print(f"  {name}: chart = {' | '.join(v['chart_types'])}\n      fields: {fields(v)}")
@@ -318,7 +324,7 @@ def _v_created(dest: Path, how: str, name: str) -> None:
     print(f"created {rel}/ {how}:")
     for f in sorted(p for p in dest.rglob("*") if p.is_file() and "common" not in p.relative_to(dest).parts):
         print(f"  {f.relative_to(CWD).as_posix()}")
-    print(f"  {rel}/src/common/  the Visual Atlas framework: read it, never edit it (every build refreshes it)")
+    print(f"  {rel}/src/common/  the Relay visuals' framework: read it, never edit it (every build refreshes it)")
     print(f"next: edit caps.js and src/*.ts, then `genbi visual build {name}` and `genbi visual test {name}`")
 
 
@@ -481,12 +487,12 @@ def main(argv=None):
     q.add_argument("name", help="the visual type, camelCase (e.g. radialBars)")
     q.add_argument("--title", default="", help="display name in Power BI")
     q.add_argument("--description", default="")
-    q.add_argument("--like", default="starter", help="starter, an Atlas family or a library visual to start from")
+    q.add_argument("--like", default="starter", help="starter, a Relay visual family or a library visual to start from")
     vs.add_parser("edit", help="copy a library visual into the project to change it").add_argument("name")
     vs.add_parser("build", help="compile and package with pbiviz").add_argument("name")
     vs.add_parser("test", help="render in headless Chromium, screenshot to visuals/<name>/test.png").add_argument("name")
     vs.add_parser("list", help="this project's custom visuals and the visual library")
-    q = vs.add_parser("source", help="print a template's source (starter, an Atlas family, common, a library visual)")
+    q = vs.add_parser("source", help="print a template's source (starter, a Relay visual family, common, a library visual)")
     q.add_argument("name")
     q.add_argument("file", nargs="?")
     p.set_defaults(fn=cmd_visual)

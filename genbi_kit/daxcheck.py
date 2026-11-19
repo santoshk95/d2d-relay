@@ -215,7 +215,7 @@ def differences(dd: dict, con, catalog: dict, report: dict) -> list[str]:
             if not q or not sql:
                 continue
             try:
-                rows = prototype.records(con, sql)
+                rows = prototype.records(con, sql, dd)       # item 76: at the report's default selection, as Power BI
             except Exception:  # noqa: BLE001 - the prototype check reports broken SQL
                 continue
             groups, measures = _visual_fields(v, catalog, (dd.get("theme") or {}).get("styles"))
@@ -275,7 +275,7 @@ def run(project: Path, dd: dict, catalog: dict, timeout: int = 300) -> dict:
         if time.time() > deadline:
             for f in (req / f"{rid}.json", req / f"{rid}.model.json"):
                 f.unlink(missing_ok=True)
-            raise CheckError(f"the DAX checker did not answer within {timeout // 60} minutes")
+            raise CheckError(f"Power BI's own engine did not answer within {timeout // 60} minutes")
         time.sleep(0.5)
     report = json.loads(result.read_text(encoding="utf-8-sig"))
     result.unlink(missing_ok=True)

@@ -38,6 +38,11 @@ function applyBrand() {
     : isAdminPortal() ? [h('span', {class: 'faint'}, 'D2D Relay admin - PASDACS only')]
     : [markEl(), h('span', {class: 'faint', style: 'line-height:1.35', title: 'D2D Relay: D2D means Data to Decision, a product of the Relay Platform by PASDACS'},
         'A Relay Platform product', h('br'), 'by PASDACS')]));
+  // the user, 2026-11-19: "have option to start tutorial or guide always above this, so they can get to know the platform
+  // as its new": the first-time tour (38-tour.js), from its first step, always one click away above the foot of the rail
+  if (!isAdminPortal() && !$('#tourlink')) $('#powered').before(h('a', {id: 'tourlink', class: 'tourlink', href: '#/welcome',
+    onclick: e => { setDrawer(false); if (location.hash === '#/welcome' && typeof coachStart === 'function') { e.preventDefault(); coachStart('welcome'); } }},
+    icon('play'), h('span', {class: 'lbl'}, h('b', {}, 'Take the tour'), h('small', {}, 'Step-by-step guides'))));
 }
 /* the look: 'light', 'dark' or 'system' (the device's setting, followed when it changes); keep: show it, don't save it */
 const darkDevice = () => { try { return matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { return false; } };
@@ -70,11 +75,14 @@ function navGroups(route) {          // D2D Relay: dashboards, Ask Relay, brandi
     ['#/requests', 'send', 'Requests', route === '#/requests'],
     ['#/payments', 'coin', 'Payments', route === '#/payments'],        // credits bought online (37-payments.js)
     ['#/notifications', 'bell', 'Notifications', route === '#/notifications']]}];
-  const top = {id: 'top', label: '', items: [['#/d2d', 'chart', 'Dashboards', routeOn('#/') || on('#/d2d') || !!S.pid]]};
-  if (me.builder !== false) top.items.push(['#/new', 'plus', 'New dashboard', on('#/new')]);
+  const top = {id: 'top', label: '', items: [['#/', 'home', 'Home', isHome()], ['#/d2d', 'chart', 'Dashboards', on('#/d2d') || !!S.pid]]};   // item 88: Home first
+  // item 84: New dashboard is the button above the menu (#newbtn), not a second menu item
   top.items.push(['#/askd', 'spark', 'Ask Relay', on('#/askd')]);
   top.items.push(['#/review', 'scale', 'Semantic Review', on('#/review')]);   // item 55: models against the KPI dictionary (40-review.js)
+  top.items.push(['#/ontology', 'layers', 'Ontology', on('#/ontology')]);
+  top.items.push(['#/visuals', 'grid', 'Relay Visual', on('#/visuals')]);   // item 86: the Relay custom visuals, view only (03-home.js)   // item 61: business terms, industry packs, KPIs (42-ontology.js)
   top.items.push(['#/migration', 'swap', 'Migration D2D', route === '#/migration']);   // moving dashboards between BI tools (39-migration.js)
+  top.items.push(['#/dawb', 'db', 'DAWB', route === '#/dawb', {state: 'soon', tip: 'DAWB, the Data Analytics Work Bench: coming soon'}]);   // 39-migration.js
   const setup = [['#/org', 'building', 'Organisation', route === '#/org'],       // D2D Relay: owner, people, credits (36-org.js)
     ['#/branding', 'palette', 'Branding', on('#/branding')],
     ['#/connections', 'plug', 'Connections', on('#/connections')],
@@ -115,10 +123,10 @@ function renderShell() {
   bell.setAttribute('aria-label', S.unread ? `Notifications, ${S.unread} unread` : 'Notifications');
   const link = ([href, ic, label, on, extra]) => {
     const st = extra && extra.state;
-    return h('a', {href, class: on ? 'on' : '', 'aria-current': on ? 'page' : null, 'data-tip': label, 'aria-label': label + (st === 'planned' ? ' (planned)' : st === 'preview' ? ' (preview)' : st === 'locked' ? ' (not in your plan)' : ''),
+    return h('a', {href, class: on ? 'on' : '', 'aria-current': on ? 'page' : null, 'data-tip': label, 'aria-label': label + (st === 'planned' ? ' (planned)' : st === 'soon' ? ' (coming soon)' : st === 'preview' ? ' (preview)' : st === 'locked' ? ' (not in your plan)' : ''),
         title: extra && extra.tip ? extra.tip : null},
       icon(ic), h('span', {class: 'lbl'}, label),
-      st === 'planned' ? h('span', {class: 'plan lbl'}, 'Planned') : st === 'preview' ? h('span', {class: 'plan lbl'}, 'Preview') : st === 'locked' ? h('span', {class: 'plan lbl'}, 'Not in plan') : null,
+      st === 'planned' ? h('span', {class: 'plan lbl'}, 'Planned') : st === 'soon' ? h('span', {class: 'plan lbl'}, 'Soon') : st === 'preview' ? h('span', {class: 'plan lbl'}, 'Preview') : st === 'locked' ? h('span', {class: 'plan lbl'}, 'Not in plan') : null,
       extra && extra.badge ? h('span', {class: 'nbadge', 'aria-label': `${extra.badge} waiting`}, extra.badge > 99 ? '99+' : extra.badge) : null);
   };
   $('#nav').replaceChildren(...navGroups(route).map(g => {
@@ -186,7 +194,7 @@ async function refreshList() {
   try {
     const ps = await api('/api/projects'), sig = JSON.stringify(ps), changed = sig !== S.psig;
     S.psig = sig; S.projects = ps; renderShell();
-    if (changed && isDash()) renderDashboards();          // only when something changed: keeps the scroll position
+    if (changed && isDash()) (isHome() ? renderD2DHome() : renderDashboards());          // only when something changed: keeps the scroll position
   } catch (e) {}
 }
 async function refreshSys() {
@@ -194,12 +202,12 @@ async function refreshSys() {
   try {
     const r = S.health = await api('/api/health'), ag = r.agent || {};
     a.className = 'health ' + (!ag.ok ? 'down' : ag.busy ? 'busy' : 'ok');
-    $('span', a).textContent = !ag.ok ? 'Agent offline' : ag.busy ? 'Agent running' + (r.running_model && modelName(r.running_model) ? ` - ${modelName(r.running_model)}` : '')
-      + (r.queue ? ` - ${r.queue} waiting` : '') : r.queue ? 'In the queue' : 'Agents ready';      // item 45: own jobs only
+    $('span', a).textContent = !ag.ok ? 'Relay Model offline' : ag.busy ? 'Working' + (r.running_model && modelName(r.running_model) ? ` - ${modelName(r.running_model)}` : '')
+      + (r.queue ? ' - more starting shortly' : '') : r.queue ? 'Starting shortly' : 'Relay Model ready';      // item 45: own jobs only
     d.className = 'health ' + (!r.daxcheck ? 'down' : r.daxcheck.state === 'checking' ? 'busy' : 'ok');
-    $('span', d).textContent = !r.daxcheck ? 'DAX checker off' : r.daxcheck.state === 'checking' ? 'Checking DAX...' : 'DAX checker on';
+    $('span', d).textContent = !r.daxcheck ? 'Number checks paused' : r.daxcheck.state === 'checking' ? 'Checking numbers...' : 'Number checks on';
     d.title = r.daxcheck ? "Power BI's own engine checks every measure and visual before a report is published"
-      : 'Start daxcheck\\start-daxcheck.cmd on this PC - publishing to Power BI needs it';
+      : "Checks in Power BI's own engine are paused for a moment; publishing needs them";
     a.title = a.dataset.tip = $('span', a).textContent; d.dataset.tip = $('span', d).textContent;
   } catch (e) { a.className = 'health down'; $('span', a).textContent = 'App offline'; }
   if (S.me && S.me.builder !== false && moduleById('validate')) {     // D2D Relay has no validation queue
@@ -228,13 +236,17 @@ function route() {
   }
   if (!pid) document.title = 'D2D Relay';
   // D2D Relay: only these screens exist; anything else (old links, bookmarks) opens the dashboards list
-  const D2D_ROUTES = ['#/new', '#/d2d', '#/askd', '#/branding', '#/notifications', '#/connections', '#/p/', '#/org', '#/setup', '#/welcome', '#/migration', '#/review'];
+  const D2D_ROUTES = ['#/new', '#/d2d', '#/askd', '#/branding', '#/notifications', '#/connections', '#/p/', '#/org', '#/setup', '#/welcome', '#/migration', '#/review', '#/ontology', '#/visuals', '#/dawb'];
   if (typeof srLeave === 'function' && !location.hash.startsWith('#/review')) srLeave();   // item 55: a review page stops polling when left
   if (location.hash === '#/review' || location.hash.startsWith('#/review/')) return renderReview();   // Semantic Review (40-review.js)
+  if (location.hash === '#/ontology' || location.hash.startsWith('#/ontology/')) return renderOntology();   // item 61 (42-ontology.js)
+  if (location.hash === '#/visuals') return renderVisualGallery();                 // item 86 (03-home.js)
   if (location.hash.startsWith('#/branding')) return renderBranding();
   if (location.hash === '#/org') return renderOrg();                               // D2D Relay: organisations and credits (36-org.js)
   if (location.hash === '#/welcome' || location.hash === '#/setup') return renderTour();   // the first-time tour (38-tour.js)
   if (location.hash === '#/migration') return renderMigration();                   // Migration D2D (39-migration.js)
+  if (location.hash === '#/dawb') return renderDawb();                             // DAWB, coming soon (39-migration.js)
+  if (isHome()) return renderD2DHome();                                             // item 88: the front page is Home (03-home.js)
   if (!pid && !D2D_ROUTES.some(r => location.hash === r || location.hash.startsWith(r.endsWith('/') ? r : r + '/'))) {
     if (location.hash && location.hash !== '#/' && location.hash !== '#') { history.replaceState(null, '', '#/d2d'); }
     return renderDashboards();

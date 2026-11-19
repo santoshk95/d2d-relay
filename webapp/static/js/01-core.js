@@ -1,9 +1,9 @@
 /* ---------------- constants and state ---------------- */
 const RUN = new Set(['queued', 'extracting', 'generating_data', 'planning', 'building', 'revising', 'building_pbi']);
-const STATUS = {queued: ['Queued', 'run'], extracting: ['Pulling warehouse data', 'run'], generating_data: ['Generating data', 'run'], planning: ['Planning', 'run'], awaiting_kpis: ['Confirm KPIs', 'you'],
+const STATUS = {queued: ['Starting shortly', 'run'], extracting: ['Pulling warehouse data', 'run'], generating_data: ['Generating data', 'run'], planning: ['Planning', 'run'], awaiting_kpis: ['Confirm KPIs', 'you'],
   building: ['Building prototype', 'run'], awaiting_review: ['Ready for review', 'you'], revising: ['Applying changes', 'run'],
   building_pbi: ['Publishing', 'run'], done: ['Published', 'ok'], error: ['Needs attention', 'err']};
-const STAGES = {extract: 'Warehouse data', data: 'Demo data', plan: 'Plan', build: 'Build', revise: 'Change request', pbi: 'Power BI', check: 'Review gates'};
+const STAGES = {extract: 'Warehouse data', data: 'Demo data', plan: 'Plan', build: 'Build', revise: 'Change request', pbi: 'Power BI', check: 'Review gates', review: 'Review team'};
 const STEPS = ['Plan', 'Confirm KPIs', 'Prototype', 'Review', 'Power BI'];
 const TABS = [['overview', 'Overview'], ['plan', 'Plan'], ['versions', 'Versions'], ['activity', 'Activity'], ['details', 'Details']];
 const FILES = {'request.md': 'Request and decisions', 'plan.yaml': 'Plan', 'definition.yaml': 'Report definition',
@@ -29,6 +29,7 @@ function h(tag, attrs, ...kids) {
   return el;
 }
 const ICONS = {
+  home: 'M4 11l8-7 8 7M6 9.5V20h4.5v-6h3v6H18V9.5',      // item 88
   grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', plus: 'M12 5v14M5 12h14', layers: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5',
   external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5', check: 'M5 12l5 5L20 7',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', spark: 'M20 12a8 8 0 0 1-11.7 7.1L4 20l1-4.2A8 8 0 1 1 20 12zM8.5 10.5h7M8.5 13.5h4.5', thumbup: 'M7 11v9H4v-9zM7 11l4-7a2 2 0 0 1 3 2l-1 4h5.5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 17.3 20H7', thumbdown: 'M7 13V4H4v9zM7 13l4 7a2 2 0 0 0 3-2l-1-4h5.5a2 2 0 0 0 2-2.3l-1.2-6A2 2 0 0 0 17.3 4H7', clip: 'M20.5 11.5l-8.2 8.2a5 5 0 0 1-7.1-7.1l8.2-8.2a3.4 3.4 0 0 1 4.8 4.8l-8.2 8.2a1.7 1.7 0 0 1-2.4-2.4l7.5-7.5', image: 'M4 5h16v14H4zM4 15l4.5-4.5 4 4L16 11l4 4M9 9.5h.01', table: 'M4 5h16v14H4zM4 10h16M4 14.5h16M10 5v14',
@@ -143,7 +144,57 @@ function attacher() {
   };
   return {input, list, button, dropOn, files: () => picked};
 }
-function upload(url, fd, onProgress) {
+/* item 64: files over BIG_FILE go to the server first in parts (Cloudflare refuses a request over 100 MB; app/uploads.py),
+   each part retried on its own; the form then carries {field, id} for each in `uploads`. One progress over everything. */
+const BIG_FILE = 4 * 1024 * 1024;
+function sendPart(url, blob, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = ev => { if (ev.lengthComputable && onProgress) onProgress(ev.loaded / ev.total); };
+    xhr.onload = () => {
+      let r = {}; try { r = JSON.parse(xhr.responseText); } catch (e) {}
+      if (xhr.status === 401) { toSignIn(); return reject(Object.assign(new Error('Signed out'), {final: true})); }
+      if (xhr.status === 200) resolve(r);
+      else reject(Object.assign(new Error(r.detail || `Upload failed (${xhr.status})`), {final: xhr.status >= 400 && xhr.status < 500 && xhr.status !== 408 && xhr.status !== 429}));
+    };
+    xhr.onerror = () => reject(new Error('The connection dropped'));
+    xhr.open('PUT', url); xhr.send(blob);
+  });
+}
+async function uploadParts(file, onProgress) {
+  const s = await api('/api/uploads', {json: {name: file.name, size: file.size}});
+  const part = s.part_size, n = s.parts;
+  for (let i = 0; i < n; i++) {
+    const blob = file.slice(i * part, Math.min(file.size, (i + 1) * part));
+    for (let attempt = 0; ; attempt++) {
+      try { await sendPart(`/api/uploads/${s.id}/${i}`, blob, p => onProgress && onProgress((i * part + p * blob.size) / file.size)); break; }
+      catch (e) {
+        if (e.final || attempt >= 4) throw new Error(`"${file.name}": ${e.message}`);
+        await new Promise(done => setTimeout(done, 1500 * (attempt + 1)));
+      }
+    }
+  }
+  return (await api(`/api/uploads/${s.id}/done`, {method: 'POST'})).id;
+}
+const PARTS_OK = /^\/api\/(projects(\/import|\/[^/]+\/(kpis|feedback))?|semreview\/runs)$/;   // the endpoints that read `uploads`
+async function upload(url, fd, onProgress) {
+  const entries = [...fd.entries()];
+  if (PARTS_OK.test(url) && entries.some(([, v]) => v instanceof File && v.size > BIG_FILE)) {
+    const total = entries.reduce((a, [, v]) => a + (v instanceof File ? v.size : 0), 0) || 1;
+    const out = new FormData(), ids = [];
+    let sent = 0;
+    for (const [k, v] of entries) {
+      if (v instanceof File && v.size > BIG_FILE) {
+        const id = await uploadParts(v, p => onProgress && onProgress(Math.min(0.99, (sent + p * v.size) / total)));
+        sent += v.size; ids.push({field: k, id});
+      } else out.append(k, v);
+    }
+    out.append('uploads', JSON.stringify(ids));
+    fd = out;
+  }
+  return sendForm(url, fd, onProgress);
+}
+function sendForm(url, fd, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.upload.onprogress = ev => { if (ev.lengthComputable && onProgress) onProgress(ev.loaded / ev.total); };

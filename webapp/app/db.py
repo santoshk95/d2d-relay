@@ -158,6 +158,8 @@ CREATE TABLE IF NOT EXISTS relay.tn_meta (key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS relay.tn_orgs (
   tenant_id TEXT PRIMARY KEY, name TEXT NOT NULL, domain TEXT UNIQUE NOT NULL, owner_id TEXT NOT NULL,
   credits INTEGER NOT NULL DEFAULT 0, setup_done INTEGER NOT NULL DEFAULT 0, created REAL NOT NULL, created_by TEXT);
+CREATE TABLE IF NOT EXISTS relay.tn_org_domains (
+  domain TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, added REAL NOT NULL, added_by TEXT);
 CREATE TABLE IF NOT EXISTS relay.tn_credits (
   id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, ts REAL NOT NULL,
   kind TEXT NOT NULL CHECK (kind IN ('start', 'charge', 'refund', 'adjust')), delta INTEGER NOT NULL,
@@ -179,6 +181,7 @@ CREATE TABLE IF NOT EXISTS relay.tn_invoice_seq (
   series TEXT NOT NULL, fy TEXT NOT NULL, last INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (series, fy));
 """
 # D2D Relay (orgs.py): tn_orgs = an organisation per tenant (its email domain, owner and pooled credits);
+# tn_org_domains = an organisation's other email domains (item 60: one organisation for a company with several);
 # tn_credits = every change to those credits (starting credits, charges, refunds, admin adjustments);
 # tn_credit_requests = what organisations asked for, and PASDACS's answer (credits are added by approving one);
 # tn_payments = credits bought online with Razorpay (payments.py): one row per checkout, amounts in the currency's

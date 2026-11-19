@@ -42,13 +42,15 @@ with sync_playwright() as p:
     out["download_email_ok"] = json.loads(open(path, encoding="utf-8").read())["you"]["email"]
     # Ask Relay: delete the conversation
     page.evaluate(f"location.hash = '#/askd/{thread}'")
-    page.wait_for_selector("text=Delete conversation", timeout=20000)
-    page.click("text=Delete conversation")
+    # item 66 (2026-11-19): Ask Relay's conversation has its own Rename and Delete (icon buttons); the list is the rail
+    page.wait_for_selector("button[title='Delete this conversation']", timeout=20000)
+    page.click("button[title='Delete this conversation']")
     page.wait_for_selector(".modal.confirm", timeout=5000)
+    out["askd_dialog"] = page.locator(".modal.confirm").inner_text()[:300]
     page.click(".modal.confirm button.danger")
     page.wait_for_timeout(2500)
     out["askd_hash_after"] = page.evaluate("location.hash")
-    out["askd_list_after"] = page.locator(".vlist").inner_text()[:300]
+    out["askd_list_after"] = page.locator(".askrail-list").inner_text()[:300] if page.locator(".askrail-list").count() else ""
     # the dashboard: Delete, the confirm dialog, then gone
     page.evaluate(f"location.hash = '#/p/{pid}'")
     page.wait_for_selector(".phead button:has-text('Delete')", timeout=20000)

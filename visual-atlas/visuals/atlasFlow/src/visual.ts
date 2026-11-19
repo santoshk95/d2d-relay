@@ -75,7 +75,7 @@ export class Visual implements IVisual {
             this.dataView = dv || null;
             if (!this.read(dv)) {
                 this.svg.style.display = "none";
-                landing(this.root, "Atlas Flow", [this.loc("Landing_Line1", "Add a Source, a Target and a Weight to draw a Sankey, chord or network."), this.loc("Landing_Line2", "Pick the chart type, look and palette in the Format pane.")]);
+                landing(this.root, "Relay Flow", [this.loc("Landing_Line1", "Add a Source, a Target and a Weight to draw a Sankey, chord or network."), this.loc("Landing_Line2", "Pick the chart type, look and palette in the Format pane.")]);
                 this.root.appendChild(this.svg);
             } else {
                 this.root.querySelectorAll(".atl-landing").forEach(n => n.remove());

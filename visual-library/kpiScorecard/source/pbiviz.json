@@ -4,7 +4,7 @@
     "displayName": "KPI Scorecard",
     "guid": "kpiScorecard81E39EAE947247F5A5439F12F35A4B97",
     "visualClassName": "Visual",
-    "version": "1.0.0.3",
+    "version": "1.0.0.4",
     "description": "Executive scorecard: one row per KPI with result, latest month, target, a coloured status chip and a sparkline",
     "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
     "gitHubUrl": ""

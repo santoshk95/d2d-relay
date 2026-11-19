@@ -168,14 +168,18 @@ def _mail(to: str, code: str) -> None:
     otp_mail.send(to, subject, html)
 
 
+PERSONAL_TEXT = ("D2D Relay is for organisations: personal workspaces are closed. Sign in with your work address, or write "
+                 "to info@pasdacs.com.")
+
+
 def _known(email: str) -> bool:
     """Whether a code goes to this address: it has an account (on the admin portal, one in PASDACS's own workspace), or
-    it is the platform admin's own address."""
+    it is the platform admin's own address. Item 83: never an account of a personal workspace (organisations only)."""
     if EMAIL and email == EMAIL:
         return True
     with db.use(db.PLATFORM):
         acct = db.one("SELECT home_tenant FROM relay.tn_accounts WHERE email = ?", (email,))
-    return bool(acct) and (acct["home_tenant"] == db.PLATFORM or not portal.ADMIN)
+    return bool(acct) and (acct["home_tenant"] == db.PLATFORM or not portal.ADMIN) and not auth.personal_tenant(acct["home_tenant"])
 
 
 def _like_sending() -> None:
@@ -299,6 +303,8 @@ def _account(email: str) -> tuple[str, dict] | JSONResponse | None:
         return _err("Your organisation's account has been closed. Write to info@pasdacs.com.", 403)
     if t["status"] == "suspended":
         return _err(f"{t['name']} is paused on D2D Relay. Write to info@pasdacs.com.", 403)
+    if auth.personal_tenant(tid):                    # item 83: D2D Relay is for organisations only
+        return _err(PERSONAL_TEXT, 403)
     with db.use(tid):
         u = db.one("SELECT * FROM users WHERE id = ?", (acct["user_id"],))
     if not u or not u["active"]:

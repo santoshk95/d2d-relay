@@ -13,7 +13,7 @@ import { FamilyVisual, Ctx } from "./common/family";
 import { DrillBar } from "./common/drill";
 
 export class Visual extends FamilyVisual<PartsSettings, Model> {
-    protected readonly title = "Atlas Parts";
+    protected readonly title = "Relay Parts";
     protected readonly landingLines: [string, string] = [
         "Add a field to Legend (the slices) and a measure to Values. Add a hierarchy such as Category and Subcategory to drill down.",
         "Add Details to split each slice into an outer ring. Pick pie or donut, labels and the center total in the Format pane."];

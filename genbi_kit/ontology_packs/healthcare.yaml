@@ -1,0 +1,481 @@
+# Industry pack: healthcare providers (hospitals and clinics). Business terms tag columns by name (genbi_kit/ontology.py);
+# KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields).
+name: Healthcare
+order: 30
+description: Hospitals, clinics and health systems. Admissions and encounters, length of stay, bed occupancy, readmissions, emergency and appointment waits, theatre use, quality, claims and the revenue cycle.
+questions:
+  - What is the average length of stay by service line and how has it changed over the last 12 months?
+  - Which wards have bed occupancy above 90 percent this month?
+  - What is the 30-day readmission rate by diagnosis and by hospital?
+  - How long do patients wait in the emergency department, and what share leave without being seen?
+  - Which payers have the highest claim denial rate, and what are the top denial reasons?
+  - How many days of revenue are sitting in accounts receivable, by facility?
+
+terms:
+  # ---------------- measures: activity and capacity
+  - {name: Admissions, kind: measure, unit: count, aggregation: sum, description: "Patients admitted to a bed (inpatient admissions).",
+     synonyms: [admission count, admits, admit count, inpatient admissions, ip admissions, number of admissions, admitted patients]}
+  - {name: Discharges, kind: measure, unit: count, aggregation: sum, description: "Patients discharged from inpatient care.",
+     synonyms: [discharge count, inpatient discharges, ip discharges, separations, number of discharges, discharged patients]}
+  - {name: Encounters, kind: measure, unit: count, aggregation: sum, description: "Patient contacts with the hospital (visits, stays, appointments).",
+     synonyms: [encounter count, visits, visit count, patient visits, patient encounters, contacts, episodes, episode count]}
+  - {name: Outpatient Visits, kind: measure, unit: count, aggregation: sum, description: "Visits where the patient was not admitted.",
+     synonyms: [opd visits, op visits, opd count, outpatient encounters, clinic visits, outpatient count, opd attendance]}
+  - {name: ED Visits, kind: measure, unit: count, aggregation: sum, description: "Visits to the emergency department.",
+     synonyms: [emergency visits, er visits, ed arrivals, emergency arrivals, casualty visits, ed attendances, emergency encounters, ed encounters]}
+  - {name: LWBS Visits, kind: measure, unit: count, aggregation: sum, description: "Emergency visits where the patient left without being seen.",
+     synonyms: [lwbs, lwbs count, left without being seen, left without being seen count, elopements, lwbs patients]}
+  - {name: Patient Days, kind: measure, unit: count, aggregation: sum, description: "Days of inpatient care given - one for each patient in a bed at midnight.",
+     synonyms: [inpatient days, census days, occupied bed days, bed days occupied, patient bed days, midnight census days]}
+  - {name: Available Bed Days, kind: measure, unit: count, aggregation: sum, description: "Staffed beds times days - the bed days the hospital could offer.",
+     synonyms: [bed days available, available bed day, staffed bed days, bed capacity days, capacity bed days, total bed days]}
+  - {name: Staffed Beds, kind: measure, unit: count, aggregation: average, description: "Beds that are open and staffed for patients.",
+     synonyms: [available beds, bed count, beds, total beds, licensed beds, operational beds, bed capacity, bed strength]}
+  - {name: Occupied Beds, kind: measure, unit: count, aggregation: last, description: "Beds with a patient in them at the count time (the census).",
+     synonyms: [census, midnight census, beds occupied, occupied bed count, bed census, inpatient census]}
+  - {name: Length of Stay, kind: measure, unit: duration, aggregation: average, description: "Days from admission to discharge for one stay.",
+     synonyms: [los, los days, stay days, stay length, length of stay days, inpatient los, days stayed, alos]}
+  - {name: Readmissions, kind: measure, unit: count, aggregation: sum, description: "Patients readmitted within the follow-up window (usually 30 days) of a discharge.",
+     synonyms: [readmission count, readmits, 30 day readmissions, readmitted patients, unplanned readmissions, readmit count]}
+  - {name: Eligible Discharges, kind: measure, unit: count, aggregation: sum, description: "Discharges that can count toward readmission (index stays; deaths and transfers out removed).",
+     synonyms: [index discharges, index admissions, readmission eligible discharges, index stays, eligible index stays]}
+  - {name: Deaths, kind: measure, unit: count, aggregation: sum, description: "Patients who died in the hospital.",
+     synonyms: [mortality count, inpatient deaths, in hospital deaths, death count, expired patients, mortalities]}
+  - {name: Hospital Acquired Infections, kind: measure, unit: count, aggregation: sum, description: "Infections patients got during their stay (CLABSI, CAUTI, surgical site and similar).",
+     synonyms: [hai, hai count, hais, nosocomial infections, healthcare associated infections, hospital infections, infection count]}
+  - {name: Case Mix Index, kind: measure, unit: number, aggregation: average, description: "Average weight of the diagnosis related groups treated - how complex the patients are.",
+     synonyms: [cmi, case mix, drg weight, average drg weight, relative weight, case mix score]}
+  # ---------------- measures: waits, appointments, theatre
+  - {name: ED Wait Time, kind: measure, unit: duration, aggregation: average, description: "Minutes from arrival at the emergency department to first seeing a clinician.",
+     synonyms: [ed wait minutes, door to provider, door to provider minutes, ed waiting time, er wait time, wait minutes, time to see provider, door to doctor, triage to provider]}
+  - {name: Appointment Wait Days, kind: measure, unit: duration, aggregation: average, description: "Days from booking an appointment to the visit.",
+     synonyms: [wait days, days to appointment, third next available, days waited, waiting days, booking lead days, time to appointment, referral to treatment days]}
+  - {name: Scheduled Appointments, kind: measure, unit: count, aggregation: sum, description: "Appointments booked in the period.",
+     synonyms: [appointments scheduled, booked appointments, appointment count, appointments, slots booked, scheduled visits, bookings]}
+  - {name: No Shows, kind: measure, unit: count, aggregation: sum, description: "Appointments where the patient did not come and did not cancel in time.",
+     synonyms: [no show count, missed appointments, dna, did not attend, no show appointments, patient no shows, dna count]}
+  - {name: Surgeries, kind: measure, unit: count, aggregation: sum, description: "Surgical procedures done.",
+     synonyms: [surgery count, operations, surgical cases, procedures done, theatre cases, or cases, surgical procedures, case count]}
+  - {name: Scheduled OR Minutes, kind: measure, unit: duration, aggregation: sum, description: "Operating room time made available (block time).",
+     synonyms: [scheduled or time, block minutes, available or minutes, allocated theatre minutes, planned or minutes, staffed or minutes, block time minutes]}
+  - {name: Used OR Minutes, kind: measure, unit: duration, aggregation: sum, description: "Operating room time used from patient in-room to out-of-room.",
+     synonyms: [or minutes used, utilized or minutes, in room minutes, case minutes, theatre minutes used, procedure minutes, actual or minutes]}
+  - {name: Patient Satisfaction Score, kind: measure, unit: number, aggregation: average, description: "Patient survey score (HCAHPS, press ganey or the hospital's own).",
+     synonyms: [satisfaction score, patient experience score, hcahps score, press ganey score, survey score, nps score, csat score, patient rating]}
+  # ---------------- measures: revenue cycle and cost
+  - {name: Gross Charges, kind: measure, unit: currency, aggregation: sum, description: "Charges at the hospital's full price list before any adjustment.",
+     synonyms: [total charges, charges, billed amount, billed charges, gross revenue, gross patient revenue, chargemaster amount, charge amount]}
+  - {name: Contractual Adjustment, kind: measure, unit: currency, aggregation: sum, description: "Part of the charge that the payer contract does not pay.",
+     synonyms: [contractual adjustments, contractual allowance, contract adjustment, payer adjustment, contractual write off, contractual discount]}
+  - {name: Net Patient Revenue, kind: measure, unit: currency, aggregation: sum, description: "Charges after contractual adjustments - what is expected to be paid.",
+     synonyms: [npr, net patient service revenue, npsr, net revenue, net charges, expected reimbursement, net patient income]}
+  - {name: Allowed Amount, kind: measure, unit: currency, aggregation: sum, description: "The amount the payer contract allows for the service.",
+     synonyms: [allowed, allowed charges, allowed payment, contract allowed, expected payment, allowable]}
+  - {name: Cash Collections, kind: measure, unit: currency, aggregation: sum, description: "Money received from payers and patients.",
+     synonyms: [collections, payments received, payment amount, cash received, receipts, patient payments, payer payments, cash posted]}
+  - {name: Claims Submitted, kind: measure, unit: count, aggregation: sum, description: "Claims sent to payers.",
+     synonyms: [claims sent, claims billed, claim count, submitted claims, total claims, claims filed, number of claims]}
+  - {name: Claims Denied, kind: measure, unit: count, aggregation: sum, description: "Claims a payer refused to pay (first pass denials).",
+     synonyms: [denied claims, denial count, claim denials, denials, rejected claims, claims rejected, denied claim count]}
+  - {name: Denied Amount, kind: measure, unit: currency, aggregation: sum, description: "Value of claims denied by payers.",
+     synonyms: [denial amount, denied charges, denied dollars, denial value, rejected amount, denied claim amount]}
+  - {name: Accounts Receivable, kind: measure, unit: currency, aggregation: last, description: "Money owed to the hospital at the end of the period.",
+     synonyms: [ar, ar balance, receivables, outstanding balance, ar outstanding, account balance, open balance, patient ar, receivable balance]}
+  - {name: Bad Debt, kind: measure, unit: currency, aggregation: sum, description: "Patient balances written off as uncollectable.",
+     synonyms: [bad debt expense, bad debt write off, uncollectible, uncollectable, provision for bad debt, patient write off]}
+  - {name: Operating Expense, kind: measure, unit: currency, aggregation: sum, description: "Cost of running the hospital - staff, supplies, drugs and overheads.",
+     synonyms: [operating expenses, opex, total expense, total expenses, operating cost, operating costs, total operating expense, hospital cost, cost to serve]}
+  - {name: Nursing Hours, kind: measure, unit: number, aggregation: sum, description: "Hours worked by nursing staff.",
+     synonyms: [nurse hours, nursing worked hours, worked hours nursing, rn hours, nursing staff hours, productive nursing hours]}
+  - {name: FTEs, kind: measure, unit: number, aggregation: average, description: "Full-time equivalent staff.",
+     synonyms: [fte, fte count, full time equivalents, worked ftes, paid ftes, staff ftes, headcount fte]}
+
+  # ---------------- keys
+  - {name: Patient, kind: key, entity: Patient, description: "Identifies a patient (medical record).",
+     synonyms: [patient id, patient number, patient key, mrn, medical record number, medical record no, uhid, patient code, mpi, person id, hospital number]}
+  - {name: Encounter, kind: key, entity: Encounter, description: "Identifies one visit or stay.",
+     synonyms: [encounter id, encounter number, encounter key, visit id, visit number, fin, fin number, account number, episode id, case id, stay id, admission id, admission number, ip number]}
+  - {name: Provider, kind: key, entity: Provider, description: "Identifies a doctor or other clinician.",
+     synonyms: [provider id, provider number, provider key, physician id, doctor id, clinician id, npi, attending id, attending physician id, surgeon id, practitioner id, consultant id]}
+  - {name: Facility, kind: key, entity: Facility, description: "Identifies a hospital, clinic or site.",
+     synonyms: [facility id, facility code, hospital id, hospital code, site id, site code, clinic id, campus id, entity id, location id, unit code]}
+  - {name: Ward, kind: key, entity: Ward, description: "Identifies a ward or nursing unit.",
+     synonyms: [ward id, ward code, unit id, nursing unit id, nursing unit, department id, dept id, cost center, location unit]}
+  - {name: Bed, kind: key, entity: Bed, description: "Identifies a bed.",
+     synonyms: [bed id, bed number, bed code, bed key, bed no, room bed]}
+  - {name: Appointment, kind: key, entity: Appointment, description: "Identifies a booked appointment.",
+     synonyms: [appointment id, appointment number, appt id, appt number, booking id, booking number, slot id]}
+  - {name: Claim, kind: key, entity: Claim, description: "Identifies a claim sent to a payer.",
+     synonyms: [claim id, claim number, claim key, claim no, bill id, bill number, invoice number, icn, claim control number]}
+  - {name: Payer, kind: key, entity: Payer, description: "Identifies an insurer or other payer.",
+     synonyms: [payer id, payer code, payer key, insurer id, insurance id, insurance code, plan id, tpa id, tpa code, carrier id, financial class id]}
+  - {name: Diagnosis Code, kind: key, entity: Diagnosis, description: "The diagnosis (ICD code).",
+     synonyms: [diagnosis id, icd, icd code, icd10, icd 10, icd10 code, dx code, primary dx, primary diagnosis code, diagnosis key]}
+  - {name: Procedure Code, kind: key, entity: Procedure, description: "The procedure or service (CPT or ICD procedure code).",
+     synonyms: [procedure id, cpt, cpt code, hcpcs, hcpcs code, px code, procedure key, service code, icd pcs]}
+  - {name: DRG Code, kind: key, entity: DRG, description: "The diagnosis related group of a stay.",
+     synonyms: [drg, drg id, ms drg, msdrg, ms drg code, apr drg, drg key, hrg code]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The day a row belongs to.",
+     synonyms: [day, calendar date, report date, posting date, transaction date, snapshot date, census date, business date, activity date]}
+  - {name: Admission Date, kind: date, entity: Date, description: "The day the patient was admitted.",
+     synonyms: [admit date, admitted date, date of admission, admission dt, admit dt, admit datetime, admission datetime, ip admission date]}
+  - {name: Discharge Date, kind: date, entity: Date, description: "The day the patient was discharged.",
+     synonyms: [discharged date, date of discharge, discharge dt, discharge datetime, separation date, disch date]}
+  - {name: Encounter Date, kind: date, entity: Date, description: "The day of the visit or service.",
+     synonyms: [visit date, service date, date of service, dos, treatment date, service dt, visit dt, registration date]}
+  - {name: Appointment Date, kind: date, entity: Date, synonyms: [appt date, appointment dt, booked date, scheduled date, appointment datetime, slot date]}
+  - {name: Payment Date, kind: date, entity: Date, synonyms: [paid date, remittance date, payment dt, check date, received date, deposit date]}
+  - {name: Claim Date, kind: date, entity: Date, synonyms: [claim submission date, claim submitted date, bill date, billing date, claim dt, submission date]}
+  - {name: Fiscal Period, kind: date, entity: Date, synonyms: [fiscal month, fiscal period number, period id, accounting period, financial period, fp]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, fiscal year number, financial year, year number]}
+
+  # ---------------- attributes
+  - {name: Facility Name, kind: attribute, entity: Facility, synonyms: [hospital name, hospital, clinic name, site name, campus name, facility description, entity name]}
+  - {name: Region, kind: attribute, entity: Facility, synonyms: [region name, network, health region, catchment, zone, market, service area]}
+  - {name: City, kind: attribute, entity: Facility, synonyms: [city name, town, facility city, patient city]}
+  - {name: State, kind: attribute, entity: Facility, synonyms: [state name, state code, province, st]}
+  - {name: Department, kind: attribute, entity: Ward, description: "The clinical or support department.",
+     synonyms: [department name, dept name, ward name, nursing unit name, unit name, clinical department, speciality department]}
+  - {name: Specialty, kind: attribute, entity: Provider, synonyms: [speciality, specialty name, provider specialty, clinical specialty, discipline, medical specialty]}
+  - {name: Service Line, kind: attribute, entity: Encounter, description: "The group of services (cardiology, orthopedics, maternity ...).",
+     synonyms: [service line name, product line, clinical service, clinical program, program, service group, line of service]}
+  - {name: Provider Name, kind: attribute, entity: Provider, synonyms: [physician name, doctor name, doctor, clinician name, attending name, surgeon name, consultant name]}
+  - {name: Encounter Type, kind: attribute, entity: Encounter, description: "Inpatient, outpatient, emergency, day case.",
+     synonyms: [visit type, patient class, patient type, encounter class, admission class, care setting, setting of care, type of visit]}
+  - {name: Admission Type, kind: attribute, entity: Encounter, synonyms: [admit type, type of admission, admission source, admission category, emergency or elective, admission reason type]}
+  - {name: Discharge Disposition, kind: attribute, entity: Encounter, description: "Where the patient went after the stay (home, transfer, death).",
+     synonyms: [discharge status, discharge destination, disposition, discharge type, discharge outcome, disposition code]}
+  - {name: Primary Diagnosis, kind: attribute, entity: Diagnosis, synonyms: [diagnosis, diagnosis name, diagnosis description, dx description, principal diagnosis, main diagnosis, diagnosis desc, icd description]}
+  - {name: Procedure Name, kind: attribute, entity: Procedure, synonyms: [procedure, procedure description, procedure desc, service description, cpt description, surgery name]}
+  - {name: Payer Name, kind: attribute, entity: Payer, synonyms: [insurer name, insurance name, insurance company, insurer, payer description, carrier name, tpa name, plan name]}
+  - {name: Payer Type, kind: attribute, entity: Payer, description: "Financial class - Medicare, Medicaid, commercial, self pay.",
+     synonyms: [financial class, payer class, payer category, insurance type, payer group, coverage type, sponsor type, payor type]}
+  - {name: Claim Status, kind: attribute, entity: Claim, synonyms: [claim state, claim stage, bill status, claim outcome, adjudication status]}
+  - {name: Denial Reason, kind: attribute, entity: Claim, synonyms: [denial code, denial reason code, denial category, rejection reason, carc, remark code, denial description, reason for denial]}
+  - {name: Appointment Status, kind: attribute, entity: Appointment, synonyms: [appt status, booking status, visit status, attendance status, appointment outcome]}
+  - {name: Gender, kind: attribute, entity: Patient, synonyms: [sex, patient gender, patient sex, gender code]}
+  - {name: Age Group, kind: attribute, entity: Patient, synonyms: [age band, age bracket, age category, age range, age bucket]}
+  - {name: Readmission Flag, kind: attribute, entity: Encounter, description: "Whether the stay was a readmission.",
+     synonyms: [readmit flag, readmission indicator, readmitted, is readmission, readmit ind, 30 day readmit flag]}
+
+kpis:
+  # ---------------- activity and capacity
+  - name: Admissions
+    synonyms: [Inpatient Admissions, Number of Admissions]
+    definition: Patients admitted to an inpatient bed in the period, transfers between wards not counted again.
+    formula: Count of distinct inpatient admissions
+    unit: count
+    aggregation: distinct_count
+    domain: Activity
+  - name: Discharges
+    synonyms: [Inpatient Discharges, Separations]
+    definition: Patients discharged from inpatient care in the period, deaths included.
+    formula: Count of distinct inpatient stays with a discharge date in the period
+    unit: count
+    aggregation: distinct_count
+    time: by discharge date
+    domain: Activity
+  - name: Outpatient Visits
+    synonyms: [OPD Visits, Clinic Visits]
+    definition: Visits where the patient was not admitted, emergency visits not included.
+    formula: Count of distinct outpatient encounters
+    filters: [Encounter type = Outpatient]
+    unit: count
+    aggregation: distinct_count
+    domain: Activity
+  - name: Patient Days
+    synonyms: [Inpatient Days, Census Days, Occupied Bed Days]
+    definition: Days of inpatient care given, counting one for each patient in a bed at the midnight census.
+    formula: Sum over days of the patients in a bed at midnight
+    unit: count
+    aggregation: sum
+    domain: Capacity
+  - name: Average Length of Stay
+    synonyms: [ALOS, Average LOS, Mean Length of Stay]
+    definition: Average days patients stay in hospital, counted for patients discharged in the period.
+    formula: Patient days of discharged patients / Discharges
+    dax: DIVIDE ( [Patient Days], [Discharges] )
+    unit: duration
+    aggregation: ratio
+    time: by discharge date
+    domain: Capacity
+  - name: Available Bed Days
+    synonyms: [Staffed Bed Days, Bed Days Available]
+    definition: Staffed beds times days in the period - the bed days the hospital could offer.
+    formula: Sum over days of staffed beds
+    unit: count
+    aggregation: sum
+    domain: Capacity
+  - name: Bed Occupancy %
+    synonyms: [Occupancy Rate, Bed Occupancy Rate, Occupancy %, BOR]
+    definition: Share of available bed days that were used by patients.
+    formula: Patient days / Available bed days
+    dax: DIVIDE ( [Patient Days], [Available Bed Days] )
+    unit: percent
+    aggregation: ratio
+    domain: Capacity
+  - name: Eligible Discharges
+    synonyms: [Index Discharges, Readmission Eligible Discharges]
+    definition: Discharges that can be followed for readmission - patients alive at discharge, not transferred out, not against medical advice.
+    formula: Discharges minus deaths, transfers to another hospital and planned exclusions
+    unit: count
+    aggregation: distinct_count
+    domain: Quality
+  - name: Readmissions
+    synonyms: [30-Day Readmissions, Unplanned Readmissions]
+    definition: Eligible discharges followed by an unplanned admission within 30 days of discharge.
+    formula: Count of index discharges with an unplanned readmission within 30 days
+    unit: count
+    aggregation: distinct_count
+    time: 30 days after discharge
+    domain: Quality
+  - name: 30-Day Readmission Rate %
+    synonyms: [Readmission Rate, Readmission Rate %, 30 Day Readmission %]
+    definition: Share of eligible discharges readmitted within 30 days.
+    formula: Readmissions / Eligible discharges
+    dax: DIVIDE ( [Readmissions], [Eligible Discharges] )
+    unit: percent
+    aggregation: ratio
+    time: 30 days after discharge
+    domain: Quality
+  - name: Deaths
+    synonyms: [Inpatient Deaths, Mortality Count]
+    definition: Patients who died during an inpatient stay.
+    formula: Count of discharges with disposition = Died
+    unit: count
+    aggregation: distinct_count
+    domain: Quality
+  - name: Inpatient Mortality Rate %
+    synonyms: [Mortality Rate, In-Hospital Mortality %, Death Rate]
+    definition: Deaths as a share of discharges (before risk adjustment).
+    formula: Deaths / Discharges
+    dax: DIVIDE ( [Deaths], [Discharges] )
+    unit: percent
+    aggregation: ratio
+    domain: Quality
+  - name: Hospital Acquired Infections
+    synonyms: [HAIs, HAI Count, Nosocomial Infections]
+    definition: Infections confirmed more than 48 hours after admission.
+    formula: Count of confirmed hospital acquired infections
+    unit: count
+    aggregation: sum
+    domain: Quality
+  - name: HAI Rate per 1000 Patient Days
+    synonyms: [Infection Rate, HAI Rate]
+    definition: Hospital acquired infections for every 1,000 patient days.
+    formula: Hospital acquired infections / Patient days x 1,000
+    dax: DIVIDE ( [Hospital Acquired Infections], [Patient Days] ) * 1000
+    unit: number
+    aggregation: ratio
+    domain: Quality
+  - name: Case Mix Index
+    synonyms: [CMI, Case Mix]
+    definition: Average diagnosis related group weight of discharged patients - how complex the patients are.
+    formula: Sum of DRG weights of discharges / Discharges
+    unit: number
+    aggregation: custom
+    domain: Activity
+  - name: Patient Satisfaction Score
+    synonyms: [Patient Experience Score, HCAHPS Score, Patient Satisfaction]
+    definition: Average patient survey score on the survey scale the hospital uses.
+    formula: Average of survey scores
+    unit: number
+    aggregation: average
+    domain: Quality
+  # ---------------- emergency, appointments, theatre
+  - name: ED Visits
+    synonyms: [Emergency Visits, ER Visits, ED Arrivals]
+    definition: Visits to the emergency department.
+    formula: Count of distinct emergency encounters
+    filters: [Encounter type = Emergency]
+    unit: count
+    aggregation: distinct_count
+    domain: Emergency
+  - name: LWBS Visits
+    synonyms: [Left Without Being Seen, LWBS Count]
+    definition: Emergency visits where the patient left before being seen by a clinician.
+    formula: Count of emergency visits with disposition = Left without being seen
+    unit: count
+    aggregation: distinct_count
+    domain: Emergency
+  - name: LWBS Rate %
+    synonyms: [Left Without Being Seen %, LWBS %]
+    definition: Share of emergency visits that left without being seen.
+    formula: LWBS visits / ED visits
+    dax: DIVIDE ( [LWBS Visits], [ED Visits] )
+    unit: percent
+    aggregation: ratio
+    domain: Emergency
+  - name: Average ED Wait Time
+    synonyms: [ED Wait Time, Door to Provider Time, Average ER Wait]
+    definition: Average minutes from arrival to first seeing a clinician, for patients who were seen.
+    formula: Average of (time seen by provider - arrival time) in minutes
+    unit: duration
+    aggregation: average
+    domain: Emergency
+  - name: Scheduled Appointments
+    synonyms: [Appointments Booked, Booked Appointments]
+    definition: Appointments booked for the period, cancelled ones removed.
+    formula: Count of appointments not cancelled in time
+    unit: count
+    aggregation: sum
+    domain: Access
+  - name: No Shows
+    synonyms: [Missed Appointments, DNA Count, No Show Count]
+    definition: Booked appointments where the patient did not come and did not cancel in time.
+    formula: Count of appointments with status = No show
+    unit: count
+    aggregation: sum
+    domain: Access
+  - name: No Show Rate %
+    synonyms: [No-Show %, DNA Rate, Missed Appointment Rate]
+    definition: Share of scheduled appointments missed without notice.
+    formula: No shows / Scheduled appointments
+    dax: DIVIDE ( [No Shows], [Scheduled Appointments] )
+    unit: percent
+    aggregation: ratio
+    domain: Access
+  - name: Average Appointment Wait Days
+    synonyms: [Appointment Wait Time, Days to Appointment, Average Wait Days]
+    definition: Average days between booking an appointment and the visit.
+    formula: Average of (appointment date - booking date) in days
+    unit: duration
+    aggregation: average
+    domain: Access
+  - name: Scheduled OR Minutes
+    synonyms: [Block Minutes, Available OR Time]
+    definition: Operating room minutes made available to surgeons (staffed block time).
+    formula: Sum of staffed operating room minutes
+    unit: duration
+    aggregation: sum
+    domain: Theatre
+  - name: Used OR Minutes
+    synonyms: [Utilized OR Minutes, In-Room Minutes]
+    definition: Operating room minutes used, from patient in room to patient out of room.
+    formula: Sum of (out-of-room time - in-room time)
+    unit: duration
+    aggregation: sum
+    domain: Theatre
+  - name: OR Utilization %
+    synonyms: [Theatre Utilization, OR Utilisation %, Block Utilization]
+    definition: Share of staffed operating room time that was used.
+    formula: Used OR minutes / Scheduled OR minutes
+    dax: DIVIDE ( [Used OR Minutes], [Scheduled OR Minutes] )
+    unit: percent
+    aggregation: ratio
+    domain: Theatre
+  # ---------------- revenue cycle and cost
+  - name: Gross Charges
+    synonyms: [Total Charges, Billed Charges, Gross Patient Revenue]
+    definition: Charges at full price list before any contractual adjustment.
+    formula: Sum of charges at chargemaster price
+    unit: currency
+    aggregation: sum
+    domain: Revenue Cycle
+  - name: Contractual Adjustments
+    synonyms: [Contractual Allowance, Contractual Write-Offs]
+    definition: Part of the charges that payer contracts do not pay.
+    formula: Gross charges - Allowed amounts
+    unit: currency
+    aggregation: sum
+    domain: Revenue Cycle
+  - name: Net Patient Revenue
+    synonyms: [Net Patient Service Revenue, NPSR, NPR]
+    definition: Gross charges after contractual adjustments - the revenue expected to be collected.
+    formula: Gross charges - Contractual adjustments
+    dax: '[Gross Charges] - [Contractual Adjustments]'
+    unit: currency
+    aggregation: sum
+    domain: Revenue Cycle
+  - name: Cash Collections
+    synonyms: [Collections, Payments Received, Cash Receipts]
+    definition: Money received from payers and patients in the period.
+    formula: Sum of payments posted
+    unit: currency
+    aggregation: sum
+    domain: Revenue Cycle
+  - name: Net Collection Rate %
+    synonyms: [Net Collection Rate, Net Collections %, Collection Rate]
+    definition: Share of the revenue expected after contractual adjustments that was actually collected.
+    formula: Cash collections / Net patient revenue
+    dax: DIVIDE ( [Cash Collections], [Net Patient Revenue] )
+    unit: percent
+    aggregation: ratio
+    domain: Revenue Cycle
+  - name: Claims Submitted
+    synonyms: [Claims Sent, Claims Filed, Claims Billed]
+    definition: Claims sent to payers in the period.
+    formula: Count of distinct claims submitted
+    unit: count
+    aggregation: distinct_count
+    domain: Revenue Cycle
+  - name: Claims Denied
+    synonyms: [Denied Claims, Claim Denials]
+    definition: Submitted claims that a payer denied on first pass.
+    formula: Count of distinct claims with a denial
+    unit: count
+    aggregation: distinct_count
+    domain: Revenue Cycle
+  - name: Denial Rate %
+    synonyms: [Claim Denial Rate, Denial %, First Pass Denial Rate]
+    definition: Share of submitted claims denied by the payer on first pass.
+    formula: Claims denied / Claims submitted
+    dax: DIVIDE ( [Claims Denied], [Claims Submitted] )
+    unit: percent
+    aggregation: ratio
+    domain: Revenue Cycle
+  - name: Accounts Receivable
+    synonyms: [AR, AR Balance, Outstanding Receivables]
+    definition: Money owed to the hospital by payers and patients at the end of the period.
+    formula: Sum of open account balances at period end
+    unit: currency
+    aggregation: last
+    domain: Revenue Cycle
+  - name: Days in AR
+    synonyms: [Days in Accounts Receivable, AR Days, DAR]
+    definition: How many days of net patient revenue are waiting to be collected.
+    formula: Accounts receivable / (Net patient revenue over the last 90 days / 90)
+    unit: duration
+    aggregation: custom
+    time: rolling 90 days of revenue
+    domain: Revenue Cycle
+  - name: Operating Expense
+    synonyms: [Operating Expenses, Operating Cost, OPEX]
+    definition: Cost of running the hospital - labor, supplies, drugs and overheads.
+    formula: Sum of operating expenses
+    unit: currency
+    aggregation: sum
+    domain: Finance
+  - name: Operating Margin %
+    synonyms: [Operating Margin, Margin %]
+    definition: Net patient revenue left after operating expenses, as a share of net patient revenue.
+    formula: (Net patient revenue - Operating expense) / Net patient revenue
+    dax: DIVIDE ( [Net Patient Revenue] - [Operating Expense], [Net Patient Revenue] )
+    unit: percent
+    aggregation: ratio
+    domain: Finance
+  - name: Cost per Discharge
+    synonyms: [Operating Cost per Discharge, Cost per Stay]
+    definition: Operating expense per inpatient discharge.
+    formula: Operating expense / Discharges
+    dax: DIVIDE ( [Operating Expense], [Discharges] )
+    unit: currency
+    aggregation: ratio
+    domain: Finance
+  - name: Nursing Hours
+    synonyms: [Nurse Hours, Worked Nursing Hours]
+    definition: Hours worked by nursing staff.
+    formula: Sum of worked nursing hours
+    unit: number
+    aggregation: sum
+    domain: Staffing
+  - name: Nursing Hours per Patient Day
+    synonyms: [NHPPD, Nursing Hours per Occupied Bed Day]
+    definition: Nursing hours worked for each patient day.
+    formula: Nursing hours / Patient days
+    dax: DIVIDE ( [Nursing Hours], [Patient Days] )
+    unit: ratio
+    aggregation: ratio
+    domain: Staffing

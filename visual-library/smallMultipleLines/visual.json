@@ -3,8 +3,8 @@
   "title": "Small Multiple Lines",
   "description": "One small line panel per group (e.g. study) comparing actual vs plan over time, with end labels showing value and % of plan and an on-track check",
   "guid": "smallMultipleLines16139C3090BA483185B4ABC948B2E057",
-  "version": "1.0.0.4",
-  "sha": "594c2eeed1afa0000434aab08caa2fccf1840e1c5b6baa701587b1510164aa57",
+  "version": "1.0.0.5",
+  "sha": "29aef397e9e1e91ebc247f65871fb652096b3e7fccb8e1f0cdea537cfd772c15",
   "roles": {
     "category": "Grouping",
     "group": "Grouping",
@@ -52,7 +52,7 @@
     ]
   ],
   "created": 1793716124.6770027,
-  "updated": 1793716124.6770027,
+  "updated": 1795081363.63769,
   "project": "vrtx-extended-0e2a",
   "project_name": "VRTX Extended",
   "report": "Global Operations Dashboard"

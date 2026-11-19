@@ -14,7 +14,7 @@ import { val } from "./common/cards";
 const NAMES: Record<string, string> = { candlestick: "Candlestick chart", waterfall: "Waterfall chart", ribbon: "Ribbon chart", funnel: "Funnel" };
 
 export class Visual extends FamilyVisual<FinanceSettings, Model> {
-    protected readonly title = "Atlas Finance";
+    protected readonly title = "Relay Finance";
     protected readonly landingLines: [string, string] = [
         "Add a field to Category and a measure to Values for a waterfall, ribbon or funnel.",
         "For a candlestick, add Open, High, Low and Close (and Volume). Pick the chart type in the Format pane."];

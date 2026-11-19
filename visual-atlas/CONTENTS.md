@@ -22,7 +22,7 @@ CUSTOMIZING.md               how to change design and colors (Format pane, theme
 CLAUDE.md                    project memory for Claude Code (read automatically when you run `claude` here)
 
 release/                     READY TO USE
-  Atlas*.pbiviz              the 13 custom visuals (import into Power BI)
+  Relay*.pbiviz              the 13 custom visuals (import into Power BI)
   themes/                    report themes: Flat, Soft, 3D, Soft Dark (style built-in and Atlas visuals)
   report/                    test report: Visual Atlas Test.pbip, 12 pages, 50 visuals on a star-schema model
   power-bi-visual-atlas.html the gallery: 84 visuals in 19 categories, with a theme studio
@@ -52,21 +52,22 @@ Not included (each is rebuilt by the tools): `node_modules/`, build output (`dis
 
 | Visual | Chart types | GUID | Version |
 |---|---|---|---|
-| Atlas Columns | Clustered, stacked, 100% stacked columns and bars; drill-down | `atlasColumns9A01238C3D0249F7B4F9DFBEA84D3599` | 1.0.9.0 |
-| Atlas Lines | Line, area, stacked areas, line + column combos; drill-down, forecast, anomalies, zoom | `atlasLines36E69B273DB443A5AF8E62CB16DB4547` | 1.0.7.0 |
-| Atlas Parts | Pie, donut; drill-down, details ring, top N | `atlasPartsA0676FD0579D44EFB545170E4799ADC9` | 1.0.7.0 |
-| Atlas Flow | Sankey, chord, network | `atlasFlowBA37FC4A61814B33BF815C11D35148B1` | 1.0.8.0 |
-| Atlas Distribution | Histogram, box and whisker, violin and raincloud, parallel coordinates | `atlasDistribution1C4252B29C654CC1BF16155962622408` | 1.0.8.0 |
-| Atlas Compare | Lollipop, dot plot, dumbbell, slope, bump, tornado, radar | `atlasCompare1934AF42622F4D63BF12168C02806AC8` | 1.0.7.0 |
-| Atlas Hierarchy | Treemap, sunburst, circle packing, org chart / tree | `atlasHierarchy21AE4CB2A0F74216862D09F0C9A3BF2E` | 1.0.7.0 |
-| Atlas Proportion | Mekko, waffle, pictogram, aster, rose, Venn | `atlasProportion74F95B1AE3CB4D9195CC248A3EC140A4` | 1.0.7.0 |
-| Atlas Time | Calendar heatmap, heat grid / punch card, stream graph, timeline slicer | `atlasTime657C41A78B0A405A998ADA36387448E9` | 1.0.6.0 |
-| Atlas Finance | Candlestick, waterfall, ribbon, funnel | `atlasFinance8C601CA9CAF44ADCB6574FA21FDDE583` | 1.0.7.0 |
-| Atlas Gauges | Card, multi-row card, KPI, gauge, dial, radial bars, liquid fill, bullet, ticker | `atlasGauges797C4E4189814B78AD7FCCDFF53CBC47` | 1.0.7.0 |
-| Atlas Text | Word cloud, ranked words | `atlasTextC961F02E238E426A825D8355E3503AA9` | 1.0.6.0 |
-| Atlas Scatter | Scatter and bubble (play axis), dot plot, Gantt | `atlasScatter0B23674C661C4797A349BBC2B0AD313A` | 1.0.6.0 |
+| Relay Columns | Clustered, stacked, 100% stacked columns and bars; drill-down | `atlasColumns9A01238C3D0249F7B4F9DFBEA84D3599` | 1.0.10.0 |
+| Relay Lines | Line, area, stacked areas, line + column combos; drill-down, forecast, anomalies, zoom | `atlasLines36E69B273DB443A5AF8E62CB16DB4547` | 1.0.8.0 |
+| Relay Parts | Pie, donut; drill-down, details ring, top N | `atlasPartsA0676FD0579D44EFB545170E4799ADC9` | 1.0.8.0 |
+| Relay Flow | Sankey, chord, network | `atlasFlowBA37FC4A61814B33BF815C11D35148B1` | 1.0.9.0 |
+| Relay Distribution | Histogram, box and whisker, violin and raincloud, parallel coordinates | `atlasDistribution1C4252B29C654CC1BF16155962622408` | 1.0.9.0 |
+| Relay Compare | Lollipop, dot plot, dumbbell, slope, bump, tornado, radar | `atlasCompare1934AF42622F4D63BF12168C02806AC8` | 1.0.8.0 |
+| Relay Hierarchy | Treemap, sunburst, circle packing, org chart / tree | `atlasHierarchy21AE4CB2A0F74216862D09F0C9A3BF2E` | 1.0.8.0 |
+| Relay Proportion | Mekko, waffle, pictogram, aster, rose, Venn | `atlasProportion74F95B1AE3CB4D9195CC248A3EC140A4` | 1.0.8.0 |
+| Relay Time | Calendar heatmap, heat grid / punch card, stream graph, timeline slicer | `atlasTime657C41A78B0A405A998ADA36387448E9` | 1.0.7.0 |
+| Relay Finance | Candlestick, waterfall, ribbon, funnel | `atlasFinance8C601CA9CAF44ADCB6574FA21FDDE583` | 1.0.8.0 |
+| Relay Gauges | Card, multi-row card, KPI, gauge, dial, radial bars, liquid fill, bullet, ticker, leaderboard; target and comparison (last year) | `atlasGauges797C4E4189814B78AD7FCCDFF53CBC47` | 1.0.8.0 |
+| Relay Text | Word cloud, ranked words | `atlasTextC961F02E238E426A825D8355E3503AA9` | 1.0.7.0 |
+| Relay Scatter | Scatter and bubble (play axis), dot plot, Gantt | `atlasScatter0B23674C661C4797A349BBC2B0AD313A` | 1.0.7.0 |
 
-Themes target the visuals by GUID. Never change a GUID: themes and reports that use the visual would lose it.
+Themes target the visuals by GUID. Never change a GUID: themes and reports that use the visual would lose it. People see the
+visuals as Relay visuals (display names, start screens, package files); "atlas" stays only in folder, code and GUID names.
 
 ---
 

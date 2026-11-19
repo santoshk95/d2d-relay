@@ -127,6 +127,7 @@ async function renderConnections() {
       qs.get('error') ? h('div', {class: 'note err'}, qs.get('error')) : null,
       h('div', {class: 'section-title'}, h('h2', {}, 'Connectors'), h('span', {class: 'hint'}, 'your own warehouse or database: a turnkey deployment by PASDACS, on request')),
       connectorCards(cat),
+      ...deploySection(),
       h('p', {class: 'small muted', style: 'margin-top:14px'}, `Questions about your data? Write to ${cat.contact}.`)].filter(Boolean));
     return;
   }
@@ -188,7 +189,15 @@ async function renderConnections() {
     h('div', {class: 'section-title', style: 'margin-top:22px'}, h('h2', {}, 'Connectors'),
       h('span', {class: 'hint'}, `${onKinds.length} of ${cat.connectors.length} switched on for ${cat.org} - PASDACS switches the others on, on request`)),
     connectorCards(cat, wizard),
+    ...deploySection(),
     h('p', {class: 'small muted', style: 'margin-top:14px'}, 'Secrets live in the secrets store by name and are never shown again; every use is audited with who and why.')].filter(Boolean));
+}
+/* item 77: publishing to the Power BI service and CI/CD with GitHub, as connectors every organisation has (44-deploy.js) */
+function deploySection() {
+  if (typeof deployConnectorCards !== 'function') return [];
+  return [h('div', {class: 'section-title', style: 'margin-top:22px'}, h('h2', {}, 'Deployment'),
+    h('span', {class: 'hint'}, 'publish dashboards to the Power BI service, and CI/CD with GitHub - your organisation\'s owners set these up')),
+    deployConnectorCards()];
 }
 
 /* ---------- one connection: the detail dialog with every action ---------- */

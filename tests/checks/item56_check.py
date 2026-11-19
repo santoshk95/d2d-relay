@@ -313,12 +313,13 @@ with sync_playwright() as pw:
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)[:300]))
     page.goto("http://127.0.0.1:8000/#/welcome")
-    try:
-        page.wait_for_selector("dt:has-text('Who is in it')", timeout=15000)
-        out["tour"] = page.evaluate("(() => { const dt = [...document.querySelectorAll('dt')].find(x => x.textContent.trim() === 'Who is in it'); "
-                                    "return dt && dt.nextElementSibling ? dt.nextElementSibling.textContent : ''; })()")
+    try:                                         # the tour's welcome (38-tour.js): "Who is in it: the people you add ..."
+        page.wait_for_selector("#coach .coach-org", timeout=15000)
+        out["tour"] = page.locator("#coach .coach-org").inner_text()
     except Exception as e:
         out["tour"] = "none: " + str(e)[:120]
+    page.keyboard.press("Escape")                # closes the tour, which lies over the page
+    page.wait_for_timeout(1200)
     page.goto("http://127.0.0.1:8000/#/org")
     page.wait_for_selector("h3:has-text('Credit history')", timeout=20000)
     page.wait_for_timeout(1000)

@@ -89,5 +89,5 @@ export class Visual extends FamilyVisual<Settings, Model> {
     protected isFiltering() { return !!this.pick; }
     protected clearFilter() { this.apply(null); }
     protected tidy(m: Model | null) { this.settings.tidy(!!m && m.hasValues); }
-    protected describe(m: Model) { return `Period slicer: ${m.levels.map(l => l.name).join(" › ")}`; }
+    protected describe(m: Model) { return `Period slicer: ${m.levels.map(l => l.name).join(" > ")}`; }
 }

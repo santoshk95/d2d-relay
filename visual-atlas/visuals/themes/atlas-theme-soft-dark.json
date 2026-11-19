@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/powerbi-desktop-samples/main/Report%20Theme%20JSON%20Schema/reportThemeSchema-2.159.json",
-  "name": "Visual Atlas · Soft · Dark",
+  "name": "Relay - Soft - Dark",
   "dataColors": [
     "#3987E5",
     "#D95926",

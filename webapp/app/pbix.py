@@ -46,8 +46,8 @@ def available() -> dict | None:
 def not_running_text() -> str:
     beat = heartbeat()
     if beat and beat.get("state") == "error" and time.time() - float(beat.get("time") or 0) < STALE_S:
-        return f"The Power BI file maker on the D2D Relay PC has stopped: {beat.get('error')}"
-    return "The Power BI file maker is not running on the D2D Relay PC."
+        return "Packaging the Power BI file paused."
+    return "Packaging the Power BI file is paused just now."
 
 
 def make(project: Path, checked_zip: Path, report: str, refresh: bool = True) -> dict:
@@ -63,7 +63,9 @@ def make(project: Path, checked_zip: Path, report: str, refresh: bool = True) ->
     req = QUEUE / "requests"
     req.mkdir(parents=True, exist_ok=True)
     tmp = req / f"{rid}.json.tmp"
-    tmp.write_text(json.dumps({"id": rid, "report": report, "zip": rel(checked_zip), "data": rel(project / "data"),
+    from genbi_kit import sampling                  # item 64: a dashboard built on a sample is packaged with the sample
+    data = project / sampling.SAMPLE_DIR if sampling.spec(project) and (project / sampling.SAMPLE_DIR).is_dir() else project / "data"
+    tmp.write_text(json.dumps({"id": rid, "report": report, "zip": rel(checked_zip), "data": rel(data),
                                "out": rel(out), "refresh": refresh, "created": time.time()}), encoding="utf-8")
     tmp.rename(req / f"{rid}.json")
     answer, started, last_alive = QUEUE / "results" / f"{rid}.json", time.time(), time.time()
@@ -76,13 +78,13 @@ def make(project: Path, checked_zip: Path, report: str, refresh: bool = True) ->
             raise PbixError(not_running_text())
         if now - started > TIMEOUT_S:
             (req / f"{rid}.json").unlink(missing_ok=True)
-            raise PbixError(f"Power BI Desktop did not make the .pbix within {TIMEOUT_S // 60} minutes.")
+            raise PbixError(f"Packaging the Power BI file took longer than {TIMEOUT_S // 60} minutes, so it stopped.")
         time.sleep(1)
     result = json.loads(answer.read_text(encoding="utf-8-sig"))
     answer.unlink(missing_ok=True)
     if not result.get("ok"):
-        raise PbixError(f"Power BI Desktop could not make the .pbix: {result.get('error') or 'no reason given'}")
+        raise PbixError(f"The Power BI file could not be packaged: {result.get('error') or 'no reason given'}")
     if not out.exists():
-        raise PbixError("The Power BI file maker said it was done, but the .pbix is not there.")
+        raise PbixError("Packaging the Power BI file finished, but the file is not there.")
     return {"pbix": out, "data_folder": result.get("data_folder"), "seconds": result.get("seconds"), "mb": result.get("mb"),
             "refreshed": result.get("refreshed", refresh)}

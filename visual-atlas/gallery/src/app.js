@@ -440,7 +440,7 @@ setTheme(store.get('atlas-theme')||(root.getAttribute('data-theme')||'auto'));
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(studioReady)syncStudio();});}catch(e){}
 
 /* ---------------- theme studio: brand color, palette, look ---------------- */
-const MODES=[['spectrum','Spectrum'],['analogous','Analogous'],['mono','Mono'],['atlas','Atlas'],['classic','Classic'],['custom','Custom']];
+const MODES=[['spectrum','Spectrum'],['analogous','Analogous'],['mono','Mono'],['atlas','Relay'],['classic','Classic'],['custom','Custom']];
 const sw=(t,n)=>`<div class="st-sw">${Array.from({length:n},(_,i)=>`<i style="--sw:var(--${t}${i+1})"></i>`).join('')}</div>`;
 function studioHTML(){
   return `<div class="st-h"><div><b>Theme studio</b><span>Every chart on the page reads its colors from these tokens.</span></div><button type="button" class="st-reset" data-sx="reset">Reset</button></div>

@@ -4,7 +4,7 @@
     "displayName": "Small Multiple Lines",
     "guid": "smallMultipleLines16139C3090BA483185B4ABC948B2E057",
     "visualClassName": "Visual",
-    "version": "1.0.0.4",
+    "version": "1.0.0.5",
     "description": "One small line panel per group (e.g. study) comparing actual vs plan over time, with end labels showing value and % of plan and an on-track check",
     "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
     "gitHubUrl": ""

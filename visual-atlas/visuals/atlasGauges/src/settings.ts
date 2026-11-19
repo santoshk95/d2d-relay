@@ -1,13 +1,14 @@
 /*
- * Format pane for Atlas Gauges: cards, multi-row cards, KPIs, gauges,
- * dials, radial bars, liquid fill, bullet charts and a ticker. Shared cards
+ * Format pane for Relay Gauges: cards, multi-row cards, KPIs, gauges,
+ * dials, radial bars, liquid fill, bullet charts, a ticker and a leaderboard. Shared cards
  * come from common/cards.ts.
  */
 "use strict";
 import { formattingSettings as fs } from "powerbi-visuals-utils-formattingmodel";
 import { opt, range, LOOKS, val, StyleCard, PaletteCard, DataColorsCard, LabelsCard, CategoryAxisCard } from "./common/cards";
 
-const TYPES = [opt("card", "Card"), opt("multirow", "Multi-row card"), opt("kpi", "KPI"), opt("gauge", "Gauge"), opt("dial", "Dial (tachometer)"), opt("radialBar", "Radial bars"), opt("liquid", "Liquid fill"), opt("bullet", "Bullet chart"), opt("ticker", "Ticker")];
+const TYPES = [opt("card", "Card"), opt("multirow", "Multi-row card"), opt("kpi", "KPI"), opt("gauge", "Gauge"), opt("dial", "Dial (tachometer)"), opt("radialBar", "Radial bars"), opt("liquid", "Liquid fill"), opt("bullet", "Bullet chart"), opt("ticker", "Ticker"), opt("leaderboard", "Leaderboard")];
+const SORT = [opt("valueDesc", "Highest first"), opt("valueAsc", "Lowest first"), opt("targetDesc", "Best against target first"), opt("targetAsc", "Worst against target first"), opt("compareDesc", "Best against comparison first"), opt("compareAsc", "Worst against comparison first"), opt("none", "Data order")];
 const DIR = [opt("higher", "Higher is better"), opt("lower", "Lower is better")];
 const TSTYLE = [opt("area", "Area"), opt("line", "Line"), opt("column", "Columns")];
 const ANGLE = [opt("180", "Half circle"), opt("240", "Three quarters"), opt("270", "Open ring")];
@@ -32,8 +33,10 @@ class StatusCard extends fs.SimpleCard {
     badColor = new fs.ColorPicker({ name: "badColor", displayName: "Off target", value: { value: "#d64550" } });
     colorValue = new fs.ToggleSwitch({ name: "colorValue", displayName: "Color the value by status", value: false });
     showTarget = new fs.ToggleSwitch({ name: "showTarget", displayName: "Show target", value: true });
+    targetLabel = new fs.TextInput({ name: "targetLabel", displayName: "Target is called", placeholder: "target", value: "" });
+    compareLabel = new fs.TextInput({ name: "compareLabel", displayName: "Comparison is called", placeholder: "LY", value: "" });
     name = "status"; displayName = "Target and status";
-    slices = [this.direction, this.tolerance, this.goodColor, this.warnColor, this.badColor, this.colorValue, this.showTarget];
+    slices = [this.direction, this.tolerance, this.goodColor, this.warnColor, this.badColor, this.colorValue, this.showTarget, this.targetLabel, this.compareLabel];
 }
 class TrendCard extends fs.SimpleCard {
     show = new fs.ToggleSwitch({ name: "show", displayName: "Trend", value: true });
@@ -65,6 +68,14 @@ class BulletCard extends fs.SimpleCard {
     name = "bullet"; displayName = "Bullet chart";
     slices = [this.orientation];
 }
+class LeaderboardCard extends fs.SimpleCard {
+    sort = new fs.ItemDropdown({ name: "sort", displayName: "Order", items: SORT, value: SORT[0] });
+    topN = new fs.NumUpDown({ name: "topN", displayName: "Rows (0 = all)", value: 0, options: range(0, 1000) });
+    rank = new fs.ToggleSwitch({ name: "rank", displayName: "Rank numbers", value: true });
+    bars = new fs.ToggleSwitch({ name: "bars", displayName: "Value bars", value: true });
+    name = "leaderboard"; displayName = "Leaderboard";
+    slices = [this.sort, this.topN, this.rank, this.bars];
+}
 class TickerCard extends fs.SimpleCard {
     speed = new fs.NumUpDown({ name: "speed", displayName: "Seconds per loop", value: 30, options: range(3, 600) });
     direction = new fs.ItemDropdown({ name: "direction", displayName: "Direction", items: TDIR, value: TDIR[0] });
@@ -83,17 +94,22 @@ export class GaugesSettings extends fs.Model {
     liquid = new LiquidCard();
     bullet = new BulletCard();
     ticker = new TickerCard();
+    leaderboard = new LeaderboardCard();
     labels = new LabelsCard(true);
     categoryAxis = new CategoryAxisCard();
-    cards: fs.Cards[] = [this.chart, this.style, this.palette, this.dataColors, this.status, this.trend, this.scale, this.liquid, this.bullet, this.ticker, this.labels, this.categoryAxis];
+    cards: fs.Cards[] = [this.chart, this.style, this.palette, this.dataColors, this.status, this.trend, this.scale, this.liquid, this.bullet, this.ticker, this.leaderboard, this.labels, this.categoryAxis];
 
     get type() { return val(this.chart.chartType); }
-    tidy(info: { items: number; target: boolean; trend: boolean; bands: boolean }) {
+    tidy(info: { items: number; target: boolean; compare: boolean; trend: boolean; bands: boolean }) {
         const t = this.type, round = ["gauge", "dial", "radialBar", "liquid"].includes(t);
-        this.chart.columns.visible = info.items > 1 && !["multirow", "ticker", "radialBar", "bullet"].includes(t);
+        this.chart.columns.visible = info.items > 1 && !["multirow", "ticker", "radialBar", "bullet", "leaderboard"].includes(t);
         this.chart.accent.visible = t === "card" || t === "multirow";
-        this.status.visible = info.target || t === "dial";
-        this.trend.visible = t === "kpi" && info.trend;
+        this.status.visible = info.target || info.compare || t === "dial";
+        this.status.targetLabel.visible = info.target;
+        this.status.compareLabel.visible = info.compare;
+        this.trend.visible = (t === "kpi" || t === "leaderboard") && info.trend;
+        this.trend.style.visible = t === "kpi";
+        this.leaderboard.visible = t === "leaderboard";
         this.scale.visible = round || t === "bullet";
         this.scale.angle.visible = t === "gauge" || t === "dial";
         this.scale.width.visible = t === "gauge" || t === "dial" || t === "radialBar";

@@ -654,6 +654,24 @@
           "type": {
             "numeric": true
           }
+        },
+        "axis": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "auto",
+                "displayName": "Auto"
+              },
+              {
+                "value": "zero",
+                "displayName": "Start at zero"
+              },
+              {
+                "value": "fit",
+                "displayName": "Fit the changes"
+              }
+            ]
+          }
         }
       }
     },

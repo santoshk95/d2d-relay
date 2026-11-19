@@ -1,5 +1,5 @@
 /*
- * Drawing for Atlas Compare: lollipop, dot plot, dumbbell, slope, bump,
+ * Drawing for Relay Compare: lollipop, dot plot, dumbbell, slope, bump,
  * tornado and radar from one category × series matrix, with the shared
  * value axis, legend and labels, in flat, soft and 3D looks.
  */
@@ -115,14 +115,17 @@ export function render(c: C) {
         const names = order.map(ci => m.cats[ci].name), cTitle = CA.title.value ? m.catTitle : "";
         let L: number, R: number, T: number, B: number;
         const zero = type === "lollipop";
+        /* a negative lollipop's label sits beyond its head, toward the category names: keep room for it on that side too
+           (2026-11-19: "General Merchandise" ran into "-$8.53M") */
+        const negRoom = zero && LB.show.value && vals.some(v => v < 0);
         let d = domain(Math.min(...vals), Math.max(...vals), horiz ? box.r - box.l : box.b - box.t, horiz ? 80 : 44, VA, m.format, c.culture, zero);
         if (horiz) {
             const nameW = CA.show.value ? Math.min(W * 0.35, Math.max(...names.map(x => textW(x, cfs)))) + 10 : 0;
-            L = box.l + nameW + (cTitle ? cfs + 8 : 0); R = box.r - lbW - (look.is3d ? 4 : 0);
+            L = box.l + nameW + (cTitle ? cfs + 8 : 0) + (negRoom ? lbW : 0); R = box.r - lbW - (look.is3d ? 4 : 0);
             T = box.t + 2; B = box.b - (VA.show.value ? Math.max(6, VA.fontSize.value) + 8 : 0);
             d = domain(Math.min(...vals), Math.max(...vals), R - L, 80, VA, m.format, c.culture, zero);
         } else {
-            T = box.t + (LB.show.value ? lbfs + 6 : 4); B = box.b - (CA.show.value ? cfs + 8 : 0) - (cTitle ? cfs + 6 : 0);
+            T = box.t + (LB.show.value ? lbfs + 6 : 4); B = box.b - (CA.show.value ? cfs + 8 : 0) - (cTitle ? cfs + 6 : 0) - (negRoom ? lbfs + 6 : 0);
             d = domain(Math.min(...vals), Math.max(...vals), B - T, 44, VA, m.format, c.culture, zero);
             L = box.l + tickWidth(d, VA); R = box.r - 4;
         }
@@ -144,8 +147,8 @@ export function render(c: C) {
             const u = U(k), row = m.grid[ci], present = row.map((x, si) => ({ x, si })).filter(o => o.x) as { x: Cell; si: number }[];
             const g = el("g", { class: "grp" + (c.io.anyOn(m.cats[ci].items) && focused(m.cats[ci].name) ? "" : " dim") }, marks);
             if (CA.show.value && k % skip === 0) {
-                if (horiz) c.io.bindLabel(el("text", { x: r1(L - 8), y: r1(u + cfs * 0.35), "text-anchor": "end", "font-size": cfs, fill: cC, class: "ax" }, lab, trunc(names[k], L - box.l - 10 - (cTitle ? cfs + 8 : 0), cfs)), catTarget(m, ci));
-                else c.io.bindLabel(el("text", { x: r1(u), y: r1(B + cfs + 4), "text-anchor": "middle", "font-size": cfs, fill: cC, class: "ax" }, lab, trunc(names[k], band - 2, cfs)), catTarget(m, ci));
+                if (horiz) { const nx = L - 8 - (negRoom ? lbW : 0); c.io.bindLabel(el("text", { x: r1(nx), y: r1(u + cfs * 0.35), "text-anchor": "end", "font-size": cfs, fill: cC, class: "ax" }, lab, trunc(names[k], nx - box.l - 2 - (cTitle ? cfs + 8 : 0), cfs)), catTarget(m, ci)); }
+                else c.io.bindLabel(el("text", { x: r1(u), y: r1(B + cfs + 4 + (negRoom ? lbfs + 6 : 0)), "text-anchor": "middle", "font-size": cfs, fill: cC, class: "ax" }, lab, trunc(names[k], band - 2, cfs)), catTarget(m, ci));
             }
             if (!present.length) return;
             if (type === "lollipop") {
@@ -212,15 +215,19 @@ export function render(c: C) {
             c.bind(g, cellT(cell));
         };
         if (mirror) {
-            const mx = Math.max(...m.cells.filter(x => x.s < 2).map(x => Math.abs(x.v))) || 1;
-            const nt = nice(0, mx, 4), half = (box.r - box.l - (center ? nameW : nameW) - 2 * lbW) / 2;
+            const mx = Math.max(...m.cells.filter(x => x.s < 2).map(x => Math.abs(x.v))) || 1, half = (box.r - box.l - (center ? nameW : nameW) - 2 * lbW) / 2;
+            /* as many ticks as their labels have room for on each half ("$1.4bn$1.2bn$1bn" ran together) */
+            const tickW = textW(formatter(m.format, Number(VA.displayUnits.value) || 0, VA.decimals.value >= 0 ? VA.decimals.value : null, mx, c.culture)(mx), vfs) + 14;
+            const nt = nice(0, mx, Math.max(1, Math.min(4, Math.floor(half / tickW))));
             const cx0 = center ? box.l + lbW + half : box.l + nameW + lbW + half, cx1 = center ? cx0 + nameW : cx0;
             const Lx = (v: number) => cx0 - Math.min(1, Math.abs(v) / nt.hi) * half, Rx = (v: number) => cx1 + Math.min(1, Math.abs(v) / nt.hi) * half;
             const f = formatter(m.format, Number(VA.displayUnits.value) || 0, VA.decimals.value >= 0 ? VA.decimals.value : null, nt.hi, c.culture);
+            const used: [number, number][] = [];
             nt.ticks.forEach(v => {
-                [Lx(v), Rx(v)].forEach(x => {
+                (v === 0 && cx0 === cx1 ? [Lx(v)] : [Lx(v), Rx(v)]).forEach(x => {
                     if (GR.show.value) el("line", { x1: r1(x) + 0.5, x2: r1(x) + 0.5, y1: r1(T), y2: r1(B), stroke: colorOr(GR.color, t.grid), "stroke-width": GR.width.value }, root);
-                    if (VA.show.value) el("text", { x: r1(x), y: r1(B + vfs + 4), "text-anchor": "middle", "font-size": vfs, fill: colorOr(VA.color, t.axis), class: "ax" }, root, v === 0 ? "0" : f(v));
+                    const txt = v === 0 ? "0" : f(v), w = textW(txt, vfs), l = x - w / 2, r = x + w / 2;
+                    if (VA.show.value && !used.some(([a, b]) => l < b + 6 && a < r + 6)) { used.push([l, r]); el("text", { x: r1(x), y: r1(B + vfs + 4), "text-anchor": "middle", "font-size": vfs, fill: colorOr(VA.color, t.axis), class: "ax" }, root, txt); }
                 });
             });
             order.forEach((ci, k) => {

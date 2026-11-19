@@ -15,7 +15,7 @@ import { val } from "./common/cards";
 const NAMES: Record<string, string> = { treemap: "Treemap", sunburst: "Sunburst", pack: "Circle packing", tree: "Org chart" };
 
 export class Visual extends FamilyVisual<HierarchySettings, Model> {
-    protected readonly title = "Atlas Hierarchy";
+    protected readonly title = "Relay Hierarchy";
     protected readonly landingLines: [string, string] = [
         "Add one or more fields to Levels (for example Category, Subcategory, Product) and a measure to Size.",
         "For an org chart, use ID and Parent ID instead of Levels. Pick treemap, sunburst, circle packing or org chart in the Format pane."];

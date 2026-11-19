@@ -1,0 +1,449 @@
+# Industry pack: telecom operators. Business terms tag columns by name (genbi_kit/ontology.py);
+# KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields).
+name: Telecom
+order: 70
+description: Mobile, broadband and fixed-line operators. Subscribers and churn, ARPU, recharges and data usage, voice minutes, network availability and call quality, support tickets, billing and acquisition cost.
+questions:
+  - What is the monthly churn rate by plan type and by circle, and how has it moved over the last 12 months?
+  - How has ARPU changed by region and subscription type this year?
+  - What were gross additions and net additions by channel last month?
+  - Which cell sites have network availability below 99 percent this week?
+  - What is the average data usage per subscriber by plan and network technology?
+  - How many recharges were made, and what is the average recharge value by channel?
+
+terms:
+  # ---------------- measures: subscribers
+  - {name: Subscribers, kind: measure, unit: count, aggregation: last, description: "Active connections (SIMs, lines or broadband accounts) at the end of the period.",
+     synonyms: [subscriber count, active subscribers, subs, active subs, subscriber base, total subscribers, connections, active connections, active lines, lines in service, customer base, base count, active base, closing subscribers, closing base, sim count]}
+  - {name: Opening Subscribers, kind: measure, unit: count, aggregation: last, description: "Subscribers at the start of the period.",
+     synonyms: [opening base, opening subs, opening subscriber count, beginning subscribers, subscribers at start, start of period subscribers, opening connections, bop subscribers]}
+  - {name: Average Subscribers, kind: measure, unit: count, aggregation: average, description: "Average subscribers over the period (opening and closing, or daily).",
+     synonyms: [avg subscribers, average subs, average base, avg base, mean subscribers, average active subscribers, avg subs, average connections]}
+  - {name: Gross Additions, kind: measure, unit: count, aggregation: sum, description: "New connections activated in the period.",
+     synonyms: [gross adds, grossadds, new connections, new subscribers, new activations, activations, new subs, acquisitions, new lines, connects, gross connects, gross activations]}
+  - {name: Disconnections, kind: measure, unit: count, aggregation: sum, description: "Connections that ended in the period (churned).",
+     synonyms: [disconnects, disconnect count, churned subscribers, churned subs, deactivations, terminations, churners, lost subscribers, lost subs, churn count, disconnected subscribers, line disconnects, cancellations]}
+  - {name: Data Users, kind: measure, unit: count, aggregation: distinct_count, description: "Subscribers who used mobile data in the period.",
+     synonyms: [data subscribers, data subs, active data users, data user count, internet users, data customers, active data subscribers, mobile data users, data active base]}
+  - {name: Port Outs, kind: measure, unit: count, aggregation: sum, description: "Subscribers who moved their number to another operator.",
+     synonyms: [mnp out, mnp outs, port out count, number portability out, ported out, porting out, port out requests, ported out numbers]}
+  # ---------------- measures: revenue, recharges and billing
+  - {name: Service Revenue, kind: measure, unit: currency, aggregation: sum, description: "Revenue from voice, data, messaging and other services (not handsets).",
+     synonyms: [service rev, services revenue, telecom revenue, usage revenue, network revenue, recurring revenue, subscription revenue, mobile service revenue, airtime revenue, revenue, total revenue, gross revenue, total service revenue]}
+  - {name: Data Revenue, kind: measure, unit: currency, aggregation: sum, description: "Revenue from mobile and fixed data.",
+     synonyms: [data rev, internet revenue, data service revenue, mobile data revenue, broadband revenue, data usage revenue, data income]}
+  - {name: Voice Revenue, kind: measure, unit: currency, aggregation: sum, description: "Revenue from calls.",
+     synonyms: [voice rev, call revenue, voice service revenue, airtime voice revenue, outgoing revenue, voice income, calls revenue]}
+  - {name: Roaming Revenue, kind: measure, unit: currency, aggregation: sum, description: "Revenue from customers using the network abroad and from visitors.",
+     synonyms: [roaming rev, intl roaming revenue, international roaming revenue, inbound roaming revenue, outbound roaming revenue, roaming income]}
+  - {name: ARPU, kind: measure, unit: currency, aggregation: average, description: "Average revenue per user, already worked out per row (never add it up).",
+     synonyms: [arpu amount, avg revenue per user, average revenue per user, revenue per user, rpu, arpa, average revenue per account, arpu monthly, monthly arpu]}
+  - {name: Recharge Value, kind: measure, unit: currency, aggregation: sum, description: "Money added to prepaid accounts.",
+     synonyms: [recharge amount, recharge amt, top up amount, topup amount, top up value, topup value, recharge denomination, reload amount, credit purchased, recharge revenue, prepaid recharge value, voucher value]}
+  - {name: Recharges, kind: measure, unit: count, aggregation: sum, description: "Number of recharge (top-up) transactions.",
+     synonyms: [recharge count, number of recharges, topups, top ups, topup count, top up count, recharge transactions, recharge txns, reloads, recharge events]}
+  - {name: Billed Amount, kind: measure, unit: currency, aggregation: sum, description: "Amount invoiced to postpaid customers.",
+     synonyms: [bill amount, billed revenue, invoice amount, invoiced amount, total billed, billing amount, invoiced revenue, postpaid billing, bill value]}
+  - {name: Collections, kind: measure, unit: currency, aggregation: sum, description: "Money collected against bills.",
+     synonyms: [collected amount, payments received, payment amount, bill payments, cash collected, collection amount, amount collected, receipts, bill collections]}
+  - {name: Acquisition Cost, kind: measure, unit: currency, aggregation: sum, description: "Cost of winning new subscribers - commissions, handset subsidy, marketing.",
+     synonyms: [sac total, subscriber acquisition spend, acquisition spend, customer acquisition cost total, commission and subsidy, acquisition expense, sales and marketing cost, dealer commission, acquisition costs]}
+  # ---------------- measures: usage
+  - {name: Data Usage, kind: measure, unit: number, aggregation: sum, description: "Mobile or fixed data used (gigabytes).",
+     synonyms: [data volume, data consumed, data consumption, data gb, gb used, data used gb, data traffic, data mb, mb used, data usage gb, volume gb, internet usage, data kb]}
+  - {name: Voice Minutes, kind: measure, unit: number, aggregation: sum, description: "Minutes of calls made and received.",
+     synonyms: [voice mins, call minutes, minutes of use, voice usage, call duration minutes, talk time, minutes used, voice volume, airtime minutes, call mins, total minutes]}
+  - {name: SMS Count, kind: measure, unit: count, aggregation: sum, description: "Text messages sent.",
+     synonyms: [sms, sms sent, messages sent, text messages, sms volume, sms usage, number of sms, messages count, sms messages]}
+  - {name: Average Download Speed, kind: measure, unit: number, aggregation: average, description: "Download speed, in megabits per second.",
+     synonyms: [download speed, download mbps, avg download speed, dl speed, dl throughput, downlink throughput, data speed, throughput mbps, avg throughput, user throughput]}
+  - {name: Latency, kind: measure, unit: duration, aggregation: average, description: "Round trip delay on the network, in milliseconds.",
+     synonyms: [latency ms, ping, ping ms, round trip time, rtt, network latency, delay ms, average latency, avg latency]}
+  # ---------------- measures: network
+  - {name: Cell Sites, kind: measure, unit: count, aggregation: last, description: "Number of cell sites (towers) on air.",
+     synonyms: [sites, site count, number of sites, towers, tower count, cell towers, bts count, base stations, cells, on air sites, radio sites, enodeb count]}
+  - {name: Site Scheduled Minutes, kind: measure, unit: duration, aggregation: sum, description: "Minutes cell sites should have been on air.",
+     synonyms: [scheduled minutes, total site minutes, site minutes, planned minutes, expected on air minutes, total minutes in period, total available minutes, site time]}
+  - {name: Site Available Minutes, kind: measure, unit: duration, aggregation: sum, description: "Minutes cell sites were actually on air and working.",
+     synonyms: [available minutes, uptime minutes, on air minutes, site uptime minutes, service available minutes, minutes up, up minutes, site up time]}
+  - {name: Network Availability %, kind: measure, unit: percent, aggregation: average, description: "Share of time the network or site was up, already worked out per row.",
+     synonyms: [network availability, availability pct, availability, site availability, site availability pct, cell availability, network uptime, uptime pct, service availability, ne availability]}
+  - {name: Call Attempts, kind: measure, unit: count, aggregation: sum, description: "Calls tried (set-up attempts).",
+     synonyms: [call attempt count, attempted calls, call setup attempts, total calls, calls attempted, call tries, rrc attempts, setup attempts]}
+  - {name: Successful Calls, kind: measure, unit: count, aggregation: sum, description: "Calls that connected.",
+     synonyms: [completed calls, call success count, connected calls, calls connected, successful call count, established calls, call setups, successful setups, rrc success]}
+  - {name: Dropped Calls, kind: measure, unit: count, aggregation: sum, description: "Connected calls that ended by themselves (not by the user).",
+     synonyms: [call drops, drop calls, dropped call count, drop count, calls dropped, abnormal releases, call drop count, lost calls]}
+  # ---------------- measures: care
+  - {name: Support Tickets, kind: measure, unit: count, aggregation: sum, description: "Customer complaints and service requests raised.",
+     synonyms: [tickets, ticket count, complaints, complaint count, cases, case count, trouble tickets, service requests, care contacts, tickets raised, tickets opened, fault tickets]}
+  - {name: Tickets Resolved Within SLA, kind: measure, unit: count, aggregation: sum, description: "Tickets closed within the promised time.",
+     synonyms: [resolved within sla, tickets within sla, sla met tickets, within sla count, resolved in sla, sla compliant tickets, tickets closed in sla, on time tickets]}
+
+  # ---------------- keys
+  - {name: Subscriber, kind: key, entity: Subscriber, description: "Identifies a connection (the phone number or line).",
+     synonyms: [subscriber id, subscriber number, subscriber key, msisdn, mobile number, mobile no, phone number, phone no, mdn, sim number, iccid, imsi, line id, connection id, connection number, service number, service id, cli]}
+  - {name: Customer, kind: key, entity: Customer, description: "Identifies a customer (who may have several connections).",
+     synonyms: [customer id, customer number, customer key, customer code, account id, account number, billing account, billing account number, ban, party id, cust id, crm id, customer nbr]}
+  - {name: Plan, kind: key, entity: Plan, description: "Identifies a tariff plan or package.",
+     synonyms: [plan id, plan code, plan key, tariff id, tariff code, tariff plan id, package id, package code, rate plan id, rate plan code, offer id, offer code, bundle id, product code]}
+  - {name: Cell Site, kind: key, entity: Cell Site, description: "Identifies a cell site, tower or cell.",
+     synonyms: [site id, site code, cell site id, cell id, tower id, tower code, bts id, bts code, enodeb id, gnodeb id, node id, ne id, sector id, cgi, lac cell id]}
+  - {name: Device, kind: key, entity: Device, description: "Identifies a handset or modem.",
+     synonyms: [device id, imei, handset id, device number, tac, equipment id, modem id, cpe id, serial number, device key]}
+  - {name: Recharge, kind: key, entity: Recharge, description: "Identifies a recharge transaction.",
+     synonyms: [recharge id, recharge number, recharge ref, topup id, top up id, reload id, voucher id, voucher number, payment id, transaction id, txn id, recharge transaction id]}
+  - {name: Invoice, kind: key, entity: Invoice, description: "Identifies a bill.",
+     synonyms: [invoice id, invoice number, invoice no, bill id, bill number, bill no, billing id, statement id, invoice key, bill reference]}
+  - {name: Ticket, kind: key, entity: Ticket, description: "Identifies a complaint or service request.",
+     synonyms: [ticket id, ticket number, ticket no, case id, case number, complaint id, complaint number, incident id, incident number, sr number, sr id, request id, fault id, trouble ticket id]}
+  - {name: Dealer, kind: key, entity: Dealer, description: "Identifies a dealer, retailer or distributor.",
+     synonyms: [dealer id, dealer code, retailer id, retailer code, distributor id, distributor code, agent id, agent code, pos id, pos code, outlet id, outlet code, channel partner id, store id]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The day a row belongs to.",
+     synonyms: [day, calendar date, report date, reporting date, usage date, business date, snapshot date, cdr date, event date, traffic date, activity date]}
+  - {name: Activation Date, kind: date, entity: Date, description: "The day the connection started.",
+     synonyms: [activation dt, connection date, connect date, start date, join date, joining date, subscriber since, customer since date, sim activation date, service start date, first activation date, registration date, onboarding date]}
+  - {name: Disconnection Date, kind: date, entity: Date, description: "The day the connection ended.",
+     synonyms: [disconnect date, deactivation date, termination date, churn date, end date, cancellation date, service end date, closure date, barring date, disconnect dt]}
+  - {name: Recharge Date, kind: date, entity: Date, synonyms: [topup date, top up date, reload date, recharge dt, payment date, last recharge date, transaction date, txn date]}
+  - {name: Bill Date, kind: date, entity: Date, synonyms: [invoice date, billing date, statement date, bill cycle date, bill dt, bill generation date, cycle date, due date]}
+  - {name: Ticket Date, kind: date, entity: Date, synonyms: [ticket created date, complaint date, case date, opened date, ticket open date, raised date, created date, ticket created]}
+  - {name: Month, kind: date, entity: Date, synonyms: [month name, billing month, usage month, reporting month, month year, year month, yyyymm]}
+  - {name: Fiscal Quarter, kind: date, entity: Date, synonyms: [fiscal qtr, fq, financial quarter, quarter number, reporting quarter]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, financial year, financial year number, year number]}
+
+  # ---------------- attributes
+  - {name: Plan Name, kind: attribute, entity: Plan, synonyms: [tariff name, tariff plan, tariff, package name, rate plan name, offer name, bundle name, plan description, plan desc, product name]}
+  - {name: Subscription Type, kind: attribute, entity: Subscriber, description: "Prepaid or postpaid (or hybrid).",
+     synonyms: [connection type, payment type, prepaid postpaid, pre post, billing type, account type, pay type, plan type, paid type, line type]}
+  - {name: Service Type, kind: attribute, entity: Subscriber, description: "Mobile, fixed broadband, fibre, TV, enterprise.",
+     synonyms: [service, service line, line of service, product type, service category, access type, product line, lob, service name]}
+  - {name: Network Technology, kind: attribute, entity: Cell Site, description: "2G, 3G, 4G or 5G.",
+     synonyms: [technology, network generation, radio technology, rat, radio access technology, generation, network tech, band, tech type, access technology]}
+  - {name: Cell Site Name, kind: attribute, entity: Cell Site, synonyms: [site name, tower name, site description, bts name, node name, cell name, site location, enodeb name]}
+  - {name: Site Type, kind: attribute, entity: Cell Site, synonyms: [tower type, site category, site class, macro or small cell, site classification, cell type, site kind, rooftop or ground]}
+  - {name: Circle, kind: attribute, entity: Cell Site, description: "The operator's licence area or telecom circle.",
+     synonyms: [circle name, telecom circle, licence area, license area, lsa, service area, cluster, cluster name, zone, area]}
+  - {name: Region, kind: attribute, entity: Cell Site, synonyms: [region name, sales region, market, territory, operating region, division, geo region]}
+  - {name: State, kind: attribute, entity: Cell Site, synonyms: [state name, state code, province, st]}
+  - {name: City, kind: attribute, entity: Cell Site, synonyms: [city name, town, district, subscriber city, locality]}
+  - {name: Customer Segment, kind: attribute, entity: Customer, synonyms: [segment, customer type, consumer or enterprise, customer category, customer class, customer group, value segment, arpu band, customer tier, enterprise segment]}
+  - {name: Customer Name, kind: attribute, entity: Customer, synonyms: [client name, account name, account holder, subscriber name, customer full name]}
+  - {name: Device Type, kind: attribute, entity: Device, synonyms: [handset type, device category, smartphone flag, phone type, device class, handset category, device model, handset model, device make, handset make]}
+  - {name: Recharge Channel, kind: attribute, entity: Recharge, synonyms: [channel, recharge mode, recharge source, topup channel, top up channel, payment channel, payment mode, sales channel, recharge medium, wallet or retail]}
+  - {name: Dealer Name, kind: attribute, entity: Dealer, synonyms: [retailer name, distributor name, agent name, outlet name, partner name, dealer description, store name]}
+  - {name: Disconnection Reason, kind: attribute, entity: Subscriber, description: "Why the connection ended (voluntary, non-payment, port out).",
+     synonyms: [churn reason, churn type, disconnect reason, deactivation reason, termination reason, churn category, cancellation reason, reason for leaving, disconnect type, churn code]}
+  - {name: Ticket Category, kind: attribute, entity: Ticket, synonyms: [complaint type, complaint category, ticket type, issue type, fault category, case category, issue category, request type, fault type, problem type]}
+  - {name: Ticket Status, kind: attribute, entity: Ticket, synonyms: [complaint status, case status, status, resolution status, ticket state, incident status, sr status]}
+  - {name: Tenure Band, kind: attribute, entity: Subscriber, synonyms: [tenure bucket, tenure group, vintage, vintage band, subscriber age band, customer tenure band, age on network band, tenure range]}
+  - {name: Roaming Flag, kind: attribute, entity: Subscriber, synonyms: [roaming indicator, roaming ind, is roaming, roamer flag, roaming status, international roaming flag, roaming user]}
+
+kpis:
+  # ---------------- subscribers and churn
+  - name: Active Subscribers
+    synonyms: [Subscribers, Subscriber Base, Active Base, Active Connections]
+    definition: Connections that are active at the end of the period - for prepaid, with a billable event (call, data, recharge) in the last 90 days, for postpaid, not disconnected.
+    formula: Count of distinct active connections at period end
+    unit: count
+    aggregation: last
+    domain: Subscribers
+  - name: Opening Subscribers
+    synonyms: [Opening Base, Beginning Subscribers]
+    definition: Active subscribers at the start of the period.
+    formula: Active subscribers at the end of the previous period
+    unit: count
+    aggregation: last
+    domain: Subscribers
+  - name: Average Subscribers
+    synonyms: [Average Base, Average Active Subscribers]
+    definition: Average of the active subscribers over the period.
+    formula: Average of daily active subscribers
+    unit: count
+    aggregation: average
+    domain: Subscribers
+  - name: Gross Additions
+    synonyms: [Gross Adds, New Connections, New Activations]
+    definition: New connections activated in the period.
+    formula: Count of connections with an activation date in the period
+    unit: count
+    aggregation: sum
+    time: by activation date
+    domain: Subscribers
+  - name: Disconnections
+    synonyms: [Disconnects, Churned Subscribers, Deactivations]
+    definition: Connections that ended in the period, voluntary and involuntary, port-outs included.
+    formula: Count of connections with a disconnection date in the period
+    unit: count
+    aggregation: sum
+    time: by disconnection date
+    domain: Subscribers
+  - name: Net Additions
+    synonyms: [Net Adds, Net Subscriber Additions]
+    definition: Gross additions less disconnections - how much the base grew.
+    formula: Gross additions - Disconnections
+    dax: '[Gross Additions] - [Disconnections]'
+    unit: count
+    aggregation: sum
+    domain: Subscribers
+  - name: Churn Rate %
+    synonyms: [Churn %, Monthly Churn, Subscriber Churn Rate, Disconnection Rate]
+    definition: Share of the opening subscribers that disconnected in the period. Monthly churn is measured over a month.
+    formula: Disconnections / Opening subscribers
+    dax: DIVIDE ( [Disconnections], [Opening Subscribers] )
+    unit: percent
+    aggregation: ratio
+    domain: Subscribers
+  - name: Port Outs
+    synonyms: [MNP Outs, Ported Out Numbers]
+    definition: Subscribers who moved their number to another operator in the period.
+    formula: Count of completed port-out requests
+    unit: count
+    aggregation: sum
+    domain: Subscribers
+  - name: Data Users
+    synonyms: [Active Data Users, Data Subscribers]
+    definition: Subscribers who used at least 1 MB of mobile data in the period.
+    formula: Distinct count of subscribers with data usage above 1 MB
+    unit: count
+    aggregation: distinct_count
+    domain: Usage
+  - name: Data Penetration %
+    synonyms: [Data User Share, Data Adoption %, Data Subscriber %]
+    definition: Share of active subscribers who use mobile data.
+    formula: Data users / Active subscribers
+    dax: DIVIDE ( [Data Users], [Active Subscribers] )
+    unit: percent
+    aggregation: ratio
+    domain: Usage
+  # ---------------- revenue and ARPU
+  - name: Service Revenue
+    synonyms: [Telecom Revenue, Services Revenue, Network Revenue]
+    definition: Revenue from voice, data, messaging, roaming and value added services, excluding handset and equipment sales.
+    formula: Sum of recognized service revenue
+    unit: currency
+    aggregation: sum
+    domain: Revenue
+  - name: ARPU
+    synonyms: [Average Revenue per User, Revenue per Subscriber, Monthly ARPU]
+    definition: Service revenue per average subscriber, per month.
+    formula: Service revenue / Average subscribers / Months in the period
+    dax: DIVIDE ( [Service Revenue], [Average Subscribers] )
+    unit: currency
+    aggregation: ratio
+    time: per month (divide by months when the period is longer)
+    domain: Revenue
+  - name: Data Revenue
+    synonyms: [Data Rev, Mobile Data Revenue, Internet Revenue]
+    definition: Revenue from mobile and fixed data services.
+    formula: Sum of data service revenue
+    unit: currency
+    aggregation: sum
+    domain: Revenue
+  - name: Data Revenue Share %
+    synonyms: [Data Share of Revenue, Data Revenue Mix %, Data Contribution %]
+    definition: Data revenue as a share of service revenue.
+    formula: Data revenue / Service revenue
+    dax: DIVIDE ( [Data Revenue], [Service Revenue] )
+    unit: percent
+    aggregation: ratio
+    domain: Revenue
+  - name: Recharge Value
+    synonyms: [Recharge Amount, Top-Up Value, Prepaid Recharge Value]
+    definition: Money added to prepaid accounts in the period (top-ups and vouchers).
+    formula: Sum of recharge amounts
+    unit: currency
+    aggregation: sum
+    domain: Revenue
+  - name: Recharges
+    synonyms: [Recharge Count, Top-Ups, Number of Recharges]
+    definition: Number of recharge transactions in the period.
+    formula: Count of distinct recharge transactions
+    unit: count
+    aggregation: distinct_count
+    domain: Revenue
+  - name: Average Recharge Value
+    synonyms: [Average Top-Up, Average Recharge Amount, Recharge per Transaction]
+    definition: Recharge value per recharge transaction.
+    formula: Recharge value / Recharges
+    dax: DIVIDE ( [Recharge Value], [Recharges] )
+    unit: currency
+    aggregation: ratio
+    domain: Revenue
+  - name: Billed Amount
+    synonyms: [Billing Amount, Invoiced Amount, Postpaid Billing]
+    definition: Amount invoiced to postpaid customers in the period.
+    formula: Sum of bill amounts
+    unit: currency
+    aggregation: sum
+    domain: Billing
+  - name: Collections
+    synonyms: [Bill Collections, Payments Received, Cash Collected]
+    definition: Money collected against bills in the period.
+    formula: Sum of bill payments
+    unit: currency
+    aggregation: sum
+    domain: Billing
+  - name: Collection Efficiency %
+    synonyms: [Collection Rate, Collection Efficiency, Billing Collection %]
+    definition: Share of billed amount collected in the period.
+    formula: Collections / Billed amount
+    dax: DIVIDE ( [Collections], [Billed Amount] )
+    unit: percent
+    aggregation: ratio
+    domain: Billing
+  - name: Acquisition Cost
+    synonyms: [Subscriber Acquisition Spend, Acquisition Spend]
+    definition: Cost of winning new subscribers - dealer commission, handset subsidy and marketing.
+    formula: Sum of commissions, subsidies and acquisition marketing
+    unit: currency
+    aggregation: sum
+    domain: Acquisition
+  - name: Subscriber Acquisition Cost
+    synonyms: [SAC, Cost per Gross Add, CPGA, Customer Acquisition Cost]
+    definition: Acquisition cost for each new connection.
+    formula: Acquisition cost / Gross additions
+    dax: DIVIDE ( [Acquisition Cost], [Gross Additions] )
+    unit: currency
+    aggregation: ratio
+    domain: Acquisition
+  # ---------------- usage
+  - name: Data Usage
+    synonyms: [Data Volume, Data Consumption, Data Traffic]
+    definition: Data used by subscribers, in gigabytes.
+    formula: Sum of data volume in gigabytes
+    unit: number
+    aggregation: sum
+    domain: Usage
+  - name: Data Usage per Subscriber
+    synonyms: [Average Data Usage, GB per User, Data Consumption per Subscriber]
+    definition: Gigabytes used per average subscriber, per month.
+    formula: Data usage / Average subscribers
+    dax: DIVIDE ( [Data Usage], [Average Subscribers] )
+    unit: number
+    aggregation: ratio
+    time: per month
+    domain: Usage
+  - name: Voice Minutes
+    synonyms: [Minutes of Use, Call Minutes, Voice Volume]
+    definition: Minutes of calls made and received.
+    formula: Sum of call duration in minutes
+    unit: number
+    aggregation: sum
+    domain: Usage
+  - name: MOU per Subscriber
+    synonyms: [MOU, Minutes of Use per Subscriber, Average Minutes of Use]
+    definition: Voice minutes per average subscriber, per month.
+    formula: Voice minutes / Average subscribers
+    dax: DIVIDE ( [Voice Minutes], [Average Subscribers] )
+    unit: number
+    aggregation: ratio
+    time: per month
+    domain: Usage
+  # ---------------- network quality
+  - name: Cell Sites
+    synonyms: [Sites, Towers, Number of Sites]
+    definition: Cell sites on air at the end of the period.
+    formula: Count of distinct cell sites on air
+    unit: count
+    aggregation: last
+    domain: Network
+  - name: Site Scheduled Minutes
+    synonyms: [Scheduled Minutes, Total Site Minutes]
+    definition: Minutes cell sites should have been on air - sites times minutes in the period, planned outages excluded where the contract allows.
+    formula: Sum over sites of scheduled minutes
+    unit: duration
+    aggregation: sum
+    domain: Network
+  - name: Site Available Minutes
+    synonyms: [Available Minutes, Site Uptime Minutes]
+    definition: Minutes cell sites were on air and carrying traffic.
+    formula: Scheduled minutes - Outage minutes
+    unit: duration
+    aggregation: sum
+    domain: Network
+  - name: Network Availability %
+    synonyms: [Site Availability, Network Uptime, Availability %]
+    definition: Share of scheduled time the cell sites were available.
+    formula: Site available minutes / Site scheduled minutes
+    dax: DIVIDE ( [Site Available Minutes], [Site Scheduled Minutes] )
+    unit: percent
+    aggregation: ratio
+    domain: Network
+  - name: Call Attempts
+    synonyms: [Attempted Calls, Call Setup Attempts]
+    definition: Calls tried on the network.
+    formula: Count of call set-up attempts
+    unit: count
+    aggregation: sum
+    domain: Network
+  - name: Successful Calls
+    synonyms: [Connected Calls, Completed Calls]
+    definition: Calls that connected.
+    formula: Count of call attempts that connected
+    unit: count
+    aggregation: sum
+    domain: Network
+  - name: Call Success Rate %
+    synonyms: [Call Setup Success Rate, CSSR, Call Completion Rate]
+    definition: Share of call attempts that connected.
+    formula: Successful calls / Call attempts
+    dax: DIVIDE ( [Successful Calls], [Call Attempts] )
+    unit: percent
+    aggregation: ratio
+    domain: Network
+  - name: Dropped Calls
+    synonyms: [Call Drops, Calls Dropped]
+    definition: Connected calls that ended abnormally, not by the user.
+    formula: Count of connected calls released abnormally
+    unit: count
+    aggregation: sum
+    domain: Network
+  - name: Call Drop Rate %
+    synonyms: [Drop Call Rate, DCR, Call Drop %]
+    definition: Share of connected calls that dropped.
+    formula: Dropped calls / Successful calls
+    dax: DIVIDE ( [Dropped Calls], [Successful Calls] )
+    unit: percent
+    aggregation: ratio
+    domain: Network
+  - name: Average Download Speed
+    synonyms: [Download Speed, Average Throughput, DL Throughput]
+    definition: Average download speed in megabits per second.
+    formula: Average of measured download speed
+    unit: number
+    aggregation: average
+    domain: Network
+  # ---------------- customer care
+  - name: Support Tickets
+    synonyms: [Tickets, Complaints, Service Requests]
+    definition: Complaints and service requests raised in the period.
+    formula: Count of distinct tickets
+    unit: count
+    aggregation: distinct_count
+    domain: Care
+  - name: Tickets Resolved Within SLA
+    synonyms: [Resolved Within SLA, SLA Met Tickets]
+    definition: Tickets closed within the time promised for their category.
+    formula: Count of tickets closed within SLA
+    unit: count
+    aggregation: distinct_count
+    domain: Care
+  - name: SLA Compliance %
+    synonyms: [Tickets Within SLA %, Resolution within SLA %, SLA Adherence]
+    definition: Share of tickets resolved within SLA.
+    formula: Tickets resolved within SLA / Support tickets
+    dax: DIVIDE ( [Tickets Resolved Within SLA], [Support Tickets] )
+    unit: percent
+    aggregation: ratio
+    domain: Care
+  - name: Complaints per 1000 Subscribers
+    synonyms: [Tickets per 1000 Subscribers, Complaint Rate]
+    definition: Tickets raised for every 1,000 average subscribers.
+    formula: Support tickets / Average subscribers x 1,000
+    dax: DIVIDE ( [Support Tickets], [Average Subscribers] ) * 1000
+    unit: number
+    aggregation: ratio
+    domain: Care

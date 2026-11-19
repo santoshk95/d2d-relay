@@ -512,7 +512,7 @@ g.sh("chmod a+r /tmp/item58-mini.zip", "root")
 PLAY = r"""
 import json, sys
 from playwright.sync_api import sync_playwright
-cookie = sys.argv[1]
+cookie, name = sys.argv[1], sys.argv[2]
 typo = "".join(chr(x) for x in (0x2014, 0x2013, 0x2026, 0x201C, 0x201D, 0x2018, 0x2019, 0xB7, 0x2022, 0x203A, 0x2039, 0x2192, 0x2190, 0x2194))
 out, errors = {}, []
 H3 = "() => [...document.querySelectorAll('h3')].some(x => x.textContent.trim() === \"DAWB's plan\")"
@@ -522,18 +522,28 @@ with sync_playwright() as pw:
     ctx.add_cookies([{"name": "d2d_session", "value": cookie, "url": "http://127.0.0.1:8000"}])
     page = ctx.new_page()
     page.on("pageerror", lambda e: errors.append(str(e)[:300]))
-    page.goto("http://127.0.0.1:8000/#/new")
-    page.wait_for_selector("form.formcard", timeout=30000)
+    # New dashboard, the guided way (2026-11-19): Name, then Your data's "From a DAWB hand-off", then the steps to Start
+    nd_open(page)
+    page.fill("#nd-name", name)
+    nd_next(page, 1)
     page.click(".dmode button:has-text('From a DAWB hand-off')")
     page.wait_for_timeout(300)
-    out["zip_shown"] = page.locator("input[name=handoff]").evaluate("e => !!e.closest('.genpanel') && e.closest('.genpanel').style.display !== 'none'")
-    out["csv_hidden"] = page.locator("input[name=files]").evaluate("e => e.closest('.drop').style.display === 'none'")
-    out["label"] = page.locator("form.formcard label.f").nth(1).inner_text()
-    out["button"] = page.locator("form.formcard button[type=submit]").inner_text()
-    out["form_text"] = page.evaluate("document.querySelector('form.formcard').innerText")
+    out["zip_shown"] = page.locator(f"{ND_SHOWN} input[type=file][accept^='.zip']").evaluate("e => !e.closest('[hidden]')")
+    out["csv_hidden"] = page.locator(f"{ND_SHOWN} input[type=file][accept^='.csv']").evaluate("e => !!e.closest('[hidden]')")
+    data_text = page.locator(ND_SHOWN).inner_text()
     page.screenshot(path="/tmp/item58-new-1280.png", full_page=True)
-    page.set_input_files("input[name=handoff]", "/tmp/item58-mini.zip")
-    page.click("form.formcard button[type=submit]")
+    nd_upload(page, ".zip", "/tmp/item58-mini.zip", "item58-mini.zip")
+    nd_next(page, 2)
+    out["label"] = page.locator(f"{ND_SHOWN} label[for=nd-added]").inner_text()
+    out["prompt_hidden"] = page.locator("#nd-prompt").evaluate("e => !!e.closest('[hidden]')")
+    build_text = page.locator(ND_SHOWN).inner_text()
+    nd_next(page, 3)
+    page.wait_for_selector(f"{ND_SHOWN} .nd-theme", timeout=30000)
+    nd_next(page, 4)
+    nd_next(page, 5)
+    out["button"] = page.locator("form.formcard.nd .nd-nav button[type=submit]").inner_text()
+    out["form_text"] = data_text + "\n" + build_text + "\n" + page.locator(ND_SHOWN).inner_text()
+    nd_next(page)
     page.wait_for_function("() => location.hash.startsWith('#/p/')", timeout=60000)
     page.wait_for_function(H3, timeout=30000)
     page.wait_for_timeout(800)
@@ -557,8 +567,9 @@ with sync_playwright() as pw:
     page.wait_for_timeout(800)
     out["sideways_360"] = page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth")
     page.screenshot(path="/tmp/item58-plan-360.png", full_page=True)
-    page.goto("http://127.0.0.1:8000/#/new")
-    page.wait_for_selector("form.formcard", timeout=30000)
+    nd_open(page)                                   # the guided New dashboard at phone width: Your data, a hand-off
+    page.fill("#nd-name", "Phone check")
+    nd_next(page, 1)
     page.click(".dmode button:has-text('From a DAWB hand-off')")
     page.wait_for_timeout(300)
     out["new_sideways_360"] = page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth")
@@ -569,11 +580,12 @@ with sync_playwright() as pw:
 print(json.dumps(out))
 """
 n0, b0 = len(dashboards()), balance()
-ui = browser(c.WEB_C, PLAY, c.cookie(owner, "d2d_session"))
+ui = browser(c.WEB_C, c.ND_FLOW + PLAY, c.cookie(owner, "d2d_session"), f"Mini Screens {S}")
 check("New dashboard: 'From a DAWB hand-off' shows the .zip picker and hides the CSV one", ui.get("zip_shown") is True
       and ui.get("csv_hidden") is True, ui if "zip_shown" not in ui else {k: ui.get(k) for k in ("zip_shown", "csv_hidden")})
-check("New dashboard: the request is optional for a hand-off, the button says what comes next",
-      "Anything to add" in str(ui.get("label")) and "Import - confirm DAWB's plan next" in str(ui.get("button")), (ui.get("label"), ui.get("button")))
+check("New dashboard: for a hand-off, What to build asks only for anything to add; the last step's button says what comes next",
+      "Anything to add" in str(ui.get("label")) and ui.get("prompt_hidden") is True and "Import - confirm DAWB's plan next" in str(ui.get("button")),
+      (ui.get("label"), ui.get("prompt_hidden"), ui.get("button")))
 check("New dashboard: it says D2D checks the manifest and shows DAWB's plan", "checks every file against the hand-off's manifest" in str(ui.get("form_text"))
       and "shows DAWB's plan for you to confirm" in str(ui.get("form_text")), str(ui.get("form_text"))[-600:])
 check("import from the form: it opens the new dashboard at Confirm KPIs", str(ui.get("hash", "")).startswith("#/p/mini-screens")
@@ -581,10 +593,14 @@ check("import from the form: it opens the new dashboard at Confirm KPIs", str(ui
 check("plan screen: DAWB's plan, from a DAWB hand-off, with its 5 KPIs (Total orders labelled Orders)",
       "DAWB's plan" in str(ui.get("text")) and "From a DAWB hand-off" in str(ui.get("text")) and ui.get("kpis") == 5
       and ui.get("names") == [x[0] for x in EXPECT] and ui.get("labels") == [x[1] for x in EXPECT], {k: ui.get(k) for k in ("kpis", "names", "labels")})
-check("plan screen: the rename in the notes' first paragraph (shown), the model with its relationships and note, the pages",
-      "Orders is now Total orders" in str(ui.get("text")) and "sales_daily[store_id] -> dim_store[store_id]" in str(ui.get("text"))
-      and "A small star" in str(ui.get("text")) and "Orders by channel (donut chart)" in str(ui.get("text"))
-      and "2 relationships join the tables" in str(ui.get("full")), str(ui.get("text"))[:900])
+# since items 61/62 the plan screen shows the semantic model (its diagram: a relationship is its line's title) in place
+# of the Data model card, once the data was read (at the import)
+check("plan screen: the rename in the notes' first paragraph (shown), the pages, the relationships (in the semantic model's diagram)",
+      "Orders is now Total orders" in str(ui.get("text")) and "Orders by channel (donut chart)" in str(ui.get("text"))
+      and "sales_daily[store_id] -> dim_store[store_id]" in str(ui.get("full")) and "2 relationships join the tables" in str(ui.get("full")),
+      str(ui.get("text"))[:900])
+check("plan screen: the hand-off's note on its model (DAWB's own words) is shown", "A small star" in str(ui.get("text")),
+      [ln for ln in str(ui.get("text")).splitlines() if "model" in ln.lower()][:6])
 check("screens: nothing sideways at 1280 and 360 px (plan and New dashboard), plain characters, no script errors",
       ui.get("sideways_1280") is False and ui.get("sideways_360") is False and ui.get("new_sideways_360") is False
       and ui.get("typo") == "" and ui.get("errors") == [], {k: ui.get(k) for k in ("sideways_1280", "sideways_360", "new_sideways_360", "typo", "errors", "stderr")})

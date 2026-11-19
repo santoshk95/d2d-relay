@@ -45,7 +45,7 @@
       "displayNameKey": "Role_Color",
       "name": "colorValue",
       "kind": "Measure",
-      "description": "Optional. Colors items on a gradient (for example Margin %) when Colors › Color by is Value.",
+      "description": "Optional. Colors items on a gradient (for example Margin %) when Colors > Color by is Value.",
       "descriptionKey": "Role_Color_Desc"
     },
     {

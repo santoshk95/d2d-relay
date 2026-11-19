@@ -14,7 +14,7 @@ import { FamilyVisual, Ctx } from "./common/family";
 const NAMES: Record<string, string> = { mekko: "Mekko chart", waffle: "Waffle chart", pictogram: "Pictogram", aster: "Aster plot", rose: "Rose chart", venn: "Venn diagram" };
 
 export class Visual extends FamilyVisual<ProportionSettings, Model> {
-    protected readonly title = "Atlas Proportion";
+    protected readonly title = "Relay Proportion";
     protected readonly landingLines: [string, string] = [
         "Add a field to Category and a measure to Values. Add a Legend for Mekko segments or a stacked rose.",
         "A second measure is the total (waffle, pictogram) or the weight (aster). For a Venn diagram, write overlaps in Category as \"A & B\"."];

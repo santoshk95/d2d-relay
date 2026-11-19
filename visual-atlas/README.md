@@ -5,7 +5,7 @@ Power BI custom visuals with Flat, Soft and 3D looks and colors that follow your
 | Folder | What's in it |
 |---|---|
 | `CONTENTS.md` | Start here: what is in the package, and the three paths (use, restyle, develop) |
-| `release/` | Ready to use: 13 visuals (`Atlas*.pbiviz`), `themes/*.json`, a test report (`report/Visual Atlas Test.pbip`, `VisualAtlasTest.zip`), the gallery page |
+| `release/` | Ready to use: 13 visuals (`Relay*.pbiviz`), `themes/*.json`, a test report (`report/Visual Atlas Test.pbip`, `VisualAtlasTest.zip`), the gallery page |
 | `visuals/` | Source of the 13 custom visuals (`atlas*/`, shared `common/`), themes, the test harness and sample data |
 | `CUSTOMIZING.md` | How to change design and colors: Format pane, one theme for every visual, brand themes, code |
 | `gallery/` | Source of the Visual Atlas HTML gallery (84 visuals in 19 categories) |

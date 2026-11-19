@@ -733,7 +733,7 @@ def _theme(t: dict) -> dict:
         container["title"] = [{**(container.get("title") or [{}])[0], "fontFamily": t.get("font", "Segoe UI")}]
         theme["visualStyles"]["*"]["*"] = container
     for entry in atlas.catalog().values():          # Atlas families and custom visuals on the same framework
-        defaults = atlas.theme_defaults(entry, t.get("look", "soft"))
+        defaults = atlas.theme_defaults(entry, t.get("look", "soft"), t.get("font"))     # item 72: the brand's font too
         if defaults:
             theme["visualStyles"][entry["guid"]] = {"*": {obj: [props] for obj, props in defaults.items()}}
     from . import catalog

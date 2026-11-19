@@ -28,7 +28,17 @@
       "displayName": "Target",
       "displayNameKey": "Role_Target",
       "name": "target",
-      "kind": "Measure"
+      "kind": "Measure",
+      "description": "Optional. The plan, budget or goal. Shown as a marker and as the change against it.",
+      "descriptionKey": "Role_Target_Desc"
+    },
+    {
+      "displayName": "Comparison (last year)",
+      "displayNameKey": "Role_Compare",
+      "name": "compare",
+      "kind": "Measure",
+      "description": "Optional. A value to compare with, usually last year. Cards, KPIs, multi-row cards and leaderboards show the change against it, for example +3.2% vs LY.",
+      "descriptionKey": "Role_Compare_Desc"
     },
     {
       "displayName": "Minimum",
@@ -72,6 +82,9 @@
             "max": 1
           },
           "target": {
+            "max": 1
+          },
+          "compare": {
             "max": 1
           },
           "minValue": {
@@ -118,6 +131,11 @@
             {
               "for": {
                 "in": "target"
+              }
+            },
+            {
+              "for": {
+                "in": "compare"
               }
             },
             {
@@ -369,6 +387,10 @@
               {
                 "value": "ticker",
                 "displayName": "Ticker"
+              },
+              {
+                "value": "leaderboard",
+                "displayName": "Leaderboard"
               }
             ]
           }
@@ -464,6 +486,16 @@
         "showTarget": {
           "type": {
             "bool": true
+          }
+        },
+        "targetLabel": {
+          "type": {
+            "text": true
+          }
+        },
+        "compareLabel": {
+          "type": {
+            "text": true
           }
         }
       }
@@ -612,6 +644,59 @@
                 "displayName": "Scroll up"
               }
             ]
+          }
+        }
+      }
+    },
+    "leaderboard": {
+      "properties": {
+        "sort": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "valueDesc",
+                "displayName": "Highest first"
+              },
+              {
+                "value": "valueAsc",
+                "displayName": "Lowest first"
+              },
+              {
+                "value": "targetDesc",
+                "displayName": "Best against target first"
+              },
+              {
+                "value": "targetAsc",
+                "displayName": "Worst against target first"
+              },
+              {
+                "value": "compareDesc",
+                "displayName": "Best against comparison first"
+              },
+              {
+                "value": "compareAsc",
+                "displayName": "Worst against comparison first"
+              },
+              {
+                "value": "none",
+                "displayName": "Data order"
+              }
+            ]
+          }
+        },
+        "topN": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "rank": {
+          "type": {
+            "bool": true
+          }
+        },
+        "bars": {
+          "type": {
+            "bool": true
           }
         }
       }

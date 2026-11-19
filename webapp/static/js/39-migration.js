@@ -1,7 +1,9 @@
 /* ---------------- D2D Relay: Migration D2D (#/migration, 2026-11-12), "Migrate any Dashboard to Dashboard". What it
    is (moving dashboards from one BI tool to another, in any direction) and a button that asks PASDACS to switch it on:
    POST /api/org/migration-request emails PASDACS what was asked (Reply-To the person) and lists it on the admin
-   portal's Requests page. Not self-service yet; the ids are the server's (orgs.BI_TOOLS). ---------------- */
+   portal's Requests page. Not self-service yet; the ids are the server's (orgs.BI_TOOLS). One contact, the card at the end
+   (the user, 2026-11-19: "in migration remove contact which is twice"). DAWB (#/dawb, renderDawb below): coming soon, what
+   it is, and one contact. ---------------- */
 const BI_TOOLS = [['cognos', 'IBM Cognos Analytics'], ['qlik', 'Qlik Sense or QlikView'], ['looker', 'Looker'], ['powerbi', 'Power BI'],
   ['tableau', 'Tableau'], ['microstrategy', 'MicroStrategy'], ['businessobjects', 'SAP BusinessObjects'],
   ['ssrs', 'SQL Server Reporting Services'], ['other', 'Another tool']];
@@ -18,8 +20,6 @@ function renderMigration() {
     h('h1', {}, 'Migrate any dashboard to any dashboard'),
     h('p', {class: 'muted lead'}, 'Move your reports from one BI tool to another: Cognos, Qlik, Looker, Tableau, Power BI and more, in any direction. '
       + 'Each dashboard is rebuilt in the new tool, and its numbers are checked against the original.'),
-    h('div', {class: 'row', style: 'gap:10px;flex-wrap:wrap;margin:6px 0 20px;align-items:center'}, ask('Contact PASDACS'),
-      h('span', {class: 'small muted'}, `PASDACS switches Migration D2D on for each organisation. Tell us what you would like to move.`)),
     h('div', {class: 'migrmap'},
       h('div', {class: 'card'}, h('h3', {}, 'From'), chips()),
       h('div', {class: 'migrmid', 'aria-hidden': 'true'}, icon('swap')),
@@ -86,4 +86,42 @@ function migrationDialog() {
     h('label', {class: 'f'}, 'Anything else ', h('small', {}, 'optional')), msg, out,
     h('div', {class: 'row', style: 'justify-content:flex-end;gap:12px;margin-top:12px;align-items:center;flex-wrap:wrap'},
       h('span', {class: 'small muted'}, 'or ', mailLink(`email ${contact}`)), send)));
+}
+
+/* DAWB, the Data Analytics Work Bench (#/dawb): coming soon (the user, 2026-11-19: "Like Migration D2D, have DAWB as well as
+   coming soon and explanation of it and contact"). PASDACS's lakehouse builder: AI agents do the data-engineering work,
+   people approve it, and each finished build is handed to D2D (item 58, New dashboard, "From a DAWB hand-off"). */
+function renderDawb() {
+  const o = ORG(), me = S.me || {}, contact = o.contact || 'info@pasdacs.com', org = o.name || 'our organisation';
+  document.title = 'DAWB - D2D Relay';
+  const tile = (ic, title, text) => h('div', {class: 'tile'}, icon(ic), h('h3', {}, title), h('div', {class: 'muted small'}, text));
+  const li = (b, text) => h('li', {}, h('div', {}, h('b', {}, b), text));
+  const body = `Hello PASDACS,\n\nWe would like to hear about DAWB, the Data Analytics Work Bench, for ${org}.\n\n`
+    + `Our data sources (optional): \n\nRequested by: ${me.name || ''} <${me.email || ''}>\n`;
+  const mail = `mailto:${contact}?subject=${encodeURIComponent(`D2D Relay: DAWB for ${org}`)}&body=${encodeURIComponent(body)}`;
+  $('#main').replaceChildren(h('div', {class: 'page migr dawb'},
+    h('div', {class: 'eyebrow row', style: 'gap:8px;align-items:center'}, 'DAWB', h('span', {class: 'tag'}, 'Coming soon')),
+    h('h1', {}, 'Data Analytics Work Bench'),
+    h('p', {class: 'muted lead'}, 'AI agents do the data-engineering work; your people make the decisions. DAWB reads your source systems, '
+      + 'builds and runs the pipelines and the lakehouse, and hands each finished build to D2D, ready for dashboards.'),
+    h('h2', {}, 'How it works'),
+    h('ol', {class: 'howto'},
+      li('Connect your sources. ', 'Databases, warehouses and pipeline tools: SQL Server, PostgreSQL, MySQL, BigQuery, Azure Databricks, '
+        + 'Azure Data Factory, Informatica, dbt, Airflow and more.'),
+      li('Agents do the work. ', 'They read your sources, propose the data model and build the pipelines, always in the same six phases.'),
+      li('People approve. ', 'The work stops at fixed points for a named person to approve, nothing is deployed until a second person '
+        + 'agrees, and every action is logged.'),
+      li('It runs, and D2D takes it from there. ', 'Pipelines run in DEV and TEST, then live, day and night. Each finished build comes to '
+        + 'D2D with its tables and a proposed plan, waiting at Confirm KPIs.')),
+    h('h2', {}, 'What it covers'),
+    h('div', {class: 'tiles3'},
+      tile('plus', 'Build new', 'A lakehouse and its pipelines, from your source systems.'),
+      tile('swap', 'Change and migrate', 'Change what exists, or move off legacy tools, with lineage across platforms.'),
+      tile('shield', 'Assess and run', 'Assess a data estate, and run its pipelines day and night, with an audit trail.')),
+    h('div', {class: 'card'}, h('h3', {}, 'Interested in DAWB?'),
+      h('p', {class: 'small muted', style: 'margin:4px 0 12px'}, `DAWB is coming soon. Tell PASDACS about your data sources: we reply by email, `
+        + `show you DAWB, and tell you when it is ready for ${o.name || 'your organisation'}.`),
+      h('div', {class: 'row', style: 'gap:12px;flex-wrap:wrap;align-items:center'},
+        h('a', {class: 'btn primary', href: mail}, icon('send'), 'Contact PASDACS'),
+        h('span', {class: 'small muted'}, 'or write to ', h('a', {href: `mailto:${contact}?subject=${encodeURIComponent('DAWB')}`}, contact))))));
 }

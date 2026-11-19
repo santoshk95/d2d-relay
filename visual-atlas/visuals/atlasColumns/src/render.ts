@@ -98,7 +98,7 @@ export function render(e: Env): Drawn {
     const eps = (hi - lo) * 1e-9, ticks = nt.ticks.filter(t => t >= lo - eps && t <= hi + eps);
     const fmtA = mode === "percent" ? (v: number) => Math.round(v * 100) + "%" : axisFormatter(m.format, Number(VA.displayUnits.value) || 0, VA.decimals.value, ticks, e.culture);
     const tickText = ticks.map(t => fmtA(t)), vLabW = vShow ? Math.max(0, ...tickText.map(t => textW(t, vfs))) : 0;
-    const vTitle = VA.title.value ? m.valueNames.join(", ") : "", cTitle = CA.title.value && hasCat ? m.levelNames.join(" › ") : "";
+    const vTitle = VA.title.value ? m.valueNames.join(", ") : "", cTitle = CA.title.value && hasCat ? m.levelNames.join(" > ") : "";
 
     /* ---------- category labels and hierarchy runs ---------- */
     const n = m.cats.length, concat = CA.concatenate.value || m.levels < 2;
@@ -227,7 +227,8 @@ export function render(e: Env): Drawn {
             else el("line", { x1: r1(gx0), x2: r1(gx1), y1: r1(p), y2: r1(p), stroke: gC, "stroke-width": gw, "stroke-dasharray": dash, "stroke-linecap": "round" }, B);
         }
         if (vShow) {
-            if (horiz) el("text", { x: r1(p), y: r1(plotB + 4 + vfs), "text-anchor": "middle", fill: vC, "font-size": vfs, class: "ax" }, B, tickText[i]);
+            /* a tick at either end of a horizontal axis stays inside the visual ("100%" was cut at the right edge) */
+            if (horiz) { const tw = textW(tickText[i], vfs), endR = p + tw / 2 > W - 2, endL = p - tw / 2 < 2; el("text", { x: r1(endR ? W - 2 : endL ? 2 : p), y: r1(plotB + 4 + vfs), "text-anchor": endR ? "end" : endL ? "start" : "middle", fill: vC, "font-size": vfs, class: "ax" }, B, tickText[i]); }
             else el("text", { x: r1(plotL - 8), y: r1(p + vfs * 0.35), "text-anchor": "end", fill: vC, "font-size": vfs, class: "ax" }, B, tickText[i]);
         }
     });
@@ -357,8 +358,9 @@ export function render(e: Env): Drawn {
                     const lines = wraps[i] || [t], tx = e.bindCat(el("text", { x: r1(cx), y: r1(y0 + cfs * 0.9), "text-anchor": "middle", fill: cC, "font-size": cfs }, g), i);
                     lines.forEach((ln, k) => { el("tspan", { x: r1(cx), dy: k ? r1(cfs * 1.15) : 0 }, tx, ln); });
                 } else {
-                    const ax = cx + cfs * 0.25, ay = y0 + cfs * 0.55;
-                    e.bindCat(el("text", { x: r1(ax), y: r1(ay), "text-anchor": "end", fill: cC, "font-size": cfs, transform: `rotate(-45 ${r1(ax)} ${r1(ay)})` }, g, trunc(t, rotLen, cfs)), i);
+                    /* a slanted label runs down to the left: the first ones are shortened so they end inside the visual */
+                    const ax = cx + cfs * 0.25, ay = y0 + cfs * 0.55, room = (ax - 2) / 0.7071 - cfs * 0.4;
+                    e.bindCat(el("text", { x: r1(ax), y: r1(ay), "text-anchor": "end", fill: cC, "font-size": cfs, transform: `rotate(-45 ${r1(ax)} ${r1(ay)})` }, g, trunc(t, Math.max(cfs * 1.5, Math.min(rotLen, room)), cfs)), i);
                 }
             });
             for (let t = 0; t < tiers; t++) {

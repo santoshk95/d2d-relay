@@ -58,7 +58,8 @@ EGRESS = re.compile(r"^/api/(projects/[^/]+/github|connections/[^/]+/write)/?$")
 LEFTOVER = re.compile(r"^/api/registry/[^/]+/interest/?$")
 # S15: pages and callbacks outside /api from RELAY: GitHub and Microsoft mail sign-ins, observability webhooks, the
 # visual gallery page (D2D Relay's own sign-in, the warehouse sign-in and the sign-in pages stay)
-PAGES_OFF = ("/auth/github/", "/auth/microsoft/", "/auth/observe/", "/gallery")
+# item 86: /gallery (the Relay visual library, view only, for signed-in people) is on again: the app frames it at #/library
+PAGES_OFF = ("/auth/github/", "/auth/microsoft/", "/auth/observe/")
 
 
 def page_off(path: str) -> bool:

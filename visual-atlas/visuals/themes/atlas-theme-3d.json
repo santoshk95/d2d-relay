@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/powerbi-desktop-samples/main/Report%20Theme%20JSON%20Schema/reportThemeSchema-2.159.json",
-  "name": "Visual Atlas · 3D",
+  "name": "Relay - 3D",
   "dataColors": [
     "#2A78D6",
     "#EB6834",

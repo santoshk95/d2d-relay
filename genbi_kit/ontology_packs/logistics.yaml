@@ -1,0 +1,460 @@
+# Industry pack: supply chain and logistics. Business terms tag columns by name (genbi_kit/ontology.py);
+# KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields).
+name: Supply chain and logistics
+order: 50
+description: Shippers, carriers and warehouse operators. Shipments and deliveries, on-time and in-full service, freight and warehousing cost, transit times, warehouse picking, storage use, inventory and fleet.
+questions:
+  - What was our OTIF percent by customer and by lane last month?
+  - Which carriers have the worst on-time delivery rate, and what is their freight cost per kilogram?
+  - How has freight cost per shipment changed by transport mode over the last 12 months?
+  - Which warehouses have the lowest picks per labor hour and pick accuracy this week?
+  - What is the average transit time by lane, and where are shipments most often late?
+  - How full are our warehouses and trucks, by site and by week?
+
+terms:
+  # ---------------- measures: shipments and service
+  - {name: Shipments, kind: measure, unit: count, aggregation: sum, description: "Shipments sent (one consignment from one origin to one destination).",
+     synonyms: [shipment count, number of shipments, consignments, consignment count, loads, load count, shipments sent, dispatches, dispatch count, bills of lading]}
+  - {name: Deliveries, kind: measure, unit: count, aggregation: sum, description: "Deliveries completed (shipments that arrived).",
+     synonyms: [delivery count, delivered shipments, deliveries completed, number of deliveries, drops, drop count, stops delivered, completed deliveries, pod count]}
+  - {name: On Time Deliveries, kind: measure, unit: count, aggregation: sum, description: "Deliveries that arrived within the promised window.",
+     synonyms: [on time count, ontime deliveries, on time delivery count, deliveries on time, on time shipments, ot deliveries, on time drops]}
+  - {name: OTIF Deliveries, kind: measure, unit: count, aggregation: sum, description: "Deliveries that arrived on time and complete (in full).",
+     synonyms: [otif count, otif, on time in full deliveries, otif shipments, perfect deliveries, otif qualified, otif drops, deliveries otif]}
+  - {name: Order Lines Ordered, kind: measure, unit: count, aggregation: sum, description: "Order lines the customer asked for.",
+     synonyms: [lines ordered, ordered lines, order line count, order lines, lines requested, requested lines, lines on order, total lines]}
+  - {name: Order Lines Shipped, kind: measure, unit: count, aggregation: sum, description: "Order lines that shipped complete.",
+     synonyms: [lines shipped, shipped lines, lines fulfilled, fulfilled lines, lines delivered, lines filled, lines complete, filled lines]}
+  - {name: Orders, kind: measure, unit: count, aggregation: sum, description: "Customer or purchase orders.",
+     synonyms: [order count, number of orders, orders received, orders placed, orders shipped, total orders, purchase orders]}
+  - {name: Damaged Shipments, kind: measure, unit: count, aggregation: sum, description: "Shipments that arrived damaged or short.",
+     synonyms: [damage count, damaged count, damaged deliveries, damage claims count, damaged consignments, shipments damaged, claims raised, loss and damage count]}
+  - {name: Transit Time, kind: measure, unit: duration, aggregation: average, description: "Days (or hours) from pickup to delivery.",
+     synonyms: [transit days, transit time days, days in transit, lead time days, delivery time, transit hours, door to door time, shipping time, tat, delivery lead time, transit duration]}
+  - {name: Delay Days, kind: measure, unit: duration, aggregation: average, description: "Days a delivery arrived after the promised date (zero when on time).",
+     synonyms: [days late, late days, delay days late, delivery delay, delay in days, lateness days, days delayed, days past due, delay time]}
+  - {name: Dwell Time, kind: measure, unit: duration, aggregation: average, description: "Time a truck, container or pallet waits at a site or port.",
+     synonyms: [dwell hours, dwell days, yard time, waiting time, detention time, dock dwell, port dwell, gate to gate time, turnaround time, truck turnaround]}
+  - {name: Order Cycle Time, kind: measure, unit: duration, aggregation: average, description: "Time from the customer placing the order to delivery.",
+     synonyms: [order to delivery time, order cycle days, order lead time, order to delivery days, order fulfillment time, order to cash days, order fulfilment time]}
+  # ---------------- measures: weight, volume, distance
+  - {name: Shipment Weight, kind: measure, unit: number, aggregation: sum, description: "Weight shipped (kilograms, pounds or tonnes).",
+     synonyms: [weight kg, gross weight, chargeable weight, billable weight, actual weight, weight lbs, total weight, shipped weight, tonnage, weight tonnes]}
+  - {name: Shipment Volume, kind: measure, unit: number, aggregation: sum, description: "Volume shipped (cubic metres or feet).",
+     synonyms: [cbm, cubic meters, cubic metres, volume cbm, cube, volumetric weight, shipped volume, total volume, cubic feet]}
+  - {name: Pallets, kind: measure, unit: count, aggregation: sum, description: "Pallets moved or stored.",
+     synonyms: [pallet count, number of pallets, pallet qty, pallets shipped, pallet quantity, plt count, pallet positions moved]}
+  - {name: Packages, kind: measure, unit: count, aggregation: sum, description: "Parcels or cartons shipped.",
+     synonyms: [package count, parcels, parcel count, cartons, carton count, pieces, piece count, handling units, hu count, boxes]}
+  - {name: Distance, kind: measure, unit: number, aggregation: sum, description: "Distance travelled (kilometres or miles).",
+     synonyms: [distance km, distance miles, km, kms, kilometers, kilometres, miles, trip distance, route distance, mileage, lane distance]}
+  - {name: Trips, kind: measure, unit: count, aggregation: sum, description: "Truck or vehicle trips made.",
+     synonyms: [trip count, number of trips, truck trips, vehicle trips, runs, routes run, journeys, route count]}
+  - {name: Load Weight, kind: measure, unit: number, aggregation: sum, description: "Weight actually loaded on vehicles.",
+     synonyms: [loaded weight, payload, payload weight, load kg, truck load weight, vehicle load, weight loaded, cargo weight]}
+  - {name: Vehicle Capacity Weight, kind: measure, unit: number, aggregation: sum, description: "Weight the vehicles could have carried.",
+     synonyms: [vehicle capacity, truck capacity, capacity weight, max payload, capacity kg, available capacity, rated capacity, truck payload capacity, fleet capacity]}
+  - {name: CO2 Emissions, kind: measure, unit: number, aggregation: sum, description: "Carbon dioxide emitted by transport (kilograms or tonnes).",
+     synonyms: [co2, co2e, co2 kg, carbon emissions, emissions, ghg emissions, carbon footprint, co2 tonnes, emission kg]}
+  # ---------------- measures: cost
+  - {name: Freight Cost, kind: measure, unit: currency, aggregation: sum, description: "What carriers charged to move the goods.",
+     synonyms: [freight charges, freight cost amount, freight spend, transport cost, transportation cost, shipping cost, carrier charges, carrier cost, freight bill, freight amount, linehaul cost, haulage cost, line haul]}
+  - {name: Fuel Surcharge, kind: measure, unit: currency, aggregation: sum, description: "Fuel supplement a carrier adds to the freight rate.",
+     synonyms: [fuel surcharge amount, fsc, fuel charge, fuel adjustment, fuel supplement, baf, bunker surcharge, fuel cost surcharge]}
+  - {name: Accessorial Charges, kind: measure, unit: currency, aggregation: sum, description: "Extra carrier charges (detention, liftgate, redelivery, handling).",
+     synonyms: [accessorials, accessorial cost, accessorial fees, extra charges, additional charges, detention charges, other freight charges, ancillary charges, accessorial amount]}
+  - {name: Warehousing Cost, kind: measure, unit: currency, aggregation: sum, description: "Cost of storing and handling goods in warehouses.",
+     synonyms: [warehouse cost, warehouse expense, storage cost, storage charges, handling cost, handling charges, warehouse operating cost, dc cost, distribution cost, 3pl warehouse cost, storage and handling cost]}
+  - {name: Net Sales, kind: measure, unit: currency, aggregation: sum, description: "Sales value of the goods moved (for cost-to-sales ratios).",
+     synonyms: [net sls, net revenue, sales, sales revenue, revenue, invoice value, order value, sales value, turnover]}
+  - {name: Cost of Goods Sold, kind: measure, unit: currency, aggregation: sum, description: "Cost of the goods sold, the base for inventory turns.",
+     synonyms: [cogs, cost of sales, product cost sold, cost of goods, goods cost, material cost of sales]}
+  # ---------------- measures: warehouse and inventory
+  - {name: Lines Picked, kind: measure, unit: count, aggregation: sum, description: "Order lines picked in the warehouse.",
+     synonyms: [picks, pick lines, pick count, lines picked count, picked lines, order lines picked, total picks, pick tasks, number of picks]}
+  - {name: Units Picked, kind: measure, unit: count, aggregation: sum, description: "Units picked in the warehouse.",
+     synonyms: [picked units, units pick qty, pick qty, picked qty, picked quantity, pieces picked, eaches picked]}
+  - {name: Pick Errors, kind: measure, unit: count, aggregation: sum, description: "Picks that were wrong (wrong item, wrong quantity).",
+     synonyms: [picking errors, mispicks, mis picks, error picks, wrong picks, pick error count, picking error count, short picks, pick mistakes]}
+  - {name: Pick Labor Hours, kind: measure, unit: number, aggregation: sum, description: "Hours worked by pickers.",
+     synonyms: [picker hours, pick hours, picking hours, labor hours, labour hours, warehouse labor hours, direct hours, worked hours, man hours, operator hours]}
+  - {name: Pallet Positions Used, kind: measure, unit: count, aggregation: average, description: "Storage positions holding stock.",
+     synonyms: [positions used, used positions, occupied positions, occupied pallet positions, pallet positions occupied, locations used, bins used, occupied locations, space used]}
+  - {name: Pallet Positions Available, kind: measure, unit: count, aggregation: average, description: "Storage positions the warehouse has in total.",
+     synonyms: [positions available, total positions, pallet capacity, storage capacity, total pallet positions, location capacity, capacity positions, bins available, space available]}
+  - {name: Inventory Units, kind: measure, unit: count, aggregation: last, description: "Units in stock at the end of the period.",
+     synonyms: [on hand units, stock units, on hand qty, stock qty, inventory qty, soh, stock on hand, closing stock units, inventory on hand]}
+  - {name: Inventory Value, kind: measure, unit: currency, aggregation: last, description: "Value of the stock at the end of the period, at cost.",
+     synonyms: [stock value, inventory cost, inventory dollars, inventory at cost, closing stock value, on hand value, stock cost]}
+  - {name: Received Units, kind: measure, unit: count, aggregation: sum, description: "Units received into the warehouse.",
+     synonyms: [receipts units, units received, received qty, receipt qty, inbound units, goods receipt qty, gr qty, received quantity]}
+  - {name: Backordered Lines, kind: measure, unit: count, aggregation: sum, description: "Order lines that could not be filled from stock.",
+     synonyms: [backorders, back orders, backorder lines, backorder count, unfilled lines, short lines, stockout lines, lines on backorder]}
+
+  # ---------------- keys
+  - {name: Shipment, kind: key, entity: Shipment, description: "Identifies one shipment or consignment.",
+     synonyms: [shipment id, shipment number, shipment key, shipment no, consignment id, consignment number, consignment no, tracking number, tracking id, awb, awb number, waybill, waybill number, bol number, bill of lading, pro number, load id, load number, delivery number]}
+  - {name: Order, kind: key, entity: Order, description: "Identifies an order.",
+     synonyms: [order id, order number, order key, order no, sales order, so number, po number, purchase order, po id, customer order, order ref]}
+  - {name: Carrier, kind: key, entity: Carrier, description: "Identifies a carrier or transporter.",
+     synonyms: [carrier id, carrier code, carrier number, carrier key, scac, scac code, transporter id, transporter code, haulier id, forwarder id, 3pl id, logistics provider id, lsp id, tms carrier id]}
+  - {name: Lane, kind: key, entity: Lane, description: "Identifies a transport lane (origin to destination pair).",
+     synonyms: [lane id, lane code, lane key, route id, route code, trade lane, trade lane id, corridor id, origin destination pair, od pair, route key]}
+  - {name: Origin, kind: key, entity: Origin, description: "Identifies the place a shipment starts from.",
+     synonyms: [origin id, origin code, origin location, origin location id, origin site, origin facility, origin warehouse, from location, from site, pickup location id, ship from, ship from id, shipper id, origin port]}
+  - {name: Destination, kind: key, entity: Destination, description: "Identifies the place a shipment goes to.",
+     synonyms: [destination id, destination code, destination location, destination location id, destination site, destination facility, dest id, to location, to site, delivery location id, ship to, ship to id, consignee id, destination port]}
+  - {name: Warehouse, kind: key, entity: Warehouse, description: "Identifies a warehouse or distribution centre.",
+     synonyms: [warehouse id, warehouse code, warehouse number, warehouse key, dc id, dc code, dc number, distribution center, distribution centre, whse id, whse code, fulfillment center id, site code, depot id]}
+  - {name: Product, kind: key, entity: Product, description: "Identifies an item (SKU).",
+     synonyms: [product id, product code, product key, sku, sku id, sku code, item id, item code, item number, article number, material number, material id, part number, gtin, upc, ean]}
+  - {name: Customer, kind: key, entity: Customer, description: "Identifies a customer.",
+     synonyms: [customer id, customer code, customer number, customer key, client id, account id, sold to, sold to id, bill to, bill to id, receiver id, shipper account]}
+  - {name: Supplier, kind: key, entity: Supplier, description: "Identifies a supplier.",
+     synonyms: [supplier id, supplier code, supplier number, vendor id, vendor code, vendor number, vendor key, shipper vendor id]}
+  - {name: Vehicle, kind: key, entity: Vehicle, description: "Identifies a truck, trailer or other vehicle.",
+     synonyms: [vehicle id, vehicle number, vehicle code, vehicle registration, truck id, truck number, trailer id, trailer number, fleet id, fleet number, registration number, plate number, license plate]}
+  - {name: Driver, kind: key, entity: Driver, description: "Identifies a driver.",
+     synonyms: [driver id, driver code, driver number, driver key, driver license, driver badge, chauffeur id, operator id]}
+  - {name: Container, kind: key, entity: Container, description: "Identifies a shipping container.",
+     synonyms: [container id, container number, container no, container key, cntr number, equipment number, container ref, seal number, iso container number]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The day a row belongs to.",
+     synonyms: [day, calendar date, report date, transaction date, posting date, event date, business date, activity date, snapshot date]}
+  - {name: Ship Date, kind: date, entity: Date, description: "The day goods left the origin.",
+     synonyms: [shipment date, dispatch date, pickup date, pick up date, departure date, actual ship date, shipped date, loading date, atd, etd, gi date, goods issue date]}
+  - {name: Delivery Date, kind: date, entity: Date, description: "The day goods arrived.",
+     synonyms: [delivered date, arrival date, actual delivery date, pod date, proof of delivery date, received date, ata, actual arrival date, drop date, delivered on]}
+  - {name: Promised Date, kind: date, entity: Date, description: "The date the customer was promised (or requested).",
+     synonyms: [promise date, due date, planned delivery date, requested delivery date, requested date, eta, scheduled delivery date, appointment date, commit date, need by date, expected delivery date]}
+  - {name: Order Date, kind: date, entity: Date, synonyms: [order created date, order placed date, order received date, po date, order dt, creation date, booking date]}
+  - {name: Receipt Date, kind: date, entity: Date, synonyms: [goods receipt date, receiving date, putaway date, inbound date, grn date, gr date, dock date]}
+  - {name: Week, kind: date, entity: Date, synonyms: [week number, week id, calendar week, iso week, ship week, delivery week, fiscal week]}
+  - {name: Month, kind: date, entity: Date, synonyms: [month name, ship month, delivery month, month year, year month, yyyymm]}
+  - {name: Fiscal Period, kind: date, entity: Date, synonyms: [fiscal month, period number, period id, accounting period, posting period, fp]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, fiscal year number, financial year, year number]}
+
+  # ---------------- attributes
+  - {name: Carrier Name, kind: attribute, entity: Carrier, synonyms: [carrier, transporter name, transporter, haulier name, forwarder name, logistics provider, 3pl name, carrier description]}
+  - {name: Carrier Type, kind: attribute, entity: Carrier, synonyms: [fleet type, own or contracted, carrier category, carrier class, contract type, asset or non asset, carrier group]}
+  - {name: Transport Mode, kind: attribute, entity: Shipment, description: "Road, rail, air or ocean.",
+     synonyms: [mode, mode of transport, shipping mode, ship mode, transportation mode, freight mode, mode code, transport type, mot, carriage mode]}
+  - {name: Service Level, kind: attribute, entity: Shipment, synonyms: [service type, service class, delivery service, shipping service, service code, speed, express or standard, service tier, delivery option]}
+  - {name: Shipment Status, kind: attribute, entity: Shipment, synonyms: [delivery status, tracking status, shipment state, load status, status, milestone, shipment stage, leg status]}
+  - {name: Origin Name, kind: attribute, entity: Origin, synonyms: [origin site name, origin city, ship from name, from city, origin description, pickup city, origin town, origin location name]}
+  - {name: Destination Name, kind: attribute, entity: Destination, synonyms: [destination site name, destination city, ship to name, to city, destination description, delivery city, destination town, destination location name]}
+  - {name: Lane Name, kind: attribute, entity: Lane, synonyms: [route name, lane description, route description, lane label, origin destination, lane group, corridor]}
+  - {name: Equipment Type, kind: attribute, entity: Vehicle, synonyms: [vehicle type, truck type, trailer type, container size, container type, equipment class, fleet type class, vehicle class, body type]}
+  - {name: Incoterm, kind: attribute, entity: Order, synonyms: [incoterms, inco term, delivery terms, shipping terms, freight terms, trade terms]}
+  - {name: Warehouse Name, kind: attribute, entity: Warehouse, synonyms: [dc name, distribution center name, whse name, site name, depot name, warehouse description, fulfillment center name]}
+  - {name: Product Name, kind: attribute, entity: Product, synonyms: [item name, item description, sku description, product description, material description, description, article description]}
+  - {name: Product Category, kind: attribute, entity: Product, synonyms: [category, category name, product group, item group, product class, commodity, commodity group, material group]}
+  - {name: Customer Name, kind: attribute, entity: Customer, synonyms: [client name, account name, consignee name, receiver name, customer description, sold to name]}
+  - {name: Region, kind: attribute, entity: Destination, synonyms: [region name, sales region, zone, area, territory, destination region, market, state]}
+  - {name: Country, kind: attribute, entity: Destination, synonyms: [country name, country code, destination country, nation, dest country]}
+  - {name: Delay Reason, kind: attribute, entity: Shipment, description: "Why a delivery was late.",
+     synonyms: [delay code, delay cause, late reason, late delivery reason, exception reason, exception code, reason code, failure reason, miss reason, delivery exception]}
+  - {name: Unit of Measure, kind: attribute, entity: Product, synonyms: [uom, base unit, measure unit, weight unit, unit of weight, base uom]}
+
+kpis:
+  # ---------------- service
+  - name: Shipments
+    synonyms: [Shipment Count, Consignments, Number of Shipments]
+    definition: Shipments sent in the period (one consignment from one origin to one destination).
+    formula: Count of distinct shipments
+    unit: count
+    aggregation: distinct_count
+    time: by ship date
+    domain: Transport
+  - name: Deliveries
+    synonyms: [Delivery Count, Delivered Shipments]
+    definition: Shipments delivered in the period.
+    formula: Count of distinct shipments with a delivery date in the period
+    unit: count
+    aggregation: distinct_count
+    time: by delivery date
+    domain: Service
+  - name: On Time Deliveries
+    synonyms: [Deliveries On Time, On-Time Count]
+    definition: Deliveries that arrived within the promised delivery window (on or before the promised date and time, with the tolerance the contract allows).
+    formula: Count of deliveries with delivery date <= promised date
+    unit: count
+    aggregation: distinct_count
+    domain: Service
+  - name: On-Time Delivery %
+    synonyms: [OTD, OTD %, On Time Delivery Rate, Delivery Punctuality]
+    definition: Share of deliveries that arrived on time.
+    formula: On time deliveries / Deliveries
+    dax: DIVIDE ( [On Time Deliveries], [Deliveries] )
+    unit: percent
+    aggregation: ratio
+    domain: Service
+  - name: OTIF Deliveries
+    synonyms: [OTIF Count, Deliveries On Time and In Full]
+    definition: Deliveries that arrived on time and with every ordered line and quantity.
+    formula: Count of deliveries that were on time and complete
+    unit: count
+    aggregation: distinct_count
+    domain: Service
+  - name: OTIF %
+    synonyms: [On-Time In-Full %, On Time In Full, OTIF Rate]
+    definition: Share of deliveries that were both on time and in full.
+    formula: OTIF deliveries / Deliveries
+    dax: DIVIDE ( [OTIF Deliveries], [Deliveries] )
+    unit: percent
+    aggregation: ratio
+    domain: Service
+  - name: Order Lines Ordered
+    synonyms: [Lines Ordered, Ordered Lines]
+    definition: Order lines customers asked for.
+    formula: Count of order lines
+    unit: count
+    aggregation: sum
+    domain: Service
+  - name: Order Lines Shipped
+    synonyms: [Lines Shipped, Lines Fulfilled]
+    definition: Order lines shipped in full.
+    formula: Count of order lines shipped complete
+    unit: count
+    aggregation: sum
+    domain: Service
+  - name: Line Fill Rate %
+    synonyms: [Fill Rate, Fill Rate %, Order Line Fill Rate]
+    definition: Share of ordered lines shipped in full.
+    formula: Order lines shipped / Order lines ordered
+    dax: DIVIDE ( [Order Lines Shipped], [Order Lines Ordered] )
+    unit: percent
+    aggregation: ratio
+    domain: Service
+  - name: Average Transit Time
+    synonyms: [Transit Time, Average Transit Days, Delivery Lead Time]
+    definition: Average days from pickup to delivery of delivered shipments.
+    formula: Average of (delivery date - ship date) in days
+    unit: duration
+    aggregation: average
+    domain: Transport
+  - name: Average Delay Days
+    synonyms: [Average Days Late, Delay Days]
+    definition: Average days late of deliveries that arrived after the promised date.
+    formula: Average of (delivery date - promised date) for late deliveries
+    filters: [Delivery date after promised date]
+    unit: duration
+    aggregation: average
+    domain: Service
+  - name: Order Cycle Time
+    synonyms: [Order to Delivery Time, Order Lead Time]
+    definition: Average days from the customer placing the order to delivery.
+    formula: Average of (delivery date - order date) in days
+    unit: duration
+    aggregation: average
+    domain: Service
+  - name: Average Dwell Time
+    synonyms: [Dwell Time, Truck Turnaround Time, Yard Time]
+    definition: Average hours a vehicle or container waits at a site between arrival and departure.
+    formula: Average of (departure time - arrival time) in hours
+    unit: duration
+    aggregation: average
+    domain: Transport
+  - name: Damaged Shipments
+    synonyms: [Damage Claims, Shipments Damaged]
+    definition: Delivered shipments reported damaged or with missing goods.
+    formula: Count of shipments with a damage or shortage report
+    unit: count
+    aggregation: distinct_count
+    domain: Service
+  - name: Damage Rate %
+    synonyms: [Damage %, Loss and Damage Rate, Claims Rate]
+    definition: Share of deliveries that arrived damaged.
+    formula: Damaged shipments / Deliveries
+    dax: DIVIDE ( [Damaged Shipments], [Deliveries] )
+    unit: percent
+    aggregation: ratio
+    domain: Service
+  # ---------------- cost
+  - name: Freight Cost
+    synonyms: [Freight Spend, Transportation Cost, Transport Cost, Freight Charges]
+    definition: What carriers charged to move the goods - base rate, fuel surcharge and accessorials.
+    formula: Sum of carrier invoice amounts
+    unit: currency
+    aggregation: sum
+    domain: Cost
+  - name: Warehousing Cost
+    synonyms: [Warehouse Cost, Storage and Handling Cost]
+    definition: Cost of storing and handling goods in warehouses, own or third party.
+    formula: Sum of warehouse labor, rent, utilities and 3PL warehouse charges
+    unit: currency
+    aggregation: sum
+    domain: Cost
+  - name: Logistics Cost
+    synonyms: [Total Logistics Cost, Supply Chain Cost, Distribution Cost]
+    definition: Freight and warehousing cost together.
+    formula: Freight cost + Warehousing cost
+    dax: '[Freight Cost] + [Warehousing Cost]'
+    unit: currency
+    aggregation: sum
+    domain: Cost
+  - name: Net Sales
+    synonyms: [Net Revenue, Sales Value]
+    definition: Net sales value of the goods moved, the base for cost-to-sales ratios.
+    formula: Sum of invoice value after discounts
+    unit: currency
+    aggregation: sum
+    domain: Cost
+  - name: Logistics Cost % of Sales
+    synonyms: [Logistics Cost %, Supply Chain Cost % of Sales, Logistics Cost to Sales]
+    definition: Logistics cost as a share of net sales.
+    formula: Logistics cost / Net sales
+    dax: DIVIDE ( [Logistics Cost], [Net Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Cost
+  - name: Freight Cost per Shipment
+    synonyms: [Cost per Shipment, Average Freight Cost per Shipment]
+    definition: Freight cost for each shipment sent.
+    formula: Freight cost / Shipments
+    dax: DIVIDE ( [Freight Cost], [Shipments] )
+    unit: currency
+    aggregation: ratio
+    domain: Cost
+  - name: Shipment Weight
+    synonyms: [Weight Shipped, Total Weight, Chargeable Weight]
+    definition: Weight shipped, in one unit (kilograms) across all shipments.
+    formula: Sum of shipment weights in kilograms
+    unit: number
+    aggregation: sum
+    domain: Transport
+  - name: Freight Cost per Kg
+    synonyms: [Cost per Kg, Freight Cost per Kilogram, Freight Rate per Kg]
+    definition: Freight cost for each kilogram shipped.
+    formula: Freight cost / Shipment weight
+    dax: DIVIDE ( [Freight Cost], [Shipment Weight] )
+    unit: currency
+    aggregation: ratio
+    domain: Cost
+  # ---------------- warehouse
+  - name: Lines Picked
+    synonyms: [Picks, Pick Lines, Order Lines Picked]
+    definition: Order lines picked in the warehouse.
+    formula: Count of completed pick tasks (lines)
+    unit: count
+    aggregation: sum
+    domain: Warehouse
+  - name: Pick Errors
+    synonyms: [Picking Errors, Mispicks]
+    definition: Picks found wrong at pack or check (wrong item or quantity).
+    formula: Count of picks with an error
+    unit: count
+    aggregation: sum
+    domain: Warehouse
+  - name: Pick Accuracy %
+    synonyms: [Picking Accuracy, Pick Accuracy Rate]
+    definition: Share of picks done without error.
+    formula: 1 - Pick errors / Lines picked
+    dax: 1 - DIVIDE ( [Pick Errors], [Lines Picked] )
+    unit: percent
+    aggregation: ratio
+    domain: Warehouse
+  - name: Pick Labor Hours
+    synonyms: [Picker Hours, Picking Hours]
+    definition: Hours worked by pickers.
+    formula: Sum of hours booked to picking
+    unit: number
+    aggregation: sum
+    domain: Warehouse
+  - name: Lines Picked per Labor Hour
+    synonyms: [Picks per Hour, Pick Rate, Picking Productivity]
+    definition: Order lines picked for each hour of picker labor.
+    formula: Lines picked / Pick labor hours
+    dax: DIVIDE ( [Lines Picked], [Pick Labor Hours] )
+    unit: ratio
+    aggregation: ratio
+    domain: Warehouse
+  - name: Pallet Positions Used
+    synonyms: [Occupied Positions, Positions Used]
+    definition: Storage positions holding stock, average over the period.
+    formula: Average of occupied storage positions
+    unit: count
+    aggregation: average
+    domain: Warehouse
+  - name: Pallet Positions Available
+    synonyms: [Total Positions, Storage Capacity]
+    definition: Storage positions the warehouse has in total, average over the period.
+    formula: Average of storage positions available
+    unit: count
+    aggregation: average
+    domain: Warehouse
+  - name: Storage Utilization %
+    synonyms: [Warehouse Utilization, Space Utilization, Storage Utilisation %]
+    definition: Share of storage positions that hold stock.
+    formula: Pallet positions used / Pallet positions available
+    dax: DIVIDE ( [Pallet Positions Used], [Pallet Positions Available] )
+    unit: percent
+    aggregation: ratio
+    domain: Warehouse
+  # ---------------- inventory and fleet
+  - name: Inventory Value
+    synonyms: [Stock Value, Inventory at Cost]
+    definition: Value of the stock on hand at the end of the period, at cost.
+    formula: Sum of stock on hand times unit cost, at period end
+    unit: currency
+    aggregation: last
+    domain: Inventory
+  - name: Average Inventory Value
+    synonyms: [Average Inventory, Average Stock Value]
+    definition: Average value of stock over the period, at cost.
+    formula: Average of inventory value at each period end
+    unit: currency
+    aggregation: average
+    domain: Inventory
+  - name: Cost of Goods Sold
+    synonyms: [COGS, Cost of Sales]
+    definition: Cost of the goods sold in the period, the base for inventory turns.
+    formula: Sum of units sold times unit cost
+    unit: currency
+    aggregation: sum
+    domain: Inventory
+  - name: Inventory Turnover
+    synonyms: [Inventory Turns, Stock Turn]
+    definition: How many times the stock is sold through in the period.
+    formula: Cost of goods sold / Average inventory value
+    dax: DIVIDE ( [Cost of Goods Sold], [Average Inventory Value] )
+    unit: ratio
+    aggregation: ratio
+    domain: Inventory
+  - name: Days of Inventory
+    synonyms: [Days Inventory Outstanding, DIO, Days of Stock]
+    definition: How many days of sales the stock covers.
+    formula: Average inventory value / Cost of goods sold x Days in the period
+    unit: duration
+    aggregation: custom
+    domain: Inventory
+  - name: Load Weight
+    synonyms: [Payload, Weight Loaded]
+    definition: Weight actually carried by the vehicles.
+    formula: Sum of weight loaded per trip
+    unit: number
+    aggregation: sum
+    domain: Fleet
+  - name: Vehicle Capacity Weight
+    synonyms: [Vehicle Capacity, Truck Capacity]
+    definition: Weight the vehicles could have carried on the same trips.
+    formula: Sum of rated payload per trip
+    unit: number
+    aggregation: sum
+    domain: Fleet
+  - name: Vehicle Fill %
+    synonyms: [Truck Utilization, Load Factor, Vehicle Capacity Utilization]
+    definition: Share of vehicle capacity that was loaded.
+    formula: Load weight / Vehicle capacity weight
+    dax: DIVIDE ( [Load Weight], [Vehicle Capacity Weight] )
+    unit: percent
+    aggregation: ratio
+    domain: Fleet
+  - name: CO2 Emissions
+    synonyms: [Carbon Emissions, Transport Emissions, GHG Emissions]
+    definition: Carbon dioxide equivalent emitted by transport, in tonnes.
+    formula: Sum of emissions of the trips and shipments
+    unit: number
+    aggregation: sum
+    domain: Fleet

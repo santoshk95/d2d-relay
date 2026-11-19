@@ -82,7 +82,8 @@ check("real: Claude planned the dashboard in a job container (awaiting the KPIs)
 print(f"  plan took {round((time.time() - t0) / 60, 1)} min", flush=True)
 kpis = ((st.get("plan") or {}).get("kpis")) or []
 if st.get("status") == "awaiting_kpis":
-    s, r = p.form(f"/api/projects/{pid}/kpis", {"payload": json.dumps({"action": "confirm", "kpis": kpis, "feedback": ""})})
+    approved = [i["id"] for i in st.get("approval_items") or []]       # item 73: each gap, assumption and deviation approved
+    s, r = p.form(f"/api/projects/{pid}/kpis", {"payload": json.dumps({"action": "confirm", "kpis": kpis, "feedback": "", "approved": approved})})
     check("real: the KPIs are confirmed; the build starts", s == 200, (s, str(r)[:200]))
     t1 = time.time()
     st = wait_for(p, pid, ("awaiting_review", "error", "done"), 45)

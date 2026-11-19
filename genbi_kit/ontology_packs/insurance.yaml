@@ -1,0 +1,434 @@
+# Industry pack: insurance (general, health and life insurers, brokers). Business terms tag columns by name (genbi_kit/ontology.py);
+# KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields).
+name: Insurance
+order: 65
+description: Insurers and their distribution. Premiums written and earned, policies and renewals, claims and reserves, loss ratio, expense ratio and combined ratio, agents and channels.
+questions:
+  - What was gross written premium by line of business and by region this quarter, compared with last year?
+  - What is the loss ratio by product and by year of loss, and which lines run above 70 percent?
+  - What is the combined ratio by line of business over the last 8 quarters?
+  - What share of policies renewed last month, and which agents have the lowest renewal rate?
+  - How long does it take to settle claims, and what is the claim rejection rate by cause?
+  - Which distribution channels bring the most new business premium?
+
+terms:
+  # ---------------- measures: premium
+  - {name: Gross Written Premium, kind: measure, unit: currency, aggregation: sum, description: "Premium on policies written in the period, before reinsurance.",
+     synonyms: [gwp, gross premium, gross premium written, written premium, premium written, total premium, premium amount, gross written prem, gwp amount, premium, policy premium, premium income]}
+  - {name: Ceded Premium, kind: measure, unit: currency, aggregation: sum, description: "Premium passed on to reinsurers.",
+     synonyms: [reinsurance premium, premium ceded, ceded prem, reinsurance ceded premium, reinsurance cost, outward premium, ri premium, ceded gwp, premium to reinsurers]}
+  - {name: Net Written Premium, kind: measure, unit: currency, aggregation: sum, description: "Written premium kept after reinsurance.",
+     synonyms: [nwp, net premium, net premium written, net written prem, retained premium, nwp amount, net gwp]}
+  - {name: Earned Premium, kind: measure, unit: currency, aggregation: sum, description: "The part of written premium that belongs to the period (cover already provided).",
+     synonyms: [ep, earned prem, premium earned, earned gross premium, gross earned premium, gep, net earned premium, nep, earned premium amount, earned revenue]}
+  - {name: New Business Premium, kind: measure, unit: currency, aggregation: sum, description: "Premium on new policies (first year premium).",
+     synonyms: [nbp, new premium, first year premium, fyp, new business gwp, new policy premium, new business prem, new business revenue, ape, annualized premium equivalent]}
+  - {name: Renewal Premium, kind: measure, unit: currency, aggregation: sum, description: "Premium on renewed policies.",
+     synonyms: [renewal prem, renewal gwp, renewed premium, renewal business premium, rp, subsequent year premium, rnl premium, renewal revenue]}
+  - {name: Sum Insured, kind: measure, unit: currency, aggregation: sum, description: "The most the insurer pays under the policy (insured value).",
+     synonyms: [si, sum assured, tsi, total sum insured, insured value, insured amount, coverage amount, cover amount, limit of liability, sum covered, policy limit, insured sum, face amount]}
+  - {name: Earned Exposure, kind: measure, unit: number, aggregation: sum, description: "Policy years of cover provided (a policy for 6 months counts 0.5).",
+     synonyms: [exposure, earned exposure years, policy years, earned vehicle years, earned car years, exposure years, risk years, earned units, exposure units, life years, earned policy years]}
+  # ---------------- measures: policies
+  - {name: Policies in Force, kind: measure, unit: count, aggregation: last, description: "Policies in cover at the end of the period.",
+     synonyms: [pif, policies active, active policies, policy count in force, inforce policies, in force count, live policies, policies live, policy inforce]}
+  - {name: Policies Issued, kind: measure, unit: count, aggregation: sum, description: "Policies written in the period (new and renewed).",
+     synonyms: [policies written, policies sold, policy count, issued policies, number of policies, policies booked, policies underwritten, policies bound, policy issuances]}
+  - {name: New Policies, kind: measure, unit: count, aggregation: sum, description: "Policies written to customers new to the product.",
+     synonyms: [new business policies, new policy count, new business count, new policies issued, new sales count, nb policies, policies new]}
+  - {name: Policies Due for Renewal, kind: measure, unit: count, aggregation: sum, description: "Policies reaching their end date in the period.",
+     synonyms: [renewal due, renewals due, due for renewal, policies expiring, expiring policies, policies up for renewal, renewal base, policies due, maturing policies]}
+  - {name: Policies Renewed, kind: measure, unit: count, aggregation: sum, description: "Expiring policies that were renewed.",
+     synonyms: [renewed policies, renewals, renewal count, policies renewed count, renewals done, policies retained, retained policies, renewed count]}
+  - {name: Lapsed Policies, kind: measure, unit: count, aggregation: sum, description: "Policies that ended without renewal or because premium was not paid.",
+     synonyms: [lapses, lapse count, lapsed count, policies lapsed, cancelled policies, cancellations, policy cancellations, terminated policies, non renewed policies]}
+  - {name: Quotes, kind: measure, unit: count, aggregation: sum, description: "Quotes given to prospects.",
+     synonyms: [quote count, quotes given, quotations, quotation count, quotes issued, number of quotes, proposals, quote requests, leads quoted]}
+  # ---------------- measures: claims
+  - {name: Claims Reported, kind: measure, unit: count, aggregation: sum, description: "Claims notified to the insurer.",
+     synonyms: [claim count, claims count, claims notified, claims registered, reported claims, new claims, number of claims, claims lodged, fnol count, claims received, claims intimated]}
+  - {name: Claims Settled, kind: measure, unit: count, aggregation: sum, description: "Claims paid in the period.",
+     synonyms: [settled claims, claims paid count, paid claims count, claims closed paid, claims settled count, claims admitted, claims honoured]}
+  - {name: Claims Rejected, kind: measure, unit: count, aggregation: sum, description: "Claims turned down (repudiated or denied).",
+     synonyms: [rejected claims, claims repudiated, repudiated claims, claims denied, denied claims, claims declined, declined claims, rejection count, repudiations]}
+  - {name: Claims Paid, kind: measure, unit: currency, aggregation: sum, description: "Money paid out on claims.",
+     synonyms: [paid claims, claim paid amount, claims payment, claim payments, paid loss, paid losses, claims settled amount, indemnity paid, claims disbursed, settlement amount, paid amount]}
+  - {name: Outstanding Claims Reserve, kind: measure, unit: currency, aggregation: last, description: "Estimated cost of reported claims not yet paid.",
+     synonyms: [outstanding claims, case reserve, case reserves, claim reserve, claims reserve, os reserve, outstanding reserve, reserve amount, reserves, o s claims, outstanding loss reserve]}
+  - {name: Claims Incurred, kind: measure, unit: currency, aggregation: sum, description: "Claims paid plus the change in claim reserves.",
+     synonyms: [incurred claims, incurred loss, incurred losses, total incurred, claims incurred amount, loss incurred, incurred amount, incurred cost, net claims incurred]}
+  - {name: Claim Settlement Days, kind: measure, unit: duration, aggregation: average, description: "Days from claim notification to settlement.",
+     synonyms: [settlement days, days to settle, claim tat, claim turnaround days, claim cycle time, settlement time, days to settlement, claim processing days, claim closure days, days to close]}
+  # ---------------- measures: cost
+  - {name: Commission Expense, kind: measure, unit: currency, aggregation: sum, description: "Commission and brokerage paid to agents and brokers.",
+     synonyms: [commission, commissions, commission paid, brokerage, agent commission, broker commission, acquisition cost, commission amount, distribution cost, brokerage paid]}
+  - {name: Underwriting Expense, kind: measure, unit: currency, aggregation: sum, description: "Operating expenses of writing and servicing business (management expenses).",
+     synonyms: [operating expenses, opex, expenses of management, management expenses, underwriting expenses, other underwriting expenses, admin expense, operating expense, overheads, expense amount, operating cost]}
+  - {name: Reinsurance Recoveries, kind: measure, unit: currency, aggregation: sum, description: "Claims money recovered from reinsurers.",
+     synonyms: [reinsurance recovery, ri recoveries, ceded claims, recoveries from reinsurers, reinsurer share of claims, ri share of claims, reinsurance claims recovered]}
+  - {name: Investment Income, kind: measure, unit: currency, aggregation: sum, description: "Income earned on the insurer's investments.",
+     synonyms: [investment return, investment gains, interest and dividends, income from investments, investment revenue, float income]}
+
+  # ---------------- keys
+  - {name: Policy, kind: key, entity: Policy, description: "Identifies a policy.",
+     synonyms: [policy id, policy number, policy no, policy key, policy nbr, policy ref, policy reference, certificate number, certificate id, contract number, proposal number, policy code]}
+  - {name: Policyholder, kind: key, entity: Policyholder, description: "Identifies the customer who holds the policy.",
+     synonyms: [policyholder id, policy holder id, customer id, customer number, insured id, insured number, client id, member id, proposer id, party id, customer key, holder id]}
+  - {name: Claim, kind: key, entity: Claim, description: "Identifies a claim.",
+     synonyms: [claim id, claim number, claim no, claim key, claim nbr, claim ref, claim reference, claim file number, loss number, fnol number, claim code]}
+  - {name: Product, kind: key, entity: Product, description: "Identifies an insurance product or plan.",
+     synonyms: [product id, product code, product key, plan id, plan code, plan number, scheme code, product number, cover code, product nbr]}
+  - {name: Agent, kind: key, entity: Agent, description: "Identifies an agent, broker or other intermediary.",
+     synonyms: [agent id, agent code, agent number, broker id, broker code, intermediary id, intermediary code, producer code, producer id, advisor id, adviser id, sales agent id, partner id, pos code, channel partner id]}
+  - {name: Branch, kind: key, entity: Branch, description: "Identifies a branch or office.",
+     synonyms: [branch id, branch code, branch number, office id, office code, branch key, location code, servicing office, issuing office, unit code]}
+  - {name: Risk, kind: key, entity: Risk, description: "Identifies the thing insured (vehicle, property, life, member).",
+     synonyms: [risk id, risk number, risk key, insured object id, vehicle id, vehicle number, registration number, property id, asset id, insured item id, risk code, location id]}
+  - {name: Quote, kind: key, entity: Quote, description: "Identifies a quotation.",
+     synonyms: [quote id, quote number, quotation id, quotation number, quote key, quote ref, proposal id, lead id, enquiry id]}
+  - {name: Underwriter, kind: key, entity: Underwriter, description: "Identifies the underwriter who accepted the risk.",
+     synonyms: [underwriter id, underwriter code, uw id, uw code, underwriting officer id, risk officer id, approver id]}
+  - {name: Claims Handler, kind: key, entity: Claims Handler, description: "Identifies the adjuster or handler of a claim.",
+     synonyms: [adjuster id, adjuster code, handler id, claim handler id, claims officer id, assessor id, surveyor id, surveyor code, loss adjuster id, tpa id]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The day a row belongs to.",
+     synonyms: [day, calendar date, report date, reporting date, accounting date, posting date, transaction date, business date, snapshot date, as of date, bordereau date]}
+  - {name: Policy Start Date, kind: date, entity: Date, description: "The day cover starts.",
+     synonyms: [inception date, effective date, policy effective date, risk start date, cover start date, start date, commencement date, policy inception date, period start date, coverage start date]}
+  - {name: Policy End Date, kind: date, entity: Date, description: "The day cover ends (the renewal date).",
+     synonyms: [expiry date, expiration date, policy expiry date, renewal date, cover end date, end date, maturity date, risk end date, period end date, coverage end date, renewal due date]}
+  - {name: Issue Date, kind: date, entity: Date, synonyms: [policy issue date, issued date, written date, booking date, bind date, underwriting date, sold date, issue dt, policy date, accepted date]}
+  - {name: Loss Date, kind: date, entity: Date, description: "The day the loss or event happened.",
+     synonyms: [date of loss, dol, accident date, incident date, loss event date, event date, date of accident, date of incident, occurrence date, date of death, admission date]}
+  - {name: Claim Reported Date, kind: date, entity: Date, synonyms: [reported date, claim notification date, notification date, fnol date, date reported, claim intimation date, claim registered date, claim date, intimation date]}
+  - {name: Claim Closed Date, kind: date, entity: Date, synonyms: [settlement date, claim settlement date, closed date, closure date, claim closure date, payment date, claim paid date, date closed, finalization date]}
+  - {name: Underwriting Year, kind: date, entity: Date, description: "The year the policy was written.",
+     synonyms: [uw year, policy year, year of account, yoa, inception year, written year, issue year, treaty year, account year]}
+  - {name: Accident Year, kind: date, entity: Date, synonyms: [loss year, year of loss, accident yr, occurrence year, claim year, event year, ay]}
+  - {name: Month, kind: date, entity: Date, synonyms: [month name, accounting month, reporting month, month year, year month, yyyymm, month end]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, financial year, financial year number, year number, accounting year]}
+
+  # ---------------- attributes
+  - {name: Line of Business, kind: attribute, entity: Product, description: "Motor, health, property, travel, life ... the class of insurance.",
+     synonyms: [lob, line of business name, business line, class of business, cob, insurance class, insurance line, product class, segment, business class, line, product line, class]}
+  - {name: Product Name, kind: attribute, entity: Product, synonyms: [plan name, scheme name, product description, product desc, plan description, cover name, product title]}
+  - {name: Coverage Type, kind: attribute, entity: Product, synonyms: [coverage, cover type, cover, coverage name, coverage description, peril, peril type, benefit type, cover code description, guarantee]}
+  - {name: Policy Status, kind: attribute, entity: Policy, description: "In force, lapsed, cancelled, expired.",
+     synonyms: [policy state, policy stage, status, policy condition, in force status, contract status, policy life status, policy standing]}
+  - {name: Business Type, kind: attribute, entity: Policy, description: "New business or renewal.",
+     synonyms: [new or renewal, policy type, renewal flag, new renewal flag, business category, sale type, transaction type, new business flag, renewal indicator, business status]}
+  - {name: Premium Frequency, kind: attribute, entity: Policy, synonyms: [payment frequency, premium payment mode, payment mode, billing frequency, premium mode, installment frequency, billing mode, premium term]}
+  - {name: Claim Status, kind: attribute, entity: Claim, synonyms: [claim state, claim stage, claim outcome, claim decision, claim condition, settlement status, claim progress]}
+  - {name: Cause of Loss, kind: attribute, entity: Claim, description: "What caused the claim (collision, fire, illness, theft).",
+     synonyms: [loss cause, cause, claim cause, claim type, claim category, loss type, type of loss, cause code, loss description, nature of loss, event type, diagnosis]}
+  - {name: Rejection Reason, kind: attribute, entity: Claim, synonyms: [repudiation reason, denial reason, decline reason, rejection code, repudiation code, reason for rejection, claim denial reason, reject reason]}
+  - {name: Distribution Channel, kind: attribute, entity: Agent, description: "How the policy was sold (agent, broker, direct, bancassurance, online).",
+     synonyms: [channel, sales channel, channel name, sourcing channel, channel type, distribution type, source channel, acquisition channel, sale channel, intermediary type, channel group]}
+  - {name: Agent Name, kind: attribute, entity: Agent, synonyms: [broker name, intermediary name, producer name, advisor name, adviser name, partner name, agency name, agent description]}
+  - {name: Branch Name, kind: attribute, entity: Branch, synonyms: [office name, branch, branch description, servicing office name, unit name, issuing office name]}
+  - {name: Region, kind: attribute, entity: Branch, synonyms: [region name, zone, zone name, territory, area, cluster, circle, division, market, sales region]}
+  - {name: State, kind: attribute, entity: Branch, synonyms: [state name, state code, province, risk state, st]}
+  - {name: City, kind: attribute, entity: Branch, synonyms: [city name, town, risk city, location]}
+  - {name: Policyholder Name, kind: attribute, entity: Policyholder, synonyms: [customer name, insured name, client name, member name, proposer name, holder name, policy holder name]}
+  - {name: Customer Segment, kind: attribute, entity: Policyholder, synonyms: [customer type, customer category, segment name, customer class, individual or corporate, client type, customer tier, risk segment, customer group]}
+  - {name: Age Band, kind: attribute, entity: Policyholder, synonyms: [age group, age bracket, age category, age range, age bucket, entry age band]}
+  - {name: Gender, kind: attribute, entity: Policyholder, synonyms: [sex, insured gender, gender code, policyholder gender]}
+  - {name: Underwriter Name, kind: attribute, entity: Underwriter, synonyms: [uw name, underwriting officer, underwriter, risk officer name, approver name]}
+  - {name: Vehicle Make, kind: attribute, entity: Risk, synonyms: [make, vehicle brand, car make, manufacturer, vehicle model, make model, vehicle class, vehicle type]}
+  - {name: Risk Band, kind: attribute, entity: Risk, synonyms: [risk grade, risk class, risk category, risk rating, rating class, risk tier, rating band, risk segment band, occupancy class, hazard class]}
+
+kpis:
+  # ---------------- premium
+  - name: Gross Written Premium
+    synonyms: [GWP, Gross Premium, Written Premium, Premium Written]
+    definition: Premium on policies written in the period, before reinsurance, taxes excluded.
+    formula: Sum of premiums on policies and endorsements written in the period
+    unit: currency
+    aggregation: sum
+    time: by policy issue date
+    domain: Premium
+  - name: Gross Written Premium LY
+    synonyms: [GWP LY, Gross Written Premium Last Year, Written Premium LY]
+    definition: Gross written premium in the same period last year.
+    formula: Gross written premium for the same period one year earlier
+    unit: currency
+    aggregation: sum
+    time: same period last year
+    domain: Premium
+  - name: Premium Growth %
+    synonyms: [GWP Growth %, Written Premium Growth, YoY Premium Growth]
+    definition: Change in gross written premium against the same period last year.
+    formula: (Gross written premium - Gross written premium last year) / Gross written premium last year
+    dax: DIVIDE ( [Gross Written Premium] - [Gross Written Premium LY], [Gross Written Premium LY] )
+    unit: percent
+    aggregation: ratio
+    domain: Premium
+  - name: Ceded Premium
+    synonyms: [Reinsurance Premium, Premium Ceded, Outward Premium]
+    definition: Premium passed to reinsurers in the period.
+    formula: Sum of premium ceded under treaties and facultative cover
+    unit: currency
+    aggregation: sum
+    domain: Premium
+  - name: Net Written Premium
+    synonyms: [NWP, Net Premium Written, Retained Premium]
+    definition: Written premium kept after reinsurance.
+    formula: Gross written premium - Ceded premium
+    dax: '[Gross Written Premium] - [Ceded Premium]'
+    unit: currency
+    aggregation: sum
+    domain: Premium
+  - name: Net Retention %
+    synonyms: [Retention Ratio, Premium Retention Ratio, Net Retention Ratio]
+    definition: Share of written premium kept after reinsurance.
+    formula: Net written premium / Gross written premium
+    dax: DIVIDE ( [Net Written Premium], [Gross Written Premium] )
+    unit: percent
+    aggregation: ratio
+    domain: Premium
+  - name: Earned Premium
+    synonyms: [EP, Premium Earned, Gross Earned Premium]
+    definition: The part of written premium that belongs to the period - the cover already provided (written premium spread over the policy term).
+    formula: Written premium times the share of the policy term elapsed in the period
+    unit: currency
+    aggregation: sum
+    domain: Premium
+  - name: New Business Premium
+    synonyms: [NBP, First Year Premium, FYP]
+    definition: Premium on policies sold to new customers or products in the period.
+    formula: Sum of premium on new business policies
+    filters: [Business type = New]
+    unit: currency
+    aggregation: sum
+    domain: Premium
+  - name: Renewal Premium
+    synonyms: [Renewal Premium Income, Renewed Premium]
+    definition: Premium on renewed policies in the period.
+    formula: Sum of premium on renewal policies
+    filters: [Business type = Renewal]
+    unit: currency
+    aggregation: sum
+    domain: Premium
+  - name: Average Premium per Policy
+    synonyms: [Average Premium, Premium per Policy, Average Ticket Size]
+    definition: Gross written premium for each policy written.
+    formula: Gross written premium / Policies issued
+    dax: DIVIDE ( [Gross Written Premium], [Policies Issued] )
+    unit: currency
+    aggregation: ratio
+    domain: Premium
+  - name: Sum Insured
+    synonyms: [Total Sum Insured, TSI, Sum Assured]
+    definition: Total cover on the policies in force - what the insurer would pay in a full loss.
+    formula: Sum of sums insured on policies in force
+    unit: currency
+    aggregation: sum
+    domain: Premium
+  # ---------------- policies and renewals
+  - name: New Policies
+    synonyms: [New Business Policies, New Policy Count]
+    definition: Policies sold to customers new to the product in the period.
+    formula: Count of distinct new business policies issued
+    filters: [Business type = New]
+    unit: count
+    aggregation: distinct_count
+    domain: Policies
+  - name: Policies Renewed
+    synonyms: [Renewed Policies, Renewals]
+    definition: Expiring policies that were renewed.
+    formula: Count of expiring policies with a renewal within the grace period
+    unit: count
+    aggregation: distinct_count
+    domain: Policies
+  - name: Policies Issued
+    synonyms: [Policies Written, Policies Sold, Policy Count]
+    definition: Policies written in the period, new and renewed.
+    formula: New policies + Policies renewed
+    dax: '[New Policies] + [Policies Renewed]'
+    unit: count
+    aggregation: distinct_count
+    domain: Policies
+  - name: Policies Due for Renewal
+    synonyms: [Renewals Due, Expiring Policies, Renewal Base]
+    definition: Policies whose cover ends in the period.
+    formula: Count of policies with an end date in the period
+    unit: count
+    aggregation: distinct_count
+    time: by policy end date
+    domain: Policies
+  - name: Renewal Rate %
+    synonyms: [Renewal Ratio, Policy Retention Rate, Retention Rate %, Renewal %]
+    definition: Share of policies due for renewal that were renewed.
+    formula: Policies renewed / Policies due for renewal
+    dax: DIVIDE ( [Policies Renewed], [Policies Due for Renewal] )
+    unit: percent
+    aggregation: ratio
+    domain: Policies
+  - name: Policies in Force
+    synonyms: [PIF, Active Policies, In-Force Policies]
+    definition: Policies in cover at the end of the period.
+    formula: Count of policies with start date <= period end and end date >= period end
+    unit: count
+    aggregation: last
+    domain: Policies
+  - name: Quotes
+    synonyms: [Quotations, Quote Count]
+    definition: Quotes given to prospects in the period.
+    formula: Count of distinct quotes
+    unit: count
+    aggregation: distinct_count
+    domain: Sales
+  - name: Quote to Bind Rate %
+    synonyms: [Conversion Rate, Quote Conversion %, Hit Ratio, Quote to Policy %]
+    definition: Share of quotes that became new policies.
+    formula: New policies / Quotes
+    dax: DIVIDE ( [New Policies], [Quotes] )
+    unit: percent
+    aggregation: ratio
+    domain: Sales
+  # ---------------- claims
+  - name: Claims Reported
+    synonyms: [Claim Count, Claims Registered, Claims Notified]
+    definition: Claims notified to the insurer in the period.
+    formula: Count of distinct claims by reported date
+    unit: count
+    aggregation: distinct_count
+    time: by claim reported date
+    domain: Claims
+  - name: Claims Settled
+    synonyms: [Settled Claims, Claims Paid Count]
+    definition: Claims paid in the period.
+    formula: Count of distinct claims with a payment in the period
+    unit: count
+    aggregation: distinct_count
+    domain: Claims
+  - name: Claims Rejected
+    synonyms: [Rejected Claims, Repudiated Claims, Claims Denied]
+    definition: Claims turned down in the period.
+    formula: Count of distinct claims closed as rejected
+    unit: count
+    aggregation: distinct_count
+    domain: Claims
+  - name: Claim Settlement Ratio %
+    synonyms: [Claim Settlement Ratio, Claims Paid Ratio, Settlement Rate]
+    definition: Share of claims reported that were settled.
+    formula: Claims settled / Claims reported
+    dax: DIVIDE ( [Claims Settled], [Claims Reported] )
+    unit: percent
+    aggregation: ratio
+    domain: Claims
+  - name: Claim Rejection Rate %
+    synonyms: [Claim Repudiation Ratio, Rejection Ratio, Claims Denied %]
+    definition: Share of claims reported that were rejected.
+    formula: Claims rejected / Claims reported
+    dax: DIVIDE ( [Claims Rejected], [Claims Reported] )
+    unit: percent
+    aggregation: ratio
+    domain: Claims
+  - name: Claims Paid
+    synonyms: [Paid Claims, Paid Losses, Claim Payments]
+    definition: Money paid out on claims in the period.
+    formula: Sum of claim payments
+    unit: currency
+    aggregation: sum
+    domain: Claims
+  - name: Outstanding Claims Reserve
+    synonyms: [Case Reserve, Outstanding Claims, OS Claims Reserve]
+    definition: Estimated cost of reported claims not yet paid, at the end of the period.
+    formula: Sum of case reserves on open claims
+    unit: currency
+    aggregation: last
+    domain: Claims
+  - name: Claims Incurred
+    synonyms: [Incurred Claims, Incurred Losses, Total Incurred]
+    definition: Claims paid in the period plus the change in outstanding claim reserves.
+    formula: Claims paid + Closing outstanding reserve - Opening outstanding reserve
+    unit: currency
+    aggregation: sum
+    domain: Claims
+  - name: Average Claim Cost
+    synonyms: [Average Claim Severity, Claim Severity, Average Claim Size]
+    definition: Average amount paid per settled claim.
+    formula: Claims paid / Claims settled
+    dax: DIVIDE ( [Claims Paid], [Claims Settled] )
+    unit: currency
+    aggregation: ratio
+    domain: Claims
+  - name: Earned Exposure
+    synonyms: [Exposure, Policy Years, Earned Vehicle Years]
+    definition: Policy years of cover provided in the period (a policy for six months counts 0.5).
+    formula: Sum over policies of the fraction of a year covered in the period
+    unit: number
+    aggregation: sum
+    domain: Claims
+  - name: Claim Frequency
+    synonyms: [Claims Frequency, Claims per Exposure Year]
+    definition: Claims reported for each year of earned exposure.
+    formula: Claims reported / Earned exposure
+    dax: DIVIDE ( [Claims Reported], [Earned Exposure] )
+    unit: ratio
+    aggregation: ratio
+    domain: Claims
+  - name: Average Claim Settlement Days
+    synonyms: [Claim Settlement TAT, Days to Settle, Claim Turnaround Time]
+    definition: Average days from claim notification to settlement for claims settled in the period.
+    formula: Average of (settlement date - reported date) in days
+    unit: duration
+    aggregation: average
+    domain: Claims
+  # ---------------- underwriting result
+  - name: Loss Ratio %
+    synonyms: [Loss Ratio, Claims Ratio, Incurred Claims Ratio, ICR]
+    definition: Claims incurred as a share of earned premium - the share of premium that goes to claims.
+    formula: Claims incurred / Earned premium
+    dax: DIVIDE ( [Claims Incurred], [Earned Premium] )
+    unit: percent
+    aggregation: ratio
+    domain: Underwriting
+  - name: Commission Expense
+    synonyms: [Commission, Commission Paid, Brokerage, Acquisition Cost]
+    definition: Commission and brokerage paid to agents and brokers.
+    formula: Sum of commission on policies written
+    unit: currency
+    aggregation: sum
+    domain: Underwriting
+  - name: Commission Rate %
+    synonyms: [Commission Ratio, Brokerage Rate]
+    definition: Commission as a share of gross written premium.
+    formula: Commission expense / Gross written premium
+    dax: DIVIDE ( [Commission Expense], [Gross Written Premium] )
+    unit: percent
+    aggregation: ratio
+    domain: Underwriting
+  - name: Underwriting Expense
+    synonyms: [Management Expenses, Operating Expenses, Expenses of Management]
+    definition: Operating expenses of writing and servicing business, commission excluded.
+    formula: Sum of underwriting, policy servicing and overhead expenses
+    unit: currency
+    aggregation: sum
+    domain: Underwriting
+  - name: Expense Ratio %
+    synonyms: [Expense Ratio, Cost Ratio, Underwriting Expense Ratio]
+    definition: Commission and underwriting expenses as a share of earned premium.
+    formula: (Commission expense + Underwriting expense) / Earned premium
+    dax: DIVIDE ( [Commission Expense] + [Underwriting Expense], [Earned Premium] )
+    unit: percent
+    aggregation: ratio
+    domain: Underwriting
+  - name: Combined Ratio %
+    synonyms: [Combined Ratio, COR, Combined Operating Ratio]
+    definition: Loss ratio plus expense ratio. Below 100% the insurer makes an underwriting profit.
+    formula: Loss ratio + Expense ratio
+    dax: '[Loss Ratio %] + [Expense Ratio %]'
+    unit: percent
+    aggregation: ratio
+    domain: Underwriting
+  - name: Underwriting Result
+    synonyms: [Underwriting Profit, Underwriting Profit or Loss, Underwriting Margin]
+    definition: Earned premium less claims incurred, commission and underwriting expenses (investment income left out).
+    formula: Earned premium - Claims incurred - Commission expense - Underwriting expense
+    dax: '[Earned Premium] - [Claims Incurred] - [Commission Expense] - [Underwriting Expense]'
+    unit: currency
+    aggregation: sum
+    domain: Underwriting

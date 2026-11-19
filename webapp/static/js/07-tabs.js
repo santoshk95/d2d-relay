@@ -122,13 +122,13 @@ function friendly(e) {
   if (e.tool === 'Bash') {
     const m = d.match(/genbi\s+(\w+)(?:\s+(\w+))?/);
     if (m) {
-      const visual = {new: 'Started a custom visual', edit: 'Opened a library visual to change it', build: 'Compiled a custom visual',
-        test: 'Tested a custom visual in a browser', list: 'Listed custom visuals', source: 'Read a visual template'};
+      const visual = {new: 'Started a custom visual', edit: 'Opened a library visual to change it', build: 'Built a custom visual',
+        test: 'Tested a custom visual', list: 'Listed custom visuals', source: 'Read a visual template'};
       return m[1] === 'visual' ? visual[m[2]] || 'Worked on a custom visual' : {profile: 'Profiled the data', sql: 'Queried the data',
-        validate: 'Checked the report definition', prototype: 'Rendered the prototype', daxcheck: "Checked the DAX in Power BI's engine",
-        build: 'Wrote the Power BI files', catalog: 'Looked up the visual catalog'}[m[1]] || 'Ran a Relay tool';
+        validate: 'Checked the report definition', prototype: 'Rendered the prototype', daxcheck: "Checked every measure in Power BI's own engine",
+        build: 'Built the Power BI model and pages', catalog: 'Looked up the visual catalog'}[m[1]] || 'Ran a Relay tool';
     }
-    return 'Ran a command';
+    return 'Ran a Relay step';
   }
   const f = fileLabel(d);
   // Claude Code's tool names, and the other runners' (Codex, Gemini, Antigravity), in words; anything else as "Used ..."
@@ -142,14 +142,16 @@ function friendly(e) {
 }
 /* a project file in words: "request.md" -> "your request"; other files by their name, without the folders */
 const FILE_WORDS = {'request.md': 'your request', 'plan.md': 'the plan', 'kpis.md': 'the KPIs', 'kpis.json': 'the KPIs', 'feedback.md': 'your feedback',
-  'data.md': 'the data notes', 'model.bim': 'the data model', 'report.json': 'the report definition'};
+  'data.md': 'the data notes', 'model.bim': 'the data model', 'report.json': 'the report definition',
+  'claude.md': 'its instructions', 'agents.md': 'its instructions', 'gemini.md': 'its instructions'};   // item 74: the runner's own files
 function fileLabel(path) {
   const base = String(path || '').split(/[\\/]/).pop();
   return FILE_WORDS[base.toLowerCase()] || base || 'a file';
 }
 /* Older activity lines name the model's maker ("Claude is reading your data..."); the app speaks as Relay, or the partner's
    brand. Display only: the saved log is unchanged. */
-const brandSay = t => typeof t === 'string' ? t.replace(/\bClaude Code\b/g, 'the agent').replace(/\bClaude\b/g, typeof brandName === 'function' ? brandName() : 'Relay') : t;
+const brandSay = t => typeof t === 'string' ? t.replace(/\bClaude Code\b/g, 'Relay Model').replace(/\bClaude\b/g, typeof brandName === 'function' ? brandName() : 'Relay')
+  .replace(/\b[Aa]tlas/g, m => m[0] === 'A' ? 'Relay' : 'relay') : t;     // item 74: never the AI's vendor or the visuals' old name
 /* the live "Now:" line says what Relay is doing, not what it did */
 function doing(e) {
   const f = fileLabel(e.detail);
@@ -161,22 +163,22 @@ function eventRow(e) {
   const t = h('span', {class: 'faint'}, clock(e.ts));
   const row = (av, who, body, cls) => h('div', {class: 'ev ' + (cls || '')}, h('div', {class: 'av ' + av}, typeof who === 'string' ? who : who), body);
   if (e.kind === 'user') return row('you', icon('user'), h('div', {}, h('div', {class: 'hd'}, h('b', {}, 'You'), t), h('div', {class: 'bd'}, rich(e.text), attachedList(e.attachments))));
-  if (e.kind === 'say') return row('claude', icon('spark'), h('div', {}, h('div', {class: 'hd'}, h('b', {}, 'Relay'), t), h('div', {class: 'bd'}, rich(e.text))));
+  if (e.kind === 'say') return row('claude', icon('spark'), h('div', {}, h('div', {class: 'hd'}, h('b', {}, 'Relay Model'), t), h('div', {class: 'bd'}, rich(brandSay(e.text)))));
   if (e.kind === 'app') {
     const lvl = {ok: 'ok', warn: 'warn', error: 'err'}[e.level] || 'neutral';
     return row(lvl, icon(lvl === 'ok' ? 'check' : lvl === 'neutral' ? 'info' : 'alert'), h('div', {}, h('div', {class: 'hd'}, h('b', {}, 'Relay'), t),
       h('div', {class: 'bd'}, brandSay(e.text), e.items ? h('ul', {}, e.items.slice(0, 15).map(i => h('li', {}, brandSay(i)))) : null)));
   }
-  if (e.kind === 'start') return row('neutral', icon('play'), h('div', {class: 'bd'}, 'Relay started working', e.model && modelName(e.model) ? ` - ${modelName(e.model)}` : '', ' ', t), 'quiet');
-  if (e.kind === 'done') return row(e.ok ? 'ok' : 'warn', icon(e.ok ? 'check' : 'alert'), h('div', {class: 'bd'}, e.ok ? 'Relay finished' : `Relay stopped (${e.subtype || 'error'})`,
+  if (e.kind === 'start') return row('neutral', icon('play'), h('div', {class: 'bd'}, 'Started working', e.model && modelName(e.model) ? ` - ${modelName(e.model)}` : '', ' ', t), 'quiet');
+  if (e.kind === 'done') return row(e.ok ? 'ok' : 'warn', icon(e.ok ? 'check' : 'alert'), h('div', {class: 'bd'}, e.ok ? 'Relay Model finished' : 'Relay Model stopped before finishing',
     e.turns ? ` - ${e.turns} steps` : '', e.duration_ms ? ` - ${dur(e.duration_ms)}` : '', ' ', t), 'quiet');     // D2D Relay: no tokens or AI cost
   if (e.kind === 'error') return row('err', icon('alert'), h('div', {}, h('div', {class: 'hd'}, h('b', {}, 'Error'), t), h('div', {class: 'bd', style: 'color:var(--err)'}, e.text)));
   return null;
 }
 function stepRow(e, results) {
   const res = e.id && results[e.id];
-  return h('div', {class: 'tstep'}, h('div', {class: 'w'}, friendly(e)), h('div', {class: 'dd'}, e.tool === 'Bash' || !['Read', 'Write', 'Edit'].includes(e.tool) ? e.detail || '' : ''),
-    res ? h('div', {class: 'res' + (res.ok ? '' : ' bad')}, res.text || '(no output)') : null);
+  return h('div', {class: 'tstep'}, h('div', {class: 'w'}, brandSay(friendly(e))), h('div', {class: 'dd'}, e.tool === 'Bash' || !['Read', 'Write', 'Edit'].includes(e.tool) ? brandSay(e.detail || '') : ''),
+    res ? h('div', {class: 'res' + (res.ok ? '' : ' bad')}, brandSay(res.text || '(no output)')) : null);
 }
 /* The timeline: business events in full, Relay's tool steps folded into "N steps" (or listed, in Everything mode). */
 function buildTimeline(container, events, mode, query) {
@@ -189,8 +191,8 @@ function buildTimeline(container, events, mode, query) {
   const flush = () => {
     if (!group) return;
     const g = group;
-    const det = h('details', {class: 'steps-group'}, h('summary', {}, icon('gear'), `${g.length} step${g.length === 1 ? '' : 's'} by Relay`,
-      h('span', {class: 'faint'}, ' - ' + friendly(g[g.length - 1])), h('span', {class: 'spacer'}), h('span', {class: 'faint'}, clock(g[0].ts))));
+    const det = h('details', {class: 'steps-group'}, h('summary', {}, icon('gear'), `${g.length} step${g.length === 1 ? '' : 's'} by Relay Model`,
+      h('span', {class: 'faint'}, ' - ' + brandSay(friendly(g[g.length - 1]))), h('span', {class: 'spacer'}), h('span', {class: 'faint'}, clock(g[0].ts))));
     det.addEventListener('toggle', () => { if (det.open && det.children.length === 1) det.append(...g.map(e => stepRow(e, results))); });
     out.push(det); group = null;
   };
@@ -233,7 +235,7 @@ function renderLive() {
   const lastTool = [...S.events].reverse().find(e => e.kind === 'tool');
   const lastSay = [...S.events].reverse().find(e => e.kind === 'say' || e.kind === 'app');
   if (now) now.replaceChildren(h('div', {class: 'spin', style: 'width:12px;height:12px;border-width:2px'}),
-    lastTool && (!lastSay || lastTool.seq > lastSay.seq) ? `Now ${doing(lastTool)}...` : 'Working...');
+    lastTool && (!lastSay || lastTool.seq > lastSay.seq) ? `Relay Model: ${brandSay(doing(lastTool))}...` : 'Relay Model is working...');
 }
 
 /* ---------------- details tab ---------------- */
@@ -251,15 +253,18 @@ function creditsCard(st) {
         h('td', {class: 'n delta' + (r.delta > 0 ? ' plus' : '')}, (r.delta > 0 ? '+' : '') + r.delta)))))
       : h('div', {class: 'muted small'}, 'No credits used yet.'));
 }
-const VISUALS_LABEL = {builtin: "Power BI's built-in visuals only", mixed: 'Built-in first, custom where needed', relay: 'Relay custom visuals'};
+const VISUALS_LABEL = {builtin: "Power BI's built-in visuals", mixed: 'Built-in plus custom visuals', relay: 'Relay custom visuals'};
+const VISUALS_CHOICE = {builtin: VISUALS_LABEL.builtin, mixed: VISUALS_LABEL.mixed};
 // Which visuals the next versions use; editors can change it (the next plan, build or change follows it).
 function visualsSetting(st) {
   const mode = st.visuals_mode || 'relay';
   if (!(st.access && st.access.can_edit)) return VISUALS_LABEL[mode] || mode;
   // item 44: a dashboard paid at the built-in price pays the difference once to move to custom visuals
   const extra = (st.credits || {}).custom_extra || 0, more = v => extra && v !== 'builtin' ? ` (${extra} more credits)` : '';
+  // the user, 2026-11-19: only two choices, built-in, or built-in plus custom (an older all-custom dashboard keeps its own)
+  const choices = Object.entries(VISUALS_CHOICE).concat(VISUALS_CHOICE[mode] ? [] : [[mode, VISUALS_LABEL[mode] || mode]]);
   const sel = h('select', {class: 'sel', 'aria-label': 'Visuals for the next versions', style: 'max-width:380px'},
-    Object.entries(VISUALS_LABEL).map(([v, t]) => h('option', {value: v, selected: v === mode}, t + more(v))));
+    choices.map(([v, t]) => h('option', {value: v, selected: v === mode}, t + more(v))));
   sel.onchange = async () => {
     sel.disabled = true;
     try {
@@ -279,7 +284,7 @@ function detailsTab(st) {
     h('div', {},
       requestCard(st),
       h('div', {class: 'card'}, h('h3', {}, 'Settings'), h('dl', {class: 'kv'},
-        h('dt', {}, 'AI model'), h('dd', {}, 'Relay Model powered by Claude'),
+        h('dt', {}, 'AI model'), h('dd', {}, 'Relay Model'),
         h('dt', {}, 'Visuals'), h('dd', {}, visualsSetting(st)),
         h('dt', {}, 'Custom visuals'), h('dd', {}, {ask: 'Ask me in the plan', auto: 'Build when they fit better', never: 'Only available visuals'}[st.custom_visuals] || st.custom_visuals),
         h('dt', {}, 'Visual style'), h('dd', {}, [style.look ? `look ${style.look}` : null, style.brand_name ? `brand palette ${style.brand_name}` : style.accent ? `brand ${style.accent} (${style.palette})` : null, style.dark ? 'dark' : null].filter(Boolean).join(', ') || 'Relay decides'))),

@@ -25,7 +25,6 @@ P, A = c.BASE, c.ADMIN_BASE
 STAMP = str(int(time.time()))[-6:]
 BLOCKED = "That is not part of D2D Relay."
 ROUTES = os.path.join(HERE, "..", "audit", "routes-public.txt")     # tests/audit: regenerate with routes.py after adding routes
-RZP = "http://127.0.0.1:8105"
 check, detail = c.check, c.detail_of
 
 
@@ -96,7 +95,7 @@ for line in open(ROUTES, encoding="utf-8"):
 bad = []
 for method, path in routes:
     s, h, t = raw(method, P, path, {"Content-Type": "application/json"}, b"{}" if method != "GET" else None)
-    want = (400,) if path == "/api/payments/webhook" else (401, 404)
+    want = (400,) if path == "/api/payments/webhook" else (401, 404)   # Razorpay's webhook: its own signature, no session
     if s not in want:
         bad.append((method, path, s, t[:80]))
 check(f"anonymous: none of the {len(routes)} reachable API routes answers without a session (401/404; the webhook 400)",
@@ -303,6 +302,8 @@ for path in (f"/api/projects/{A1}/data/..%2Fproject.json", f"/api/projects/{A1}/
     check(f"paths: {urllib.parse.unquote(path).replace(A1, '<dash>').replace(A2, '<other>')} -> refused", s in (400, 404, 405), (s, str(r)[:100]))
 
 section("payments across organisations")
+# a paid checkout of organisation A is seeded as payments.py makes one (d2d_checks.seed_payment), so this does not
+# depend on an earlier suite having bought (pay_check.py and item59_check.py check buying and the receipts in full)
 s, r = b1.post("/api/payments/verify", {"razorpay_order_id": "order_ABCDEF123456", "razorpay_payment_id": "pay_ABCDEF123456",
                                         "razorpay_signature": "0" * 64})
 check("payments: verifying an order that is not the organisation's answers 404", s == 404, (s, r))
@@ -310,10 +311,13 @@ s, h, t = raw("POST", P, "/api/payments/webhook", {"x-razorpay-signature": "0" *
 check("payments: a webhook with a wrong signature is refused (400)", s == 400, (s, t[:100]))
 s, h, t = raw("POST", A, "/api/payments/webhook", {"Content-Type": "application/json"}, b"{}")
 check("payments: the admin portal has no webhook (404)", s == 404, (s, t[:100]))
-paid = sql(f"SELECT id FROM relay.tn_payments WHERE status = 'paid' AND tenant_id != '{tid_b}' ORDER BY created DESC LIMIT 1")
-if paid:
-    s, r = b1.get(f"/api/payments/{paid}/receipt")
-    check("payments: another organisation's receipt answers 404", s == 404, (s, str(r)[:100]))
+paid = c.seed_payment(tid_a, a1.email, credits=20, invoice=False).get("id")
+s, r = a1.get(f"/api/payments/{paid}/receipt")
+s2, r2 = b1.get(f"/api/payments/{paid}/receipt")
+check("payments: a past payment's receipt opens for its organisation's owner, and answers 404 to another organisation's",
+      bool(paid) and s == 200 and "Payment receipt" in str(r) and s2 == 404, (paid, s, s2, str(r2)[:100]))
+s, r = a2.get(f"/api/payments/{paid}/receipt")
+check("payments: ... and 404 to a member who did not pay it", s == 404, (s, str(r)[:100]))
 s, r = a2.put("/api/payments/billing", {"name": "X", "address": "Y", "country": "India", "state": "29", "pin": "560001"})
 check("payments: a member cannot change the billing details (403)", s == 403, (s, r))
 

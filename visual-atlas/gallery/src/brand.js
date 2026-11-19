@@ -115,15 +115,16 @@ const BRAND=(()=>{
     try{localStorage.setItem('atlas-brand',JSON.stringify(state));}catch(e){}
   }
   /* Power BI report theme: palette, structural colors, text sizes and the look as container styles.
-     Built-in visuals take the container look (corners, shadow, border); the Atlas custom visuals also take the bar look. */
+     Built-in visuals take the container look (corners, shadow, border); the Relay custom visuals also take the bar look. */
   const SCHEMA='https://raw.githubusercontent.com/microsoft/powerbi-desktop-samples/main/Report%20Theme%20JSON%20Schema/reportThemeSchema-2.159.json';
   /* every Atlas custom visual: keep in sync with the pbiviz.json files in visuals/ (tools/mk_themes.js reads them from there) */
   const ATLAS_VISUALS=['atlasColumns9A01238C3D0249F7B4F9DFBEA84D3599','atlasCompare1934AF42622F4D63BF12168C02806AC8','atlasDistribution1C4252B29C654CC1BF16155962622408','atlasFinance8C601CA9CAF44ADCB6574FA21FDDE583','atlasFlowBA37FC4A61814B33BF815C11D35148B1','atlasGauges797C4E4189814B78AD7FCCDFF53CBC47','atlasHierarchy21AE4CB2A0F74216862D09F0C9A3BF2E','atlasLines36E69B273DB443A5AF8E62CB16DB4547','atlasPartsA0676FD0579D44EFB545170E4799ADC9','atlasProportion74F95B1AE3CB4D9195CC248A3EC140A4','atlasScatter0B23674C661C4797A349BBC2B0AD313A','atlasTextC961F02E238E426A825D8355E3503AA9','atlasTime657C41A78B0A405A998ADA36387448E9'];
   function themeObject(look,dark){
     look=['flat','soft','3d'].includes(look)?look:(['flat','soft','3d'].includes(state.look)?state.look:'soft');dark=!!dark;
     const T=tokens(dark),pal=dark?themed(true):palette(),U=c=>String(c).toUpperCase(),F=c=>({solid:{color:U(c)}});
-    const base=state.mode==='atlas'?'Relay':'Relay · '+(state.mode==='classic'?'Classic':state.mode==='custom'?'Custom brand':'Brand '+norm(state.brand).toUpperCase());
-    const name=`${base} · ${look==='3d'?'3D':look==='soft'?'Soft':'Flat'}${dark?' · Dark':''}`;
+    /* the name Power BI shows for the theme, in plain characters ("Relay - Soft - Dark") */
+    const base=state.mode==='atlas'?'Relay':'Relay - '+(state.mode==='classic'?'Classic':state.mode==='custom'?'Custom brand':'Brand '+norm(state.brand).toUpperCase());
+    const name=`${base} - ${look==='3d'?'3D':look==='soft'?'Soft':'Flat'}${dark?' - Dark':''}`;
     const surf=dark?T.surface:'#ffffff',radius={flat:4,soft:12,'3d':8}[look];
     const shadow=look==='flat'?{show:false}:{show:true,position:'Outer',preset:look==='3d'?'BottomRight':'Bottom',color:F(T.sh),
       transparency:dark?(look==='3d'?50:62):(look==='3d'?70:84),shadowBlur:look==='3d'?14:12,shadowDistance:look==='3d'?6:3,shadowSpread:0};

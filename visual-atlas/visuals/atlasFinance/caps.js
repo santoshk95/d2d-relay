@@ -1,4 +1,4 @@
-// Atlas Finance: roles, data mapping and chart objects. tools/mk_caps.js adds the shared objects.
+// Relay Finance: roles, data mapping and chart objects. tools/mk_caps.js adds the shared objects.
 module.exports = ({ E, num, bool, text, color }) => ({
   roles: [
     { displayName: 'Category', displayNameKey: 'Role_Category', name: 'category', kind: 'Grouping', description: 'Dates for a candlestick, drivers or months for a waterfall, periods for a ribbon, stages for a funnel.', descriptionKey: 'Role_Category_Desc' },
@@ -22,7 +22,7 @@ module.exports = ({ E, num, bool, text, color }) => ({
   objects: {
     chart: { properties: { chartType: E(['candlestick', 'Candlestick'], ['waterfall', 'Waterfall'], ['ribbon', 'Ribbon'], ['funnel', 'Funnel']), look: E(['flat', 'Flat'], ['soft', 'Soft'], ['3d', '3D']), shadow: num } },
     candles: { properties: { style: E(['candle', 'Candles'], ['ohlc', 'OHLC bars'], ['line', 'Close line']), upColor: color, downColor: color, volume: bool, movingAverage: num, maColor: color, minWidth: num } },
-    waterfall: { properties: { startTotal: bool, endTotal: bool, endLabel: text, subtotals: text, incColor: color, decColor: color, totColor: color, connectors: bool, radius: num } },
+    waterfall: { properties: { startTotal: bool, endTotal: bool, endLabel: text, subtotals: text, incColor: color, decColor: color, totColor: color, connectors: bool, radius: num, axis: E(['auto', 'Auto'], ['zero', 'Start at zero'], ['fit', 'Fit the changes']) } },
     ribbon: { properties: { opacity: num, columnWidth: num, rank: bool } },
     funnel: { properties: { shape: E(['bars', 'Bars'], ['tapered', 'Tapered funnel']), content: E(['value', 'Value'], ['first', 'Value and % of first'], ['previous', 'Value and % of previous'], ['percentFirst', '% of first']), conversion: bool, colors: E(['single', 'One color'], ['vary', 'A color per stage'], ['gradient', 'Darker by stage']), radius: num } }
   }

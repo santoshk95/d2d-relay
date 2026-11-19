@@ -1,0 +1,65 @@
+/* D2D Relay: the Ask Relay page (item 66): conversations, the conversation, ideas / KPIs / data */
+.askx{display:grid;grid-template-columns:260px minmax(0,1fr) 290px;gap:16px;align-items:start;position:relative}
+.askx>*{min-width:0}
+.askrail,.askside{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;display:flex;flex-direction:column;gap:10px}
+.askrail input[type=search]{width:100%}
+.askgroup .gh{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin:10px 4px 4px}
+.askitem{display:flex;align-items:center;gap:2px;border-radius:var(--radius-sm);padding:2px 2px 2px 0}
+.askitem:hover,.askitem:focus-within{background:var(--surface-2)}
+.askitem.on{background:var(--accent-tint)}
+.askitem .it{flex:1;min-width:0;display:flex;flex-direction:column;padding:6px 8px;text-decoration:none;color:var(--ink)}
+.askitem .t1{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.askitem .t2{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.askitem .acts{display:flex;opacity:0;transition:opacity .15s}
+.askitem:hover .acts,.askitem:focus-within .acts{opacity:1}
+.ib{border:0;background:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;display:inline-flex}
+.ib:hover,.ib:focus-visible{background:var(--surface-3);color:var(--ink)}
+.ib.on{color:var(--accent)}
+.askmain{display:flex;flex-direction:column;gap:12px;min-height:60vh}
+.askhead{display:flex;align-items:center;gap:8px;padding:2px 0 8px;border-bottom:1px solid var(--line)}
+.asktitle{margin:0;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.askoutline{max-width:220px;padding:5px 8px;font-size:12.5px}
+.askchat{display:flex;flex-direction:column;gap:12px}
+.askyou{display:flex;justify-content:flex-end;scroll-margin-top:12px}
+.askyou .bubble{background:var(--ink);color:var(--bg);border-radius:14px 14px 4px 14px;padding:10px 14px;max-width:78%;white-space:pre-wrap}
+.askwait{display:flex;align-items:center;gap:10px;margin:0}
+.askhello{margin:0;text-align:center;padding:26px 20px}
+.askhello h2{margin:0 0 6px}
+.askhello p{margin:0 auto 14px;max-width:560px}
+.askstart{margin-top:10px}
+.askstart .gh{margin-bottom:6px}
+.askstart .chips{justify-content:center}
+.askcompose{margin:0;position:sticky;bottom:8px;box-shadow:var(--shadow-lg)}
+.askcompose textarea{width:100%;resize:none;min-height:52px}
+.askscope{width:auto;max-width:280px;padding:5px 8px}
+.askmeter{display:flex;align-items:center;gap:8px}
+.askmeter .dots{display:flex;gap:3px}
+.askmeter .dots i{width:8px;height:8px;border-radius:50%;background:var(--line-2)}
+.askmeter .dots i.on{background:var(--accent)}
+.asktabs{display:flex;gap:2px;background:var(--surface-2);border-radius:var(--radius-sm);padding:3px}
+.asktabs button{flex:1;border:0;background:none;padding:6px 8px;border-radius:6px;font:600 12.5px var(--font);color:var(--ink-2);cursor:pointer}
+.asktabs button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.askside-body{display:flex;flex-direction:column;gap:8px}
+.askideas .gh{margin:6px 2px}
+.askidea{display:flex;align-items:flex-start;gap:4px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:2px;margin-bottom:6px;background:var(--surface)}
+.askidea .q{flex:1;text-align:left;border:0;background:none;padding:7px 8px;font:13px var(--font);color:var(--ink);cursor:pointer;line-height:1.35}
+.askidea:hover{border-color:var(--line-2)}
+.askkpis{display:flex;flex-direction:column;gap:4px;max-height:60vh;overflow:auto}
+.askkpi,.askds{display:flex;flex-direction:column;align-items:flex-start;text-align:left;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--surface);padding:7px 10px;cursor:pointer;font:13px var(--font);color:var(--ink)}
+.askkpi small,.askds small{color:var(--muted);font-size:11.5px}
+.askkpi:hover,.askds:hover{border-color:var(--line-2)}
+.askds.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.askrail-toggle,.askside-toggle{display:none}
+.askveil{display:none}
+@media (max-width:1180px){
+  .askx{grid-template-columns:minmax(0,1fr)}
+  .askrail,.askside{position:fixed;top:0;bottom:0;z-index:60;width:min(320px,86vw);max-height:none;background:var(--bg);padding:16px;
+    box-shadow:var(--shadow-lg);transition:transform .2s var(--ease)}
+  .askrail{left:0;transform:translateX(-105%)}
+  .askside{right:0;transform:translateX(105%)}
+  .askx.rail-open .askrail,.askx.side-open .askside{transform:none}
+  .askx.rail-open .askveil,.askx.side-open .askveil{display:block;position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.35)}
+  .askrail-toggle,.askside-toggle{display:inline-flex}
+}
+@media (max-width:640px){.askyou .bubble{max-width:92%}.askoutline{display:none}}

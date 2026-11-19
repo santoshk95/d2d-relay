@@ -1,0 +1,587 @@
+# Industry pack: grocery and food-and-drug retail (item 61). Business terms tag columns by name (genbi_kit/ontology.py);
+# KPIs go into the organisation's KPI dictionary (genbi_kit/semreview/kpis.py fields). A KPI built from other KPIs has
+# reference DAX naming them by [name]; a base KPI has a definition and formula in words only, so it fits any model.
+name: Grocery and retail
+order: 10
+description: Supermarkets, food and drug stores, pharmacy, fuel and digital grocery. Store and item sales, baskets, margin, shrink, own brands, in-stock, supply chain, labor and loyalty.
+questions:
+  - What were net sales by division last week, and how do they compare with last year?
+  - Which 10 stores have the highest shrink as a percent of sales this quarter?
+  - How has own brands penetration changed by department over the last 13 periods?
+  - Which categories grew digital sales penetration the most this year?
+  - Where is the in-stock rate below 95 percent, by store and department?
+  - What is the average basket value by banner and channel?
+
+terms:
+  # ---------------- measures: sales and margin
+  - {name: Sales, kind: measure, unit: currency, aggregation: sum, family: Sales, description: "Value of goods sold at the register or online.",
+     synonyms: [sls, sale, sales amount, sales value, sales dollars, dollar sales, revenue, turnover, pos sales, register sales, item sales, extended price, ext price, ext retail, line amount, sales retail, total sales]}
+  - {name: Net Sales, kind: measure, unit: currency, aggregation: sum, family: Sales, description: "Sales after discounts, coupons and returns.",
+     synonyms: [net sls, net revenue, sales net, net amount, net sales amount, net retail, nsv]}
+  - {name: Gross Sales, kind: measure, unit: currency, aggregation: sum, family: Sales, description: "Sales before discounts, coupons and returns.",
+     synonyms: [gross sls, gross revenue, sales gross, gross retail, sales before discount]}
+  - {name: Cost of Goods Sold, kind: measure, unit: currency, aggregation: sum, description: "Cost of the goods sold.",
+     synonyms: [cogs, cost of sales, cos, product cost, cost amount, ext cost, extended cost, item cost amount, cost dollars, total cost]}
+  - {name: Gross Margin, kind: measure, unit: currency, aggregation: sum, description: "Sales less the cost of goods sold.",
+     synonyms: [gross profit, gross margin amount, margin amount, margin dollars, gm dollars, front margin, margin]}
+  - {name: Discount, kind: measure, unit: currency, aggregation: sum, description: "Price reductions given at the register.",
+     synonyms: [discounts, markdown, markdowns, md amount, promo discount, price reduction, discount amount, reduction]}
+  - {name: Coupon Amount, kind: measure, unit: currency, aggregation: sum, description: "Value of coupons redeemed.",
+     synonyms: [coupon, coupons, coupon value, coupon redemption, mfr coupon, digital coupon, store coupon]}
+  - {name: Returns, kind: measure, unit: currency, aggregation: sum, description: "Value of goods returned and refunded.",
+     synonyms: [return amount, refunds, refund amount, returned sales, return value]}
+  - {name: Promo Sales, kind: measure, unit: currency, aggregation: sum, family: Sales, description: "Sales of items sold on promotion.",
+     synonyms: [promotional sales, promo sls, sales on promo, deal sales, ad sales]}
+  - {name: Own Brands Sales, kind: measure, unit: currency, aggregation: sum, family: Sales, description: "Sales of the retailer's own (private label) brands.",
+     synonyms: [own brand sales, private label sales, pl sales, store brand sales, own brands sls]}
+  - {name: Digital Sales, kind: measure, unit: currency, aggregation: sum, family: Sales, description: "Sales ordered online (delivery and pickup).",
+     synonyms: [ecom sales, ecommerce sales, e commerce sales, online sales, dotcom sales, digital sls, delivery sales, pickup sales]}
+  - {name: Gross Margin %, kind: measure, unit: percent, aggregation: average, description: "Gross margin as a share of sales, already worked out per row (weight it by sales, never average it).",
+     synonyms: [gross margin pct, gm pct, gm percent, margin pct, margin percent, gm rate, margin rate, gross margin rate]}
+  - {name: Tax, kind: measure, unit: currency, aggregation: sum, description: "Sales tax collected (not part of sales).",
+     synonyms: [sales tax, tax amount, tax amt, vat, gst, tax collected]}
+  - {name: Vendor Funding, kind: measure, unit: currency, aggregation: sum, description: "Allowances and promotional money from vendors.",
+     synonyms: [allowance, allowances, scan allowance, bill back, billback, promo funding, vendor allowance, deal money, trade funds]}
+  # ---------------- measures: volume and baskets
+  - {name: Units, kind: measure, unit: count, aggregation: sum, description: "Items sold (each).",
+     synonyms: [units sold, unit qty, unit quantity, item qty, sold qty, sales units, sls units, sales qty, eaches, pieces, qty sold, quantity sold, quantity, unit count]}
+  - {name: Cases, kind: measure, unit: count, aggregation: sum, description: "Cases (packs of items) sold, ordered or shipped.",
+     synonyms: [case qty, case quantity, cs qty, cases sold]}
+  - {name: Weight Sold, kind: measure, unit: number, aggregation: sum, description: "Weight of random-weight items sold (pounds or kilograms).",
+     synonyms: [weight, net weight, pounds sold, lbs sold, kilogram sold, kg sold, sold weight]}
+  - {name: Transactions, kind: measure, unit: count, aggregation: sum, description: "Register and online transactions (baskets). Grocers often call it customer count.",
+     synonyms: [transaction count, txn count, trans count, baskets, basket count, tickets, ticket count, receipts, receipt count, trips, customer count, cust count]}
+  - {name: Orders, kind: measure, unit: count, aggregation: sum, description: "Orders placed (online, or with suppliers in supply-chain data).",
+     synonyms: [order count, online orders, ecom orders, digital orders]}
+  - {name: Unique Customers, kind: measure, unit: count, aggregation: distinct_count, description: "Distinct customers or households that bought.",
+     synonyms: [distinct customers, unique households, household count, hh count, active customers, shoppers, unique shoppers]}
+  # ---------------- measures: inventory, waste and supply chain
+  - {name: Inventory On Hand, kind: measure, unit: count, aggregation: last, description: "Units in stock at the end of the period.",
+     synonyms: [on hand, oh qty, on hand qty, stock on hand, soh, onhand units, eoh, ending on hand, closing stock, stock qty, inventory units, inventory qty]}
+  - {name: Inventory Value, kind: measure, unit: currency, aggregation: last, description: "Value of the stock on hand (at cost).",
+     synonyms: [stock value, inventory cost, oh value, on hand value, inventory dollars, inventory amount, stock at cost]}
+  - {name: Shrink, kind: measure, unit: currency, aggregation: sum, description: "Inventory lost to theft, damage, spoilage and errors.",
+     synonyms: [shrinkage, shrink amount, shrink dollars, known loss, unknown loss, inventory loss, loss amount]}
+  - {name: Waste, kind: measure, unit: currency, aggregation: sum, description: "Fresh product thrown away (spoilage).",
+     synonyms: [spoilage, spoils, throwaway, dumps, food waste, write off, writeoff, waste amount]}
+  - {name: Out of Stock Count, kind: measure, unit: count, aggregation: sum, description: "Item and store combinations found with no stock.",
+     synonyms: [out of stock, oos count, stockouts, stock outs, stockout count, oos flag, zero stock]}
+  - {name: Ordered Units, kind: measure, unit: count, aggregation: sum, description: "Units ordered from suppliers or the warehouse.",
+     synonyms: [order qty, units ordered, ordered qty, po qty, purchase order qty, order units]}
+  - {name: Shipped Units, kind: measure, unit: count, aggregation: sum, description: "Units shipped or delivered against orders.",
+     synonyms: [ship qty, units shipped, shipped qty, delivered qty, delivered units, fulfilled qty]}
+  - {name: Received Units, kind: measure, unit: count, aggregation: sum, description: "Units received at the store or warehouse.",
+     synonyms: [received qty, units received, receipt qty, receiving qty]}
+  - {name: Lead Time Days, kind: measure, unit: duration, aggregation: average, description: "Days from order to receipt.",
+     synonyms: [lead time, lead days, days to deliver, delivery days]}
+  # ---------------- measures: prices and space
+  - {name: Price, kind: measure, unit: currency, aggregation: average, description: "Selling price of one item.",
+     synonyms: [unit price, retail price, regular price, reg price, selling price, sell price, shelf price, unit retail, retail]}
+  - {name: Promo Price, kind: measure, unit: currency, aggregation: average, description: "Price of an item while on promotion.",
+     synonyms: [sale price, ad price, promotional price, deal price]}
+  - {name: Unit Cost, kind: measure, unit: currency, aggregation: average, description: "Cost of one item.",
+     synonyms: [cost per unit, item cost, unit cost amount, landed cost, case cost]}
+  - {name: Selling Square Feet, kind: measure, unit: number, aggregation: sum, entity: Store, description: "Selling area of a store.",
+     synonyms: [square feet, sq ft, square foot, store size, selling area, selling sq ft, sales area, store square feet]}
+  # ---------------- measures: pharmacy, fuel, loyalty, labor
+  - {name: Prescriptions, kind: measure, unit: count, aggregation: sum, description: "Prescriptions filled.",
+     synonyms: [scripts, rx count, rx filled, scripts filled, prescription count, fills, script count]}
+  - {name: Pharmacy Sales, kind: measure, unit: currency, aggregation: sum, family: Sales, description: "Sales of prescriptions.",
+     synonyms: [rx sales, prescription sales, rx revenue, pharmacy revenue]}
+  - {name: Fuel Gallons, kind: measure, unit: number, aggregation: sum, description: "Fuel sold (gallons or litres).",
+     synonyms: [gallons, gallons sold, fuel volume, fuel qty, liters, litres]}
+  - {name: Fuel Sales, kind: measure, unit: currency, aggregation: sum, family: Sales, description: "Sales at the fuel centers.",
+     synonyms: [gas sales, fuel revenue, fuel center sales]}
+  - {name: Loyalty Sales, kind: measure, unit: currency, aggregation: sum, family: Sales, description: "Sales with a loyalty card or member account.",
+     synonyms: [card sales, club card sales, member sales, loyalty sls, tracked sales]}
+  - {name: Points Earned, kind: measure, unit: number, aggregation: sum, description: "Loyalty points given to members.",
+     synonyms: [points issued, rewards earned, points awarded]}
+  - {name: Points Redeemed, kind: measure, unit: number, aggregation: sum, description: "Loyalty points used by members.",
+     synonyms: [rewards redeemed, points used, redemptions]}
+  - {name: Labor Hours, kind: measure, unit: number, aggregation: sum, description: "Hours worked by store or warehouse staff.",
+     synonyms: [hours worked, work hours, paid hours, scheduled hours, labor hrs, worked hours, man hours]}
+  - {name: Labor Cost, kind: measure, unit: currency, aggregation: sum, description: "Wages and payroll cost.",
+     synonyms: [payroll, wages, labor dollars, labor amount, wage cost, payroll cost]}
+
+  # ---------------- keys: what identifies a row's store, item, customer ...
+  - {name: Store, kind: key, entity: Store, description: "Identifies a store (location).",
+     synonyms: [store id, store nbr, store number, store num, store no, str nbr, str id, store key, store code, location id, loc id, site id, facility id, facility nbr, store nbr id]}
+  - {name: Product, kind: key, entity: Product, description: "Identifies an item (product).",
+     synonyms: [product id, item, item id, item nbr, item number, item code, item key, product key, product code, sku, upc, ean, gtin, plu, article, article id, cic, corp item cd, corporate item code, item upc]}
+  - {name: Customer, kind: key, entity: Customer, description: "Identifies a customer, member or household.",
+     synonyms: [customer id, customer key, member id, loyalty id, loyalty card, card number, club card, club card nbr, household id, household, hhid, hh id, shopper id, account id]}
+  - {name: Transaction, kind: key, entity: Transaction, description: "Identifies one register or online transaction.",
+     synonyms: [transaction id, txn id, trans id, ticket id, ticket nbr, receipt id, receipt nbr, basket id, txn nbr, transaction number]}
+  - {name: Order, kind: key, entity: Order, description: "Identifies one order (online or purchase order).",
+     synonyms: [order id, order nbr, order number, order key, po number, po nbr, purchase order, po id]}
+  - {name: Vendor, kind: key, entity: Vendor, description: "Identifies a supplier.",
+     synonyms: [vendor id, vendor nbr, vendor number, vendor code, supplier id, supplier nbr, supplier code, mfr id, manufacturer id, vendor key]}
+  - {name: Warehouse, kind: key, entity: Warehouse, description: "Identifies a distribution center or warehouse.",
+     synonyms: [warehouse id, dc id, dc nbr, distribution center, dc, whse id, whse nbr, warehouse nbr]}
+  - {name: Promotion, kind: key, entity: Promotion, description: "Identifies a promotion or ad event.",
+     synonyms: [promo id, promotion id, promo nbr, deal id, ad id, event id, offer id]}
+  - {name: Employee, kind: key, entity: Employee, description: "Identifies a store or warehouse associate.",
+     synonyms: [employee id, emp id, associate id, staff id, employee nbr, worker id]}
+
+  # ---------------- dates
+  - {name: Date, kind: date, entity: Date, description: "The day a row belongs to.",
+     synonyms: [day, txn date, transaction date, sales date, business date, calendar date, order date, sold date, post date, posting date, receipt date, sale date]}
+  - {name: Fiscal Week, kind: date, entity: Date, description: "The retailer's fiscal week.",
+     synonyms: [fiscal wk, fw, fiscal week number, fiscal week id, wk nbr, week nbr, week id, retail week, ad week]}
+  - {name: Fiscal Period, kind: date, entity: Date, description: "The retailer's fiscal period (4-week or 4-4-5 month).",
+     synonyms: [fiscal month, fiscal period number, period nbr, period id, fp, accounting period]}
+  - {name: Fiscal Quarter, kind: date, entity: Date, synonyms: [fiscal qtr, fq, quarter nbr]}
+  - {name: Fiscal Year, kind: date, entity: Date, synonyms: [fiscal yr, fy, fiscal year nbr, year nbr]}
+
+  # ---------------- attributes: store hierarchy
+  - {name: Store Name, kind: attribute, entity: Store, synonyms: [store desc, store description, location name, site name, store nm]}
+  - {name: Banner, kind: attribute, entity: Store, description: "The store brand the shopper sees.",
+     synonyms: [banner name, store banner, chain, trade name, brand banner]}
+  - {name: Division, kind: attribute, entity: Store, description: "The operating division a store reports to.",
+     synonyms: [division name, div name, operating division, business unit]}
+  - {name: District, kind: attribute, entity: Store, synonyms: [district name, dist name, market, market name]}
+  - {name: Region, kind: attribute, entity: Store, synonyms: [region name, rgn, sales region, territory, area]}
+  - {name: Store Format, kind: attribute, entity: Store, synonyms: [format, store type, store format name, concept, store concept]}
+  - {name: City, kind: attribute, entity: Store, synonyms: [city name, town]}
+  - {name: State, kind: attribute, entity: Store, synonyms: [state code, state name, province, st]}
+  - {name: Zip Code, kind: attribute, entity: Store, synonyms: [zip, postal code, postcode, zip cd]}
+  # ---------------- attributes: product hierarchy
+  - {name: Product Name, kind: attribute, entity: Product, synonyms: [item name, item description, item desc, product description, product desc, description, sku description]}
+  - {name: Department, kind: attribute, entity: Product, synonyms: [dept, department name, dept name, dept desc]}
+  - {name: Category, kind: attribute, entity: Product, synonyms: [category name, cat name, product category, merch category, category desc]}
+  - {name: Subcategory, kind: attribute, entity: Product, synonyms: [sub category, subcategory name, subcat name, sub cat, segment]}
+  - {name: Class, kind: attribute, entity: Product, synonyms: [product class, class name, item class]}
+  - {name: Brand, kind: attribute, entity: Product, synonyms: [brand name, brand desc, manufacturer brand]}
+  - {name: Own Brand Flag, kind: attribute, entity: Product, description: "Whether an item is one of the retailer's own (private label) brands.",
+     synonyms: [own brand, own brands, private label, private label flag, pl flag, store brand, own brand ind, national brand flag]}
+  - {name: Fresh Flag, kind: attribute, entity: Product, synonyms: [fresh, perishable, perishable flag, fresh ind]}
+  - {name: Size, kind: attribute, entity: Product, synonyms: [item size, pack size, size desc, uom, unit of measure, package size]}
+  # ---------------- attributes: customer, channel, promotion
+  - {name: Channel, kind: attribute, entity: Transaction, description: "How the order was placed and fulfilled.",
+     synonyms: [sales channel, order channel, fulfillment type, fulfilment type, delivery type, order type, channel name]}
+  - {name: Tender Type, kind: attribute, entity: Transaction, synonyms: [payment type, payment method, tender, tender desc, pay type]}
+  - {name: Promo Flag, kind: attribute, entity: Promotion, description: "Whether the item was sold on promotion.",
+     synonyms: [on promo, promo, promo ind, promotion flag, deal flag, ad flag]}
+  - {name: Promo Type, kind: attribute, entity: Promotion, synonyms: [promotion type, deal type, offer type, ad type]}
+  - {name: Customer Segment, kind: attribute, entity: Customer, synonyms: [segment name, customer type, shopper segment, lifestage, loyalty tier, tier]}
+  - {name: Vendor Name, kind: attribute, entity: Vendor, synonyms: [supplier name, vendor desc, manufacturer, mfr name]}
+
+kpis:
+  # ---------------- sales
+  - name: Net Sales
+    synonyms: [Sales, Total Sales, Revenue, Net Revenue]
+    definition: Sales after discounts, coupons and returns, at the register and online.
+    formula: Gross sales - discounts - coupons - returns
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Gross Sales
+    definition: Sales before discounts, coupons and returns.
+    formula: Sum of items sold times their regular price
+    unit: currency
+    aggregation: sum
+    domain: Sales
+  - name: Net Sales LY
+    synonyms: [Sales LY, Net Sales Last Year]
+    definition: Net sales in the same period last year (same fiscal weeks).
+    formula: Net sales for the same fiscal period one year earlier
+    unit: currency
+    aggregation: sum
+    time: fiscal year (52 or 53 weeks), same fiscal weeks last year
+    domain: Sales
+  - name: Sales Growth %
+    synonyms: [Sales vs LY %, YoY Sales Growth, Net Sales Growth %]
+    definition: Change in net sales against the same period last year.
+    formula: (Net sales - Net sales last year) / Net sales last year
+    dax: DIVIDE ( [Net Sales] - [Net Sales LY], [Net Sales LY] )
+    unit: percent
+    aggregation: ratio
+    domain: Sales
+  - name: Identical Store Sales Growth %
+    synonyms: [ID Sales %, Comp Sales %, Comparable Store Sales Growth, Same Store Sales Growth, LFL Sales %]
+    definition: Sales growth against last year for stores open in both periods, so new and closed stores do not distort it.
+    formula: (Net sales of identical stores - their net sales last year) / their net sales last year
+    filters: [Stores open at least 12 full months in both periods, Excludes fuel sales]
+    unit: percent
+    aggregation: ratio
+    domain: Sales
+  - name: Units Sold
+    synonyms: [Units, Unit Sales, Quantity Sold]
+    definition: Items sold, net of returns.
+    formula: Sum of units sold - units returned
+    unit: count
+    aggregation: sum
+    domain: Sales
+  - name: Transactions
+    synonyms: [Customer Count, Baskets, Transaction Count, Trips]
+    definition: Number of register and online transactions (baskets).
+    formula: Count of distinct transactions
+    unit: count
+    aggregation: distinct_count
+    domain: Customers
+  - name: Average Basket Value
+    synonyms: [Average Transaction Value, ATV, Average Ticket, Basket Value, Avg Basket]
+    definition: Net sales per transaction.
+    formula: Net sales / Transactions
+    dax: DIVIDE ( [Net Sales], [Transactions] )
+    unit: currency
+    aggregation: ratio
+    domain: Customers
+  - name: Units per Transaction
+    synonyms: [UPT, Basket Size, Items per Basket]
+    definition: Items sold per transaction.
+    formula: Units sold / Transactions
+    dax: DIVIDE ( [Units Sold], [Transactions] )
+    unit: number
+    aggregation: ratio
+    domain: Customers
+  - name: Average Unit Retail
+    synonyms: [AUR, Average Selling Price, ASP, Average Item Price]
+    definition: Net sales per unit sold.
+    formula: Net sales / Units sold
+    dax: DIVIDE ( [Net Sales], [Units Sold] )
+    unit: currency
+    aggregation: ratio
+    domain: Sales
+  - name: Store Count
+    synonyms: [Number of Stores, Stores Selling]
+    definition: Stores with sales in the period.
+    formula: Distinct count of stores with net sales
+    unit: count
+    aggregation: distinct_count
+    domain: Stores
+  - name: Average Weekly Sales per Store
+    synonyms: [Sales per Store per Week, AWS]
+    definition: Net sales per store per fiscal week.
+    formula: Net sales / Store count / Number of fiscal weeks
+    unit: currency
+    aggregation: ratio
+    domain: Stores
+  - name: Selling Square Feet
+    synonyms: [Square Feet, Selling Area]
+    definition: Selling area of the stores in the selection.
+    formula: Sum of each store's selling square feet
+    unit: number
+    aggregation: sum
+    domain: Stores
+  - name: Sales per Square Foot
+    synonyms: [Sales per Sq Ft, Sales Density]
+    definition: Net sales per square foot of selling space.
+    formula: Net sales / Selling square feet
+    dax: DIVIDE ( [Net Sales], [Selling Square Feet] )
+    unit: currency
+    aggregation: ratio
+    domain: Stores
+  # ---------------- margin and pricing
+  - name: Cost of Goods Sold
+    synonyms: [COGS, Cost of Sales]
+    definition: Cost of the goods sold, net of vendor allowances where they are booked against cost.
+    formula: Sum of units sold times their unit cost
+    unit: currency
+    aggregation: sum
+    domain: Margin
+  - name: Gross Margin
+    synonyms: [Gross Profit, Margin $, GM $, Gross Margin $]
+    definition: Net sales less the cost of goods sold.
+    formula: Net sales - Cost of goods sold
+    dax: '[Net Sales] - [Cost of Goods Sold]'
+    unit: currency
+    aggregation: sum
+    domain: Margin
+  - name: Gross Margin %
+    synonyms: [GM %, Gross Margin Rate, Margin %, Gross Profit %]
+    definition: Gross margin as a share of net sales.
+    formula: Gross margin / Net sales
+    dax: DIVIDE ( [Gross Margin], [Net Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Margin
+  - name: Discounts
+    synonyms: [Markdowns, Markdown $, Discount Amount]
+    definition: Price reductions given at the register, promotions included, coupons excluded.
+    formula: Sum of discount amounts
+    unit: currency
+    aggregation: sum
+    domain: Margin
+  - name: Markdown %
+    synonyms: [Discount %, Markdown Rate]
+    definition: Discounts as a share of gross sales.
+    formula: Discounts / Gross sales
+    dax: DIVIDE ( [Discounts], [Gross Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Margin
+  - name: Promo Sales
+    synonyms: [Promotional Sales, Sales on Promotion]
+    definition: Net sales of items sold on promotion.
+    formula: Net sales where the item was on promotion
+    filters: [Promo flag = Yes]
+    unit: currency
+    aggregation: sum
+    domain: Margin
+  - name: Promo Sales %
+    synonyms: [Promo Penetration %, Promotional Sales Share]
+    definition: Share of net sales sold on promotion.
+    formula: Promo sales / Net sales
+    dax: DIVIDE ( [Promo Sales], [Net Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Margin
+  - name: Vendor Funding
+    synonyms: [Allowances, Vendor Allowances, Promo Funding]
+    definition: Allowances and promotional funds received from vendors.
+    formula: Sum of scan, bill-back and other vendor allowances
+    unit: currency
+    aggregation: sum
+    domain: Margin
+  # ---------------- own brands, digital, loyalty
+  - name: Own Brands Sales
+    synonyms: [Private Label Sales, Store Brand Sales, Own Brand Sales]
+    definition: Net sales of the retailer's own (private label) brands.
+    formula: Net sales where the item is an own brand
+    filters: [Own brand flag = Yes]
+    unit: currency
+    aggregation: sum
+    domain: Own Brands
+  - name: Own Brands Penetration %
+    synonyms: [Private Label Share, Own Brands Share, Private Label Penetration %, Own Brand %]
+    definition: Own brands' share of net sales.
+    formula: Own brands sales / Net sales
+    dax: DIVIDE ( [Own Brands Sales], [Net Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Own Brands
+  - name: Digital Sales
+    synonyms: [eCommerce Sales, Online Sales, Digital Revenue]
+    definition: Net sales of orders placed online, delivery and pickup.
+    formula: Net sales where the channel is delivery or pickup
+    filters: [Channel in Delivery, Pickup]
+    unit: currency
+    aggregation: sum
+    domain: Digital
+  - name: Digital Sales Penetration %
+    synonyms: [eCommerce Penetration, Digital Share, Online Penetration %]
+    definition: Digital sales as a share of net sales.
+    formula: Digital sales / Net sales
+    dax: DIVIDE ( [Digital Sales], [Net Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Digital
+  - name: Online Orders
+    synonyms: [Digital Orders, eCommerce Orders]
+    definition: Orders placed online.
+    formula: Count of distinct online orders
+    unit: count
+    aggregation: distinct_count
+    domain: Digital
+  - name: Average Order Value
+    synonyms: [AOV, Digital Basket, Average Online Order]
+    definition: Digital sales per online order.
+    formula: Digital sales / Online orders
+    dax: DIVIDE ( [Digital Sales], [Online Orders] )
+    unit: currency
+    aggregation: ratio
+    domain: Digital
+  - name: Loyalty Sales
+    synonyms: [Tracked Sales, Member Sales, Club Card Sales]
+    definition: Net sales with a loyalty card or member account.
+    formula: Net sales where a customer id is present
+    unit: currency
+    aggregation: sum
+    domain: Loyalty
+  - name: Loyalty Sales Penetration %
+    synonyms: [Tracked Sales %, Member Sales Share]
+    definition: Share of net sales made by loyalty members.
+    formula: Loyalty sales / Net sales
+    dax: DIVIDE ( [Loyalty Sales], [Net Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Loyalty
+  - name: Active Members
+    synonyms: [Active Households, Active Loyalty Members]
+    definition: Loyalty households that bought at least once in the last 52 weeks.
+    formula: Distinct count of households with a purchase in the last 52 weeks
+    unit: count
+    aggregation: distinct_count
+    time: rolling 52 weeks
+    domain: Loyalty
+  # ---------------- shrink, waste, inventory, supply chain
+  - name: Shrink
+    synonyms: [Shrinkage, Shrink $, Inventory Loss]
+    definition: Value of inventory lost to theft, damage, spoilage and administrative errors, at cost.
+    formula: Book inventory - physical inventory, plus recorded losses
+    unit: currency
+    aggregation: sum
+    domain: Shrink
+  - name: Shrink %
+    synonyms: [Shrink % of Sales, Shrink Rate]
+    definition: Shrink as a share of net sales.
+    formula: Shrink / Net sales
+    dax: DIVIDE ( [Shrink], [Net Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Shrink
+  - name: Waste
+    synonyms: [Spoilage, Fresh Waste, Throwaway]
+    definition: Value of fresh product thrown away, at cost.
+    formula: Sum of recorded waste
+    unit: currency
+    aggregation: sum
+    domain: Shrink
+  - name: Waste %
+    synonyms: [Spoilage %, Waste % of Sales]
+    definition: Waste as a share of net sales.
+    formula: Waste / Net sales
+    dax: DIVIDE ( [Waste], [Net Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Shrink
+  - name: Out of Stock Rate %
+    synonyms: [OOS %, Stockout Rate, Out of Stock %]
+    definition: Share of item and store combinations with no stock when checked.
+    formula: Out-of-stock item-store checks / All item-store checks
+    unit: percent
+    aggregation: ratio
+    domain: Inventory
+  - name: In-Stock Rate %
+    synonyms: [In Stock %, On-Shelf Availability, OSA %]
+    definition: Share of item and store combinations in stock when checked.
+    formula: 1 - Out-of-stock rate
+    dax: 1 - [Out of Stock Rate %]
+    unit: percent
+    aggregation: ratio
+    domain: Inventory
+  - name: Average Inventory Value
+    synonyms: [Average Inventory, Avg Inventory at Cost]
+    definition: Average value of the stock on hand over the period, at cost.
+    formula: Average of the inventory value at each period end
+    unit: currency
+    aggregation: average
+    domain: Inventory
+  - name: Inventory Turnover
+    synonyms: [Inventory Turns, Stock Turn]
+    definition: How many times the inventory is sold through in the period.
+    formula: Cost of goods sold / Average inventory value
+    dax: DIVIDE ( [Cost of Goods Sold], [Average Inventory Value] )
+    unit: ratio
+    aggregation: ratio
+    domain: Inventory
+  - name: GMROI
+    synonyms: [Gross Margin Return on Inventory, GMROII]
+    definition: Gross margin earned for each dollar of average inventory.
+    formula: Gross margin / Average inventory value
+    dax: DIVIDE ( [Gross Margin], [Average Inventory Value] )
+    unit: ratio
+    aggregation: ratio
+    domain: Inventory
+  - name: Weeks of Supply
+    synonyms: [WOS, Weeks of Cover, Stock Cover]
+    definition: How many weeks the stock on hand lasts at the recent rate of sale.
+    formula: Units on hand / Average weekly units sold (last 4 weeks)
+    unit: duration
+    aggregation: custom
+    domain: Inventory
+  - name: Fill Rate %
+    synonyms: [Order Fill Rate, Case Fill Rate, Vendor Fill Rate]
+    definition: Share of ordered units that were shipped.
+    formula: Shipped units / Ordered units
+    unit: percent
+    aggregation: ratio
+    domain: Supply Chain
+  - name: On-Time In-Full %
+    synonyms: [OTIF, OTIF %, On Time In Full]
+    definition: Share of deliveries that arrived on time and complete.
+    formula: Deliveries on time and in full / All deliveries
+    unit: percent
+    aggregation: ratio
+    domain: Supply Chain
+  # ---------------- labor, pharmacy, fuel
+  - name: Labor Hours
+    synonyms: [Hours Worked, Paid Hours]
+    definition: Hours worked by store staff.
+    formula: Sum of hours worked
+    unit: number
+    aggregation: sum
+    domain: Labor
+  - name: Sales per Labor Hour
+    synonyms: [SPLH, Labor Productivity]
+    definition: Net sales per hour worked.
+    formula: Net sales / Labor hours
+    dax: DIVIDE ( [Net Sales], [Labor Hours] )
+    unit: currency
+    aggregation: ratio
+    domain: Labor
+  - name: Labor Cost
+    synonyms: [Payroll, Wages]
+    definition: Wages and payroll cost of store staff.
+    formula: Sum of wages and payroll costs
+    unit: currency
+    aggregation: sum
+    domain: Labor
+  - name: Labor Cost %
+    synonyms: [Labor % of Sales, Payroll %]
+    definition: Labor cost as a share of net sales.
+    formula: Labor cost / Net sales
+    dax: DIVIDE ( [Labor Cost], [Net Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Labor
+  - name: Prescriptions Filled
+    synonyms: [Scripts, Rx Count, Script Count]
+    definition: Prescriptions filled by the pharmacies.
+    formula: Count of prescriptions filled
+    unit: count
+    aggregation: sum
+    domain: Pharmacy
+  - name: Pharmacy Sales
+    synonyms: [Rx Sales, Prescription Sales]
+    definition: Net sales of prescriptions.
+    formula: Sum of prescription sales
+    unit: currency
+    aggregation: sum
+    domain: Pharmacy
+  - name: Average Prescription Value
+    synonyms: [Average Script Value, Rx per Script]
+    definition: Pharmacy sales per prescription filled.
+    formula: Pharmacy sales / Prescriptions filled
+    dax: DIVIDE ( [Pharmacy Sales], [Prescriptions Filled] )
+    unit: currency
+    aggregation: ratio
+    domain: Pharmacy
+  - name: Fuel Gallons
+    synonyms: [Gallons Sold, Fuel Volume]
+    definition: Gallons of fuel sold.
+    formula: Sum of gallons sold
+    unit: number
+    aggregation: sum
+    domain: Fuel
+  - name: Fuel Margin per Gallon
+    synonyms: [Cents per Gallon, CPG, Fuel CPG]
+    definition: Fuel gross margin per gallon sold.
+    formula: Fuel gross margin / Fuel gallons
+    dax: DIVIDE ( [Fuel Gross Margin], [Fuel Gallons] )
+    unit: currency
+    aggregation: ratio
+    domain: Fuel
+  - name: Fuel Gross Margin
+    synonyms: [Fuel Margin, Fuel Gross Profit]
+    definition: Fuel sales less the cost of the fuel sold.
+    formula: Fuel sales - Fuel cost
+    unit: currency
+    aggregation: sum
+    domain: Fuel
+  - name: Return Rate %
+    synonyms: [Returns %, Refund Rate]
+    definition: Returns as a share of gross sales.
+    formula: Returns / Gross sales
+    dax: DIVIDE ( [Returns], [Gross Sales] )
+    unit: percent
+    aggregation: ratio
+    domain: Sales
+  - name: Returns
+    synonyms: [Refunds, Return Amount]
+    definition: Value of goods returned and refunded.
+    formula: Sum of refunds
+    unit: currency
+    aggregation: sum
+    domain: Sales

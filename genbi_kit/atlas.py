@@ -1,6 +1,7 @@
-"""Visual Atlas: 13 Power BI custom-visual families (about 50 chart types) from the Visual Atlas project
-(`visual-atlas/` in this repo). The packaged .pbiviz files sit in custom_visuals/atlas/ and everything the toolkit
-needs comes from them: the field wells, data mapping and every Format-pane option (capabilities), and the compiled
+"""The Relay visual families: 13 Power BI custom visuals (about 60 chart types) from the visual-atlas project
+(`visual-atlas/` in this repo; "Atlas" is only the project's and the code's name, never shown to anyone). The packaged
+.pbiviz files sit in custom_visuals/atlas/ as Relay<Family>.<version>.pbiviz (older Atlas<Family> files are still
+read; the newest version of a family wins) and everything the toolkit needs comes from them: the field wells, data mapping and every Format-pane option (capabilities), and the compiled
 visual code that the HTML prototype runs in a mock Power BI host - so the prototype draws exactly what Power BI will.
 
 Custom visuals built by the visual factory (vfactory.py) sit on the same framework and are handled the same way:
@@ -8,6 +9,7 @@ those in the visual library (library_dir()/<name>/<name>.pbiviz) and the current
 (visuals/dist/<name>.pbiviz) join the catalog after the Atlas families.
 """
 import json
+import re
 import shutil
 import subprocess
 import zipfile
@@ -103,19 +105,22 @@ def _entry(pkg: dict, file: str, origin: str = "atlas") -> dict:
 
 
 def _newest(paths: list[Path]) -> list[Path]:
+    """The newest file of each family: RelayColumns.1.0.10.0.pbiviz and an older AtlasColumns.1.0.9.0.pbiviz are one
+    family (Columns), so a renamed package never shows up twice."""
     best: dict[str, tuple] = {}
     for p in paths:
         parts = p.name.split(".")
         version = tuple(int(x) for x in parts[1:5] if x.isdigit())
-        if parts[0] not in best or version > best[parts[0]][0]:
-            best[parts[0]] = (version, p)
+        family = re.sub(r"^(Relay|Atlas)", "", parts[0])
+        if family not in best or version > best[family][0]:
+            best[family] = (version, p)
     return [p for _, p in best.values()]
 
 
 def package_paths() -> list[tuple[str, Path]]:
     """(origin, .pbiviz) in precedence order: the Atlas families (newest version of each), the visual library,
     the current project's own custom visuals (a project copy of a library visual wins)."""
-    out = [("atlas", p) for p in sorted(_newest(list(folder().glob("Atlas*.pbiviz"))))]
+    out = [("atlas", p) for p in sorted(_newest(list(folder().glob("Relay*.pbiviz")) + list(folder().glob("Atlas*.pbiviz"))))]
     lib = library_dir()
     if lib.is_dir():
         out += [("library", p) for p in sorted(lib.glob("*/*.pbiviz"))]
@@ -250,10 +255,13 @@ def dataview(entry: dict, fields: dict, rows: list[dict], describe) -> dict:
     return {"categories": categories, "values": [column(0, j, role, d) for j, (role, d, _) in enumerate(val)]}
 
 
-def theme_defaults(entry: dict, look: str) -> dict:
-    """What the report theme sets for every Atlas-framework visual - the look and the theme palette - limited to
-    the objects this visual has (a custom visual may leave some out)."""
+def theme_defaults(entry: dict, look: str, font: str | None = None) -> dict:
+    """What the report theme sets for every Relay-framework visual - the look, the theme palette and (item 72) the
+    brand's font - limited to the objects this visual has (a custom visual may leave some out)."""
     objs, out = entry.get("objects") or {}, {}
+    if font and "fontFamily" in (objs.get("style") or {}):
+        name = f"'{font}'" if " " in font else font
+        out["style"] = {"fontFamily": f"{name}, wf_segoe-ui_normal, helvetica, arial, sans-serif"}
     chart = objs.get("chart") or {}
     if "look" in chart:
         out["chart"] = {"look": look if look in LOOKS else "soft", **({"shadow": 55} if "shadow" in chart else {})}

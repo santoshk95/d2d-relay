@@ -18,6 +18,7 @@ query result; the answer shows the SQL, where it ran, the checks, and whether it
 import asyncio
 import hashlib
 import json
+import os
 import re
 import secrets
 import threading
@@ -35,6 +36,9 @@ from . import auth, connectors, db, instances, providers, semantic, store
 from . import usage as costs
 
 MAX_QUERIES = 4
+# item 67: Ask Relay and the other chat-lane answers (KPI changes in words, Semantic Review's meaning check) answer while
+# someone waits, so they think at "high", not the builds' "max" (D2D_CHAT_EFFORT)
+CHAT_EFFORT = (os.environ.get("D2D_CHAT_EFFORT") or "high").strip().lower()
 PREVIEW_ROWS = 50
 EXTRACT_TIMEOUT_S = 60
 CACHE_LIVE_S = 3600
@@ -97,7 +101,7 @@ def _extract_engine(pids: list[str], combined: bool) -> tuple[duckdb.DuckDBPyCon
             expanded = definition_mod.expand(defn) if defn.get("tables") else None
         except Exception:  # noqa: BLE001 - an unfinished definition: raw views only
             expanded = None
-        con = data_mod.connect(d, expanded)
+        con = data_mod.connect(d, expanded, full=True)       # item 64: every row, also for a dashboard built on a sample
     else:
         con = duckdb.connect()
         con.execute("SET autoinstall_known_extensions = false")
@@ -299,6 +303,14 @@ def context_pack(u: dict, scope: dict) -> tuple[str, dict]:
             parts.append("- filters the person set (apply them): " + "; ".join(f"{k} = {v}" for k, v in scope["filters"].items()))
         if scope.get("selection"):
             parts.append(f"- the person selected: {scope['selection']}")
+    try:                                                  # item 81: what the owners accepted about the organisation, short
+        from . import orgsetup
+        org = orgsetup.context_lines()
+    except Exception:  # noqa: BLE001 - Ask Relay answers without it
+        org = []
+    if org:
+        parts.append("\n## The organisation (its owners' own description: use its calendar, currency and names)")
+        parts += org
     pub = semantic.published(src.get("team_id")) if src["kind"] != "org" else \
         [m for m in semantic.published(src.get("team_id"))] + [m for t in db.q("SELECT id FROM teams") for m in semantic.published(t["id"])]
     seen, metrics = set(), []
@@ -411,14 +423,15 @@ def pick_model(uid: str, model: str | None) -> str:
     return model
 
 
-async def _claude(u: dict, prompt: str, session: str | None, workdir: str, model: str | None = None, system: str | None = None) -> dict:
+async def _claude(u: dict, prompt: str, session: str | None, workdir: str, model: str | None = None, system: str | None = None,
+                  lane: str = "chat") -> dict:
     model = model or models_for(u["id"])["default"]
     cfg = providers.run_config(u["id"], model, 600)
     if cfg.get("runner"):                     # Ask Relay runs on Claude with no tools; another CLI's choice uses Claude
         cfg = providers.run_config(u["id"], model, 600, kind="claude_account")
     failed, done = None, {}
     try:
-        done = await _claude_run(u, prompt, session, workdir, system, cfg)
+        done = await _claude_run(u, prompt, session, workdir, system, cfg, lane)
         if done.get("ok") is False:
             failed = done.get("text") or ""
     except AskError as e:
@@ -435,16 +448,17 @@ async def _claude(u: dict, prompt: str, session: str | None, workdir: str, model
             bcfg = None
         if bcfg and not bcfg.get("runner"):
             db.audit("ai.fallback", None, {"from": cfg["kind"], "to": bcfg["kind"], "error": failed[:300], "where": "ask"}, u["id"])
-            return {**await _claude_run(u, prompt, session, workdir, system, bcfg), "fallback": True}
+            return {**await _claude_run(u, prompt, session, workdir, system, bcfg, lane), "fallback": True}
     if not done:
         raise AskError((failed or "The AI provider stopped without an answer.")[:300])
     return done
 
 
-async def _claude_run(u: dict, prompt: str, session: str | None, workdir: str, system: str | None, cfg: dict) -> dict:
+async def _claude_run(u: dict, prompt: str, session: str | None, workdir: str, system: str | None, cfg: dict, lane: str = "chat") -> dict:
     """One Ask Relay request on one provider."""
     payload = {"workdir": workdir, "prompt": prompt, "system": system or SYSTEM, "model": cfg["model"], "max_turns": 2,
-               "timeout_s": 600, "resume": session, "lane": "chat", "runner": "claude-code", "env": cfg["env"], "tools": []}
+               "timeout_s": 600, "resume": session, "lane": lane, "runner": "claude-code", "env": cfg["env"], "tools": [],
+               "effort": CHAT_EFFORT}
     url = await instances.agent_url(u["id"])
     done: dict = {}
     async with httpx.AsyncClient(timeout=httpx.Timeout(15, read=None)) as client:
@@ -469,12 +483,14 @@ async def _claude_run(u: dict, prompt: str, session: str | None, workdir: str, s
     return done
 
 
-async def ask_json(u: dict, system: str, prompt: str, step: str, model: str | None = None) -> dict:
+async def ask_json(u: dict, system: str, prompt: str, step: str, model: str | None = None, lane: str = "chat") -> dict:
     """One structured request to the model (no tools, the chat lane): returns the JSON object it replied with.
     Counts against the person's quota and is recorded in the cost records under `step`."""
     costs.check(u["id"])
-    res = await _claude(u, prompt, None, _workdir(u["id"]), model, system)
+    res = await _claude(u, prompt, None, _workdir(u["id"]), model, system, lane=lane)
     await _forget(u, [res.get("session_id")])
+    if res.get("ok") is False:                      # not signed in, a refusal, an error: no answer to read
+        raise AskError((res.get("text") or "The AI provider gave no answer.")[:300])
     use = res.get("usage") or {}
     costs.record("llm", u["id"], step=step, model=res.get("model"), provider=res.get("provider"),
                  tokens=sum(v for v in use.values() if isinstance(v, (int, float))), cost_usd=res.get("cost_usd") or 0)

@@ -1,0 +1,160 @@
+/* D2D Relay: the organisation setup (js/47-setup.js, #/setup, item 81): the step list on the side (on top on narrow
+   screens), one step at a time in a card, the proposed KPIs and business terms kept or dropped one by one, the check
+   view; the notice on New dashboard and Semantic Review, the card on Organisation. The brand reuses New dashboard's
+   nd-theme (newdash.css). Tokens only (app.css): light, dark and the accents. */
+.su-page [hidden]{display:none!important}
+.su-page{max-width:1180px}
+.su-meta{margin:4px 0 14px;max-width:78ch}
+.su-top{max-width:1120px}
+.su-top svg.i,.su-fin svg.i{vertical-align:-3px}
+/* the screen-reader line: fixed, so it never makes the document taller than main (main is the scroll area) */
+.su-sr{position:fixed;top:0;left:0;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* the steps on the side, the step on the screen beside them */
+.su-wrap{display:grid;grid-template-columns:236px minmax(0,1fr);gap:16px;align-items:start;max-width:1120px}
+.su-steps{list-style:none;margin:0;padding:8px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);position:sticky;top:12px;
+  display:flex;flex-direction:column;gap:2px}
+.su-st{min-width:0}
+.su-st button{display:flex;align-items:center;gap:10px;width:100%;min-width:0;margin:0;padding:7px 8px;border:0;border-radius:var(--radius-sm);
+  background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.su-st button:not(:disabled):hover{background:var(--surface-2)}
+.su-st button:disabled{cursor:default;opacity:1}
+.su-st button:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.su-st.cur button{background:var(--surface-2)}
+.su-n{width:26px;height:26px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--surface-3);color:var(--ink-2)}
+.su-n svg.i{width:14px;height:14px;stroke-width:2.6}
+.su-st.done .su-n,.su-sumrow.ok .su-n{background:var(--accent-tint);color:var(--accent)}
+.su-st.cur .su-n{background:var(--primary);color:var(--primary-ink)}
+.su-sl{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+.su-sl b{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.su-sl small{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.su-st.todo .su-sl b{color:var(--faint)}
+
+/* a step */
+.su-card{padding:20px 22px;margin:0;min-width:0}
+.su-kicker{font-size:12px;font-weight:600;color:var(--muted);margin:0 0 2px}
+.su-h{font-size:19px;line-height:1.3;margin:0 0 4px;font-family:var(--font-head)}
+.su-h:focus{outline:none}
+.su-h:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.su-lead{color:var(--muted);margin:0 0 12px;max-width:78ch}
+.su-body label.f:first-child{margin-top:4px}
+.su-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+.su-nav .btn.primary{min-height:38px}
+.su-nav .spin,.su-prog .spin{width:15px;height:15px;border-width:2px;flex:none}
+.su-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+.su-grid3{grid-template-columns:minmax(0,.6fr) minmax(0,1.7fr) minmax(0,.9fr)}      /* currency, calendar (long names), month */
+.su-grid3.su-gu{grid-template-columns:minmax(0,1.3fr) minmax(0,.6fr) minmax(0,1.3fr)}   /* understanding: calendar, currency, readers */
+.su-grid>div{min-width:0}
+.su-auds{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.su-aud{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);border-radius:999px;padding:4px 11px 4px 8px;background:var(--surface);font-size:12.5px;cursor:pointer}
+.su-aud:has(input:checked){border-color:var(--accent);background:var(--accent-tint);color:var(--accent);font-weight:600}
+.su-aud input{margin:0;accent-color:var(--accent)}
+.su-pre{white-space:pre-wrap}
+
+/* prepare */
+.su-prog{display:flex;gap:12px;align-items:center;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);margin:0 0 12px}
+.su-prog b{display:block}
+.su-ready{display:flex;gap:8px;align-items:flex-start;margin:0 0 12px}
+.su-more.su-dropped{margin:-4px 0 12px}
+.su-dropped ul{margin:6px 0 0;padding-left:18px}
+.su-ready svg.i{margin-top:2px}
+.su-choice{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.su-opt{display:flex;flex-direction:column;gap:8px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0}
+.su-opt.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-tint)}
+.su-opt h3{display:flex;gap:8px;align-items:center;margin:0}
+.su-opt h3 svg.i{color:var(--accent)}
+.su-opt p{margin:0;flex:1}
+.su-optact{gap:8px 10px}
+.su-optact .btn{white-space:normal;text-align:left}
+
+/* understanding */
+.su-src{margin:0 0 4px}
+.su-newer{gap:10px;margin:8px 0 4px}
+.su-newer .grow{flex:1;min-width:180px}
+
+/* the proposed KPIs and terms */
+.su-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 6px}
+.su-find{max-width:260px}
+.su-tools input.su-find{width:auto;flex:1 1 180px}
+.su-group h4{font-size:13px;margin:14px 0 6px}
+.su-group h4 .muted{font-weight:400}
+.su-item{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:6px;background:var(--surface);min-width:0}
+.su-item.off{border-left-color:var(--line-2);background:var(--surface-2)}
+.su-item.off .su-ith b{color:var(--faint);text-decoration:line-through}
+.su-keep{display:flex;gap:10px;align-items:flex-start;cursor:pointer;min-width:0}
+.su-keep input{flex:none;width:16px;height:16px;margin:2px 0 0;accent-color:var(--accent)}
+.su-ith{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;min-width:0}
+.su-ith b{overflow-wrap:anywhere}
+.tag.su-std{background:var(--surface-3);color:var(--ink-2)}
+.su-def,.su-why,.su-syn,.su-more{margin:4px 0 0 26px;font-size:12.5px;overflow-wrap:anywhere}
+.su-why{color:var(--muted)}
+.su-why b{color:var(--ink-2)}
+.su-syn{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.su-syn code,.su-ab code{font:11.5px var(--mono);background:var(--surface-3);border-radius:4px;padding:0 5px;color:var(--ink-2);overflow-wrap:anywhere}
+.su-more summary{cursor:pointer;color:var(--accent);font-weight:600;width:max-content;max-width:100%}
+.su-more dl{display:grid;grid-template-columns:minmax(0,130px) minmax(0,1fr);gap:4px 12px;margin:6px 0 2px}
+.su-more dt{color:var(--muted)}
+.su-more dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.su-more dd.mono{white-space:pre-wrap;font-size:11.5px}
+.su-none{padding:10px 2px}
+.su-repl{margin-top:12px;align-items:flex-start}
+.su-repl input{margin-top:3px;flex:none}
+.su-skiph{margin-top:6px}
+.su-tune svg.i{vertical-align:-3px}
+.su-abbr{border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:10px 12px;margin:0 0 12px}
+.su-abs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.su-ab{font-size:12.5px;border:1px solid var(--line);border-radius:6px;padding:1px 8px;background:var(--surface);overflow-wrap:anywhere}
+
+/* theme: Branding drawn inside (as on New dashboard) */
+.su-thact{gap:8px;margin-top:10px}
+
+/* check and finish */
+.su-sum{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.su-sumrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px 12px;align-items:start;padding:11px 14px;border-top:1px solid var(--line);background:var(--surface)}
+.su-sumrow:first-child{border-top:0}
+.su-sumt{min-width:0;overflow-wrap:anywhere}
+.su-sumt>b{margin-right:8px}
+.su-sumt .small{margin-top:2px}
+.su-sumt .nd-sws{margin-top:4px}
+.su-left{gap:10px;margin-top:12px}
+.su-left .grow{flex:1;min-width:200px}
+.su-fintext{margin:12px 0 0}
+.su-fin{display:block}
+
+/* New dashboard and Semantic Review, until the setup is finished */
+.su-gate{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;margin:0 0 12px}
+.su-gtext{flex:1 1 260px;min-width:0}
+
+/* Organisation: the business context card */
+.su-ochead{gap:8px;align-items:center;margin-bottom:8px}
+.su-ochead h3{margin:0}
+.su-short{margin:0 0 10px;max-width:90ch;overflow-wrap:anywhere}
+.su-kv{margin:0 0 12px}
+.su-kv dd{min-width:0;overflow-wrap:anywhere}
+.su-kv ul{margin:0;padding-left:18px}
+
+@media (max-width:1000px){
+  .su-wrap{grid-template-columns:minmax(0,1fr);gap:12px}
+  .su-steps{position:static;flex-direction:row;align-items:center;padding:8px 10px;gap:0}
+  .su-st{flex:1 1 0;display:flex;align-items:center}
+  .su-st::after{content:"";flex:1 1 6px;height:2px;min-width:4px;margin:0 2px;border-radius:2px;background:var(--line)}
+  .su-st.done::after{background:var(--accent)}
+  .su-st:last-child{flex:0 0 auto}
+  .su-st:last-child::after{display:none}
+  .su-st button{width:auto;padding:3px;flex:none}
+  .su-sl{display:none}
+}
+@media (max-width:760px){
+  .su-card{padding:16px 14px}
+  .su-grid,.su-grid3,.su-grid3.su-gu,.su-choice{grid-template-columns:minmax(0,1fr)}
+  .su-nav .btn{flex:1 1 auto;justify-content:center}
+  .su-nav .spacer{display:none}
+  .su-find,.su-tools input.su-find{max-width:none;flex:1 1 100%}
+  .su-def,.su-why,.su-syn,.su-more{margin-left:0}
+  .su-more dl{grid-template-columns:minmax(0,1fr);gap:0}
+  .su-more dd{margin-bottom:6px}
+  .su-sumrow{grid-template-columns:auto minmax(0,1fr);padding:10px 12px}
+  .su-sumrow>.btn{grid-column:2;justify-self:start}
+  .kv.su-kv{grid-template-columns:minmax(0,1fr);gap:2px}
+  .kv.su-kv dd{margin-bottom:8px}
+}

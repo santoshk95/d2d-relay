@@ -1,13 +1,15 @@
-"""Test stack only, end to end with real Claude: one dashboard in each Visuals mode, in the order the New dashboard form
-offers them (item 34): Power BI's built-in visuals, built-in first with custom where needed, Relay custom visuals.
+"""Test stack only, end to end with real Claude: one dashboard in each Visuals choice the New dashboard offers (since
+2026-11-19 two: Power BI's built-in visuals, and built-in plus custom; "relay", all custom, can still be named).
 Each is planned and built by real Claude in job containers, approved, published through Power BI's own engine (the DAX
 check) and made into a .pbix by this PC's Power BI file maker; then what each report is made of is checked, in its
-definition and inside the .pbix.
+definition and inside the .pbix. Since items 62, 68 and 73 also: the plan screen has the semantic model, the analyst
+reviewed the plan on its own, each gap, assumption and deviation is approved at Confirm, and the UI/UX, story and
+accuracy reviewers each checked the version (read-only, nothing they read changed) before it was shown.
 
 Needs (tests/README.md, "End to end with real Claude"):
   - the stack started with live's Claude sign-in: TEST_CLAUDE_VOLUME=claude-api-auth TEST_CLAUDE_EXTERNAL=true;
   - the test stack's own DAX checker and file maker: tests/stack/helpers.ps1 start (never live's).
-python -I -X utf8 visuals_e2e_check.py <public> <admin> [builtin,mixed,relay]
+python -I -X utf8 visuals_e2e_check.py <public> <admin> [builtin,mixed]
 Afterwards delete the test runs' transcripts from the sign-in volume (the command is printed at the end)."""
 import io
 import json
@@ -19,7 +21,7 @@ import time
 import urllib.request
 import zipfile
 
-MODES = (sys.argv[3] if len(sys.argv) > 3 else "builtin,mixed,relay").split(",")
+MODES = (sys.argv[3] if len(sys.argv) > 3 else "builtin,mixed").split(",")
 sys.argv = [sys.argv[0], sys.argv[1], sys.argv[2]]
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -145,6 +147,38 @@ with sync_playwright() as pw:
         out["sun"] += found["sunbad"]
         out["sunbursts"] += found["suns"]
         out["pages"] += 1
+    # item 76: the slicers filter the report as in Power BI. Each slicer is moved from its default to the first other
+    # value the prototype computed: what it filters is drawn again with other numbers, nothing breaks, no NaN.
+    out["slicers"] = page.evaluate('''async () => {
+      const res = {slicers: R.slicers.length, linked: 0, tried: 0, changed: 0, broken: [], weird: [], notes: [],
+                   fixed: R.pages.reduce((n, p) => n + p.visuals.filter(v => (v.b || []).length).length, 0)};
+      const boxes = () => [...document.querySelectorAll('#page > .v')];
+      const pause = () => new Promise(done => setTimeout(done, 400));
+      for (let i = 0; i < R.slicers.length; i++) {
+        const s = R.slicers[i];
+        if (s.note) { res.notes.push([s.label, s.note]); continue; }
+        const pages = s.page === null ? R.pages.map((_, k) => k) : [s.page];
+        const pg = pages.find(k => R.pages[k].visuals.some(v => (v.q || []).includes(i)));
+        if (pg === undefined) { res.notes.push([s.label, 'filters no visual']); continue; }
+        res.linked += 1;
+        current = pg; resetAll(); await pause();
+        const idxs = R.pages[pg].visuals.map((v, k) => (v.q || []).includes(i) ? k : -1).filter(k => k >= 0);
+        const txt = () => { const bs = boxes(); return idxs.map(k => bs[k] ? bs[k].textContent : '').join(' | '); };
+        const before = txt();
+        const idx = s.values.findIndex((_, k) => !s.d.includes(k) && reachable(withSel(i, [k])));
+        if (idx < 0) { res.notes.push([s.label, 'no other value computed']); continue; }
+        res.tried += 1;
+        setSel(i, [idx]); await pause();
+        const after = txt();
+        if (after !== before) res.changed += 1;
+        else res.notes.push([s.label, s.values[idx], 'nothing it filters changed']);
+        boxes().forEach(bx => bx.querySelectorAll('.err, .aerr').forEach(e => res.broken.push([R.pages[pg].name, s.label, s.values[idx], e.textContent.slice(0, 160)])));
+        const odd = after.match(/NaN|Infinity|undefined/g);
+        if (odd) res.weird.push([R.pages[pg].name, s.label, s.values[idx], [...new Set(odd)]]);
+        resetAll();
+      }
+      current = 0; draw();
+      return res; }''')
     b.close()
 print(json.dumps(out))
 """
@@ -234,13 +268,19 @@ while time.time() < end:
             run["steps"]["plan"] = round((time.time() - run["t0"]) / 60, 1)
             kpis = (st.get("plan") or {}).get("kpis") or []
             run["kpis"] = len(kpis)
-            s, r = p.form(f"/api/projects/{run['pid']}/kpis", {"payload": json.dumps({"action": "confirm", "kpis": kpis, "feedback": ""})})
+            items = st.get("approval_items") or []               # item 73: each gap, assumption and deviation, approved
+            run["review"], run["approvals"], run["semantic"] = st.get("plan_review") or {}, items, bool(st.get("semantic_ready"))
+            s, r = p.form(f"/api/projects/{run['pid']}/kpis", {"payload": json.dumps({"action": "confirm", "kpis": kpis, "feedback": "",
+                                                                                      "approved": [i["id"] for i in items]})})
             run["confirmed"] = s == 200
-            print(f"  {mode}: planned in {run['steps']['plan']} min, {len(kpis)} KPIs confirmed ({s})", flush=True)
+            run["confirm_answer"] = "" if s == 200 else str(r)[:300]
+            print(f"  {mode}: planned in {run['steps']['plan']} min; analyst review: {run['review'].get('verdict') if run['review'].get('ran') else 'did not run'}; "
+                  f"{len(kpis)} KPIs and {len(items)} gaps, assumptions or deviations approved ({s})", flush=True)
         elif status == "awaiting_review" and "build" not in run["steps"]:
             run["steps"]["build"] = round((time.time() - run["t0"]) / 60, 1)
             v = (st.get("versions") or [{}])[-1]
             run["v"], run["gates"] = v.get("v"), {x.get("id"): x.get("status") for x in v.get("gates") or []}
+            run["team"] = v.get("team") or {}                    # item 68: the version's reviewers
             s, r = p.post(f"/api/projects/{run['pid']}/approve", {"version": run["v"]})
             run["approved"] = s == 200
             run["approve_answer"] = "" if s == 200 else str(r)[:300]
@@ -266,7 +306,23 @@ summary = []
 for mode, run in runs.items():
     pid = run["pid"]
     check(f"{mode}: Real Claude planned it and the KPIs were confirmed", run.get("confirmed") is True and run.get("kpis", 0) > 0,
-          (run["steps"], run.get("kpis"), run["error"][:200]))
+          (run["steps"], run.get("kpis"), run.get("confirm_answer"), run["error"][:200]))
+    check(f"{mode}: the plan screen had the semantic model of the data (item 62)", run.get("semantic") is True, run.get("semantic"))
+    rv = run.get("review") or {}
+    check(f"{mode}: the analyst reviewed the plan on its own before it was shown (item 68: {rv.get('verdict')}, "
+          f"{len(rv.get('checked') or [])} things checked)", rv.get("ran") is True and rv.get("label") == "Analyst review",
+          {k: rv.get(k) for k in ("ran", "why", "verdict", "summary")})
+    check(f"{mode}: each gap, assumption and deviation was listed and approved at Confirm ({len(run.get('approvals') or [])}; item 73)",
+          run.get("confirmed") is True and all(i.get("id") and i.get("kind") in ("gap", "assumption", "deviation") for i in run.get("approvals") or []),
+          (run.get("approvals") or [])[:5])
+    team = run.get("team") or {}
+    if "build" in run["steps"]:
+        check(f"{mode}: the UI/UX, story and accuracy reviewers each checked the version before it was shown (item 68: "
+              + ", ".join(f"{r} {team.get(r, {}).get('verdict')}" for r in ("ux", "story", "accuracy")) + ")",
+              all(team.get(r, {}).get("ran") for r in ("ux", "story", "accuracy")) and "team" in run.get("gates", {}),
+              {r: {k: t.get(k) for k in ("ran", "why", "verdict", "summary")} for r, t in team.items()})
+        check(f"{mode}: no reviewer changed what it reviewed (the fence put nothing back)", not any(t.get("fenced") for t in team.values()),
+              {r: t.get("fenced") for r, t in team.items()})
     check(f"{mode}: Real Claude built it; no review gate failed", "build" in run["steps"] and "fail" not in run.get("gates", {}).values(),
           (run.get("gates"), run["error"][:200]))
     check(f"{mode}: approved, published through Power BI's engine and made into a .pbix", run["status"] == "done",
@@ -314,6 +370,14 @@ for mode, run in runs.items():
               bool(lab.get("pages")) and not lab.get("touching"), lab.get("touching"))
         check(f"{mode}: no sunburst label lies on another or leaves its slice ({lab.get('sunbursts', 0)} labelled sunbursts in the report)",
               bool(lab.get("pages")) and not lab.get("sun"), lab.get("sun"))
+        sl = lab.get("slicers") or {}
+        print(f"  {mode}: slicers {sl.get('slicers')}, linked {sl.get('linked')}, tried {sl.get('tried')}, changed {sl.get('changed')}; "
+              f"visuals that fix a report filter in their SQL: {sl.get('fixed')}; notes: {(sl.get('notes') or [])[:6]}", flush=True)
+        check(f"{mode}: the prototype's slicers filter its visuals (item 76: {sl.get('linked', 0)} of {sl.get('slicers', 0)} slicers "
+              f"filter visuals; {sl.get('changed', 0)} of {sl.get('tried', 0)} moved redrew what they filter)",
+              sl.get("tried", 0) > 0 and sl.get("changed") == sl.get("tried"), sl)
+        check(f"{mode}: no visual breaks or shows NaN, Infinity or undefined when a slicer moves (item 76)",
+              "tried" in sl and not sl.get("broken") and not sl.get("weird"), {k: sl.get(k) for k in ("broken", "weird")} if sl else lab)
         shown, measured = dict(lab.get("titles") or []), measure_titles(pid, run["v"])
         titled = {k: m for k, m in measured.items() if k in shown}
         wrong = {k: shown[k] for k, m in titled.items() if shown[k] in (None, "", m, f"[{m}]", stand_in(m))}

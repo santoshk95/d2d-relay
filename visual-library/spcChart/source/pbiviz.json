@@ -4,7 +4,7 @@
     "displayName": "SPC Control Chart",
     "guid": "spcChart2F44EE613D5E4F46B7EF9430A277856F",
     "visualClassName": "Visual",
-    "version": "1.0.0.1",
+    "version": "1.0.0.2",
     "description": "Individuals control chart: values in order with centre line, upper/lower control limits and out-of-control points highlighted",
     "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/",
     "gitHubUrl": ""

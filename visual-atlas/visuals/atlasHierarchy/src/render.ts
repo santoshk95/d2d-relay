@@ -9,7 +9,7 @@ import { Model, HNode } from "./model";
 import { HierarchySettings } from "./settings";
 import { Ctx } from "./common/family";
 import { Target } from "./common/interact";
-import { el, r1, textW, trunc } from "./common/look";
+import { el, r1, textW, trunc, MORE } from "./common/look";
 import { mix, inkOn } from "./common/color";
 import { colorOr, val } from "./common/cards";
 import { legend, LegendItem } from "./common/chart";
@@ -96,7 +96,7 @@ export function render(c: C, view: View, redraw: () => void) {
             e.addEventListener("click", ev => { ev.stopPropagation(); goTo(k); });
             e.addEventListener("keydown", ev => { const kk = (ev as KeyboardEvent).key; if (kk === "Enter" || kk === " ") { ev.preventDefault(); goTo(k); } });
         };
-        const backText = "‹ " + c.msg("Zoom_Back", "Back"), bw = textW(backText, bfs) + 18;
+        const backText = "< " + c.msg("Zoom_Back", "Back"), bw = textW(backText, bfs) + 18;
         const back = el("g", { class: "crumb-back" }, g);
         el("rect", { x: pad, y: r1(y0), width: r1(bw), height: bh, rx: bh / 2, fill: t.hc ? t.surface : mix(t.ink, t.surface, 0.9), stroke: mix(t.ink, t.surface, 0.6), "stroke-width": 1 }, back);
         el("text", { x: r1(pad + bw / 2), y: r1(mid), "text-anchor": "middle", "font-size": bfs, fill: t.ink, class: "ttl" }, back, backText);
@@ -107,7 +107,7 @@ export function render(c: C, view: View, redraw: () => void) {
             const tx = el("text", { x: r1(x), y: r1(mid), "font-size": bfs, fill: last ? t.ink : t.axis, class: last ? "ttl" : "ax", style: last ? "" : "text-decoration:underline" }, g, shown);
             if (!last) { tx.setAttribute("pointer-events", "all"); step(tx, k, label); }
             x += textW(shown, bfs) + 6;
-            if (!last) { el("text", { x: r1(x), y: r1(mid), "font-size": bfs, fill: t.axis, class: "ax" }, g, "›"); x += 12; }
+            if (!last) { el("text", { x: r1(x), y: r1(mid), "font-size": bfs, fill: t.axis, class: "ax" }, g, ">"); x += 12; }
         });
         top = y0 + bh + 6;
     }
@@ -211,7 +211,7 @@ export function render(c: C, view: View, redraw: () => void) {
                 for (const two of extra ? [true, false] : [false]) {
                     for (let max = room; !txt && max >= 18; max *= 0.8) {
                         /* no label rather than an unreadable stub ("Ro…") */
-                        const cut = trunc(nm, max, lbfs); if (cut !== nm && cut.replace("…", "").length < 4) break;
+                        const cut = trunc(nm, max, lbfs); if (cut !== nm && cut.replace(MORE, "").length < 4) break;
                         const lines = two ? [cut, trunc(extra, max, lbfs)] : [cut];
                         if (inside(lines, rad)) { txt = lines; radial = rad; }
                     }

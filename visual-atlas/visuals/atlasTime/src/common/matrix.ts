@@ -39,7 +39,7 @@ export function readModel(dv: powerbi.DataView | undefined, host: powerbi.extens
     for (let r = 0; r < n; r++) {
         const id = withCats(builder(), r).createSelectionId();
         let over: string | undefined; catCols.forEach(c => { over = over || fillOf(c.objects && c.objects[r]); });
-        cats.push({ key: catCols.map(c => String(c.values[r])).join("\u001f"), name: catCols.map((c, k) => cnames[k](c.values[r])).join(" › "), color: over || "", selector: id.getSelector(), id, items: [] });
+        cats.push({ key: catCols.map(c => String(c.values[r])).join("\u001f"), name: catCols.map((c, k) => cnames[k](c.values[r])).join(" > "), color: over || "", selector: id.getSelector(), id, items: [] });
     }
     const series: Colored[] = [], cells: Cell[] = [], formats: (string | undefined)[] = [];
     const add = (col: Val, s: number, tipCols: Val[], extra: (b: powerbi.visuals.ISelectionIdBuilder) => powerbi.visuals.ISelectionIdBuilder) => {
@@ -74,7 +74,7 @@ export function readModel(dv: powerbi.DataView | undefined, host: powerbi.extens
     const roles = dv && dv.metadata && dv.metadata.dataRoles;
     const hasHl = cells.some(c => c.hlv !== null) || valsOf(cat, "values").some(c => !!c.highlights);
     return {
-        cats, series, cells, grid, catTitle: catCols.map(c => c.source.displayName).join(" › "), serTitle: seriesField ? values.source.displayName : "",
+        cats, series, cells, grid, catTitle: catCols.map(c => c.source.displayName).join(" > "), serTitle: seriesField ? values.source.displayName : "",
         byMeasure: !seriesField, format: formats[0], formats,
         colored: colorCats && (series.length === 1 || (measuresAreParts && !seriesField)) ? cats : series,
         drill: (roles && roles.drillableRoles && roles.drillableRoles["category"]) || [], drillDisabled: !!(roles && roles.isDrillDisabled), levelNames: catCols.map(c => c.source.displayName),

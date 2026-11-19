@@ -52,6 +52,13 @@ def tenant_row(t: str | None) -> dict | None:
     return row if row and row["status"] != "closed" else None
 
 
+def personal_tenant(t: str) -> bool:
+    """Item 83 (the user, 2026-11-19: "only orgnisations are allowed to sign in and perosnal will be blocked"): a personal
+    workspace (item 39: one free-mail address) signs nobody in any more; its data stays until PASDACS deletes it."""
+    row = db.one("SELECT personal FROM relay.tn_orgs WHERE tenant_id = ?", (t,)) if t and t != db.PLATFORM else None
+    return bool(row and row["personal"])
+
+
 def _directory_home(uid: str) -> str | None:
     row = db.one("SELECT home_tenant FROM relay.tn_accounts WHERE user_id = ?", (uid,)) if uid else None
     return row["home_tenant"] if row else None
@@ -71,7 +78,7 @@ def home_of(request: Request) -> tuple[str, dict | None, str]:
         return t, u, ("u:" + uid) if u else ""
     if MODE in ("sso", "otp"):                          # D2D Relay: otp = one email, one-time code (otp.py)
         t, sid = identity.split_cookie(request.cookies.get(identity.COOKIE))
-        if not tenant_row(t):
+        if not tenant_row(t) or personal_tenant(t):          # item 83: a personal workspace's session no longer signs anyone in
             return db.PLATFORM, None, ""
         with db.use(t):
             u = identity.session_user(sid)
@@ -250,7 +257,7 @@ def check(u: dict | None, method: str, path: str) -> JSONResponse | None:
         # workspace through /api/org.
         return _deny(404, "Administration is on the D2D Relay admin portal.")
     # a new dashboard, or (item 58) one from a DAWB hand-off; no dashboard's id is "import" (store.new_id adds -xxxx)
-    if path in ("/api/projects", "/api/projects/import") and method == "POST":
+    if path in ("/api/projects", "/api/projects/import", "/api/projects/suggest") and method == "POST":   # item 71: suggest
         return None if is_dev(u) else _deny(403, "Your account cannot create dashboards in this organisation.")
     m = PROJECT.match(path)
     if m:

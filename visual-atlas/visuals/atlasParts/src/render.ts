@@ -1,5 +1,5 @@
 /*
- * Drawing for Atlas Parts: pie and donut (full or half), with a details
+ * Drawing for Relay Parts: pie and donut (full or half), with a details
  * ring, top N plus Other, a progress track, a center total and labels
  * inside or outside with leader lines that never overlap.
  */
@@ -29,7 +29,8 @@ export function render(c: C, topBand: number) {
     const { W, H, s, m, root, look, t } = c, pad = 6, CH = s.chart, SL = s.slices, LB = s.labels;
     const donut = s.type === "donut", half = CH.half.value, gap = CH.gap.value, content = val(SL.content), pos = val(SL.labelPosition), lbfs = Math.max(6, LB.fontSize.value);
     const fmtL = labelFormatter(m.format, Number(LB.displayUnits.value) || 0, LB.decimals.value, Math.max(...m.cells.map(x => Math.abs(x.v))), c.culture), fmtT = formatter(m.format, 1, null, 0, c.culture);
-    const pct = (v: number) => (v * 100).toFixed(LB.decimals.value >= 0 ? Math.min(3, LB.decimals.value) : v < 0.1 ? 1 : 0) + "%";
+    /* a share that is not zero never reads as zero: "<0.1%", not "0.0%" */
+    const pct = (v: number) => { const d = LB.decimals.value >= 0 ? Math.min(3, LB.decimals.value) : v < 0.1 ? 1 : 0, s_ = (v * 100).toFixed(d); return v > 0 && Number(s_) === 0 ? "<" + (d ? "0." + "0".repeat(d - 1) + "1" : "1") + "%" : s_ + "%"; };
 
     /* slices: category totals, largest first, top N with the rest as Other */
     interface Slice { key: string; name: string; v: number; cells: Cell[]; cat: Colored | null; other: boolean; }
@@ -53,7 +54,7 @@ export function render(c: C, topBand: number) {
     const r0 = donut ? R * CH.hole.value / 100 : 0, rMid = nested ? r0 + (R - r0) * 0.58 : R;
     const sh = look.shadow(), marks = el("g", sh ? { filter: sh } : {}, root), labels = el("g", {}, root);
     const tip = (sl: Slice): TipItem[] => [{ displayName: m.catTitle, value: sl.name, color: colorOf(sl, slices.indexOf(sl)) }, { displayName: m.series[0] && !nested ? m.series[0].name : "Value", value: fmtT(sl.v) }, { displayName: "Share", value: pct(sl.v / total) }].concat(sl.cells.length === 1 ? sl.cells[0].tips.map(tp => ({ displayName: tp.name, value: tp.value })) : []);
-    const ends: { mid: number; text: string; color: string }[] = [];
+    const ends: { mid: number; text: string; color: string; v: number }[] = [];
     let a = start;
     slices.forEach((sl, k) => {
         const a0 = a, a1 = a + span * sl.v / total; a = a1;
@@ -77,14 +78,18 @@ export function render(c: C, topBand: number) {
         const mid = (a0 + a1) / 2, text = labelOf(sl.name, sl.v);
         const rIn = (r0 + rMid) / 2, arcLen = (a1 - a0) * rIn, inside = pos === "inside" || (pos === "auto" && textW(text, lbfs) + 6 < Math.min(arcLen, (rMid - r0) * 1.6));
         if (inside) { if (arcLen > lbfs + 2) el("text", { x: r1(cx + Math.sin(mid) * rIn), y: r1(cy - Math.cos(mid) * rIn + lbfs * 0.35), "text-anchor": "middle", "font-size": lbfs, fill: t.hc ? t.ink : inkOn(col), class: "lbl", style: "stroke:none" }, labels, trunc(text, Math.max(30, arcLen), lbfs)); }
-        else ends.push({ mid, text, color: col });
+        else ends.push({ mid, text, color: col, v: sl.v });
     });
-    /* outside labels: two columns, spread so they never overlap, with leader lines */
+    /* outside labels: two columns, spread so they never overlap, with leader lines, kept between the legend and the
+       bottom (2026-11-19: small slices at the top wrote over the legend); when they cannot all fit, the smallest go */
     const side = (right: boolean) => {
-        const list = ends.filter(e => (Math.sin(e.mid) >= 0) === right).map(e => ({ ...e, y: cy - Math.cos(e.mid) * (R + 10) }));
+        const gapY = lbfs + 3, top = box.t + lbfs * 0.8, bottom = box.b - 4, room = Math.max(1, Math.floor((bottom - top) / gapY) + 1);
+        let list = ends.filter(e => (Math.sin(e.mid) >= 0) === right).map(e => ({ ...e, y: cy - Math.cos(e.mid) * (R + 10) }));
+        if (list.length > room) { const keep = new Set(list.slice().sort((p, q) => q.v - p.v).slice(0, room)); list = list.filter(e => keep.has(e)); }
         list.sort((p, q) => p.y - q.y);
-        const gapY = lbfs + 3; for (let k = 1; k < list.length; k++) list[k].y = Math.max(list[k].y, list[k - 1].y + gapY);
-        const over = list.length ? list[list.length - 1].y - (box.b - 4) : 0; if (over > 0) list.forEach(e => { e.y -= over; }); for (let k = list.length - 2; k >= 0; k--) list[k].y = Math.min(list[k].y, list[k + 1].y - gapY);
+        if (list.length) list[0].y = Math.max(list[0].y, top);
+        for (let k = 1; k < list.length; k++) list[k].y = Math.max(list[k].y, list[k - 1].y + gapY);
+        const over = list.length ? list[list.length - 1].y - bottom : 0; if (over > 0) list.forEach(e => { e.y -= over; }); for (let k = list.length - 2; k >= 0; k--) list[k].y = Math.min(list[k].y, list[k + 1].y - gapY);
         list.forEach(e => {
             const ex = cx + Math.sin(e.mid) * R, ey = cy - Math.cos(e.mid) * R, kx = cx + Math.sin(e.mid) * (R + 8), lx = right ? cx + R + 14 : cx - R - 14;
             el("path", { d: `M${r1(ex)},${r1(ey)}L${r1(kx)},${r1(e.y)}L${r1(lx)},${r1(e.y)}`, fill: "none", stroke: mix(e.color, t.surface, 0.3), "stroke-width": 1 }, labels);
@@ -94,7 +99,8 @@ export function render(c: C, topBand: number) {
     side(true); side(false);
     /* center total (donut) */
     if (donut && SL.centerTotal.value && r0 > 18) {
-        const v = track ? slices[0].v / total : total, big = track ? pct(v) : fmtL(total), fs2 = Math.min(r0 * 0.5, 34), yy = half ? cy - 6 : cy + fs2 * 0.2;
+        /* the total in its own unit ($4.99bn, not "$4,990M" in the slices' unit) */
+        const v = track ? slices[0].v / total : total, big = track ? pct(v) : labelFormatter(m.format, Number(LB.displayUnits.value) || 0, LB.decimals.value, total, c.culture)(total), fs2 = Math.min(r0 * 0.5, 34), yy = half ? cy - 6 : cy + fs2 * 0.2;
         el("text", { x: r1(cx), y: r1(yy), "text-anchor": "middle", "font-size": r1(fs2), fill: t.ink, class: "ttl" }, labels, big);
         el("text", { x: r1(cx), y: r1(yy + Math.max(9, lbfs) + 4), "text-anchor": "middle", "font-size": Math.max(9, lbfs), fill: t.axis, class: "ax" }, labels, trunc(SL.centerLabel.value || (track ? slices[0].name : "Total"), r0 * 1.6, lbfs));
     }

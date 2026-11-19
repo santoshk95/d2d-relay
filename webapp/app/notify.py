@@ -10,8 +10,21 @@ from . import auth, db
 
 router = APIRouter()
 
-KINDS = {"build", "share", "alert", "schedule", "report", "quota", "review", "ops"}
+KINDS = {"build", "share", "alert", "schedule", "report", "quota", "review", "ops", "platform"}
 KEEP_DAYS = 60
+# Item 82 (the user, 2026-11-19: "only org or their task or their platform relation notification must be here not
+# all"): notices about the platform itself (another organisation's request, an organisation deleted, the job runner's and
+# the PC helpers' health, a self-healing hold) are PASDACS's console's. The admin portal shows them and nothing else; the
+# public site never does: there a person sees their organisation's news, their own work and what PASDACS answered them.
+# A platform notice is kind "platform", or (older ones) one that links into the admin portal.
+PLATFORM_LINKS = ("#/requests", "#/orgs", "#/admin/", "#/payments")
+PLATFORM = "(kind = 'platform' OR " + " OR ".join(f"COALESCE(link, '') LIKE '{p}%'" for p in PLATFORM_LINKS) + ")"
+
+
+def _site() -> str:
+    """The notices this site shows: the admin portal's are the platform's, the public site's all the others."""
+    from . import portal
+    return PLATFORM if portal.ADMIN else f"NOT {PLATFORM}"
 
 
 def add(user_id: str | None, kind: str, title: str, body: str = "", link: str | None = None) -> None:
@@ -32,8 +45,9 @@ def team_members(team_id: str) -> list[str]:
 
 
 def mine(uid: str, limit: int = 50) -> dict:
-    rows = db.q("SELECT * FROM notifications WHERE user_id = ? ORDER BY created DESC LIMIT ?", (uid, limit))
-    unread = db.one("SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read IS NULL", (uid,))["n"]
+    site = _site()
+    rows = db.q(f"SELECT * FROM notifications WHERE user_id = ? AND {site} ORDER BY created DESC LIMIT ?", (uid, limit))
+    unread = db.one(f"SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read IS NULL AND {site}", (uid,))["n"]
     return {"items": rows, "unread": unread}
 
 
@@ -50,7 +64,7 @@ def my_notifications():
 
 @router.post("/api/notifications/read")
 def mark_all_read():
-    db.run("UPDATE notifications SET read = ? WHERE user_id = ? AND read IS NULL", (time.time(), auth.current.get()["id"]))
+    db.run(f"UPDATE notifications SET read = ? WHERE user_id = ? AND read IS NULL AND {_site()}", (time.time(), auth.current.get()["id"]))
     return mine(auth.current.get()["id"])
 
 

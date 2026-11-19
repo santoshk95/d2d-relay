@@ -1,7 +1,8 @@
 """Create the project files of a new Atlas family visual (everything except caps.js and src/).
 
 usage: python3 tools/scaffold.py <name> "<Display Name>" "<description>" "<icon spec>"
-  name          folder and visual name, e.g. atlasCompare
+  name          folder and visual name, e.g. atlasCompare (code only)
+  Display Name  what people see: "Relay Compare" (never "Atlas")
   icon spec     shapes on a 20x20 grid: "r x y w h" (rectangle) or "c x y r" (circle), separated by ";"
 Copies package.json, package-lock.json, tsconfig.json and eslint.config.mjs from atlasColumns, writes
 pbiviz.json with a new GUID (never change it afterwards), assets/icon.png and style/visual.less.
@@ -32,7 +33,7 @@ guid = name + uuid.uuid4().hex.upper()
 (d / "pbiviz.json").write_text(json.dumps({
     "visual": {"name": name, "displayName": display, "guid": guid, "visualClassName": "Visual", "version": "1.0.0.0",
                "description": desc, "supportUrl": "https://learn.microsoft.com/power-bi/developer/visuals/", "gitHubUrl": ""},
-    "apiVersion": "5.11.1", "author": {"name": "Visual Atlas", "email": "atlas@example.com"}, "assets": {"icon": "assets/icon.png"},
+    "apiVersion": "5.11.1", "author": {"name": "RELAY by PASDACS", "email": "info@pasdacs.com"}, "assets": {"icon": "assets/icon.png"},
     "externalJS": None, "style": "style/visual.less", "capabilities": "capabilities.json", "dependencies": None, "stringResources": [], "version": "1.0.0.0"
 }, indent=2) + "\n", encoding="utf-8")
 (d / "style" / "visual.less").write_text('@import "atlas.less";\n', encoding="utf-8")

@@ -1,7 +1,7 @@
 """Test stack only: item 30 (2026-11-12): the legal pages; the audit's engineering items S4 (the AI engine's API only for
 the web app), S6 (the AI engine reaches only Anthropic), S10 (the admin portal only from this PC or through Access),
 S11 (FastAPI/Starlette), S15 (RELAY's leftover routes off), S16 (the visual kit's lockfile), S17 (a warehouse sign-in
-bound to its browser), P6 (no email in Razorpay's notes: in pay_check.py).
+bound to its browser). P6 (no email in Razorpay's notes) was checked by pay_check.py until item 59 removed buying online.
 python -I -X utf8 item30_check.py http://127.0.0.1:8103 http://127.0.0.1:8104"""
 import json
 import os
@@ -74,7 +74,13 @@ for method, path in (("GET", "/api/me/ai"), ("PUT", "/api/me/ai"), ("GET", "/api
     check(f"S15: {method} {path} is off (404)", s == 404, (s, str(r)[:120]))
 s, r = p.get("/api/registry")
 check("S15: the module registry the app needs still answers", s == 200 and isinstance(r, dict), s)
-for method, path in (("GET", "/gallery"), ("GET", "/auth/github/callback?code=x&state=y"), ("GET", "/auth/microsoft/callback?code=x&state=y"),
+s, h, t = raw("GET", P, "/gallery", {}, None)             # item 86: the visual library, for signed-in people only
+check("item 86: GET /gallery (the visual library) is not served without signing in", s != 200, (s, t[:100]))
+s, r = p.call("GET", "/gallery")
+check("item 86: GET /gallery is the visual library for someone signed in, view only (no visual files to download)",
+      s == 200 and "<title>Relay Visual</title>" in str(r) and ".pbiviz" not in str(r) and 'id="d2d-view-only"' in str(r)
+      and "d2d-filters" in str(r) and "\u2026" not in str(r), (s, str(r)[:100]))
+for method, path in (("GET", "/auth/github/callback?code=x&state=y"), ("GET", "/auth/microsoft/callback?code=x&state=y"),
                      ("POST", "/auth/observe/hook/x1")):
     s, h, t = raw(method, P, path, {"Content-Type": "application/json"}, b"{}" if method == "POST" else None)
     check(f"S15: {method} {path.split('?')[0]} is off without signing in (404)", s == 404, (s, t[:100]))

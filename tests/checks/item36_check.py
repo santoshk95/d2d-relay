@@ -7,7 +7,7 @@ drawn by the image's `genbi prototype` and looked at in Chromium:
 - a visual whose title is a measure: with a "title" column in its prototype SQL the prototype shows that sentence;
   without one `genbi prototype` reports it and the prototype shows a readable stand-in ("Revenue Trend", not the
   measure's name "Title Revenue Trend");
-- the image ships Relay Gauges 1.0.7.0.
+- the image ships Relay Gauges 1.0.8.0 (rebuilt 2026-11-19).
 python -I -X utf8 item36_check.py <public> <admin>"""
 import json
 import os
@@ -135,7 +135,7 @@ subprocess.run(["docker", "cp", f"{c.WEB_C}:/tmp/item36.png", c.out_path("item36
 
 r = docker("exec", "-i", "-u", "agent", "-e", "PYTHONPATH=/opt/genbi", c.WEB_C, "/usr/local/bin/python3", "-P", "-", input_text=(
     "from genbi_kit import atlas\nprint(atlas.catalog()['atlasGauges'].get('version'))\n"))
-check("kpi: the image ships Relay Gauges 1.0.7.0", r.stdout.strip() == "1.0.7.0", (r.stdout + r.stderr)[-200:])
+check("kpi: the image ships Relay Gauges 1.0.8.0", r.stdout.strip() == "1.0.8.0", (r.stdout + r.stderr)[-200:])
 docker("exec", "-u", "root", c.WEB_C, "rm", "-rf", WORK, "/tmp/item36.png")
 
 bad = [n for n, ok in c.RESULTS if not ok]

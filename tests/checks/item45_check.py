@@ -3,7 +3,8 @@ public it shows other job details?". The shared agent serves every organisation 
 one organisation is not shown to another.
 - a project's queue position counts only its own organisation's jobs (another one's running or waiting jobs never);
 - /api/health: the queue is the organisation's own; the agent is "busy" for it only while its own job runs;
-- a queued dashboard says "In the queue" and that it starts shortly, with no count of the jobs ahead;
+- a queued dashboard says it starts shortly (since item 70: "Starting shortly", "Relay Model starts this shortly"; it
+  said "In the queue"), with no count of the jobs ahead;
 - no Stop: the user, of the Stop button, "hide it everywhere, so customers can't stop a waiting or running build"
   (no button, and the API refuses with 403).
 Screenshot: item45-queued.png in the run's folder.
@@ -128,8 +129,10 @@ if not check("ui: the browser check ran", bool(o), res.stderr[-600:]):
     print(res.stderr[-3000:], flush=True)
 if o:
     t = o["text"]
-    check("ui: a queued dashboard says In the queue and that it starts shortly", "In the queue" in t
-          and "It starts shortly. You can leave this page; it keeps its place." in t, t[:600])
+    # item 70 (2026-11-19, "Relay Model" wording): the pill says Starting shortly (it said Queued), the banner Relay Model
+    # starts this shortly (it said In the queue / It starts shortly)
+    check("ui: a queued dashboard says it starts shortly (pill Starting shortly; Relay Model starts this shortly)", "Starting shortly" in t
+          and "Relay Model starts this shortly. You can leave this page; it keeps its place." in t and "In the queue" not in t, t[:600])
     check("ui: ... with no count of the jobs ahead and no 'waiting for the agent'", "ahead of this one" not in t and "Waiting for the agent" not in t, t[:600])
     check("ui: ... and no Stop button", o.get("stop_buttons") == 0, o.get("stop_buttons"))
     check("ui: no script errors", not o["errors"], o["errors"])

@@ -100,6 +100,7 @@ services:
       RELAY_ROLE: admin
       RELAY_DATABASE_URL: postgresql://relay_app:${RELAY_DB_PASSWORD}@d2d-relay-db:5432/relay
       RELAY_PUBLIC_URL: ${RELAY_ADMIN_PUBLIC_URL:-https://admin-d2d.pasdacs.com}
+      RELAY_SITE_URL: ${RELAY_PUBLIC_URL:-https://d2d.pasdacs.com}    # item 59: the public site's address, for links in emails
     volumes:
       - admin-data:/data
     ports:

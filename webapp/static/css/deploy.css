@@ -1,0 +1,22 @@
+/* D2D Relay: deployment (item 70, js/44-deploy.js): a published dashboard sent to the Power BI service and pushed to GitHub */
+.depgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:12px 0 4px}
+.depsec{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.depsec .where{overflow-wrap:anywhere}
+.depsec .btn{align-self:flex-start}
+.depsec .hint{margin-top:0}
+.depwrap{overflow-x:auto;margin-top:12px}
+.deptable td{vertical-align:top}
+.deptable .deperr{color:var(--err);overflow-wrap:anywhere;max-width:560px}
+.deptable .depnote{color:var(--muted);margin-top:4px;overflow-wrap:anywhere;max-width:560px}
+.depset .card{margin-bottom:16px}
+.depchk{margin-top:14px}
+.depcols{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.depbtns{justify-content:flex-end;gap:8px;margin-top:14px}
+.depsecrets{font-size:12.5px}
+.depsecrets code{font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:0 5px;white-space:nowrap}
+@media (max-width:640px){.depcols{grid-template-columns:1fr}.deptable .by{display:none}}
+/* item 77: the deployment connectors on the Connections page (deployConnectorCards) */
+.depconn{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.depconn .kv{grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:12.5px;margin:0}
+.depconn .kv dd{min-width:0;overflow-wrap:anywhere}
+@media (max-width:560px){.depconn{grid-template-columns:minmax(0,1fr)}.depconn .kv{grid-template-columns:minmax(0,1fr);gap:2px}.depconn .kv dd{margin-bottom:6px}}

@@ -1060,7 +1060,7 @@ def _apply(case: dict, who: str) -> dict:
         res["result"] = f"{c['name']} is marked for renewal ({r.get('status')}); its owner was told."
     elif kind == "notify_hold":
         admins = [u["id"] for u in db.q("SELECT id FROM users WHERE org_role = 'admin' AND active = 1")]
-        notify.add_many(admins, "alert", "DAX checker is offline", f"Start daxcheck\\start-daxcheck.cmd on the Windows PC. Publishing is held until the heartbeat is back. (Self-healing case {case['id']})", "#/admin/monitoring")
+        notify.add_many(admins, "platform", "DAX checker is offline", f"Start daxcheck\\start-daxcheck.cmd on the Windows PC. Publishing is held until the heartbeat is back. (Self-healing case {case['id']})", "#/admin/monitoring")
         res["result"] = f"{len(admins)} admin(s) told; publishing stays blocked by the checker itself until it is back."
     elif kind == "dashboard_revise":
         pid = sub["project"]

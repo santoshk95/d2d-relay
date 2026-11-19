@@ -42,8 +42,8 @@
     dayTooltip: has('tooltip', 'Date:'), daySelect: has('select', 'Order date='), multiSelect: out.log.some(x => x[0] === 'select' && x[2] === true), contextMenu: has('context'),
     legendSelects: has('select', 'series=E-bike'), streamTooltip: has('tooltip', 'Peak:'), keyboard: has('select', 'Weekday='),
     filterApplied: filters.length >= 2 && /GreaterThanOrEqual/.test(filters[0][1]) && /"table":"Orders"/.test(filters[0][1]) && filters[0][2] === 0,
-    rangeExtends: out.after1 !== out.after2 && /–/.test(out.after2), filterCleared: filters.some(x => x[1] === 'none' && x[2] === 1) && /All periods/.test(out.after3),
-    savedFilterShown: /Q2 2024 – Q4 2024/.test(out.saved), scrolls: out.scroll[0] > out.scroll[1],
+    rangeExtends: out.after1 !== out.after2 && / to /.test(out.after2), filterCleared: filters.some(x => x[1] === 'none' && x[2] === 1) && /All periods/.test(out.after3),
+    savedFilterShown: /Q2 2024 to Q4 2024/.test(out.saved), scrolls: out.scroll[0] > out.scroll[1],
     backgroundClears: has('clear') && out.dimAfterClear === 0, highlights: out.highlightDims > 0,
     landing: !!cases[14].querySelector('.atl-landing'), hint: !!cases[16].querySelector('.note'), noNaN: bad.length === 0,
     calendarCards: card(cal, 'Calendar') && card(cal, 'Color scale') && !card(cal, 'Timeline slicer'), timelineCards: card(tl, 'Timeline slicer') && !card(tl, 'Color scale')

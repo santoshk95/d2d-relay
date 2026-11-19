@@ -33,6 +33,7 @@ import json
 import os
 import shutil
 import time
+import traceback
 from pathlib import Path
 
 import httpx
@@ -138,6 +139,11 @@ def delete_project(pid: str, u: dict) -> dict:
         db.run("DELETE FROM shares WHERE project_id = ?", (pid,))
         db.run("DELETE FROM jobs WHERE pid = ? AND state <> 'running'", (pid,))
         db.run("DELETE FROM notifications WHERE link LIKE ?", (f"%/p/{pid}%",))
+        try:                                       # item 70: its publish and push records
+            from . import deploy
+            deploy.forget(pid)
+        except Exception:  # noqa: BLE001 - a workspace without the table yet
+            traceback.print_exc()
         db.run("DELETE FROM projects WHERE id = ?", (pid,))
     # out of sight at once (dot folders are never listed or backed up), then gone
     gone = d.with_name(f".deleted-{pid}-{int(time.time())}")
@@ -259,7 +265,8 @@ def erase_org(tid: str, who: str) -> dict:
             shutil.rmtree(f, ignore_errors=True)
     with db.use(db.PLATFORM):
         with db.transaction():
-            for sql in ("DELETE FROM relay.tn_orgs WHERE tenant_id = ?", "DELETE FROM relay.tn_accounts WHERE home_tenant = ?",
+            for sql in ("DELETE FROM relay.tn_orgs WHERE tenant_id = ?", "DELETE FROM relay.tn_org_domains WHERE tenant_id = ?",
+                        "DELETE FROM relay.tn_accounts WHERE home_tenant = ?",
                         "DELETE FROM relay.tn_access WHERE tenant_id = ?", "DELETE FROM relay.tn_acting WHERE tenant_id = ?",
                         "DELETE FROM relay.tn_setup WHERE tenant_id = ?", "DELETE FROM relay.tn_modules WHERE tenant_id = ?",
                         "DELETE FROM relay.tn_handovers WHERE tenant_id = ?"):

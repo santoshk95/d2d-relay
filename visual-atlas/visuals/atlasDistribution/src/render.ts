@@ -202,7 +202,7 @@ export function render(e: Env): void {
                 const t: Target = {
                     key: `b${g}|${k}`, obs: members[g][k], ids: members[g][k].map(i => m.obs[i].id).slice(0, 2000),
                     tip: () => {
-                        const items: TipItem[] = [{ displayName: "Bin", value: `${fmtV(lo)} – ${fmtV(hi)}` }];
+                        const items: TipItem[] = [{ displayName: "Bin", value: `${fmtV(lo)} to ${fmtV(hi)}` }];
                         if (G > 1) items.push({ displayName: m.groupTitle || "Group", value: grp.name, color: c });
                         items.push({ displayName: "Count", value: String(n), color: c }, { displayName: "Share of " + (G > 1 ? grp.name : "total"), value: (n / tot[g] * 100).toFixed(1) + "%" });
                         if (e.active && hot[g][k] !== n) items.push({ displayName: "Highlighted", value: String(hot[g][k]) });
@@ -334,9 +334,9 @@ export function render(e: Env): void {
         const groupTip = (o: { g: Group; st: Stats }, c: string): TipItem[] => {
             const st = o.st, items: TipItem[] = [];
             if (m.hasGroup || m.byMeasure) items.push({ displayName: m.byMeasure ? "Measure" : m.groupTitle, value: o.g.name, color: c });
-            items.push({ displayName: "Median", value: fmtV(st.md), color: c }, { displayName: "Middle 50%", value: `${fmtV(st.q1)} – ${fmtV(st.q3)}` });
-            if (!violin) items.push({ displayName: "Whiskers", value: `${fmtV(st.lo)} – ${fmtV(st.hi)}` }, { displayName: "Outliers", value: String(st.out.length) });
-            else items.push({ displayName: "Range", value: `${fmtV(st.min)} – ${fmtV(st.max)}` });
+            items.push({ displayName: "Median", value: fmtV(st.md), color: c }, { displayName: "Middle 50%", value: `${fmtV(st.q1)} to ${fmtV(st.q3)}` });
+            if (!violin) items.push({ displayName: "Whiskers", value: `${fmtV(st.lo)} to ${fmtV(st.hi)}` }, { displayName: "Outliers", value: String(st.out.length) });
+            else items.push({ displayName: "Range", value: `${fmtV(st.min)} to ${fmtV(st.max)}` });
             items.push({ displayName: "Mean", value: fmtV(st.mean) }, { displayName: "Observations", value: String(st.n) });
             if (e.active) items.push({ displayName: "Highlighted", value: String(o.g.obs.filter(i => (e.active as Set<number>).has(i)).length) });
             return items;

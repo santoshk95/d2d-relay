@@ -11,6 +11,7 @@ import asyncio
 import csv
 import json
 import os
+import re
 import shutil
 import time
 import traceback
@@ -21,13 +22,16 @@ import httpx
 
 from genbi_kit import KIT, catalog, library_dir, use_project, visuals_dir
 from genbi_kit import data as data_mod
-from genbi_kit import datagen, daxcheck, definition, gates, prototype, report_builder, vfactory
+from genbi_kit import datagen, daxcheck, definition, gates, prototype, report_builder, sampling, vfactory
 from genbi_kit import validate as checks
 from genbi_kit.profile import profile
 
 from . import connectors, db, doctor, errors, instances, notify, orgs, pbix, prompts, providers, store, usage
 
 AGENT_URL = os.environ.get("AGENT_URL", "http://agent:8090")
+# item 67 (the user, 2026-11-19: "internally switch the agent to use subscription from docker on opus 5.5 max"): every
+# dashboard run on Claude Code's highest effort level (D2D_AGENT_EFFORT: low, medium, high, xhigh or max)
+AGENT_EFFORT = (os.environ.get("D2D_AGENT_EFFORT") or "max").strip().lower()
 CATALOG = Path(os.environ.get("MODELS_FILE", "/opt/genbi/config/models.json"))
 # item 47: Claude Opus 5.5 only, should both model files be unreadable (the Relay Model normally: house-models.json)
 FALLBACK = {"default": "claude-opus-5-5", "models": [{"id": "claude-opus-5-5", "label": "Opus 5.5", "family": "opus", "latest": True}]}
@@ -40,7 +44,8 @@ def house_models() -> list[dict]:
         ms = json.loads(CATALOG.with_name("house-models.json").read_text(encoding="utf-8"))["models"]
     except (OSError, ValueError, KeyError, TypeError):
         return []
-    return [{k: v for k, v in m.items() if k != "target"} for m in ms if m.get("id") and m.get("target")]
+    # item 68: a hidden house model (the reviewers' second model) is never offered in a picker
+    return [{k: v for k, v in m.items() if k != "target"} for m in ms if m.get("id") and m.get("target") and not m.get("hidden")]
 
 
 def model_catalog() -> dict:
@@ -304,6 +309,8 @@ def give_back(pid: str, args: dict, kind: str | None = None, started: bool = Tru
     cid = (args or {}).get("charge")
     if started and (kind or (args or {}).get("kind")) in KEPT:
         return 0
+    if (args or {}).get("kept"):                 # item 90: a new dashboard's credits taken in its steps are not given back
+        return 0
     try:
         n = orgs.refund(cid, "The run did not finish.")
         if n:
@@ -481,11 +488,31 @@ async def _run(pid: str, kind: str, args: dict) -> None:
         store.update(pid, status="error", error="Stopped. Press Retry to run this step again.")
     except Exception as e:  # noqa: BLE001 - shown to the user
         traceback.print_exc()
-        msg = str(e) or e.__class__.__name__
-        if isinstance(e, httpx.TransportError):
-            msg = f"Could not reach the agent service at {AGENT_URL} ({e.__class__.__name__}). Is the agent container running?"
+        msg = friendly(e)
         app_note(pid, kind, msg, "error")
         store.update(pid, status="error", error=msg)
+
+
+# item 74 (the user, 2026-11-19: "show it more confidential like relay model is working"): what a person reads when a
+# run stops, without the machinery's own words (the full text stays in the server's log)
+_RAW = [(re.compile(r"timed out|timeout", re.I), "Relay Model took longer than this step allows. Press Retry: it continues from where it got to."),
+        (re.compile(r"exited with code|agent service refused|stopped without finishing|runner|job container|lane is full", re.I),
+         "Relay Model could not finish this step just now. Press Retry in a minute."),
+        (re.compile(r"rate.?limit|overloaded|quota|usage limit|429|529", re.I),
+         "Relay Model is very busy just now. Press Retry in a few minutes.")]
+
+
+def friendly(e: BaseException) -> str:
+    """A run's error as a person reads it: errors the app wrote for people stay as they are; the AI engine's own
+    messages become plain ones."""
+    msg = str(e) or e.__class__.__name__
+    if isinstance(e, httpx.TransportError):
+        return "Relay Model could not be reached just now. Press Retry in a minute."
+    if isinstance(e, AgentError):
+        for rx, text in _RAW:
+            if rx.search(msg):
+                return text
+    return msg
 
 
 def refresh_guide(d: Path) -> None:
@@ -498,13 +525,14 @@ def refresh_guide(d: Path) -> None:
 
 
 async def agent(pid: str, stage: str, prompt: str, turns: int, target: str, resume: str | None = None,
-                extra_s: int = 0, system: str | None = None, env: dict | None = None) -> dict:
+                extra_s: int = 0, system: str | None = None, env: dict | None = None, model: str | None = None,
+                lane: str | None = None, tools: list[str] | None = None) -> dict:
     """One Claude Code run in the project folder; every event goes to the activity log as it happens.
     `target` is what the run works towards ("plan", "v1", "v2" ...), so its tokens and cost add up per version.
     `system` replaces the dashboard system prompt for phase modules whose subject is not a dashboard (P10+);
     `env` adds per-run variables for the toolkit (P16: the repository credential `genbi repo` uses) - never logged."""
     refresh_guide(store.project_dir(pid))
-    model = (store.load(pid).get("job") or {}).get("model") or DEFAULT_MODEL
+    model = model or (store.load(pid).get("job") or {}).get("model") or DEFAULT_MODEL     # item 68: a reviewer names its own
     owner = _owner(pid)
     timeout = TIMEOUT_S["fix" if resume else stage] + extra_s
     try:
@@ -517,7 +545,7 @@ async def agent(pid: str, stage: str, prompt: str, turns: int, target: str, resu
         raise AgentError(str(e)) from e
     failed, result = None, {}
     try:
-        result = await _stream(pid, stage, prompt, cfg, turns, timeout, resume, owner, system, env)
+        result = await _stream(pid, stage, prompt, cfg, turns, timeout, resume, owner, system, env, lane, tools)
         if result.get("ok") is False:
             failed = result.get("text") or ""
     except AgentError as e:
@@ -529,10 +557,10 @@ async def agent(pid: str, stage: str, prompt: str, turns: int, target: str, resu
         except providers.ProviderError:
             bcfg = None
         if bcfg:
-            app_note(pid, stage, f"{cfg['provider']} failed ({failed[:160]}). Trying once more on the backup: "
-                                 f"{bcfg['provider']}.", "warn")
+            app_note(pid, stage, "Relay Model is running this step once more.", "warn")
             db.audit("ai.fallback", pid, {"from": cfg["kind"], "to": bcfg["kind"], "error": failed[:300]}, owner)
-            result = await _stream(pid, stage, prompt, bcfg, turns, timeout, result.get("session_id") or resume, owner, system, env)
+            result = await _stream(pid, stage, prompt, bcfg, turns, timeout, result.get("session_id") or resume, owner, system, env,
+                                   lane, tools)
             cfg, failed = {**bcfg, "fallback": True}, None
     if failed is not None and "kind" not in result:
         raise AgentError(failed)
@@ -560,7 +588,8 @@ def _owner(pid: str) -> str | None:
 
 
 async def _stream(pid: str, stage: str, prompt: str, cfg: dict, turns: int, timeout: int, resume: str | None,
-                  owner: str | None, system: str | None = None, env: dict | None = None) -> dict:
+                  owner: str | None, system: str | None = None, env: dict | None = None, lane: str | None = None,
+                  tools: list[str] | None = None) -> dict:
     """One run on the agent service: every event goes to the activity log as it happens."""
     runner = cfg.get("runner") or "claude-code"
     tenant_env = {}
@@ -569,14 +598,15 @@ async def _stream(pid: str, stage: str, prompt: str, cfg: dict, turns: int, time
         lib.mkdir(parents=True, exist_ok=True)
         tenant_env["GENBI_LIBRARY"] = str(lib)
     payload = {"workdir": store.rel(pid), "prompt": prompt, "system": system or prompts.SYSTEM, "model": cfg["model"], "max_turns": turns,
-               "timeout_s": timeout, "resume": resume, "lane": LANE, "runner": runner,
-               "env": {**cfg["env"], **tenant_env, **{k: v for k, v in (env or {}).items() if v}}}
+               "timeout_s": timeout, "resume": resume, "lane": lane or LANE, "runner": runner, "effort": AGENT_EFFORT,
+               "env": {**cfg["env"], **tenant_env, **{k: v for k, v in (env or {}).items() if v}},
+               **({"tools": tools} if tools is not None else {})}
     url = RUNNER_URLS[runner] if runner in RUNNER_URLS else await instances.agent_url(owner)
     result: dict = {}
     async with httpx.AsyncClient(timeout=httpx.Timeout(15, read=None)) as client:
         async with client.stream("POST", f"{url}/runs", json=payload) as r:
             if r.status_code != 200:
-                raise AgentError(f"Agent service refused the run: {(await r.aread()).decode(errors='replace')[:300]}")
+                raise AgentError(f"Relay Model could not start this step: {(await r.aread()).decode(errors='replace')[:300]}")
             async for line in r.aiter_lines():
                 if not line.strip():
                     continue
@@ -591,8 +621,152 @@ async def _stream(pid: str, stage: str, prompt: str, cfg: dict, turns: int, time
                 elif ev["kind"] == "error":
                     raise AgentError(ev["text"], result.get("session_id"))
     if "kind" not in result:
-        raise AgentError("The agent stopped without finishing its run.", result.get("session_id"))
+        raise AgentError("Relay Model stopped before finishing this step.", result.get("session_id"))
     return result
+
+
+# ---------------------------------------------------------------- item 68: Relay's ring-fenced review team
+# The user, 2026-11-19: "a multi agent where there is a developer, analyst, qa and ui/ux, story agent" and "always there
+# should be a ring fenced agents review on each thing prepared and approved before coming to end users. always a multi
+# model to ensure what comes out is 100% accurate and interactive and business ready". The analyst plans and the developer
+# builds (the agent runs above); QA is the review gates (genbi_kit/gates.py); then independent reviewers check each plan
+# (analyst review) and each version (UI/UX, story, accuracy) before the person sees it. Each reviewer is its own run:
+# a fresh session that never saw the build, read-only tools (Read, Glob, Grep and read-only genbi commands), its own lane
+# on the AI engine, and on a second model for the story, accuracy and analyst reviews (D2D_REVIEW_MODELS: house models
+# "relay" = the builder's, "relay-review" = the second). Anything a reviewer changed anyway is put back (the fence).
+# A "must" issue goes back to the developer (or the analyst) for one fix round, the gates run again and that reviewer
+# looks once more; what is still open is shown to the person with the version (the "Review team" gate warns).
+TURNS["review"], TIMEOUT_S["review"] = 40, 1200
+REVIEW_MODELS = [m.strip() for m in (os.environ.get("D2D_REVIEW_MODELS") or "relay,relay-review").split(",") if m.strip()]
+ROLE_MODEL = {"ux": 0, "analyst": 1, "story": 1, "accuracy": 1}
+ROLE_LABEL = {"analyst": "Analyst review", "ux": "UI/UX review", "story": "Story review", "accuracy": "Accuracy review"}
+REVIEW_TOOLS = ["Read", "Glob", "Grep", "Bash(genbi:*)"]
+FENCE = ("plan.yaml", "definition.yaml", "prototype/index.html", "datagen.yaml", "request.md", "ontology.json", "ontology.md",
+         "profile.md", "profile.json", "sample.json")
+TEAM_REVIEW = (os.environ.get("D2D_TEAM_REVIEW") or "on").strip().lower() != "off"
+
+
+def _fence(d: Path) -> dict:
+    return {rel: (d / rel).read_bytes() for rel in FENCE if (d / rel).is_file()}
+
+
+def _unfence(d: Path, saved: dict) -> list[str]:
+    """Put back every fenced file a reviewer changed (it has no tools to write, so this is a second lock)."""
+    changed = []
+    for rel, data in saved.items():
+        p = d / rel
+        try:
+            if not p.is_file() or p.read_bytes() != data:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_bytes(data)
+                changed.append(rel)
+        except OSError:
+            changed.append(rel)
+    return changed
+
+
+def _verdict(text: str) -> dict:
+    """A reviewer's JSON answer, cleaned: verdict, summary, what it checked, issues (must / should), and for the analyst
+    the gaps, assumptions and deviations from the KPI dictionary."""
+    from genbi_kit.plaintext import human
+    import re as _re
+    m = _re.search(r"\{.*\}", text or "", _re.S)
+    try:
+        v = json.loads(m.group(0)) if m else {}
+    except ValueError:
+        v = {}
+    v = v if isinstance(v, dict) else {}
+    clean = lambda x, n: human(str(x or "")).strip()[:n]                          # noqa: E731
+    issues = [{"severity": "must" if str(i.get("severity") or "").lower() == "must" else "should",
+               "where": clean(i.get("where"), 200), "issue": clean(i.get("issue"), 600), "fix": clean(i.get("fix"), 600)}
+              for i in v.get("issues") or [] if isinstance(i, dict) and str(i.get("issue") or "").strip()][:40]
+    out = {"parsed": bool(v), "verdict": "fix" if any(i["severity"] == "must" for i in issues) else "approve",
+           "summary": clean(v.get("summary"), 600), "checked": [clean(c, 200) for c in v.get("checked") or [] if str(c).strip()][:40],
+           "issues": issues}
+    for k in ("gaps", "assumptions"):
+        val = v.get(k) or []
+        out[k] = [clean(x, 400) for x in (val if isinstance(val, list) else [val]) if str(x).strip()][:30]
+    out["deviations"] = [{"kpi": clean(x.get("kpi"), 120), "dictionary": clean(x.get("dictionary"), 120), "difference": clean(x.get("difference"), 500)}
+                         for x in v.get("deviations") or [] if isinstance(x, dict) and str(x.get("difference") or "").strip()][:30]
+    return out
+
+
+async def _review_run(pid: str, role: str, target: str) -> dict:
+    d = store.project_dir(pid)
+    saved = _fence(d)
+    model = REVIEW_MODELS[ROLE_MODEL.get(role, 0) % len(REVIEW_MODELS)] if REVIEW_MODELS else None
+    t0 = time.time()
+    try:
+        for wait in range(90):                     # the review lane is full (other dashboards' reviews): wait for a slot
+            try:
+                res = await agent(pid, "review", prompts.review(role), TURNS["review"], target, system=prompts.REVIEW_SYSTEM,
+                                  model=model, lane="review", tools=REVIEW_TOOLS, env={"GENBI_READONLY": "1"})
+                break
+            except AgentError as e:
+                if "lane is full" not in str(e) or wait == 89:
+                    raise
+                await asyncio.sleep(20)
+        out = {"ran": True, **_verdict(res.get("text") or "")}
+        if not out["parsed"]:
+            out.update(ran=False, why="its answer could not be read")
+    except Exception as e:  # noqa: BLE001 - a reviewer that cannot run never stops the build; it is said
+        traceback.print_exc()
+        out = {"ran": False, "why": friendly(e)[:200]}
+    changed = await asyncio.to_thread(_unfence, d, saved)
+    return {**out, "role": role, "label": ROLE_LABEL[role], "seconds": round(time.time() - t0), "when": time.time(),
+            **({"fenced": changed} if changed else {})}
+
+
+async def team_review(pid: str, roles: list[str], target: str) -> dict:
+    """The reviewers for `roles`, side by side; {role: result}."""
+    if not TEAM_REVIEW or not roles:
+        return {}
+    app_note(pid, "review", f"Relay's review team is checking {'the plan' if target == 'plan' else target}: "
+             + ", ".join(ROLE_LABEL[r] for r in roles) + ". Each reviewer works on its own and cannot change what it checks.")
+    results = await asyncio.gather(*[_review_run(pid, r, target) for r in roles])
+    for r in results:
+        if not r.get("ran"):
+            app_note(pid, "review", f"{r['label']} could not run ({r.get('why')}).", "warn")
+        else:
+            must = [i for i in r["issues"] if i["severity"] == "must"]
+            app_note(pid, "review", f"{r['label']}: " + ("approved" if r["verdict"] == "approve" else f"{len(must)} thing(s) to fix")
+                     + (f" - {r['summary']}" if r.get("summary") else ""), "ok" if r["verdict"] == "approve" else "warn",
+                     [f"{i['where']}: {i['issue']}" for i in r["issues"]][:12] or None)
+    return {r["role"]: r for r in results}
+
+
+def _must_lines(team: dict) -> list[str]:
+    return [f"{r['label']} - {i['where']}: {i['issue']}" + (f" Fix: {i['fix']}" if i.get("fix") else "")
+            for r in team.values() if r.get("ran") for i in r.get("issues") or [] if i["severity"] == "must"]
+
+
+def _review_inputs(pid: str, dax: dict | None) -> None:
+    """What the version reviewers read: a picture of every prototype page (.review/shots/) and Power BI's values."""
+    d = store.project_dir(pid)
+    rv = d / ".review"
+    rv.mkdir(exist_ok=True)
+    (rv / "values.json").write_text(json.dumps({"values": (dax or {}).get("values") or [], "sampled": (dax or {}).get("sampled") or [],
+                                                "engine": (dax or {}).get("engine")}, default=str), encoding="utf-8")
+    try:
+        httpx.post(f"{AGENT_URL}/display-check", json={"workdir": store.rel(pid), "file": "prototype/index.html", "shots": ".review/shots"},
+                   timeout=300)
+    except httpx.HTTPError:
+        traceback.print_exc()
+
+
+def team_gate(team: dict) -> dict:
+    """The "Review team" gate: pass when every reviewer approved, warn on what is still open (approval stays possible),
+    skip when the reviewers could not run."""
+    if not team:
+        return gates.gate("team", skip="the review team did not run")
+    items = []
+    for r in team.values():
+        if not r.get("ran"):
+            items.append(gates.warn(f"{r['label']} could not run: {r.get('why')}"))
+            continue
+        items += [gates.warn(f"{r['label']} - {i['where']}: {i['issue']}") for i in r.get("issues") or [] if i["severity"] == "must"]
+    ok = ", ".join(r["label"] for r in team.values() if r.get("ran") and r.get("verdict") == "approve")
+    return gates.gate("team", items, ok=f"approved by {ok}" if ok else "checked")
 
 
 # ---------------------------------------------------------------- plan
@@ -680,7 +854,7 @@ async def _extract(pid: str) -> None:
         c = connectors.connection(spec["connection_id"], owner)
     except (connectors.ConnectorError, KeyError) as e:
         raise RuntimeError("The warehouse connection of this dashboard is not one of its owner's connections.") from e
-    app_note(pid, "extract", f"Pulling {len(spec['tables'])} table(s) from {c['name']} with your own login.")
+    app_note(pid, "extract", f"Relay Model is reading {len(spec['tables'])} table(s) from {c['name']} with your own login.")
     done = []
     for t in spec["tables"]:
         try:
@@ -720,8 +894,8 @@ async def _data(pid: str, feedback: str | None = None) -> None:
     d = store.project_dir(pid)
     st = store.load(pid)
     spec = st.get("data") or {}
-    app_note(pid, "data", "Changing the demo data." if feedback else
-             "Designing demo data for your business: tables, keys, trends and a few stories to find.")
+    app_note(pid, "data", "Relay Model is changing the demo data." if feedback else
+             "Relay Model is designing demo data for your business: tables, keys, trends and a few stories to find.")
     uploaded = [f["name"] for f in st.get("files") or [] if not f.get("generated")]
     res = await agent(pid, "data", prompts.data(spec, uploaded, feedback), TURNS["data"], "data")
     for attempt in range(FIX_ROUNDS + 1):
@@ -730,7 +904,7 @@ async def _data(pid: str, feedback: str | None = None) -> None:
             break
         if attempt == FIX_ROUNDS:
             raise RuntimeError(f"The demo data recipe still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-        app_note(pid, "data", f"The check found {len(problems)} problem(s) in datagen.yaml - D2D is fixing them.",
+        app_note(pid, "data", f"The check found {len(problems)} problem(s) in the demo data recipe - Relay Model is fixing them.",
                  "warn", problems)
         res = await agent(pid, "data", prompts.fix(problems, "data"), TURNS["fix"], "data", resume=res.get("session_id"))
     refresh_files(pid)
@@ -750,11 +924,56 @@ async def _data(pid: str, feedback: str | None = None) -> None:
         store.update(pid, status="awaiting_kpis", job=None)
 
 
+def read_data(pid: str, announce: bool = True) -> dict:
+    """Items 61 and 64, before Relay plans: the organisation's ontology into the dashboard's folder (ontology.json and
+    ontology.md), a sample of the big tables (sample.json, the person's choice on New dashboard: data_policy), then the
+    profile with every column's business term. project.json gets data_size (what is read) and semantic_ready, so the
+    plan screen shows the semantic model while Relay plans. Returns the semantic summary."""
+    from . import ontology
+    d = store.project_dir(pid)
+    st = store.load(pid)
+    ontology.write_project_files(pid)
+    pol = st.get("data_policy") or {}
+    res = sampling.prepare(d, pol.get("mode") or "auto", pol.get("rows"), pol.get("method") or "random")
+    profile(d)
+    view = ontology.semantic_view(pid) or {}
+    found = sorted({c["tag"]["term"] for t in view.get("tables") or [] for c in t["columns"] if c.get("tag")})
+    ontology.write_project_files(pid, found)            # ontology.md: the terms and KPIs of this data first
+    size = {"files": res["files"], "sampled": res["sampled"], "method": res["method"], "rows": res["rows"],
+            "total_rows": sum(f.get("rows") or 0 for f in res["files"]), "bytes": sum(f.get("bytes") or 0 for f in res["files"]),
+            "used_rows": sum((res["sampled"].get(f["file"]) or {}).get("rows", f.get("rows") or 0) for f in res["files"])}
+    store.update(pid, data_size=size, semantic_ready=time.time())
+    if announce:
+        sem = view.get("semantic") or {}
+        c = sem.get("counts") or {}
+        rels = len(view.get("relationships") or [])
+        bits = [f"{len(view.get('tables') or [])} tables", f"{c.get('tagged', 0)} of {c.get('columns', 0)} columns matched to "
+                f"your ontology" + (f" ({view['industry']})" if view.get("industry") else ""), f"{rels} likely relationship{'s' if rels != 1 else ''}"]
+        items = [f"{g['term']} is in {len(g['columns'])} columns: {', '.join(g['columns'])}" for g in sem.get("combine") or []]
+        items += [f"{g['family']}: {', '.join(g['columns'])} ({', '.join(g['terms'])})" for g in sem.get("related") or []]
+        app_note(pid, "plan", "Relay Model read your data: " + ", ".join(bits) + ". The semantic model is on the plan screen.", "ok", items or None)
+        if res["sampled"]:
+            app_note(pid, "plan", "Large data: Relay Model plans and builds on a sample of "
+                     + "; ".join(f"{name} ({f['rows']:,} of {f['of']:,} rows)" for name, f in res["sampled"].items())
+                     + ". Every other table is used in full; Ask Relay answers from all rows.", "info")
+    return view
+
+
 async def _plan(pid: str, feedback: str | None, attachments: list[dict] | None = None) -> None:
     d = store.project_dir(pid)
     st = store.load(pid)
-    app_note(pid, "plan", "Revising the plan with your feedback." if feedback
-             else "Reading your data and request to plan the report.")
+    app_note(pid, "plan", "Relay Model is revising the plan with your feedback." if feedback
+             else "Relay Model is reading your data and request to plan the dashboard.")
+    if not feedback:
+        try:
+            await asyncio.to_thread(read_data, pid)
+        except Exception:  # noqa: BLE001 - the agent profiles the data itself; the semantic view waits for it
+            traceback.print_exc()
+    else:
+        from . import ontology
+        await asyncio.to_thread(ontology.write_project_files, pid)
+        if await asyncio.to_thread(sampling.stale, d):              # item 64: files came with the revision
+            await asyncio.to_thread(read_data, pid, False)
     prompt = (prompts.PLAN_REVISE.format(feedback=feedback) + prompts.attached(attachments) if feedback
               else prompts.plan(st.get("images") or [], policy(st), generated=(d / "datagen.yaml").exists(),
                                 visuals=st.get("visuals_mode")))
@@ -764,13 +983,40 @@ async def _plan(pid: str, feedback: str | None, attachments: list[dict] | None =
         if not problems:
             break
         if attempt == FIX_ROUNDS:
-            raise RuntimeError(f"plan.yaml still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
-        app_note(pid, "plan", f"The check found {len(problems)} problem(s) in plan.yaml - D2D is fixing them.", "warn", problems)
+            raise RuntimeError(f"The plan still has {len(problems)} problem(s): " + "; ".join(problems[:4]))
+        app_note(pid, "plan", f"The check found {len(problems)} problem(s) in the plan - Relay Model is fixing them.", "warn", problems)
         res = await agent(pid, "plan", prompts.fix(problems, "plan"), TURNS["fix"], "plan", resume=res.get("session_id"))
+    review = await team_review(pid, ["analyst"], "plan")                     # item 68: the analyst review
+    must = _must_lines(review)
+    if must:
+        app_note(pid, "plan", f"The analyst review asked for {len(must)} change(s) to the plan: Relay Model is making them.", "warn", must)
+        kept = (d / "plan.yaml").read_bytes()
+        res = await agent(pid, "plan", prompts.fix(must, "plan"), TURNS["fix"], "plan", resume=res.get("session_id"))
+        for attempt in range(FIX_ROUNDS + 1):
+            problems = await asyncio.to_thread(lambda: _sync_data(d) + _check_plan(d))
+            if not problems:
+                review = await team_review(pid, ["analyst"], "plan") or review
+                break
+            if attempt == FIX_ROUNDS:                  # the changes did not check out: the plan before them stays
+                (d / "plan.yaml").write_bytes(kept)
+                app_note(pid, "plan", "The analyst review's changes did not pass the plan check, so the plan before them is kept; "
+                         "its findings are listed for you to approve.", "warn")
+                break
+            res = await agent(pid, "plan", prompts.fix(problems, "plan"), TURNS["fix"], "plan", resume=res.get("session_id"))
     plan = definition.load(d / "plan.yaml")
+    as_list = lambda v: [str(x) for x in v if str(x).strip()] if isinstance(v, list) else ([str(v)] if str(v or "").strip() else [])   # noqa: E731
+    store.update(pid, plan_review={"when": time.time(), **(review.get("analyst") or {}),
+                                   "plan_assumptions": as_list(plan.get("assumptions"))[:30],
+                                   "plan_gaps": as_list(plan.get("gaps"))[:30]}, approvals=None)
     refresh_files(pid)                  # the plan stage may have changed generated demo data
+    try:
+        from . import ontology
+        await asyncio.to_thread(ontology.mark_plan_kpis, pid)      # item 61: which KPIs come from the dictionary
+    except Exception:  # noqa: BLE001
+        traceback.print_exc()
     st = store.load(pid)
-    st.update(status="awaiting_kpis", job=None, plan_summary=res.get("text") or "", plan_rounds=st.get("plan_rounds", 0) + 1)
+    st.update(status="awaiting_kpis", job=None, plan_summary=res.get("text") or "", plan_rounds=st.get("plan_rounds", 0) + 1,
+              semantic_ready=time.time())
     store.save(st)
     app_note(pid, "plan", f"Plan ready: {len(plan.get('kpis') or [])} KPIs on {len(plan.get('pages') or [])} pages. "
              "Waiting for you to confirm the KPIs.", "ok")
@@ -821,14 +1067,14 @@ def _display(pid: str, rel: str) -> dict:
         r.raise_for_status()
         return r.json()
     except Exception as e:  # noqa: BLE001 - a check that cannot run never breaks the version
-        return gates.gate("display", skip=f"the browser check could not run ({e.__class__.__name__})")
+        return gates.gate("display", skip=f"the page drawing check could not run ({e.__class__.__name__})")
 
 
 def _dax_check(d: Path, dd: dict) -> dict:
     """Every measure and visual query evaluated by Power BI's engine (the DAX checker on this PC). Problems go back to
     Claude like any other; without the checker the version is marked as not checked."""
     if not daxcheck.available():
-        return {"checked": False, "reason": "the DAX checker is not running on this PC"}
+        return {"checked": False, "reason": "Power BI's own engine was paused at the time"}
     try:
         return daxcheck.summary(daxcheck.run(d, dd, catalog()))
     except Exception as e:  # noqa: BLE001 - a check that cannot run never breaks the version
@@ -868,27 +1114,55 @@ async def _version(pid: str, stage: str, prompt: str, feedback: str | None, atta
                    visuals: int = 0) -> None:
     d = store.project_dir(pid)
     target = f"v{len(store.load(pid)['versions']) + 1}"
-    app_note(pid, stage, "Building the model, the measures and the report pages." if stage == "build"
-             else "Applying your changes.")
+    try:
+        from . import ontology
+        await asyncio.to_thread(ontology.write_project_files, pid)  # item 61: the person's column tags and today's dictionary
+        if await asyncio.to_thread(sampling.stale, d):              # item 64: new data came: the samples follow it
+            await asyncio.to_thread(read_data, pid, False)
+    except Exception:  # noqa: BLE001
+        traceback.print_exc()
+    app_note(pid, stage, "Relay Model is building the model, the measures and the report pages." if stage == "build"
+             else "Relay Model is applying your changes.")
     if visuals:
-        app_note(pid, stage, f"This run may build {visuals} new custom visual{'s' if visuals > 1 else ''} "
-                 "(code, compile, browser test) - it takes longer.")
+        app_note(pid, stage, f"Relay Model may build {visuals} new custom visual{'s' if visuals > 1 else ''} "
+                 "for this version - it takes a little longer.")
     res = await agent(pid, stage, prompt, TURNS[stage] + VISUAL_TURNS * visuals, target, extra_s=VISUAL_S * visuals)
     for attempt in range(FIX_ROUNDS + 1):
-        app_note(pid, stage, "Running the review gates: definition, prototype, Power Query, data, DAX in Power BI's "
-                             "engine, report files, consistency, best practices, accessibility, display...")
+        app_note(pid, stage, "Relay Model is checking every number and page: definition, prototype, Power Query, data, "
+                             "DAX in Power BI's own engine, report files, consistency, best practices, accessibility, display...")
         drift = await asyncio.to_thread(_sync_data, d)
         problems, info, found = await asyncio.to_thread(_check_definition, d, pid)
         problems = drift + problems
         if not problems or attempt == FIX_ROUNDS:
             break
         names = ", ".join(g["name"] for g in gates.failed(found)) or "Values match the prototype"
-        app_note(pid, stage, f"Review gates not passed ({names}): {len(problems)} problem(s) - D2D is fixing them.",
+        app_note(pid, stage, f"Review gates not passed ({names}): {len(problems)} problem(s) - Relay Model is fixing them.",
                  "warn", problems)
         res = await agent(pid, stage, prompts.fix(problems, "definition"), TURNS["fix"], target, resume=res.get("session_id"))
     if info is None:
-        raise RuntimeError(f"D2D could not produce a valid report definition ({len(problems)} problem(s)): "
+        raise RuntimeError(f"Relay Model could not produce a valid report definition ({len(problems)} problem(s)): "
                            + "; ".join(problems[:4]))
+    team: dict = {}
+    if not gates.failed(found):                                              # item 68: QA passed, now the review team
+        await asyncio.to_thread(_review_inputs, pid, info.get("dax"))
+        team = await team_review(pid, ["ux", "story", "accuracy"], target)
+        must = _must_lines(team)
+        if must:
+            app_note(pid, stage, f"Relay's review team asked for {len(must)} change(s): Relay Model is making them before you see the version.", "warn", must)
+            kept = {rel: (d / rel).read_bytes() for rel in ("definition.yaml", "prototype/index.html") if (d / rel).is_file()}
+            res = await agent(pid, stage, prompts.fix(must, "definition"), TURNS["fix"], target, resume=res.get("session_id"))
+            drift = await asyncio.to_thread(_sync_data, d)
+            p2, i2, f2 = await asyncio.to_thread(_check_definition, d, pid)
+            if i2 is not None and not gates.failed(f2):
+                problems, info, found = drift + p2, i2, f2
+                again = [r for r, x in team.items() if x.get("verdict") == "fix" or not x.get("ran")]
+                await asyncio.to_thread(_review_inputs, pid, info.get("dax"))
+                team.update({r: {**x, "round": 2} for r, x in (await team_review(pid, again, target)).items()})
+            else:
+                app_note(pid, stage, "The review team's changes did not pass the review gates, so the version before them is kept.", "warn")
+                for rel, data in kept.items():                                # back to what passed the gates
+                    (d / rel).write_bytes(data)
+        found = gates.ordered(found + [team_gate(team)])
     refresh_files(pid)                  # a change request may have regenerated the demo data
     st = store.load(pid)
     v = len(st["versions"]) + 1
@@ -902,7 +1176,8 @@ async def _version(pid: str, stage: str, prompt: str, feedback: str | None, atta
     info["dax"] = _dax_brief(dax)
     info["gates"] = gates.compact(found)
     st["versions"].append({"v": v, "created": time.time(), "summary": res.get("text") or "", "feedback": feedback,
-                           "attachments": [a["path"] for a in attachments or []], "problems": problems, **info})
+                           "attachments": [a["path"] for a in attachments or []], "problems": problems, **info,
+                           **({"team": team} if team else {})})
     st.update(status="awaiting_review", job=None, approved=None)
     store.save(st)
     added = await asyncio.to_thread(_promote, pid, d, info, problems)
@@ -946,6 +1221,9 @@ def check_version(pid: str, v: int) -> list[dict]:
         (d / scratch).unlink(missing_ok=True)
     if info and info.get("dax", {}).get("checked") and not (vdir / "dax.json").exists():
         (vdir / "dax.json").write_text(json.dumps(info["dax"]), encoding="utf-8")
+    team = next((x.get("team") for x in store.load(pid).get("versions") or [] if x["v"] == v and x.get("team")), None)
+    if team:                                                    # item 68: the review team's verdict stays with the version
+        found = gates.ordered(found + [team_gate(team)])
     _save_gates(pid, d, v, found, (info or {}).get("dax"))
     bad = gates.failed(found)
     app_note(pid, "check", f"Review gates for v{v}: " + (f"{len(bad)} failed ({', '.join(g['name'] for g in bad)})" if bad
@@ -988,7 +1266,8 @@ def _build_pbip(d: Path, pid: str, v: int) -> dict:
     errors, dd = checks.definition_errors(raw, d, check_sql=False)
     if errors:
         raise RuntimeError("The approved definition does not validate: " + "; ".join(errors[:4]))
-    folder = f"{HOST_DIR}\\{pid}\\data\\" if HOST_DIR else str(d / "data") + "/"
+    sub = sampling.SAMPLE_DIR if sampling.spec(d) else "data"   # item 64: a dashboard built on a sample loads the sample
+    folder = f"{HOST_DIR}\\{pid}\\{sub}\\" if HOST_DIR else str(d / sub) + "/"
     dd["data"]["folder"] = folder
     dd["data"]["extracts"] = connectors.extracts_for_pbip(d)    # native connectors for warehouse tables
     out, stage = d / "powerbi", d / ".publish"
@@ -996,12 +1275,12 @@ def _build_pbip(d: Path, pid: str, v: int) -> dict:
     if not daxcheck.available():
         _tell_pasdacs("The DAX checker is not running on the D2D Relay PC", "Start daxcheck\\start-daxcheck.cmd on the "
                       "D2D Relay PC: publishing waits for it.")
-        raise RuntimeError("Power BI's engine on the D2D Relay PC is not running just now, so the DAX cannot be checked "
-                           "before publishing. PASDACS has been told; press Retry in a few minutes.")
+        raise RuntimeError("Checking every number in Power BI's own engine is paused just now, so nothing was published "
+                           "yet. PASDACS has been told; press Retry in a few minutes.")
     try:
         dax = daxcheck.summary(daxcheck.run(d, dd, catalog()))
     except Exception as err:  # noqa: BLE001 - shown to the user
-        raise RuntimeError(f"The DAX check in Power BI's engine did not finish: {err}. Press Retry.") from err
+        raise RuntimeError(f"Checking every number in Power BI's own engine did not finish: {err}. Press Retry.") from err
     (d / "versions" / f"v{v}" / "dax.json").write_text(json.dumps(dax), encoding="utf-8")
     # write the project to a staging folder, run every review gate on those exact files, and only then move it in
     shutil.rmtree(stage, ignore_errors=True)
@@ -1104,10 +1383,11 @@ def _make_pbix(d: Path, report: str) -> dict:
             _tell_pasdacs("The Power BI file maker is not running on the D2D Relay PC",
                           "Start pbix\\start-pbix.cmd on the D2D Relay PC: published dashboards wait for it.")
             raise RuntimeError(f"{e} PASDACS has been told; press Retry in a few minutes.") from e
-        raise RuntimeError(f"{e} Press Retry; if it happens again, PASDACS can see why on the D2D Relay PC.") from e
+        raise RuntimeError(f"{e} Press Retry; if it happens again, PASDACS can see why.") from e
     finally:
         shutil.rmtree(inbox, ignore_errors=True)
-    csvs = sorted((d / "data").glob("*.csv"))
+    ddir = d / sampling.SAMPLE_DIR if sampling.spec(d) and (d / sampling.SAMPLE_DIR).is_dir() else d / "data"   # item 64
+    csvs = sorted(ddir.glob("*.csv"))
     with_data = sum(f.stat().st_size for f in csvs) <= ZIP_DATA_LIMIT
     zpath = d / f"{report}.zip"
     tmp = zpath.with_suffix(".zip.tmp")
@@ -1127,9 +1407,9 @@ def _make_pbix(d: Path, report: str) -> dict:
 
 async def _pbi(pid: str, v: int) -> None:
     d = store.project_dir(pid)
-    app_note(pid, "pbi", f"Checking prototype v{v} in Power BI's engine and running the review gates...")
+    app_note(pid, "pbi", f"Relay Model is checking every number of prototype v{v} in Power BI's own engine and running the review gates...")
     out = await asyncio.to_thread(_build_pbip, d, pid, v)
-    app_note(pid, "pbi", "Every check passed. Power BI Desktop is making the .pbix file...")
+    app_note(pid, "pbi", "Every check passed. Relay Model is packaging your Power BI file (.pbix)...")
     out.update(await asyncio.to_thread(_make_pbix, d, out["report"]))
     st = store.load(pid)
     st.update(status="done", job=None, approved=v, output=out, finished=time.time())
@@ -1148,6 +1428,8 @@ async def _pbi(pid: str, v: int) -> None:
     app_note(pid, "pbi", f"Power BI file ready: {out['pbix']} ({out['pages']} pages, {out['visuals']} visuals, "
              f"{out['measures']} measures, {out['pbix_mb']} MB). It passed all {len(passed)} review gates"
              + (f", with warnings in {', '.join(warned)}" if warned else "") + "." + _ready_text(out), "ok")
+    from . import deploy                           # item 70: publish and push, when the organisation switched them on
+    deploy.after_pbix(pid)
 
 
 async def _pbix_job(pid: str, args: dict) -> None:
@@ -1156,7 +1438,7 @@ async def _pbix_job(pid: str, args: dict) -> None:
     d = store.project_dir(pid)
     st = store.load(pid)
     report = _published_report(d, st)
-    app_note(pid, "pbi", "Power BI Desktop is making the .pbix file...")
+    app_note(pid, "pbi", "Relay Model is packaging your Power BI file (.pbix)...")
     made = await asyncio.to_thread(_make_pbix, d, report)
     st = store.load(pid)
     out = {k: v for k, v in (st.get("output") or {}).items() if k not in OLD_OUTPUT_KEYS}
@@ -1168,6 +1450,8 @@ async def _pbix_job(pid: str, args: dict) -> None:
             p.update(pbix=made["pbix"], zip=made["zip"])
     store.save(st)
     app_note(pid, "pbi", f"Power BI file ready: {made['pbix']} ({made['pbix_mb']} MB)." + _ready_text(made), "ok")
+    from . import deploy                           # item 70: publish and push, when the organisation switched them on
+    deploy.after_pbix(pid)
 
 
 register_job("pbix", _pbix_job, status="building_pbi", done="Power BI file ready")

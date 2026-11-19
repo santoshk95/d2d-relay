@@ -188,15 +188,17 @@ with sync_playwright() as pw:
     page = ctx.new_page()
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
-    page.goto("http://127.0.0.1:8000/#/new")
-    page.wait_for_selector("select[aria-label='Visuals']", timeout=20000)
-    page.wait_for_timeout(800)
-    vis = page.locator("select[aria-label='Visuals']")
-    out["options"] = vis.evaluate("s => [...s.options].map(o => [o.value, o.textContent])")
-    out["use_builtin"] = page.locator("b.useline").inner_text()
-    vis.select_option("mixed")
-    out["use_mixed"] = page.locator("b.useline").inner_text()
-    page.locator(".sect:has(select[aria-label='Visuals'])").screenshot(path="/tmp/item44-new.png")
+    # New dashboard, the guided way (2026-11-19): its Visuals step, two choices, each with its credits
+    with open("/tmp/item44-sales.csv", "w") as f:
+        f.write("month,region,sales\n2026-01,North,120\n2026-02,North,135\n2026-01,South,98\n2026-02,South,101\n")
+    nd_open(page)
+    nd_to_visuals(page, "Credits check", csv_path="/tmp/item44-sales.csv")
+    cards = page.locator(f"{ND_SHOWN} label.nd-card")
+    out["options"] = cards.evaluate_all("xs => xs.map(x => [x.querySelector('input').value, x.innerText])")
+    out["use_builtin"] = page.locator(f"{ND_SHOWN} p:has-text('Uses')").inner_text()
+    page.click(f"{ND_SHOWN} label.nd-card:has(input[value=mixed])")
+    out["use_mixed"] = page.locator(f"{ND_SHOWN} p:has-text('Uses')").inner_text()
+    page.locator(ND_SHOWN).screenshot(path="/tmp/item44-new.png")
     page.goto("http://127.0.0.1:8000/#/org")
     page.wait_for_selector("dt:text-is('New dashboard')", timeout=20000)
     out["org_new"] = page.locator("dt:text-is('New dashboard') + dd").inner_text()
@@ -213,7 +215,7 @@ with sync_playwright() as pw:
 print(json.dumps(out))
 """
 cookie = next(k.value for k in p.jar if k.name == "d2d_session")
-res = subprocess.run(["docker", "exec", "-i", c.WEB_C, "python3", "-", cookie, pb2 or ""], input=PLAY, capture_output=True, text=True,
+res = subprocess.run(["docker", "exec", "-i", c.WEB_C, "python3", "-", cookie, pb2 or ""], input=c.ND_FLOW + PLAY, capture_output=True, text=True,
                      encoding="utf-8", errors="replace", timeout=240)
 try:
     o = json.loads(res.stdout.strip().splitlines()[-1])
@@ -222,9 +224,11 @@ except (ValueError, IndexError):
 if not check("ui: the browser checks ran", bool(o), res.stderr[-600:]):
     print(res.stderr[-3000:], flush=True)
 if o:
-    check("ui: New dashboard's choices carry their credits", o["options"] == [["builtin", "Power BI's built-in visuals only (25 credits)"],
-          ["mixed", "Built-in first, custom where needed (50 credits)"], ["relay", "Relay custom visuals (50 credits)"]], o["options"])
-    check("ui: its Uses line says 25 for built-in and 50 once mixed is picked", o["use_builtin"].startswith("Uses 25 credits")
+    # the guided New dashboard (2026-11-19): two choices, built-in and built-in plus custom, each saying its credits
+    check("ui: New dashboard's choices carry their credits (built-in 25, built-in plus custom 50)",
+          [v for v, _ in o["options"]] == ["builtin", "mixed"] and "25 credits" in o["options"][0][1] and "50 credits" in o["options"][1][1],
+          o["options"])
+    check("ui: its Uses line says 25 for built-in and 50 once built-in plus custom is picked", o["use_builtin"].startswith("Uses 25 credits")
           and o["use_mixed"].startswith("Uses 50 credits"), (o["use_builtin"], o["use_mixed"]))
     check("ui: the Organisation page gives both prices", "25 credits with Power BI's built-in visuals" in o["org_new"]
           and "50 credits with custom visuals" in o["org_new"], o["org_new"])

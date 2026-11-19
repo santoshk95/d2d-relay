@@ -1,4 +1,4 @@
-"""D2D Relay: buying credits online with Razorpay (item 23).
+"""D2D Relay: buying credits online with Razorpay (item 23; taken away by item 59, back since item 85).
 
 An organisation buys a pack of credits on its Organisation page (Buy credits). The server makes a Razorpay order for
 the pack's price (the amount is always the server's, never the browser's); Razorpay's own checkout window takes the
@@ -12,6 +12,13 @@ once, in the database transaction that marks it paid (_fulfil):
      payment.captured, order.paid, payment.failed, refund.processed. It covers a tab closed before the answer came;
   3. a look at Razorpay when the Organisation page opens, or when a platform admin presses Check on the admin portal:
      checkouts of the last two days that are still waiting.
+
+Both ways to more credits stand side by side (item 85, the user 2026-11-19: "add back payment as well, let both options
+be, either they can add credits or request credits as well, only organisations are allowed to sign in and personal will
+be blocked"): Buy credits here, Request credits in orgs.py. Item 59 had taken buying online away earlier that day
+("remove payment all and have only as request credits"); item 85 brought it back as it was. Only organisations buy: personal
+workspaces (item 39) sign nobody in since item 83 (otp.py, auth.personal_tenant), so nothing here treats them apart.
+/api/org carries the organisation's completed payments too (past), for the Organisation page.
 
 Keys (.env only, never in commits): RELAY_RAZORPAY_KEY_ID, RELAY_RAZORPAY_KEY_SECRET, RELAY_RAZORPAY_WEBHOOK_SECRET.
 Test keys (rzp_test_...) move no money, so with them only PASDACS's own workspace may buy (anyone else would get
@@ -451,6 +458,15 @@ def _public(r: dict) -> dict:
             "live": bool(r.get("live")), "error": r.get("error"), "invoice_no": r.get("invoice_no")}
 
 
+def past(tid: str, u: dict) -> list[dict]:
+    """The organisation's completed payments (owners see all of them, others their own), newest first, for /api/org:
+    the Organisation page lists them with their invoices. Empty for an organisation that never bought online."""
+    sql = "SELECT * FROM relay.tn_payments WHERE tenant_id = ? AND status IN ('paid', 'refunded')"
+    rows = (db.q(sql + " ORDER BY created DESC LIMIT 50", (tid,)) if orgs.is_owner(u) else
+            db.q(sql + " AND user_id = ? ORDER BY created DESC LIMIT 50", (tid, u["id"])))
+    return [_public(r) for r in rows]
+
+
 @router.get("/api/payments")
 def overview(request: Request):
     """Buy credits and the Organisation page: whether this person can buy here, the packs and their prices in the
@@ -700,14 +716,10 @@ def save_billing(body: BillingIn, request: Request):
     return overview(request)
 
 
-def _site() -> str:
-    """The public site's address (the webhook URL to give Razorpay); the admin portal's own address is not it."""
-    from . import identity
-    return (os.environ.get("D2D_PAYMENTS_SITE") or ("" if portal.ADMIN else identity.PUBLIC_URL) or "https://d2d.pasdacs.com").rstrip("/")
-
-
 @router.get("/api/admin/payments")
 def admin_view():
+    """The admin portal's Payments page: the keys, what is on sale, PASDACS's invoice details and every checkout. The
+    webhook URL is the public site's (portal.site(), item 59: D2D_SITE_URL on the admin portal), never the portal's own."""
     orgs._admin()                                                            # noqa: SLF001
     s = settings()
     rows = db.q("SELECT * FROM relay.tn_payments ORDER BY created DESC LIMIT 200")
@@ -718,7 +730,7 @@ def admin_view():
                   "all": sum(net(p) for p in paid if p["currency"] == c), "count": sum(p["currency"] == c for p in paid)}
               for c in ("INR", "USD")}
     return {"mode": mode(), "key_id": (KEY_ID[:13] + "..." + KEY_ID[-4:]) if len(KEY_ID) > 20 else KEY_ID, "key_secret": bool(KEY_SECRET),
-            "webhook_secret": bool(WEBHOOK_SECRET), "webhook_url": _site() + WEBHOOK_PATH, "events": list(EVENTS), "test_for": TEST_FOR,
+            "webhook_secret": bool(WEBHOOK_SECRET), "webhook_url": portal.site() + WEBHOOK_PATH, "events": list(EVENTS), "test_for": TEST_FOR,
             "settings": s, "packs": packs(s), "payments": [_admin_row(r) for r in rows], "contact": orgs.CONTACT, "totals": totals,
             "seller": invoices.seller(s), "missing": invoices.missing(s), "states": invoices.STATES, "fy": invoices.fiscal_year(time.time()),
             "years": sorted({json.loads(r["invoice"])["fy"] for r in db.q("SELECT invoice FROM relay.tn_payments WHERE invoice IS NOT NULL")},

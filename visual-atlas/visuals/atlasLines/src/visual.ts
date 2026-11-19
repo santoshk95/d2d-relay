@@ -14,7 +14,7 @@ import { DrillBar } from "./common/drill";
 
 const NAMES: Record<string, string> = { line: "Line chart", area: "Area chart", stackedArea: "Stacked area chart", percentArea: "100% stacked area chart", comboStacked: "Line and stacked column chart", comboClustered: "Line and clustered column chart" };
 export class Visual extends FamilyVisual<LinesSettings, Model> {
-    protected readonly title = "Atlas Lines";
+    protected readonly title = "Relay Lines";
     protected readonly landingLines: [string, string] = [
         "Add a field to X-axis (a date hierarchy drills down) and one or more measures to Y-axis.",
         "For a combo chart, put the column measures in Y-axis and the line measures in Line y-axis. Pick the chart type in the Format pane."];

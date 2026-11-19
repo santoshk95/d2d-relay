@@ -102,6 +102,14 @@ export function render(c: C, view: View, redraw: () => void, topBand: number) {
 
     /* layers: bands under the marks would let an area swallow every click, so the hover bands sit above the lines and areas, under the markers */
     const back = el("g", {}, root), sh = look.shadow(), marks = el("g", sh ? { filter: sh } : {}, root), bands = el("g", {}, root), over = el("g", {}, root), labels = el("g", {}, root);
+    /* data labels whole or not at all, never on one another (2026-11-19: "$612K$615K$618K" ran together) */
+    const placedL: { l: number; r: number; t: number; b: number }[] = [];
+    const placeLabel = (x: number, y: number, text: string, maxW: number) => {
+        const w = textW(text, lbfs), box = { l: x - w / 2 - 2, r: x + w / 2 + 2, t: y - lbfs, b: y + 3 };
+        if (w > maxW || box.l < 0 || box.r > W || placedL.some(p => p.l < box.r && box.l < p.r && p.t < box.b && box.t < p.b)) return;
+        placedL.push(box);
+        el("text", { x: r1(x), y: r1(y), "text-anchor": "middle", "font-size": lbfs, fill: t.text, class: "lbl" }, labels, text);
+    };
     /* target zone: shaded from the target value up */
     if (isFinite(tgt)) { const y = YL(tgt); el("rect", { x: r1(L), y: r1(T), width: r1(R - L), height: r1(Math.max(0, y - T)), fill: mix(aC, t.surface, 0.9) }, back); el("line", { x1: r1(L), x2: r1(R), y1: r1(y) + 0.5, y2: r1(y) + 0.5, stroke: aC, "stroke-width": 1.2, "stroke-dasharray": "5 3" }, back); el("text", { x: r1(R - 4), y: r1(y - 4), "text-anchor": "end", "font-size": 9, fill: aC, class: "ref" }, labels, `Target ${dL.f(tgt)}`); }
     /* error band */
@@ -134,7 +142,7 @@ export function render(c: C, view: View, redraw: () => void, topBand: number) {
             const share = percent && areaStack ? `  (${Math.round((areaStack.hi[sr.i][ci] - areaStack.lo[sr.i][ci]) * 100)}%)` : "";
             out.push({ displayName: sr.name, value: fmtT(sr)(v) + share, color: colorOf(sr) });
         });
-        if (m.lower && m.upper && isFinite(m.lower[ci])) out.push({ displayName: "Range", value: `${fmtT(m.series[0])(m.lower[ci])} – ${fmtT(m.series[0])(m.upper[ci])}` });
+        if (m.lower && m.upper && isFinite(m.lower[ci])) out.push({ displayName: "Range", value: `${fmtT(m.series[0])(m.lower[ci])} to ${fmtT(m.series[0])(m.upper[ci])}` });
         const first = m.series[0].cells[ci]; if (first >= 0) m.cells[first].tips.forEach(tp => out.push({ displayName: tp.name, value: tp.value }));
         return out;
     };
@@ -152,7 +160,7 @@ export function render(c: C, view: View, redraw: () => void, topBand: number) {
                 if (look.is3d) { el("path", { d: `M${r1(x)},${r1(y0)}l4,-3h${r1(w - 1)}l-4,3Z`, fill: look.top(col) }, g); el("path", { d: `M${r1(x + w - 1)},${r1(y0)}l4,-3v${r1(h)}l-4,3Z`, fill: look.side(col) }, g); }
                 el("rect", { x: r1(x), y: r1(y0), width: r1(Math.max(0.5, w - 1)), height: r1(h), rx: r1(Math.min(rad, w / 3, h / 2)), fill: t.hc ? t.surface : look.fill(col, "v"), stroke: t.hc ? t.ink : "none" }, g);
                 c.bind(g, cellT(cl));
-                if (LB.show.value && !colStack && h > 0) el("text", { x: r1(x + w / 2), y: r1(y0 - 3), "text-anchor": "middle", "font-size": lbfs, fill: t.text, class: "lbl" }, labels, trunc(fmtL(sr)(cl.v), step, lbfs));
+                if (LB.show.value && !colStack && h > 0) placeLabel(x + w / 2, y0 - 3, fmtL(sr)(cl.v), step);
             });
         });
     }
@@ -188,7 +196,7 @@ export function render(c: C, view: View, redraw: () => void, topBand: number) {
                 const dot = el("circle", { cx: r1(p[0]), cy: r1(p[1]), r: r1(r), fill: t.surface, stroke: col, "stroke-width": 2, class: "mk" + (c.io.on(ix) ? "" : " dim") }, over);
                 c.bind(dot, cellT(m.cells[ix]));
             }
-            if (LB.show.value && (!combo || sr.line)) el("text", { x: r1(p[0]), y: r1(p[1] - Math.max(r, 3) - 4), "text-anchor": "middle", "font-size": lbfs, fill: t.text, class: "lbl" }, labels, fmtL(sr)(sr.v[ci]));
+            if (LB.show.value && (!combo || sr.line)) placeLabel(p[0], p[1] - Math.max(r, 3) - 4, fmtL(sr)(sr.v[ci]), Infinity);
             if (endLabels && isLast) el("text", { x: r1(R + (dR ? tickWidth(dR, VA) : 0) + 8), y: r1(p[1] + lbfs * 0.35), "font-size": lbfs + 1, fill: col, class: "ttl" }, labels, trunc(sr.name, endW - 8, lbfs + 1));
         });
     });
@@ -253,7 +261,7 @@ export function render(c: C, view: View, redraw: () => void, topBand: number) {
     /* category labels (skip any that would overlap) */
     if (CA.show.value) {
         let right = -Infinity;
-        vis.forEach(ci => { const txt = m.cats[ci].path.length > 1 ? m.cats[ci].path.join(" › ") : m.cats[ci].label, w = textW(txt, cfs), left = X(ci) - w / 2; if (left < right + 6) return; right = left + w; const tx = el("text", { x: r1(X(ci)), y: r1(B + cfs + 4), "text-anchor": "middle", "font-size": cfs, fill: cC, class: "ax" }, labels, txt); const its = m.series.map(sr => sr.cells[ci]).filter(i => i >= 0); c.io.bindLabel(tx, { key: "c" + ci, items: its, ids: [m.cats[ci].id], tip: () => catTip(ci) }); });
+        vis.forEach(ci => { const txt = m.cats[ci].path.length > 1 ? m.cats[ci].path.join(" > ") : m.cats[ci].label, w = textW(txt, cfs), left = X(ci) - w / 2; if (left < right + 6) return; right = left + w; const tx = el("text", { x: r1(X(ci)), y: r1(B + cfs + 4), "text-anchor": "middle", "font-size": cfs, fill: cC, class: "ax" }, labels, txt); const its = m.series.map(sr => sr.cells[ci]).filter(i => i >= 0); c.io.bindLabel(tx, { key: "c" + ci, items: its, ids: [m.cats[ci].id], tip: () => catTip(ci) }); });
         fc.forEach((p, k) => { if (k === fc.length - 1) el("text", { x: r1(X(p.ci)), y: r1(B + cfs + 4), "text-anchor": "middle", "font-size": cfs, fill: t.axis, class: "ax" }, labels, `+${k + 1}`); });
     }
 

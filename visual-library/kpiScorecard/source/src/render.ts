@@ -83,7 +83,7 @@ export function render(c: C) {
         el("text", { x: x.kpi, y: r1(base), "font-size": fs, fill: ink, "font-weight": 600 }, g, trunc(r.name, want.kpi, fs));
         (["result", "latest", "target"] as Col[]).forEach(k => {
             if (want[k] <= 0) return;
-            const v = (r as unknown as Record<string, string>)[k] || "–";
+            const v = (r as unknown as Record<string, string>)[k] || "-";
             el("text", { x: r1(x[k] + want[k]), y: r1(base), "text-anchor": "end", "font-size": fs, fill: k === "result" ? ink : t.text, "font-weight": k === "result" ? 600 : 400 }, g, trunc(v, want[k], fs));
         });
         if (want.status > 0 && r.statusText) {

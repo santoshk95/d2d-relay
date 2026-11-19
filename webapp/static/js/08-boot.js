@@ -3,7 +3,8 @@ function render() {
   const st = S.project;
   if (!st || !S.pid || !location.hash.startsWith('#/p/')) return;
   const key = JSON.stringify([st.id, st.status, st.versions.length, st.plan_rounds, st.approved, st.error, S.version, S.vsel, (st.job || {}).kind, S.tab,
-    S.actMode, st.versions.map(v => v.label || ''), (st.publishes || []).length, st.model, (st.visuals && st.visuals.proposals || []).map(p => p.decision || '').join()]);
+    S.actMode, st.versions.map(v => v.label || ''), (st.publishes || []).length, st.model, (st.visuals && st.visuals.proposals || []).map(p => p.decision || '').join(),
+    st.semantic_ready || 0]);
   const main = $('#main');
   if (key !== S.key) {
     S.key = key; S.live = null;
@@ -15,9 +16,9 @@ function render() {
   // in-place updates while Relay works
   const bt = $('#btext');
   // item 45: no count of the jobs ahead (they may be other organisations')
-  if (bt) bt.textContent = st.status === 'queued' ? 'It starts shortly. You can leave this page; it keeps its place.'
-    : st.running_since ? `Running for ${dur(Date.now() - st.running_since * 1000)}` + (['pbi', 'pbix'].includes((st.job || {}).kind)
-      ? ' - Power BI Desktop on the D2D Relay PC, one file at a time' : '') : '';     // item 46: builds run side by side
+  if (bt) bt.textContent = st.status === 'queued' ? 'Relay Model starts this shortly. You can leave this page; it keeps its place.'
+    : st.running_since ? `Relay Model is working - ${dur(Date.now() - st.running_since * 1000)} so far` + (['pbi', 'pbix'].includes((st.job || {}).kind)
+      ? ' - Power BI files are packaged one at a time' : '') : '';     // item 46: builds run side by side
   renderLive();
   const lf = $('#liveframe');
   if (lf && st.live_prototype && st.live_prototype !== S.live) { S.live = st.live_prototype; lf.replaceChildren(protoFrame(`/api/projects/${st.id}/prototype/live?t=${st.live_prototype}`)); }
@@ -57,6 +58,17 @@ async function poll() {
     }
   }
   timer = setTimeout(poll, S.project && RUN.has(S.project.status) ? 1500 : 5000);
+}
+/* item 81: the organisation setup (47-setup.js) opens at a step with #/setup?step=<id>. The shell's route() (02-shell.js)
+   knows #/setup alone (38-tour.js hands it to renderSetup), so the step is noted and the address made #/setup first. */
+if (typeof setupAt === 'function') {
+  const shellRoute = route;
+  route = function () {
+    if (/^#\/setup\?/.test(location.hash) && !isAdminPortal()) { setupAt(location.hash); history.replaceState(null, '', '#/setup'); }
+    return shellRoute();
+  };
+  window.removeEventListener('hashchange', shellRoute);
+  window.addEventListener('hashchange', route);
 }
 if (isAdminPortal()) {             // D2D Relay's admin portal: organisations and requests only (no dashboards, agent or models)
   loadMe();

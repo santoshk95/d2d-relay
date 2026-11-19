@@ -325,7 +325,8 @@ def by_col(entity, prop):
 # ------------------------------------------------------------------ custom visuals
 GUID = {}
 ver = lambda p: tuple(int(x) for x in p.name.split(".")[1:5])
-for pbiviz in sorted((ROOT / "release").glob("Atlas*.pbiviz"), key=ver):
+# the packages are named after the visuals' display names (RelayColumns.1.0.10.0.pbiviz); older AtlasColumns.* files too
+for pbiviz in sorted(list((ROOT / "release").glob("Relay*.pbiviz")) + list((ROOT / "release").glob("Atlas*.pbiviz")), key=ver):
     with zipfile.ZipFile(pbiviz) as z:
         pkg = json.loads(z.read("package.json"))
     GUID[pkg["visual"]["name"]] = (pkg["visual"]["guid"], pbiviz)
@@ -354,21 +355,21 @@ dist = [
                                                         "values": [meas(O, m) for m in ("Sales", "Profit", "Margin %", "Units", "Avg Delivery Days")]},
            "Parallel coordinates · products across five measures", {"chart": {"chartType": "parallel"}, "parallel": {"curve": "smooth"}}),
 ]
-PAGES.append(("atlasDistribution", "Atlas Distribution", dist))
+PAGES.append(("atlasDistribution", "Relay Distribution", dist))
 
 # page 2: Atlas Columns next to the built-in column chart, on the Date dimension
 ymq = [col("Date", "Year", True), col("Date", "Quarter", False), col("Date", "Month", False)]
 cols = [
     visual("colsDrill", COLS, (16, 16, 616, 336), {"category": ymq, "values": [meas(O, "Sales"), meas(O, "Profit")]},
-           "Atlas Columns · Year › Quarter › Month (drill down)", {"labels": {"show": True}}, sort=by_col("Date", "Year")),
+           "Relay Columns · Year › Quarter › Month (drill down)", {"labels": {"show": True}}, sort=by_col("Date", "Year")),
     visual("builtinDrill", "clusteredColumnChart", (648, 16, 616, 336), {"Category": [dict(p) for p in ymq], "Y": [meas(O, "Sales"), meas(O, "Profit")]},
            "Built-in clustered column · same data", {"labels": {"show": True}}, sort=by_col("Date", "Year")),
     visual("colsStacked", COLS, (16, 368, 616, 336), {"category": [col("Date", "Month")], "series": [col("Channel", "Channel")], "values": [meas(O, "Sales")]},
-           "Atlas Columns · monthly sales stacked by channel", {"chart": {"chartType": "stackedColumn", "look": "3d"}}, sort=by_col("Date", "Month")),
+           "Relay Columns · monthly sales stacked by channel", {"chart": {"chartType": "stackedColumn", "look": "3d"}}, sort=by_col("Date", "Month")),
     visual("colsBar", COLS, (648, 368, 616, 336), {"category": [col("Product", "Category")], "values": [meas(O, "Sales"), meas(O, "Profit")]},
-           "Atlas Columns · clustered bar by category", {"chart": {"chartType": "clusteredBar", "shape": "pill"}, "labels": {"show": True}}),
+           "Relay Columns · clustered bar by category", {"chart": {"chartType": "clusteredBar", "shape": "pill"}, "labels": {"show": True}}),
 ]
-PAGES.append(("atlasColumns", "Atlas Columns", cols))
+PAGES.append(("atlasColumns", "Relay Columns", cols))
 
 # page 3: Atlas Flow. The Sankey reads Orders (device to category), so it filters with the model;
 # chord and network use their own small tables.
@@ -380,62 +381,62 @@ flow = [
     visual("flowNetwork", FLOW, (832, 368, 432, 336), {"source": [col("Product Network", "Product A")], "target": [col("Product Network", "Product B")], "weight": [meas("Product Network", "Co-purchase Orders")]},
            "Network · products bought together", {"chart": {"chartType": "network"}}),
 ]
-PAGES.append(("atlasFlow", "Atlas Flow", flow))
+PAGES.append(("atlasFlow", "Relay Flow", flow))
 
 # four tiles per page
 Q = [(16, 16, 616, 336), (648, 16, 616, 336), (16, 368, 616, 336), (648, 368, 616, 336)]
 P = "Product"
 
-PAGES.append(("atlasCompare", "Atlas Compare", [
+PAGES.append(("atlasCompare", "Relay Compare", [
     visual("cmpLollipop", G["atlasCompare"], Q[0], {"category": [col(P, "Subcategory")], "values": [meas(O, "Sales")]}, "Lollipop · sales by subcategory", {"chart": {"chartType": "lollipop", "sort": "valueDesc"}, "labels": {"show": True}}),
     visual("cmpDumbbell", G["atlasCompare"], Q[1], {"category": [col(P, "Category")], "values": [meas(O, "Sales 2024"), meas(O, "Sales 2025")]}, "Dumbbell · 2024 vs 2025 by category", {"chart": {"chartType": "dumbbell", "sort": "changeDesc"}, "labels": {"show": True}}),
     visual("cmpSlope", G["atlasCompare"], Q[2], {"category": [col(P, "Subcategory")], "values": [meas(O, "Sales 2024"), meas(O, "Sales 2025")]}, "Slope · subcategories 2024 to 2025", {"chart": {"chartType": "slope"}}),
     visual("cmpRadar", G["atlasCompare"], Q[3], {"category": [col("Carrier", "Carrier")], "series": [col("Channel", "Channel")], "values": [meas(O, "Avg Delivery Days")]}, "Radar · delivery days by carrier and channel", {"chart": {"chartType": "radar"}}),
 ]))
-PAGES.append(("atlasHierarchy", "Atlas Hierarchy", [
+PAGES.append(("atlasHierarchy", "Relay Hierarchy", [
     visual("hiTreemap", G["atlasHierarchy"], Q[0], {"levels": [col(P, "Category"), col(P, "Subcategory"), col(P, "Product")], "values": [meas(O, "Sales")], "colorValue": [meas(O, "Margin %")]}, "Treemap · products (click a group to zoom)", {"chart": {"chartType": "treemap", "depth": 2}}),
     visual("hiSunburst", G["atlasHierarchy"], Q[1], {"levels": [col(P, "Category"), col(P, "Subcategory"), col(P, "Product")], "values": [meas(O, "Sales")]}, "Sunburst · products", {"chart": {"chartType": "sunburst"}}),
     visual("hiPack", G["atlasHierarchy"], Q[2], {"levels": [col(P, "Category"), col(P, "Subcategory"), col(P, "Product")], "values": [meas(O, "Sales")]}, "Circle packing · products", {"chart": {"chartType": "pack"}}),
     visual("hiOrg", G["atlasHierarchy"], Q[3], {"nodeId": [col("Employees", "Employee")], "parentId": [col("Employees", "Manager")], "label": [col("Employees", "Name")], "values": [meas("Employees", "Total Salary")]}, "Org chart · click a card to open its team", {"chart": {"chartType": "tree"}, "tree": {"expanded": 2}}),
 ]))
-PAGES.append(("atlasProportion", "Atlas Proportion", [
+PAGES.append(("atlasProportion", "Relay Proportion", [
     visual("prMekko", G["atlasProportion"], Q[0], {"category": [col("Carrier", "Carrier")], "series": [col("Channel", "Channel")], "values": [meas(O, "Sales")]}, "Mekko · carrier by channel", {"chart": {"chartType": "mekko"}}),
     visual("prWaffle", G["atlasProportion"], Q[1], {"category": [col(P, "Category")], "values": [meas(O, "Sales")]}, "Waffle · category shares", {"chart": {"chartType": "waffle"}, "waffle": {"shape": "circle"}}),
     visual("prAster", G["atlasProportion"], Q[2], {"category": [col(P, "Category")], "values": [meas(O, "Margin Score"), meas(O, "Sales")]}, "Aster · margin score, width by sales", {"chart": {"chartType": "aster"}, "radial": {"maxScore": 50}}),
     visual("prRose", G["atlasProportion"], Q[3], {"category": [col("Date", "Month")], "series": [col("Channel", "Channel")], "values": [meas(O, "Sales")]}, "Rose · sales by month and channel", {"chart": {"chartType": "rose"}, "labels": {"show": False}}, sort=by_col("Date", "Month")),
 ]))
-PAGES.append(("atlasTime", "Atlas Time", [
+PAGES.append(("atlasTime", "Relay Time", [
     visual("tmTimeline", G["atlasTime"], (16, 16, 1248, 150), {"time": [col("Date", "Date")], "values": [meas(O, "Order Count")]}, "Timeline slicer · filters this page", {"chart": {"chartType": "timeline"}, "timeline": {"granularity": "month"}}),
     visual("tmCalendar", G["atlasTime"], (16, 182, 616, 260), {"time": [col("Date", "Date")], "values": [meas(O, "Order Count")]}, "Calendar heatmap · orders per day", {"chart": {"chartType": "calendar"}, "scale": {"mode": "quantile"}}),
     visual("tmHeat", G["atlasTime"], (648, 182, 616, 260), {"time": [col("Date", "Month")], "rows": [col("Carrier", "Carrier")], "values": [meas(O, "Avg Delivery Days")]}, "Heat grid · delivery days by carrier and month", {"chart": {"chartType": "heatgrid"}, "labels": {"show": True}}, sort=by_col("Date", "Month")),
     visual("tmStream", G["atlasTime"], (16, 458, 1248, 246), {"time": [col("Date", "Month")], "series": [col(P, "Category")], "values": [meas(O, "Sales")]}, "Stream graph · sales by category", {"chart": {"chartType": "stream"}, "labels": {"show": True}}, sort=by_col("Date", "Month")),
 ]))
-PAGES.append(("atlasFinance", "Atlas Finance", [
+PAGES.append(("atlasFinance", "Relay Finance", [
     visual("fiCandle", G["atlasFinance"], Q[0], {"category": [col("Prices", "Day")], "open": [meas("Prices", "Price Open")], "high": [meas("Prices", "Price High")], "low": [meas("Prices", "Price Low")], "close": [meas("Prices", "Price Close")], "volume": [meas("Prices", "Trade Volume")]}, "Candlestick · six months", {"chart": {"chartType": "candlestick"}, "candles": {"movingAverage": 10}}, sort=by_col("Prices", "Day")),
     visual("fiWaterfall", G["atlasFinance"], Q[1], {"category": [col("Date", "Year")], "series": [col(P, "Category")], "values": [meas(O, "Sales")]}, "Waterfall · 2024 to 2025 by category", {"chart": {"chartType": "waterfall"}}, sort=by_col("Date", "Year")),
     visual("fiRibbon", G["atlasFinance"], Q[2], {"category": [col("Date", "Month")], "series": [col(P, "Category")], "values": [meas(O, "Sales")]}, "Ribbon · category rank by month", {"chart": {"chartType": "ribbon"}, "labels": {"show": False}}, sort=by_col("Date", "Month")),
     visual("fiFunnel", G["atlasFinance"], Q[3], {"category": [col("Pipeline", "Stage")], "values": [meas("Pipeline", "Deal Count")]}, "Funnel · sales pipeline", {"chart": {"chartType": "funnel"}, "funnel": {"shape": "tapered", "colors": "gradient"}}, sort=by_col("Pipeline", "Stage")),
 ]))
-PAGES.append(("atlasGauges", "Atlas Gauges", [
+PAGES.append(("atlasGauges", "Relay Gauges", [
     visual("gaCards", G["atlasGauges"], Q[0], {"values": [meas(O, "Sales"), meas(O, "Profit"), meas(O, "Order Count"), meas(O, "Margin %")]}, "Cards · four measures", {"chart": {"chartType": "card"}}),
     visual("gaKpi", G["atlasGauges"], Q[1], {"trend": [col("Date", "Month")], "values": [meas(O, "Sales 2025")], "target": [meas(O, "Sales Target")]}, "KPI · sales vs target by month", {"chart": {"chartType": "kpi"}}, sort=by_col("Date", "Month")),
     visual("gaGauge", G["atlasGauges"], Q[2], {"category": [col("Channel", "Channel")], "values": [meas(O, "Sales 2025")], "target": [meas(O, "Sales Target")]}, "Gauges · 2025 sales vs target by channel", {"chart": {"chartType": "gauge"}, "status": {"colorValue": True}}),
     visual("gaBullet", G["atlasGauges"], Q[3], {"category": [col(P, "Category")], "values": [meas(O, "Sales 2025")], "target": [meas(O, "Sales Target")]}, "Bullet · 2025 sales vs target by category", {"chart": {"chartType": "bullet"}}),
 ]))
-PAGES.append(("atlasTextParts", "Atlas Text and Parts", [
+PAGES.append(("atlasTextParts", "Relay Text and Parts", [
     visual("ptDonut", G["atlasParts"], Q[0], {"category": [col("Channel", "Channel")], "values": [meas(O, "Sales")]}, "Donut · sales by channel", {"chart": {"chartType": "donut"}}),
     visual("ptPie", G["atlasParts"], Q[1], {"category": [col(P, "Category", True), col(P, "Subcategory", False)], "values": [meas(O, "Sales")]}, "Pie · category (drill to subcategory)", {"chart": {"chartType": "pie", "topN": 6}}),
     visual("txCloud", G["atlasText"], Q[2], {"category": [col("Reviews", "Phrase")], "values": [meas("Reviews", "Mention Count")], "colorValue": [meas("Reviews", "Avg Sentiment")]}, "Word cloud · review phrases by sentiment", {"wcolor": {"colorBy": "value"}}),
     visual("txBars", G["atlasText"], Q[3], {"category": [col("Reviews", "Phrase")], "group": [col("Reviews", "Topic")], "values": [meas("Reviews", "Mention Count")]}, "Ranked words · by topic", {"chart": {"chartType": "bars"}, "wcolor": {"colorBy": "group"}, "labels": {"show": True}}),
 ]))
 dym = [col("Date", "Year", True), col("Date", "Quarter", False), col("Date", "Month", False)]
-PAGES.append(("atlasLines", "Atlas Lines", [
+PAGES.append(("atlasLines", "Relay Lines", [
     visual("lnDrill", G["atlasLines"], Q[0], {"category": dym, "values": [meas(O, "Sales")]}, "Line · Year › Quarter › Month (drill) · forecast", {"chart": {"chartType": "line"}, "lines": {"markers": "all"}, "analytics": {"forecast": 2, "trend": True}}, sort=by_col("Date", "Year")),
     visual("lnStacked", G["atlasLines"], Q[1], {"category": [col("Date", "Month")], "series": [col("Channel", "Channel")], "values": [meas(O, "Sales")]}, "Stacked area · sales by channel", {"chart": {"chartType": "stackedArea", "curve": "smooth"}}, sort=by_col("Date", "Month")),
     visual("lnCombo", G["atlasLines"], Q[2], {"category": [col("Date", "Month")], "values": [meas(O, "Sales 2024"), meas(O, "Sales 2025")], "lineValues": [meas(O, "Margin %")]}, "Line and clustered column · margin on a second axis", {"chart": {"chartType": "comboClustered"}, "lines": {"markers": "all"}}, sort=by_col("Date", "Month")),
     visual("lnZoom", G["atlasLines"], Q[3], {"category": [col("Date", "Date")], "values": [meas(O, "Order Count")]}, "Area · daily orders · zoom slider · anomalies", {"chart": {"chartType": "area", "zoom": True}, "analytics": {"anomalies": True}}, sort=by_col("Date", "Date")),
 ]))
-PAGES.append(("atlasScatter", "Atlas Scatter", [
+PAGES.append(("atlasScatter", "Relay Scatter", [
     visual("scBubble", G["atlasScatter"], Q[0], {"details": [col(P, "Product")], "legend": [col(P, "Category")], "x": [meas(O, "Sales")], "y": [meas(O, "Margin %")], "size": [meas(O, "Units")]}, "Bubble · products: sales vs margin (drag to zoom)", {"guides": {"quadrants": True}}),
     visual("scPlay", G["atlasScatter"], Q[1], {"details": [col(P, "Subcategory")], "legend": [col(P, "Category")], "play": [col("Date", "Year")], "x": [meas(O, "Sales")], "y": [meas(O, "Margin %")], "size": [meas(O, "Units")]}, "Bubble · play axis by year", {"labels": {"show": True}}),
     visual("scDot", G["atlasScatter"], Q[2], {"details": [col(O, "Order ID")], "xCategory": [col("Carrier", "Carrier")], "y": [meas(O, "Days to Deliver")]}, "Dot plot · delivery days per order by carrier", {"chart": {"chartType": "dotplot"}, "points": {"size": 2, "opacity": 45}}),

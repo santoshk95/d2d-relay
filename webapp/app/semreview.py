@@ -66,7 +66,7 @@ CREATE INDEX IF NOT EXISTS semreview_runs_created ON semreview_runs (created);
 """, added_columns={"semreview_runs": {"touched": "REAL"}})       # touched: when the review's current step started
 
 MAX_FILES = int(os.environ.get("D2D_REVIEW_MAX_FILES") or 5)
-MAX_MB = int(os.environ.get("D2D_REVIEW_MAX_MB") or 100)
+MAX_MB = int(os.environ.get("D2D_REVIEW_MAX_MB") or 500)       # item 64: files over Cloudflare's 100 MB arrive in parts
 RUNNING_PER_ORG = 2
 READ_TIMEOUT_S = int(os.environ.get("D2D_REVIEW_READ_TIMEOUT_S") or 300)
 MEANING_TRIES = 2                  # "Check meaning again" at no cost, this many times
@@ -489,6 +489,9 @@ def get_run(rid: str):
     out["result"] = json.loads(r["result"]) if r["result"] else None
     out["ai"] = json.loads(r["ai"]) if r["ai"] else None
     out["cost"] = orgs.COST["review"]
+    from . import semreview_fix                                   # item 65: fixes, and what fixing uses
+    out["fixes"] = semreview_fix.fixes_of(r)
+    out["fix_estimate"] = semreview_fix.estimate(out["result"], rid) if r["status"] == "done" else {}
     out["can_delete"] = out["mine"] or orgs.is_owner(auth.current.get())
     out["can_run"] = auth.is_dev(auth.current.get())
     return out
@@ -575,10 +578,14 @@ async def _begin(u: dict, title: str, sources: list[dict]) -> str:
 
 
 @router.post("/api/semreview/runs")
-async def start_run(name: str = Form(""), azure: str = Form("[]"), files: list[UploadFile] = File(default=[])):
+async def start_run(name: str = Form(""), azure: str = Form("[]"), files: list[UploadFile] = File(default=[]), uploads: str = Form("")):
+    from . import orgsetup
+    from . import uploads as parts
     u = _u()
     _need_dev(u)
-    files = [f for f in files if f.filename]
+    orgsetup.require_setup()                                        # item 81: the organisation is set up first
+    big = parts.as_files(uploads, "files")                          # item 64: files that came in parts
+    files = [f for f in files if f.filename] + big
     try:
         picks = json.loads(azure or "[]")
         assert isinstance(picks, list)
@@ -619,6 +626,8 @@ async def start_run(name: str = Form(""), azure: str = Form("[]"), files: list[U
     except BaseException:
         shutil.rmtree(tmp, ignore_errors=True)
         raise
+    finally:
+        parts.discard(uploads, big)
     try:
         os.replace(tmp, _tmp(rid))
         _start(rid)
@@ -632,8 +641,10 @@ async def start_run(name: str = Form(""), azure: str = Form("[]"), files: list[U
 @router.post("/api/semreview/runs/{rid}/again")
 async def run_again(rid: str):
     """The same models, read again from what the review kept, against today's dictionary."""
+    from . import orgsetup
     u = _u()
     _need_dev(u)
+    orgsetup.require_setup()                                        # item 81: a new review, so the organisation is set up first
     old = _run_row(rid)
     models = db.q("SELECT idx, name FROM semreview_models WHERE run_id = ? ORDER BY idx", (rid,))
     if old["status"] != "done" or not models:
@@ -940,6 +951,11 @@ def recover() -> None:
                    ("The review was stopped by a restart of D2D Relay. Start it again.", time.time(), r["id"]))
             if r["charge"]:
                 orgs.refund(r["charge"], "The review was stopped by a restart.")
+        try:                                                    # item 65: fixes that were running end, credits back
+            from . import semreview_fix
+            semreview_fix.recover()
+        except Exception:  # noqa: BLE001 - a workspace without the column yet
+            traceback.print_exc()
         shutil.rmtree(store.root() / ".semreview", ignore_errors=True)
 
 

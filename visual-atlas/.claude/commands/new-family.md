@@ -8,7 +8,7 @@ Read `CLAUDE.md`, `docs/ROADMAP.md` (which charts belong to this family) and `do
 
 Steps (inside the Docker image: `docker run --rm -it -v "$PWD":/work -w /work visual-atlas bash`):
 
-1. `cd visuals && pbiviz new Atlas<Name>`. Then `npm i powerbi-visuals-utils-formattingutils@6.1.2` (+ `powerbi-visuals-utils-dataviewutils@6.1.0` for fx colors). Remove d3 if it isn't needed.
+1. `cd visuals && pbiviz new atlas<Name>`, then set `displayName` to "Relay <Name>" (people see it; never "Atlas") and the author to RELAY by PASDACS. Then `npm i powerbi-visuals-utils-formattingutils@6.1.2` (+ `powerbi-visuals-utils-dataviewutils@6.1.0` for fx colors). Remove d3 if it isn't needed.
 2. Fill in `pbiviz.json`, `capabilities.json` (roles, mapping, objects, tooltips, `supports*` flags, `privileges: []`, drilldown for category roles), `stringResources/en-US/resources.resjson` and `assets/icon.png`.
 3. Write `src/settings.ts` (cards + `tidy()`), `src/model.ts`, `src/render.ts` and `src/visual.ts`. Copy the host wiring from `visuals/atlasColumns/src/visual.ts`. Use `visuals/common/` for colors, looks, text measuring and number formats.
 4. Add `visuals/test/<name>_cases.js` (each chart type × Flat/Soft/3D, brand and custom palettes, dark, high contrast, highlights, landing page, edge cases) and a step in `scripts/test.sh`.

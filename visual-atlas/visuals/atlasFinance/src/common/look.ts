@@ -33,12 +33,14 @@ export function textW(text: string, size: number): number {
     if (WIDTHS.size > 20000) WIDTHS.clear();
     WIDTHS.set(key, w); return w;
 }
-/** shorten a label with an ellipsis so it fits a width */
+/** the mark a shortened label ends with: three plain dots (the text people read uses keyboard characters only) */
+export const MORE = "...";
+/** shorten a label with three dots so it fits a width */
 export function trunc(text: string, w: number, size: number): string {
     const s = String(text); if (textW(s, size) <= w) return s;
     let lo = 0, hi = s.length;
-    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (textW(s.slice(0, mid) + "…", size) <= w) lo = mid; else hi = mid - 1; }
-    return lo > 0 ? s.slice(0, lo).trimEnd() + "…" : s.slice(0, 1) + "…";
+    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (textW(s.slice(0, mid) + MORE, size) <= w) lo = mid; else hi = mid - 1; }
+    return lo > 0 ? s.slice(0, lo).trimEnd() + MORE : s.slice(0, 1) + MORE;
 }
 
 export type LookName = "flat" | "soft" | "3d";

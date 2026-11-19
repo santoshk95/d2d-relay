@@ -1,22 +1,25 @@
 # Visual Atlas custom visuals for Power BI
 
+People see these visuals as the Relay visuals: Relay Columns, Relay Gauges and so on (display names, start screens and the
+`Relay*.pbiviz` files). "Atlas" is only this project's name and the code's (folders, class names, GUIDs).
+
 Thirteen Power BI custom visuals, each a family of chart types with a chart-type switch, and report themes that style all of them. Every visual has Flat, Soft and 3D looks, a Style card (font, text color) and a palette from the report theme, a brand color or your own list. `../CUSTOMIZING.md` explains how to change design and colors.
 
 | File | Chart types |
 |---|---|
-| `../release/AtlasColumns.<version>.pbiviz` | Clustered, stacked and 100% stacked columns and bars, with drill-down |
-| `../release/AtlasLines.<version>.pbiviz` | Line, area, stacked and 100% area, line + column combos, with drill-down, forecast, anomalies and a zoom slider |
-| `../release/AtlasParts.<version>.pbiviz` | Pie and donut, with drill-down, details ring, top N, half donut, center total |
-| `../release/AtlasFlow.<version>.pbiviz` | Sankey, chord and network |
-| `../release/AtlasDistribution.<version>.pbiviz` | Histogram, box and whisker, violin and raincloud, parallel coordinates |
-| `../release/AtlasCompare.<version>.pbiviz` | Lollipop, dot plot, dumbbell, slope, bump, tornado, radar |
-| `../release/AtlasHierarchy.<version>.pbiviz` | Treemap, sunburst, circle packing, org chart / tree (zoom, open and close) |
-| `../release/AtlasProportion.<version>.pbiviz` | Mekko, waffle, pictogram, aster, rose, Venn |
-| `../release/AtlasTime.<version>.pbiviz` | Calendar heatmap, heat grid / punch card, stream graph, timeline slicer (filters the report) |
-| `../release/AtlasFinance.<version>.pbiviz` | Candlestick, waterfall, ribbon, funnel |
-| `../release/AtlasGauges.<version>.pbiviz` | Card, multi-row card, KPI, gauge, dial, radial bars, liquid fill, bullet, ticker |
-| `../release/AtlasText.<version>.pbiviz` | Word cloud, ranked words |
-| `../release/AtlasScatter.<version>.pbiviz` | Scatter, bubble (play axis, quadrants, clusters, zoom), dot plot, Gantt |
+| `../release/RelayColumns.<version>.pbiviz` | Clustered, stacked and 100% stacked columns and bars, with drill-down |
+| `../release/RelayLines.<version>.pbiviz` | Line, area, stacked and 100% area, line + column combos, with drill-down, forecast, anomalies and a zoom slider |
+| `../release/RelayParts.<version>.pbiviz` | Pie and donut, with drill-down, details ring, top N, half donut, center total |
+| `../release/RelayFlow.<version>.pbiviz` | Sankey, chord and network |
+| `../release/RelayDistribution.<version>.pbiviz` | Histogram, box and whisker, violin and raincloud, parallel coordinates |
+| `../release/RelayCompare.<version>.pbiviz` | Lollipop, dot plot, dumbbell, slope, bump, tornado, radar |
+| `../release/RelayHierarchy.<version>.pbiviz` | Treemap, sunburst, circle packing, org chart / tree (zoom, open and close) |
+| `../release/RelayProportion.<version>.pbiviz` | Mekko, waffle, pictogram, aster, rose, Venn |
+| `../release/RelayTime.<version>.pbiviz` | Calendar heatmap, heat grid / punch card, stream graph, timeline slicer (filters the report) |
+| `../release/RelayFinance.<version>.pbiviz` | Candlestick, waterfall, ribbon, funnel |
+| `../release/RelayGauges.<version>.pbiviz` | Card, multi-row card, KPI, gauge, dial, radial bars, liquid fill, bullet, ticker, leaderboard (ranked rows with changes and sparklines) |
+| `../release/RelayText.<version>.pbiviz` | Word cloud, ranked words |
+| `../release/RelayScatter.<version>.pbiviz` | Scatter, bubble (play axis, quadrants, clusters, zoom), dot plot, Gantt |
 | `themes/atlas-theme-*.json` | Report themes (Flat, Soft, 3D and Soft Dark) for built-in visuals and every Atlas visual |
 | `common/` | Shared code: colors, looks, Format pane cards, legend, axes, selection, drill buttons |
 | `test/` | A mock host that renders the packaged visuals in a browser, with test cases and checks per visual; `test/sample-data/` has CSV files |
@@ -32,7 +35,7 @@ Thirteen Power BI custom visuals, each a family of chart types with a chart-type
 | Atlas Proportion | Category (Venn: "A & B" for overlaps), Legend, Values (a second measure is the total or weight), Tooltips |
 | Atlas Time | Time (a date, or the heat grid columns), Rows (heat grid), Legend (stream), Values, Tooltips |
 | Atlas Finance | Category, Legend (ribbon, waterfall breakdown), Values; Open, High, Low, Close and Volume (candlestick); Tooltips |
-| Atlas Gauges | Category (one tile per value), Trend axis (KPI), Value, Target, Minimum, Maximum, Band 1, Band 2, Tooltips |
+| Atlas Gauges | Category (one tile or leaderboard row per value), Trend axis (KPI and leaderboard sparklines), Value, Target, Comparison (last year), Minimum, Maximum, Band 1, Band 2, Tooltips |
 | Atlas Text | Text (phrases or free text), Topic, Weight, Color value (sentiment), Tooltips |
 | Atlas Scatter | Values (details), Legend, X-axis category (dot plot), Play axis, X-axis, Y-axis, Size; Task, Start date, End date, Owner, % complete (Gantt); Tooltips |
 

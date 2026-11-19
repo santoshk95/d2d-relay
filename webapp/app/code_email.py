@@ -145,13 +145,18 @@ D2D Relay - Data to Decision, a Relay Platform product by PASDACS<br>
 
 def render(code: str, minutes: int, admin: bool = False) -> tuple[str, str]:
     """(subject, html) of the email that carries a sign-in code; admin=True for the admin portal's."""
+    try:
+        from .portal import site as _site                   # item 59: the install's own address (demo.pasdacs.com)
+        site = _site() or SITE
+    except ImportError:                                     # python -m app.code_email outside the package
+        site = SITE
     e = _html.escape
     lasts = f"It works once and expires in {minutes} minutes."
     page = _PAGE.substitute(
         title="D2D Relay sign-in code", preheader=e(lasts), mark=_mark(), head=HEAD, body=BODY,
         eyebrow="D2D RELAY ADMIN" if admin else "D2D RELAY",
         lead=f"Enter this code on the {'admin ' if admin else ''}sign-in page to continue.",
-        code=e(code), lasts=e(lasts), site=SITE, site_name=SITE.split("://", 1)[-1], help=HELP)
+        code=e(code), lasts=e(lasts), site=e(site), site_name=e(site.split("://", 1)[-1]), help=HELP)
     return f"D2D Relay sign-in code: {code}", page
 
 

@@ -74,7 +74,7 @@ export class Visual implements IVisual {
             this.settings = this.fss.populateFormattingSettingsModel(DistSettings, dv);
             this.model = readModel(dv, this.host, String(this.settings.chart.chartType.value.value));
             if (!this.model) {
-                landing(this.root, "Atlas Distribution", [
+                landing(this.root, "Relay Distribution", [
                     this.loc("Landing_Line1", "Add a measure to Values and the field that identifies one observation (Order ID, Shipment ID) to Sample by."),
                     this.loc("Landing_Line2", "Add a Group to compare distributions. Pick histogram, box, violin or parallel coordinates in the Format pane.")]);
                 this.root.appendChild(this.svg); this.svg.style.display = "none";

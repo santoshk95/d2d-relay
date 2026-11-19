@@ -89,16 +89,59 @@ def one_thread(tid: str):
     return t
 
 
+class Rename(BaseModel):
+    title: str
+
+
+@router.patch("/api/askd/threads/{tid}")
+def rename_thread(tid: str, body: Rename):
+    """Item 66: the person names their own conversation."""
+    u = _u()
+    title = " ".join((body.title or "").split())[:120]
+    if len(title) < 1:
+        raise HTTPException(400, "Give the conversation a name.")
+    if not db.one("SELECT 1 AS x FROM askd_threads WHERE id = ? AND user_id = ?", (tid, u["id"])):
+        raise HTTPException(404, "Unknown conversation")
+    db.run("UPDATE askd_threads SET title = ? WHERE id = ? AND user_id = ?", (title, tid, u["id"]))
+    return {"id": tid, "title": title}
+
+
 @router.get("/api/askd/options")
 def scope_options():
-    """What the person can ask about: dashboards they can open, their connections with configured tables."""
+    """What the person can ask about: dashboards they can open, their connections with configured tables; since item 66
+    also the organisation's KPIs (its dictionary, for the side panel) and its industry's example questions."""
     u = _u()
     ps = store.dashboards()
     access = auth.access_map(u, [p["id"] for p in ps])
-    return {"dashboards": [{"id": p["id"], "name": p["name"]} for p in ps if p["id"] in access],
+    mine = [p for p in ps if p["id"] in access]
+    return {"dashboards": [{"id": p["id"], "name": p["name"], "status": p.get("status"), "created": p.get("created")} for p in mine],
             "connections": [{"id": c["id"], "name": c["name"], "kind": c["kind"], "tables": len(c["tables"])} for c in connectors.mine(u["id"])],
             "teams": u.get("teams", []), "viewer": not auth.is_dev(u),
-            "suggestions": _suggestions([p for p in ps if p["id"] in access]), "brand_colors": _brand_colors()}
+            "suggestions": _suggestions(mine), "brand_colors": _brand_colors(), **_ontology_bits(mine)}
+
+
+def _ontology_bits(ps: list[dict]) -> dict:
+    """The KPIs a person can ask about: the organisation's dictionary (name, unit, a short definition) and the KPIs of
+    their dashboards; the industry's example questions."""
+    from . import ontology
+    try:
+        entries = ontology.kpis()
+        questions = ontology.questions()
+        industry = ontology.industry_name()
+    except Exception:  # noqa: BLE001 - the side panel is a help, never a reason for the page to fail
+        entries, questions, industry = [], [], ""
+    seen, kpis = set(), []
+    for e in entries[:300]:
+        if e["name"].lower() not in seen:
+            seen.add(e["name"].lower())
+            kpis.append({"name": e["name"], "unit": e.get("unit"), "definition": (e.get("definition") or "")[:200], "domain": e.get("domain"),
+                         "from": "dictionary"})
+    for p in ps[:20]:
+        for n in _kpi_names(p["id"]):
+            if n.lower() not in seen:
+                seen.add(n.lower())
+                kpis.append({"name": n, "from": p["name"]})
+    return {"kpis": kpis[:400], "questions": questions, "industry": industry}
 
 
 def _kpi_names(pid: str) -> list[str]:

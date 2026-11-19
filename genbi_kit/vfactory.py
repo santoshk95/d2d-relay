@@ -97,7 +97,7 @@ def _template(like: str | None) -> tuple[Path, str]:
     for folder in (VKIT / "families" / like, library_dir() / like / "source"):
         if (folder / "caps.js").exists():
             return folder, json.loads((folder / "pbiviz.json").read_text(encoding="utf-8"))["visual"]["displayName"]
-    raise VisualError(f"unknown template {like!r}: use starter, an Atlas family ({', '.join(families())}) "
+    raise VisualError(f"unknown template {like!r}: use starter, a Relay visual family ({', '.join(families())}) "
                       f"or a library visual (`genbi visual list`)")
 
 
@@ -489,7 +489,7 @@ def _cases(project: Path, entry: dict) -> tuple[list[dict], list[str], list[str]
                 sql = (v.get("prototype") or {}).get("sql")
                 if not sql:
                     raise ValueError("missing prototype.sql")
-                item = prototype._atlas_item(v, entry, prototype.records(con, sql), describe, t)
+                item = prototype._atlas_item(v, entry, prototype.records(con, sql, d), describe, t)
                 cases.append({"title": f"{page['name']} / {v['id']}", "w": max(120, int(v["w"]) - 24),
                               "h": max(90, int(v["h"]) - 56), "item": item, "theme": light})
             except Exception as e:  # noqa: BLE001 - reported

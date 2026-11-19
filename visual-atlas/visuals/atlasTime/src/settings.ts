@@ -29,8 +29,12 @@ class ScaleCard extends fs.SimpleCard {
     steps = new fs.NumUpDown({ name: "steps", displayName: "Color steps (0 = smooth)", value: 0, options: range(0, 12) });
     gap = new fs.NumUpDown({ name: "gap", displayName: "Gap between cells (px)", value: 2, options: range(0, 10) });
     radius = new fs.NumUpDown({ name: "radius", displayName: "Corner radius", value: 2, options: range(0, 12) });
+    min = new fs.TextInput({ name: "min", displayName: "Low end", placeholder: "Auto (lowest value)", value: "" });
+    max = new fs.TextInput({ name: "max", displayName: "High end", placeholder: "Auto (highest value)", value: "" });
+    mid = new fs.TextInput({ name: "mid", displayName: "Middle value", placeholder: "None (for example 0 or 0.95)", value: "" });
+    midColor = new fs.ColorPicker({ name: "midColor", displayName: "Middle color", value: { value: "" } });
     name = "scale"; displayName = "Color scale";
-    slices = [this.mode, this.lowColor, this.highColor, this.emptyColor, this.steps, this.gap, this.radius];
+    slices = [this.mode, this.lowColor, this.highColor, this.emptyColor, this.steps, this.gap, this.radius, this.min, this.max, this.mid, this.midColor];
 }
 class CalendarCard extends fs.SimpleCard {
     view = new fs.ItemDropdown({ name: "view", displayName: "View", items: VIEW, value: VIEW[0] });

@@ -1,6 +1,6 @@
 /* ---------------- phase 7: notifications, scheduled reports and alerts, email accounts, costs and quotas ---------------- */
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const NOTE_ICON = {ops: 'shield', build: 'check', share: 'share', alert: 'alert', schedule: 'clock', report: 'download', quota: 'info', review: 'edit'};
+const NOTE_ICON = {ops: 'shield', platform: 'shield', build: 'check', share: 'share', alert: 'alert', schedule: 'clock', report: 'download', quota: 'info', review: 'edit'};
 const myTz = () => (S.me && S.me.tz) || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 const tzList = cur => { let z = []; try { z = Intl.supportedValuesOf('timeZone'); } catch (e) {}
   return [...new Set([cur, myTz(), 'UTC', ...z].filter(Boolean))]; };

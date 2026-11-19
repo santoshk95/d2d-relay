@@ -169,7 +169,7 @@ def create(body: dict, who: str | None) -> dict:
     calls = "batch" if body.get("calls") == "batch" else "live"
     visuals = (body.get("visuals") or "relay").strip()
     if visuals not in ("relay", "builtin"):
-        raise HTTPException(400, "Target visuals: relay (Visual Atlas) or builtin (Power BI's own visuals).")
+        raise HTTPException(400, "Target visuals: relay (Relay visuals) or builtin (Power BI's own visuals).")
     name = (body.get("name") or "").strip()[:80] or f"{READERS[source]['label']} to {TARGETS[target]['label']}"
     mid = "mig-" + pysecrets.token_hex(4)
     d = store.ROOT / mid
@@ -1538,7 +1538,7 @@ class NewMigration(BaseModel):
     read_from: str | None = None
     mode: str | None = None
     calls: str | None = None
-    visuals: str | None = None          # relay (Visual Atlas) or builtin (Power BI's own visuals)
+    visuals: str | None = None          # relay (Relay visuals) or builtin (Power BI's own visuals)
 
 
 class ConnectIn(BaseModel):
