@@ -197,7 +197,7 @@ with sync_playwright() as pw:
     out["options"] = cards.evaluate_all("xs => xs.map(x => [x.querySelector('input').value, x.innerText])")
     out["use_builtin"] = page.locator(f"{ND_SHOWN} p:has-text('Uses')").inner_text()
     page.click(f"{ND_SHOWN} label.nd-card:has(input[value=mixed])")
-    out["use_mixed"] = page.locator(f"{ND_SHOWN} p:has-text('Uses')").inner_text()
+    out["use_mixed"] = page.locator(f"{ND_SHOWN} p:has-text('Custom visuals take')").inner_text()   # item 90
     page.locator(ND_SHOWN).screenshot(path="/tmp/item44-new.png")
     page.goto("http://127.0.0.1:8000/#/org")
     page.wait_for_selector("dt:text-is('New dashboard')", timeout=20000)
@@ -225,11 +225,12 @@ if not check("ui: the browser checks ran", bool(o), res.stderr[-600:]):
     print(res.stderr[-3000:], flush=True)
 if o:
     # the guided New dashboard (2026-11-19): two choices, built-in and built-in plus custom, each saying its credits
-    check("ui: New dashboard's choices carry their credits (built-in 25, built-in plus custom 50)",
-          [v for v, _ in o["options"]] == ["builtin", "mixed"] and "25 credits" in o["options"][0][1] and "50 credits" in o["options"][1][1],
+    # item 90: the 25 are taken going on from Your data, so built-in is Included and custom visuals say what more they take
+    check("ui: New dashboard's choices carry their credits (built-in included in the 25 taken at Your data, custom +25)",
+          [v for v, _ in o["options"]] == ["builtin", "mixed"] and "Included" in o["options"][0][1] and "+25 credits" in o["options"][1][1],
           o["options"])
-    check("ui: its Uses line says 25 for built-in and 50 once built-in plus custom is picked", o["use_builtin"].startswith("Uses 25 credits")
-          and o["use_mixed"].startswith("Uses 50 credits"), (o["use_builtin"], o["use_mixed"]))
+    check("ui: its line says 25 in all for built-in, and that custom visuals take 25 more when you go on",
+          o["use_builtin"].startswith("Uses 25 credits") and o["use_mixed"].startswith("Custom visuals take 25 more credits"), (o["use_builtin"], o["use_mixed"]))
     check("ui: the Organisation page gives both prices", "25 credits with Power BI's built-in visuals" in o["org_new"]
           and "50 credits with custom visuals" in o["org_new"], o["org_new"])
     check("ui: a built-in dashboard's Visuals switch says custom visuals use 25 more credits",

@@ -326,21 +326,18 @@ async def public_status():
     the monitor has open: nothing about anyone's work, data or organisation."""
     from . import monitor, otp_mail, pbix
 
-    async def answers(url: str, sock: str | None = None) -> bool:
-        try:
-            transport = httpx.AsyncHTTPTransport(uds=sock) if sock else None
-            async with httpx.AsyncClient(timeout=3, transport=transport) as client:
-                return (await client.get(url)).status_code == 200
-        except Exception:  # noqa: BLE001 - down is the answer
-            return False
     try:
         db.one("SELECT 1 AS ok")
         database = True
     except Exception:  # noqa: BLE001
         database = False
-    sock = os.environ.get("D2D_JOB_RUNNER_SOCK", "/run/relay-runner/runner.sock")
-    services = {"app": True, "database": database, "ai_engine": await answers(f"{worker.AGENT_URL}/health"),
-                "job_runner": await answers("http://runner/health", sock) if Path(sock).exists() else None,
+    try:                                         # the job runner's socket is the AI engine's alone: it says
+        async with httpx.AsyncClient(timeout=3) as client:
+            agent = (await client.get(f"{worker.AGENT_URL}/health")).json()
+    except Exception:  # noqa: BLE001
+        agent = None
+    services = {"app": True, "database": database, "ai_engine": bool(agent and agent.get("ok")),
+                "job_runner": agent.get("job_runner") if agent else None,
                 "dax_checker": bool(daxcheck.available()), "pbix_maker": bool(pbix.available()),
                 "sign_in_mail": bool(otp_mail.mode()) or None}
     open_alerts = monitor.active() if database else []

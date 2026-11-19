@@ -474,6 +474,24 @@ if os.environ.get("D2D_RUNNERS") and "claude-code" not in os.environ["D2D_RUNNER
     RUNNERS.pop("claude-code")                       # a runner image serves its own CLI only
 
 
+_RUNNER = {"at": 0.0, "ok": None}
+
+
+def _runner_ok():
+    """Item 91: the job runner answers on its socket, which only this service may open (checked at most once a minute);
+    None when builds do not use it. /status.json in the web app passes it on to status.pasdacs.com."""
+    if JOB_MODE == "off" or not os.path.exists(JOB_SOCK):
+        return None
+    if time.time() - _RUNNER["at"] > 60:
+        try:
+            with httpx.Client(transport=httpx.HTTPTransport(uds=JOB_SOCK), base_url="http://runner", timeout=2) as c:
+                _RUNNER["ok"] = c.get("/health").status_code == 200
+        except Exception:  # noqa: BLE001 - it does not answer
+            _RUNNER["ok"] = False
+        _RUNNER["at"] = time.time()
+    return _RUNNER["ok"]
+
+
 @app.get("/health")
 def health():
     lanes = {lane: bool(active[lane]) for lane in LANES}
@@ -481,7 +499,7 @@ def health():
     # many run in each lane, and how many each takes
     return {"ok": True, "busy": lanes["build"], "lanes": lanes, "runs": {lane: len(active[lane]) for lane in LANES},
             "capacity": CAPACITY, "runners": list(RUNNERS), "model": MODEL, "models": _models(),
-            "since": {lane: min(active[lane]) if active[lane] else None for lane in LANES}}
+            "since": {lane: min(active[lane]) if active[lane] else None for lane in LANES}, "job_runner": _runner_ok()}
 
 
 @app.get("/metrics", response_class=PlainTextResponse)

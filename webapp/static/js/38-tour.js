@@ -165,11 +165,20 @@ function coachStart(flow) {
     document.addEventListener('keydown', coachKey, true);
     window.addEventListener('resize', coachMove);
     window.addEventListener('scroll', coachMove, true);
+    window.addEventListener('hashchange', coachAway);
     COACH.timer = setInterval(() => coachPlace(false), 500);    // pages draw late and the menu redraws: keep the light on its part
     if (typeof ResizeObserver === 'function') { COACH.ro = new ResizeObserver(coachMove); COACH.ro.observe(COACH.tip); }   // a callout that grows stays on the screen
   }
   coachRun(flow || 'welcome');
 }
+/* the person went somewhere else (a link, Back, the address bar): the tour steps aside, not marked as seen, and shows
+   again on the front page; the tour's own moves (a guide's page, a sample on #/welcome) keep it open */
+const coachAway = () => {
+  if (!COACH.open) return;
+  const at = location.hash;
+  if (at === '#/welcome' || at === COACH.going || (COACH.going === '#/' && (at === '' || at === '#'))) return;
+  coachClose();
+};
 const coachMove = () => { if (!COACH.raf) COACH.raf = requestAnimationFrame(() => { COACH.raf = 0; coachPlace(false); }); };
 
 function coachRun(flow) {
@@ -195,11 +204,11 @@ async function coachShow(i, dir) {
   const was = COACH.sample;
   COACH.sample = st.sample || null;
   if (st.sample) {                                               // a sample page: on #/welcome, drawn by renderTour
-    if (location.hash !== '#/welcome') location.hash = '#/welcome';
+    if (location.hash !== '#/welcome') { COACH.going = '#/welcome'; location.hash = '#/welcome'; }
     else if (was !== st.sample || !$('#main .tsample')) tourSample(st.sample);
   } else {
     if (was && location.hash === '#/welcome') renderD2DHome();   // back from a sample: Home under the tour again
-    if (st.route && !coachOnRoute(st.route)) location.hash = st.route;
+    if (st.route && !coachOnRoute(st.route)) { COACH.going = st.route; location.hash = st.route; }
   }
   const t0 = Date.now(), limit = st.route || st.sample ? 5000 : 900;
   let el = coachFind(st);
@@ -320,6 +329,7 @@ function coachClose() {
   document.removeEventListener('keydown', coachKey, true);
   window.removeEventListener('resize', coachMove);
   window.removeEventListener('scroll', coachMove, true);
+  window.removeEventListener('hashchange', coachAway);
   if (COACH.root) COACH.root.remove();
   if (COACH.drawer) { COACH.drawer = false; setDrawer(false); }
 }
