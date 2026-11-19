@@ -43,7 +43,8 @@ its time, or at the first check that finds everything working after one found so
 leaves no mark and the page is not blind for longer than the restart.
 
 On the D2D PC, the Desktop shortcut "Restart D2D quietly" does this and then restarts Windows. Its script, which holds
-the key, is in `%LOCALAPPDATA%\PASDACS`; run with `-Check`, it only tests the key.
+the key, is in `%USERPROFILE%\PASDACS`; run with `-Check`, it only tests the key. It is not in AppData: the Claude app
+is a packaged Windows app, so what its tools write under AppData only the app itself can see.
 
 ## Deploy
 
