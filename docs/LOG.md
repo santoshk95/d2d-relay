@@ -1993,6 +1993,16 @@ committed.
       item81 71/71, accounts 48/48, item60 41/41.
     - **Live** 2026-11-20 about 00:01 IST on the user's "Yes, deploy it": 76a96fc (database dump `relay-db-20261119-183108.dump`; 434287e kept for going back). Its upgrade check from f754035: 30 of 30.
 
+93. **The Relay Model's Claude, chosen on the admin portal** (the user, 2026-11-20: "in admin portal can you provide
+    access /option to change Relay model base whether to use claude api or claude subscription so its easier"): the
+    admin portal's Overview has a Relay Model card with two choices, saved on the click:
+    - the Claude subscription first (the AI engine's login), with the API key as its backup;
+    - the Claude API key first (paid per token), with the subscription as its backup.
+
+    It is stored in the control plane (meta `ai_primary`, `GET`/`PUT /api/admin/ai`, admin portal only) and read by
+    every run within about 15 seconds (`providers.ai_primary`), so no restart is needed. `RELAY_AI_PRIMARY` stays the
+    default until the first choice. The API choice needs `RELAY_ANTHROPIC_API_KEY`. `item93_check.py` has 10 checks.
+
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
 ## How items 9-10 were checked (2026-11-10)

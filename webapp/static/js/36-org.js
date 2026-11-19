@@ -549,6 +549,30 @@ async function renderOrgs() {
     h('p', {class: 'small muted'}, 'What organisations ask for (credits, connectors) is under ', h('a', {href: '#/requests'}, 'Requests'), '.'));
 }
 
+/* item 93 (the user, 2026-11-20): which Claude the Relay Model runs on first, chosen here; saved on the click (the
+   Overview redraws itself every 30 seconds), new runs follow within about 15 seconds, no restart */
+function aiCard() {
+  const box = h('div', {class: 'card', id: 'aicard'}, h('h3', {}, 'Relay Model'), h('div', {class: 'muted small'}, 'Loading...'));
+  const draw = a => {
+    const opt = (v, title, text) => h('label', {class: 'nd-card' + (a.primary === v ? ' on' : ''), style: 'cursor:pointer'},
+      h('input', {type: 'radio', name: 'ai-primary', value: v, checked: a.primary === v, disabled: v === 'api' && !a.key_set,
+        onchange: () => save(v)}),
+      h('span', {}, h('b', {}, title), h('span', {class: 'small muted'}, text)));
+    const save = async v => {
+      try { draw(await api('/api/admin/ai', {method: 'PUT', json: {primary: v}})); notify(v === 'api' ? 'The Relay Model now runs on the Claude API key first.' : 'The Relay Model now runs on the Claude subscription first.', 'ok'); }
+      catch (e) { notify(e.message, 'err'); draw(a); }
+    };
+    box.replaceChildren(h('h3', {}, 'Relay Model'),
+      h('div', {class: 'muted small', style: 'margin:0 0 10px'}, 'Which Claude the AI engine uses first for every organisation; the other one is the backup when it fails or reaches its limit. New runs follow within about 15 seconds.'),
+      h('fieldset', {class: 'nd-choice'}, h('legend', {class: 'sr'}, 'The Relay Model runs first on'),
+        opt('subscription', 'Claude subscription first', 'The AI engine\'s Claude login. The API key is the backup.'),
+        opt('api', 'Claude API key first', a.key_set ? 'Paid per token on the Anthropic account. The subscription is the backup.'
+          : 'No API key is set for this installation: add RELAY_ANTHROPIC_API_KEY to its settings first.')));
+  };
+  api('/api/admin/ai').then(draw, e => box.replaceChildren(h('h3', {}, 'Relay Model'), h('div', {class: 'note err'}, e.message)));
+  return box;
+}
+
 /* ---------------- Overview (#/overview, the admin portal's first page): who is online now and everyone with an account
    (item 50; since item 56 people are added, not signed up) */
 async function renderOverview(again) {
@@ -573,6 +597,7 @@ async function renderOverview(again) {
       tile('People', t.people, `${t.today} added today, ${t.week} this week`),
       tile('Workspaces', t.workspaces, `${t.business} business, ${t.personal} personal`),
       tile('Dashboards', t.dashboards, 'made by them')),
+    aiCard(),
     h('div', {class: 'card'}, h('h3', {}, `Online now (${d.online.length})`),
       d.online.length ? h('div', {class: 'orgwrap'}, h('table', {class: 'utable'}, head(['Person', 'Workspace', 'Last seen']),
         h('tbody', {}, d.online.map(r => h('tr', {}, h('td', {}, who(r)), h('td', {}, where(r)), h('td', {class: 'n'}, ago(r.last_seen)))))))

@@ -1174,6 +1174,31 @@ def _admin() -> dict:
     return u
 
 
+class AiChoice(BaseModel):
+    primary: str
+
+
+@router.get("/api/admin/ai")
+def admin_ai():
+    """Item 93: which of the installation's two ways to Claude the Relay Model runs on first (providers.ai_primary)."""
+    _admin()
+    from . import providers
+    return {"primary": providers.ai_primary(), "key_set": bool(providers.INSTALL_API_KEY), "default": providers.AI_PRIMARY}
+
+
+@router.put("/api/admin/ai")
+def admin_set_ai(body: AiChoice):
+    u = _admin()
+    from . import providers, tenancy
+    before = providers.ai_primary()
+    try:
+        now = providers.set_ai_primary(body.primary)
+    except providers.ProviderError as e:
+        raise HTTPException(400, str(e))
+    tenancy.ctl_audit("d2d.ai_primary", db.PLATFORM, now, {"from": before, "to": now}, who=u.get("id"))
+    return admin_ai()
+
+
 @router.get("/api/admin/orgs")
 def all_orgs():
     _admin()

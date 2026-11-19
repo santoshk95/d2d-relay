@@ -40,6 +40,35 @@ from . import db, secrets_store
 
 INSTALL_API_KEY = (os.environ.get("D2D_ANTHROPIC_API_KEY") or "").strip()       # item 42: the installation's API key
 AI_PRIMARY = "api" if (os.environ.get("D2D_AI_PRIMARY") or "subscription").strip().lower() == "api" else "subscription"   # item 67
+_PRIMARY = {"v": None, "at": 0.0}
+
+
+def ai_primary() -> str:
+    """Item 93 (the user, 2026-11-20: "in admin portal ... option to change Relay model base whether to use claude api or
+    claude subscription"): which of the installation's two ways to Claude runs first, "subscription" (the AI engine's
+    login) or "api" (the API key, paid per token); the other is the backup. PASDACS picks it on the admin portal's
+    Overview (the control plane's meta "ai_primary", read at most every 15 seconds, so no restart); RELAY_AI_PRIMARY is
+    the default until then."""
+    now = time.time()
+    if now - _PRIMARY["at"] > 15:
+        try:
+            v = (db.ctl_meta("ai_primary") or "").strip().lower()
+        except Exception:  # noqa: BLE001 - the database is away: keep the default
+            v = ""
+        _PRIMARY.update(v=v if v in ("api", "subscription") else AI_PRIMARY, at=now)
+    return _PRIMARY["v"]
+
+
+def set_ai_primary(v: str) -> str:
+    """Item 93: PASDACS's choice; "api" needs the installation's API key (RELAY_ANTHROPIC_API_KEY)."""
+    v = (v or "").strip().lower()
+    if v not in ("api", "subscription"):
+        raise ProviderError("Choose the Claude subscription or the Claude API key.")
+    if v == "api" and not INSTALL_API_KEY:
+        raise ProviderError("No Claude API key is set for this installation: add RELAY_ANTHROPIC_API_KEY to its settings first.")
+    db.set_ctl_meta("ai_primary", v)
+    _PRIMARY.update(v=v, at=time.time())
+    return v
 INSTALL_API_LABEL = "Anthropic API (this installation's key)"
 GATEWAY_URL = os.environ.get("D2D_LITELLM_URL", "http://litellm:4000")
 GATEWAY_DIR = Path(os.environ.get("D2D_LITELLM_DIR", "/data/llm"))
@@ -268,7 +297,7 @@ def _install_default(uid: str | None, s: dict) -> bool:
 def _install_key_first(uid: str | None, s: dict) -> bool:
     """Item 42: the installation's API key runs first for a person with no provider of their own (only with
     RELAY_AI_PRIMARY=api since item 67; by default the subscription runs first and the key is its backup)."""
-    return bool(INSTALL_API_KEY) and AI_PRIMARY == "api" and _install_default(uid, s)
+    return bool(INSTALL_API_KEY) and ai_primary() == "api" and _install_default(uid, s)
 
 
 def run_config(uid: str | None, model: str, ttl_s: int, kind: str | None = None) -> dict:
