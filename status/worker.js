@@ -5,24 +5,28 @@
    A Cloudflare Worker, outside the D2D PC, so it still answers and still emails when the PC, Docker or the tunnel is
    down. Every three minutes (cron) it checks, from Cloudflare's edge: the public site (/healthz: the app and its
    database), its sign-in page, the admin portal, and the site's /status.json for each service behind it (AI engine,
-   build runner, DAX checker, Relay Visual Agent (the Power BI file maker; named so on the page at the user's word,
-   2026-11-20), sign-in mail). It keeps the state, 90 days of daily uptime and the last incidents in KV, in one write a
-   run. Something down for two checks in a row is an incident: info@pasdacs.com is emailed through Microsoft Graph (the
+   build runner, DAX checker, Power BI file maker, sign-in mail; the page and its JSON name them in plain words, see
+   SERVICES). It keeps the state, 90 days of daily uptime and the last incidents in KV, in one write a run. Something down for two checks in a row is an incident: info@pasdacs.com is emailed through Microsoft Graph (the
    mail app D2D uses, app-only; secrets MS_TENANT, MS_CLIENT_ID, MS_CLIENT_SECRET), again every REMIND_HOURS while it
    lasts, and once more when it is back. A quiet restart (POST /api/pause, see run()) stops the checks from counting for
    a while, without saying so. GET / is the page, GET /api/status the JSON. Plain keyboard characters only in what
    people read. */
 
+/* What people read names no tools and says nothing of how (the user, 2026-11-20: "dont mention .pbix file, just say
+   dashboard, nothing specific to tool or how"): plain names and words on the page and in its JSON (PUB's ids; the keys
+   stay, for the history in KV), no error details and no version. Only the emails to PASDACS keep the details. */
 const SERVICES = [
-  ['site', 'D2D Relay website', 'd2d.pasdacs.com: the app and its database'],
-  ['signin', 'Sign-in', 'The sign-in page and the emailed sign-in codes'],
-  ['admin', 'Admin portal', 'admin.pasdacs.com, for PASDACS'],
-  ['ai_engine', 'AI engine', 'Relay Model: plans, builds and Ask Relay'],
-  ['job_runner', 'Build runner', 'Each dashboard build in its own container'],
-  ['dax_checker', 'DAX checker', 'Checks every measure before a file is made'],
-  ['pbix_maker', 'Relay Visual Agent', 'Makes the .pbix files'],
+  ['site', 'D2D Relay website', 'The app at d2d.pasdacs.com'],
+  ['signin', 'Sign-in', 'Signing in to D2D Relay'],
+  ['admin', 'Admin portal', 'For the PASDACS team'],
+  ['ai_engine', 'AI engine', 'Relay Model, for dashboards and Ask Relay'],
+  ['job_runner', 'Dashboard builds', 'Builds each dashboard you ask for'],
+  ['dax_checker', 'Number checks', 'Checks every number in a dashboard'],
+  ['pbix_maker', 'Relay Visual Agent', 'Makes the finished dashboards'],
 ];
 const NAME = Object.fromEntries(SERVICES.map(([k, n]) => [k, n]));
+const PUB = {site: 'website', signin: 'sign_in', admin: 'admin_portal', ai_engine: 'ai_engine', job_runner: 'dashboard_builds',
+  dax_checker: 'number_checks', pbix_maker: 'relay_visual_agent'};
 const DAYS = 90, KEEP_INCIDENTS = 40, KEEP_MS = 120;
 const TZ = 'Asia/Kolkata';
 
@@ -167,7 +171,8 @@ function text(st, changes, down, remind) {
   }
   lines.push('', 'Status page: https://status.pasdacs.com', 'Checked: ' + when(st.updated || Date.now()),
     '', 'What to look at first: is the PC on and Docker Desktop running? Then the D2D containers (docker ps), the tunnel',
-    '(d2d-relay-tunnel), and the D2D Relay helpers. docs/d2d-relay.md, "After the PC restarts", has the steps.');
+    '(d2d-relay-tunnel), and the D2D Relay helpers. docs/d2d-relay.md, "After the PC restarts", has the steps.',
+    'On the PC, Dashboard builds is the job runner, Number checks the DAX checker, Relay Visual Agent the Power BI file maker.');
   return lines.join('\n');
 }
 
@@ -192,11 +197,11 @@ function page(st) {
   const rows = comps.map(([k, n, d]) => { const c = st.components[k];
     return `<li class="svc"><div class="top"><div><b>${esc(n)}</b><span class="desc">${esc(d)}</span></div>
       <span class="pill ${c.status}">${label(c.status)}</span></div>
-      ${c.status === 'down' && c.detail ? `<div class="detail">${esc(c.detail)}, since ${esc(when(c.since))}</div>` : ''}
+      ${c.status === 'down' ? `<div class="detail">Since ${esc(when(c.since))}</div>` : ''}
       <div class="bars" aria-label="${esc(n)}: 90 days">${bars(k)}</div>
       <div class="foot"><span>90 days ago</span><span>${upPct(k)} working</span><span>Today</span></div></li>`; }).join('');
   const incs = (st.incidents || []).slice(0, 12).map(i => `<li><b>${esc(NAME[i.k] || i.k)}</b> down ${esc(when(i.start))}${i.end
-    ? ` to ${esc(when(i.end))} (${esc(mins(i.end - i.start))})` : ', <span class="open">still down</span>'}${i.detail ? `<span class="desc">${esc(i.detail)}</span>` : ''}</li>`).join('');
+    ? ` to ${esc(when(i.end))} (${esc(mins(i.end - i.start))})` : ', <span class="open">still down</span>'}</li>`).join('');
   const ms = (st.ms || []).slice(-60), top = Math.max(...ms, 1);
   const spark = ms.length ? `<div class="spark" aria-label="Response time, last 3 hours">${ms.map(v => `<i style="height:${Math.max(4, Math.round(v / top * 100))}%" title="${v} ms"></i>`).join('')}</div>
     <div class="foot"><span>Website response time, last ${Math.round(ms.length * 3 / 60 * 10) / 10} hours</span><span>now ${ms[ms.length - 1]} ms</span></div>` : '';
@@ -235,21 +240,26 @@ ul{list-style:none;margin:0;padding:0}
 @media (max-width:520px){.bars{gap:1px}.wrap{padding:20px 16px 40px}}
 </style></head><body><div class="wrap">
 <header><div class="mark" aria-hidden="true"><i></i></div><div><h1>PASDACS status</h1><small>D2D Relay and the services behind it</small></div></header>
-<div class="banner ${overall[0]}" role="status">${esc(overall[1])}<small>${st.updated ? 'Checked ' + esc(when(st.updated)) + ', every 3 minutes, from Cloudflare' : 'The first check runs within 3 minutes'}</small></div>
+<div class="banner ${overall[0]}" role="status">${esc(overall[1])}<small>${st.updated ? 'Last checked ' + esc(when(st.updated)) + ', every 3 minutes' : 'The first check runs within 3 minutes'}</small></div>
 ${rows ? `<ul>${rows}</ul>` : ''}
 ${spark ? `<h2>Response time</h2>${spark}` : ''}
 <h2>Incidents</h2>${incs ? `<ul class="inc">${incs}</ul>` : '<p class="desc">None in the last 90 days.</p>'}
-<p class="meta">Problems are emailed to PASDACS as they happen. Questions: <a href="mailto:info@pasdacs.com">info@pasdacs.com</a>.${st.version ? ' Version ' + esc(st.version) + '.' : ''}</p>
+<p class="meta">PASDACS hears of any problem as it happens. Questions: <a href="mailto:info@pasdacs.com">info@pasdacs.com</a>.</p>
 </div></body></html>`;
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname === '/api/status') {
+    if (url.pathname === '/api/status') {                                       // the page's facts, in its words
       const st = await load(env);
-      const pub = Object.fromEntries(Object.entries(st.components).map(([k, c]) => [k, {status: c.status, since: c.since, checked: c.checked}]));
-      return Response.json({updated: st.updated || null, components: pub, incidents: (st.incidents || []).slice(0, 12), version: st.version || ''},
+      const pub = Object.fromEntries(SERVICES.filter(([k]) => st.components[k]).map(([k, n]) => {
+        const c = st.components[k];
+        return [PUB[k], {name: n, status: c.status, since: c.since, checked: c.checked}];
+      }));
+      const incidents = (st.incidents || []).slice(0, 12).map(i => ({component: PUB[i.k] || 'service', name: NAME[i.k] || 'A service',
+        start: i.start, end: i.end}));
+      return Response.json({updated: st.updated || null, components: pub, incidents},
         {headers: {'cache-control': 'no-store', 'access-control-allow-origin': '*'}});
     }
     if (url.pathname === '/api/check-now' && request.method === 'POST') {        // a check now, as the cron runs it

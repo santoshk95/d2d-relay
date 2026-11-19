@@ -12,7 +12,7 @@ It checks every three minutes, from Cloudflare (cron `*/3 * * * *`):
 | D2D Relay website | `https://d2d.pasdacs.com/healthz`: the app and its database |
 | Sign-in | `/login.html`, and whether sign-in mail is set up (`/status.json`) |
 | Admin portal | `https://admin.pasdacs.com/healthz`: Cloudflare Access's sign-in in front of it also counts as working |
-| AI engine, Build runner, DAX checker, Relay Visual Agent (the Power BI file maker) | `https://d2d.pasdacs.com/status.json`: each one up, down or not used; no sign-in needed, and nothing personal |
+| AI engine, Dashboard builds (the job runner), Number checks (the DAX checker), Relay Visual Agent (the Power BI file maker) | `https://d2d.pasdacs.com/status.json`: each one up, down or not used; no sign-in needed, and nothing personal |
 
 The state, 90 days of daily uptime, the website's response times and the last 40 incidents are kept in KV
 (`d2d-status`, binding `STATUS`). Each run writes once, 480 times a day, which is inside the free plan.
@@ -57,3 +57,7 @@ npx wrangler secret put MS_TENANT -c ..\d2d.relay\status\wrangler.jsonc     (and
 
 `GET /` is the page; it refreshes every minute and follows the device's light or dark setting. `GET /api/status` is the
 same information as JSON.
+
+Both name no tools and say nothing of how (the user, 2026-11-20: "dont mention .pbix file, just say dashboard, nothing
+specific to tool or how"). They use plain names and lines and plain JSON ids, with no error details and no version. The
+emails to PASDACS keep the details.

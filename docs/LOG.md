@@ -1980,6 +1980,11 @@ committed.
         Desktop shortcut "Restart D2D quietly" pauses for 30 minutes and restarts Windows.
       - Deployed as version b550f0f7. The Worker's test against a fake D2D, KV and clock passed 16 of 16; live, the
         route answers 404 without the key.
+      - The page and its JSON name no tools and say nothing of how ("dont mention .pbix file, just say dashboard,
+        nothing specific to tool or how"). The services read Dashboard builds, Number checks and Relay Visual Agent
+        ("Makes the finished dashboards"), with no error details, version or Cloudflare, and the JSON uses plain ids.
+        The emails to PASDACS keep the details. Deployed as version f8192807: the test, now also on the words, passed
+        19 of 19, and the live page and JSON have none of the tool words.
 
 92. **Organisations sign up again; the first person names theirs** (the user, 2026-11-19: "they will create on their own
     as sign up and then i get notification and i will handle credits", "whoever first signs in org, they will put the
