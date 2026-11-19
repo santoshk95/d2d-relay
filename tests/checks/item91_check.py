@@ -14,10 +14,10 @@ import d2d_checks as c  # noqa: E402
 
 req = urllib.request.Request(c.BASE + "/status.json", headers={"cf-connecting-ip": "198.18.91.1"})
 with urllib.request.urlopen(req, timeout=20) as r:
-    status, headers, body = r.status, dict(r.headers), r.read().decode("utf-8")
+    status, cache, body = r.status, r.headers.get("Cache-Control", ""), r.read().decode("utf-8")     # case-insensitive
 d = json.loads(body)
 c.check("item 91: /status.json answers with no sign-in", status == 200, status)
-c.check("item 91: it is never cached", "no-store" in headers.get("Cache-Control", ""), headers.get("Cache-Control"))
+c.check("item 91: it is never cached", "no-store" in cache, cache)
 c.check("item 91: every service is listed", set(d.get("services", {})) == {"app", "database", "ai_engine", "job_runner", "dax_checker", "pbix_maker", "sign_in_mail"},
         d.get("services"))
 c.check("item 91: the app and its database are up", d["services"]["app"] is True and d["services"]["database"] is True, d["services"])

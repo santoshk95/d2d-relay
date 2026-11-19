@@ -1946,6 +1946,33 @@ committed.
     - **Docker on this PC:** every container but live D2D's was removed, on the user's word: the DAWB demo,
       family-vault, plinth and rfp-copilot (40 containers), then the test stack after the release run. Their volumes
       and images are kept.
+    - **Live again, 2026-11-19 (IST)** (the user: "looks good, go ahead, deploy and publish and commit"):
+      - **Tests:**
+        - Release run on 9ac50a5: 1845 of 1851. Its misses: the tour's layer stayed over pages it did not open (fixed in
+          434287e); item44 expected the old Visuals wording (test updated); item59's admin Payments screen check (open,
+          as before).
+        - Upgrade check from live's f754035 to bc64327: 30 of 30.
+        - On 434287e: sec 117/117, item44 37/37, tour 72/72, pay_ui 37/37, item91 8/9 (the test read a header with the
+          wrong case: fixed), gov_ui 10/11.
+      - **Deploy:**
+        - About 23:14: database dump `relay-db-20261119-174358.dump`, `RELAY_OTP_ON_SCREEN` taken out of the live `.env`,
+          then web, admin and runner on bc64327.
+        - About 23:22: 434287e. It is `latest`; bc64327 and f754035 are kept for going back.
+      - **The tunnel:** the user deleted the old one and made a new one: its token is in `tunnel.env`, and its public
+        hostnames are `d2d` to `web:8000` and `admin` to `admin:8000`. The corporate site's temporary Worker
+        `pasdacs-d2d-page` was deleted (`wrangler delete -c wrangler.d2d.jsonc`), so d2d.pasdacs.com reaches the app
+        again (about 23:20).
+      - **admin.pasdacs.com:** the user's Cloudflare Access application `admin-pasdacs` (30-minute sessions), with
+        `RELAY_ADMIN_ACCESS_TEAM` and `RELAY_ADMIN_ACCESS_AUD` read from Access's sign-in redirect into the live `.env`.
+        The portal then asks for its own email code.
+      - **status.pasdacs.com:** `pasdacs-status` deployed (KV `d2d-status`, cron `*/3`) with secrets `MS_TENANT`,
+        `MS_CLIENT_ID`, `MS_CLIENT_SECRET` and `TEST_KEY`; one test alert sent to info@pasdacs.com.
+      - **Docker:** only live D2D's five containers run.
+      - **Still open:**
+        - After Delete, the Dashboards list can still show the deleted dashboard until it refreshes (gov_ui_check).
+        - item59's admin Payments screen check.
+        - The user to confirm Razorpay's live webhook is on.
+        - The trial organisation (its owner's address is needed).
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
