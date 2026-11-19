@@ -318,6 +318,40 @@ def healthz():
     return {"ok": True, "database": db.BACKEND, "instance": db.INSTANCE, "portal": portal.NAME}
 
 
+@app.get("/status.json")
+async def public_status():
+    """Item 91 (the user, 2026-11-19: "build a status.pasdacs.com ... to view all the status of the d2d application and
+    services and alerts as well to info@pasdacs.com in case of any issues"): what the status page reads (a Cloudflare
+    Worker, outside this PC's Docker: status/worker.js), with no sign-in. Each service up or not, and how many alerts
+    the monitor has open: nothing about anyone's work, data or organisation."""
+    from . import monitor, otp_mail, pbix
+
+    async def answers(url: str, sock: str | None = None) -> bool:
+        try:
+            transport = httpx.AsyncHTTPTransport(uds=sock) if sock else None
+            async with httpx.AsyncClient(timeout=3, transport=transport) as client:
+                return (await client.get(url)).status_code == 200
+        except Exception:  # noqa: BLE001 - down is the answer
+            return False
+    try:
+        db.one("SELECT 1 AS ok")
+        database = True
+    except Exception:  # noqa: BLE001
+        database = False
+    sock = os.environ.get("D2D_JOB_RUNNER_SOCK", "/run/relay-runner/runner.sock")
+    services = {"app": True, "database": database, "ai_engine": await answers(f"{worker.AGENT_URL}/health"),
+                "job_runner": await answers("http://runner/health", sock) if Path(sock).exists() else None,
+                "dax_checker": bool(daxcheck.available()), "pbix_maker": bool(pbix.available()),
+                "sign_in_mail": bool(otp_mail.mode()) or None}
+    open_alerts = monitor.active() if database else []
+    now = time.time()
+    return JSONResponse({"ok": all(v is not False for v in services.values()), "services": services,
+                         "alerts": {"critical": sum(1 for x in open_alerts if x.get("severity") == "critical"), "all": len(open_alerts)},
+                         "errors_15min": sum(1 for t in monitor.ERRORS if t > now - 900),
+                         "version": (os.environ.get("RELAY_COMMIT") or "")[:12], "time": round(now)},
+                        headers={"Cache-Control": "no-store"})
+
+
 @app.get("/portal.js")
 def portal_js():
     """D2D Relay: which site this is, for the screens before anything else loads (index.html, login.html)."""

@@ -1,7 +1,7 @@
 404-admin 59
 404-edition 330
-OPEN 177
-nonapi 17
+OPEN 179
+nonapi 18
 OPEN	DELETE	/api/askd/threads/{tid}	app.governance.api_delete_thread
 OPEN	DELETE	/api/branding/logo	app.branding.remove_logo
 OPEN	DELETE	/api/connections/{cid}	app.data_routes.remove_connection
@@ -37,6 +37,7 @@ OPEN	GET	/api/me	app.main.me
 OPEN	GET	/api/me/data	app.governance.api_my_data
 OPEN	GET	/api/me/pins	app.platform.my_pins
 OPEN	GET	/api/models	app.main.models
+OPEN	GET	/api/new-dashboard/credits	app.main.new_dashboard_credits
 OPEN	GET	/api/notifications	app.notify.my_notifications
 OPEN	GET	/api/ontology	app.ontology.get_ontology
 OPEN	GET	/api/ontology/export.yaml	app.ontology.export_yaml
@@ -105,6 +106,7 @@ OPEN	POST	/api/deploy/github/test	app.deploy.github_test
 OPEN	POST	/api/export/project/{pid}	app.publishing_routes.export_prototype
 OPEN	POST	/api/me/delete	app.orgs.delete_my_account
 OPEN	POST	/api/me/tour	app.platform.tour_seen
+OPEN	POST	/api/new-dashboard/credits	app.main.new_dashboard_pay
 OPEN	POST	/api/notifications/read	app.notify.mark_all_read
 OPEN	POST	/api/notifications/{nid}/read	app.notify.mark_read
 OPEN	POST	/api/ontology/import	app.ontology.import_terms
@@ -190,6 +192,7 @@ nonapi	GET	/gallery	app.main.gallery
 nonapi	GET	/healthz	app.main.healthz
 nonapi	GET	/metrics	app.monitor.prometheus
 nonapi	GET	/portal.js	app.main.portal_js
+nonapi	GET	/status.json	app.main.public_status
 nonapi	POST	/auth/local	app.platform.local_sign_in
 nonapi	POST	/auth/logout	app.platform.sign_out
 nonapi	POST	/auth/observe/hook/{sid}	app.observe.api_hook

@@ -1,0 +1,25 @@
+// status.pasdacs.com: D2D Relay's status page and alerts (item 91), a Cloudflare Worker outside the D2D PC.
+// Deploy from the corporate site's folder (it has wrangler and the Cloudflare login):
+//   cd Downloads\pasdacs-corporate-site && npx wrangler deploy -c ..\d2d.relay\status\wrangler.jsonc
+// Secrets (never in this file): MS_TENANT, MS_CLIENT_ID, MS_CLIENT_SECRET (the mail app D2D uses, app-only Mail.Send)
+// and TEST_KEY (for POST /api/test-alert): npx wrangler secret put <NAME> -c ..\d2d.relay\status\wrangler.jsonc
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "pasdacs-status",
+  "main": "worker.js",
+  "compatibility_date": "2026-07-27",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "status.pasdacs.com", "custom_domain": true }],
+  // every 3 minutes: one KV write a run (480 a day, inside the free plan's 1,000)
+  "triggers": { "crons": ["*/3 * * * *"] },
+  "kv_namespaces": [{ "binding": "STATUS", "id": "b43e4dc4c1db4c98a8afac6428c5d155" }],
+  "vars": {
+    "SITE": "d2d.pasdacs.com",
+    "ADMIN": "admin.pasdacs.com",
+    "ALERT_TO": "info@pasdacs.com",
+    "ALERT_FROM": "info@pasdacs.com",
+    "REMIND_HOURS": "6"
+  },
+  "observability": { "enabled": true }
+}

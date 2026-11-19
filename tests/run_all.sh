@@ -30,7 +30,7 @@ suite() {   # <suite> [<arguments after the two addresses>]
 suite d2d_checks connectors portal credits people production
 for s in gov_check gov_ui_check ask_credits_check review_fixes_check pay_check pay_ui_check \
          sec_check item29_check tour_ui_check item30_check rename_check jobs_check accounts_check item34_check item35_check item36_check item37_check item38_check item40_check item42_check item44_check item45_check item46_check item48_check item49_check item50_check item51_check item52_check item55_check item55_ui_check item56_check item57_check item58_check \
-         item59_check item60_check item61_check item62_check item63_check item64_check item65_check item66_check item70_check item73_check item81_check item82_check item90_check; do
+         item59_check item60_check item61_check item62_check item63_check item64_check item65_check item66_check item70_check item73_check item81_check item82_check item90_check item91_check; do
   suite "$s"
 done
 echo "all suites: $passed of $total checks passed${failed[*]:+; suites with failures: ${failed[*]}}"

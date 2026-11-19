@@ -38,7 +38,7 @@ LIBRARY = re.compile(r"^/api/library/([^/]+)$")
 PUBLISH = {"/approve", "/pbix"}             # D2D Relay: making the Power BI file is publishing
 SHARE = {"/shares"}
 OPEN_PATHS = ("/login.html", "/privacy.html", "/terms.html", "/refunds.html", "/contact.html", "/auth/", "/css/login.css", "/css/fonts.css", "/fonts/", "/relay-mark.svg", "/d2d-mark.svg", "/favicon.ico", "/powered-by.svg", "/icons/", "/manifest.webmanifest",
-              "/favicon", "/metrics", "/healthz", "/portal.js",
+              "/favicon", "/metrics", "/healthz", "/status.json", "/portal.js",
               "/robots.txt", "/og/")   # reachable without signing in (/metrics checks its own token); /og/ holds the share image
 ADMIN_AUTH = ("/auth/otp/", "/auth/providers", "/auth/logout", "/auth/brand")   # D2D Relay: the admin portal's sign-in paths
 SAFE = {"GET", "HEAD", "OPTIONS"}

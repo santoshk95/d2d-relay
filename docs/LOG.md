@@ -1924,6 +1924,28 @@ committed.
 
       Both pass on the test stack with the working copy mounted and no Claude. The tour's callout now re-places
       itself when it grows (a `ResizeObserver`), which fixes the last step sometimes sitting below the screen.
+91. **status.pasdacs.com, and D2D back on d2d.pasdacs.com with admin.pasdacs.com** (the user, 2026-11-19: "looks good, go
+    ahead, deploy and publish and commit, i need to configure the network tunnel as well, remove all container from the
+    docker and have only this one running and admin.pasdacs.com as well and also build a status.pasdacs.com (if possible
+    to be outside from this docker may be in cloudflare directly) as well do view all the status of the d2d application
+    and services and alerts as well to info@pasdacs.com in case of any issues"):
+    - **`GET /status.json`** (no sign-in; `auth.OPEN_PATHS`): each service up, down or not used:
+      - the app and the database;
+      - the AI engine and the job runner (asked over its socket);
+      - the DAX checker, the Power BI file maker, and sign-in mail.
+
+      It also gives how many alerts the monitor has open (counts only), server errors in the last 15 minutes, the
+      version and the time. Nothing about anyone's work, data or organisation. `item91_check.py` (new, in
+      `run_all.sh`) covers it. `tests/audit/routes-public.txt` is regenerated: it now has `/status.json` and item 90's
+      `/api/new-dashboard/credits`.
+    - **`status/`: the `pasdacs-status` Cloudflare Worker on status.pasdacs.com**, outside the PC (`status/README.md`):
+      - Every three minutes it checks the site, its sign-in, the admin portal and `/status.json`.
+      - It keeps the state and 90 days of uptime in KV (`d2d-status`).
+      - It emails info@pasdacs.com through Microsoft Graph (the sign-in mail app, app-only) when something is down for
+        two checks in a row, every 6 hours while it lasts, and when it is back.
+    - **Docker on this PC:** every container but live D2D's was removed, on the user's word: the DAWB demo,
+      family-vault, plinth and rfp-copilot (40 containers), then the test stack after the release run. Their volumes
+      and images are kept.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
