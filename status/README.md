@@ -12,7 +12,7 @@ It checks every three minutes, from Cloudflare (cron `*/3 * * * *`):
 | D2D Relay website | `https://d2d.pasdacs.com/healthz`: the app and its database |
 | Sign-in | `/login.html`, and whether sign-in mail is set up (`/status.json`) |
 | Admin portal | `https://admin.pasdacs.com/healthz`: Cloudflare Access's sign-in in front of it also counts as working |
-| AI engine, Build runner, DAX checker, Power BI file maker | `https://d2d.pasdacs.com/status.json`: each one up, down or not used; no sign-in needed, and nothing personal |
+| AI engine, Build runner, DAX checker, Relay Visual Agent (the Power BI file maker) | `https://d2d.pasdacs.com/status.json`: each one up, down or not used; no sign-in needed, and nothing personal |
 
 The state, 90 days of daily uptime, the website's response times and the last 40 incidents are kept in KV
 (`d2d-status`, binding `STATUS`). Each run writes once, 480 times a day, which is inside the free plan.
@@ -34,6 +34,16 @@ with these Worker secrets:
 
 If the app's client secret is renewed, update it here too. `POST /api/test-alert`, with the header `x-test-key:
 <TEST_KEY>`, sends one test email; `POST /api/check-now` with the same header runs a check at once.
+
+## A quiet restart
+
+`POST /api/pause`, with the same header and `{"minutes": 30}` (60 at most; 0 ends it), pauses the checks without
+saying so. The page keeps what the last check found, and nothing is counted: no incident, no email. The pause ends at
+its time, or at the first check that finds everything working after one found something down, so a restart of the PC
+leaves no mark and the page is not blind for longer than the restart.
+
+On the D2D PC, the Desktop shortcut "Restart D2D quietly" does this and then restarts Windows. Its script, which holds
+the key, is in `%LOCALAPPDATA%\PASDACS`; run with `-Check`, it only tests the key.
 
 ## Deploy
 

@@ -5,11 +5,13 @@
    A Cloudflare Worker, outside the D2D PC, so it still answers and still emails when the PC, Docker or the tunnel is
    down. Every three minutes (cron) it checks, from Cloudflare's edge: the public site (/healthz: the app and its
    database), its sign-in page, the admin portal, and the site's /status.json for each service behind it (AI engine,
-   build runner, DAX checker, Power BI file maker, sign-in mail). It keeps the state, 90 days of daily uptime and the
-   last incidents in KV, in one write a run. Something down for two checks in a row is an incident: info@pasdacs.com is
-   emailed through Microsoft Graph (the mail app D2D uses, app-only; secrets MS_TENANT, MS_CLIENT_ID, MS_CLIENT_SECRET),
-   again every REMIND_HOURS while it lasts, and once more when it is back. GET / is the page, GET /api/status the JSON.
-   Plain keyboard characters only in what people read. */
+   build runner, DAX checker, Relay Visual Agent (the Power BI file maker; named so on the page at the user's word,
+   2026-11-20), sign-in mail). It keeps the state, 90 days of daily uptime and the last incidents in KV, in one write a
+   run. Something down for two checks in a row is an incident: info@pasdacs.com is emailed through Microsoft Graph (the
+   mail app D2D uses, app-only; secrets MS_TENANT, MS_CLIENT_ID, MS_CLIENT_SECRET), again every REMIND_HOURS while it
+   lasts, and once more when it is back. A quiet restart (POST /api/pause, see run()) stops the checks from counting for
+   a while, without saying so. GET / is the page, GET /api/status the JSON. Plain keyboard characters only in what
+   people read. */
 
 const SERVICES = [
   ['site', 'D2D Relay website', 'd2d.pasdacs.com: the app and its database'],
@@ -18,7 +20,7 @@ const SERVICES = [
   ['ai_engine', 'AI engine', 'Relay Model: plans, builds and Ask Relay'],
   ['job_runner', 'Build runner', 'Each dashboard build in its own container'],
   ['dax_checker', 'DAX checker', 'Checks every measure before a file is made'],
-  ['pbix_maker', 'Power BI file maker', 'Makes the .pbix files'],
+  ['pbix_maker', 'Relay Visual Agent', 'Makes the .pbix files'],
 ];
 const NAME = Object.fromEntries(SERVICES.map(([k, n]) => [k, n]));
 const DAYS = 90, KEEP_INCIDENTS = 40, KEEP_MS = 120;
@@ -64,8 +66,8 @@ async function load(env) {
 }
 const day = t => new Date(t + 5.5 * 3600e3).toISOString().slice(0, 10);       // IST days
 
-async function tick(env) {
-  const now = Date.now(), st = await load(env), {results, ms, alerts, version} = await checkAll(env);
+async function tick(env, pre) {
+  const now = Date.now(), st = await load(env), {results, ms, alerts, version} = pre || await checkAll(env);
   const changes = [];
   for (const [k, [raw, detail]] of Object.entries(results)) {
     const c = st.components[k] || {status: 'unknown', since: now, fails: 0};
@@ -111,6 +113,24 @@ async function tick(env) {
   return st;
 }
 const mins = ms => { const m = Math.max(1, Math.round(ms / 60e3)); return m < 90 ? `${m} min` : `${Math.round(m / 60 * 10) / 10} h`; };
+
+/* ---------------- a quiet restart ----------------
+   The user, 2026-11-20, of a planned-maintenance notice: "i dont want it to show ... how to do silently". POST
+   /api/pause (the key) pauses the checks for up to an hour: the page keeps what the last check found, with its time, and
+   nothing is counted, no incident, no email; the page does not say so. The pause ends at its time, or at the first check
+   that finds everything working after one found something down (the PC restarted and came back), so the page is not left
+   blind longer than the restart. Kept apart from the state ('pause'), so a run in flight cannot write over it. */
+const PAUSE_MAX = 60;
+const ttl = until => Math.max(60, Math.ceil((until - Date.now()) / 1000) + 600);
+async function run(env) {
+  const now = Date.now(), p = parse(await env.STATUS.get('pause'));
+  if (!p || !(p.until > now)) return tick(env);
+  const r = await checkAll(env);
+  const bad = Object.values(r.results).some(([raw]) => raw === 'down' || raw === 'unknown');
+  if (!bad && p.down) { await env.STATUS.delete('pause'); return tick(env, r); }
+  if (bad && !p.down) await env.STATUS.put('pause', JSON.stringify({...p, down: now}), {expirationTtl: ttl(p.until)});
+  return {...(await load(env)), paused: p.until};
+}
 
 /* ---------------- email: Microsoft Graph, as the alert sender (app-only) ---------------- */
 async function mail(env, subjectLine, body) {
@@ -234,9 +254,19 @@ export default {
     }
     if (url.pathname === '/api/check-now' && request.method === 'POST') {        // a check now, as the cron runs it
       if (!env.TEST_KEY || request.headers.get('x-test-key') !== env.TEST_KEY) return new Response('Not found', {status: 404});
-      const st = await tick(env);
+      const st = await run(env);
       return Response.json({updated: st.updated, components: Object.fromEntries(Object.entries(st.components).map(([k, c]) => [k, c.status])),
-        mail_error: st.mail_error || null});
+        mail_error: st.mail_error || null, paused_until: st.paused || null});
+    }
+    if (url.pathname === '/api/pause' && request.method === 'POST') {            // a quiet restart (run()); minutes 0 ends it
+      if (!env.TEST_KEY || request.headers.get('x-test-key') !== env.TEST_KEY) return new Response('Not found', {status: 404});
+      const b = await request.json().catch(() => ({}));
+      const n = Math.round(Number(b && b.minutes != null ? b.minutes : 30));
+      const m = Number.isFinite(n) ? Math.min(PAUSE_MAX, Math.max(0, n)) : 30;
+      if (!m) { await env.STATUS.delete('pause'); return Response.json({paused_until: null}); }
+      const until = Date.now() + m * 60e3;
+      await env.STATUS.put('pause', JSON.stringify({until}), {expirationTtl: ttl(until)});
+      return Response.json({paused_until: until, ends: when(until)});
     }
     if (url.pathname === '/api/test-alert' && request.method === 'POST') {       // one email, to check the alert route works
       if (!env.TEST_KEY || request.headers.get('x-test-key') !== env.TEST_KEY) return new Response('Not found', {status: 404});
@@ -254,6 +284,6 @@ export default {
       'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data:"}});
   },
   async scheduled(controller, env, ctx) {
-    ctx.waitUntil(tick(env));
+    ctx.waitUntil(run(env));
   },
 };

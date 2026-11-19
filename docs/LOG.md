@@ -1973,6 +1973,13 @@ committed.
         - item59's admin Payments screen check.
         - The user to confirm Razorpay's live webhook is on.
         - The trial organisation and its credits: the user makes them on the admin portal (the user, 2026-11-19).
+    - **Later (the user, 2026-11-20):**
+      - The page calls the Power BI file maker "Relay Visual Agent".
+      - A quiet restart, with no notice on the page ("i dont want it to show ... how to do silently"): `POST /api/pause`
+        (the key) pauses the checks until D2D is seen back, 60 minutes at most (`status/README.md`). On the D2D PC, the
+        Desktop shortcut "Restart D2D quietly" pauses for 30 minutes and restarts Windows.
+      - Deployed as version b550f0f7. The Worker's test against a fake D2D, KV and clock passed 16 of 16; live, the
+        route answers 404 without the key.
 
 92. **Organisations sign up again; the first person names theirs** (the user, 2026-11-19: "they will create on their own
     as sign up and then i get notification and i will handle credits", "whoever first signs in org, they will put the
