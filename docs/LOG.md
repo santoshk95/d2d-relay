@@ -1972,7 +1972,7 @@ committed.
         - After Delete, the Dashboards list can still show the deleted dashboard until it refreshes (gov_ui_check).
         - item59's admin Payments screen check.
         - The user to confirm Razorpay's live webhook is on.
-        - The trial organisation (its owner's address is needed).
+        - The trial organisation and its credits: the user makes them on the admin portal (the user, 2026-11-19).
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
