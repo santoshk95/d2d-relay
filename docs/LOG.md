@@ -1991,6 +1991,7 @@ committed.
     - **Tests:** `item56_check.py` (70: the sign-up, Requests, the notification, approval with 30, the name in the setup,
       a colleague with no code, Gmail and throw-away told why), `sec_check.py` (117) and `upgrade_check.py` updated;
       item81 71/71, accounts 48/48, item60 41/41.
+    - **Live** 2026-11-20 about 00:01 IST on the user's "Yes, deploy it": 76a96fc (database dump `relay-db-20261119-183108.dump`; 434287e kept for going back). Its upgrade check from f754035: 30 of 30.
 
 Test data in the live install: none since the fresh start (item 18); PASDACS's own test traces went too (item 33).
 
