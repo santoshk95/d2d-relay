@@ -232,6 +232,12 @@ export default {
       return Response.json({updated: st.updated || null, components: pub, incidents: (st.incidents || []).slice(0, 12), version: st.version || ''},
         {headers: {'cache-control': 'no-store', 'access-control-allow-origin': '*'}});
     }
+    if (url.pathname === '/api/check-now' && request.method === 'POST') {        // a check now, as the cron runs it
+      if (!env.TEST_KEY || request.headers.get('x-test-key') !== env.TEST_KEY) return new Response('Not found', {status: 404});
+      const st = await tick(env);
+      return Response.json({updated: st.updated, components: Object.fromEntries(Object.entries(st.components).map(([k, c]) => [k, c.status])),
+        mail_error: st.mail_error || null});
+    }
     if (url.pathname === '/api/test-alert' && request.method === 'POST') {       // one email, to check the alert route works
       if (!env.TEST_KEY || request.headers.get('x-test-key') !== env.TEST_KEY) return new Response('Not found', {status: 404});
       const st = await load(env);

@@ -33,7 +33,7 @@ with these Worker secrets:
 - `MS_CLIENT_SECRET`
 
 If the app's client secret is renewed, update it here too. `POST /api/test-alert`, with the header `x-test-key:
-<TEST_KEY>`, sends one test email.
+<TEST_KEY>`, sends one test email; `POST /api/check-now` with the same header runs a check at once.
 
 ## Deploy
 
